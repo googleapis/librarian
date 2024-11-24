@@ -17,8 +17,11 @@ package generate
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/generator/internal/gitrepo"
 )
@@ -29,13 +32,15 @@ func Run(ctx context.Context, arg ...string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := cloneGoogleapis(ctx); err != nil {
+	googleapisRepo, err := cloneGoogleapis(ctx)
+	if err != nil {
 		return err
 	}
-	if _, err := cloneLanguageRepo(ctx, cfg.language); err != nil {
+	languageRepo, err := cloneLanguageRepo(ctx, cfg.language)
+	if err != nil {
 		return err
 	}
-	return nil
+	return runDocker(googleapisRepo.Dir, languageRepo.Dir, cfg.api)
 }
 
 const googleapisURL = "https://github.com/googleapis/googleapis"
@@ -49,4 +54,33 @@ func cloneLanguageRepo(ctx context.Context, language string) (*gitrepo.Repo, err
 	languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", language)
 	repoPath := filepath.Join(os.TempDir(), fmt.Sprintf("/generator-google-cloud-%s", language))
 	return gitrepo.CloneOrOpen(ctx, repoPath, languageRepoURL)
+}
+
+const dotnetContainerDir = "containers/dotnet"
+
+func runDocker(googleapisDir, languageDir, api string) error {
+	if err := runCommand("docker", "build", dotnetContainerDir, "-t", "picard"); err != nil {
+		return err
+	}
+	args := []string{
+		"run",
+		"-v", fmt.Sprintf("%s:/apis", googleapisDir),
+		"-v", fmt.Sprintf("%s:/output", languageDir),
+		dotnetContainerDir,
+		"--command=update",
+		"--api-root=/apis",
+		fmt.Sprintf("--api=%s", api),
+		"--output-root=/output",
+	}
+	return runCommand("docker", args...)
+}
+
+func runCommand(c string, args ...string) error {
+	cmd := exec.Command(c, args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	slog.Info(strings.Repeat("-", 80))
+	slog.Info(cmd.String())
+	slog.Info(strings.Repeat("-", 80))
+	return cmd.Run()
 }
