@@ -13,21 +13,18 @@
 // limitations under the License.
 
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 
 namespace MakeItSo;
 
-internal class UpdateCommand : ICommand
+internal class BuildCommand : ICommand
 {
-    private readonly string _apiRoot;
     private readonly string _api;
     private readonly string _outputRoot;
     private readonly UnknownApiBehavior _unknownApiBehavior;
 
-    public UpdateCommand(string apiRoot, string api, string outputRoot, UnknownApiBehavior unknownApiBehavior)
+    public BuildCommand(string api, string outputRoot, UnknownApiBehavior unknownApiBehavior)
     {
-        _apiRoot = apiRoot;
         _api = api;
         _outputRoot = outputRoot;
         _unknownApiBehavior = unknownApiBehavior;
@@ -43,22 +40,21 @@ internal class UpdateCommand : ICommand
             switch (_unknownApiBehavior)
             {
                 case UnknownApiBehavior.Create:
-                    throw new NotImplementedException($"Create for unknown API {_api} is not yet supported");
+                    throw new InvalidOperationException($"Create for unknown API {_api} is not supported by the build command");
                 case UnknownApiBehavior.Error:
                     throw new InvalidOperationException($"No API configured with proto path {_api}, and unknown API behavior is 'error'");
                 case UnknownApiBehavior.Ignore:
                     return;
                 default:
                     throw new InvalidOperationException($"Unsupported unknown API behavior: {_unknownApiBehavior}");
-            }            
+            }
         }
 
         var psi = new ProcessStartInfo
         {
             FileName = "/bin/bash",
-            ArgumentList = { "./generateapis.sh", api.Id },
-            WorkingDirectory = _outputRoot,
-            EnvironmentVariables = { { "GOOGLEAPIS_DIR", _apiRoot } }
+            ArgumentList = { "./build.sh", api.Id },
+            WorkingDirectory = _outputRoot
         };
         var process = Process.Start(psi)!;
         process.WaitForExit();

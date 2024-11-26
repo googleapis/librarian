@@ -46,13 +46,22 @@ if (commandName is null)
     return 1;
 }
 
+UnknownApiBehavior unknownApiBehavior = namedArgs.GetValueOrDefault("unknown", "error") switch
+{
+    "error" => UnknownApiBehavior.Error,
+    "ignore" => UnknownApiBehavior.Ignore,
+    "create" => UnknownApiBehavior.Create,
+    _ => throw new ArgumentException($"Invalid value for --unknown: '{namedArgs["unknown"]}'")
+};
+
 ICommand? command;
 try
 {
     command = namedArgs["command"] switch
     {
-        "create" => new CreateCommand(namedArgs["api-root"], namedArgs["api"], namedArgs["output-root"]),
-        "update" => new UpdateCommand(namedArgs["api-root"], namedArgs["api"], namedArgs["output-root"]),
+        "create" => new CreateCommand(namedArgs["api-root"], namedArgs["api"], namedArgs["output-root"], unknownApiBehavior),
+        "update" => new UpdateCommand(namedArgs["api-root"], namedArgs["api"], namedArgs["output-root"], unknownApiBehavior),
+        "build" => new BuildCommand(namedArgs["api"], namedArgs["output-root"], unknownApiBehavior),
         _ => null
     };
 }
@@ -87,4 +96,8 @@ void ShowHelp()
     Console.WriteLine("Valid commands:");
     Console.WriteLine("--command=update --api-root=path-to-apis --api=relative-path-to-api --output-root=path-to-dotnet-repo");
     Console.WriteLine("--command=create --api-root=path-to-apis --api=relative-path-to-api --output-root=path-to-dotnet-repo");
+    Console.WriteLine("--command=build --api=relative-path-to-api --output-root=path-to-dotnet-repo");
+    Console.WriteLine();
+    Console.WriteLine("Common optional arguments:");
+    Console.WriteLine("--unknown=error|ignore|create");
 }

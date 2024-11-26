@@ -19,12 +19,14 @@ internal class CreateCommand : ICommand
     private readonly string _apiRoot;
     private readonly string _api;
     private readonly string _outputRoot;
+    private readonly UnknownApiBehavior _unknownApiBehavior;
 
-    public CreateCommand(string apiRoot, string api, string outputRoot)
+    public CreateCommand(string apiRoot, string api, string outputRoot, UnknownApiBehavior unknownApiBehavior)
     {
         _apiRoot = apiRoot;
         _api = api;
         _outputRoot = outputRoot;
+        _unknownApiBehavior = unknownApiBehavior;
     }
 
     public void Execute() => throw new NotImplementedException();
