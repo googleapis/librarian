@@ -44,6 +44,7 @@ internal class BuildCommand : ICommand
                 case UnknownApiBehavior.Error:
                     throw new InvalidOperationException($"No API configured with proto path {_api}, and unknown API behavior is 'error'");
                 case UnknownApiBehavior.Ignore:
+                    Console.WriteLine($"Ignoring unknown API {_api}");
                     return;
                 default:
                     throw new InvalidOperationException($"Unsupported unknown API behavior: {_unknownApiBehavior}");
