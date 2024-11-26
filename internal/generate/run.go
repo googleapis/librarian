@@ -56,17 +56,14 @@ func cloneLanguageRepo(ctx context.Context, language string) (*gitrepo.Repo, err
 	return gitrepo.CloneOrOpen(ctx, repoPath, languageRepoURL)
 }
 
-const dotnetContainerDir = "containers/dotnet"
+const dotnetImageTag = "picard"
 
 func runDocker(googleapisDir, languageDir, api string) error {
-	if err := runCommand("docker", "build", dotnetContainerDir, "-t", "picard"); err != nil {
-		return err
-	}
 	args := []string{
 		"run",
 		"-v", fmt.Sprintf("%s:/apis", googleapisDir),
 		"-v", fmt.Sprintf("%s:/output", languageDir),
-		dotnetContainerDir,
+		dotnetImageTag,
 		"--command=update",
 		"--api-root=/apis",
 		fmt.Sprintf("--api=%s", api),
