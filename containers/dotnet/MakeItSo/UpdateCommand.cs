@@ -35,6 +35,8 @@ internal class UpdateCommand : ICommand
 
     public void Execute()
     {
+        MakeApiRootGitSafe();
+
         var apiCatalogJson = File.ReadAllText(Path.Combine(_outputRoot, "apis", "apis.json"));
         var apiCatalog = JsonConvert.DeserializeObject<ApiCatalog>(apiCatalogJson)!;
         var api = apiCatalog.Apis.FirstOrDefault(api => api.ProtoPath == _api);
@@ -66,6 +68,28 @@ internal class UpdateCommand : ICommand
         if (process.ExitCode != 0)
         {
             throw new Exception($"Generation ended with exit code {process.ExitCode}");
+        }
+    }
+
+    /// <summary>
+    /// Temporary hack to allow post-processors to reset any changes
+    /// made in pre-processors. This will be obsolete once we stop the .NET generator container
+    /// from issuing any git commands - possibly enforced by the CLI creating a copy of the API directory.
+    /// </summary>
+    private void MakeApiRootGitSafe()
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "/usr/bin/git",
+            ArgumentList = { "config", "--global", "--add", "safe.directory", _apiRoot },
+            WorkingDirectory = _outputRoot,
+            EnvironmentVariables = { { "GOOGLEAPIS_DIR", _apiRoot } }
+        };
+        var process = Process.Start(psi)!;
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+        {
+            throw new Exception($"git hack exited with code {process.ExitCode}");
         }
     }
 }
