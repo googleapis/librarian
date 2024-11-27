@@ -37,32 +37,42 @@ internal class UpdateCommand : ICommand
     {
         MakeApiRootGitSafe();
 
-        var apiCatalogJson = File.ReadAllText(Path.Combine(_outputRoot, "apis", "apis.json"));
-        var apiCatalog = JsonConvert.DeserializeObject<ApiCatalog>(apiCatalogJson)!;
-        var api = apiCatalog.Apis.FirstOrDefault(api => api.ProtoPath == _api);
-        if (api is null)
+        var processArguments = new List<string> { "./generateapis.sh" };
+
+        // The magic string "all" is used to say "just generate all known APIs" which is
+        // done by just running generateapis.sh without any other arguments.
+        // Otherwise, we need to find the API corresponding to the specified directory.
+        if (_api != "all")
         {
-            switch (_unknownApiBehavior)
+            var apiCatalogJson = File.ReadAllText(Path.Combine(_outputRoot, "apis", "apis.json"));
+            var apiCatalog = JsonConvert.DeserializeObject<ApiCatalog>(apiCatalogJson)!;
+            var api = apiCatalog.Apis.FirstOrDefault(api => api.ProtoPath == _api);
+            if (api is null)
             {
-                case UnknownApiBehavior.Create:
-                    throw new NotImplementedException($"Create for unknown API {_api} is not yet supported");
-                case UnknownApiBehavior.Error:
-                    throw new InvalidOperationException($"No API configured with proto path {_api}, and unknown API behavior is 'error'");
-                case UnknownApiBehavior.Ignore:
-                    Console.WriteLine($"Ignoring unknown API {_api}");
-                    return;
-                default:
-                    throw new InvalidOperationException($"Unsupported unknown API behavior: {_unknownApiBehavior}");
-            }            
+                switch (_unknownApiBehavior)
+                {
+                    case UnknownApiBehavior.Create:
+                        throw new NotImplementedException($"Create for unknown API {_api} is not yet supported");
+                    case UnknownApiBehavior.Error:
+                        throw new InvalidOperationException($"No API configured with proto path {_api}, and unknown API behavior is 'error'");
+                    case UnknownApiBehavior.Ignore:
+                        Console.WriteLine($"Ignoring unknown API {_api}");
+                        return;
+                    default:
+                        throw new InvalidOperationException($"Unsupported unknown API behavior: {_unknownApiBehavior}");
+                }
+            }
+            processArguments.Add(api.Id);
         }
 
         var psi = new ProcessStartInfo
         {
             FileName = "/bin/bash",
-            ArgumentList = { "./generateapis.sh", api.Id },
             WorkingDirectory = _outputRoot,
             EnvironmentVariables = { { "GOOGLEAPIS_DIR", _apiRoot } }
         };
+        processArguments.ForEach(psi.ArgumentList.Add);
+
         var process = Process.Start(psi)!;
         process.WaitForExit();
         if (process.ExitCode != 0)
