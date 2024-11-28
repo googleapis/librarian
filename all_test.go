@@ -33,19 +33,22 @@ func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
 	fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, _ error) error {
 		if d.IsDir() {
-			if d.Name() == "testdata" {
+			if d.Name() == "testdata" || strings.HasPrefix(d.Name(), ".") {
 				return fs.SkipDir
 			}
 			return nil
 		}
-		if !strings.HasSuffix(path, ".go") {
+
+		if strings.HasPrefix(d.Name(), ".") {
 			return nil
 		}
+
 		f, err := sfs.Open(path)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
+
 		if !googleHeader.MatchReader(bufio.NewReader(f)) {
 			t.Errorf("%q: incorrect header", path)
 		}
