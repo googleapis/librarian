@@ -34,18 +34,18 @@ func generatorGenerateCommand() *command {
 		name:  "generate",
 		short: "Generate a new client library",
 		usage: "generator generate [arguments]",
-		fs:    flag.NewFlagSet("generate", flag.ContinueOnError),
+		flags: flag.NewFlagSet("generate", flag.ContinueOnError),
 		run:   generate,
 	}
-	c.fs.StringVar(&apiFlag, "api", "", "name of API inside googleapis")
-	c.fs.Func("language", "language to generate", func(language string) error {
+	c.flags.StringVar(&apiFlag, "api", "", "name of API inside googleapis")
+	c.flags.Func("language", "language to generate", func(language string) error {
 		if !supportedLanguages[language] {
 			return fmt.Errorf("invalid -language flag specified: %q", language)
 		}
 		languageFlag = language
 		return nil
 	})
-	c.fs.Usage = constructUsage(c.fs, c.short, c.usage, c.commands, true)
+	c.flags.Usage = constructUsage(c.flags, c.short, c.usage, c.commands, true)
 	return c
 }
 

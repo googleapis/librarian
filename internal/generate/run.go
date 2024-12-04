@@ -26,20 +26,20 @@ import (
 func Run(ctx context.Context, arg ...string) error {
 	cmd := generatorCommand()
 
-	if err := cmd.fs.Parse(arg); err != nil {
+	if err := cmd.flags.Parse(arg); err != nil {
 		return err
 	}
-	if len(cmd.fs.Args()) == 0 {
-		cmd.fs.Usage()
+	if len(cmd.flags.Args()) == 0 {
+		cmd.flags.Usage()
 		return fmt.Errorf("missing command")
 	}
 
-	c := cmd.fs.Args()[0]
+	c := cmd.flags.Args()[0]
 	sub := cmd.lookup(c)
 	if sub == nil {
 		return fmt.Errorf("invalid command: %q", c)
 	}
-	if err := sub.fs.Parse(arg[1:]); err != nil {
+	if err := sub.flags.Parse(arg[1:]); err != nil {
 		return err
 	}
 	return sub.run(ctx)

@@ -24,7 +24,7 @@ type command struct {
 	name     string
 	short    string
 	usage    string
-	fs       *flag.FlagSet
+	flags    *flag.FlagSet
 	commands []*command
 	run      func(ctx context.Context) error
 }
@@ -47,11 +47,11 @@ func generatorCommand() *command {
 			generatorCreateCommand(),
 			generatorGenerateCommand(),
 		},
-		fs: flag.NewFlagSet("generator", flag.ContinueOnError),
+		flags: flag.NewFlagSet("generator", flag.ContinueOnError),
 		// run is not set for generator because it is different than the
 		// others
 	}
-	c.fs.Usage = constructUsage(c.fs, c.short, c.usage, c.commands, false)
+	c.flags.Usage = constructUsage(c.flags, c.short, c.usage, c.commands, false)
 	return c
 }
 
