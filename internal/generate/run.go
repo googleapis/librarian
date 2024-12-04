@@ -20,56 +20,29 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
-
-	"github.com/googleapis/generator/internal/gitrepo"
 )
 
 func Run(ctx context.Context, arg ...string) error {
-	cfg := &config{}
-	cfg, err := parseFlags(cfg, arg)
-	if err != nil {
+	cmd := generatorCommand()
+
+	if err := cmd.fs.Parse(arg); err != nil {
 		return err
 	}
-	googleapisRepo, err := cloneGoogleapis(ctx)
-	if err != nil {
+	if len(cmd.fs.Args()) == 0 {
+		cmd.fs.Usage()
+		return fmt.Errorf("missing command")
+	}
+
+	c := cmd.fs.Args()[0]
+	sub := cmd.lookup(c)
+	if sub == nil {
+		return fmt.Errorf("invalid command: %q", c)
+	}
+	if err := sub.fs.Parse(arg[1:]); err != nil {
 		return err
 	}
-	languageRepo, err := cloneLanguageRepo(ctx, cfg.language)
-	if err != nil {
-		return err
-	}
-	return runDocker(googleapisRepo.Dir, languageRepo.Dir, cfg.api)
-}
-
-const googleapisURL = "https://github.com/googleapis/googleapis"
-
-func cloneGoogleapis(ctx context.Context) (*gitrepo.Repo, error) {
-	repoPath := filepath.Join(os.TempDir(), "/generator-googleapis")
-	return gitrepo.CloneOrOpen(ctx, repoPath, googleapisURL)
-}
-
-func cloneLanguageRepo(ctx context.Context, language string) (*gitrepo.Repo, error) {
-	languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", language)
-	repoPath := filepath.Join(os.TempDir(), fmt.Sprintf("/generator-google-cloud-%s", language))
-	return gitrepo.CloneOrOpen(ctx, repoPath, languageRepoURL)
-}
-
-const dotnetImageTag = "picard"
-
-func runDocker(googleapisDir, languageDir, api string) error {
-	args := []string{
-		"run",
-		"-v", fmt.Sprintf("%s:/apis", googleapisDir),
-		"-v", fmt.Sprintf("%s:/output", languageDir),
-		dotnetImageTag,
-		"--command=update",
-		"--api-root=/apis",
-		fmt.Sprintf("--api=%s", api),
-		"--output-root=/output",
-	}
-	return runCommand("docker", args...)
+	return sub.run(ctx)
 }
 
 func runCommand(c string, args ...string) error {

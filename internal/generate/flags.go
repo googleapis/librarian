@@ -15,75 +15,60 @@
 package generate
 
 import (
+	"context"
 	"flag"
 	"fmt"
 )
 
-type config struct {
-	api      string
-	language string
+type command struct {
+	name     string
+	short    string
+	usage    string
+	fs       *flag.FlagSet
+	commands []*command
+	run      func(ctx context.Context) error
 }
 
-func parseFlags(cfg *config, args []string) (*config, error) {
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.StringVar(&cfg.api, "api", "", "name of API inside googleapis")
-	flags.StringVar(&cfg.language, "language", "", "specify from cpp, csharp, go, java, node, php, python, ruby, rust")
-
-	// We don't want to print the whole usage message on each flags
-	// error, so we set to a no-op and do the printing ourselves.
-	flags.Usage = func() {}
-	usage := func() {
-		fmt.Fprint(flags.Output(), `Generator generates client libraries for Google APIs.
-
-Usage:
-
-  generator [flags]
-
-Flags:
-
-`)
-		flags.PrintDefaults()
-		fmt.Fprintf(flags.Output(), "\n\n")
-	}
-
-	if err := flags.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			usage() // print usage only on help
+func (c *command) lookup(name string) *command {
+	for _, sub := range c.commands {
+		if sub.name == name {
+			return sub
 		}
-		return nil, err
 	}
-	if err := validateConfig(cfg); err != nil {
-		usage() // print usage only on help
-		return nil, err
-	}
-	return cfg, nil
+	return nil
 }
 
-func validateConfig(cfg *config) error {
-	if cfg.api == "" {
-		return fmt.Errorf("api must be provided")
+func generatorCommand() *command {
+	c := &command{
+		name:  "generator",
+		short: "Generator generates client libraries for Google APIs.",
+		usage: "generator <command> [arguments]",
+		commands: []*command{
+			generatorCreateCommand(),
+			generatorGenerateCommand(),
+		},
+		fs: flag.NewFlagSet("generator", flag.ContinueOnError),
+		// run is not set for generator because it is different than the
+		// others
 	}
+	c.fs.Usage = constructUsage(c.fs, c.short, c.usage, c.commands, false)
+	return c
+}
 
-	switch cfg.language {
-	case "cpp":
-		return errNotImplemented
-	case "dotnet":
-		return nil
-	case "go":
-		return errNotImplemented
-	case "java":
-		return errNotImplemented
-	case "node":
-		return errNotImplemented
-	case "php":
-		return errNotImplemented
-	case "python":
-		return errNotImplemented
-	case "ruby":
-		return errNotImplemented
-	case "rust":
-		return errNotImplemented
-	default:
-		return fmt.Errorf("invalid -language flag specified: %q", cfg.language)
+func constructUsage(fs *flag.FlagSet, short, usage string, commands []*command, hasFlags bool) func() {
+	output := fmt.Sprintf("%s\n\nUsage:\n\n  %s\n", short, usage)
+	if len(commands) > 0 {
+		output += "\nThe commands are:\n\n"
+		for _, c := range commands {
+			output += fmt.Sprintf("  %s  %s\n", c.name, c.short)
+		}
+	}
+	if hasFlags {
+		output += "\nFlags:\n\n"
+	}
+	return func() {
+		fmt.Fprint(fs.Output(), output)
+		fs.PrintDefaults()
+		fmt.Fprintf(fs.Output(), "\n\n")
 	}
 }
