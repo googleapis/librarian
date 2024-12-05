@@ -6,7 +6,7 @@ To run the generator:
 
 ```
 docker build containers/dotnet -t picard
-go run ./cmd/generate -language dotnet -api secretmanager
+go run ./cmd/generator generate -language dotnet -api secretmanager
 ```
 
 ## License
