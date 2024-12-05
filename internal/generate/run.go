@@ -16,7 +16,6 @@ package generate
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -24,25 +23,14 @@ import (
 )
 
 func Run(ctx context.Context, arg ...string) error {
-	cmd := generatorCommand()
-
-	if err := cmd.flags.Parse(arg); err != nil {
+	cmd, err := parseArgs(arg)
+	if err != nil {
 		return err
 	}
-	if len(cmd.flags.Args()) == 0 {
-		cmd.flags.Usage()
-		return fmt.Errorf("missing command")
-	}
-
-	c := cmd.flags.Args()[0]
-	sub := cmd.lookup(c)
-	if sub == nil {
-		return fmt.Errorf("invalid command: %q", c)
-	}
-	if err := sub.flags.Parse(arg[1:]); err != nil {
+	if err := cmd.flags.Parse(arg[1:]); err != nil {
 		return err
 	}
-	return sub.run(ctx)
+	return cmd.run(ctx)
 }
 
 func runCommand(c string, args ...string) error {

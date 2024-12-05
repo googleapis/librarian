@@ -21,48 +21,14 @@ import (
 )
 
 type command struct {
-	name     string
-	short    string
-	usage    string
-	flags    *flag.FlagSet
-	commands []*command
-	run      func(ctx context.Context) error
+	name  string
+	short string
+	flags *flag.FlagSet
+	run   func(ctx context.Context) error
 }
 
-func (c *command) lookup(name string) *command {
-	for _, sub := range c.commands {
-		if sub.name == name {
-			return sub
-		}
-	}
-	return nil
-}
-
-func generatorCommand() *command {
-	c := &command{
-		name:  "generator",
-		short: "Generator generates client libraries for Google APIs.",
-		usage: "generator <command> [arguments]",
-		commands: []*command{
-			generatorCreateCommand(),
-			generatorGenerateCommand(),
-		},
-		flags: flag.NewFlagSet("generator", flag.ContinueOnError),
-		// run is not set for generator because it is different than the
-		// others
-	}
-	c.flags.Usage = constructUsage(c.flags, c.short, c.usage, c.commands, false)
-	return c
-}
-
-func constructUsage(fs *flag.FlagSet, short, usage string, commands []*command, hasFlags bool) func() {
-	output := fmt.Sprintf("%s\n\nUsage:\n\n  %s\n", short, usage)
-	if len(commands) > 0 {
-		output += "\nThe commands are:\n\n"
-		for _, c := range commands {
-			output += fmt.Sprintf("  %s  %s\n", c.name, c.short)
-		}
-	}
+func constructUsage(fs *flag.FlagSet, name string, hasFlags bool) func() {
+	output := fmt.Sprintf("Usage:\n\n  generator %s [arguments]\n", name)
 	if hasFlags {
 		output += "\nFlags:\n\n"
 	}
@@ -71,4 +37,50 @@ func constructUsage(fs *flag.FlagSet, short, usage string, commands []*command, 
 		fs.PrintDefaults()
 		fmt.Fprintf(fs.Output(), "\n\n")
 	}
+}
+
+func parseArgs(args []string) (*command, error) {
+	fs := flag.NewFlagSet("generator", flag.ContinueOnError)
+	commands := []*command{
+		generatorCreateCommand(),
+		generatorGenerateCommand(),
+	}
+
+	output := `Generator generates client libraries for Google APIs.
+
+Usage:
+
+  generator <command> [arguments]
+
+The commands are:
+`
+	for _, c := range commands {
+		output += fmt.Sprintf("\n  %s  %s", c.name, c.short)
+	}
+
+	fs.Usage = func() {
+		fmt.Fprint(fs.Output(), output)
+		fs.PrintDefaults()
+		fmt.Fprintf(fs.Output(), "\n\n")
+	}
+
+	if err := fs.Parse(args); err != nil {
+		return nil, err
+	}
+	if len(fs.Args()) == 0 {
+		fs.Usage()
+		return nil, fmt.Errorf("missing command")
+	}
+
+	name := fs.Args()[0]
+	var cmd *command
+	for _, sub := range commands {
+		if sub.name == name {
+			cmd = sub
+		}
+	}
+	if cmd == nil {
+		return nil, fmt.Errorf("invalid command: %q", name)
+	}
+	return cmd, nil
 }

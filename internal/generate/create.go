@@ -23,11 +23,10 @@ func generatorCreateCommand() *command {
 	c := &command{
 		name:  "create",
 		short: "Create a new client library",
-		usage: "generator create [arguments]",
 		flags: flag.NewFlagSet("create", flag.ContinueOnError),
 		run:   create,
 	}
-	c.flags.Usage = constructUsage(c.flags, c.short, c.usage, c.commands, false)
+	c.flags.Usage = constructUsage(c.flags, c.name, false)
 	return c
 }
 

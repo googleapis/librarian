@@ -33,7 +33,6 @@ func generatorGenerateCommand() *command {
 	c := &command{
 		name:  "generate",
 		short: "Generate a new client library",
-		usage: "generator generate [arguments]",
 		flags: flag.NewFlagSet("generate", flag.ContinueOnError),
 		run:   generate,
 	}
@@ -45,7 +44,7 @@ func generatorGenerateCommand() *command {
 		languageFlag = language
 		return nil
 	})
-	c.flags.Usage = constructUsage(c.flags, c.short, c.usage, c.commands, true)
+	c.flags.Usage = constructUsage(c.flags, c.name, true)
 	return c
 }
 
