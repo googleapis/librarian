@@ -12,40 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generate
+package generator
 
 import (
 	"context"
 	"flag"
 	"fmt"
+
+	"github.com/googleapis/generator/internal/command"
 )
 
-type command struct {
-	name  string
-	short string
-	flags *flag.FlagSet
-	run   func(ctx context.Context) error
+func Run(ctx context.Context, arg ...string) error {
+	cmd, err := parseArgs(arg)
+	if err != nil {
+		return err
+	}
+	if err := cmd.Parse(arg[1:]); err != nil {
+		return err
+	}
+	return cmd.Run(ctx)
 }
 
-func constructUsage(fs *flag.FlagSet, name string, hasFlags bool) func() {
-	output := fmt.Sprintf("Usage:\n\n  generator %s [arguments]\n", name)
-	if hasFlags {
-		output += "\nFlags:\n\n"
-	}
-	return func() {
-		fmt.Fprint(fs.Output(), output)
-		fs.PrintDefaults()
-		fmt.Fprintf(fs.Output(), "\n\n")
-	}
-}
-
-func parseArgs(args []string) (*command, error) {
+func parseArgs(args []string) (*command.Command, error) {
 	fs := flag.NewFlagSet("generator", flag.ContinueOnError)
-	commands := []*command{
-		generatorCreateCommand(),
-		generatorGenerateCommand(),
-	}
-
 	output := `Generator generates client libraries for Google APIs.
 
 Usage:
@@ -54,8 +43,8 @@ Usage:
 
 The commands are:
 `
-	for _, c := range commands {
-		output += fmt.Sprintf("\n  %s  %s", c.name, c.short)
+	for _, c := range command.Commands {
+		output += fmt.Sprintf("\n  %s  %s", c.Name, c.Short)
 	}
 
 	fs.Usage = func() {
@@ -71,16 +60,5 @@ The commands are:
 		fs.Usage()
 		return nil, fmt.Errorf("missing command")
 	}
-
-	name := fs.Args()[0]
-	var cmd *command
-	for _, sub := range commands {
-		if sub.name == name {
-			cmd = sub
-		}
-	}
-	if cmd == nil {
-		return nil, fmt.Errorf("invalid command: %q", name)
-	}
-	return cmd, nil
+	return command.Lookup(fs.Args()[0])
 }

@@ -19,12 +19,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/googleapis/generator/internal/generate"
+	"github.com/googleapis/generator/internal/generator"
 )
 
 func main() {
 	ctx := context.Background()
-	if err := generate.Run(ctx, os.Args[1:]...); err != nil {
+	if err := generator.Run(ctx, os.Args[1:]...); err != nil {
 		log.Fatal(err)
 	}
 }

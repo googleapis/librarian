@@ -14,22 +14,53 @@
 
 package container
 
-import "errors"
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"os"
+	"os/exec"
+	"strings"
+)
 
-var errNotImplemented = errors.New("not implemented")
-
-func Generate() error {
-	return errNotImplemented
+func Generate(ctx context.Context, language, apiRoot, apiPath, output, generatorInput string) error {
+	return runGenerate(apiRoot, fmt.Sprintf("google-cloud-%s", language), apiPath)
 }
 
-func Clean() error {
-	return errNotImplemented
+func Clean(ctx context.Context, language, repoRoot, apiPath string) error {
+	return runCommand("echo", "clean not implemented")
 }
 
-func Build() error {
-	return errNotImplemented
+func Build(ctx context.Context, language, repoRoot, apiPath string) error {
+	return runCommand("echo", "build not implemented")
 }
 
-func Configure() error {
-	return errNotImplemented
+func Configure(ctx context.Context, language, apiRoot, apiPath, generatorInput string) error {
+	return runCommand("echo", "configure not implemented")
+}
+
+const dotnetImageTag = "picard"
+
+func runGenerate(googleapisDir, languageDir, api string) error {
+	args := []string{
+		"run",
+		"-v", fmt.Sprintf("%s:/apis", googleapisDir),
+		"-v", fmt.Sprintf("%s:/output", languageDir),
+		dotnetImageTag,
+		"--command=update",
+		"--api-root=/apis",
+		fmt.Sprintf("--api=%s", api),
+		"--output-root=/output",
+	}
+	return runCommand("docker", args...)
+}
+
+func runCommand(c string, args ...string) error {
+	cmd := exec.Command(c, args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	slog.Info(strings.Repeat("-", 80))
+	slog.Info(cmd.String())
+	slog.Info(strings.Repeat("-", 80))
+	return cmd.Run()
 }
