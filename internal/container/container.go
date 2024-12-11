@@ -20,11 +20,13 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
 func Generate(ctx context.Context, language, apiRoot, apiPath, output, generatorInput string) error {
-	return runGenerate(apiRoot, fmt.Sprintf("google-cloud-%s", language), apiPath)
+	languageDir := filepath.Join(output, fmt.Sprintf("google-cloud-%s", language))
+	return runGenerate(apiRoot, languageDir, apiPath)
 }
 
 func Clean(ctx context.Context, language, repoRoot, apiPath string) error {

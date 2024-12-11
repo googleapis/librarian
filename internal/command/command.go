@@ -18,6 +18,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/googleapis/generator/internal/container"
 )
@@ -85,6 +89,14 @@ var CmdGenerate = &Command{
 			}
 			flagAPIRoot = repo.Dir
 		}
+		if flagOutput == "" {
+			defaultOutput, err := defaultOutput()
+			if err != nil {
+				return err
+			}
+			flagOutput = defaultOutput
+			slog.Info(fmt.Sprintf("No output directory specified. Defaulting to %s", defaultOutput))
+		}
 		return container.Generate(ctx, flagLanguage, flagAPIRoot, flagAPIPath, flagOutput, flagGeneratorInput)
 	},
 }
@@ -106,6 +118,14 @@ var CmdUpdateRepo = &Command{
 			}
 			flagAPIRoot = repo.Dir
 		}
+		if flagOutput == "" {
+			defaultOutput, err := defaultOutput()
+			if err != nil {
+				return err
+			}
+			flagOutput = defaultOutput
+			slog.Info(fmt.Sprintf("No output directory specified. Defaulting to %s", defaultOutput))
+		}
 		if _, err := cloneLanguageRepo(ctx, flagLanguage); err != nil {
 			return err
 		}
@@ -123,6 +143,25 @@ var CmdUpdateRepo = &Command{
 		}
 		return push()
 	},
+}
+
+func defaultOutput() (string, error) {
+	const yyyyMMddHHmmss = "20060102150405" // Expected format by time library
+
+	path := filepath.Join(os.TempDir(), "generator-"+time.Now().Format(yyyyMMddHHmmss))
+
+	if _, err := os.Stat(path); err == nil {
+		return "", fmt.Errorf("Default output path already exists: %s", path)
+	} else if os.IsNotExist(err) {
+		err := os.Mkdir(path, 0755)
+		if err != nil {
+			return "", fmt.Errorf("Unable to create default output path '%s': %w", path, err)
+		}
+	} else {
+		return "", fmt.Errorf("Unable to check directory '%s': %w", path, err)
+	}
+
+	return path, nil
 }
 
 func commit() error {
