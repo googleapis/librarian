@@ -151,14 +151,14 @@ func defaultOutput() (string, error) {
 	path := filepath.Join(os.TempDir(), "generator-"+time.Now().Format(yyyyMMddHHmmss))
 
 	if _, err := os.Stat(path); err == nil {
-		return "", fmt.Errorf("Default output path already exists: %s", path)
+		return "", fmt.Errorf("default output path already exists: %s", path)
 	} else if os.IsNotExist(err) {
 		err := os.Mkdir(path, 0755)
 		if err != nil {
-			return "", fmt.Errorf("Unable to create default output path '%s': %w", path, err)
+			return "", fmt.Errorf("unable to create default output path '%s': %w", path, err)
 		}
 	} else {
-		return "", fmt.Errorf("Unable to check directory '%s': %w", path, err)
+		return "", fmt.Errorf("unable to check directory '%s': %w", path, err)
 	}
 
 	return path, nil
