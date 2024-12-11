@@ -50,7 +50,7 @@ func runGenerate(googleapisDir, languageDir, apiPath string) error {
 		"-v", fmt.Sprintf("%s:/apis", googleapisDir),
 		"-v", fmt.Sprintf("%s:/output", languageDir),
 		dotnetImageTag,
-		"--command=update",
+		"generate",
 		"--api-root=/apis",
 		fmt.Sprintf("--api-path=%s", apiPath),
 		"--output=/output",
