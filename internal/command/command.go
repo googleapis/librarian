@@ -79,9 +79,11 @@ var CmdGenerate = &Command{
 		}
 
 		if flagAPIRoot == "" {
-			if _, err := cloneGoogleapis(ctx); err != nil {
+			repo, err := cloneGoogleapis(ctx)
+			if err != nil {
 				return err
 			}
+			flagAPIRoot = repo.Dir
 		}
 		return container.Generate(ctx, flagLanguage, flagAPIRoot, flagAPIPath, flagOutput, flagGeneratorInput)
 	},
@@ -98,9 +100,11 @@ var CmdUpdateRepo = &Command{
 			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 		}
 		if flagAPIRoot == "" {
-			if _, err := cloneGoogleapis(ctx); err != nil {
+			repo, err := cloneGoogleapis(ctx)
+			if err != nil {
 				return err
 			}
+			flagAPIRoot = repo.Dir
 		}
 		if _, err := cloneLanguageRepo(ctx, flagLanguage); err != nil {
 			return err
