@@ -71,17 +71,17 @@ var CmdGenerate = &Command{
 	Name:  "generate",
 	Short: "Generate a new client library",
 	Run: func(ctx context.Context) error {
-		if flagAPIRoot == "" {
-			return fmt.Errorf("-api-root is not provided")
-		}
 		if flagAPIPath == "" {
 			return fmt.Errorf("-api-path is not provided")
 		}
 		if !supportedLanguages[flagLanguage] {
 			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 		}
-		if _, err := cloneGoogleapis(ctx); err != nil {
-			return err
+
+		if flagAPIRoot == "" {
+			if _, err := cloneGoogleapis(ctx); err != nil {
+				return err
+			}
 		}
 		return container.Generate(ctx, flagLanguage, flagAPIRoot, flagAPIPath, flagOutput, flagGeneratorInput)
 	},
@@ -91,17 +91,16 @@ var CmdUpdateRepo = &Command{
 	Name:  "update-repo",
 	Short: "Configure a new API in a given language",
 	Run: func(ctx context.Context) error {
-		if flagAPIRoot == "" {
-			return fmt.Errorf("-api-root is not provided")
-		}
 		if flagAPIPath == "" {
 			return fmt.Errorf("-api-path is not provided")
 		}
 		if !supportedLanguages[flagLanguage] {
 			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 		}
-		if _, err := cloneGoogleapis(ctx); err != nil {
-			return err
+		if flagAPIRoot == "" {
+			if _, err := cloneGoogleapis(ctx); err != nil {
+				return err
+			}
 		}
 		if _, err := cloneLanguageRepo(ctx, flagLanguage); err != nil {
 			return err
@@ -169,7 +168,6 @@ func init() {
 		addFlagAPIPath,
 		addFlagAPIRoot,
 		addFlagBranch,
-		addFlagGeneratorInput,
 		addFlagGitHubToken,
 		addFlagLanguage,
 		addFlagOutput,

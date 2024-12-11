@@ -41,7 +41,10 @@ func Configure(ctx context.Context, language, apiRoot, apiPath, generatorInput s
 
 const dotnetImageTag = "picard"
 
-func runGenerate(googleapisDir, languageDir, api string) error {
+func runGenerate(googleapisDir, languageDir, apiPath string) error {
+	if apiPath == "" {
+		return fmt.Errorf("apiPath cannot be empty")
+	}
 	args := []string{
 		"run",
 		"-v", fmt.Sprintf("%s:/apis", googleapisDir),
@@ -49,8 +52,8 @@ func runGenerate(googleapisDir, languageDir, api string) error {
 		dotnetImageTag,
 		"--command=update",
 		"--api-root=/apis",
-		fmt.Sprintf("--api=%s", api),
-		"--output-root=/output",
+		fmt.Sprintf("--api-path=%s", apiPath),
+		"--output=/output",
 	}
 	return runCommand("docker", args...)
 }
