@@ -90,7 +90,7 @@ var CmdGenerate = &Command{
 			flagAPIRoot = repo.Dir
 		}
 		if flagOutput == "" {
-			defaultOutput, err := defaultOutput()
+			defaultOutput, err := defaultOutput(time.Now())
 			if err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ var CmdUpdateRepo = &Command{
 			flagAPIRoot = repo.Dir
 		}
 		if flagOutput == "" {
-			defaultOutput, err := defaultOutput()
+			defaultOutput, err := defaultOutput(time.Now())
 			if err != nil {
 				return err
 			}
@@ -145,10 +145,10 @@ var CmdUpdateRepo = &Command{
 	},
 }
 
-func defaultOutput() (string, error) {
+func defaultOutput(t time.Time) (string, error) {
 	const yyyyMMddHHmmss = "20060102150405" // Expected format by time library
 
-	path := filepath.Join(os.TempDir(), "generator-"+time.Now().Format(yyyyMMddHHmmss))
+	path := filepath.Join(os.TempDir(), "generator-"+t.Format(yyyyMMddHHmmss))
 
 	if _, err := os.Stat(path); err == nil {
 		return "", fmt.Errorf("default output path already exists: %s", path)
