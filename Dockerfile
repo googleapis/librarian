@@ -15,8 +15,11 @@
 FROM golang:1.23 AS build
 
 WORKDIR /src
-COPY go.mod go.sum .
+
+COPY go.mod .
+COPY go.sum .
 RUN go mod download
+
 COPY cmd cmd
 COPY internal internal
 RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/generator
@@ -25,8 +28,26 @@ RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/generator
 # while in Docker. Note that for this to work, *this*
 # docker image should be run with
 #  -v /var/run/docker.sock:/var/run/docker.sock
-FROM docker:dind
+FROM golang:1.23
 WORKDIR /app
+
+# From https://docs.docker.com/engine/install/debian/
+# Add Docker's official GPG key
+RUN apt update
+RUN apt install -y ca-certificates curl
+RUN install -m 0755 -d /etc/apt/keyrings
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+RUN chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+RUN echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null
+RUN apt update
+
+# Install Docker
+RUN apt-get -y install docker-ce
 
 COPY --from=build /src/generator .
 ENTRYPOINT ["/app/generator"]
