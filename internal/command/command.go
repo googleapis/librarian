@@ -18,12 +18,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/googleapis/generator/internal/container"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/googleapis/generator/internal/container"
 )
 
 type Command struct {
@@ -105,9 +104,6 @@ var CmdUpdateRepo = &Command{
 	Name:  "update-repo",
 	Short: "Configure a new API in a given language",
 	Run: func(ctx context.Context) error {
-		if flagAPIPath == "" {
-			return fmt.Errorf("-api-path is not provided")
-		}
 		if !supportedLanguages[flagLanguage] {
 			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 		}
@@ -126,16 +122,22 @@ var CmdUpdateRepo = &Command{
 			flagOutput = defaultOutput
 			slog.Info(fmt.Sprintf("No output directory specified. Defaulting to %s", defaultOutput))
 		}
-		if _, err := cloneLanguageRepo(ctx, flagLanguage); err != nil {
+		languageRepo, err := cloneLanguageRepo(ctx, flagLanguage)
+		if err != nil {
 			return err
 		}
-		if err := container.Generate(ctx, flagLanguage, flagAPIRoot, flagAPIPath, flagOutput, flagGeneratorInput); err != nil {
+		image := fmt.Sprintf("google-cloud-%s-generator", flagLanguage)
+		generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
+		if err := container.Generate(ctx, image, flagAPIRoot, flagOutput, generatorInput, flagAPIPath); err != nil {
 			return err
 		}
-		if err := container.Clean(ctx, flagLanguage, flagOutput, flagAPIPath); err != nil {
+		if err := container.Clean(ctx, image, languageRepo.Dir, flagAPIPath); err != nil {
 			return err
 		}
-		if err := container.Build(ctx, flagLanguage, flagOutput, flagAPIPath); err != nil {
+		if err := os.CopyFS(languageRepo.Dir, os.DirFS(flagOutput)); err != nil {
+			return err
+		}
+		if err := container.Build(ctx, image, languageRepo.Dir, flagAPIPath); err != nil {
 			return err
 		}
 		if err := commit(); err != nil {

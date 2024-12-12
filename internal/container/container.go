@@ -20,43 +20,105 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
-func Generate(ctx context.Context, language, apiRoot, apiPath, output, generatorInput string) error {
-	languageDir := filepath.Join(output, fmt.Sprintf("google-cloud-%s", language))
-	return runGenerate(apiRoot, languageDir, apiPath)
+func Generate(ctx context.Context, image, apiRoot, output, generatorInput, apiPath string) error {
+	return runGenerate(image, apiRoot, output, generatorInput, apiPath)
 }
 
-func Clean(ctx context.Context, language, repoRoot, apiPath string) error {
-	return runCommand("echo", "clean not implemented")
+func Clean(ctx context.Context, image, repoRoot, apiPath string) error {
+	return runClean(image, repoRoot, apiPath)
 }
 
-func Build(ctx context.Context, language, repoRoot, apiPath string) error {
-	return runCommand("echo", "build not implemented")
+func Build(ctx context.Context, image, repoRoot, apiPath string) error {
+	return runBuild(image, repoRoot, apiPath)
 }
 
 func Configure(ctx context.Context, language, apiRoot, apiPath, generatorInput string) error {
 	return runCommand("echo", "configure not implemented")
 }
 
-const dotnetImageTag = "picard"
-
-func runGenerate(googleapisDir, languageDir, apiPath string) error {
-	if apiPath == "" {
-		return fmt.Errorf("apiPath cannot be empty")
+func runGenerate(image, apiRoot, output, generatorInput, apiPath string) error {
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
 	}
-	args := []string{
-		"run",
-		"-v", fmt.Sprintf("%s:/apis", googleapisDir),
-		"-v", fmt.Sprintf("%s:/output", languageDir),
-		dotnetImageTag,
+	if apiRoot == "" {
+		return fmt.Errorf("apiRoot cannot be empty")
+	}
+	if output == "" {
+		return fmt.Errorf("output cannot be empty")
+	}
+	if generatorInput == "" && apiPath == "" {
+		return fmt.Errorf("apiPath and generatorInput can't both be empty")
+	}
+	var containerArgs []string
+	containerArgs = append(containerArgs,
 		"generate",
 		"--api-root=/apis",
-		fmt.Sprintf("--api-path=%s", apiPath),
-		"--output=/output",
+		"--output=/output")
+	var mounts []string
+	mounts = append(mounts,
+		fmt.Sprintf("%s:/apis", apiRoot),
+		fmt.Sprintf("%s:/output", output),
+	)
+
+	if generatorInput != "" {
+		mounts = append(mounts, fmt.Sprintf("%s:/generator-input", generatorInput))
+		containerArgs = append(containerArgs, "--generator-input=/generator-input")
 	}
+	if apiPath != "" {
+		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
+	}
+	return runDocker(image, mounts, containerArgs)
+}
+
+func runClean(image, repoRoot, apiPath string) error {
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
+	}
+	if repoRoot == "" {
+		return fmt.Errorf("repoRoot cannot be empty")
+	}
+	mounts := []string{fmt.Sprintf("%s:/repo", repoRoot)}
+	var containerArgs []string
+	containerArgs = append(containerArgs,
+		"clean",
+		"--repo-root=/repo",
+	)
+	if apiPath != "" {
+		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
+	}
+	return runDocker(image, mounts, containerArgs)
+}
+
+func runBuild(image, repoRoot, apiPath string) error {
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
+	}
+	if repoRoot == "" {
+		return fmt.Errorf("repoRoot cannot be empty")
+	}
+	mounts := []string{fmt.Sprintf("%s:/repo", repoRoot)}
+	var containerArgs []string
+	containerArgs = append(containerArgs,
+		"build",
+		"--repo-root=/repo",
+	)
+	if apiPath != "" {
+		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
+	}
+	return runDocker(image, mounts, containerArgs)
+}
+
+func runDocker(image string, mounts []string, containerArgs []string) error {
+	var args []string
+	args = append(args, "run")
+	for _, mount := range mounts {
+		args = append(args, "-v", mount)
+	}
+	args = append(args, image)
+	args = append(args, containerArgs...)
 	return runCommand("docker", args...)
 }
 
