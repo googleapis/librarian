@@ -227,6 +227,7 @@ func init() {
 		addFlagGeneratorInput,
 		addFlagLanguage,
 		addFlagOutput,
+		addFlagRepoRoot,
 	} {
 		fn(fs)
 	}
