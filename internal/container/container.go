@@ -47,13 +47,19 @@ func runGenerate(googleapisDir, languageDir, apiPath string) error {
 	if apiPath == "" {
 		return fmt.Errorf("apiPath cannot be empty")
 	}
+	outputDir, err := filepath.Abs(languageDir)
+	if err != nil {
+		return err
+	}
 	args := []string{
 		"run",
 		"-v", fmt.Sprintf("%s:/apis", googleapisDir),
-		"-v", fmt.Sprintf("%s:/output", languageDir),
+		"-v", fmt.Sprintf("%s:/output", outputDir),
+		"-v", fmt.Sprintf("%s:/input", filepath.Join(outputDir, "generator-input")),
 		dotnetImageTag,
 		"generate",
 		"--api-root=/apis",
+		"--generator-input=/input",
 		fmt.Sprintf("--api-path=%s", apiPath),
 		"--output=/output",
 	}

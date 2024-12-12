@@ -89,6 +89,17 @@ var CmdGenerate = &Command{
 			}
 			flagAPIRoot = repo.Dir
 		}
+		if flagRepoRoot == "" {
+			repo, err := cloneLanguageRepo(ctx, flagLanguage)
+			if err != nil {
+				return err
+			}
+			// flagRepoRoot is the parent directory to the google-cloud-language repo
+			flagRepoRoot = filepath.Dir(repo.Dir)
+		}
+		if err := verifyLanguageRepoExists(flagRepoRoot, flagLanguage); err != nil {
+			return err
+		}
 		if flagOutput == "" {
 			defaultOutput, err := defaultOutput(time.Now())
 			if err != nil {
@@ -163,6 +174,19 @@ func defaultOutput(t time.Time) (string, error) {
 	}
 
 	return path, nil
+}
+
+func verifyLanguageRepoExists(repoRoot string, language string) error {
+	path := filepath.Join(repoRoot, fmt.Sprintf("google-cloud-%s", language))
+	_, err := os.Stat(path)
+	switch {
+	case err == nil:
+		return nil
+	case os.IsNotExist(err):
+		return fmt.Errorf("language repo not found: %s", path)
+	default:
+		return fmt.Errorf("unable to check language repo '%s': %w", path, err)
+	}
 }
 
 func commit() error {

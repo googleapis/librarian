@@ -27,6 +27,7 @@ var (
 	flagLanguage       string
 	flagOutput         string
 	flagPush           bool
+	flagRepoRoot       string
 )
 
 func addFlagAPIRoot(fs *flag.FlagSet) {
@@ -72,4 +73,8 @@ func addFlagGitHubToken(fs *flag.FlagSet) {
 
 func addFlagGeneratorInput(fs *flag.FlagSet) {
 	fs.StringVar(&flagGeneratorInput, "generator-input", "", "generator-input within the clone we've just created")
+}
+
+func addFlagRepoRoot(fs *flag.FlagSet) {
+	fs.StringVar(&flagRepoRoot, "repo-root", "", "directory containing the google-cloud-language repos of the selected languages")
 }
