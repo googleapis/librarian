@@ -148,16 +148,17 @@ var CmdUpdateRepo = &Command{
 func defaultOutput(t time.Time) (string, error) {
 	const yyyyMMddHHmmss = "20060102150405" // Expected format by time library
 
-	path := filepath.Join(os.TempDir(), "generator-"+t.Format(yyyyMMddHHmmss))
+	path := filepath.Join(os.TempDir(), fmt.Sprintf("generator-%s", t.Format(yyyyMMddHHmmss)))
 
-	if _, err := os.Stat(path); err == nil {
-		return "", fmt.Errorf("default output path already exists: %s", path)
-	} else if os.IsNotExist(err) {
-		err := os.Mkdir(path, 0755)
-		if err != nil {
+	_, err := os.Stat(path)
+	switch {
+	case os.IsNotExist(err):
+		if err := os.Mkdir(path, 0755); err != nil {
 			return "", fmt.Errorf("unable to create default output path '%s': %w", path, err)
 		}
-	} else {
+	case err == nil:
+		return "", fmt.Errorf("default output path already exists: %s", path)
+	default:
 		return "", fmt.Errorf("unable to check directory '%s': %w", path, err)
 	}
 
