@@ -19,36 +19,52 @@ import (
 )
 
 var (
-	flagImage       string
 	flagAPIPath     string
 	flagAPIRoot     string
 	flagBranch      string
+	flagBuild       bool
 	flagGitHubToken string
+	flagImage       string
 	flagLanguage    string
 	flagOutput      string
-	flagRepoRoot    string
 	flagPush        bool
-	flagBuild       bool
+	flagRepoRoot    string
 )
 
-func addFlagImage(fs *flag.FlagSet) {
-	fs.StringVar(&flagImage, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
+func addFlagAPIPath(fs *flag.FlagSet) {
+	fs.StringVar(&flagAPIPath, "api-path", "", "(Required) path api-root to the API to be generated (e.g., google/cloud/functions/v2)")
 }
 
 func addFlagAPIRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagAPIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to /tmp")
 }
 
-func addFlagAPIPath(fs *flag.FlagSet) {
-	fs.StringVar(&flagAPIPath, "api-path", "", "(Required) path api-root to the API to be generated (e.g., google/cloud/functions/v2)")
-}
-
 func addFlagBranch(fs *flag.FlagSet) {
 	fs.StringVar(&flagBranch, "branch", "main", "repository branch")
 }
 
+func addFlagBuild(fs *flag.FlagSet) {
+	fs.BoolVar(&flagBuild, "build", false, "whether to build the generated code")
+}
+
+func addFlagGitHubToken(fs *flag.FlagSet) {
+	fs.StringVar(&flagGitHubToken, "github-token", "", "GitHub access token")
+}
+
+func addFlagImage(fs *flag.FlagSet) {
+	fs.StringVar(&flagImage, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
+}
+
 func addFlagLanguage(fs *flag.FlagSet) {
 	fs.StringVar(&flagLanguage, "language", "", "(Required) language to generate code for")
+}
+
+func addFlagOutput(fs *flag.FlagSet) {
+	fs.StringVar(&flagOutput, "output", "", "directory where generated code will be written")
+}
+
+func addFlagPush(fs *flag.FlagSet) {
+	fs.BoolVar(&flagPush, "push", false, "push to GitHub if true")
 }
 
 func addFlagRepoRoot(fs *flag.FlagSet) {
@@ -66,20 +82,4 @@ var supportedLanguages = map[string]bool{
 	"ruby":   false,
 	"rust":   false,
 	"all":    false,
-}
-
-func addFlagOutput(fs *flag.FlagSet) {
-	fs.StringVar(&flagOutput, "output", "", "directory where generated code will be written")
-}
-
-func addFlagPush(fs *flag.FlagSet) {
-	fs.BoolVar(&flagPush, "push", false, "push to GitHub if true")
-}
-
-func addFlagGitHubToken(fs *flag.FlagSet) {
-	fs.StringVar(&flagGitHubToken, "github-token", "", "GitHub access token")
-}
-
-func addFlagBuild(fs *flag.FlagSet) {
-	fs.BoolVar(&flagBuild, "build", false, "whether to build the generated code")
 }
