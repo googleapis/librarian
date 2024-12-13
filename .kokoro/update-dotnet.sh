@@ -15,6 +15,4 @@
 
 set -e
 
-go run ./cmd/generator update-repo \
-  -language=dotnet \
-  -image=us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/pipeline-images/google-cloud-dotnet-generator
+go run ./cmd/generator update-repo -language=dotnet
