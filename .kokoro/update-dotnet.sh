@@ -15,4 +15,5 @@
 
 set -e
 
+cd generator
 go run ./cmd/generator update-repo -language=dotnet
