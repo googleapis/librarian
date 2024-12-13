@@ -85,7 +85,7 @@ var CmdConfigure = &Command{
 			return err
 		}
 
-		image := defaultImage(flagLanguage)
+		image := deriveImage()
 		languageRepo, err := cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
 		if err != nil {
 			return err
@@ -171,7 +171,7 @@ var CmdGenerate = &Command{
 			}
 		}
 
-		image := defaultImage(flagLanguage)
+		image := deriveImage()
 		// The final empty string argument is for generator input - we don't have any
 		if err := container.Generate(ctx, image, apiRoot, outputDir, "", flagAPIPath); err != nil {
 			return err
@@ -236,7 +236,7 @@ var CmdUpdateRepo = &Command{
 			return err
 		}
 
-		image := defaultImage(flagLanguage)
+		image := deriveImage()
 
 		// Take a defensive copy of the generator input directory from the language repo.
 		generatorInput := filepath.Join(tmpRoot, "generator-input")
@@ -263,8 +263,12 @@ var CmdUpdateRepo = &Command{
 	},
 }
 
-func defaultImage(language string) string {
-	return fmt.Sprintf("google-cloud-%s-generator", language)
+func deriveImage() string {
+	if flagImage != "" {
+		return flagImage
+	} else {
+		return fmt.Sprintf("google-cloud-%s-generator", flagLanguage)
+	}
 }
 
 func createTmpWorkingRoot(t time.Time) (string, error) {
@@ -310,6 +314,7 @@ func init() {
 
 	fs := CmdConfigure.flags
 	for _, fn := range []func(fs *flag.FlagSet){
+		addFlagImage,
 		addFlagAPIPath,
 		addFlagAPIRoot,
 		addFlagLanguage,
@@ -321,6 +326,7 @@ func init() {
 
 	fs = CmdGenerate.flags
 	for _, fn := range []func(fs *flag.FlagSet){
+		addFlagImage,
 		addFlagAPIPath,
 		addFlagAPIRoot,
 		addFlagLanguage,
@@ -332,6 +338,7 @@ func init() {
 
 	fs = CmdUpdateRepo.flags
 	for _, fn := range []func(fs *flag.FlagSet){
+		addFlagImage,
 		addFlagAPIPath,
 		addFlagAPIRoot,
 		addFlagBranch,

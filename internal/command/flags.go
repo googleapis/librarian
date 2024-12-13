@@ -19,6 +19,7 @@ import (
 )
 
 var (
+	flagImage       string
 	flagAPIPath     string
 	flagAPIRoot     string
 	flagBranch      string
@@ -28,6 +29,10 @@ var (
 	flagPush        bool
 	flagBuild       bool
 )
+
+func addFlagImage(fs *flag.FlagSet) {
+	fs.StringVar(&flagImage, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
+}
 
 func addFlagAPIRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagAPIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to /tmp")
