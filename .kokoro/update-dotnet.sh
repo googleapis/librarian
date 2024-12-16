@@ -15,6 +15,22 @@
 
 set -e
 
+install_go() {
+    GO_VERSION="1.23.4"
+    INSTALL_DIR="/usr/local"
+    SHA256="6924efde5de86fe277676e929dc9917d466efa02fb934197bc2eba35d5680971"
+    GO_ARCHIVE="go$GO_VERSION.linux-amd64.tar.gz"
+    
+    wget "https://go.dev/dl/$GO_ARCHIVE"
+    echo "$SHA256 $GO_ARCHIVE" | sha256sum --check 
+    
+    tar -C $INSTALL_DIR -xzf $GO_ARCHIVE
+    rm $GO_ARCHIVE
+    echo "export PATH=$PATH:$INSTALL_DIR/go/bin" >> ~/.bashrc
+    source ~/.bashrc
+}
+
+install_go()
 cd github/generator
 go env
 go run ./cmd/generator update-repo -language=dotnet
