@@ -16,4 +16,5 @@
 set -e
 
 cd github/generator
+go env
 go run ./cmd/generator update-repo -language=dotnet
