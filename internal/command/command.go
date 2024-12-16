@@ -133,7 +133,10 @@ var CmdConfigure = &Command{
 		if err := container.Generate(ctx, image, apiRoot, outputDir, generatorInput, flagAPIPath); err != nil {
 			return err
 		}
-		// No need to clean here, as configure should fail for an existing API.
+		// We don't need to clean the newly-configured API, but we *do* need to clean any non-API-specific files.
+		if err := container.Clean(ctx, image, languageRepo.Dir, "none"); err != nil {
+			return err
+		}
 		if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 			return err
 		}
