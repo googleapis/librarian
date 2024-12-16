@@ -30,7 +30,7 @@ install_go() {
     source ~/.bashrc
 }
 
-install_go()
+install_go
 cd github/generator
 go env
 go run ./cmd/generator update-repo -language=dotnet
