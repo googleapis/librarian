@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -92,13 +93,15 @@ func runGenerate(image, apiRoot, output, generatorInput, apiPath string) error {
 		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
 	}
 
-	_, err := getCommand("ls", "-la", generatorInput)
-	if err != nil {
-		return err
-	}
-	runDockerWithEntrypointOverride(image, mounts, "id", []string{})
-	runDockerWithEntrypointOverride(image, mounts, "ls", []string{"-la"})
-	runDockerWithEntrypointOverride(image, mounts, "ls", []string{"-la", "/generator-input"})
+	// _, err := getCommand("ls", "-la", generatorInput)
+	// if err != nil {
+	// 	return err
+	// }
+	// runDockerWithEntrypointOverride(image, mounts, "id", []string{})
+	// runDockerWithEntrypointOverride(image, mounts, "ls", []string{"-la"})
+	// runDockerWithEntrypointOverride(image, mounts, "ls", []string{"-la", "/generator-input"})
+	sharedPath := filepath.Join(os.Getenv("KOKORO_ARTIFACTS_DIR"), "orpheus.txt")
+	runDockerWithEntrypointOverride(image, mounts, "cat", []string{sharedPath})
 	return runDocker(image, mounts, containerArgs)
 }
 
