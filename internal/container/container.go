@@ -100,8 +100,11 @@ func runGenerate(image, apiRoot, output, generatorInput, apiPath string) error {
 	// runDockerWithEntrypointOverride(image, mounts, "id", []string{})
 	// runDockerWithEntrypointOverride(image, mounts, "ls", []string{"-la"})
 	// runDockerWithEntrypointOverride(image, mounts, "ls", []string{"-la", "/generator-input"})
-	sharedPath := filepath.Join(os.Getenv("KOKORO_ARTIFACTS_DIR"), "orpheus.txt")
-	runDockerWithEntrypointOverride(image, mounts, "cat", []string{sharedPath})
+	sharedDir := os.Getenv("KOKORO_ARTIFACTS_DIR")
+	sharedFile := filepath.Join(sharedDir, "orpheus.txt")
+	getCommand("cat", sharedFile)
+	mounts = append(mounts, fmt.Sprintf("%s:%s", sharedDir, sharedDir))
+	runDockerWithEntrypointOverride(image, mounts, "cat", []string{sharedFile})
 	return runDocker(image, mounts, containerArgs)
 }
 
