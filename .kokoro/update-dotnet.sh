@@ -38,6 +38,9 @@ reduce_noise() {
 install_go
 reduce_noise
 
+WORK_ROOT=$KOKORO_ARTIFACTS_DIR/cli-work-root
+mkdir $WORK_ROOT
+
 gcloud auth configure-docker us-central1-docker.pkg.dev
 cd github/generator
-go run ./cmd/generator update-repo -language=dotnet
+go run ./cmd/generator update-repo -language=dotnet -work-root=$WORK_ROOT
