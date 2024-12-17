@@ -46,6 +46,9 @@ override_repository
 reduce_noise
 
 echo "looked back" > $KOKORO_ARTIFACTS_DIRECTORY/orpheus.txt
+echo "Path: $KOKORO_ARTIFACTS_DIRECTORY/orpheus.txt"
+echo "Contents: "
+cat "$KOKORO_ARTIFACTS_DIRECTORY/orpheus.txt"
 
 gcloud auth configure-docker us-central1-docker.pkg.dev
 cd github/generator
