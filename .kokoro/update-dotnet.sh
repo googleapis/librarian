@@ -30,25 +30,13 @@ install_go() {
     source ~/.bashrc
 }
 
-# TODO: Remove after modifying job config to allow non-slash endings
-override_repository() {
-    GENERATOR_CLI_REPOSITORY=us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/pipeline-images
-    export GENERATOR_CLI_REPOSITORY
-}
-
 reduce_noise() {
     CI=true
     export CI
 }
 
 install_go
-override_repository
 reduce_noise
-
-echo "looked back" > $KOKORO_ARTIFACTS_DIR/orpheus.txt
-echo "Path: $KOKORO_ARTIFACTS_DIR/orpheus.txt"
-echo "Contents: "
-cat "$KOKORO_ARTIFACTS_DIR/orpheus.txt"
 
 gcloud auth configure-docker us-central1-docker.pkg.dev
 cd github/generator

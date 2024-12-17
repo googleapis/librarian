@@ -20,7 +20,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -93,18 +92,6 @@ func runGenerate(image, apiRoot, output, generatorInput, apiPath string) error {
 		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
 	}
 
-	// _, err := getCommand("ls", "-la", generatorInput)
-	// if err != nil {
-	// 	return err
-	// }
-	// runDockerWithEntrypointOverride(image, mounts, "id", []string{})
-	// runDockerWithEntrypointOverride(image, mounts, "ls", []string{"-la"})
-	// runDockerWithEntrypointOverride(image, mounts, "ls", []string{"-la", "/generator-input"})
-	sharedDir := os.Getenv("KOKORO_ARTIFACTS_DIR")
-	sharedFile := filepath.Join(sharedDir, "orpheus.txt")
-	getCommand("cat", sharedFile)
-	mounts = append(mounts, fmt.Sprintf("%s:%s", "/b/r/w/src", "/b/f/w/src"))
-	runDockerWithEntrypointOverride(image, mounts, "cat", []string{filepath.Join("/b/f/w/src", "orpheus.txt")})
 	return runDocker(image, mounts, containerArgs)
 }
 
@@ -151,30 +138,6 @@ func runBuild(image, rootName, root, apiPath string) error {
 	return runDocker(image, mounts, containerArgs)
 }
 
-func runDockerWithEntrypointOverride(image string, mounts []string, entrypoint string, entrypointArgs []string) error {
-	args := []string{
-		"run",
-	}
-	for _, mount := range mounts {
-		args = append(args, "-v", mount)
-	}
-
-	uid, err := uid()
-	if err != nil {
-		return err
-	}
-	gid, err := gid()
-	if err != nil {
-		return err
-	}
-
-	args = append(args, "--user", fmt.Sprintf("%s:%s", uid, gid))
-	args = append(args, "--entrypoint", entrypoint)
-	args = append(args, image)
-	args = append(args, entrypointArgs...)
-	return runCommand("docker", args...)
-}
-
 func runDocker(image string, mounts []string, containerArgs []string) error {
 	args := []string{
 		"run",
@@ -195,23 +158,4 @@ func runCommand(c string, args ...string) error {
 	slog.Info(cmd.String())
 	slog.Info(strings.Repeat("-", 80))
 	return cmd.Run()
-}
-
-func uid() (string, error) {
-	return getCommand("id", "-u")
-}
-func gid() (string, error) {
-	return getCommand("id", "-g")
-}
-func getCommand(c string, args ...string) (string, error) {
-	cmd := exec.Command(c, args...)
-	slog.Info(cmd.String())
-
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	result := string(out[:len(out)-1])
-	slog.Info(result)
-	return result, nil
 }
