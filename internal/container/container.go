@@ -91,7 +91,6 @@ func runGenerate(image, apiRoot, output, generatorInput, apiPath string) error {
 	if apiPath != "" {
 		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
 	}
-
 	return runDocker(image, mounts, containerArgs)
 }
 
