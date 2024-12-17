@@ -138,6 +138,8 @@ func runBuild(image, rootName, root, apiPath string) error {
 }
 
 func runDocker(image string, mounts []string, containerArgs []string) error {
+	mounts = maybeRelocateMounts(mounts)
+
 	args := []string{
 		"run",
 	}
@@ -147,6 +149,24 @@ func runDocker(image string, mounts []string, containerArgs []string) error {
 	args = append(args, image)
 	args = append(args, containerArgs...)
 	return runCommand("docker", args...)
+}
+
+func maybeRelocateMounts(mounts []string) []string {
+	// When running in Kokoro, we'll be running sibling containers.
+	// Make sure we specify the "from" part of the mount as the host directory.
+	kokoroHostRootDir := os.Getenv("KOKORO_HOST_ROOT_DIR")
+	kokoroRootDir := os.Getenv("KOKORO_ROOT_DIR")
+	if kokoroRootDir == "" || kokoroHostRootDir == "" {
+		return mounts
+	}
+	relocatedMounts := []string{}
+	for _, mount := range mounts {
+		if strings.HasPrefix(mount, kokoroRootDir) {
+			mount = strings.Replace(mount, kokoroRootDir, kokoroHostRootDir, 1)
+		}
+		relocatedMounts = append(relocatedMounts, mount)
+	}
+	return relocatedMounts
 }
 
 func runCommand(c string, args ...string) error {
