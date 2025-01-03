@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 // Repo represents a git repository.
@@ -116,7 +118,13 @@ func Commit(ctx context.Context, repo *Repo, msg string) error {
 	if status.IsClean() {
 		return fmt.Errorf("no modifications to commit")
 	}
-	commit, err := worktree.Commit(msg, &git.CommitOptions{})
+	commit, err := worktree.Commit(msg, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "Google Cloud SDK",
+			Email: "noreply-cloudsdk@google.com",
+			When:  time.Now(),
+		},
+	})
 	if err != nil {
 		return err
 	}
