@@ -140,13 +140,13 @@ var CmdConfigure = &Command{
 		if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 			return err
 		}
+		if err := commitAll(ctx, languageRepo); err != nil {
+			return err
+		}
 		if err := container.Build(ctx, image, "repo-root", languageRepo.Dir, flagAPIPath); err != nil {
 			return err
 		}
 
-		if err := commit(); err != nil {
-			return err
-		}
 		return push()
 	},
 }
@@ -276,10 +276,10 @@ var CmdUpdateRepo = &Command{
 		if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 			return err
 		}
-		if err := container.Build(ctx, image, "repo-root", languageRepo.Dir, flagAPIPath); err != nil {
+		if err := commitAll(ctx, languageRepo); err != nil {
 			return err
 		}
-		if err := commit(); err != nil {
+		if err := container.Build(ctx, image, "repo-root", languageRepo.Dir, flagAPIPath); err != nil {
 			return err
 		}
 		return push()
@@ -326,12 +326,26 @@ func createTmpWorkingRoot(t time.Time) (string, error) {
 	return path, nil
 }
 
-func commit() error {
-	return fmt.Errorf("commit is not implemented")
+// No commit is made if there are no file modifications.
+func commitAll(ctx context.Context, repo *gitrepo.Repo) error {
+	status, err := gitrepo.AddAll(ctx, repo)
+	if err != nil {
+		return err
+	}
+	if status.IsClean() {
+		slog.Info("No modifications to commit.")
+		return nil
+	}
+	slog.Debug(fmt.Sprintf("git.Status: %#v", status))
+	// TODO: Use git status to create a meaningful commit message.
+	return gitrepo.Commit(ctx, repo, "Generator updates.")
 }
 
 func push() error {
-	return fmt.Errorf("push is not implemented")
+	if flagPush {
+		return fmt.Errorf("push is not implemented")
+	}
+	return nil
 }
 
 var Commands = []*Command{

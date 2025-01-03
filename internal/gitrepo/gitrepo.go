@@ -89,3 +89,45 @@ func Open(ctx context.Context, dirpath string) (*Repo, error) {
 		repo: repo,
 	}, nil
 }
+
+func AddAll(ctx context.Context, repo *Repo) (git.Status, error) {
+	worktree, err := repo.repo.Worktree()
+	if err != nil {
+		return git.Status{}, err
+	}
+	err = worktree.AddWithOptions(&git.AddOptions{All: true})
+	if err != nil {
+		return git.Status{}, err
+	}
+	return worktree.Status()
+}
+
+// returns an error if there is nothing to commit
+func Commit(ctx context.Context, repo *Repo, msg string) error {
+	worktree, err := repo.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+	if status.IsClean() {
+		return fmt.Errorf("No modifications to commit.")
+	}
+	commit, err := worktree.Commit(msg, &git.CommitOptions{})
+	if err != nil {
+		return err
+	}
+
+	// Log commit object, if enabled
+	if slog.Default().Enabled(ctx, slog.LevelInfo.Level()) {
+		obj, err := repo.repo.CommitObject(commit)
+		if err != nil {
+			return err
+		}
+		slog.Info(fmt.Sprint(obj))
+	}
+	return nil
+}
