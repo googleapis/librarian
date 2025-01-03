@@ -338,7 +338,7 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo) error {
 	}
 
 	gitrepo.PrintStatus(ctx, repo)
-	// TODO: Use git status to create a meaningful commit message.
+	// TODO: Get commit message from googleapis
 	return gitrepo.Commit(ctx, repo, "Generator updates.")
 }
 
