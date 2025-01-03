@@ -114,7 +114,7 @@ func Commit(ctx context.Context, repo *Repo, msg string) error {
 		return err
 	}
 	if status.IsClean() {
-		return fmt.Errorf("No modifications to commit.")
+		return fmt.Errorf("no modifications to commit")
 	}
 	commit, err := worktree.Commit(msg, &git.CommitOptions{})
 	if err != nil {
