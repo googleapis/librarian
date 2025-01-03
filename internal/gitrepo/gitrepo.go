@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -137,5 +138,54 @@ func Commit(ctx context.Context, repo *Repo, msg string) error {
 		}
 		slog.Info(fmt.Sprint(obj))
 	}
+	return nil
+}
+
+func PrintStatus(ctx context.Context, repo *Repo) error {
+	worktree, err := repo.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+
+	if status.IsClean() {
+		slog.Info("git status: No modifications found.")
+		return nil
+	}
+
+	var staged []string
+	for path, file := range status {
+		switch file.Staging {
+		case git.Added:
+			staged = append(staged, fmt.Sprintf("  A %s", path))
+		case git.Modified:
+			staged = append(staged, fmt.Sprintf("  M %s", path))
+		case git.Deleted:
+			staged = append(staged, fmt.Sprintf("  D %s", path))
+		}
+	}
+	if len(staged) > 0 {
+		slog.Info(fmt.Sprintf("git status: Staged Changes\n%s", strings.Join(staged, "\n")))
+	}
+
+	var notStaged []string
+	for path, file := range status {
+		switch file.Worktree {
+		case git.Untracked:
+			notStaged = append(notStaged, fmt.Sprintf("  ? %s", path))
+		case git.Modified:
+			notStaged = append(notStaged, fmt.Sprintf("  M %s", path))
+		case git.Deleted:
+			notStaged = append(notStaged, fmt.Sprintf("  D %s", path))
+		}
+	}
+	if len(notStaged) > 0 {
+		slog.Info(fmt.Sprintf("git status: Unstaged Changes\n%s", strings.Join(notStaged, "\n")))
+	}
+
 	return nil
 }

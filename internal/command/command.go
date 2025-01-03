@@ -336,7 +336,8 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo) error {
 		slog.Info("No modifications to commit.")
 		return nil
 	}
-	slog.Debug(fmt.Sprintf("git.Status: %#v", status))
+
+	gitrepo.PrintStatus(ctx, repo)
 	// TODO: Use git status to create a meaningful commit message.
 	return gitrepo.Commit(ctx, repo, "Generator updates.")
 }
