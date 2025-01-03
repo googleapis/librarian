@@ -173,7 +173,7 @@ func runCommand(c string, args ...string) error {
 	cmd := exec.Command(c, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	slog.Info(strings.Repeat("-", 80))
+	slog.Info(strings.Repeat("=", 80))
 	slog.Info(cmd.String())
 	slog.Info(strings.Repeat("-", 80))
 	return cmd.Run()
