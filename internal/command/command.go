@@ -140,7 +140,8 @@ var CmdConfigure = &Command{
 		if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 			return err
 		}
-		if err := commitAll(ctx, languageRepo); err != nil {
+		msg := fmt.Sprintf("Configured API %s", flagAPIPath) // TODO: Improve info using googleapis commits and version info
+		if err := commitAll(ctx, languageRepo, msg); err != nil {
 			return err
 		}
 		if err := container.Build(ctx, image, "repo-root", languageRepo.Dir, flagAPIPath); err != nil {
@@ -276,9 +277,17 @@ var CmdUpdateRepo = &Command{
 		if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 			return err
 		}
-		if err := commitAll(ctx, languageRepo); err != nil {
+
+		var msg string // TODO: Improve info using googleapis commits and version info
+		if flagAPIPath == "" {
+			msg = "Regenerated all APIs"
+		} else {
+			msg = fmt.Sprintf("Regenerated API %s", flagAPIPath)
+		}
+		if err := commitAll(ctx, languageRepo, msg); err != nil {
 			return err
 		}
+
 		if err := container.Build(ctx, image, "repo-root", languageRepo.Dir, flagAPIPath); err != nil {
 			return err
 		}
@@ -327,7 +336,7 @@ func createTmpWorkingRoot(t time.Time) (string, error) {
 }
 
 // No commit is made if there are no file modifications.
-func commitAll(ctx context.Context, repo *gitrepo.Repo) error {
+func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	status, err := gitrepo.AddAll(ctx, repo)
 	if err != nil {
 		return err
@@ -338,8 +347,7 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo) error {
 	}
 
 	gitrepo.PrintStatus(ctx, repo)
-	// TODO: Get commit message from googleapis
-	return gitrepo.Commit(ctx, repo, "Generator updates.")
+	return gitrepo.Commit(ctx, repo, msg)
 }
 
 func push() error {
