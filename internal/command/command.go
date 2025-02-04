@@ -94,9 +94,7 @@ var CmdConfigure = &Command{
 			// We assume it's okay not to take a defensive copy of apiRoot in the configure command,
 			// as "vanilla" configuration/generation shouldn't need to edit any protos. (That's just an escape hatch.)
 			apiRoot, err = filepath.Abs(flagAPIRoot)
-			slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
 			if err != nil {
-				slog.Error(fmt.Sprintf("Error getting apiRoot: %s", err))
 				return err
 			}
 		}
@@ -249,7 +247,9 @@ var CmdUpdateRepo = &Command{
 			}
 		} else {
 			apiRoot, err := filepath.Abs(flagAPIRoot)
+			slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
 			if err != nil {
+				slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
 				return err
 			}
 			apiRepo, err = gitrepo.Open(ctx, apiRoot)
