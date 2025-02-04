@@ -24,6 +24,7 @@ import (
 
 func main() {
 	ctx := context.Background()
+	log.Println("Invoking generator with arguements:", strings.Join(os.Args[1:], " "))
 	if err := generator.Run(ctx, os.Args[1:]...); err != nil {
 		log.Fatal(err)
 	}
