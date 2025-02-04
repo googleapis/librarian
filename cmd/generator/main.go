@@ -26,9 +26,9 @@ func main() {
 	ctx := context.Background()
 
 	log.Println("Arguments passed to generator:")
-    for i, arg := range os.Args {
-            log.Printf("Argument %d: %s", i, arg)
-    }
+	for i, arg := range os.Args {
+		log.Printf("Argument %d: %s", i, arg)
+	}
 
 	if err := generator.Run(ctx, os.Args[1:]...); err != nil {
 		log.Fatal(err)

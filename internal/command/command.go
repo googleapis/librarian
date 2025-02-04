@@ -96,7 +96,7 @@ var CmdConfigure = &Command{
 			apiRoot, err = filepath.Abs(flagAPIRoot)
 			slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
 			if err != nil {
-			    slog.Error(fmt.Sprintf("Error getting apiRoot: %s", err))
+				slog.Error(fmt.Sprintf("Error getting apiRoot: %s", err))
 				return err
 			}
 		}
