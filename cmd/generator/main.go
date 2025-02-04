@@ -24,7 +24,12 @@ import (
 
 func main() {
 	ctx := context.Background()
-	log.Println("Invoking generator with arguements:", strings.Join(os.Args[1:], " "))
+
+	log.Println("Arguments passed to generator:")
+    for i, arg := range os.Args {
+            log.Printf("Argument %d: %s", i, arg)
+    }
+
 	if err := generator.Run(ctx, os.Args[1:]...); err != nil {
 		log.Fatal(err)
 	}
