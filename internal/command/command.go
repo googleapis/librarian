@@ -393,7 +393,9 @@ func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo
 
 	// Note that as we've updated the state, we'll definitely have something to commit, even if no
 	// generated code changed. This avoids us regenerating no-op changes again and again, and reflects
-	// that we really are at the latest state.
+	// that we really are at the latest state. We could skip the build step here if there are no changes
+	// prior to updating the state, but it's probably not worth the additional complexity (and it does
+	// no harm to check the code is still "healthy").
 	var msg = createCommitMessage(commits)
 	if err := commitAll(ctx, languageRepo, msg); err != nil {
 		return err
@@ -423,7 +425,7 @@ func createCommitMessage(commits []object.Commit) string {
 	for i := len(commits) - 1; i >= 0; i-- {
 		commit := commits[i]
 		messageLines := strings.Split(commit.Message, "\n")
-		sourceLinkLines = append(sourceLinkLines, fmt.Sprintf("Source-Link: https://github.com/googleapis/googleapis/%s", commit.Hash.String()))
+		sourceLinkLines = append(sourceLinkLines, fmt.Sprintf("Source-Link: https://github.com/googleapis/googleapis/commits/%s", commit.Hash.String()))
 		for _, line := range messageLines {
 			if strings.HasPrefix(line, PiperPrefix) {
 				piperRevIdLines = append(piperRevIdLines, line)

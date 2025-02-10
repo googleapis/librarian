@@ -61,7 +61,6 @@ func Clone(ctx context.Context, dirpath, repoURL string) (*Repo, error) {
 		URL:           repoURL,
 		ReferenceName: plumbing.HEAD,
 		SingleBranch:  true,
-		Depth:         1,
 		Tags:          git.NoTags,
 		// .NET uses submodules for conformance tests.
 		// (There may be other examples too.)
@@ -224,14 +223,8 @@ func PrintStatus(ctx context.Context, repo *Repo) error {
 // The returned commits are ordered such that the most recent commit is first.
 func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) ([]object.Commit, error) {
 	commits := []object.Commit{}
-	// Our paths are directories, and should be treated as such. (If we pass in x/v1, we don't want x/v1beta changes.)
-	path = path + "/"
 	finalHash := plumbing.NewHash(commit)
-	pathFilter := func(changePath string) bool {
-		return strings.HasPrefix(changePath, path)
-	}
-
-	logOptions := git.LogOptions{PathFilter: pathFilter}
+	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
 	logIterator, err := repo.repo.Log(&logOptions)
 	if err != nil {
 		return nil, err
@@ -244,7 +237,42 @@ func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) 
 			return ErrStopIterating
 		}
 
-		commits = append(commits, *commit)
+		// Skip any commit with multiple parents. We shouldn't see this
+		// as we don't use merge commits.
+		if commit.NumParents() != 1 {
+			return nil
+		}
+
+		// We perform filtering by finding out if the tree hash for the given
+		// path at the commit we're looking at is the same as the tree hash
+		// for the commit's parent. This is much, much faster than any other filtering
+		// option, it seems.
+		parentCommit, err := commit.Parent(0)
+		if err != nil {
+			return err
+		}
+		currentTree, err := commit.Tree()
+		if err != nil {
+			return err
+		}
+		currentPathEntry, err := currentTree.FindEntry(path)
+		if err != nil {
+			return err
+		}
+		parentTree, err := parentCommit.Tree()
+		if err != nil {
+			return err
+		}
+		parentPathEntry, err := parentTree.FindEntry(path)
+		if err != nil {
+			return err
+		}
+
+		// If we've found a change, add it to our list of commits.
+		if currentPathEntry.Hash != parentPathEntry.Hash {
+			commits = append(commits, *commit)
+		}
+
 		return nil
 	})
 	if err != nil && err != ErrStopIterating {
