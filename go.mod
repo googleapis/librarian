@@ -1,6 +1,6 @@
 module github.com/googleapis/generator
 
-go 1.23
+go 1.23.6
 
 require github.com/go-git/go-git/v5 v5.13.2
 
