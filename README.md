@@ -1,18 +1,9 @@
-# generator
+# librarian
 
-This repository contains experimental code for SDK generation.
+This repository contains code for a unified command line tool for
+SDK client library configuration, generation and releasing.
 
-To run the generator:
-
-```
-# Build dotnet generator's docker
-git clone git@github.com:googleapis/google-cloud-dotnet.git
-cd google-cloud-dotnet
-docker build -f Dockerfile.generator -t picard .
-
-# Run the generator
-go run ./cmd/generator generate -language dotnet
-```
+Sample command lines coming soon, when we have public containers.
 
 ## License
 
