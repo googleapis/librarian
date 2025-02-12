@@ -22,7 +22,7 @@ RUN go mod download
 
 COPY cmd cmd
 COPY internal internal
-RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/generator
+RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
 
 # Using docker:dind so we can run docker from the CLI,
 # while in Docker. Note that for this to work, *this*
@@ -49,5 +49,5 @@ RUN apt update
 # Install Docker
 RUN apt-get -y install docker-ce
 
-COPY --from=build /src/generator .
-ENTRYPOINT ["/app/generator"]
+COPY --from=build /src/librarian .
+ENTRYPOINT ["/app/librarian"]

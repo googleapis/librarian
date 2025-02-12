@@ -15,7 +15,7 @@
 syntax = "proto3";
 package google.cloud.sdk.pipeline;
 
-option go_package = "github.com/googleapis/generator/internal/statepb;statepb";
+option go_package = "github.com/googleapis/librarian/internal/statepb;statepb";
 
 // Overall state of the generation and release pipeline. This is expected
 // to be stored in each language repo as generator-input/pipeline-state.json.

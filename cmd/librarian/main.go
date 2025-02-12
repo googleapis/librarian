@@ -19,18 +19,18 @@ import (
 	"log"
 	"os"
 
-	"github.com/googleapis/generator/internal/generator"
+	"github.com/googleapis/librarian/internal/librarian"
 )
 
 func main() {
 	ctx := context.Background()
 
-	log.Println("Arguments passed to generator:")
+	log.Println("Arguments passed to librarian:")
 	for i, arg := range os.Args {
 		log.Printf("Argument %d: %s", i, arg)
 	}
 
-	if err := generator.Run(ctx, os.Args[1:]...); err != nil {
+	if err := librarian.Run(ctx, os.Args[1:]...); err != nil {
 		log.Fatal(err)
 	}
 }

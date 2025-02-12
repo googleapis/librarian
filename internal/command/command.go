@@ -28,9 +28,9 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/googleapis/generator/internal/container"
-	"github.com/googleapis/generator/internal/gitrepo"
-	"github.com/googleapis/generator/internal/statepb"
+	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/statepb"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -128,7 +128,7 @@ var CmdConfigure = &Command{
 			return err
 		}
 
-		// After configuring, we run quite a lot of the same code as in CmdUpdateRepo.Run.
+		// After configuring, we run quite a lot of the same code as in CmdUpdateApis.Run.
 		outputDir := filepath.Join(tmpRoot, "output")
 		if err := os.Mkdir(outputDir, 0755); err != nil {
 			return err
@@ -166,7 +166,7 @@ var CmdConfigure = &Command{
 
 var CmdGenerate = &Command{
 	Name:  "generate",
-	Short: "Generate a new client library",
+	Short: "Generate client library code for an API",
 	Run: func(ctx context.Context) error {
 		if flagAPIPath == "" {
 			return fmt.Errorf("-api-path is not provided")
@@ -222,9 +222,9 @@ var CmdGenerate = &Command{
 	},
 }
 
-var CmdUpdateRepo = &Command{
-	Name:  "update-repo",
-	Short: "Configure a new API in a given language",
+var CmdUpdateApis = &Command{
+	Name:  "update-apis",
+	Short: "Update a language repo by regenerating configured APIs",
 	Run: func(ctx context.Context) error {
 
 		if !supportedLanguages[flagLanguage] {
@@ -452,7 +452,7 @@ func deriveImage(state *statepb.PipelineState) string {
 		return flagImage
 	}
 
-	defaultRepository := os.Getenv("GENERATOR_CLI_REPOSITORY")
+	defaultRepository := os.Getenv("LIBRARIAN_REPOSITORY")
 	relativeImage := fmt.Sprintf("google-cloud-%s-generator", flagLanguage)
 
 	var tag string
@@ -510,7 +510,7 @@ func createTmpWorkingRoot(t time.Time) (string, error) {
 
 	const yyyyMMddHHmmss = "20060102T150405" // Expected format by time library
 
-	path := filepath.Join(os.TempDir(), fmt.Sprintf("generator-%s", t.Format(yyyyMMddHHmmss)))
+	path := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", t.Format(yyyyMMddHHmmss)))
 
 	_, err := os.Stat(path)
 	switch {
@@ -553,7 +553,7 @@ func push() error {
 var Commands = []*Command{
 	CmdConfigure,
 	CmdGenerate,
-	CmdUpdateRepo,
+	CmdUpdateApis,
 }
 
 func init() {
@@ -589,7 +589,7 @@ func init() {
 		fn(fs)
 	}
 
-	fs = CmdUpdateRepo.flags
+	fs = CmdUpdateApis.flags
 	for _, fn := range []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
@@ -607,7 +607,7 @@ func init() {
 }
 
 func constructUsage(fs *flag.FlagSet, name string) func() {
-	output := fmt.Sprintf("Usage:\n\n  generator %s [arguments]\n", name)
+	output := fmt.Sprintf("Usage:\n\n  librarian %s [arguments]\n", name)
 	output += "\nFlags:\n\n"
 	return func() {
 		fmt.Fprint(fs.Output(), output)

@@ -43,4 +43,4 @@ mkdir $WORK_ROOT
 
 gcloud auth configure-docker us-central1-docker.pkg.dev
 cd github/generator
-go run ./cmd/generator update-repo -language=dotnet -work-root=$WORK_ROOT
+go run ./cmd/generator update-apis -language=dotnet -work-root=$WORK_ROOT

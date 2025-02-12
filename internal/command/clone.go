@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/googleapis/generator/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const googleapisURL = "https://github.com/googleapis/googleapis"

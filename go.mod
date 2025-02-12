@@ -1,4 +1,4 @@
-module github.com/googleapis/generator
+module github.com/googleapis/librarian
 
 go 1.23.6
 

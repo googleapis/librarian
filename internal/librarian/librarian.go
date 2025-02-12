@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package generator
+package librarian
 
 import (
 	"context"
 	"flag"
 	"fmt"
 
-	"github.com/googleapis/generator/internal/command"
+	"github.com/googleapis/librarian/internal/command"
 )
 
 func Run(ctx context.Context, arg ...string) error {
@@ -34,12 +34,11 @@ func Run(ctx context.Context, arg ...string) error {
 }
 
 func parseArgs(args []string) (*command.Command, error) {
-	fs := flag.NewFlagSet("generator", flag.ContinueOnError)
-	output := `Generator generates client libraries for Google APIs.
-
+	fs := flag.NewFlagSet("librarian", flag.ContinueOnError)
+	output := `Librarian manages client libraries for Google APIsmanages
 Usage:
 
-  generator <command> [arguments]
+  librarian <command> [arguments]
 
 The commands are:
 `
