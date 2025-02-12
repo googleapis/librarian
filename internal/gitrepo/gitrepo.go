@@ -24,8 +24,11 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/google/go-github/v69/github"
 )
 
 // Repo represents a git repository.
@@ -279,4 +282,65 @@ func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) 
 		return nil, err
 	}
 	return commits, nil
+}
+
+// Creates a branch with the given name in the default remote.
+func PushBranch(ctx context.Context, repo *Repo, remoteBranch string, accessToken string) error {
+	headRef, err := repo.repo.Head()
+	if err != nil {
+		return err
+	}
+	auth := http.BasicAuth{
+		Username: "Ignored",
+		Password: accessToken,
+	}
+	refFrom := headRef.Name().String()
+	refTo := fmt.Sprintf("refs/heads/%s", remoteBranch)
+	refSpec := config.RefSpec(fmt.Sprintf("%s:%s", refFrom, refTo))
+	pushOptions := git.PushOptions{
+		RefSpecs: []config.RefSpec{refSpec},
+		Auth:     &auth,
+	}
+
+	slog.Info(fmt.Sprintf("Pushing to branch %s", remoteBranch))
+	return repo.repo.Push(&pushOptions)
+}
+
+// Creates a pull request in the remote repo. At the moment this requires a single remote to be
+// configured, which must have a GitHub HTTPS URL. We assume a base branch of "main".
+func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, accessToken string, title string) error {
+	remotes, err := repo.repo.Remotes()
+	if err != nil {
+		return err
+	}
+
+	if len(remotes) != 1 {
+		return fmt.Errorf("can only create a PR with a single remote; number of remotes: %d", len(remotes))
+	}
+
+	remoteUrl := remotes[0].Config().URLs[0]
+	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
+		return fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)
+	}
+	remotePath := remoteUrl[len("https://github.com/"):]
+	pathParts := strings.Split(remotePath, "/")
+	organization := pathParts[0]
+	repoName := pathParts[1]
+
+	gitHubClient := github.NewClient(nil).WithAuthToken(accessToken)
+	newPR := &github.NewPullRequest{
+		Title:               &title,
+		Head:                &remoteBranch,
+		Base:                github.Ptr("main"),
+		Body:                github.Ptr("Regenerated all changed APIs. See individual commits for details."),
+		MaintainerCanModify: github.Ptr(true),
+	}
+
+	pr, _, err := gitHubClient.PullRequests.Create(ctx, organization, repoName, newPR)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
+	return nil
 }

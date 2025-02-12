@@ -73,12 +73,13 @@ var CmdConfigure = &Command{
 			return fmt.Errorf("-github-token must be provided if -push is set to true")
 		}
 
+		startOfRun := time.Now()
 		// tmpRoot is a newly-created working directory under /tmp
 		// We do any cloning or copying under there. Currently this is only
 		// actually needed in generate if the user hasn't specified an output directory
 		// - we could potentially only create it in that case, but always creating it
 		// is a more general case.
-		tmpRoot, err := createTmpWorkingRoot(time.Now())
+		tmpRoot, err := createTmpWorkingRoot(startOfRun)
 		if err != nil {
 			return err
 		}
@@ -160,7 +161,7 @@ var CmdConfigure = &Command{
 			return err
 		}
 
-		return push()
+		return push(ctx, languageRepo, startOfRun)
 	},
 }
 
@@ -230,10 +231,15 @@ var CmdUpdateApis = &Command{
 		if !supportedLanguages[flagLanguage] {
 			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 		}
+		if flagPush && flagGitHubToken == "" {
+			return fmt.Errorf("-github-token must be provided if -push is set to true")
+		}
+
+		startOfRun := time.Now()
 
 		// tmpRoot is a newly-created working directory under /tmp
 		// We do any cloning or copying under there.
-		tmpRoot, err := createTmpWorkingRoot(time.Now())
+		tmpRoot, err := createTmpWorkingRoot(startOfRun)
 		if err != nil {
 			return err
 		}
@@ -335,6 +341,11 @@ var CmdUpdateApis = &Command{
 			gitrepo.ResetHard(ctx, apiRepo)
 		}
 
+		if !flagPush {
+			slog.Info("Pushing not specified; update complete.")
+			return nil
+		}
+
 		hashAfter, err := gitrepo.HeadHash(ctx, languageRepo)
 		if err != nil {
 			return err
@@ -342,9 +353,9 @@ var CmdUpdateApis = &Command{
 		if hashBefore == hashAfter {
 			slog.Info("No changes generated; nothing to push.")
 			return nil
-		} else {
-			return push()
 		}
+
+		return push(ctx, languageRepo, startOfRun)
 	},
 }
 
@@ -425,7 +436,7 @@ func createCommitMessage(commits []object.Commit) string {
 	for i := len(commits) - 1; i >= 0; i-- {
 		commit := commits[i]
 		messageLines := strings.Split(commit.Message, "\n")
-		sourceLinkLines = append(sourceLinkLines, fmt.Sprintf("Source-Link: https://github.com/googleapis/googleapis/commits/%s", commit.Hash.String()))
+		sourceLinkLines = append(sourceLinkLines, fmt.Sprintf("Source-Link: https://github.com/googleapis/googleapis/commit/%s", commit.Hash.String()))
 		for _, line := range messageLines {
 			if strings.HasPrefix(line, PiperPrefix) {
 				piperRevIdLines = append(piperRevIdLines, line)
@@ -543,11 +554,23 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	return gitrepo.Commit(ctx, repo, msg)
 }
 
-func push() error {
-	if flagPush {
-		return fmt.Errorf("push is not implemented")
+func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time) error {
+	if !flagPush {
+		return nil
 	}
-	return nil
+	if flagGitHubToken == "" {
+		return fmt.Errorf("no GitHub token supplied for push")
+	}
+	const yyyyMMddHHmmss = "20060102T150405" // Expected format by time library
+	timestamp := startOfRun.Format(yyyyMMddHHmmss)
+	branch := fmt.Sprintf("librarian-%s", timestamp)
+	err := gitrepo.PushBranch(ctx, repo, branch, flagGitHubToken)
+	if err != nil {
+		return err
+	}
+
+	title := fmt.Sprintf("feat: API regeneration: %s", timestamp)
+	return gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title)
 }
 
 var Commands = []*Command{
