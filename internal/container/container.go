@@ -142,6 +142,7 @@ func runDocker(image string, mounts []string, containerArgs []string) error {
 
 	args := []string{
 		"run",
+		"--rm", // Automatically delete the container after completion
 	}
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
