@@ -42,5 +42,5 @@ WORK_ROOT=$KOKORO_ARTIFACTS_DIR/cli-work-root
 mkdir $WORK_ROOT
 
 gcloud auth configure-docker us-central1-docker.pkg.dev
-cd github/generator
-go run ./cmd/generator update-apis -language=dotnet -work-root=$WORK_ROOT
+cd github/librarian
+go run ./cmd/librarian update-apis -language=dotnet -work-root=$WORK_ROOT
