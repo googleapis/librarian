@@ -62,6 +62,14 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 	return runDocker(image, mounts, containerArgs)
 }
 
+func CreateReleasePR(image string) error {
+	containerArgs := []string{
+		"createReleasePR",
+	}
+	mounts := []string{}
+	return runDocker(image, mounts, containerArgs)
+}
+
 func runGenerate(image, apiRoot, output, generatorInput, apiPath string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")

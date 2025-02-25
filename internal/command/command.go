@@ -359,6 +359,20 @@ var CmdUpdateApis = &Command{
 	},
 }
 
+var CmdCreateReleasePR = &Command{
+	Name:  "create-release-pr",
+	Short: "Generate a PR for release",
+	Run: func(ctx context.Context) error {
+
+		image := deriveImage(nil)
+
+		if err := container.CreateReleasePR(image); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, repoState *statepb.PipelineState, apiState *statepb.ApiGenerationState) error {
 	if flagAPIPath != "" && flagAPIPath != apiState.Id {
 		// If flagAPIPath has been passed in, we only act on that API.
@@ -577,6 +591,7 @@ var Commands = []*Command{
 	CmdConfigure,
 	CmdGenerate,
 	CmdUpdateApis,
+	CmdCreateReleasePR,
 }
 
 func init() {
