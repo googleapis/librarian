@@ -63,9 +63,7 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 }
 
 func CreateReleasePR(image string) error {
-	containerArgs := []string{
-		"createReleasePR",
-	}
+	containerArgs := []string{}
 	mounts := []string{}
 	return runDocker(image, mounts, containerArgs)
 }
