@@ -20,6 +20,8 @@ Available commands:
 - "generate": Generate client library code for an API
 - "update-apis": Update a language repo by regenerating configured APIs
 
+This librarian CLI expects container images from repository configured via `LIBRARIAN_REPOSITORY`
+
 ### generate
 
 Run `go run ./cmd/librarian generate -h` to get helper messages for defined flags and their descriptions. You will see output as below.
