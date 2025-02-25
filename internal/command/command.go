@@ -364,7 +364,7 @@ var CmdCreateReleasePR = &Command{
 	Short: "Generate a PR for release",
 	Run: func(ctx context.Context) error {
 
-		image := deriveImage(nil)
+		image := os.Getenv("LIBRARIAN_REPOSITORY")
 
 		if err := container.CreateReleasePR(image); err != nil {
 			return err
