@@ -15,14 +15,14 @@ Apache 2.0 - See [LICENSE] for more information.
 
 ## Usages
 
-Avalaible commands:
+Available commands:
 - "configure": Configure a new API in a given language
 - "generate": Generate client library code for an API
 - "update-apis": Update a language repo by regenerating configured APIs
 
 ### generate
 
-run `go run ./cmd/librarian generate -h` to get helper messages for defined flags and their descriptions.
+Run `go run ./cmd/librarian generate -h` to get helper messages for defined flags and their descriptions. You will see output as below.
 
 ```
 Usage:
