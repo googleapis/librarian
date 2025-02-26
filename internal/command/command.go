@@ -667,6 +667,16 @@ func init() {
 	} {
 		fn(fs)
 	}
+
+	fs = CmdCreateReleasePR.flags
+	for _, fn := range []func(fs *flag.FlagSet){
+		addFlagLanguage,
+		addFlagPush,
+		addFlagGitHubToken,
+		addFlagRepoRoot,
+	} {
+		fn(fs)
+	}
 }
 
 func constructUsage(fs *flag.FlagSet, name string) func() {
