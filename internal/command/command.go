@@ -363,13 +363,38 @@ var CmdCreateReleasePR = &Command{
 	Name:  "create-release-pr",
 	Short: "Generate a PR for release",
 	Run: func(ctx context.Context) error {
+		if !supportedLanguages[flagLanguage] {
+			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+		}
+		startOfRun := time.Now()
+		// tmpRoot is a newly-created working directory under /tmp
+		// We do any cloning or copying under there. Currently this is only
+		// actually needed in generate if the user hasn't specified an output directory
+		// - we could potentially only create it in that case, but always creating it
+		// is a more general case.
+		tmpRoot, err := createTmpWorkingRoot(startOfRun)
+		var languageRepo *gitrepo.Repo
+		if flagRepoRoot == "" {
+			languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
+			if err != nil {
+				return err
+			}
+		} else {
+			languageRepo, err = gitrepo.Open(ctx, flagRepoRoot)
+			if err != nil {
+				return err
+			}
+		}
 
 		image := os.Getenv("LIBRARIAN_REPOSITORY")
-
-		if err := container.CreateReleasePR(image); err != nil {
+		repoPath := filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
+		if err := container.CreateReleasePR(image, repoPath); err != nil {
 			return err
 		}
-		return nil
+		if _, err := gitrepo.AddAll(ctx, languageRepo); err != nil {
+			return err
+		}
+		return push(ctx, languageRepo, startOfRun)
 	},
 }
 

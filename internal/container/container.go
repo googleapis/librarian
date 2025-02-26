@@ -62,10 +62,18 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 	return runDocker(image, mounts, containerArgs)
 }
 
-func CreateReleasePR(image string) error {
+func CreateReleasePR(image string, languageRepo string) error {
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
+	}
 	containerArgs := []string{}
-	mounts := []string{}
-	return runDocker(image, mounts, containerArgs)
+	mounts := []string{
+		fmt.Sprintf("%s:/repo", languageRepo),
+	}
+
+	output := runDocker(image, mounts, containerArgs)
+	//should have a directory with changes and then can copy those
+	return output
 }
 
 func runGenerate(image, apiRoot, output, generatorInput, apiPath string) error {
