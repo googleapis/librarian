@@ -386,8 +386,10 @@ var CmdCreateReleasePR = &Command{
 			}
 		}
 		image := os.Getenv("LIBRARIAN_REPOSITORY")
-
-		repoPath := filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
+		repoPath := flagRepoRoot
+		if repoPath == "" {
+			repoPath = filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
+		}
 		if err := container.CreateReleasePR(image, repoPath); err != nil {
 			return err
 		}
