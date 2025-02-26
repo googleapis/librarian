@@ -308,7 +308,7 @@ func PushBranch(ctx context.Context, repo *Repo, remoteBranch string, accessToke
 
 // Creates a pull request in the remote repo. At the moment this requires a single remote to be
 // configured, which must have a GitHub HTTPS URL. We assume a base branch of "main".
-func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, accessToken string, title string) error {
+func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, accessToken string, title string, body string) error {
 	remotes, err := repo.repo.Remotes()
 	if err != nil {
 		return err
@@ -327,12 +327,15 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 	organization := pathParts[0]
 	repoName := pathParts[1]
 
+	if body == "" {
+		body = "Regenerated all changed APIs. See individual commits for details."
+	}
 	gitHubClient := github.NewClient(nil).WithAuthToken(accessToken)
 	newPR := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &remoteBranch,
 		Base:                github.Ptr("main"),
-		Body:                github.Ptr("Regenerated all changed APIs. See individual commits for details."),
+		Body:                github.Ptr(body),
 		MaintainerCanModify: github.Ptr(true),
 	}
 
