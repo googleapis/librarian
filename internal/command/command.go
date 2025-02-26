@@ -391,12 +391,13 @@ var CmdCreateReleasePR = &Command{
 		if err := container.CreateReleasePR(image, repoPath); err != nil {
 			return err
 		}
-		all, err := gitrepo.AddAll(ctx, languageRepo)
+		_, err = gitrepo.AddAll(ctx, languageRepo)
 		if err != nil {
 			return err
 		}
-		fmt.Println("response from add all %s", all.String())
-		fmt.Println("languageRepo %s", languageRepo)
+		if err := gitrepo.Commit(ctx, languageRepo, "release PR"); err != nil {
+			return err
+		}
 		return push(ctx, languageRepo, startOfRun)
 	},
 }
@@ -612,7 +613,7 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time) error {
 	}
 
 	title := fmt.Sprintf("feat: API regeneration: %s", timestamp)
-	return gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title)
+	return gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title, "")
 }
 
 var Commands = []*Command{
