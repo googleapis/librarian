@@ -385,15 +385,18 @@ var CmdCreateReleasePR = &Command{
 				return err
 			}
 		}
-
 		image := os.Getenv("LIBRARIAN_REPOSITORY")
+
 		repoPath := filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
 		if err := container.CreateReleasePR(image, repoPath); err != nil {
 			return err
 		}
-		if _, err := gitrepo.AddAll(ctx, languageRepo); err != nil {
+		all, err := gitrepo.AddAll(ctx, languageRepo)
+		if err != nil {
 			return err
 		}
+		fmt.Println("response from add all %s", all.String())
+		fmt.Println("languageRepo %s", languageRepo)
 		return push(ctx, languageRepo, startOfRun)
 	},
 }
