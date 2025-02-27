@@ -373,6 +373,8 @@ var CmdCreateReleasePR = &Command{
 		// - we could potentially only create it in that case, but always creating it
 		// is a more general case.
 		tmpRoot, err := createTmpWorkingRoot(startOfRun)
+		//TODO: add flag to check if should multi PRs per library OR just let release please take care of per language
+		// right now this functionality exists in release-please, so would rather just pass github token
 		var languageRepo *gitrepo.Repo
 		if flagRepoRoot == "" {
 			languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
@@ -385,6 +387,7 @@ var CmdCreateReleasePR = &Command{
 				return err
 			}
 		}
+		//TODO: fix to be dynamic for release image
 		image := os.Getenv("LIBRARIAN_REPOSITORY")
 		repoPath := flagRepoRoot
 		if repoPath == "" {
@@ -397,6 +400,8 @@ var CmdCreateReleasePR = &Command{
 		if err != nil {
 			return err
 		}
+		//TODO: add commit meta data + read from third party repo
+		// make message + title dynamic
 		if err := gitrepo.Commit(ctx, languageRepo, "release PR"); err != nil {
 			return err
 		}
