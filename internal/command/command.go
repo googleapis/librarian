@@ -21,6 +21,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -161,7 +162,7 @@ var CmdConfigure = &Command{
 			return err
 		}
 
-		return push(ctx, languageRepo, startOfRun)
+		return push(ctx, languageRepo, startOfRun, "", "")
 	},
 }
 
@@ -355,7 +356,7 @@ var CmdUpdateApis = &Command{
 			return nil
 		}
 
-		return push(ctx, languageRepo, startOfRun)
+		return push(ctx, languageRepo, startOfRun, "", "")
 	},
 }
 
@@ -365,6 +366,10 @@ var CmdCreateReleasePR = &Command{
 	Run: func(ctx context.Context) error {
 		if !supportedLanguages[flagLanguage] {
 			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+		}
+		if flagImage == "" {
+			slog.Error("Create release pr requires image.")
+			return nil
 		}
 		startOfRun := time.Now()
 		// tmpRoot is a newly-created working directory under /tmp
@@ -387,26 +392,53 @@ var CmdCreateReleasePR = &Command{
 				return err
 			}
 		}
-		//TODO: fix to be dynamic for release image
-		image := os.Getenv("LIBRARIAN_REPOSITORY")
 		repoPath := flagRepoRoot
 		if repoPath == "" {
 			repoPath = filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
 		}
-		if err := container.CreateReleasePR(image, repoPath); err != nil {
+		outputDirectory := flagOutput
+		if outputDirectory == "" {
+			outputDirectory = "/output"
+		}
+		if err := container.CreateReleasePR(flagImage, repoPath, outputDirectory); err != nil {
 			return err
 		}
+
 		_, err = gitrepo.AddAll(ctx, languageRepo)
 		if err != nil {
 			return err
 		}
+		commitMessage := readCommitMessage(outputDirectory)
+
 		//TODO: add commit meta data + read from third party repo
 		// make message + title dynamic
-		if err := gitrepo.Commit(ctx, languageRepo, "release PR"); err != nil {
+		if err := gitrepo.Commit(ctx, languageRepo, commitMessage); err != nil {
 			return err
 		}
-		return push(ctx, languageRepo, startOfRun)
+		//TODO this should be read from a file
+		tag := "v.2.7.0"
+		prDescription, _ := getPrDescription(repoPath, languageRepo, tag)
+		//TODO title should be read from file
+		return push(ctx, languageRepo, startOfRun, "Release PR: v.2.7.1", prDescription)
 	},
+}
+
+func getPrDescription(repoPath string, repo *gitrepo.Repo, tag string) (string, error) {
+	//TODO this should receive commit info and then parse out message
+	return gitrepo.GetCommitsSinceTag(repoPath, repo, tag)
+}
+
+func readCommitMessage(directory string) string {
+	filePath := directory + "/commit.txt"
+
+	// Read the file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Convert the byte slice to a string
+	return string(content)
 }
 
 func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, repoState *statepb.PipelineState, apiState *statepb.ApiGenerationState) error {
@@ -604,7 +636,7 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	return gitrepo.Commit(ctx, repo, msg)
 }
 
-func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time) error {
+func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) error {
 	if !flagPush {
 		return nil
 	}
@@ -618,9 +650,10 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time) error {
 	if err != nil {
 		return err
 	}
-
-	title := fmt.Sprintf("feat: API regeneration: %s", timestamp)
-	return gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title, "")
+	if title == "" {
+		title = fmt.Sprintf("feat: API regeneration: %s", timestamp)
+	}
+	return gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title, description)
 }
 
 var Commands = []*Command{
@@ -685,6 +718,8 @@ func init() {
 		addFlagPush,
 		addFlagGitHubToken,
 		addFlagRepoRoot,
+		addFlagOutput,
+		addFlagImage,
 	} {
 		fn(fs)
 	}
