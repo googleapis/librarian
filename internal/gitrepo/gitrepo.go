@@ -18,8 +18,10 @@ package gitrepo
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -346,4 +348,60 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 
 	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
 	return nil
+}
+
+// TODO: refactor out specific logic to parse commits
+func GetCommitsSinceTag(repoPath string, repo *Repo, tagName string) (string, error) {
+	tagRef, err := repo.repo.Tag(tagName)
+	if err != nil {
+		return "", err
+	}
+	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
+	if err != nil {
+		log.Fatal(err)
+	}
+	headRef, err := repo.repo.Head()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	commitIter, err := repo.repo.Log(&git.LogOptions{
+		From: headRef.Hash(),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	description := ""
+	err = commitIter.ForEach(func(c *object.Commit) error {
+		if c.Committer.When.Before(tagCommit.Committer.When) {
+			return fmt.Errorf("end of commits") // Stop iterating when we reach commits before the tag
+		}
+
+		tree, err := c.Tree()
+		if err != nil {
+			return err
+		}
+		err = tree.Files().ForEach(func(f *object.File) error {
+			relPath, err := filepath.Rel(repoPath, filepath.Join(repoPath, f.Name))
+			if err != nil {
+				return err
+			}
+			parts := strings.Split(relPath, string(os.PathSeparator))
+			if len(parts) > 1 {
+				parentDir := parts[0]
+				description = fmt.Sprintf("%s %s\n", c.Hash.String(), parentDir)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return "", err
+	} else {
+		return description, nil
+	}
 }
