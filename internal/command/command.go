@@ -411,7 +411,7 @@ var CmdCreateReleasePR = &Command{
 			return err
 		}
 		//TODO this should be read from a file
-		tag := "v.2.7.0"
+		tag := "v2.70.0"
 		prDescription, _ := createPrDescription(repoPath, languageRepo, tag)
 		//TODO title should be read from file
 		return push(ctx, languageRepo, startOfRun, "Release PR: v.2.7.1", prDescription)
