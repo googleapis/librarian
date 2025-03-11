@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"os/user"
 	"strings"
 )
 
@@ -144,9 +145,18 @@ func runDocker(image string, mounts []string, containerArgs []string) error {
 		"run",
 		"--rm", // Automatically delete the container after completion
 	}
+	// Run as the current user in the container - primarily so that any
+	// files we create end up being owned by the current user (and easily deletable).
+	currentUser, err := user.Current()
+	if err != nil {
+		return err
+	}
+	args = append(args, fmt.Sprintf("--user=%s:%s", currentUser.Uid, currentUser.Gid))
+
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
 	}
+
 	args = append(args, image)
 	args = append(args, containerArgs...)
 	return runCommand("docker", args...)
