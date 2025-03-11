@@ -372,11 +372,6 @@ var CmdCreateReleasePR = &Command{
 			return nil
 		}
 		startOfRun := time.Now()
-		// tmpRoot is a newly-created working directory under /tmp
-		// We do any cloning or copying under there. Currently this is only
-		// actually needed in generate if the user hasn't specified an output directory
-		// - we could potentially only create it in that case, but always creating it
-		// is a more general case.
 		tmpRoot, err := createTmpWorkingRoot(startOfRun)
 		//TODO: add flag to check if should multi PRs per library OR just let release please take care of per language
 		// right now this functionality exists in release-please, so would rather just pass github token
@@ -417,13 +412,13 @@ var CmdCreateReleasePR = &Command{
 		}
 		//TODO this should be read from a file
 		tag := "v.2.7.0"
-		prDescription, _ := getPrDescription(repoPath, languageRepo, tag)
+		prDescription, _ := createPrDescription(repoPath, languageRepo, tag)
 		//TODO title should be read from file
 		return push(ctx, languageRepo, startOfRun, "Release PR: v.2.7.1", prDescription)
 	},
 }
 
-func getPrDescription(repoPath string, repo *gitrepo.Repo, tag string) (string, error) {
+func createPrDescription(repoPath string, repo *gitrepo.Repo, tag string) (string, error) {
 	//TODO this should receive commit info and then parse out message
 	return gitrepo.GetCommitsSinceTag(repoPath, repo, tag)
 }
