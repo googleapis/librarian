@@ -353,6 +353,7 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 // TODO: refactor out specific logic to parse commits
 func GetCommitsSinceTag(repoPath string, repo *Repo, tagName string) (string, error) {
 	tagRef, err := repo.repo.Tag(tagName)
+	slog.Info(fmt.Sprintf("Found tag %s %s", tagName, tagRef))
 	if err != nil {
 		return "", err
 	}
@@ -373,6 +374,7 @@ func GetCommitsSinceTag(repoPath string, repo *Repo, tagName string) (string, er
 	}
 	description := ""
 	err = commitIter.ForEach(func(c *object.Commit) error {
+		slog.Info(fmt.Sprintf("Found commit %s", c))
 		if c.Committer.When.Before(tagCommit.Committer.When) {
 			return fmt.Errorf("end of commits") // Stop iterating when we reach commits before the tag
 		}
@@ -382,6 +384,7 @@ func GetCommitsSinceTag(repoPath string, repo *Repo, tagName string) (string, er
 			return err
 		}
 		err = tree.Files().ForEach(func(f *object.File) error {
+			slog.Info(fmt.Sprintf("Found file %s", f))
 			relPath, err := filepath.Rel(repoPath, filepath.Join(repoPath, f.Name))
 			if err != nil {
 				return err
