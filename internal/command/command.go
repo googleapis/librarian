@@ -21,6 +21,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/googleapis/librarian/internal/libconfig"
 	"log"
 	"log/slog"
 	"os"
@@ -395,7 +396,14 @@ var CmdCreateReleasePR = &Command{
 		if outputDirectory == "" {
 			outputDirectory = "/output"
 		}
-		if err := container.CreateReleasePR(flagImage, repoPath, outputDirectory); err != nil {
+		tag := "v2.70.0"
+		//TODO this
+		//1) read list of files from json path
+		//2) check for commits in those directories
+		//3) check for common commits and what libraries they affect
+		//4) return list of commits and libraries
+		createPrDescription(repoPath, languageRepo, tag)
+		/*if err := container.CreateReleasePR(flagImage, repoPath, outputDirectory); err != nil {
 			return err
 		}
 
@@ -410,17 +418,39 @@ var CmdCreateReleasePR = &Command{
 		if err := gitrepo.Commit(ctx, languageRepo, commitMessage); err != nil {
 			return err
 		}
-		//TODO this should be read from a file
-		tag := "v2.70.0"
-		prDescription, _ := createPrDescription(repoPath, languageRepo, tag)
+
 		//TODO title should be read from file
 		return push(ctx, languageRepo, startOfRun, "Release PR: v.2.7.1", prDescription)
+
+		*/
+		return nil
 	},
 }
 
-func createPrDescription(repoPath string, repo *gitrepo.Repo, tag string) (string, error) {
+func createPrDescription(repoPath string, repo *gitrepo.Repo, tag string) {
 	//TODO this should receive commit info and then parse out message
-	return gitrepo.GetCommitsSinceTag(repoPath, repo, tag)
+	configFile := "librarian_config.json" // Replace with your JSON file path
+	tagName := "v2.70.0"                  // Replace with your Git tag name
+
+	libMap, err := libconfig.LoadLibraryConfig(configFile)
+	if err != nil {
+		fmt.Println("Error loading libconfig:", err)
+		return
+	}
+	commitMap, err := gitrepo.SearchCommitsAfterTag(repo, tagName, libMap)
+	if err != nil {
+		fmt.Println("Error searching commits:", err)
+		return
+	}
+	// Print the results
+	for libName, commits := range commitMap {
+		fmt.Printf("Library: %s\n", libName)
+		for _, commit := range commits {
+			fmt.Printf("  Commit: %s\n", commit.Hash)
+			fmt.Printf("  Message: %s\n", commit.Message)
+		}
+	}
+
 }
 
 func readCommitMessage(directory string) string {

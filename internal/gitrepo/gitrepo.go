@@ -18,6 +18,7 @@ package gitrepo
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/libconfig"
 	"log"
 	"log/slog"
 	"os"
@@ -348,6 +349,94 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 
 	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
 	return nil
+}
+
+type CommitInfo struct {
+	Hash    string
+	Message string
+}
+
+func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconfig.LibraryConfig) (map[string][]CommitInfo, error) {
+	commitMap := make(map[string][]CommitInfo)
+
+	tagRef, err := repo.repo.Tag(tagName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
+	}
+
+	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
+	}
+
+	headRef, err := repo.repo.Head()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get HEAD reference: %w", err)
+	}
+
+	headCommit, err := repo.repo.CommitObject(headRef.Hash())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit object for HEAD: %w", err)
+	}
+
+	for libName, config := range libMap {
+		for _, path := range config.Paths {
+			commitIter, err := repo.repo.Log(&git.LogOptions{
+				From:  headCommit.Hash,
+				Since: &tagCommit.Committer.When,
+				PathFilter: func(s string) bool {
+					return strings.HasPrefix(s, path)
+				},
+			})
+
+			if err != nil {
+				return nil, fmt.Errorf("failed to get commit log for %s, path %s: %w", libName, path, err)
+			}
+
+			var commits []CommitInfo
+			err = commitIter.ForEach(func(commit *object.Commit) error {
+				if commit.Committer.When.After(tagCommit.Committer.When) {
+					commits = append(commits, CommitInfo{
+						Hash:    commit.Hash.String(),
+						Message: commit.Message,
+					})
+				}
+				return nil
+			})
+
+			if err != nil {
+				return nil, err
+			}
+
+			if len(commits) > 0 {
+				commitMap[libName] = append(commitMap[libName], commits...)
+			}
+		}
+	}
+
+	return commitMap, nil
+}
+
+func parseGitLog(logOutput string) []CommitInfo {
+	var commits []CommitInfo
+	lines := strings.Split(logOutput, "\n")
+
+	var currentCommit CommitInfo
+	for _, line := range lines {
+		if strings.HasPrefix(line, "commit ") {
+			if currentCommit.Hash != "" {
+				commits = append(commits, currentCommit)
+			}
+			currentCommit = CommitInfo{Hash: strings.TrimPrefix(line, "commit ")}
+		} else if strings.HasPrefix(line, "    ") {
+			currentCommit.Message += strings.TrimSpace(line) + "\n"
+		}
+	}
+	if currentCommit.Hash != "" {
+		commits = append(commits, currentCommit)
+	}
+
+	return commits
 }
 
 // TODO: refactor out specific logic to parse commits
