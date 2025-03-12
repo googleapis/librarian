@@ -377,7 +377,7 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get commit log for %s, path %s: %w", libName, path, err)
+		return nil, fmt.Errorf("failed to get commit log for  %w", err)
 	}
 
 	err = commitIter.ForEach(func(commit *object.Commit) error {
@@ -396,7 +396,7 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 		tree.Files().ForEach(func(file *object.File) error {
 			for libName, config := range libMap {
 				for _, path := range config.Paths {
-					slog.Info(fmt.Sprintf("checking for path %s lib %s", path, lib))
+					slog.Info(fmt.Sprintf("checking for path %s lib %s", path, libName))
 					if strings.HasPrefix(file.Name, path) {
 						commitMap[libName] = append(commitMap[libName], CommitInfo{
 							Hash:    commit.Hash.String(),
