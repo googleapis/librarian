@@ -372,16 +372,6 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 	}
 
-	headRef, err := repo.repo.Head()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get HEAD reference: %w", err)
-	}
-
-	headCommit, err := repo.repo.CommitObject(headRef.Hash())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get commit object for HEAD: %w", err)
-	}
-
 	for libName, config := range libMap {
 		slog.Info(fmt.Sprintf("checking library libName %s, config %s", libName, config))
 		for _, path := range config.Paths {
