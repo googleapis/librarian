@@ -407,17 +407,18 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 				}
 				return nil
 			})
-
+			slog.Info(fmt.Sprintf("exited commits"))
 			if err != nil {
 				return nil, err
 			}
 
 			if len(commits) > 0 {
+				slog.Info(fmt.Sprintf("adding commit"))
 				commitMap[libName] = append(commitMap[libName], commits...)
 			}
 		}
 	}
-
+	slog.Info(fmt.Sprintf("returning commit map"))
 	return commitMap, nil
 }
 

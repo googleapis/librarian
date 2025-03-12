@@ -423,6 +423,7 @@ var CmdCreateReleasePR = &Command{
 		return push(ctx, languageRepo, startOfRun, "Release PR: v.2.7.1", prDescription)
 
 		*/
+		slog.Info(fmt.Sprintf("return"))
 		return nil
 	},
 }
@@ -438,19 +439,22 @@ func createPrDescription(repoPath string, repo *gitrepo.Repo, tag string) {
 		return
 	}
 	commitMap, err := gitrepo.SearchCommitsAfterTag(repo, tagName, libMap)
+	slog.Info(fmt.Sprintf("returned from commits"))
 	if err != nil {
 		fmt.Println("Error searching commits:", err)
 		return
 	}
 	// Print the results
 	for libName, commits := range commitMap {
+		slog.Info(fmt.Sprintf("iterating thru %s", libName))
 		fmt.Printf("Library: %s\n", libName)
 		for _, commit := range commits {
 			fmt.Printf("  Commit: %s\n", commit.Hash)
 			fmt.Printf("  Message: %s\n", commit.Message)
 		}
 	}
-
+	slog.Info(fmt.Sprintf("returning"))
+	return
 }
 
 func readCommitMessage(directory string) string {
