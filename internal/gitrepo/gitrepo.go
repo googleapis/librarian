@@ -372,62 +372,49 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 	}
 
-	for libName, config := range libMap {
-		slog.Info(fmt.Sprintf("checking library libName %s, config %s", libName, config))
-		for _, path := range config.Paths {
-			slog.Info(fmt.Sprintf("checking path %s", config))
-			commitIter, err := repo.repo.Log(&git.LogOptions{
-				Since: &tagCommit.Committer.When,
-			})
+	commitIter, err := repo.repo.Log(&git.LogOptions{
+		Since: &tagCommit.Committer.When,
+	})
 
-			if err != nil {
-				return nil, fmt.Errorf("failed to get commit log for %s, path %s: %w", libName, path, err)
-			}
-
-			var commits []CommitInfo
-			for {
-				commit, err := commitIter.Next()
-				if err != nil {
-					if err.Error() == "EOF" {
-						slog.Info("end of commits")
-						break // End of iteration
-					}
-					slog.Error(fmt.Sprintf("error during iteration: %v", err))
-					break // Or handle the error appropriately
-				}
-
-				// Process the commit
-				slog.Info(fmt.Sprintf("commit: %s", commit.Hash.String()))
-				slog.Info(fmt.Sprintf("message: %s", commit.Message))
-
-				// ... (Your commit processing logic here) ...
-			}
-			err = commitIter.ForEach(func(commit *object.Commit) error {
-				slog.Info(fmt.Sprintf("commit %s", commit))
-				if commit == nil {
-					return nil
-				}
-				slog.Info(fmt.Sprintf("appending commit %s, %s", commit.Hash.String(), commit.Message))
-				commits = append(commits, CommitInfo{
-					Hash:    commit.Hash.String(),
-					Message: commit.Message,
-				})
-				slog.Info(fmt.Sprintf("done adding"))
-				return nil
-			})
-			slog.Info(fmt.Sprintf("exited commits"))
-			if err != nil {
-				return nil, err
-			}
-
-			if len(commits) > 0 {
-				slog.Info(fmt.Sprintf("adding commit"))
-				commitMap[libName] = append(commitMap[libName], commits...)
-			}
-		}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit log for %s, path %s: %w", libName, path, err)
 	}
-	slog.Info(fmt.Sprintf("returning commit map"))
+
+	err = commitIter.ForEach(func(commit *object.Commit) error {
+		if commit.Hash == tagCommit.Hash {
+			return nil
+		}
+		slog.Info(fmt.Sprintf("commit %s", commit))
+		if commit == nil {
+			return nil
+		}
+		tree, err := commit.Tree()
+		if err != nil {
+			return fmt.Errorf("failed to get commit tree: %w", err)
+		}
+
+		tree.Files().ForEach(func(file *object.File) error {
+			for libName, config := range libMap {
+				for _, path := range config.Paths {
+					slog.Info(fmt.Sprintf("checking for path %s lib %s", path, lib))
+					if strings.HasPrefix(file.Name, path) {
+						commitMap[libName] = append(commitMap[libName], CommitInfo{
+							Hash:    commit.Hash.String(),
+							Message: commit.Message,
+						})
+					}
+				}
+			}
+			return nil
+		})
+		return nil
+	})
+	slog.Info(fmt.Sprintf("exited commits"))
+	if err != nil {
+		return nil, err
+	}
 	return commitMap, nil
+
 }
 
 func parseGitLog(logOutput string) []CommitInfo {
