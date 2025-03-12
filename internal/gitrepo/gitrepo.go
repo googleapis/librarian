@@ -358,8 +358,9 @@ type CommitInfo struct {
 
 func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconfig.LibraryConfig) (map[string][]CommitInfo, error) {
 	commitMap := make(map[string][]CommitInfo)
-
+	slog.Info(fmt.Sprintf("searching for tag %s", tagName))
 	tagRef, err := repo.repo.Tag(tagName)
+	slog.Info(fmt.Sprintf("found tag %s", tagRef))
 	if err != nil {
 		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
 	}
@@ -380,7 +381,9 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 	}
 
 	for libName, config := range libMap {
+		slog.Info(fmt.Sprintf("checking library libName %s, config %s", libName, config))
 		for _, path := range config.Paths {
+			slog.Info(fmt.Sprintf("checking path %s", config))
 			commitIter, err := repo.repo.Log(&git.LogOptions{
 				From:  headCommit.Hash,
 				Since: &tagCommit.Committer.When,
@@ -395,6 +398,7 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 
 			var commits []CommitInfo
 			err = commitIter.ForEach(func(commit *object.Commit) error {
+				slog.Info(fmt.Sprintf("checking commit %s", commit.Hash.String()))
 				if commit.Committer.When.After(tagCommit.Committer.When) {
 					commits = append(commits, CommitInfo{
 						Hash:    commit.Hash.String(),
