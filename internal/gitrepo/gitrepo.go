@@ -401,7 +401,10 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 			var commits []CommitInfo
 
 			err = commitIter.ForEach(func(commit *object.Commit) error {
-
+				slog.Info(fmt.Sprintf("commit %s", commit))
+				if commit == nil {
+					return nil
+				}
 				slog.Info(fmt.Sprintf("appending commit %s, %s", commit.Hash.String(), commit.Message))
 				commits = append(commits, CommitInfo{
 					Hash:    commit.Hash.String(),
