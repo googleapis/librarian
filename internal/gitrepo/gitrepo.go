@@ -360,12 +360,14 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 	commitMap := make(map[string][]CommitInfo)
 	slog.Info(fmt.Sprintf("searching for tag %s", tagName))
 	tagRef, err := repo.repo.Tag(tagName)
-	slog.Info(fmt.Sprintf("found tag %s", tagRef))
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
 	}
 
 	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
+	slog.Info(fmt.Sprintf("found tag commit %s", tagCommit.Committer.When.String()))
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 	}
@@ -397,6 +399,7 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 			}
 
 			var commits []CommitInfo
+
 			err = commitIter.ForEach(func(commit *object.Commit) error {
 
 				slog.Info(fmt.Sprintf("appending commit %s, %s", commit.Hash.String(), commit.Message))
@@ -405,7 +408,6 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 					Message: commit.Message,
 				})
 				slog.Info(fmt.Sprintf("done adding"))
-
 				return nil
 			})
 			slog.Info(fmt.Sprintf("exited commits"))
