@@ -2,6 +2,7 @@ package libconfig
 
 import (
 	"encoding/json"
+	"log/slog"
 	"os"
 )
 
@@ -10,6 +11,7 @@ type LibraryConfig struct {
 }
 
 func LoadLibraryConfig(configFile string) (map[string]LibraryConfig, error) {
+	slog.Info("reading library %s", configFile)
 	data, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
