@@ -387,11 +387,7 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 		for _, path := range config.Paths {
 			slog.Info(fmt.Sprintf("checking path %s", config))
 			commitIter, err := repo.repo.Log(&git.LogOptions{
-				From:  headCommit.Hash,
 				Since: &tagCommit.Committer.When,
-				PathFilter: func(s string) bool {
-					return strings.HasPrefix(s, "apis/Google.Ads.AdManager.V1")
-				},
 			})
 
 			if err != nil {
