@@ -390,7 +390,7 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 				From:  headCommit.Hash,
 				Since: &tagCommit.Committer.When,
 				PathFilter: func(s string) bool {
-					return strings.HasPrefix(s, path)
+					return strings.HasPrefix(s, "apis/Google.Ads.AdManager.V1")
 				},
 			})
 
