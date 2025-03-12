@@ -432,7 +432,7 @@ func createPrDescription(repoPath string, repo *gitrepo.Repo, tag string) {
 	configFile := "librarian_config.json" // Replace with your JSON file path
 	tagName := "v2.70.0"                  // Replace with your Git tag name
 
-	libMap, err := libconfig.LoadLibraryConfig(repoPath + "/" + configFile)
+	libMap, err := libconfig.LoadLibraryConfig(repoPath + configFile)
 	if err != nil {
 		fmt.Println("Error loading libconfig:", err)
 		return
