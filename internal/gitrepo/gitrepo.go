@@ -399,7 +399,23 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 			}
 
 			var commits []CommitInfo
+			for {
+				commit, err := commitIter.Next()
+				if err != nil {
+					if err.Error() == "EOF" {
+						slog.Info("end of commits")
+						break // End of iteration
+					}
+					slog.Error(fmt.Sprintf("error during iteration: %v", err))
+					break // Or handle the error appropriately
+				}
 
+				// Process the commit
+				slog.Info(fmt.Sprintf("commit: %s", commit.Hash.String()))
+				slog.Info(fmt.Sprintf("message: %s", commit.Message))
+
+				// ... (Your commit processing logic here) ...
+			}
 			err = commitIter.ForEach(func(commit *object.Commit) error {
 				slog.Info(fmt.Sprintf("commit %s", commit))
 				if commit == nil {
