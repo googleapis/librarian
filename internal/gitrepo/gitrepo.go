@@ -388,12 +388,12 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 		if commit == nil {
 			return nil
 		}
-		tree, err := commit.Tree()
+		files, err := commit.Files()
 		if err != nil {
-			return fmt.Errorf("failed to get commit tree: %w", err)
+			return fmt.Errorf("failed to get commit file: %w", err)
 		}
 
-		tree.Files().ForEach(func(file *object.File) error {
+		files.ForEach(func(file *object.File) error {
 			for libName, config := range libMap {
 				for _, path := range config.Paths {
 					slog.Info(fmt.Sprintf("checking for path %s lib %s", path, libName))
