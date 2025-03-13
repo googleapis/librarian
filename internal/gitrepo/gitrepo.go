@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"github.com/googleapis/librarian/internal/libconfig"
+	//"github.com/googleapis/librarian/internal/libconfig"
 	"log"
 	"log/slog"
 	"os"
@@ -357,8 +357,8 @@ type CommitInfo struct {
 	Message string
 }
 
-func SearchCommitsAfterTag(repo *Repo, tagName string, libraries *libconfig.Libraries) (map[string][]CommitInfo, error) {
-	commitMap := make(map[string][]CommitInfo)
+func SearchCommitsAfterTag(repo *Repo, tagName string, sourcePaths []string) ([]string, error) {
+	var commitMessages []string
 	slog.Info(fmt.Sprintf("searching for tag %s", tagName))
 	tagRef, err := repo.repo.Tag(tagName)
 
@@ -385,7 +385,6 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libraries *libconfig.Libr
 		if commit.Hash == tagCommit.Hash {
 			return nil
 		}
-		slog.Info(fmt.Sprintf("commit %s", commit))
 		if commit == nil {
 			return nil
 		}
@@ -414,24 +413,19 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libraries *libconfig.Libr
 		for _, change := range changes {
 			//if change.Action == diff.Modify || change.Action == diff.Add || change.Action == diff.Delete || change.Action == diff.Rename {
 			slog.Info(fmt.Sprintf("found change library adding commit %s", change.To.Name))
-			//libraries.Libraries.f
-			for i := 0; i < len(libraries.Libraries); i++ {
-				for _, rootPath := range libraries.Libraries[i].SourcePaths {
-					if strings.HasPrefix(change.To.Name, rootPath) {
-						slog.Info(fmt.Sprintf("found matching library adding commit %s", libraries.Libraries[i].ID))
-						commitMap[libraries.Libraries[i].ID] = append(commitMap[libraries.Libraries[i].ID], CommitInfo{
-							Hash:    commit.Hash.String(),
-							Message: commit.Message,
-						})
-						break
-					}
+
+			for _, rootPath := range sourcePaths {
+				if strings.HasPrefix(change.To.Name, rootPath) {
+					commitMessages = append(commitMessages, commit.Message)
+					break
 				}
+
 			}
 		}
 		return nil
 	})
 
-	return commitMap, nil
+	return commitMessages, nil
 
 }
 
