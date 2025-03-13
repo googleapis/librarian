@@ -423,37 +423,42 @@ var CmdCreateReleasePR = &Command{
 		return push(ctx, languageRepo, startOfRun, "Release PR: v.2.7.1", prDescription)
 
 		*/
-		slog.Info(fmt.Sprintf("return"))
 		return nil
 	},
 }
 
 func createPrDescription(repoPath string, repo *gitrepo.Repo, tag string) {
 	//TODO this should receive commit info and then parse out message
-	configFile := "librarian_config.json" // Replace with your JSON file path
-	tagName := "v2.70.0"                  // Replace with your Git tag name
+	configFile := "library-state.json" // Replace with your JSON file path
+	tagName := "v2.70.0"               // Replace with your Git tag name
 
-	libMap, err := libconfig.LoadLibraryConfig(repoPath + configFile)
+	libraries, err := libconfig.LoadLibraryConfig(repoPath + configFile)
 	if err != nil {
 		fmt.Println("Error loading libconfig:", err)
 		return
 	}
-	commitMap, err := gitrepo.SearchCommitsAfterTag(repo, tagName, libMap)
+	commitMap, err := gitrepo.SearchCommitsAfterTag(repo, tagName, libraries)
 	slog.Info(fmt.Sprintf("returned from commits"))
 	if err != nil {
 		fmt.Println("Error searching commits:", err)
 		return
 	}
+
+	file, err := os.OpenFile("./commits.txt", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer file.Close() // Ensure the file is closed after use
+
 	// Print the results
 	for libName, commits := range commitMap {
-		slog.Info(fmt.Sprintf("iterating thru %s", libName))
 		fmt.Printf("Library: %s\n", libName)
+		_, err = file.WriteString(fmt.Sprintf("Library: %s\n", libName))
 		for _, commit := range commits {
-			fmt.Printf("  Commit: %s\n", commit.Hash)
-			fmt.Printf("  Message: %s\n", commit.Message)
+			_, err = file.WriteString(fmt.Sprintf("%s\n", commit.Message))
 		}
+		_, err = file.WriteString(fmt.Sprintf("\n"))
 	}
-	slog.Info(fmt.Sprintf("returning"))
 	return
 }
 

@@ -18,6 +18,7 @@ package gitrepo
 import (
 	"context"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/googleapis/librarian/internal/libconfig"
 	"log"
 	"log/slog"
@@ -356,7 +357,7 @@ type CommitInfo struct {
 	Message string
 }
 
-func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconfig.LibraryConfig) (map[string][]CommitInfo, error) {
+func SearchCommitsAfterTag(repo *Repo, tagName string, libraries *libconfig.Libraries) (map[string][]CommitInfo, error) {
 	commitMap := make(map[string][]CommitInfo)
 	slog.Info(fmt.Sprintf("searching for tag %s", tagName))
 	tagRef, err := repo.repo.Tag(tagName)
@@ -388,31 +389,48 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, libMap map[string]libconf
 		if commit == nil {
 			return nil
 		}
-		files, err := commit.Files()
+
+		parentIter := commit.Parents()
+		parentCommit, err := parentIter.Next()
+
 		if err != nil {
-			return fmt.Errorf("failed to get commit file: %w", err)
+			if err == storer.ErrStop {
+				fmt.Println("This is the initial commit, cannot get diff.")
+				return nil
+			} else {
+				log.Fatalf("Error getting parent commit: %v", err)
+			}
+
 		}
 
-		files.ForEach(func(file *object.File) error {
-			for libName, config := range libMap {
-				for _, path := range config.Paths {
-					slog.Info(fmt.Sprintf("checking for path %s lib %s", path, libName))
-					if strings.HasPrefix(file.Name, path) {
-						commitMap[libName] = append(commitMap[libName], CommitInfo{
+		parentTree, err := parentCommit.Tree()
+		commitTree, err := commit.Tree()
+
+		changes, err := object.DiffTree(parentTree, commitTree)
+		if err != nil {
+			log.Fatalf("Error getting diff: %v", err)
+		}
+
+		for _, change := range changes {
+			//if change.Action == diff.Modify || change.Action == diff.Add || change.Action == diff.Delete || change.Action == diff.Rename {
+			slog.Info(fmt.Sprintf("found change library adding commit %s", change.To.Name))
+			//libraries.Libraries.f
+			for i := 0; i < len(libraries.Libraries); i++ {
+				for _, rootPath := range libraries.Libraries[i].SourcePaths {
+					if strings.HasPrefix(change.To.Name, rootPath) {
+						slog.Info(fmt.Sprintf("found matching library adding commit %s", libraries.Libraries[i].ID))
+						commitMap[libraries.Libraries[i].ID] = append(commitMap[libraries.Libraries[i].ID], CommitInfo{
 							Hash:    commit.Hash.String(),
 							Message: commit.Message,
 						})
+						break
 					}
 				}
 			}
-			return nil
-		})
+		}
 		return nil
 	})
-	slog.Info(fmt.Sprintf("exited commits"))
-	if err != nil {
-		return nil, err
-	}
+
 	return commitMap, nil
 
 }
