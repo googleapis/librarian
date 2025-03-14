@@ -62,11 +62,13 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 	return runDocker(image, mounts, containerArgs)
 }
 
-func CreateReleasePR(image string, languageRepo string, outputDirectory string) error {
+func CreateReleasePR(image string, languageRepo string, outputDirectory string, version string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
-	containerArgs := []string{}
+	containerArgs := []string{
+		fmt.Sprintf("--version=%s", version),
+	}
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", languageRepo),
 		fmt.Sprintf("%s:/output", outputDirectory),
