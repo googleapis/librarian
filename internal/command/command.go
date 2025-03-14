@@ -392,42 +392,14 @@ var CmdCreateReleasePR = &Command{
 		if repoPath == "" {
 			repoPath = filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
 		}
-		outputDirectory := flagOutput
-		if outputDirectory == "" {
-			outputDirectory = "/output"
-		}
-		tag := "v2.70.0"
-		//TODO this
-		//1) read list of files from json path
-		//2) check for commits in those directories
-		//3) check for common commits and what libraries they affect
-		//4) return list of commits and libraries
-		createPrDescription(repoPath, languageRepo, tag)
-		/*if err := container.CreateReleasePR(flagImage, repoPath, outputDirectory); err != nil {
-			return err
-		}
 
-		_, err = gitrepo.AddAll(ctx, languageRepo)
-		if err != nil {
-			return err
-		}
-		commitMessage := readCommitMessage(outputDirectory)
+		createPrDescription(ctx, repoPath, languageRepo)
 
-		//TODO: add commit meta data + read from third party repo
-		// make message + title dynamic
-		if err := gitrepo.Commit(ctx, languageRepo, commitMessage); err != nil {
-			return err
-		}
-
-		//TODO title should be read from file
-		return push(ctx, languageRepo, startOfRun, "Release PR: v.2.7.1", prDescription)
-
-		*/
 		return nil
 	},
 }
 
-func createPrDescription(repoPath string, repo *gitrepo.Repo, tag string) {
+func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Repo) {
 	//TODO this should receive commit info and then parse out message
 	configFile := "library-state.json" // Replace with your JSON file path
 
@@ -446,21 +418,56 @@ func createPrDescription(repoPath string, repo *gitrepo.Repo, tag string) {
 			fmt.Println("Error searching commits:", err)
 			return
 		}
-		if len(commitMessages) > 0 {
-			_, err = file.WriteString(fmt.Sprintf("Library: %s\n", library.ID))
-		}
-		for _, commitMessage := range commitMessages {
-			_, err = file.WriteString(fmt.Sprintf("%s\n", commitMessage))
-		}
-		_, err = file.WriteString(fmt.Sprintf("\n"))
-	}
 
+		outputDirectory := flagOutput
+		if outputDirectory == "" {
+			outputDirectory = "/output"
+		}
+
+		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
+			commitMessage := fmt.Sprintf("Library: %s\n", library.ID)
+
+			for _, commitMessage := range commitMessages {
+				commitMessage += fmt.Sprintf("%s\n", commitMessage)
+			}
+
+			if err := container.CreateReleasePR(flagImage, repoPath, outputDirectory, library.Version); err != nil {
+				return
+			}
+
+			_, err = gitrepo.AddAll(ctx, repo)
+			if err != nil {
+				return
+			}
+
+			//TODO: add commit meta data + read from third party repo
+			// make message + title dynamic
+			if err := gitrepo.Commit(ctx, repo, commitMessage); err != nil {
+				return
+			}
+
+		}
+	}
+	//TODO add check for if we need PR
+
+	//TODO title should be what?
+	//TODO create correct PR description
+	err = push(ctx, repo, time.Now(), "Release PR: "+time.Now().String(), "")
 	if err != nil {
 		return
 	}
 	defer file.Close() // Ensure the file is closed after use
 
 	return
+}
+
+func isReleaseWorthy(messages []string) bool {
+	for _, str := range messages {
+		if strings.Contains(strings.ToLower(str), "feat") {
+			return true
+		}
+	}
+	return false
 }
 
 func readCommitMessage(directory string) string {
