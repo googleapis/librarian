@@ -432,6 +432,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 			}
 
 			if err := container.CreateReleasePR(flagImage, repoPath, outputDirectory, library.Version); err != nil {
+				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
 				return
 			}
 
@@ -442,7 +443,9 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 			//TODO: add commit meta data + read from third party repo
 			// make message + title dynamic
+			slog.Info(fmt.Sprintf("Adding commit for lib: '%s'", err))
 			if err := gitrepo.Commit(ctx, repo, commitMessage); err != nil {
+				slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
 				return
 			}
 
@@ -452,8 +455,9 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 	//TODO title should be what?
 	//TODO create correct PR description
-	err = push(ctx, repo, time.Now(), "Release PR: "+time.Now().String(), "")
+	err = push(ctx, repo, time.Now(), "Release PR: "+time.Now().String(), "temp")
 	if err != nil {
+		slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 		return
 	}
 	defer file.Close() // Ensure the file is closed after use
@@ -463,10 +467,13 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 func isReleaseWorthy(messages []string) bool {
 	for _, str := range messages {
+
 		if strings.Contains(strings.ToLower(str), "feat") {
+			slog.Info(fmt.Sprintf("Received release worthy commit: '%s'", str))
 			return true
 		}
 	}
+	slog.Info(fmt.Sprintf("Received no release worthy commits:"))
 	return false
 }
 
@@ -690,6 +697,7 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title s
 	branch := fmt.Sprintf("librarian-%s", timestamp)
 	err := gitrepo.PushBranch(ctx, repo, branch, flagGitHubToken)
 	if err != nil {
+		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return err
 	}
 	if title == "" {
