@@ -67,7 +67,7 @@ func CreateReleasePR(image string, languageRepo string, outputDirectory string, 
 		return fmt.Errorf("image cannot be empty")
 	}
 	containerArgs := []string{
-		fmt.Sprintf("--version=%s", version),
+		version,
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", languageRepo),
