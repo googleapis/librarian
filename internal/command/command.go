@@ -446,7 +446,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 			slog.Info(fmt.Sprintf("Adding commit for lib: '%s'", err))
 			if err := gitrepo.Commit(ctx, repo, commitMessage); err != nil {
 				slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
-				return
+				//TODO how to handle this
 			}
 
 		}
