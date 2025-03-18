@@ -22,7 +22,8 @@ type API struct {
 }
 
 type Libraries struct {
-	Libraries []Library `json:"libraries"`
+	Libraries   []Library `json:"libraries"`
+	CommonPaths []string  `json:"commonPaths"`
 }
 
 func LoadLibraryConfig(configFile string) (*Libraries, error) {

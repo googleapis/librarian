@@ -19,17 +19,18 @@ import (
 )
 
 var (
-	flagAPIPath     string
-	flagAPIRoot     string
-	flagBranch      string
-	flagBuild       bool
-	flagGitHubToken string
-	flagImage       string
-	flagLanguage    string
-	flagOutput      string
-	flagPush        bool
-	flagRepoRoot    string
-	flagWorkRoot    string
+	flagAPIPath              string
+	flagAPIRoot              string
+	flagBranch               string
+	flagBuild                bool
+	flagGitHubToken          string
+	flagImage                string
+	flagIntegrationTestImage string
+	flagLanguage             string
+	flagOutput               string
+	flagPush                 bool
+	flagRepoRoot             string
+	flagWorkRoot             string
 )
 
 func addFlagAPIPath(fs *flag.FlagSet) {
@@ -54,6 +55,10 @@ func addFlagGitHubToken(fs *flag.FlagSet) {
 
 func addFlagImage(fs *flag.FlagSet) {
 	fs.StringVar(&flagImage, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
+}
+
+func addFlagIntegrationTestImage(fs *flag.FlagSet) {
+	fs.StringVar(&flagIntegrationTestImage, "integrationTestImage", "", "language-specific container to run integration tests. Defaults to google-cloud-{language}-IT")
 }
 
 func addFlagLanguage(fs *flag.FlagSet) {

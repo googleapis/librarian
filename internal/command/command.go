@@ -483,7 +483,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 	}
 	//TODO title should be what?
 	//TODO create correct PR description
-	err = push(ctx, repo, time.Now(), "Release PR: "+repo.Dir, prDescription)
+	err = push(ctx, repo, time.Now(), "chore(main): release", prDescription)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 		return
@@ -497,7 +497,7 @@ func updateLibraryMetadata(releasedLibraries map[string]string, libraries *libco
 		library := libraries.Libraries[i]
 		if releasedLibraries[library.ID] != "" {
 			slog.Info(fmt.Sprintf("trying to update version to : '%s'", releasedLibraries[library.ID]))
-			library.LatestReleaseVersion = releasedLibraries[library.ID]
+			libraries.Libraries[i].LatestReleaseVersion = releasedLibraries[library.ID]
 		}
 	}
 
