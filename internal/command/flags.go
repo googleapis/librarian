@@ -30,6 +30,7 @@ var (
 	flagPush        bool
 	flagRepoRoot    string
 	flagSkipBuild   bool
+	flagTag         string
 	flagWorkRoot    string
 )
 
@@ -38,7 +39,7 @@ func addFlagAPIPath(fs *flag.FlagSet) {
 }
 
 func addFlagAPIRoot(fs *flag.FlagSet) {
-	fs.StringVar(&flagAPIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to /tmp")
+	fs.StringVar(&flagAPIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to the work-root")
 }
 
 func addFlagBranch(fs *flag.FlagSet) {
@@ -75,6 +76,10 @@ func addFlagRepoRoot(fs *flag.FlagSet) {
 
 func addFlagSkipBuild(fs *flag.FlagSet) {
 	fs.BoolVar(&flagSkipBuild, "skipBuild", false, "when create release PR if this is set to true do not perform build/integration tests")
+}
+
+func addFlagTag(fs *flag.FlagSet) {
+	fs.StringVar(&flagTag, "tag", "", "new tag for the language-specific container image.")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet) {

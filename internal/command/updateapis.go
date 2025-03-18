@@ -32,7 +32,7 @@ import (
 
 var CmdUpdateApis = &Command{
 	Name:  "update-apis",
-	Short: "Update a language repo by regenerating configured APIs",
+	Short: "Update a language repo by regenerating configured APIs with new API specifications",
 	Run: func(ctx context.Context) error {
 
 		if !supportedLanguages[flagLanguage] {
@@ -162,7 +162,8 @@ var CmdUpdateApis = &Command{
 			return nil
 		}
 
-		return push(ctx, languageRepo, startOfRun, "", "")
+		title := fmt.Sprintf("feat: API regeneration: %s", formatTimestamp(startOfRun))
+		return push(ctx, languageRepo, startOfRun, title, "")
 	},
 }
 

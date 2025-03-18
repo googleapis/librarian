@@ -125,15 +125,18 @@ func saveState(languageRepo *gitrepo.Repo, state *statepb.PipelineState) error {
 	return err
 }
 
+func formatTimestamp(t time.Time) string {
+	const yyyyMMddHHmmss = "20060102T150405" // Expected format by time library
+	return t.Format(yyyyMMddHHmmss)
+}
+
 func createTmpWorkingRoot(t time.Time) (string, error) {
 	if flagWorkRoot != "" {
 		slog.Info(fmt.Sprintf("Using specified working directory: %s", flagWorkRoot))
 		return flagWorkRoot, nil
 	}
 
-	const yyyyMMddHHmmss = "20060102T150405" // Expected format by time library
-
-	path := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", t.Format(yyyyMMddHHmmss)))
+	path := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(t)))
 
 	_, err := os.Stat(path)
 	switch {
@@ -166,23 +169,19 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	return gitrepo.Commit(ctx, repo, msg)
 }
 
-func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) error {
+func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title, description string) error {
 	if !flagPush {
 		return nil
 	}
 	if flagGitHubToken == "" {
 		return fmt.Errorf("no GitHub token supplied for push")
 	}
-	const yyyyMMddHHmmss = "20060102T150405" // Expected format by time library
-	timestamp := startOfRun.Format(yyyyMMddHHmmss)
-	branch := fmt.Sprintf("librarian-%s", timestamp)
+
+	branch := fmt.Sprintf("librarian-%s", formatTimestamp(startOfRun))
 	err := gitrepo.PushBranch(ctx, repo, branch, flagGitHubToken)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return err
-	}
-	if title == "" {
-		title = fmt.Sprintf("feat: API regeneration: %s", timestamp)
 	}
 	return gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title, description)
 }
@@ -192,6 +191,7 @@ var Commands = []*Command{
 	CmdGenerate,
 	CmdUpdateApis,
 	CmdCreateReleasePR,
+	CmdUpdateImageTag,
 }
 
 func init() {
@@ -252,6 +252,21 @@ func init() {
 		addFlagOutput,
 		addFlagImage,
 		addFlagSkipBuild,
+	} {
+		fn(fs)
+	}
+
+	fs = CmdUpdateImageTag.flags
+	for _, fn := range []func(fs *flag.FlagSet){
+		addFlagWorkRoot,
+		addFlagAPIRoot,
+		addFlagBranch,
+		addFlagGitHubToken,
+		addFlagLanguage,
+		addFlagOutput,
+		addFlagPush,
+		addFlagRepoRoot,
+		addFlagTag,
 	} {
 		fn(fs)
 	}

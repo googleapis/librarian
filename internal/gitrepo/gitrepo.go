@@ -367,3 +367,15 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
 	return nil
 }
+
+func Checkout(ctx context.Context, repo *Repo, commit string) error {
+	worktree, err := repo.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	hash := plumbing.NewHash(commit)
+	checkoutOptions := git.CheckoutOptions{
+		Hash: hash,
+	}
+	return worktree.Checkout(&checkoutOptions)
+}
