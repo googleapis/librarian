@@ -63,7 +63,7 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 	return runDocker(image, mounts, containerArgs)
 }
 
-func CreateReleasePR(image string, languageRepo string, inputDirectory string, libraryMetadata libconfig.Library) error {
+func CreateReleasePR(image string, languageRepo string, inputsDirectory string, libraryMetadata libconfig.Library) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -73,7 +73,7 @@ func CreateReleasePR(image string, languageRepo string, inputDirectory string, l
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", languageRepo),
-		fmt.Sprintf("%s:/release-notes", inputDirectory),
+		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
 
 	return runDocker(image, mounts, containerArgs)

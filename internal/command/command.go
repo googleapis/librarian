@@ -393,14 +393,13 @@ var CmdCreateReleasePR = &Command{
 			repoPath = filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
 		}
 
-		createPrDescription(ctx, repoPath, languageRepo)
+		createPrDescription(ctx, repoPath, languageRepo, tmpRoot)
 
 		return nil
 	},
 }
 
-func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Repo) {
-	//TODO this should receive commit info and then parse out message
+func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Repo, workingDir string) {
 	configFile := "library-state.json" // Replace with your JSON file path
 
 	libraries, err := libconfig.LoadLibraryConfig(repoPath + configFile)
@@ -408,10 +407,18 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 		fmt.Println("Error loading libconfig:", err)
 		return
 	}
-
-	inputDirectory := "/input"
-
-	file, err := os.OpenFile(inputDirectory+"/commits.txt", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	info, err := os.Stat(workingDir)
+	if err != nil {
+		fmt.Println("error checking directory:", err)
+	} else {
+		fmt.Println("directory info:", info.Mode())
+	}
+	inputDirectory := filepath.Join(workingDir, "inputs")
+	fmt.Println("making directory:", inputDirectory)
+	if err := os.MkdirAll(inputDirectory, 0775); err != nil {
+		fmt.Println("error creating inputs directory:", err)
+		return
+	}
 
 	var prDescription string
 	var librariesToRelease map[string]string
@@ -430,6 +437,18 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 			for _, commitMessage := range commitMessages {
 				commitMessage += fmt.Sprintf("%s\n", commitMessage)
+			}
+			time.Sleep(10 * time.Millisecond)
+			if _, err := os.Stat(inputDirectory); os.IsNotExist(err) {
+				fmt.Println("Directory still does not exist after Mkdir:", err)
+				return
+			}
+
+			path := filepath.Join(inputDirectory, "release-notes.txt")
+			file, err := os.Create(path)
+			if err != nil {
+				fmt.Println("Error creating release notes file", err)
+				return
 			}
 			file.WriteString(commitMessage)
 			if err := container.CreateReleasePR(flagImage, repoPath, inputDirectory, library); err != nil {
@@ -452,6 +471,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 			}
 
 		}
+		os.RemoveAll(inputDirectory)
 	}
 
 	//TODO add check for if we need PR
@@ -474,7 +494,6 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 		slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 		return
 	}
-	defer file.Close() // Ensure the file is closed after use
 
 	return
 }
@@ -505,13 +524,10 @@ func writeJSON(filePath string, libraries *libconfig.Libraries) error {
 
 func isReleaseWorthy(messages []string) bool {
 	for _, str := range messages {
-
 		if strings.Contains(strings.ToLower(str), "feat") {
-			slog.Info(fmt.Sprintf("Received release worthy commit: '%s'", str))
 			return true
 		}
 	}
-	slog.Info(fmt.Sprintf("Received no release worthy commits:"))
 	return false
 }
 
