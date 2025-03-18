@@ -408,20 +408,21 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 		fmt.Println("Error loading libconfig:", err)
 		return
 	}
-	file, err := os.OpenFile("./commits.txt", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 
+	inputDirectory := "/input"
+
+	file, err := os.OpenFile(inputDirectory+"/commits.txt", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+
+	var prDescription string
+	var librariesToRelease map[string]string
+	librariesToRelease = make(map[string]string)
 	for i := 0; i < len(libraries.Libraries); i++ {
 		library := libraries.Libraries[i]
 
-		commitMessages, err := gitrepo.SearchCommitsAfterTag(repo, library.Version, library.SourcePaths)
+		commitMessages, err := gitrepo.SearchCommitsAfterTag(repo, library.LatestReleaseVersion, library.SourcePaths)
 		if err != nil {
 			fmt.Println("Error searching commits:", err)
 			return
-		}
-
-		outputDirectory := flagOutput
-		if outputDirectory == "" {
-			outputDirectory = "/output"
 		}
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
@@ -430,20 +431,21 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 			for _, commitMessage := range commitMessages {
 				commitMessage += fmt.Sprintf("%s\n", commitMessage)
 			}
-
-			if err := container.CreateReleasePR(flagImage, repoPath, outputDirectory, library.Version); err != nil {
+			file.WriteString(commitMessage)
+			if err := container.CreateReleasePR(flagImage, repoPath, inputDirectory, library); err != nil {
 				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
-				return
+
 			}
 
 			_, err = gitrepo.AddAll(ctx, repo)
 			if err != nil {
-				return
+
 			}
 
 			//TODO: add commit meta data + read from third party repo
 			// make message + title dynamic
-			slog.Info(fmt.Sprintf("Adding commit for lib: '%s'", err))
+			prDescription += fmt.Sprintf("releasing lib: '%s':'%s'\n", library.ID, library.NextReleaseVersion)
+			librariesToRelease[library.ID] = library.NextReleaseVersion
 			if err := gitrepo.Commit(ctx, repo, commitMessage); err != nil {
 				slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
 				//TODO how to handle this
@@ -451,11 +453,23 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 		}
 	}
-	//TODO add check for if we need PR
 
+	//TODO add check for if we need PR
+	updateLibraryMetadata(librariesToRelease, libraries)
+	if err := gitrepo.Commit(ctx, repo, "updating library-state to latest versions"); err != nil {
+		slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
+		//TODO how to handle this
+	}
+
+	//TODO: make this configurable to run per commit
+	if err := container.RunIntegrationTests(flagImage, repoPath); err != nil {
+		slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
+		return
+
+	}
 	//TODO title should be what?
 	//TODO create correct PR description
-	err = push(ctx, repo, time.Now(), "Release PR: "+time.Now().String(), "temp")
+	err = push(ctx, repo, time.Now(), "Release PR: "+repo.Dir, prDescription)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 		return
@@ -463,6 +477,30 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 	defer file.Close() // Ensure the file is closed after use
 
 	return
+}
+
+func updateLibraryMetadata(releasedLibraries map[string]string, libraries *libconfig.Libraries) {
+	for i := 0; i < len(libraries.Libraries); i++ {
+		library := libraries.Libraries[i]
+		if releasedLibraries[library.ID] != "" {
+			library.LatestReleaseVersion = releasedLibraries[library.ID]
+		}
+	}
+	writeJSON("library-state.json", libraries)
+}
+
+func writeJSON(filePath string, libraries *libconfig.Libraries) error {
+	file, err := json.MarshalIndent(libraries, "", "    ") // Use MarshalIndent for pretty printing
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(filePath, file, 0644) // 0644 permissions (read and write for owner, read for others)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func isReleaseWorthy(messages []string) bool {

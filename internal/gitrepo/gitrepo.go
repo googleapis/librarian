@@ -359,7 +359,7 @@ type CommitInfo struct {
 
 func SearchCommitsAfterTag(repo *Repo, tagName string, sourcePaths []string) ([]string, error) {
 	var commitMessages []string
-	slog.Info(fmt.Sprintf("searching for tag %s", tagName))
+
 	tagRef, err := repo.repo.Tag(tagName)
 
 	if err != nil {
@@ -367,7 +367,6 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, sourcePaths []string) ([]
 	}
 
 	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
-	slog.Info(fmt.Sprintf("found tag commit %s", tagCommit.Committer.When.String()))
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
@@ -412,7 +411,6 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, sourcePaths []string) ([]
 
 		for _, change := range changes {
 			//if change.Action == diff.Modify || change.Action == diff.Add || change.Action == diff.Delete || change.Action == diff.Rename {
-			slog.Info(fmt.Sprintf("found change library adding commit %s", change.To.Name))
 
 			for _, rootPath := range sourcePaths {
 				if strings.HasPrefix(change.To.Name, rootPath) {

@@ -17,6 +17,7 @@ package container
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/libconfig"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -62,16 +63,17 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 	return runDocker(image, mounts, containerArgs)
 }
 
-func CreateReleasePR(image string, languageRepo string, outputDirectory string, version string) error {
+func CreateReleasePR(image string, languageRepo string, inputDirectory string, libraryMetadata libconfig.Library) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
 	containerArgs := []string{
-		version,
+		libraryMetadata.ID,
+		libraryMetadata.NextReleaseVersion,
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", languageRepo),
-		fmt.Sprintf("%s:/output", outputDirectory),
+		fmt.Sprintf("%s:/release-notes", inputDirectory),
 	}
 
 	return runDocker(image, mounts, containerArgs)
@@ -203,4 +205,8 @@ func runCommand(c string, args ...string) error {
 	slog.Info(cmd.String())
 	slog.Info(strings.Repeat("-", 80))
 	return cmd.Run()
+}
+
+func RunIntegrationTests(image string, path string) error {
+	return nil
 }

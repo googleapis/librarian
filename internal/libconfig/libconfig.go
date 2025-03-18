@@ -8,11 +8,12 @@ import (
 )
 
 type Library struct {
-	ID               string   `json:"id"`
-	Version          string   `json:"version"`
-	ReleaseTimestamp string   `json:"releaseTimestamp"`
-	Apis             []API    `json:"apis"`
-	SourcePaths      []string `json:"sourcePaths"`
+	ID                   string   `json:"id"`
+	LatestReleaseVersion string   `json:"latestReleaseVersion"`
+	NextReleaseVersion   string   `json:"nextReleaseVersion"`
+	ReleaseTimestamp     string   `json:"releaseTimestamp"`
+	Apis                 []API    `json:"apis"`
+	SourcePaths          []string `json:"sourcePaths"`
 }
 
 type API struct {
