@@ -393,30 +393,25 @@ var CmdCreateReleasePR = &Command{
 			repoPath = filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
 		}
 
-		createPrDescription(ctx, repoPath, languageRepo, tmpRoot)
+		testDir := filepath.Join(tmpRoot, "inputs")
+		if err := os.MkdirAll(testDir, 0755); err != nil {
+			fmt.Println("Failed to create test directory:", err)
+		} else {
+			fmt.Println("Test directory created successfully:", testDir)
+		}
+
+		createPrDescription(ctx, repoPath, languageRepo, testDir)
 
 		return nil
 	},
 }
 
-func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Repo, workingDir string) {
+func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string) {
 	configFile := "library-state.json" // Replace with your JSON file path
 
 	libraries, err := libconfig.LoadLibraryConfig(repoPath + configFile)
 	if err != nil {
 		fmt.Println("Error loading libconfig:", err)
-		return
-	}
-	info, err := os.Stat(workingDir)
-	if err != nil {
-		fmt.Println("error checking directory:", err)
-	} else {
-		fmt.Println("directory info:", info.Mode())
-	}
-	inputDirectory := filepath.Join(workingDir, "inputs")
-	fmt.Println("making directory:", inputDirectory)
-	if err := os.MkdirAll(inputDirectory, 0775); err != nil {
-		fmt.Println("error creating inputs directory:", err)
 		return
 	}
 
@@ -437,11 +432,6 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 			for _, commitMessage := range commitMessages {
 				commitMessage += fmt.Sprintf("%s\n", commitMessage)
-			}
-			time.Sleep(10 * time.Millisecond)
-			if _, err := os.Stat(inputDirectory); os.IsNotExist(err) {
-				fmt.Println("Directory still does not exist after Mkdir:", err)
-				return
 			}
 
 			path := filepath.Join(inputDirectory, "release-notes.txt")
@@ -469,9 +459,9 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 				slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
 				//TODO how to handle this
 			}
-
+			os.Remove(path)
 		}
-		os.RemoveAll(inputDirectory)
+
 	}
 
 	//TODO add check for if we need PR
