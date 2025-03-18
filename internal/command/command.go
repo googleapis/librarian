@@ -453,7 +453,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 			//TODO: add commit meta data + read from third party repo
 			// make message + title dynamic
-			prDescription += fmt.Sprintf("releasing lib: '%s':'%s'\n", library.ID, library.NextReleaseVersion)
+			prDescription += fmt.Sprintf("releasing lib: %s:%s\n", library.ID, library.NextReleaseVersion)
 			librariesToRelease[library.ID] = library.NextReleaseVersion
 			if err := gitrepo.Commit(ctx, repo, releaseNotes); err != nil {
 				slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
@@ -466,6 +466,10 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 	//TODO add check for if we need PR
 	updateLibraryMetadata(librariesToRelease, libraries, repoPath)
+	_, err = gitrepo.AddAll(ctx, repo)
+	if err != nil {
+
+	}
 	if err := gitrepo.Commit(ctx, repo, "updating library-state to latest versions"); err != nil {
 		slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
 		//TODO how to handle this
@@ -500,7 +504,7 @@ func updateLibraryMetadata(releasedLibraries map[string]string, libraries *libco
 }
 
 func writeJSON(filePath string, libraries *libconfig.Libraries) error {
-	file, err := json.MarshalIndent(libraries, "", "    ") // Use MarshalIndent for pretty printing
+	file, err := json.MarshalIndent(libraries, "", " ") // Use MarshalIndent for pretty printing
 	if err != nil {
 		return err
 	}
