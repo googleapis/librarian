@@ -496,15 +496,16 @@ func updateLibraryMetadata(releasedLibraries map[string]string, libraries *libco
 	for i := 0; i < len(libraries.Libraries); i++ {
 		library := libraries.Libraries[i]
 		if releasedLibraries[library.ID] != "" {
+			slog.Info(fmt.Sprintf("trying to update version to : '%s'", releasedLibraries[library.ID]))
 			library.LatestReleaseVersion = releasedLibraries[library.ID]
 		}
 	}
-	slog.Info(fmt.Sprintf("writing to librarysstate: '%s'", repoPath))
+
 	writeJSON(repoPath+"library-state.json", libraries)
 }
 
 func writeJSON(filePath string, libraries *libconfig.Libraries) error {
-	file, err := json.MarshalIndent(libraries, "", " ") // Use MarshalIndent for pretty printing
+	file, err := json.MarshalIndent(libraries, "", "  ") // Use MarshalIndent for pretty printing
 	if err != nil {
 		return err
 	}
