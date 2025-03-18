@@ -428,10 +428,10 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 		}
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
-			commitMessage := fmt.Sprintf("Library: %s\n", library.ID)
+			releaseNotes := fmt.Sprintf("Library: %s\n", library.ID)
 
 			for _, commitMessage := range commitMessages {
-				commitMessage += fmt.Sprintf("%s\n", commitMessage)
+				releaseNotes += fmt.Sprintf("%s\n", commitMessage)
 			}
 
 			path := filepath.Join(inputDirectory, "release-notes.txt")
@@ -440,7 +440,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 				fmt.Println("Error creating release notes file", err)
 				return
 			}
-			file.WriteString(commitMessage)
+			file.WriteString(releaseNotes)
 			if err := container.CreateReleasePR(flagImage, repoPath, inputDirectory, library); err != nil {
 				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
 
@@ -455,7 +455,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 			// make message + title dynamic
 			prDescription += fmt.Sprintf("releasing lib: '%s':'%s'\n", library.ID, library.NextReleaseVersion)
 			librariesToRelease[library.ID] = library.NextReleaseVersion
-			if err := gitrepo.Commit(ctx, repo, commitMessage); err != nil {
+			if err := gitrepo.Commit(ctx, repo, releaseNotes); err != nil {
 				slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
 				//TODO how to handle this
 			}
@@ -465,7 +465,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 	}
 
 	//TODO add check for if we need PR
-	updateLibraryMetadata(librariesToRelease, libraries)
+	updateLibraryMetadata(librariesToRelease, libraries, repoPath)
 	if err := gitrepo.Commit(ctx, repo, "updating library-state to latest versions"); err != nil {
 		slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
 		//TODO how to handle this
@@ -488,14 +488,15 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 	return
 }
 
-func updateLibraryMetadata(releasedLibraries map[string]string, libraries *libconfig.Libraries) {
+func updateLibraryMetadata(releasedLibraries map[string]string, libraries *libconfig.Libraries, repoPath string) {
 	for i := 0; i < len(libraries.Libraries); i++ {
 		library := libraries.Libraries[i]
 		if releasedLibraries[library.ID] != "" {
 			library.LatestReleaseVersion = releasedLibraries[library.ID]
 		}
 	}
-	writeJSON("library-state.json", libraries)
+	slog.Info(fmt.Sprintf("writing to librarysstate: '%s'", repoPath))
+	writeJSON(repoPath+"library-state.json", libraries)
 }
 
 func writeJSON(filePath string, libraries *libconfig.Libraries) error {
