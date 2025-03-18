@@ -17,6 +17,8 @@ package google.cloud.sdk.pipeline;
 
 option go_package = "github.com/googleapis/librarian/internal/statepb;statepb";
 
+import "google/protobuf/timestamp.proto";
+
 // Overall state of the generation and release pipeline. This is expected
 // to be stored in each language repo as generator-input/pipeline-state.json.
 message PipelineState {
@@ -24,17 +26,26 @@ message PipelineState {
   // language-specific tooling. The image name is assumed by convention.
   string image_tag = 1;
 
+  // The state of each API which has code generated within this repository.
   repeated ApiGenerationState api_generation_states = 2;
+
+  // The state of each library which is released within this repository.
   repeated LibraryReleaseState library_release_states = 3;
+
+  // Paths to files/directories which can trigger
+  // a release in all libraries.
+  repeated string common_library_source_paths = 4;
 }
 
 // Generation state of a single API.
 message ApiGenerationState {
   // The API identifier (currently expected to be a path)
   string id = 1;
+
   // The commit hash (in googleapis) from which the API was
   // last generated.
   string last_generated_commit = 2;
+
   // The automation level for regeneration of this API.
   AutomationLevel automation_level = 3;
 }
@@ -43,13 +54,29 @@ message ApiGenerationState {
 message LibraryReleaseState {
   // The library identifier (language-specific format)
   string id = 1;
+
   // The last version that was released, if any.
   string current_version = 2;
+
   // The next version to release (to force a specific version number).
   // This should usually be unset.
   string next_version = 3;
+
   // The automation level for releases for this library.
   AutomationLevel automation_level = 4;
+
+  // The timestamp of the latest release. (This is typically
+  // some timestamp within the process of generating the release
+  // PR for the library. Importantly, it's not just a date as
+  // there may be reasons to release a library multiple times
+  // within a day.)
+  .google.protobuf.Timestamp release_timestamp = 5;
+
+  // The APIs included in this library.
+  repeated LibraryApiMapping apis = 6;
+
+  // Paths to files or directories contributing to this library.
+  repeated string source_paths = 7;
 }
 
 // The degree of automation to use when generating/releasing.
@@ -64,4 +91,15 @@ enum AutomationLevel {
   // Automation can generated changes/releases which can
   // proceed without further review if all tests pass.
   AUTOMATION_LEVEL_AUTOMATIC = 3;
+}
+
+// Information about the state of an API which is included in a library.
+message LibraryApiMapping {
+  // The API identifier as per ApiGenerationState.
+  string api_id = 1;
+
+  // The last-generated commit hash (within the API definition repo)
+  // at the point of the last/in-progress release. (This is taken
+  // from the generation state at the time of the release.)
+  string last_released_commit = 2;
 }
