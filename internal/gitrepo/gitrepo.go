@@ -243,7 +243,6 @@ func GetApiCommits(repo *Repo, path string, commit string, retrieveAfterTimestam
 	// Sentinel "error" - this can be replaced using LogOptions.To when that's available.
 	var ErrStopIterating = fmt.Errorf("fake error to stop iterating")
 	err = logIterator.ForEach(func(commit *object.Commit) error {
-		fmt.Println("commit:", commit.Message)
 		if commit.Hash == finalHash {
 			return ErrStopIterating
 		}
