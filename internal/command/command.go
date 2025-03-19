@@ -365,156 +365,194 @@ var CmdCreateReleasePR = &Command{
 	Name:  "create-release-pr",
 	Short: "Generate a PR for release",
 	Run: func(ctx context.Context) error {
-		if !supportedLanguages[flagLanguage] {
-			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+		err := checkFlags()
+		if err != nil {
+			return err
 		}
-		if flagImage == "" {
-			slog.Error("Create release pr requires image.")
-			return nil
-		}
-		startOfRun := time.Now()
-		tmpRoot, err := createTmpWorkingRoot(startOfRun)
-		//TODO: add flag to check if should multi PRs per library OR just let release please take care of per language
-		// right now this functionality exists in release-please, so would rather just pass github token
-		var languageRepo *gitrepo.Repo
-		if flagRepoRoot == "" {
-			languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
-			if err != nil {
-				return err
-			}
-		} else {
-			languageRepo, err = gitrepo.Open(ctx, flagRepoRoot)
-			if err != nil {
-				return err
-			}
-		}
-		repoPath := flagRepoRoot
-		if repoPath == "" {
-			repoPath = filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
+		languageRepo, repoPath, inputDirectory, err := setupLanguageAndInputFolders(ctx)
+		if err != nil {
+			return err
 		}
 
-		testDir := filepath.Join(tmpRoot, "inputs")
-		if err := os.MkdirAll(testDir, 0755); err != nil {
-			fmt.Println("Failed to create test directory:", err)
-		} else {
-			fmt.Println("Test directory created successfully:", testDir)
+		pipelineState, err := loadState(languageRepo)
+		if err != nil {
+			fmt.Println("Error loading pipeline state:", err)
+			return err
 		}
 
-		createPrDescription(ctx, repoPath, languageRepo, testDir)
+		librariesToRelease, prDescription, err := generateReleaseCommitForEachLibrary(ctx, repoPath, languageRepo, inputDirectory, pipelineState)
+		if err != nil {
+			return err
+		}
 
-		return nil
+		return generateReleasePr(ctx, librariesToRelease, pipelineState, repoPath, languageRepo, prDescription)
 	},
 }
 
-func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string) {
-
-	pipeLine, err := loadState(repo)
-	if err != nil {
-		fmt.Println("Error loading libconfig:", err)
-		return
-	}
-	libraries := pipeLine.LibraryReleaseStates
-	var prDescription string
-	var librariesToRelease map[string]string
-	librariesToRelease = make(map[string]string)
-	for i := 0; i < len(libraries); i++ {
-		library := libraries[i]
-		if library.Id != "Google.Shopping.Merchant.Products.V1Beta" {
-			continue
+func setupLanguageAndInputFolders(ctx context.Context) (*gitrepo.Repo, string, string, error) {
+	startOfRun := time.Now()
+	tmpRoot, err := createTmpWorkingRoot(startOfRun)
+	var languageRepo *gitrepo.Repo
+	if flagRepoRoot == "" {
+		languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
+		if err != nil {
+			return nil, "", "", err
 		}
-		fmt.Println("Checking library:", library.Id, len(library.SourcePaths))
-		//commitMessages, err := gitrepo.SearchCommitsAfterTag(repo, library.ID+"-"+library.CurrentVersion, library.SourcePaths)
-		var commitMessages []string
-		for j := 0; j < len(library.SourcePaths); j++ {
-			commits, err := gitrepo.GetApiCommits2(ctx, repo, library.SourcePaths[j], library.Id+"-"+library.CurrentVersion)
-
-			//commits, err := gitrepo.GetApiCommits2(ctx, repo, library.SourcePaths, library.ID+"-"+library.CurrentVersion)
-
-			if err != nil {
-				fmt.Println("Error searching commits:", err)
-				//TODO update PR description with this data and mark as not humanly resolvable
-			}
-			for _, commit := range commits {
-				fmt.Println("Found commit:", library.Id, commit.Message)
-				commitMessages = append(commitMessages, commit.Message)
-			}
-
+	} else {
+		languageRepo, err = gitrepo.Open(ctx, flagRepoRoot)
+		if err != nil {
+			return nil, "", "", err
 		}
-
-		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
-			fmt.Println("Processing")
-			releaseNotes := fmt.Sprintf("Library: %s\n", library.Id)
-
-			for _, commitMessage := range commitMessages {
-				releaseNotes += fmt.Sprintf("%s\n", commitMessage)
-			}
-
-			path := filepath.Join(inputDirectory, "release-notes.txt")
-			file, err := os.Create(path)
-			if err != nil {
-				fmt.Println("Error creating release notes file", err)
-				return
-			}
-			file.WriteString(releaseNotes)
-			releaseVersion := library.NextVersion
-			if releaseVersion == "" {
-				releaseVersion, err = calculateNextVersion(library.CurrentVersion)
-				fmt.Println("Calculating next version:", releaseVersion)
-			}
-			if err := container.CreateReleasePR(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
-				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
-
-			}
-			//TODO: make this configurable so we don't have to run per library
-			if err := container.Build(flagImage, "repo-root", repoPath, "library-id", library.Id); err != nil {
-				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
-				return
-
-			}
-
-			_, err = gitrepo.AddAll(ctx, repo)
-			if err != nil {
-
-			}
-
-			//TODO: add extra meta data what is this
-			prDescription += fmt.Sprintf("releasing lib: %s:%s\n", library.Id, library.NextVersion)
-			librariesToRelease[library.Id] = releaseVersion
-			if err := gitrepo.Commit(ctx, repo, releaseNotes); err != nil {
-				slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
-				//TODO update PR description with this data and mark as not humanly resolvable
-			}
-			os.Remove(path)
-		}
-
 	}
 
+	inputDir := filepath.Join(tmpRoot, "inputs")
+	if err := os.Mkdir(inputDir, 0755); err != nil {
+		fmt.Println("Failed to create input directory:", err)
+		return nil, "", "", err
+	}
+
+	repoPath := flagRepoRoot
+	if repoPath == "" {
+		repoPath = filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
+	}
+
+	return languageRepo, repoPath, inputDir, nil
+}
+
+func checkFlags() error {
+	if !supportedLanguages[flagLanguage] {
+		return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+	}
+	if flagImage == "" {
+		return fmt.Errorf("Create release pr requires image")
+	}
+	return nil
+}
+
+func generateReleasePr(ctx context.Context, librariesToRelease map[string]string, pipelineState *statepb.PipelineState, repoPath string, repo *gitrepo.Repo, prDescription string) error {
 	if len(librariesToRelease) > 0 {
-		updateLibraryMetadata(librariesToRelease, pipeLine, repoPath)
-		saveState(repo, pipeLine)
-		_, err = gitrepo.AddAll(ctx, repo)
+		updateLibraryMetadata(librariesToRelease, pipelineState, repoPath)
+		err := saveState(repo, pipelineState)
+		if err != nil {
+			return err
+		}
+		/* can i remove this _, err := gitrepo.AddAll(ctx, repo)
 		if err != nil {
 
-		}
+		}*/
 		if err := gitrepo.Commit(ctx, repo, "updating pipeline-state with latest versions"); err != nil {
 			slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
-			return
+			return err
 		}
 
 		err = push(ctx, repo, time.Now(), "chore(main): release", "Release "+prDescription)
 		if err != nil {
 			slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
-			return
+			return err
 		}
 	}
-
-	return
+	return nil
 }
 
-func calculateNextVersion(version string) (string, error) {
-	parts := strings.Split(version, ".")
+/*
+this goes through each library in pipeline state and checks if any new commits have been added to that library since previous commit tag
+*/
+func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (map[string]string, string, error) {
+	libraries := pipelineState.LibraryReleaseStates
+	var prDescription string
+	var librariesToRelease map[string]string
+	librariesToRelease = make(map[string]string)
+	for i := 0; i < len(libraries); i++ {
+		library := libraries[i]
+		var commitMessages []string
+		//TODO: need to add common paths as well as refactor to see if can check all paths at 1 x
+		for j := 0; j < len(library.SourcePaths); j++ {
+			//TODO: figure out generic logic
+			previousReleaseTag := library.Id + "-" + library.CurrentVersion
+			commits, err := gitrepo.GetApiCommitsSinceTagForSource(repo, library.SourcePaths[j], previousReleaseTag)
+			if err != nil {
+				fmt.Println("Error searching commits:", err)
+				//TODO update PR description with this data and mark as not humanly resolvable
+			}
+			for _, commit := range commits {
+				commitMessages = append(commitMessages, commit.Message)
+			}
+		}
+
+		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
+			releaseNotes, err := createReleaseNotes(library, commitMessages, inputDirectory)
+			releaseVersion, err := calculateNextVersion(library)
+
+			//
+			if err := container.UpdateReleaseMetadata(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
+				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
+
+			}
+			//TODO: make this configurable so we don't have to run per library
+			if flagSkipBuild {
+				if err := container.Build(flagImage, "repo-root", repoPath, "library-id", library.Id); err != nil {
+					slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
+					//TODO: log in release PR
+				}
+			}
+
+			//TODO: add extra meta data what is this
+			prDescription += fmt.Sprintf("releasing lib: %s:%s\n", library.Id, library.NextVersion)
+			librariesToRelease[library.Id] = releaseVersion
+
+			createCommit(ctx, err, repo, releaseNotes)
+
+			err = os.Remove(inputDirectory)
+			if err != nil {
+				return nil, "", err
+			}
+		}
+	}
+	return librariesToRelease, prDescription, nil
+}
+
+func createCommit(ctx context.Context, err error, repo *gitrepo.Repo, releaseNotes string) {
+	_, err = gitrepo.AddAll(ctx, repo)
+	if err != nil {
+		fmt.Println("Error adding files:", err)
+		//TODO update PR description with this data and mark as not humanly resolvable
+	}
+	//TODO: what should the description be here?
+	if err := gitrepo.Commit(ctx, repo, releaseNotes); err != nil {
+		slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
+		//TODO update PR description with this data and mark as not humanly resolvable
+	}
+}
+
+// TODO: update with actual logic
+func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []string, inputDirectory string) (string, error) {
+	releaseNotes := fmt.Sprintf("Library: %s\n", library.Id)
+
+	for _, commitMessage := range commitMessages {
+		releaseNotes += fmt.Sprintf("%s\n", commitMessage)
+	}
+
+	path := filepath.Join(inputDirectory, "release-notes.txt")
+	file, err := os.Create(path)
+	if err != nil {
+		fmt.Println("Error creating release notes file", err)
+		return "", err
+	}
+	_, err = file.WriteString(releaseNotes)
+	if err != nil {
+		return "", err
+	}
+	return releaseNotes, nil
+}
+
+// TODO: need to add handling of suffix
+func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) {
+	if library.NextVersion == "" {
+		return library.NextVersion, nil
+	}
+	parts := strings.Split(library.CurrentVersion, ".")
 	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid version format: %s", version)
+		return "", fmt.Errorf("invalid version format: %s", library.CurrentVersion)
 	}
 
 	major, err := strconv.Atoi(parts[0])
@@ -581,7 +619,7 @@ func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo
 		slog.Info(fmt.Sprintf("Ignoring blocked API: '%s'", apiState.Id))
 		return nil
 	}
-	commits, err := gitrepo.GetApiCommits(ctx, apiRepo, apiState.Id, apiState.LastGeneratedCommit)
+	commits, err := gitrepo.GetApiCommits(apiRepo, apiState.Id, apiState.LastGeneratedCommit, nil)
 	if err != nil {
 		return err
 	}
@@ -851,7 +889,7 @@ func init() {
 		addFlagRepoRoot,
 		addFlagOutput,
 		addFlagImage,
-		addFlagIntegrationTestImage,
+		addFlagSkipBuild,
 	} {
 		fn(fs)
 	}

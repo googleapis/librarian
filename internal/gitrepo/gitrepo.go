@@ -228,11 +228,13 @@ func PrintStatus(ctx context.Context, repo *Repo) error {
 // Returns the commits in an API rooted at the given path,
 // stopping looking at the given commit (which is not included in the results).
 // The returned commits are ordered such that the most recent commit is first.
-func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) ([]object.Commit, error) {
+func GetApiCommits(repo *Repo, path string, commit string, retrieveAfterTimestamp *time.Time) ([]object.Commit, error) {
 	commits := []object.Commit{}
 	finalHash := plumbing.NewHash(commit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
-	fmt.Println("commit:", repo.Dir)
+	if retrieveAfterTimestamp != nil {
+		logOptions.Since = retrieveAfterTimestamp
+	}
 	logIterator, err := repo.repo.Log(&logOptions)
 	if err != nil {
 		return nil, err
@@ -291,9 +293,8 @@ func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) 
 	return commits, nil
 }
 
-func GetApiCommits2(ctx context.Context, repo *Repo, path, tagName string) ([]object.Commit, error) {
-	commits := []object.Commit{}
-
+// looks up tag, retrieves commit and then pulls all commits with a give source path
+func GetApiCommitsSinceTagForSource(repo *Repo, path, tagName string) ([]object.Commit, error) {
 	tagRef, err := repo.repo.Tag(tagName)
 
 	if err != nil {
@@ -301,76 +302,11 @@ func GetApiCommits2(ctx context.Context, repo *Repo, path, tagName string) ([]ob
 	}
 
 	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
-
-	finalHash := plumbing.NewHash(tagCommit.Hash.String())
-
-	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime,
-		Since: &tagCommit.Committer.When,
-	}
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 	}
 
-	logIterator, err := repo.repo.Log(&logOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	// Sentinel "error" - this can be replaced using LogOptions.To when that's available.
-
-	var ErrStopIterating = fmt.Errorf("fake error to stop iterating")
-
-	err = logIterator.ForEach(func(commit *object.Commit) error {
-		//fmt.Println("commit:", commit.Message)
-		if commit.Hash == finalHash {
-			return ErrStopIterating
-		}
-
-		// Skip any commit with multiple parents. We shouldn't see this
-		// as we don't use merge commits.
-		if commit.NumParents() != 1 {
-			return nil
-		}
-
-		// We perform filtering by finding out if the tree hash for the given
-		// path at the commit we're looking at is the same as the tree hash
-		// for the commit's parent. This is much, much faster than any other filtering
-		// option, it seems.
-		parentCommit, err := commit.Parent(0)
-		if err != nil {
-			return err
-		}
-		currentTree, err := commit.Tree()
-		if err != nil {
-			return err
-		}
-		currentPathEntry, err := currentTree.FindEntry(path)
-
-		if err != nil {
-			return err
-		}
-		parentTree, err := parentCommit.Tree()
-		if err != nil {
-			return err
-		}
-		parentPathEntry, err := parentTree.FindEntry(path)
-		if err != nil {
-			return err
-		}
-		//fmt.Println("currentPathEntry:", currentPathEntry.Name, currentPathEntry.Hash)
-		//fmt.Println("parentPathEntry:", parentPathEntry.Name, parentPathEntry.Hash)
-		// If we've found a change, add it to our list of commits.
-		if currentPathEntry.Hash != parentPathEntry.Hash {
-			commits = append(commits, *commit)
-		}
-
-		return nil
-	})
-	if err != nil && err != ErrStopIterating {
-		return nil, err
-	}
-	return commits, nil
+	return GetApiCommits(repo, path, tagCommit.Hash.String(), &tagCommit.Committer.When)
 }
 
 // Creates a branch with the given name in the default remote.

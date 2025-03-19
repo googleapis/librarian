@@ -62,7 +62,7 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 	return runDocker(image, mounts, containerArgs)
 }
 
-func CreateReleasePR(image string, languageRepo string, inputsDirectory string, libId string, releaseVersion string) error {
+func UpdateReleaseMetadata(image string, languageRepo string, inputsDirectory string, libId string, releaseVersion string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}

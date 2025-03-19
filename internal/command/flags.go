@@ -19,18 +19,18 @@ import (
 )
 
 var (
-	flagAPIPath              string
-	flagAPIRoot              string
-	flagBranch               string
-	flagBuild                bool
-	flagGitHubToken          string
-	flagImage                string
-	flagIntegrationTestImage string
-	flagLanguage             string
-	flagOutput               string
-	flagPush                 bool
-	flagRepoRoot             string
-	flagWorkRoot             string
+	flagAPIPath     string
+	flagAPIRoot     string
+	flagBranch      string
+	flagBuild       bool
+	flagGitHubToken string
+	flagImage       string
+	flagLanguage    string
+	flagOutput      string
+	flagPush        bool
+	flagRepoRoot    string
+	flagSkipBuild   bool
+	flagWorkRoot    string
 )
 
 func addFlagAPIPath(fs *flag.FlagSet) {
@@ -57,10 +57,6 @@ func addFlagImage(fs *flag.FlagSet) {
 	fs.StringVar(&flagImage, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
 }
 
-func addFlagIntegrationTestImage(fs *flag.FlagSet) {
-	fs.StringVar(&flagIntegrationTestImage, "integrationTestImage", "", "language-specific container to run integration tests. Defaults to google-cloud-{language}-IT")
-}
-
 func addFlagLanguage(fs *flag.FlagSet) {
 	fs.StringVar(&flagLanguage, "language", "", "(Required) language to generate code for")
 }
@@ -75,6 +71,10 @@ func addFlagPush(fs *flag.FlagSet) {
 
 func addFlagRepoRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagRepoRoot, "repo-root", "", "Repository root. When this is not specified, the language repo will be cloned.")
+}
+
+func addFlagSkipBuild(fs *flag.FlagSet) {
+	fs.BoolVar(&flagSkipBuild, "skipBuild", false, "when create release PR if this is set to true do not perform build/integration tests")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet) {
