@@ -232,6 +232,7 @@ func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) 
 	commits := []object.Commit{}
 	finalHash := plumbing.NewHash(commit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
+	fmt.Println("commit:", repo.Dir)
 	logIterator, err := repo.repo.Log(&logOptions)
 	if err != nil {
 		return nil, err
@@ -240,6 +241,88 @@ func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) 
 	// Sentinel "error" - this can be replaced using LogOptions.To when that's available.
 	var ErrStopIterating = fmt.Errorf("fake error to stop iterating")
 	err = logIterator.ForEach(func(commit *object.Commit) error {
+		fmt.Println("commit:", commit.Message)
+		if commit.Hash == finalHash {
+			return ErrStopIterating
+		}
+
+		// Skip any commit with multiple parents. We shouldn't see this
+		// as we don't use merge commits.
+		if commit.NumParents() != 1 {
+			return nil
+		}
+
+		// We perform filtering by finding out if the tree hash for the given
+		// path at the commit we're looking at is the same as the tree hash
+		// for the commit's parent. This is much, much faster than any other filtering
+		// option, it seems.
+		parentCommit, err := commit.Parent(0)
+		if err != nil {
+			return err
+		}
+		currentTree, err := commit.Tree()
+		if err != nil {
+			return err
+		}
+
+		currentPathEntry, err := currentTree.FindEntry(path)
+		if err != nil {
+			//return err
+		}
+		parentTree, err := parentCommit.Tree()
+		if err != nil {
+			//return err
+		}
+		parentPathEntry, err := parentTree.FindEntry(path)
+		if err != nil {
+			//return err
+		}
+
+		// If we've found a change, add it to our list of commits.
+		if currentPathEntry != nil && parentPathEntry != nil && currentPathEntry.Hash != parentPathEntry.Hash {
+			commits = append(commits, *commit)
+		}
+
+		return nil
+	})
+	if err != nil && err != ErrStopIterating {
+		return nil, err
+	}
+	return commits, nil
+}
+
+func GetApiCommits2(ctx context.Context, repo *Repo, path, tagName string) ([]object.Commit, error) {
+	commits := []object.Commit{}
+
+	tagRef, err := repo.repo.Tag(tagName)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
+	}
+
+	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
+
+	finalHash := plumbing.NewHash(tagCommit.Hash.String())
+
+	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime,
+		Since: &tagCommit.Committer.When,
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
+	}
+
+	logIterator, err := repo.repo.Log(&logOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sentinel "error" - this can be replaced using LogOptions.To when that's available.
+
+	var ErrStopIterating = fmt.Errorf("fake error to stop iterating")
+
+	err = logIterator.ForEach(func(commit *object.Commit) error {
+		//fmt.Println("commit:", commit.Message)
 		if commit.Hash == finalHash {
 			return ErrStopIterating
 		}
@@ -263,6 +346,7 @@ func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) 
 			return err
 		}
 		currentPathEntry, err := currentTree.FindEntry(path)
+
 		if err != nil {
 			return err
 		}
@@ -274,7 +358,8 @@ func GetApiCommits(ctx context.Context, repo *Repo, path string, commit string) 
 		if err != nil {
 			return err
 		}
-
+		//fmt.Println("currentPathEntry:", currentPathEntry.Name, currentPathEntry.Hash)
+		//fmt.Println("parentPathEntry:", parentPathEntry.Name, parentPathEntry.Hash)
 		// If we've found a change, add it to our list of commits.
 		if currentPathEntry.Hash != parentPathEntry.Hash {
 			commits = append(commits, *commit)
@@ -330,6 +415,9 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 	pathParts := strings.Split(remotePath, "/")
 	organization := pathParts[0]
 	repoName := pathParts[1]
+	if strings.HasSuffix(repoName, ".git") {
+		repoName = repoName[:len(repoName)-4]
+	}
 
 	if body == "" {
 		body = "Regenerated all changed APIs. See individual commits for details."
@@ -425,28 +513,6 @@ func SearchCommitsAfterTag(repo *Repo, tagName string, sourcePaths []string) ([]
 
 	return commitMessages, nil
 
-}
-
-func parseGitLog(logOutput string) []CommitInfo {
-	var commits []CommitInfo
-	lines := strings.Split(logOutput, "\n")
-
-	var currentCommit CommitInfo
-	for _, line := range lines {
-		if strings.HasPrefix(line, "commit ") {
-			if currentCommit.Hash != "" {
-				commits = append(commits, currentCommit)
-			}
-			currentCommit = CommitInfo{Hash: strings.TrimPrefix(line, "commit ")}
-		} else if strings.HasPrefix(line, "    ") {
-			currentCommit.Message += strings.TrimSpace(line) + "\n"
-		}
-	}
-	if currentCommit.Hash != "" {
-		commits = append(commits, currentCommit)
-	}
-
-	return commits
 }
 
 // TODO: refactor out specific logic to parse commits
