@@ -502,7 +502,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 
 			createCommit(ctx, err, repo, releaseNotes)
 
-			err = os.Remove(inputDirectory)
+			//TODO: refactor, see if can wipe on every library instead of deleting
+			err = os.Remove(filepath.Join(inputDirectory, "release-notes.txt"))
 			if err != nil {
 				return nil, "", err
 			}
