@@ -422,6 +422,9 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 	librariesToRelease = make(map[string]string)
 	for i := 0; i < len(libraries); i++ {
 		library := libraries[i]
+		if library.ID != "Google.Shopping.Merchant.Products.V1Beta" {
+			continue
+		}
 		fmt.Println("Checking library:", library.ID, len(library.SourcePaths))
 		commitMessages, err := gitrepo.SearchCommitsAfterTag(repo, library.ID+"-"+library.CurrentVersion, library.SourcePaths)
 		fmt.Println("Found commits:", library.ID, len(commitMessages))
