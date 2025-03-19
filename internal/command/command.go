@@ -26,6 +26,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -407,8 +408,9 @@ var CmdCreateReleasePR = &Command{
 }
 
 func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string) {
-	configFile := "library-state.json" // Replace with your JSON file path
+	configFile := "generator-input/pipeline-state.json" // Replace with your JSON file path
 
+	//TODO update to use pipeline load state
 	libraries, err := libconfig.LoadLibraryConfig(repoPath + configFile)
 	if err != nil {
 		fmt.Println("Error loading libconfig:", err)
@@ -418,13 +420,13 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 	var prDescription string
 	var librariesToRelease map[string]string
 	librariesToRelease = make(map[string]string)
-	for i := 0; i < len(libraries.Libraries); i++ {
-		library := libraries.Libraries[i]
+	for i := 0; i < len(libraries); i++ {
+		library := libraries[i]
 
-		commitMessages, err := gitrepo.SearchCommitsAfterTag(repo, library.LatestReleaseVersion, library.SourcePaths)
+		commitMessages, err := gitrepo.SearchCommitsAfterTag(repo, library.ID+"-"+library.CurrentVersion, library.SourcePaths)
 		if err != nil {
 			fmt.Println("Error searching commits:", err)
-			return
+			//TODO update PR description with this data and mark as not humanly resolvable
 		}
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
@@ -441,7 +443,11 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 				return
 			}
 			file.WriteString(releaseNotes)
-			if err := container.CreateReleasePR(flagImage, repoPath, inputDirectory, library); err != nil {
+			releaseVersion := library.NextReleaseVersion
+			if releaseVersion == "" {
+				releaseVersion, err = calculateNextVersion(library.CurrentVersion)
+			}
+			if err := container.CreateReleasePR(flagImage, repoPath, inputDirectory, library.ID, releaseVersion); err != nil {
 				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
 
 			}
@@ -451,60 +457,80 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 
 			}
 
-			//TODO: add commit meta data + read from third party repo
-			// make message + title dynamic
+			//TODO: add extra meta data what is this
 			prDescription += fmt.Sprintf("releasing lib: %s:%s\n", library.ID, library.NextReleaseVersion)
-			librariesToRelease[library.ID] = library.NextReleaseVersion
+			librariesToRelease[library.ID] = releaseVersion
 			if err := gitrepo.Commit(ctx, repo, releaseNotes); err != nil {
 				slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
-				//TODO how to handle this
+				//TODO update PR description with this data and mark as not humanly resolvable
 			}
 			os.Remove(path)
 		}
 
 	}
 
-	//TODO add check for if we need PR
-	updateLibraryMetadata(librariesToRelease, libraries, repoPath)
-	_, err = gitrepo.AddAll(ctx, repo)
-	if err != nil {
+	if len(librariesToRelease) > 0 {
+		updateLibraryMetadata(librariesToRelease, libraries, repoPath)
+		_, err = gitrepo.AddAll(ctx, repo)
+		if err != nil {
 
-	}
-	if err := gitrepo.Commit(ctx, repo, "updating library-state to latest versions"); err != nil {
-		slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
-		//TODO how to handle this
-	}
+		}
+		if err := gitrepo.Commit(ctx, repo, "updating pipeline-state with latest versions"); err != nil {
+			slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
+			return
+		}
 
-	//TODO: make this configurable to run per commit
-	if err := container.RunIntegrationTests(flagImage, repoPath); err != nil {
-		slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
-		return
+		//TODO: make this configurable to run per commit
+		if err := container.RunIntegrationTests(flagImage, repoPath); err != nil {
+			slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
+			return
 
-	}
-	//TODO title should be what?
-	//TODO create correct PR description
-	err = push(ctx, repo, time.Now(), "chore(main): release", prDescription)
-	if err != nil {
-		slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
-		return
+		}
+		err = push(ctx, repo, time.Now(), "chore(main): release", prDescription)
+		if err != nil {
+			slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
+			return
+		}
 	}
 
 	return
 }
 
-func updateLibraryMetadata(releasedLibraries map[string]string, libraries *libconfig.Libraries, repoPath string) {
-	for i := 0; i < len(libraries.Libraries); i++ {
-		library := libraries.Libraries[i]
-		if releasedLibraries[library.ID] != "" {
-			slog.Info(fmt.Sprintf("trying to update version to : '%s'", releasedLibraries[library.ID]))
-			libraries.Libraries[i].LatestReleaseVersion = releasedLibraries[library.ID]
-		}
+func calculateNextVersion(version string) (string, error) {
+	parts := strings.Split(version, ".")
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid version format: %s", version)
 	}
 
-	writeJSON(repoPath+"library-state.json", libraries)
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return "", fmt.Errorf("invalid major version: %w", err)
+	}
+
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return "", fmt.Errorf("invalid minor version: %w", err)
+	}
+
+	//increment minor version
+	minor++
+
+	return fmt.Sprintf("%d.%d.%d", major, minor, 0), nil
 }
 
-func writeJSON(filePath string, libraries *libconfig.Libraries) error {
+func updateLibraryMetadata(releasedLibraries map[string]string, libraries []libconfig.LibraryReleaseState, repoPath string) {
+	for i := 0; i < len(libraries); i++ {
+		library := libraries[i]
+		if releasedLibraries[library.ID] != "" {
+			slog.Info(fmt.Sprintf("trying to update version to : '%s'", releasedLibraries[library.ID]))
+			libraries[i].CurrentVersion = releasedLibraries[library.ID]
+		}
+	}
+	//TODO update to use existing pipelinejson
+	writeJSON(repoPath+"generator-input/pipeline-state.json", libraries)
+}
+
+func writeJSON(filePath string, libraries []libconfig.LibraryReleaseState) error {
 	file, err := json.MarshalIndent(libraries, "", "  ") // Use MarshalIndent for pretty printing
 	if err != nil {
 		return err
@@ -820,6 +846,7 @@ func init() {
 		addFlagRepoRoot,
 		addFlagOutput,
 		addFlagImage,
+		addFlagIntegrationTestImage,
 	} {
 		fn(fs)
 	}

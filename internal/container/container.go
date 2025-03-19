@@ -17,7 +17,6 @@ package container
 import (
 	"context"
 	"fmt"
-	"github.com/googleapis/librarian/internal/libconfig"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -63,13 +62,16 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 	return runDocker(image, mounts, containerArgs)
 }
 
-func CreateReleasePR(image string, languageRepo string, inputsDirectory string, libraryMetadata libconfig.Library) error {
+func CreateReleasePR(image string, languageRepo string, inputsDirectory string, libId string, releaseVersion string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
 	containerArgs := []string{
-		libraryMetadata.ID,
-		libraryMetadata.NextReleaseVersion,
+		"prepare-library-release",
+		"--repo-root=/repo",
+		fmt.Sprintf("--library-id=%s", libId),
+		"--release-notes=/inputs/release-notes.txt",
+		fmt.Sprintf("--version=%s", releaseVersion),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", languageRepo),

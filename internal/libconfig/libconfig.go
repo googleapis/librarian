@@ -7,37 +7,50 @@ import (
 	"os"
 )
 
-type Library struct {
-	ID                   string   `json:"id"`
-	LatestReleaseVersion string   `json:"latestReleaseVersion"`
-	NextReleaseVersion   string   `json:"nextReleaseVersion"`
-	ReleaseTimestamp     string   `json:"releaseTimestamp"`
-	Apis                 []API    `json:"apis"`
-	SourcePaths          []string `json:"sourcePaths"`
+// ApiGenerationState represents the structure of each item in the "apiGenerationStates" array.
+type ApiGenerationState struct {
+	ID                  string `json:"id"`
+	LastGeneratedCommit string `json:"lastGeneratedCommit"`
+	AutomationLevel     string `json:"automationLevel"`
 }
 
-type API struct {
-	ID            string `json:"id"`
-	ReleaseCommit string `json:"release_commit"`
+// Api represents the structure of each item in the "apis" array within LibraryReleaseState.
+type Api struct {
+	ApiID              string `json:"apiId"`
+	LastReleasedCommit string `json:"lastReleasedCommit"`
 }
 
-type Libraries struct {
-	Libraries   []Library `json:"libraries"`
-	CommonPaths []string  `json:"commonPaths"`
+// LibraryReleaseState represents the structure of each item in the "libraryReleaseStates" array.
+type LibraryReleaseState struct {
+	ID                 string   `json:"id"`
+	CurrentVersion     string   `json:"currentVersion"`
+	NextReleaseVersion string   `json:"nextReleaseVersion"`
+	AutomationLevel    string   `json:"automationLevel"`
+	ReleaseTimestamp   string   `json:"releaseTimestamp"`
+	Apis               []Api    `json:"apis"`
+	SourcePaths        []string `json:"sourcePaths"`
 }
 
-func LoadLibraryConfig(configFile string) (*Libraries, error) {
+// Data represents the overall structure of the JSON data.
+type PipelineData struct {
+	ImageTag                 string                `json:"imageTag"`
+	ApiGenerationStates      []ApiGenerationState  `json:"apiGenerationStates"`
+	LibraryReleaseStates     []LibraryReleaseState `json:"libraryReleaseStates"`
+	CommonLibrarySourcePaths []string              `json:"common_library_source_paths"`
+}
+
+func LoadLibraryConfig(configFile string) ([]LibraryReleaseState, error) {
 	slog.Info("reading library %s", configFile)
 	data, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
 	}
 
-	var libs Libraries
-	err = json.Unmarshal(data, &libs)
+	var pipelineData PipelineData
+	err = json.Unmarshal(data, &pipelineData)
 	if err != nil {
 		log.Fatalf("Error unmarshaling JSON: %v", err)
 	}
 
-	return &libs, nil
+	return pipelineData.LibraryReleaseStates, nil
 }
