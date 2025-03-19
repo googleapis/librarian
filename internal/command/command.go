@@ -451,6 +451,7 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 			releaseVersion := library.NextReleaseVersion
 			if releaseVersion == "" {
 				releaseVersion, err = calculateNextVersion(library.CurrentVersion)
+				fmt.Println("Calculating next version:", releaseVersion)
 			}
 			if err := container.CreateReleasePR(flagImage, repoPath, inputDirectory, library.ID, releaseVersion); err != nil {
 				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
@@ -517,10 +518,16 @@ func calculateNextVersion(version string) (string, error) {
 		return "", fmt.Errorf("invalid minor version: %w", err)
 	}
 
+	suffix := strings.Split(parts[2], "-")
+	patch := "0"
+	if len(suffix) > 1 {
+		patch += "-" + suffix[1]
+	}
+
 	//increment minor version
 	minor++
 
-	return fmt.Sprintf("%d.%d.%d", major, minor, 0), nil
+	return fmt.Sprintf("%d.%d.%s", major, minor, patch), nil
 }
 
 func updateLibraryMetadata(releasedLibraries map[string]string, libraries []libconfig.LibraryReleaseState, repoPath string) {
