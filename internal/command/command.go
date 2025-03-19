@@ -422,14 +422,16 @@ func createPrDescription(ctx context.Context, repoPath string, repo *gitrepo.Rep
 	librariesToRelease = make(map[string]string)
 	for i := 0; i < len(libraries); i++ {
 		library := libraries[i]
-
+		fmt.Println("Checking library:", library.ID, len(library.SourcePaths))
 		commitMessages, err := gitrepo.SearchCommitsAfterTag(repo, library.ID+"-"+library.CurrentVersion, library.SourcePaths)
+		fmt.Println("Found commits:", library.ID, len(commitMessages))
 		if err != nil {
 			fmt.Println("Error searching commits:", err)
 			//TODO update PR description with this data and mark as not humanly resolvable
 		}
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
+			fmt.Println("Processing")
 			releaseNotes := fmt.Sprintf("Library: %s\n", library.ID)
 
 			for _, commitMessage := range commitMessages {
