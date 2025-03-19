@@ -436,10 +436,10 @@ func generateReleasePr(ctx context.Context, librariesToRelease map[string]string
 		if err != nil {
 			return err
 		}
-		/* can i remove this _, err := gitrepo.AddAll(ctx, repo)
+		_, err = gitrepo.AddAll(ctx, repo)
 		if err != nil {
 
-		}*/
+		}
 		if err := gitrepo.Commit(ctx, repo, "updating pipeline-state with latest versions"); err != nil {
 			slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
 			return err
