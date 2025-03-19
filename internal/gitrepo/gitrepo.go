@@ -18,12 +18,8 @@ package gitrepo
 import (
 	"context"
 	"fmt"
-	"github.com/go-git/go-git/v5/plumbing/storer"
-	//"github.com/googleapis/librarian/internal/libconfig"
-	"log"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -265,14 +261,13 @@ func GetApiCommits(repo *Repo, path string, commit string, retrieveAfterTimestam
 		if err != nil {
 			return err
 		}
-
 		currentPathEntry, err := currentTree.FindEntry(path)
 		if err != nil {
-			//return err
+			return err
 		}
 		parentTree, err := parentCommit.Tree()
 		if err != nil {
-			//return err
+			return err
 		}
 		parentPathEntry, err := parentTree.FindEntry(path)
 		if err != nil {
@@ -280,7 +275,7 @@ func GetApiCommits(repo *Repo, path string, commit string, retrieveAfterTimestam
 		}
 
 		// If we've found a change, add it to our list of commits.
-		if currentPathEntry != nil && parentPathEntry != nil && currentPathEntry.Hash != parentPathEntry.Hash {
+		if currentPathEntry.Hash != parentPathEntry.Hash {
 			commits = append(commits, *commit)
 		}
 
@@ -292,7 +287,7 @@ func GetApiCommits(repo *Repo, path string, commit string, retrieveAfterTimestam
 	return commits, nil
 }
 
-// looks up tag, retrieves commit and then pulls all commits with a give source path
+// Returns all commits since tagName that contains files in path
 func GetApiCommitsSinceTagForSource(repo *Repo, path, tagName string) ([]object.Commit, error) {
 	tagRef, err := repo.repo.Tag(tagName)
 
@@ -373,138 +368,4 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 
 	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
 	return nil
-}
-
-type CommitInfo struct {
-	Hash    string
-	Message string
-}
-
-func SearchCommitsAfterTag(repo *Repo, tagName string, sourcePaths []string) ([]string, error) {
-	var commitMessages []string
-
-	tagRef, err := repo.repo.Tag(tagName)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
-	}
-
-	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
-	}
-
-	commitIter, err := repo.repo.Log(&git.LogOptions{
-		Since: &tagCommit.Committer.When,
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get commit log for  %w", err)
-	}
-
-	err = commitIter.ForEach(func(commit *object.Commit) error {
-		if commit.Hash == tagCommit.Hash {
-			return nil
-		}
-		if commit == nil {
-			return nil
-		}
-
-		parentIter := commit.Parents()
-		parentCommit, err := parentIter.Next()
-
-		if err != nil {
-			if err == storer.ErrStop {
-				fmt.Println("This is the initial commit, cannot get diff.")
-				return nil
-			} else {
-				log.Fatalf("Error getting parent commit: %v", err)
-			}
-
-		}
-
-		parentTree, err := parentCommit.Tree()
-		commitTree, err := commit.Tree()
-
-		changes, err := object.DiffTree(parentTree, commitTree)
-		if err != nil {
-			log.Fatalf("Error getting diff: %v", err)
-		}
-
-		for _, change := range changes {
-			//if change.Action == diff.Modify || change.Action == diff.Add || change.Action == diff.Delete || change.Action == diff.Rename {
-
-			for _, rootPath := range sourcePaths {
-				if strings.HasPrefix(change.To.Name, rootPath) {
-					commitMessages = append(commitMessages, commit.Message)
-					break
-				}
-
-			}
-		}
-		return nil
-	})
-
-	return commitMessages, nil
-
-}
-
-// TODO: refactor out specific logic to parse commits
-func GetCommitsSinceTag(repoPath string, repo *Repo, tagName string) (string, error) {
-	tagRef, err := repo.repo.Tag(tagName)
-	slog.Info(fmt.Sprintf("Found tag %s %s", tagName, tagRef))
-	if err != nil {
-		return "", err
-	}
-	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
-	if err != nil {
-		log.Fatal(err)
-	}
-	headRef, err := repo.repo.Head()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	commitIter, err := repo.repo.Log(&git.LogOptions{
-		From: headRef.Hash(),
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	description := ""
-	err = commitIter.ForEach(func(c *object.Commit) error {
-		slog.Info(fmt.Sprintf("Found commit %s", c))
-		if c.Committer.When.Before(tagCommit.Committer.When) {
-			return fmt.Errorf("end of commits") // Stop iterating when we reach commits before the tag
-		}
-
-		tree, err := c.Tree()
-		if err != nil {
-			return err
-		}
-		err = tree.Files().ForEach(func(f *object.File) error {
-			slog.Info(fmt.Sprintf("Found file %s", f))
-			relPath, err := filepath.Rel(repoPath, filepath.Join(repoPath, f.Name))
-			if err != nil {
-				return err
-			}
-			parts := strings.Split(relPath, string(os.PathSeparator))
-			if len(parts) > 1 {
-				parentDir := parts[0]
-				description = fmt.Sprintf("%s %s\n", c.Hash.String(), parentDir)
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return "", err
-	} else {
-		return description, nil
-	}
 }

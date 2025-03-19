@@ -208,7 +208,3 @@ func runCommand(c string, args ...string) error {
 	slog.Info(strings.Repeat("-", 80))
 	return cmd.Run()
 }
-
-func RunIntegrationTests(image string, path string) error {
-	return nil
-}

@@ -597,19 +597,6 @@ func isReleaseWorthy(messages []string) bool {
 	return false
 }
 
-func readCommitMessage(directory string) string {
-	filePath := directory + "/commit.txt"
-
-	// Read the file content
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Convert the byte slice to a string
-	return string(content)
-}
-
 func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, repoState *statepb.PipelineState, apiState *statepb.ApiGenerationState) error {
 	if flagAPIPath != "" && flagAPIPath != apiState.Id {
 		// If flagAPIPath has been passed in, we only act on that API.
