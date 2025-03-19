@@ -547,7 +547,7 @@ func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []s
 
 // TODO: need to add handling of suffix
 func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) {
-	if library.NextVersion == "" {
+	if library.NextVersion != "" {
 		return library.NextVersion, nil
 	}
 	parts := strings.Split(library.CurrentVersion, ".")
