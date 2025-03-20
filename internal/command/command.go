@@ -444,7 +444,7 @@ this goes through each library in pipeline state and checks if any new commits h
 func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (string, error) {
 	libraries := pipelineState.LibraryReleaseStates
 	var prDescription string
-
+	var lastGeneratedCommit object.Commit
 	for _, library := range libraries {
 		var commitMessages []string
 		//TODO: need to add common paths as well as refactor to see if can check all paths at 1 x
@@ -459,6 +459,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			for _, commit := range commits {
 				commitMessages = append(commitMessages, commit.Message)
 			}
+			lastGeneratedCommit = commits[len(commits)-1]
 		}
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
@@ -491,8 +492,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 
 			libraryReleaseCommitDesc := fmt.Sprintf("Release library: %s version %s\n", library.Id, releaseVersion)
 
-			//update state in
-			updateLibraryMetadata(library.Id, releaseVersion, "temp", pipelineState)
+			updateLibraryMetadata(library.Id, releaseVersion, lastGeneratedCommit.Hash.String(), pipelineState)
 
 			err = saveState(repo, pipelineState)
 			if err != nil {
@@ -503,10 +503,6 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			if err != nil {
 				//TODO: need to revert the changes made to state for this library/reload from last commit
 			}
-			/*err = os.Remove(filepath.Join(inputDirectory, "release-notes.txt"))
-			if err != nil {
-				return "", err
-			}*/
 		}
 	}
 	return prDescription, nil
@@ -583,17 +579,19 @@ func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) 
 }
 
 func updateLibraryMetadata(libraryId string, releaseVersion string, lastGeneratedCommit string, pipelineState *statepb.PipelineState) {
-	for i := 0; i < len(pipelineState.LibraryReleaseStates); i++ {
-		library := pipelineState.LibraryReleaseStates[i]
+	for i, library := range pipelineState.LibraryReleaseStates {
 		if library.Id == libraryId {
 			pipelineState.LibraryReleaseStates[i].CurrentVersion = releaseVersion
-		}
-	}
-
-	for i := 0; i < len(pipelineState.ApiGenerationStates); i++ {
-		apiGeneratedState := pipelineState.ApiGenerationStates[i]
-		if apiGeneratedState.Id == libraryId {
-			pipelineState.ApiGenerationStates[i].LastGeneratedCommit = lastGeneratedCommit
+			for _, apis := range library.Apis {
+				//TODO is this logic correct? we update all apis in library with same commit id?
+				for i := 0; i < len(pipelineState.ApiGenerationStates); i++ {
+					apiGeneratedState := pipelineState.ApiGenerationStates[i]
+					if apiGeneratedState.Id == apis.ApiId {
+						pipelineState.ApiGenerationStates[i].LastGeneratedCommit = lastGeneratedCommit
+					}
+				}
+			}
+			break
 		}
 	}
 }
