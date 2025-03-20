@@ -70,7 +70,7 @@ func UpdateReleaseMetadata(image string, languageRepo string, inputsDirectory st
 		"prepare-library-release",
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libId),
-		"--release-notes=/inputs/release-notes.txt",
+		fmt.Sprintf("--release-notes=/inputs/%s-%s-release-notes.txt", libId, releaseVersion),
 		fmt.Sprintf("--version=%s", releaseVersion),
 	}
 	mounts := []string{

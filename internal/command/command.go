@@ -368,14 +368,14 @@ var CmdCreateReleasePR = &Command{
 		if err != nil {
 			return err
 		}
-		languageRepo, repoPath, inputDirectory, err := setupLanguageAndInputFolders(ctx)
+		languageRepo, repoPath, inputDirectory, err := setupReleasePrFolders(ctx)
 		if err != nil {
 			return err
 		}
 
 		pipelineState, err := loadState(languageRepo)
 		if err != nil {
-			fmt.Println("Error loading pipeline state:", err)
+			slog.Info("Error loading pipeline state:", err)
 			return err
 		}
 
@@ -388,7 +388,7 @@ var CmdCreateReleasePR = &Command{
 	},
 }
 
-func setupLanguageAndInputFolders(ctx context.Context) (*gitrepo.Repo, string, string, error) {
+func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, string, error) {
 	startOfRun := time.Now()
 	tmpRoot, err := createTmpWorkingRoot(startOfRun)
 	var languageRepo *gitrepo.Repo
@@ -406,16 +406,13 @@ func setupLanguageAndInputFolders(ctx context.Context) (*gitrepo.Repo, string, s
 
 	inputDir := filepath.Join(tmpRoot, "inputs")
 	if err := os.Mkdir(inputDir, 0755); err != nil {
-		fmt.Println("Failed to create input directory:", err)
+		slog.Error("Failed to create input directory:", err)
 		return nil, "", "", err
 	}
 
-	repoPath := flagRepoRoot
-	if repoPath == "" {
-		repoPath = filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
-	}
+	slog.Error(languageRepo.Dir)
 
-	return languageRepo, repoPath, inputDir, nil
+	return languageRepo, languageRepo.Dir, inputDir, nil
 }
 
 func checkFlags() error {
@@ -430,12 +427,7 @@ func checkFlags() error {
 
 func generateReleasePr(ctx context.Context, librariesToRelease map[string]string, pipelineState *statepb.PipelineState, repoPath string, repo *gitrepo.Repo, prDescription string) error {
 	if len(librariesToRelease) > 0 {
-		updateLibraryMetadata(librariesToRelease, pipelineState, repoPath)
-		err := saveState(repo, pipelineState)
-		if err != nil {
-			return err
-		}
-		_, err = gitrepo.AddAll(ctx, repo)
+		_, err := gitrepo.AddAll(ctx, repo)
 		if err != nil {
 
 		}
@@ -485,33 +477,39 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			//
 			if err := container.UpdateReleaseMetadata(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
 				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
-
+				//TODO: log in release PR
+				continue
 			}
 			//TODO: make this configurable so we don't have to run per library
 			if flagSkipBuild {
 				if err := container.Build(flagImage, "repo-root", repoPath, "library-id", library.Id); err != nil {
 					slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
+					continue
 					//TODO: log in release PR
 				}
 			}
 
 			//TODO: add extra meta data what is this
-			prDescription += fmt.Sprintf("releasing lib: %s:%s\n", library.Id, library.NextVersion)
-			librariesToRelease[library.Id] = releaseVersion
+			prDescription += fmt.Sprintf("Release library: %s version %s\n", library.Id, releaseVersion)
 
-			createCommit(ctx, err, repo, releaseNotes)
+			libraryReleaseCommitDesc := fmt.Sprintf("Release library: %s version %s\n", library.Id, releaseVersion)
 
-			//TODO: refactor, see if can wipe on every library instead of deleting
-			err = os.Remove(filepath.Join(inputDirectory, "release-notes.txt"))
+			//update state in
+			updateLibraryMetadata(library.Id, releaseVersion, "temp", pipelineState)
+
+			err = saveState(repo, pipelineState)
 			if err != nil {
 				return nil, "", err
 			}
+
+			createLibraryReleaseCommit(ctx, err, repo, libraryReleaseCommitDesc+releaseNotes)
+
 		}
 	}
 	return librariesToRelease, prDescription, nil
 }
 
-func createCommit(ctx context.Context, err error, repo *gitrepo.Repo, releaseNotes string) {
+func createLibraryReleaseCommit(ctx context.Context, err error, repo *gitrepo.Repo, releaseNotes string) {
 	_, err = gitrepo.AddAll(ctx, repo)
 	if err != nil {
 		fmt.Println("Error adding files:", err)
@@ -526,13 +524,13 @@ func createCommit(ctx context.Context, err error, repo *gitrepo.Repo, releaseNot
 
 // TODO: update with actual logic
 func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []string, inputDirectory string) (string, error) {
-	releaseNotes := fmt.Sprintf("Library: %s\n", library.Id)
+	var releaseNotes string
 
 	for _, commitMessage := range commitMessages {
 		releaseNotes += fmt.Sprintf("%s\n", commitMessage)
 	}
 
-	path := filepath.Join(inputDirectory, "release-notes.txt")
+	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, library.CurrentVersion))
 	file, err := os.Create(path)
 	if err != nil {
 		fmt.Println("Error creating release notes file", err)
@@ -577,12 +575,15 @@ func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) 
 	return fmt.Sprintf("%d.%d.%s", major, minor, patch), nil
 }
 
-func updateLibraryMetadata(releasedLibraries map[string]string, pipelineState *statepb.PipelineState, repoPath string) {
+func updateLibraryMetadata(libraryId string, releaseVersion string, lastGeneratedCommit string, pipelineState *statepb.PipelineState) {
 	for i := 0; i < len(pipelineState.LibraryReleaseStates); i++ {
 		library := pipelineState.LibraryReleaseStates[i]
-		if releasedLibraries[library.Id] != "" {
-			slog.Info(fmt.Sprintf("trying to update version to : '%s'", releasedLibraries[library.Id]))
-			pipelineState.LibraryReleaseStates[i].CurrentVersion = releasedLibraries[library.Id]
+		if library.Id != libraryId {
+			pipelineState.LibraryReleaseStates[i].CurrentVersion = releaseVersion
+		}
+		apiGeneratedState := pipelineState.ApiGenerationStates[i]
+		if apiGeneratedState.Id == libraryId {
+			pipelineState.ApiGenerationStates[i].LastGeneratedCommit = lastGeneratedCommit
 		}
 	}
 }
