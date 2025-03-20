@@ -368,7 +368,7 @@ var CmdCreateReleasePR = &Command{
 		if err != nil {
 			return err
 		}
-		languageRepo, repoPath, inputDirectory, err := setupReleasePrFolders(ctx)
+		languageRepo, inputDirectory, err := setupReleasePrFolders(ctx)
 		if err != nil {
 			return err
 		}
@@ -383,7 +383,7 @@ var CmdCreateReleasePR = &Command{
 			flagImage = deriveImage(pipelineState)
 		}
 
-		prDescription, err := generateReleaseCommitForEachLibrary(ctx, repoPath, languageRepo, inputDirectory, pipelineState)
+		prDescription, err := generateReleaseCommitForEachLibrary(ctx, languageRepo.Dir, languageRepo, inputDirectory, pipelineState)
 		if err != nil {
 			return err
 		}
@@ -392,7 +392,7 @@ var CmdCreateReleasePR = &Command{
 	},
 }
 
-func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, string, error) {
+func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, error) {
 	startOfRun := time.Now()
 	tmpRoot, err := createTmpWorkingRoot(startOfRun)
 	if err != nil {
@@ -417,9 +417,7 @@ func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, string, 
 		return nil, "", "", err
 	}
 
-	slog.Error(languageRepo.Dir)
-
-	return languageRepo, languageRepo.Dir, inputDir, nil
+	return languageRepo, inputDir, nil
 }
 
 func checkFlags() error {
@@ -431,22 +429,12 @@ func checkFlags() error {
 
 func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription string) error {
 	if prDescription != "" {
-		_, err := gitrepo.AddAll(ctx, repo)
-		if err != nil {
-
-		}
-		if err := gitrepo.Commit(ctx, repo, "updating pipeline-state with latest versions"); err != nil {
-			slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
-			return err
-		}
-
-		err = push(ctx, repo, time.Now(), "chore(main): release", "Release "+prDescription)
+		err := push(ctx, repo, time.Now(), "chore(main): release", "Release "+prDescription)
 		if err != nil {
 			slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -514,10 +502,10 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			if err != nil {
 				//TODO: need to revert the changes made to state for this library/reload from last commit
 			}
-			err = os.Remove(filepath.Join(inputDirectory, "release-notes.txt"))
+			/*err = os.Remove(filepath.Join(inputDirectory, "release-notes.txt"))
 			if err != nil {
 				return "", err
-			}
+			}*/
 		}
 	}
 	return prDescription, nil
@@ -547,8 +535,8 @@ func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []s
 		releaseNotes += fmt.Sprintf("%s\n", commitMessage)
 	}
 
-	//path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, library.CurrentVersion))
-	path := filepath.Join(inputDirectory, fmt.Sprintf("release-notes.txt"))
+	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, library.CurrentVersion))
+	//path := filepath.Join(inputDirectory, fmt.Sprintf("release-notes.txt"))
 	file, err := os.Create(path)
 	if err != nil {
 		fmt.Println("Error creating release notes file", err)
