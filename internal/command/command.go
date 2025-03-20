@@ -599,6 +599,9 @@ func updateLibraryMetadata(libraryId string, releaseVersion string, lastGenerate
 		if library.Id != libraryId {
 			pipelineState.LibraryReleaseStates[i].CurrentVersion = releaseVersion
 		}
+	}
+
+	for i := 0; i < len(pipelineState.ApiGenerationStates); i++ {
 		apiGeneratedState := pipelineState.ApiGenerationStates[i]
 		if apiGeneratedState.Id == libraryId {
 			pipelineState.ApiGenerationStates[i].LastGeneratedCommit = lastGeneratedCommit
