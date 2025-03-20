@@ -271,7 +271,7 @@ func GetApiCommits(repo *Repo, path string, commit string, retrieveAfterTimestam
 		}
 		parentPathEntry, err := parentTree.FindEntry(path)
 		if err != nil {
-			//return err
+			return err
 		}
 
 		// If we've found a change, add it to our list of commits.
@@ -345,9 +345,7 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 	pathParts := strings.Split(remotePath, "/")
 	organization := pathParts[0]
 	repoName := pathParts[1]
-	if strings.HasSuffix(repoName, ".git") {
-		repoName = repoName[:len(repoName)-4]
-	}
+	repoName = strings.TrimSuffix(repoName, ".git")
 
 	if body == "" {
 		body = "Regenerated all changed APIs. See individual commits for details."

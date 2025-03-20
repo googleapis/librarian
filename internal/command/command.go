@@ -379,18 +379,25 @@ var CmdCreateReleasePR = &Command{
 			return err
 		}
 
-		librariesToRelease, prDescription, err := generateReleaseCommitForEachLibrary(ctx, repoPath, languageRepo, inputDirectory, pipelineState)
+		if flagImage == "" {
+			flagImage = deriveImage(pipelineState)
+		}
+
+		prDescription, err := generateReleaseCommitForEachLibrary(ctx, repoPath, languageRepo, inputDirectory, pipelineState)
 		if err != nil {
 			return err
 		}
 
-		return generateReleasePr(ctx, librariesToRelease, pipelineState, repoPath, languageRepo, prDescription)
+		return generateReleasePr(ctx, languageRepo, prDescription)
 	},
 }
 
 func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, string, error) {
 	startOfRun := time.Now()
 	tmpRoot, err := createTmpWorkingRoot(startOfRun)
+	if err != nil {
+		return nil, "", "", err
+	}
 	var languageRepo *gitrepo.Repo
 	if flagRepoRoot == "" {
 		languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
@@ -406,7 +413,7 @@ func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, string, 
 
 	inputDir := filepath.Join(tmpRoot, "inputs")
 	if err := os.Mkdir(inputDir, 0755); err != nil {
-		slog.Error("Failed to create input directory:", err)
+		slog.Error("Failed to create input directory")
 		return nil, "", "", err
 	}
 
@@ -419,14 +426,11 @@ func checkFlags() error {
 	if !supportedLanguages[flagLanguage] {
 		return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 	}
-	if flagImage == "" {
-		return fmt.Errorf("Create release pr requires image")
-	}
 	return nil
 }
 
-func generateReleasePr(ctx context.Context, librariesToRelease map[string]string, pipelineState *statepb.PipelineState, repoPath string, repo *gitrepo.Repo, prDescription string) error {
-	if len(librariesToRelease) > 0 {
+func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription string) error {
+	if prDescription != "" {
 		_, err := gitrepo.AddAll(ctx, repo)
 		if err != nil {
 
@@ -442,25 +446,24 @@ func generateReleasePr(ctx context.Context, librariesToRelease map[string]string
 			return err
 		}
 	}
+
 	return nil
 }
 
 /*
 this goes through each library in pipeline state and checks if any new commits have been added to that library since previous commit tag
 */
-func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (map[string]string, string, error) {
+func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (string, error) {
 	libraries := pipelineState.LibraryReleaseStates
 	var prDescription string
-	var librariesToRelease map[string]string
-	librariesToRelease = make(map[string]string)
-	for i := 0; i < len(libraries); i++ {
-		library := libraries[i]
+
+	for _, library := range libraries {
 		var commitMessages []string
 		//TODO: need to add common paths as well as refactor to see if can check all paths at 1 x
-		for j := 0; j < len(library.SourcePaths); j++ {
+		for _, sourcePath := range library.SourcePaths {
 			//TODO: figure out generic logic
 			previousReleaseTag := library.Id + "-" + library.CurrentVersion
-			commits, err := gitrepo.GetApiCommitsSinceTagForSource(repo, library.SourcePaths[j], previousReleaseTag)
+			commits, err := gitrepo.GetApiCommitsSinceTagForSource(repo, sourcePath, previousReleaseTag)
 			if err != nil {
 				fmt.Println("Error searching commits:", err)
 				//TODO update PR description with this data and mark as not humanly resolvable
@@ -472,9 +475,14 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
 			releaseNotes, err := createReleaseNotes(library, commitMessages, inputDirectory)
+			if err != nil {
+				return "", err
+			}
 			releaseVersion, err := calculateNextVersion(library)
+			if err != nil {
+				return "", err
+			}
 
-			//
 			if err := container.UpdateReleaseMetadata(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
 				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
 				//TODO: log in release PR
@@ -499,27 +507,36 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 
 			err = saveState(repo, pipelineState)
 			if err != nil {
-				return nil, "", err
+				return "", err
 			}
 
-			createLibraryReleaseCommit(ctx, err, repo, libraryReleaseCommitDesc+releaseNotes)
-
+			err = createLibraryReleaseCommit(ctx, repo, libraryReleaseCommitDesc+releaseNotes)
+			if err != nil {
+				//TODO: need to revert the changes made to state for this library/reload from last commit
+			}
+			err = os.Remove(filepath.Join(inputDirectory, "release-notes.txt"))
+			if err != nil {
+				return "", err
+			}
 		}
 	}
-	return librariesToRelease, prDescription, nil
+	return prDescription, nil
 }
 
-func createLibraryReleaseCommit(ctx context.Context, err error, repo *gitrepo.Repo, releaseNotes string) {
-	_, err = gitrepo.AddAll(ctx, repo)
+func createLibraryReleaseCommit(ctx context.Context, repo *gitrepo.Repo, releaseNotes string) error {
+	_, err := gitrepo.AddAll(ctx, repo)
 	if err != nil {
-		fmt.Println("Error adding files:", err)
+		slog.Info("Error adding files:", err)
+		return err
 		//TODO update PR description with this data and mark as not humanly resolvable
 	}
 	//TODO: what should the description be here?
 	if err := gitrepo.Commit(ctx, repo, releaseNotes); err != nil {
 		slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
+		return err
 		//TODO update PR description with this data and mark as not humanly resolvable
 	}
+	return nil
 }
 
 // TODO: update with actual logic
@@ -530,7 +547,8 @@ func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []s
 		releaseNotes += fmt.Sprintf("%s\n", commitMessage)
 	}
 
-	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, library.CurrentVersion))
+	//path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, library.CurrentVersion))
+	path := filepath.Join(inputDirectory, fmt.Sprintf("release-notes.txt"))
 	file, err := os.Create(path)
 	if err != nil {
 		fmt.Println("Error creating release notes file", err)
