@@ -375,7 +375,7 @@ var CmdCreateReleasePR = &Command{
 
 		pipelineState, err := loadState(languageRepo)
 		if err != nil {
-			slog.Info("Error loading pipeline state:", err)
+			slog.Info(fmt.Sprintf("Error loading pipeline state: %s", err))
 			return err
 		}
 
@@ -453,13 +453,15 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			previousReleaseTag := library.Id + "-" + library.CurrentVersion
 			commits, err := gitrepo.GetApiCommitsSinceTagForSource(repo, sourcePath, previousReleaseTag)
 			if err != nil {
-				fmt.Println("Error searching commits:", err)
+				slog.Error("Error searching commits:", err)
 				//TODO update PR description with this data and mark as not humanly resolvable
 			}
 			for _, commit := range commits {
 				commitMessages = append(commitMessages, commit.Message)
 			}
-			lastGeneratedCommit = commits[len(commits)-1]
+			if len(commitMessages) > 0 {
+				lastGeneratedCommit = commits[len(commits)-1]
+			}
 		}
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
@@ -511,11 +513,10 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 func createLibraryReleaseCommit(ctx context.Context, repo *gitrepo.Repo, releaseNotes string) error {
 	_, err := gitrepo.AddAll(ctx, repo)
 	if err != nil {
-		slog.Info("Error adding files:", err)
+		slog.Info(fmt.Sprintf("Error adding files: %s", err))
 		return err
 		//TODO update PR description with this data and mark as not humanly resolvable
 	}
-	//TODO: what should the description be here?
 	if err := gitrepo.Commit(ctx, repo, releaseNotes); err != nil {
 		slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
 		return err
@@ -533,10 +534,9 @@ func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []s
 	}
 
 	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, releaseVersion))
-	//path := filepath.Join(inputDirectory, fmt.Sprintf("release-notes.txt"))
+
 	file, err := os.Create(path)
 	if err != nil {
-		fmt.Println("Error creating release notes file", err)
 		return "", err
 	}
 	_, err = file.WriteString(releaseNotes)
@@ -546,7 +546,7 @@ func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []s
 	return releaseNotes, nil
 }
 
-// TODO: need to add handling of suffix
+// TODO: look for semvar lib
 func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) {
 	if library.NextVersion != "" {
 		return library.NextVersion, nil
