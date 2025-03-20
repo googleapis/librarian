@@ -462,11 +462,12 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 		}
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
-			releaseNotes, err := createReleaseNotes(library, commitMessages, inputDirectory)
+			releaseVersion, err := calculateNextVersion(library)
 			if err != nil {
 				return "", err
 			}
-			releaseVersion, err := calculateNextVersion(library)
+
+			releaseNotes, err := createReleaseNotes(library, commitMessages, inputDirectory, releaseVersion)
 			if err != nil {
 				return "", err
 			}
@@ -528,14 +529,14 @@ func createLibraryReleaseCommit(ctx context.Context, repo *gitrepo.Repo, release
 }
 
 // TODO: update with actual logic
-func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []string, inputDirectory string) (string, error) {
+func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []string, inputDirectory string, releaseVersion string) (string, error) {
 	var releaseNotes string
 
 	for _, commitMessage := range commitMessages {
 		releaseNotes += fmt.Sprintf("%s\n", commitMessage)
 	}
 
-	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, library.CurrentVersion))
+	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, releaseVersion))
 	//path := filepath.Join(inputDirectory, fmt.Sprintf("release-notes.txt"))
 	file, err := os.Create(path)
 	if err != nil {
