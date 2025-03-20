@@ -585,7 +585,7 @@ func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) 
 func updateLibraryMetadata(libraryId string, releaseVersion string, lastGeneratedCommit string, pipelineState *statepb.PipelineState) {
 	for i := 0; i < len(pipelineState.LibraryReleaseStates); i++ {
 		library := pipelineState.LibraryReleaseStates[i]
-		if library.Id != libraryId {
+		if library.Id == libraryId {
 			pipelineState.LibraryReleaseStates[i].CurrentVersion = releaseVersion
 		}
 	}
