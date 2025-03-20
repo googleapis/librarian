@@ -453,7 +453,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			previousReleaseTag := library.Id + "-" + library.CurrentVersion
 			commits, err := gitrepo.GetApiCommitsSinceTagForSource(repo, sourcePath, previousReleaseTag)
 			if err != nil {
-				slog.Error("Error searching commits:", err)
+				slog.Error(fmt.Sprintf("Error searching commits: %s", err))
 				//TODO update PR description with this data and mark as not humanly resolvable
 			}
 			for _, commit := range commits {
