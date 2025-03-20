@@ -396,25 +396,25 @@ func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, error) {
 	startOfRun := time.Now()
 	tmpRoot, err := createTmpWorkingRoot(startOfRun)
 	if err != nil {
-		return nil, "", "", err
+		return nil, "", err
 	}
 	var languageRepo *gitrepo.Repo
 	if flagRepoRoot == "" {
 		languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
 		if err != nil {
-			return nil, "", "", err
+			return nil, "", err
 		}
 	} else {
 		languageRepo, err = gitrepo.Open(ctx, flagRepoRoot)
 		if err != nil {
-			return nil, "", "", err
+			return nil, "", err
 		}
 	}
 
 	inputDir := filepath.Join(tmpRoot, "inputs")
 	if err := os.Mkdir(inputDir, 0755); err != nil {
 		slog.Error("Failed to create input directory")
-		return nil, "", "", err
+		return nil, "", err
 	}
 
 	return languageRepo, inputDir, nil
