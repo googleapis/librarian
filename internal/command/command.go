@@ -461,7 +461,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 		for _, sourcePath := range library.SourcePaths {
 			//TODO: figure out generic logic
 			previousReleaseTag := library.Id + "-" + library.CurrentVersion
-			commits, err := gitrepo.GetApiCommitsSinceTagForSource(repo, sourcePath, previousReleaseTag)
+			commits, err := gitrepo.GetCommitsSinceTagForPath(repo, sourcePath, previousReleaseTag)
 			if err != nil {
 				slog.Error(fmt.Sprintf("Error searching commits: %s", err))
 				//TODO update PR description with this data and mark as not humanly resolvable
@@ -625,7 +625,7 @@ func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo
 		slog.Info(fmt.Sprintf("Ignoring blocked API: '%s'", apiState.Id))
 		return nil
 	}
-	commits, err := gitrepo.GetApiCommits(apiRepo, apiState.Id, apiState.LastGeneratedCommit, nil)
+	commits, err := gitrepo.GetCommitsForPath(apiRepo, apiState.Id, apiState.LastGeneratedCommit, nil)
 	if err != nil {
 		return err
 	}

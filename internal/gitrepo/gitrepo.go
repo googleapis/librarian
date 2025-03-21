@@ -221,10 +221,10 @@ func PrintStatus(ctx context.Context, repo *Repo) error {
 	return nil
 }
 
-// Returns the commits in an API rooted at the given path,
+// Returns the commits affecting the given path,
 // stopping looking at the given commit (which is not included in the results).
 // The returned commits are ordered such that the most recent commit is first.
-func GetApiCommits(repo *Repo, path string, commit string, retrieveAfterTimestamp *time.Time) ([]object.Commit, error) {
+func GetCommitsForPath(repo *Repo, path string, commit string, retrieveAfterTimestamp *time.Time) ([]object.Commit, error) {
 	commits := []object.Commit{}
 	finalHash := plumbing.NewHash(commit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
@@ -288,7 +288,7 @@ func GetApiCommits(repo *Repo, path string, commit string, retrieveAfterTimestam
 }
 
 // Returns all commits since tagName that contains files in path
-func GetApiCommitsSinceTagForSource(repo *Repo, path, tagName string) ([]object.Commit, error) {
+func GetCommitsSinceTagForPath(repo *Repo, path, tagName string) ([]object.Commit, error) {
 	tagRef, err := repo.repo.Tag(tagName)
 
 	if err != nil {
@@ -300,7 +300,7 @@ func GetApiCommitsSinceTagForSource(repo *Repo, path, tagName string) ([]object.
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 	}
 
-	return GetApiCommits(repo, path, tagCommit.Hash.String(), &tagCommit.Committer.When)
+	return GetCommitsForPath(repo, path, tagCommit.Hash.String(), &tagCommit.Committer.When)
 }
 
 // Creates a branch with the given name in the default remote.
