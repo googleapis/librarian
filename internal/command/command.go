@@ -158,8 +158,18 @@ var CmdConfigure = &Command{
 		if err := commitAll(ctx, languageRepo, msg); err != nil {
 			return err
 		}
-		if err := container.Build(image, "repo-root", languageRepo.Dir, "api-path", flagAPIPath); err != nil {
+		// Reload state so we can find a library containing the API.
+		state, err = loadState(languageRepo)
+		if err != nil {
 			return err
+		}
+		libraryId := findLibrary(state, flagAPIPath)
+		if libraryId == "" {
+			slog.Warn(fmt.Sprintf("No library contains newly-configured API %s; skipping build.", flagAPIPath))
+		} else {
+			if err := container.BuildLibrary(image, languageRepo.Dir, libraryId); err != nil {
+				return err
+			}
 		}
 
 		return push(ctx, languageRepo, startOfRun, "", "")
@@ -216,7 +226,7 @@ var CmdGenerate = &Command{
 		}
 
 		if flagBuild {
-			if err := container.Build(image, "generator-output", outputDir, "api-path", flagAPIPath); err != nil {
+			if err := container.BuildRaw(image, outputDir, flagAPIPath); err != nil {
 				return err
 			}
 		}
@@ -481,8 +491,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 				continue
 			}
 			//TODO: make this configurable so we don't have to run per library
-			if flagSkipBuild {
-				if err := container.Build(flagImage, "repo-root", repoPath, "library-id", library.Id); err != nil {
+			if !flagSkipBuild {
+				if err := container.BuildLibrary(flagImage, repoPath, library.Id); err != nil {
 					slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
 					continue
 					//TODO: log in release PR
@@ -659,15 +669,20 @@ func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo
 	}
 
 	// Once we've committed, we can build - but then check that nothing has changed afterwards.
-	if err := container.Build(image, "repo-root", languageRepo.Dir, "api-path", apiState.Id); err != nil {
-		return err
-	}
-	clean, err := gitrepo.IsClean(ctx, languageRepo)
-	if err != nil {
-		return err
-	}
-	if !clean {
-		return fmt.Errorf("building '%s' created changes in the repo", apiState.Id)
+	libraryId := findLibrary(repoState, apiState.Id)
+	if libraryId == "" {
+		slog.Warn(fmt.Sprintf("No library contains regenerated API %s; skipping build.", flagAPIPath))
+	} else {
+		if err := container.BuildLibrary(image, languageRepo.Dir, libraryId); err != nil {
+			return err
+		}
+		clean, err := gitrepo.IsClean(ctx, languageRepo)
+		if err != nil {
+			return err
+		}
+		if !clean {
+			return fmt.Errorf("building '%s' created changes in the repo", apiState.Id)
+		}
 	}
 	return nil
 }
@@ -723,6 +738,21 @@ func deriveImage(state *statepb.PipelineState) string {
 	} else {
 		return fmt.Sprintf("%s/%s:%s", defaultRepository, relativeImage, tag)
 	}
+}
+
+// Finds a library which includes code generated from the given API path.
+// If there are no such libraries, an empty string is returned.
+// If there are multiple such libraries, the first match is returned.
+func findLibrary(state *statepb.PipelineState, apiPath string) string {
+
+	for _, library := range state.LibraryReleaseStates {
+		for _, apiMapping := range library.Apis {
+			if apiMapping.ApiId == apiPath {
+				return library.Id
+			}
+		}
+	}
+	return ""
 }
 
 func loadState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, error) {
