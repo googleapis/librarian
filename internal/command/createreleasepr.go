@@ -17,7 +17,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -195,7 +194,6 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 	}
 	if len(errorsInGeneration) > 0 {
 		prDescription = fmt.Sprintf("There were errors found in creating this release PR:%s\n%s\n", strings.Join(errorsInGeneration, "\n"), prDescription)
-		log.Fatal("final PR description" + prDescription)
 	}
 	return prDescription, len(errorsInGeneration) == 0, nil
 }
