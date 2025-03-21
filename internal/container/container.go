@@ -217,8 +217,10 @@ func runCommand(c string, args ...string) error {
 	cmd := exec.Command(c, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	slog.Info(strings.Repeat("=", 80))
+	slog.Info(fmt.Sprintf("=== Docker start %s", strings.Repeat("=", 63)))
 	slog.Info(cmd.String())
 	slog.Info(strings.Repeat("-", 80))
-	return cmd.Run()
+	err := cmd.Run()
+	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
+	return err
 }
