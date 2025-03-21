@@ -117,7 +117,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 	var prDescription string
 	var lastGeneratedCommit object.Commit
 	for _, library := range libraries {
-		var commitMessages []string
+		var commitMessages []*CommitMessage
 		//TODO: need to add common paths as well as refactor to see if can check all paths at 1 x
 		for _, sourcePath := range library.SourcePaths {
 			//TODO: figure out generic logic
@@ -128,21 +128,21 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 				//TODO update PR description with this data and mark as not humanly resolvable
 			}
 			for _, commit := range commits {
-				commitMessages = append(commitMessages, commit.Message)
+				commitMessages = append(commitMessages, ParseCommit(commit))
 			}
 			if len(commitMessages) > 0 {
 				lastGeneratedCommit = commits[len(commits)-1]
 			}
 		}
 
-		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages) {
+		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages, library.Id) {
 			releaseVersion, err := calculateNextVersion(library)
 			if err != nil {
 				return "", err
 			}
 
-			releaseNotes, err := createReleaseNotes(library, commitMessages, inputDirectory, releaseVersion)
-			if err != nil {
+			releaseNotes := formatReleaseNotes(commitMessages)
+			if err = saveReleaseNotes(inputDirectory, library.Id, releaseVersion, releaseNotes); err != nil {
 				return "", err
 			}
 
@@ -157,13 +157,14 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 					slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
 					continue
 					//TODO: log in release PR
+					//TODO: need to revert the changes made to state for this library/reload from last commit
 				}
 			}
 
 			//TODO: add extra meta data what is this
 			prDescription += fmt.Sprintf("Release library: %s version %s\n", library.Id, releaseVersion)
 
-			libraryReleaseCommitDesc := fmt.Sprintf("Release library: %s version %s\n", library.Id, releaseVersion)
+			libraryReleaseCommitDesc := fmt.Sprintf("Release library: %s version %s\n\n", library.Id, releaseVersion)
 
 			updateLibraryMetadata(library.Id, releaseVersion, lastGeneratedCommit.Hash.String(), pipelineState)
 
@@ -174,7 +175,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 
 			err = createLibraryReleaseCommit(ctx, repo, libraryReleaseCommitDesc+releaseNotes)
 			if err != nil {
-				//TODO: need to revert the changes made to state for this library/reload from last commit
+				return "", err
 			}
 		}
 	}
@@ -196,25 +197,56 @@ func createLibraryReleaseCommit(ctx context.Context, repo *gitrepo.Repo, release
 	return nil
 }
 
-// TODO: update with actual logic
-func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []string, inputDirectory string, releaseVersion string) (string, error) {
-	var releaseNotes string
+func formatReleaseNotes(commitMessages []*CommitMessage) string {
+	features := []string{}
+	docs := []string{}
+	fixes := []string{}
 
+	// TODO: Deduping (same message across multiple commits)
+	// TODO: Breaking changes
+	// TODO: Use the source links etc
 	for _, commitMessage := range commitMessages {
-		releaseNotes += fmt.Sprintf("%s\n", commitMessage)
+		features = append(features, commitMessage.Features...)
+		docs = append(docs, commitMessage.Docs...)
+		fixes = append(fixes, commitMessage.Fixes...)
 	}
 
-	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", library.Id, releaseVersion))
+	var builder strings.Builder
+
+	maybeAppendReleaseNotesSection(&builder, "New features", features)
+	maybeAppendReleaseNotesSection(&builder, "Bug fixes", fixes)
+	maybeAppendReleaseNotesSection(&builder, "Documentation improvements", docs)
+
+	if builder.Len() == 0 {
+		// TODO: Work out something rather better than this...
+		builder.WriteString("No specific release notes.")
+	}
+	return builder.String()
+}
+
+func saveReleaseNotes(inputDirectory, libraryId, releaseVersion, releaseNotes string) error {
+	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", libraryId, releaseVersion))
 
 	file, err := os.Create(path)
 	if err != nil {
-		return "", err
+		return err
 	}
 	_, err = file.WriteString(releaseNotes)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return releaseNotes, nil
+	return nil
+}
+
+func maybeAppendReleaseNotesSection(builder *strings.Builder, description string, lines []string) {
+	if len(lines) == 0 {
+		return
+	}
+	fmt.Fprintf(builder, "### %s\n\n", description)
+	for _, line := range lines {
+		fmt.Fprintf(builder, "- %s\n", line)
+	}
+	builder.WriteString("\n")
 }
 
 func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) {
@@ -287,9 +319,10 @@ func updateLibraryMetadata(libraryId string, releaseVersion string, lastGenerate
 	}
 }
 
-func isReleaseWorthy(messages []string) bool {
-	for _, str := range messages {
-		if strings.Contains(strings.ToLower(str), "feat") {
+func isReleaseWorthy(messages []*CommitMessage, libraryId string) bool {
+	for _, message := range messages {
+		// TODO: Work out why we can't call message.IsReleaseWorthy(libraryId)
+		if IsReleaseWorthy(message, libraryId) {
 			return true
 		}
 	}
