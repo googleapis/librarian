@@ -345,25 +345,20 @@ func PushBranch(ctx context.Context, repo *Repo, remoteBranch string, accessToke
 
 // Creates a pull request in the remote repo. At the moment this requires a single remote to be
 // configured, which must have a GitHub HTTPS URL. We assume a base branch of "main".
-func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, accessToken string, title string, body string) error {
+func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, accessToken string, title string, body string) (*github.PullRequest, error) {
 	remotes, err := repo.repo.Remotes()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(remotes) != 1 {
-		return fmt.Errorf("can only create a PR with a single remote; number of remotes: %d", len(remotes))
+		return nil, fmt.Errorf("can only create a PR with a single remote; number of remotes: %d", len(remotes))
 	}
 
-	remoteUrl := remotes[0].Config().URLs[0]
-	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
-		return fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)
+	organization, repoName, err := getRepoMetadata(remotes)
+	if err != nil {
+		return nil, err
 	}
-	remotePath := remoteUrl[len("https://github.com/"):]
-	pathParts := strings.Split(remotePath, "/")
-	organization := pathParts[0]
-	repoName := pathParts[1]
-	repoName = strings.TrimSuffix(repoName, ".git")
 
 	if body == "" {
 		body = "Regenerated all changed APIs. See individual commits for details."
@@ -379,11 +374,54 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 
 	pr, _, err := gitHubClient.PullRequests.Create(ctx, organization, repoName, newPR)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
+	return pr, nil
+}
+
+func AddLabelToPr(ctx context.Context, repo *Repo, prNumber int, gitHubAccessToken string, label string) error {
+
+	gitHubClient := github.NewClient(nil).WithAuthToken(gitHubAccessToken)
+
+	remotes, err := repo.repo.Remotes()
+	if err != nil {
+		return err
+	}
+	organization, repoName, err := getRepoMetadata(remotes)
+	if err != nil {
+		return err
+	}
+
+	labels := []string{label}
+
+	_, _, err = gitHubClient.Issues.AddLabelsToIssue(ctx, organization, repoName, prNumber, labels)
+	if err != nil {
+		return fmt.Errorf("failed to add label: %w", err)
+	}
 	return nil
+}
+
+func CleanWorkingTree(repo *Repo) error {
+	worktree, err := repo.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Clean(&git.CleanOptions{})
+}
+
+func getRepoMetadata(remotes []*git.Remote) (string, string, error) {
+	remoteUrl := remotes[0].Config().URLs[0]
+	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
+		return "", "", fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)
+	}
+	remotePath := remoteUrl[len("https://github.com/"):]
+	pathParts := strings.Split(remotePath, "/")
+	organization := pathParts[0]
+	repoName := pathParts[1]
+	repoName = strings.TrimSuffix(repoName, ".git")
+	return organization, repoName, nil
 }
 
 func Checkout(ctx context.Context, repo *Repo, commit string) error {

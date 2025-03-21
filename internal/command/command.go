@@ -167,9 +167,9 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	return gitrepo.Commit(ctx, repo, msg, flagGitUserName, flagGitUserEmail)
 }
 
-func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title, description string) error {
+func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) (int, error) {
 	if !flagPush {
-		return nil
+		return -1, nil
 	}
 
 	// This should already have been validated to be non-empty by validatePush
@@ -178,9 +178,13 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title, 
 	err := gitrepo.PushBranch(ctx, repo, branch, gitHubAccessToken)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
-		return err
+		return -1, err
 	}
-	return gitrepo.CreatePullRequest(ctx, repo, branch, gitHubAccessToken, title, description)
+	pr, err := gitrepo.CreatePullRequest(ctx, repo, branch, gitHubAccessToken, title, description)
+	if pr != nil {
+		return pr.GetNumber(), err
+	}
+	return -1, err
 }
 
 var Commands = []*Command{

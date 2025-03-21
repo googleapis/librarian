@@ -56,12 +56,12 @@ var CmdCreateReleasePR = &Command{
 			flagImage = deriveImage(pipelineState)
 		}
 
-		prDescription, err := generateReleaseCommitForEachLibrary(ctx, languageRepo.Dir, languageRepo, inputDirectory, pipelineState)
+		prDescription, errorsInGeneration, err := generateReleaseCommitForEachLibrary(ctx, languageRepo.Dir, languageRepo, inputDirectory, pipelineState)
 		if err != nil {
 			return err
 		}
 
-		return generateReleasePr(ctx, languageRepo, prDescription)
+		return generateReleasePr(ctx, languageRepo, prDescription, errorsInGeneration)
 	},
 }
 
@@ -93,12 +93,20 @@ func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, error) {
 	return languageRepo, inputDir, nil
 }
 
-func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription string) error {
+func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription string, errorsInGeneration bool) error {
 	if prDescription != "" {
-		err := push(ctx, repo, time.Now(), "chore(main): release", "Release "+prDescription)
+		prNumber, err := push(ctx, repo, time.Now(), "chore(main): release", "Release "+prDescription)
 		if err != nil {
-			slog.Info(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
+			slog.Warn(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 			return err
+		}
+		if errorsInGeneration {
+			gitHubAccessToken := os.Getenv(gitHubTokenEnvironmentVariable)
+			err = gitrepo.AddLabelToPr(ctx, repo, prNumber, gitHubAccessToken, "do-not-merge")
+			if err != nil {
+				slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
+				return nil //TODO: check if its okay to ignore
+			}
 		}
 	}
 	return nil
@@ -107,9 +115,10 @@ func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription st
 /*
 this goes through each library in pipeline state and checks if any new commits have been added to that library since previous commit tag
 */
-func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (string, error) {
+func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (string, bool, error) {
 	libraries := pipelineState.Libraries
 	var prDescription string
+	var errorsInGeneration []string
 	for _, library := range libraries {
 		if library.GenerationAutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
 			slog.Info(fmt.Sprintf("Skipping release-blocked library: '%s'", library.Id))
@@ -121,9 +130,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 		allSourcePaths := append(pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
 		commits, err := gitrepo.GetCommitsForPathsSinceTag(repo, allSourcePaths, previousReleaseTag)
 		if err != nil {
-			slog.Error(fmt.Sprintf("Error searching commits: %s", err))
+			logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInGeneration)
 			continue
-			//TODO update PR description with this data and mark as not humanly resolvable
 		}
 		for _, commit := range commits {
 			commitMessages = append(commitMessages, ParseCommit(commit))
@@ -132,26 +140,25 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages, library.Id) {
 			releaseVersion, err := calculateNextVersion(library)
 			if err != nil {
-				return "", err
+				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to calculate next version %s", library.Id, err), errorsInGeneration)
+				continue
 			}
 
 			releaseNotes := formatReleaseNotes(commitMessages)
-			if err = saveReleaseNotes(inputDirectory, library.Id, releaseVersion, releaseNotes); err != nil {
-				return "", err
+			if err = createReleaseNotesFile(inputDirectory, library.Id, releaseVersion, releaseNotes); err != nil {
+				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to create release notes file %s", library.Id, err), errorsInGeneration)
+				continue
 			}
 
 			if err := container.PrepareLibraryRelease(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
-				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
-				//TODO: log in release PR
+				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: prepare-library-release error %s", library.Id, err), errorsInGeneration)
 				continue
 			}
 			//TODO: make this configurable so we don't have to run per library
 			if !flagSkipBuild {
 				if err := container.BuildLibrary(flagImage, repoPath, library.Id); err != nil {
-					slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
+					errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: build/test failed with error %s", library.Id, err), errorsInGeneration)
 					continue
-					//TODO: log in release PR
-					//TODO: need to revert the changes made to state for this library/reload from last commit
 				}
 			}
 
@@ -160,9 +167,17 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			library.LastReleasedCommit = library.LastGeneratedCommit
 			library.ReleaseTimestamp = timestamppb.Now()
 
-			err = saveState(repo, pipelineState)
-			if err != nil {
-				return "", err
+			if err = saveState(repo, pipelineState); err != nil {
+				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to save pipeline state %s", library.Id, err), errorsInGeneration)
+				err := gitrepo.CleanWorkingTree(repo)
+				if err != nil {
+					isClean, err2 := gitrepo.IsClean(ctx, repo)
+					if err2 != nil || !isClean {
+						slog.Error(fmt.Sprintf("working directory is in a bad state aborting process: '%s'", err))
+						return "", true, err
+					}
+				}
+				continue
 			}
 
 			//TODO: add extra meta data what is this
@@ -171,11 +186,22 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 
 			err = commitAll(ctx, repo, libraryReleaseCommitDesc+releaseNotes)
 			if err != nil {
-				return "", err
+				//TODO: need to work out the different states: no commit happened vs need to rollback commit
+				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to create release commit %s", library.Id, err), errorsInGeneration)
+				continue
 			}
 		}
 	}
-	return prDescription, nil
+	if (errorsInGeneration != nil) && len(errorsInGeneration) > 0 {
+		prDescription = fmt.Sprintf("There were errors found in creating this release PR:%s\n%s\n", strings.Join(errorsInGeneration, "\n"), prDescription)
+	}
+	return prDescription, (errorsInGeneration == nil || len(errorsInGeneration) == 0), nil
+}
+
+func logErrorAndAppendToErrorList(message string, errorsInGeneration []string) []string {
+	slog.Warn(message)
+	errorsInGeneration = append(errorsInGeneration, message)
+	return errorsInGeneration
 }
 
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
@@ -205,7 +231,7 @@ func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	return builder.String()
 }
 
-func saveReleaseNotes(inputDirectory, libraryId, releaseVersion, releaseNotes string) error {
+func createReleaseNotesFile(inputDirectory, libraryId, releaseVersion, releaseNotes string) error {
 	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", libraryId, releaseVersion))
 
 	file, err := os.Create(path)

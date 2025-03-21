@@ -138,6 +138,7 @@ var CmdConfigure = &Command{
 			return err
 		}
 
-		return push(ctx, languageRepo, startOfRun, "", "")
+		_, err = push(ctx, languageRepo, startOfRun, "", "")
+		return err
 	},
 }

@@ -158,7 +158,8 @@ var CmdUpdateImageTag = &Command{
 			return nil
 		}
 
-		return push(ctx, languageRepo, startOfRun, "chore: update generation image tag", "")
+		_, err = push(ctx, languageRepo, startOfRun, "chore: update generation image tag", "")
+		return err
 	},
 }
 

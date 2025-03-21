@@ -163,7 +163,8 @@ var CmdUpdateApis = &Command{
 		}
 
 		title := fmt.Sprintf("feat: API regeneration: %s", formatTimestamp(startOfRun))
-		return push(ctx, languageRepo, startOfRun, title, "")
+		_, err = push(ctx, languageRepo, startOfRun, title, "")
+		return err
 	},
 }
 
