@@ -162,7 +162,8 @@ var CmdUpdateApis = &Command{
 			return nil
 		}
 
-		return push(ctx, languageRepo, startOfRun, "", "")
+		_, err = push(ctx, languageRepo, startOfRun, "", "")
+		return err
 	},
 }
 

@@ -166,12 +166,12 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	return gitrepo.Commit(ctx, repo, msg)
 }
 
-func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) error {
+func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) (int, error) {
 	if !flagPush {
-		return nil
+		return -1, nil
 	}
 	if flagGitHubToken == "" {
-		return fmt.Errorf("no GitHub token supplied for push")
+		return -1, fmt.Errorf("no GitHub token supplied for push")
 	}
 	const yyyyMMddHHmmss = "20060102T150405" // Expected format by time library
 	timestamp := startOfRun.Format(yyyyMMddHHmmss)
@@ -179,12 +179,16 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title s
 	err := gitrepo.PushBranch(ctx, repo, branch, flagGitHubToken)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
-		return err
+		return -1, err
 	}
 	if title == "" {
 		title = fmt.Sprintf("feat: API regeneration: %s", timestamp)
 	}
-	return gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title, description)
+	pr, err := gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title, description)
+	if pr != nil {
+		return pr.GetNumber(), err
+	}
+	return -1, err
 }
 
 var Commands = []*Command{
