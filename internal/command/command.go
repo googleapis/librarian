@@ -167,9 +167,9 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	return gitrepo.Commit(ctx, repo, msg, flagGitUserName, flagGitUserEmail)
 }
 
-func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) (int, error) {
+func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) (*gitrepo.PullRequestMetadata, error) {
 	if !flagPush {
-		return -1, nil
+		return nil, nil
 	}
 
 	// This should already have been validated to be non-empty by validatePush
@@ -178,7 +178,7 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title s
 	err := gitrepo.PushBranch(ctx, repo, branch, gitHubAccessToken)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
-		return -1, err
+		return nil, err
 	}
 	pr, err := gitrepo.CreatePullRequest(ctx, repo, branch, gitHubAccessToken, title, description)
 	if pr != nil {

@@ -38,6 +38,10 @@ type Repo struct {
 	repo *git.Repository
 }
 
+type PullRequestMetadata struct {
+	Number int
+}
+
 // CloneOrOpen provides access to a Git repository.
 //
 // If a repository already exists at the specified directory path (dirpath),
@@ -345,7 +349,7 @@ func PushBranch(ctx context.Context, repo *Repo, remoteBranch string, accessToke
 
 // Creates a pull request in the remote repo. At the moment this requires a single remote to be
 // configured, which must have a GitHub HTTPS URL. We assume a base branch of "main".
-func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, accessToken string, title string, body string) (*github.PullRequest, error) {
+func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, accessToken string, title string, body string) (*PullRequestMetadata, error) {
 	remotes, err := repo.repo.Remotes()
 	if err != nil {
 		return nil, err
@@ -378,7 +382,8 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 	}
 
 	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
-	return pr, nil
+	pullRequestMetadata := &PullRequestMetadata{Number: pr.GetNumber()}
+	return pullRequestMetadata, nil
 }
 
 func AddLabelToPr(ctx context.Context, repo *Repo, prNumber int, gitHubAccessToken string, label string) error {

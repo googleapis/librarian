@@ -17,6 +17,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -95,14 +96,14 @@ func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, error) {
 
 func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription string, errorsInGeneration bool) error {
 	if prDescription != "" {
-		prNumber, err := push(ctx, repo, time.Now(), "chore(main): release", "Release "+prDescription)
+		prMetadata, err := push(ctx, repo, time.Now(), "chore(main): release", prDescription)
 		if err != nil {
 			slog.Warn(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 			return err
 		}
 		if errorsInGeneration {
 			gitHubAccessToken := os.Getenv(gitHubTokenEnvironmentVariable)
-			err = gitrepo.AddLabelToPr(ctx, repo, prNumber, gitHubAccessToken, "do-not-merge")
+			err = gitrepo.AddLabelToPr(ctx, repo, prMetadata.Number, "do-not-merge", flagGitHubToken)
 			if err != nil {
 				slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 				return nil //TODO: check if its okay to ignore
@@ -192,10 +193,11 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			}
 		}
 	}
-	if (errorsInGeneration != nil) && len(errorsInGeneration) > 0 {
+	if len(errorsInGeneration) > 0 {
 		prDescription = fmt.Sprintf("There were errors found in creating this release PR:%s\n%s\n", strings.Join(errorsInGeneration, "\n"), prDescription)
+		log.Fatal("final PR description" + prDescription)
 	}
-	return prDescription, (errorsInGeneration == nil || len(errorsInGeneration) == 0), nil
+	return prDescription, len(errorsInGeneration) == 0, nil
 }
 
 func logErrorAndAppendToErrorList(message string, errorsInGeneration []string) []string {
