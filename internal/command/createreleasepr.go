@@ -54,12 +54,12 @@ var CmdCreateReleasePR = &Command{
 			flagImage = deriveImage(pipelineState)
 		}
 
-		prDescription, errorsInGeneration, err := generateReleaseCommitForEachLibrary(ctx, languageRepo.Dir, languageRepo, inputDirectory, pipelineState)
+		prDescription, errorsInRelease, err := generateReleaseCommitForEachLibrary(ctx, languageRepo.Dir, languageRepo, inputDirectory, pipelineState)
 		if err != nil {
 			return err
 		}
 
-		return generateReleasePr(ctx, languageRepo, prDescription, errorsInGeneration)
+		return generateReleasePr(ctx, languageRepo, prDescription, errorsInRelease)
 	},
 }
 
@@ -106,7 +106,7 @@ func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription st
 			return err
 		}
 		if errorsInGeneration {
-			err = gitrepo.AddLabelToPr(ctx, repo, prMetadata.Number, "do-not-merge", flagGitHubToken)
+			err = gitrepo.AddLabelToPullRequest(ctx, repo, prMetadata.Number, "do-not-merge", flagGitHubToken)
 			if err != nil {
 				slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 				return nil //TODO: check if its okay to ignore
@@ -122,7 +122,7 @@ this goes through each library in pipeline state and checks if any new commits h
 func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (string, bool, error) {
 	libraries := pipelineState.LibraryReleaseStates
 	var prDescription string
-	var errorsInGeneration []string
+	var errorsInRelease []string
 	var lastGeneratedCommit object.Commit
 	for _, library := range libraries {
 		var commitMessages []*CommitMessage
@@ -132,7 +132,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			previousReleaseTag := library.Id + "-" + library.CurrentVersion
 			commits, err := gitrepo.GetCommitsSinceTagForPath(repo, sourcePath, previousReleaseTag)
 			if err != nil {
-				logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInGeneration)
+				logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInRelease)
 				continue
 			}
 			for _, commit := range commits {
@@ -146,24 +146,24 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages, library.Id) {
 			releaseVersion, err := calculateNextVersion(library)
 			if err != nil {
-				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to calculate next version %s", library.Id, err), errorsInGeneration)
+				errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to calculate next version %s", library.Id, err), errorsInRelease)
 				continue
 			}
 
 			releaseNotes := formatReleaseNotes(commitMessages)
 			if err = createReleaseNotesFile(inputDirectory, library.Id, releaseVersion, releaseNotes); err != nil {
-				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to create release notes file %s", library.Id, err), errorsInGeneration)
+				errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to create release notes file %s", library.Id, err), errorsInRelease)
 				continue
 			}
 
 			if err := container.UpdateReleaseMetadata(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
-				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: prepare-library-release error %s", library.Id, err), errorsInGeneration)
+				errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: prepare-library-release error %s", library.Id, err), errorsInRelease)
 				continue
 			}
 			//TODO: make this configurable so we don't have to run per library
 			if !flagSkipBuild {
 				if err := container.BuildLibrary(flagImage, repoPath, library.Id); err != nil {
-					errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: build/test failed with error %s", library.Id, err), errorsInGeneration)
+					errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: build/test failed with error %s", library.Id, err), errorsInRelease)
 					continue
 				}
 			}
@@ -176,7 +176,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			updateLibraryMetadata(library.Id, releaseVersion, lastGeneratedCommit.Hash.String(), pipelineState)
 
 			if err = saveState(repo, pipelineState); err != nil {
-				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to save pipeline state %s", library.Id, err), errorsInGeneration)
+				errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to save pipeline state %s", library.Id, err), errorsInRelease)
 				err := gitrepo.CleanWorkingTree(repo)
 				if err != nil {
 					isClean, err2 := gitrepo.IsClean(ctx, repo)
@@ -191,15 +191,15 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			err = createLibraryReleaseCommit(ctx, repo, libraryReleaseCommitDesc+releaseNotes)
 			if err != nil {
 				//TODO: need to work out the different states: no commit happened vs need to rollback commit
-				errorsInGeneration = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to create release commit %s", library.Id, err), errorsInGeneration)
+				errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to create release commit %s", library.Id, err), errorsInRelease)
 				continue
 			}
 		}
 	}
-	if len(errorsInGeneration) > 0 {
-		prDescription = fmt.Sprintf("There were errors found in creating this release PR:%s\n%s\n", strings.Join(errorsInGeneration, "\n"), prDescription)
+	if len(errorsInRelease) > 0 {
+		prDescription = fmt.Sprintf("There were errors found in creating this release PR:%s\n%s\n", strings.Join(errorsInRelease, "\n"), prDescription)
 	}
-	return prDescription, len(errorsInGeneration) == 0, nil
+	return prDescription, len(errorsInRelease) > 0, nil
 }
 
 func logErrorAndAppendToErrorList(message string, errorsInGeneration []string) []string {
