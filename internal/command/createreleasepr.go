@@ -17,6 +17,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/container"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -199,8 +200,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 
 func logErrorAndAppendToErrorList(message string, errorsInGeneration []string) []string {
 	slog.Warn(message)
-	errorsInGeneration = append(errorsInGeneration, message)
-	return errorsInGeneration
+	return append(errorsInGeneration, message)
 }
 
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
