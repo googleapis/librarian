@@ -5,6 +5,7 @@ go 1.23.6
 require github.com/go-git/go-git/v5 v5.14.0
 
 require (
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/google/go-github/v69 v69.2.0
 	google.golang.org/protobuf v1.36.5
 )

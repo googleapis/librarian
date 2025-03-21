@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -216,36 +217,56 @@ func createReleaseNotes(library *statepb.LibraryReleaseState, commitMessages []s
 	return releaseNotes, nil
 }
 
-// TODO: look for semvar lib
 func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) {
 	if library.NextVersion != "" {
 		return library.NextVersion, nil
 	}
-	parts := strings.Split(library.CurrentVersion, ".")
-	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid version format: %s", library.CurrentVersion)
-	}
-
-	major, err := strconv.Atoi(parts[0])
+	current, err := semver.StrictNewVersion(library.CurrentVersion)
 	if err != nil {
-		return "", fmt.Errorf("invalid major version: %w", err)
+		return "", err
 	}
+	var next *semver.Version
+	prerelease := current.Prerelease()
+	if prerelease != "" {
+		nextPrerelease, err := calculateNextPrerelease(prerelease)
+		if err != nil {
+			return "", err
+		}
+		next = semver.New(current.Major(), current.Minor(), current.Patch(), nextPrerelease, "")
+	} else {
+		next = semver.New(current.Major(), current.Minor()+1, current.Patch(), "", "")
+	}
+	return next.String(), nil
+}
 
-	minor, err := strconv.Atoi(parts[1])
+// Match trailing digits in the prerelease part, then parse those digits as an integer.
+// Increment the integer, then format it again - keeping as much of the existing prerelease as is
+// required to end up with a string longer-than-or-equal to the original.
+// If there are no trailing digits, fail.
+// Note: this assumes the prerelease is purely ASCII.
+func calculateNextPrerelease(prerelease string) (string, error) {
+	digits := 0
+	for i := len(prerelease) - 1; i >= 0; i-- {
+		c := prerelease[i]
+		if c < '0' || c > '9' {
+			break
+		} else {
+			digits++
+		}
+	}
+	if digits == 0 {
+		return "", fmt.Errorf("unable to create next prerelease from '%s'", prerelease)
+	}
+	currentSuffix := prerelease[len(prerelease)-digits:]
+	currentNumber, err := strconv.Atoi(currentSuffix)
 	if err != nil {
-		return "", fmt.Errorf("invalid minor version: %w", err)
+		return "", err
 	}
-
-	suffix := strings.Split(parts[2], "-")
-	patch := "0"
-	if len(suffix) > 1 {
-		patch += "-" + suffix[1]
+	nextSuffix := strconv.Itoa(currentNumber + 1)
+	if len(nextSuffix) < len(currentSuffix) {
+		nextSuffix = strings.Repeat("0", len(currentSuffix)-len(nextSuffix)) + nextSuffix
 	}
-
-	//increment minor version
-	minor++
-
-	return fmt.Sprintf("%d.%d.%s", major, minor, patch), nil
+	return prerelease[:(len(prerelease)-digits)] + nextSuffix, nil
 }
 
 func updateLibraryMetadata(libraryId string, releaseVersion string, lastGeneratedCommit string, pipelineState *statepb.PipelineState) {
