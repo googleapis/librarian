@@ -17,6 +17,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/container"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -26,7 +27,6 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -132,7 +132,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			previousReleaseTag := library.Id + "-" + library.CurrentVersion
 			commits, err := gitrepo.GetCommitsSinceTagForPath(repo, sourcePath, previousReleaseTag)
 			if err != nil {
-				logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInRelease)
+				errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInRelease)
 				continue
 			}
 			for _, commit := range commits {
@@ -204,8 +204,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 
 func logErrorAndAppendToErrorList(message string, errorsInGeneration []string) []string {
 	slog.Warn(message)
-	errorsInGeneration = append(errorsInGeneration, message)
-	return errorsInGeneration
+	return append(errorsInGeneration, message)
 }
 
 func createLibraryReleaseCommit(ctx context.Context, repo *gitrepo.Repo, releaseNotes string) error {
