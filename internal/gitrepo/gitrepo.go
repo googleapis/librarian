@@ -386,9 +386,8 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 	return pullRequestMetadata, nil
 }
 
-func AddLabelToPr(ctx context.Context, repo *Repo, prNumber int, gitHubAccessToken string, label string) error {
-
-	gitHubClient := github.NewClient(nil).WithAuthToken(gitHubAccessToken)
+func AddLabelToPullRequest(ctx context.Context, repo *Repo, prNumber int, label string, accessToken string) error {
+	gitHubClient := github.NewClient(nil).WithAuthToken(accessToken)
 
 	remotes, err := repo.repo.Remotes()
 	if err != nil {
