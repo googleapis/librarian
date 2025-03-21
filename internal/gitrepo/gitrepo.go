@@ -64,7 +64,7 @@ func Clone(ctx context.Context, dirpath, repoURL string) (*Repo, error) {
 		URL:           repoURL,
 		ReferenceName: plumbing.HEAD,
 		SingleBranch:  true,
-		Tags:          git.NoTags,
+		Tags:          git.AllTags,
 		// .NET uses submodules for conformance tests.
 		// (There may be other examples too.)
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
