@@ -25,11 +25,56 @@ import (
 )
 
 func Generate(ctx context.Context, image, apiRoot, output, generatorInput, apiPath string) error {
-	return runGenerate(image, apiRoot, output, generatorInput, apiPath)
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
+	}
+	if apiRoot == "" {
+		return fmt.Errorf("apiRoot cannot be empty")
+	}
+	if output == "" {
+		return fmt.Errorf("output cannot be empty")
+	}
+	if generatorInput == "" && apiPath == "" {
+		return fmt.Errorf("apiPath and generatorInput can't both be empty")
+	}
+	containerArgs := []string{
+		"generate",
+		"--api-root=/apis",
+		"--output=/output",
+	}
+	mounts := []string{
+		fmt.Sprintf("%s:/apis", apiRoot),
+		fmt.Sprintf("%s:/output", output),
+	}
+
+	if generatorInput != "" {
+		mounts = append(mounts, fmt.Sprintf("%s:/generator-input", generatorInput))
+		containerArgs = append(containerArgs, "--generator-input=/generator-input")
+	}
+	if apiPath != "" {
+		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
+	}
+	return runDocker(image, mounts, containerArgs)
 }
 
 func Clean(ctx context.Context, image, repoRoot, apiPath string) error {
-	return runClean(image, repoRoot, apiPath)
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
+	}
+	if repoRoot == "" {
+		return fmt.Errorf("repoRoot cannot be empty")
+	}
+	mounts := []string{
+		fmt.Sprintf("%s:/repo", repoRoot),
+	}
+	containerArgs := []string{
+		"clean",
+		"--repo-root=/repo",
+	}
+	if apiPath != "" {
+		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
+	}
+	return runDocker(image, mounts, containerArgs)
 }
 
 func BuildRaw(image, generatorOutput, apiPath string) error {
@@ -115,59 +160,6 @@ func UpdateReleaseMetadata(image string, languageRepo string, inputsDirectory st
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
 
-	return runDocker(image, mounts, containerArgs)
-}
-
-func runGenerate(image, apiRoot, output, generatorInput, apiPath string) error {
-	if image == "" {
-		return fmt.Errorf("image cannot be empty")
-	}
-	if apiRoot == "" {
-		return fmt.Errorf("apiRoot cannot be empty")
-	}
-	if output == "" {
-		return fmt.Errorf("output cannot be empty")
-	}
-	if generatorInput == "" && apiPath == "" {
-		return fmt.Errorf("apiPath and generatorInput can't both be empty")
-	}
-	containerArgs := []string{
-		"generate",
-		"--api-root=/apis",
-		"--output=/output",
-	}
-	mounts := []string{
-		fmt.Sprintf("%s:/apis", apiRoot),
-		fmt.Sprintf("%s:/output", output),
-	}
-
-	if generatorInput != "" {
-		mounts = append(mounts, fmt.Sprintf("%s:/generator-input", generatorInput))
-		containerArgs = append(containerArgs, "--generator-input=/generator-input")
-	}
-	if apiPath != "" {
-		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
-	}
-	return runDocker(image, mounts, containerArgs)
-}
-
-func runClean(image, repoRoot, apiPath string) error {
-	if image == "" {
-		return fmt.Errorf("image cannot be empty")
-	}
-	if repoRoot == "" {
-		return fmt.Errorf("repoRoot cannot be empty")
-	}
-	mounts := []string{
-		fmt.Sprintf("%s:/repo", repoRoot),
-	}
-	containerArgs := []string{
-		"clean",
-		"--repo-root=/repo",
-	}
-	if apiPath != "" {
-		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
-	}
 	return runDocker(image, mounts, containerArgs)
 }
 
