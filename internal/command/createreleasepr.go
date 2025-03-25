@@ -145,7 +145,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 				return "", err
 			}
 
-			if err := container.UpdateReleaseMetadata(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
+			if err := container.PrepareLibraryRelease(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
 				slog.Info(fmt.Sprintf("Received error running container: '%s'", err))
 				//TODO: log in release PR
 				continue
