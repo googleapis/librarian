@@ -17,7 +17,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -102,6 +101,13 @@ var CmdConfigure = &Command{
 			return err
 		}
 
+		// Reload the state, so we can find the newly-configured library
+		state, err = loadState(languageRepo)
+		if err != nil {
+			return err
+		}
+		libraryID := findLibrary(state, flagAPIPath)
+
 		// Take a defensive copy of the generator input directory from the language repo.
 		// Note that we didn't do this earlier, as the container.Configure step is *intended* to modify
 		// generator input in the repo. Any changes during generation aren't intended to be persisted though.
@@ -110,7 +116,7 @@ var CmdConfigure = &Command{
 			return err
 		}
 
-		if err := container.Generate(ctx, image, apiRoot, outputDir, generatorInput, flagAPIPath); err != nil {
+		if err := container.GenerateLibrary(ctx, image, apiRoot, outputDir, generatorInput, libraryID); err != nil {
 			return err
 		}
 		// We don't need to clean the newly-configured API, but we *do* need to clean any non-API-specific files.
@@ -120,22 +126,16 @@ var CmdConfigure = &Command{
 		if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 			return err
 		}
+		// TODO: Work out if we actually want to commit the generated code here. Maybe we should just commit the configuration,
+		// and let generation happen naturally on the next run.
+		// TODO: Update last_generated_commit if we *do* keep generating here.
 		msg := fmt.Sprintf("Configured API %s", flagAPIPath) // TODO: Improve info using googleapis commits and version info
 		if err := commitAll(ctx, languageRepo, msg); err != nil {
 			return err
 		}
-		// Reload state so we can find a library containing the API.
-		state, err = loadState(languageRepo)
-		if err != nil {
+		// Build the library we've just generated.
+		if err := container.BuildLibrary(image, languageRepo.Dir, libraryID); err != nil {
 			return err
-		}
-		libraryId := findLibrary(state, flagAPIPath)
-		if libraryId == "" {
-			slog.Warn(fmt.Sprintf("No library contains newly-configured API %s; skipping build.", flagAPIPath))
-		} else {
-			if err := container.BuildLibrary(image, languageRepo.Dir, libraryId); err != nil {
-				return err
-			}
 		}
 
 		return push(ctx, languageRepo, startOfRun, "", "")

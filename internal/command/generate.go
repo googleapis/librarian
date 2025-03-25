@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,8 +69,7 @@ var CmdGenerate = &Command{
 		}
 
 		image := deriveImage(nil)
-		// The final empty string argument is for generator input - we don't have any
-		if err := container.Generate(ctx, image, apiRoot, outputDir, "", flagAPIPath); err != nil {
+		if err := container.GenerateRaw(ctx, image, apiRoot, outputDir, flagAPIPath); err != nil {
 			return err
 		}
 

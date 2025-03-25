@@ -133,9 +133,9 @@ var CmdUpdateImageTag = &Command{
 			return err
 		}
 
-		// Perform "generate, clean" on each element in ApiGenerationStates.
-		for _, apiState := range state.ApiGenerationStates {
-			err = regenerateApi(ctx, apiRepo, languageRepo, generatorInput, image, outputDir, apiState)
+		// Perform "generate, clean" on each library.
+		for _, library := range state.Libraries {
+			err = regenerateLibrary(ctx, apiRepo, languageRepo, generatorInput, image, outputDir, library)
 			if err != nil {
 				return err
 			}
@@ -162,22 +162,29 @@ var CmdUpdateImageTag = &Command{
 	},
 }
 
-func regenerateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, apiState *statepb.ApiGenerationState) error {
-	if err := gitrepo.Checkout(ctx, apiRepo, apiState.LastGeneratedCommit); err != nil {
+func regenerateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, library *statepb.LibraryState) error {
+	if len(library.ApiPaths) == 0 {
+		slog.Info(fmt.Sprintf("Skipping non-generated library: '%s'", library.Id))
+		return nil
+	}
+
+	// TODO: Handle "no last generated commit"
+	if err := gitrepo.Checkout(ctx, apiRepo, library.LastGeneratedCommit); err != nil {
 		return err
 	}
-	slog.Info(fmt.Sprintf("Generating '%s'", apiState.Id))
+
+	slog.Info(fmt.Sprintf("Generating '%s'", library.Id))
 
 	// We create an output directory separately for each API.
-	outputDir := filepath.Join(outputRoot, apiState.Id)
+	outputDir := filepath.Join(outputRoot, library.Id)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return err
 	}
 
-	if err := container.Generate(ctx, image, apiRepo.Dir, outputDir, generatorInput, apiState.Id); err != nil {
+	if err := container.GenerateLibrary(ctx, image, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
-	if err := container.Clean(ctx, image, languageRepo.Dir, apiState.Id); err != nil {
+	if err := container.Clean(ctx, image, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

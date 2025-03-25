@@ -23,6 +23,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -81,11 +82,9 @@ func deriveImage(state *statepb.PipelineState) string {
 // If there are multiple such libraries, the first match is returned.
 func findLibrary(state *statepb.PipelineState, apiPath string) string {
 
-	for _, library := range state.LibraryReleaseStates {
-		for _, apiMapping := range library.Apis {
-			if apiMapping.ApiId == apiPath {
-				return library.Id
-			}
+	for _, library := range state.Libraries {
+		if slices.Contains(library.ApiPaths, apiPath) {
+			return library.Id
 		}
 	}
 	return ""
@@ -231,11 +230,11 @@ func init() {
 	for _, fn := range []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
-		addFlagAPIPath,
 		addFlagAPIRoot,
 		addFlagBranch,
 		addFlagGitHubToken,
 		addFlagLanguage,
+		addFlagLibraryID,
 		addFlagOutput,
 		addFlagPush,
 		addFlagRepoRoot,

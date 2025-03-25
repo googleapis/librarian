@@ -55,7 +55,7 @@ func TestCalculateNextVersion(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		library := &statepb.LibraryReleaseState{
+		library := &statepb.LibraryState{
 			CurrentVersion: test.current,
 		}
 		got, err := calculateNextVersion(library)

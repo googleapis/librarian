@@ -135,9 +135,9 @@ var CmdUpdateApis = &Command{
 			return err
 		}
 
-		// Perform "generate, clean, commit, build" on each element in ApiGenerationStates.
-		for _, apiState := range state.ApiGenerationStates {
-			err = updateApi(ctx, apiRepo, languageRepo, generatorInput, image, outputDir, state, apiState)
+		// Perform "generate, clean, commit, build" on each library.
+		for _, library := range state.Libraries {
+			err = updateLibrary(ctx, apiRepo, languageRepo, generatorInput, image, outputDir, state, library)
 			if err != nil {
 				return err
 			}
@@ -167,45 +167,51 @@ var CmdUpdateApis = &Command{
 	},
 }
 
-func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, repoState *statepb.PipelineState, apiState *statepb.ApiGenerationState) error {
-	if flagAPIPath != "" && flagAPIPath != apiState.Id {
-		// If flagAPIPath has been passed in, we only act on that API.
+func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, repoState *statepb.PipelineState, library *statepb.LibraryState) error {
+	if flagLibraryID != "" && flagLibraryID != library.Id {
+		// If flagLibraryID has been passed in, we only act on that library.
 		return nil
 	}
 
-	if apiState.AutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
-		slog.Info(fmt.Sprintf("Ignoring blocked API: '%s'", apiState.Id))
+	if len(library.ApiPaths) == 0 {
+		slog.Info(fmt.Sprintf("Skipping non-generated library: '%s'", library.Id))
 		return nil
 	}
-	commits, err := gitrepo.GetCommitsForPath(apiRepo, apiState.Id, apiState.LastGeneratedCommit, nil)
+
+	if library.GenerationAutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
+		slog.Info(fmt.Sprintf("Skipping generation-blocked library: '%s'", library.Id))
+		return nil
+	}
+	slog.Info(fmt.Sprintf("Finding new commits for %s", library.Id))
+	commits, err := gitrepo.GetCommitsForPathsSinceCommit(apiRepo, library.ApiPaths, library.LastGeneratedCommit)
 	if err != nil {
 		return err
 	}
 	if len(commits) == 0 {
-		slog.Info(fmt.Sprintf("API '%s' has no changes.", apiState.Id))
+		slog.Info(fmt.Sprintf("Library '%s' has no changes.", library.Id))
 		return nil
 	}
-	slog.Info(fmt.Sprintf("Generating '%s' with %d new commit(s)", apiState.Id, len(commits)))
+	slog.Info(fmt.Sprintf("Generating '%s' with %d new commit(s)", library.Id, len(commits)))
 
 	// Now that we know the API has at least one new API commit, regenerate it, update the state, commit the change and build the output.
 
 	// We create an output directory separately for each API.
-	outputDir := filepath.Join(outputRoot, apiState.Id)
+	outputDir := filepath.Join(outputRoot, library.Id)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return err
 	}
 
-	if err := container.Generate(ctx, image, apiRepo.Dir, outputDir, generatorInput, apiState.Id); err != nil {
+	if err := container.GenerateLibrary(ctx, image, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
-	if err := container.Clean(ctx, image, languageRepo.Dir, apiState.Id); err != nil {
+	if err := container.Clean(ctx, image, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
 
-	apiState.LastGeneratedCommit = commits[0].Hash.String()
+	library.LastGeneratedCommit = commits[0].Hash.String()
 	if err := saveState(languageRepo, repoState); err != nil {
 		return err
 	}
@@ -221,20 +227,15 @@ func updateApi(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo
 	}
 
 	// Once we've committed, we can build - but then check that nothing has changed afterwards.
-	libraryId := findLibrary(repoState, apiState.Id)
-	if libraryId == "" {
-		slog.Warn(fmt.Sprintf("No library contains regenerated API %s; skipping build.", flagAPIPath))
-	} else {
-		if err := container.BuildLibrary(image, languageRepo.Dir, libraryId); err != nil {
-			return err
-		}
-		clean, err := gitrepo.IsClean(ctx, languageRepo)
-		if err != nil {
-			return err
-		}
-		if !clean {
-			return fmt.Errorf("building '%s' created changes in the repo", apiState.Id)
-		}
+	if err := container.BuildLibrary(image, languageRepo.Dir, library.Id); err != nil {
+		return err
+	}
+	clean, err := gitrepo.IsClean(ctx, languageRepo)
+	if err != nil {
+		return err
+	}
+	if !clean {
+		return fmt.Errorf("building '%s' created changes in the repo", library.Id)
 	}
 	return nil
 }

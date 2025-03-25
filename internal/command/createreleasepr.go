@@ -25,10 +25,10 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var CmdCreateReleasePR = &Command{
@@ -113,26 +113,25 @@ func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription st
 this goes through each library in pipeline state and checks if any new commits have been added to that library since previous commit tag
 */
 func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (string, error) {
-	libraries := pipelineState.LibraryReleaseStates
+	libraries := pipelineState.Libraries
 	var prDescription string
-	var lastGeneratedCommit object.Commit
 	for _, library := range libraries {
+		if library.GenerationAutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
+			slog.Info(fmt.Sprintf("Skipping release-blocked library: '%s'", library.Id))
+			continue
+		}
 		var commitMessages []*CommitMessage
-		//TODO: need to add common paths as well as refactor to see if can check all paths at 1 x
-		for _, sourcePath := range library.SourcePaths {
-			//TODO: figure out generic logic
-			previousReleaseTag := library.Id + "-" + library.CurrentVersion
-			commits, err := gitrepo.GetCommitsSinceTagForPath(repo, sourcePath, previousReleaseTag)
-			if err != nil {
-				slog.Error(fmt.Sprintf("Error searching commits: %s", err))
-				//TODO update PR description with this data and mark as not humanly resolvable
-			}
-			for _, commit := range commits {
-				commitMessages = append(commitMessages, ParseCommit(commit))
-			}
-			if len(commitMessages) > 0 {
-				lastGeneratedCommit = commits[len(commits)-1]
-			}
+
+		previousReleaseTag := library.Id + "-" + library.CurrentVersion
+		allSourcePaths := append(pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
+		commits, err := gitrepo.GetCommitsForPathsSinceTag(repo, allSourcePaths, previousReleaseTag)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Error searching commits: %s", err))
+			continue
+			//TODO update PR description with this data and mark as not humanly resolvable
+		}
+		for _, commit := range commits {
+			commitMessages = append(commitMessages, ParseCommit(commit))
 		}
 
 		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages, library.Id) {
@@ -161,17 +160,19 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 				}
 			}
 
-			//TODO: add extra meta data what is this
-			prDescription += fmt.Sprintf("Release library: %s version %s\n", library.Id, releaseVersion)
-
-			libraryReleaseCommitDesc := fmt.Sprintf("Release library: %s version %s\n\n", library.Id, releaseVersion)
-
-			updateLibraryMetadata(library.Id, releaseVersion, lastGeneratedCommit.Hash.String(), pipelineState)
+			// Update the pipeline state to record what we've released and when.
+			library.CurrentVersion = releaseVersion
+			library.LastReleasedCommit = library.LastGeneratedCommit
+			library.ReleaseTimestamp = timestamppb.Now()
 
 			err = saveState(repo, pipelineState)
 			if err != nil {
 				return "", err
 			}
+
+			//TODO: add extra meta data what is this
+			prDescription += fmt.Sprintf("Release library: %s version %s\n", library.Id, releaseVersion)
+			libraryReleaseCommitDesc := fmt.Sprintf("Release library: %s version %s\n\n", library.Id, releaseVersion)
 
 			err = createLibraryReleaseCommit(ctx, repo, libraryReleaseCommitDesc+releaseNotes)
 			if err != nil {
@@ -249,7 +250,7 @@ func maybeAppendReleaseNotesSection(builder *strings.Builder, description string
 	builder.WriteString("\n")
 }
 
-func calculateNextVersion(library *statepb.LibraryReleaseState) (string, error) {
+func calculateNextVersion(library *statepb.LibraryState) (string, error) {
 	if library.NextVersion != "" {
 		return library.NextVersion, nil
 	}
@@ -299,24 +300,6 @@ func calculateNextPrerelease(prerelease string) (string, error) {
 		nextSuffix = strings.Repeat("0", len(currentSuffix)-len(nextSuffix)) + nextSuffix
 	}
 	return prerelease[:(len(prerelease)-digits)] + nextSuffix, nil
-}
-
-func updateLibraryMetadata(libraryId string, releaseVersion string, lastGeneratedCommit string, pipelineState *statepb.PipelineState) {
-	for i, library := range pipelineState.LibraryReleaseStates {
-		if library.Id == libraryId {
-			pipelineState.LibraryReleaseStates[i].CurrentVersion = releaseVersion
-			for _, apis := range library.Apis {
-				//TODO is this logic correct? we update all apis in library with same commit id?
-				for i := 0; i < len(pipelineState.ApiGenerationStates); i++ {
-					apiGeneratedState := pipelineState.ApiGenerationStates[i]
-					if apiGeneratedState.Id == apis.ApiId {
-						pipelineState.ApiGenerationStates[i].LastGeneratedCommit = lastGeneratedCommit
-					}
-				}
-			}
-			break
-		}
-	}
 }
 
 func isReleaseWorthy(messages []*CommitMessage, libraryId string) bool {

@@ -17,6 +17,7 @@ package gitrepo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -221,21 +222,22 @@ func PrintStatus(ctx context.Context, repo *Repo) error {
 	return nil
 }
 
-// Returns the commits affecting the given path,
-// stopping looking at the given commit (which is not included in the results).
+// Returns the commits affecting any of the given paths, stopping looking at the
+// given commit (which is not included in the results).
 // The returned commits are ordered such that the most recent commit is first.
-func GetCommitsForPath(repo *Repo, path string, commit string, retrieveAfterTimestamp *time.Time) ([]object.Commit, error) {
-	commits := []object.Commit{}
-	finalHash := plumbing.NewHash(commit)
-	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
-	if retrieveAfterTimestamp != nil {
-		logOptions.Since = retrieveAfterTimestamp
+// If sinceCommit is not provided, all commits are searched. Otherwise, if no commit
+// matching sinceCommit is found, an error is returned.
+func GetCommitsForPathsSinceCommit(repo *Repo, paths []string, sinceCommit string) ([]object.Commit, error) {
+	if len(paths) == 0 {
+		return nil, errors.New("no paths to check for commits")
 	}
+	commits := []object.Commit{}
+	finalHash := plumbing.NewHash(sinceCommit)
+	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
 	logIterator, err := repo.repo.Log(&logOptions)
 	if err != nil {
 		return nil, err
 	}
-
 	// Sentinel "error" - this can be replaced using LogOptions.To when that's available.
 	var ErrStopIterating = fmt.Errorf("fake error to stop iterating")
 	err = logIterator.ForEach(func(commit *object.Commit) error {
@@ -252,31 +254,36 @@ func GetCommitsForPath(repo *Repo, path string, commit string, retrieveAfterTime
 		// We perform filtering by finding out if the tree hash for the given
 		// path at the commit we're looking at is the same as the tree hash
 		// for the commit's parent. This is much, much faster than any other filtering
-		// option, it seems.
-		parentCommit, err := commit.Parent(0)
-		if err != nil {
-			return err
-		}
-		currentTree, err := commit.Tree()
-		if err != nil {
-			return err
-		}
-		currentPathEntry, err := currentTree.FindEntry(path)
-		if err != nil {
-			return err
-		}
-		parentTree, err := parentCommit.Tree()
-		if err != nil {
-			return err
-		}
-		parentPathEntry, err := parentTree.FindEntry(path)
-		if err != nil {
-			return err
-		}
+		// option, it seems. In theory we should be able to remember our "current"
+		// commit for each path, but that's likely to be significantly more complex.
+		for _, candidatePath := range paths {
+			parentCommit, err := commit.Parent(0)
+			if err != nil {
+				return err
+			}
+			currentTree, err := commit.Tree()
+			if err != nil {
+				return err
+			}
+			currentPathEntry, err := currentTree.FindEntry(candidatePath)
+			if err != nil {
+				return err
+			}
+			parentTree, err := parentCommit.Tree()
+			if err != nil {
+				return err
+			}
+			parentPathEntry, err := parentTree.FindEntry(candidatePath)
+			if err != nil {
+				return err
+			}
 
-		// If we've found a change, add it to our list of commits.
-		if currentPathEntry.Hash != parentPathEntry.Hash {
-			commits = append(commits, *commit)
+			// If we've found a change, add it to our list of commits and proceed
+			// to the next commit.
+			if currentPathEntry.Hash != parentPathEntry.Hash {
+				commits = append(commits, *commit)
+				return nil
+			}
 		}
 
 		return nil
@@ -284,13 +291,15 @@ func GetCommitsForPath(repo *Repo, path string, commit string, retrieveAfterTime
 	if err != nil && err != ErrStopIterating {
 		return nil, err
 	}
+	if sinceCommit != "" && err != ErrStopIterating {
+		return nil, fmt.Errorf("did not find commit %s when iterating", sinceCommit)
+	}
 	return commits, nil
 }
 
 // Returns all commits since tagName that contains files in path
-func GetCommitsSinceTagForPath(repo *Repo, path, tagName string) ([]object.Commit, error) {
+func GetCommitsForPathsSinceTag(repo *Repo, paths []string, tagName string) ([]object.Commit, error) {
 	tagRef, err := repo.repo.Tag(tagName)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
 	}
@@ -300,7 +309,7 @@ func GetCommitsSinceTagForPath(repo *Repo, path, tagName string) ([]object.Commi
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 	}
 
-	return GetCommitsForPath(repo, path, tagCommit.Hash.String(), &tagCommit.Committer.When)
+	return GetCommitsForPathsSinceCommit(repo, paths, tagCommit.Hash.String())
 }
 
 // Creates a branch with the given name in the default remote.

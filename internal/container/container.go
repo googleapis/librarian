@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-func Generate(ctx context.Context, image, apiRoot, output, generatorInput, apiPath string) error {
+func GenerateRaw(ctx context.Context, image, apiRoot, output, apiPath string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -34,30 +34,54 @@ func Generate(ctx context.Context, image, apiRoot, output, generatorInput, apiPa
 	if output == "" {
 		return fmt.Errorf("output cannot be empty")
 	}
-	if generatorInput == "" && apiPath == "" {
-		return fmt.Errorf("apiPath and generatorInput can't both be empty")
+	if apiPath == "" {
+		return fmt.Errorf("apiPath cannot be empty")
 	}
 	containerArgs := []string{
-		"generate",
+		"generate-raw",
 		"--api-root=/apis",
 		"--output=/output",
+		fmt.Sprintf("--api-path=%s", apiPath),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/output", output),
 	}
+	return runDocker(image, mounts, containerArgs)
+}
 
-	if generatorInput != "" {
-		mounts = append(mounts, fmt.Sprintf("%s:/generator-input", generatorInput))
-		containerArgs = append(containerArgs, "--generator-input=/generator-input")
+func GenerateLibrary(ctx context.Context, image, apiRoot, output, generatorInput, libraryID string) error {
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
 	}
-	if apiPath != "" {
-		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
+	if apiRoot == "" {
+		return fmt.Errorf("apiRoot cannot be empty")
+	}
+	if output == "" {
+		return fmt.Errorf("output cannot be empty")
+	}
+	if generatorInput == "" {
+		return fmt.Errorf("generatorInput cannot be empty")
+	}
+	if libraryID == "" {
+		return fmt.Errorf("libraryID cannot be empty")
+	}
+	containerArgs := []string{
+		"generate-library",
+		"--api-root=/apis",
+		"--output=/output",
+		"--generator-input=/generator-input",
+		fmt.Sprintf("--library-id=%s", libraryID),
+	}
+	mounts := []string{
+		fmt.Sprintf("%s:/apis", apiRoot),
+		fmt.Sprintf("%s:/output", output),
+		fmt.Sprintf("%s:/generator-input", generatorInput),
 	}
 	return runDocker(image, mounts, containerArgs)
 }
 
-func Clean(ctx context.Context, image, repoRoot, apiPath string) error {
+func Clean(ctx context.Context, image, repoRoot, libraryID string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -71,8 +95,8 @@ func Clean(ctx context.Context, image, repoRoot, apiPath string) error {
 		"clean",
 		"--repo-root=/repo",
 	}
-	if apiPath != "" {
-		containerArgs = append(containerArgs, fmt.Sprintf("--api-path=%s", apiPath))
+	if libraryID != "" {
+		containerArgs = append(containerArgs, fmt.Sprintf("--library-id=%s", libraryID))
 	}
 	return runDocker(image, mounts, containerArgs)
 }

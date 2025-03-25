@@ -26,6 +26,7 @@ var (
 	flagGitHubToken string
 	flagImage       string
 	flagLanguage    string
+	flagLibraryID   string
 	flagOutput      string
 	flagPush        bool
 	flagRepoRoot    string
@@ -62,6 +63,9 @@ func addFlagLanguage(fs *flag.FlagSet) {
 	fs.StringVar(&flagLanguage, "language", "", "(Required) language to generate code for")
 }
 
+func addFlagLibraryID(fs *flag.FlagSet) {
+	fs.StringVar(&flagLibraryID, "library-id", "", "The ID of a single library to update")
+}
 func addFlagOutput(fs *flag.FlagSet) {
 	fs.StringVar(&flagOutput, "output", "", "directory where generated code will be written")
 }
