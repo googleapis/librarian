@@ -19,20 +19,22 @@ import (
 )
 
 var (
-	flagAPIPath     string
-	flagAPIRoot     string
-	flagBranch      string
-	flagBuild       bool
-	flagGitHubToken string
-	flagImage       string
-	flagLanguage    string
-	flagLibraryID   string
-	flagOutput      string
-	flagPush        bool
-	flagRepoRoot    string
-	flagSkipBuild   bool
-	flagTag         string
-	flagWorkRoot    string
+	flagAPIPath      string
+	flagAPIRoot      string
+	flagBranch       string
+	flagBuild        bool
+	flagGitUserEmail string
+	flagGitUserName  string
+	flagGitHubToken  string
+	flagImage        string
+	flagLanguage     string
+	flagLibraryID    string
+	flagOutput       string
+	flagPush         bool
+	flagRepoRoot     string
+	flagSkipBuild    bool
+	flagTag          string
+	flagWorkRoot     string
 )
 
 func addFlagAPIPath(fs *flag.FlagSet) {
@@ -53,6 +55,14 @@ func addFlagBuild(fs *flag.FlagSet) {
 
 func addFlagGitHubToken(fs *flag.FlagSet) {
 	fs.StringVar(&flagGitHubToken, "github-token", "", "GitHub access token")
+}
+
+func addFlagGitUserEmail(fs *flag.FlagSet) {
+	fs.StringVar(&flagGitUserEmail, "git-user-email", "", "Email address to use in Git commits")
+}
+
+func addFlagGitUserName(fs *flag.FlagSet) {
+	fs.StringVar(&flagGitUserName, "git-user-name", "", "Display name to use in Git commits")
 }
 
 func addFlagImage(fs *flag.FlagSet) {

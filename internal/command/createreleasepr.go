@@ -174,28 +174,13 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			prDescription += fmt.Sprintf("Release library: %s version %s\n", library.Id, releaseVersion)
 			libraryReleaseCommitDesc := fmt.Sprintf("Release library: %s version %s\n\n", library.Id, releaseVersion)
 
-			err = createLibraryReleaseCommit(ctx, repo, libraryReleaseCommitDesc+releaseNotes)
+			err = commitAll(ctx, repo, libraryReleaseCommitDesc+releaseNotes)
 			if err != nil {
 				return "", err
 			}
 		}
 	}
 	return prDescription, nil
-}
-
-func createLibraryReleaseCommit(ctx context.Context, repo *gitrepo.Repo, releaseNotes string) error {
-	_, err := gitrepo.AddAll(ctx, repo)
-	if err != nil {
-		slog.Info(fmt.Sprintf("Error adding files: %s", err))
-		return err
-		//TODO update PR description with this data and mark as not humanly resolvable
-	}
-	if err := gitrepo.Commit(ctx, repo, releaseNotes); err != nil {
-		slog.Info(fmt.Sprintf("Received error trying to commit: '%s'", err))
-		return err
-		//TODO update PR description with this data and mark as not humanly resolvable
-	}
-	return nil
 }
 
 func formatReleaseNotes(commitMessages []*CommitMessage) string {

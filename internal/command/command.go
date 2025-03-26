@@ -164,8 +164,7 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 		return nil
 	}
 
-	gitrepo.PrintStatus(ctx, repo)
-	return gitrepo.Commit(ctx, repo, msg)
+	return gitrepo.Commit(ctx, repo, msg, flagGitUserName, flagGitUserEmail)
 }
 
 func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title, description string) error {
@@ -233,6 +232,8 @@ func init() {
 		addFlagAPIRoot,
 		addFlagBranch,
 		addFlagGitHubToken,
+		addFlagGitUserEmail,
+		addFlagGitUserName,
 		addFlagLanguage,
 		addFlagLibraryID,
 		addFlagOutput,
@@ -247,6 +248,8 @@ func init() {
 		addFlagLanguage,
 		addFlagPush,
 		addFlagGitHubToken,
+		addFlagGitUserEmail,
+		addFlagGitUserName,
 		addFlagRepoRoot,
 		addFlagOutput,
 		addFlagImage,
@@ -261,6 +264,8 @@ func init() {
 		addFlagAPIRoot,
 		addFlagBranch,
 		addFlagGitHubToken,
+		addFlagGitUserEmail,
+		addFlagGitUserName,
 		addFlagLanguage,
 		addFlagOutput,
 		addFlagPush,

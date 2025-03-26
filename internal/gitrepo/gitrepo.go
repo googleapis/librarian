@@ -109,7 +109,7 @@ func AddAll(ctx context.Context, repo *Repo) (git.Status, error) {
 }
 
 // returns an error if there is nothing to commit
-func Commit(ctx context.Context, repo *Repo, msg string) error {
+func Commit(ctx context.Context, repo *Repo, msg string, userName, userEmail string) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err
@@ -122,10 +122,16 @@ func Commit(ctx context.Context, repo *Repo, msg string) error {
 	if status.IsClean() {
 		return fmt.Errorf("no modifications to commit")
 	}
+	if userName == "" {
+		userName = "Google Cloud SDK"
+	}
+	if userEmail == "" {
+		userEmail = "noreply-cloudsdk@google.com"
+	}
 	hash, err := worktree.Commit(msg, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "Google Cloud SDK",
-			Email: "noreply-cloudsdk@google.com",
+			Name:  userName,
+			Email: userEmail,
 			When:  time.Now(),
 		},
 	})
