@@ -122,7 +122,7 @@ func Commit(ctx context.Context, repo *Repo, msg string) error {
 	if status.IsClean() {
 		return fmt.Errorf("no modifications to commit")
 	}
-	commit, err := worktree.Commit(msg, &git.CommitOptions{
+	hash, err := worktree.Commit(msg, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "Google Cloud SDK",
 			Email: "noreply-cloudsdk@google.com",
@@ -133,14 +133,9 @@ func Commit(ctx context.Context, repo *Repo, msg string) error {
 		return err
 	}
 
-	// Log commit object, if enabled
-	if slog.Default().Enabled(ctx, slog.LevelInfo.Level()) {
-		obj, err := repo.repo.CommitObject(commit)
-		if err != nil {
-			return err
-		}
-		slog.Info(fmt.Sprint(obj))
-	}
+	// Log commit hash (brief) and subject line (first line of commit)
+	subject := strings.Split(msg, "\n")[0]
+	slog.Info(fmt.Sprintf("Committed %s: '%s'", hash.String()[0:7], subject))
 	return nil
 }
 
