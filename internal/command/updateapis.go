@@ -182,7 +182,6 @@ func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *git
 		slog.Info(fmt.Sprintf("Skipping generation-blocked library: '%s'", library.Id))
 		return nil
 	}
-	slog.Info(fmt.Sprintf("Finding new commits for %s", library.Id))
 	commits, err := gitrepo.GetCommitsForPathsSinceCommit(apiRepo, library.ApiPaths, library.LastGeneratedCommit)
 	if err != nil {
 		return err
