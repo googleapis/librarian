@@ -21,14 +21,14 @@ pub mod locations {
     /// Common implementation for [super::super::client::Locations] request builders.
     #[derive(Clone, Debug)]
     pub(crate) struct RequestBuilder<R: std::default::Default> {
-        stub: Arc<dyn super::super::stubs::dynamic::Locations>,
+        stub: Arc<dyn super::super::stub::dynamic::Locations>,
         request: R,
         options: gax::options::RequestOptions,
     }
 
     impl<R> RequestBuilder<R>
     where R: std::default::Default {
-        pub(crate) fn new(stub: Arc<dyn super::super::stubs::dynamic::Locations>) -> Self {
+        pub(crate) fn new(stub: Arc<dyn super::super::stub::dynamic::Locations>) -> Self {
             Self {
                 stub,
                 request: R::default(),
@@ -42,7 +42,7 @@ pub mod locations {
     pub struct ListLocations(RequestBuilder<crate::model::ListLocationsRequest>);
 
     impl ListLocations {
-        pub(crate) fn new(stub: Arc<dyn super::super::stubs::dynamic::Locations>) -> Self {
+        pub(crate) fn new(stub: Arc<dyn super::super::stub::dynamic::Locations>) -> Self {
             Self(
                 RequestBuilder::new(stub)
             )
@@ -114,7 +114,7 @@ pub mod locations {
     pub struct GetLocation(RequestBuilder<crate::model::GetLocationRequest>);
 
     impl GetLocation {
-        pub(crate) fn new(stub: Arc<dyn super::super::stubs::dynamic::Locations>) -> Self {
+        pub(crate) fn new(stub: Arc<dyn super::super::stub::dynamic::Locations>) -> Self {
             Self(
                 RequestBuilder::new(stub)
             )
