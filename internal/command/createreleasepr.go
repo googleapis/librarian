@@ -130,7 +130,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 		allSourcePaths := append(pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
 		commits, err := gitrepo.GetCommitsForPathsSinceTag(repo, allSourcePaths, previousReleaseTag)
 		if err != nil {
-			logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInRelease)
+			errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInRelease)
 			continue
 		}
 		for _, commit := range commits {
