@@ -15,7 +15,10 @@
 package command
 
 import (
+	"errors"
 	"flag"
+	"fmt"
+	"os"
 )
 
 // Environment variables are specified here as they're used for the same sort of purpose as flags...
@@ -110,4 +113,29 @@ var supportedLanguages = map[string]bool{
 	"ruby":   false,
 	"rust":   false,
 	"all":    false,
+}
+
+func validatePush() error {
+	if flagPush && os.Getenv(gitHubTokenEnvironmentVariable) == "" {
+		return errors.New("no GitHub token supplied for push")
+	}
+	return nil
+}
+
+func validateLanguage() error {
+	if !supportedLanguages[flagLanguage] {
+		return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+	}
+	return nil
+}
+
+// Validate that the flag with the given name has been provided.
+// TODO: Rework how we add flags so that these can be validated before we even
+// start executing the command. (At least for simple cases where a flag is required;
+// note that this isn't always going to be the same for all commands for one flag.)
+func validateRequiredFlag(name, value string) error {
+	if value == "" {
+		return fmt.Errorf("required flag -%s not specified", name)
+	}
+	return nil
 }

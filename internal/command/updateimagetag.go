@@ -32,14 +32,14 @@ var CmdUpdateImageTag = &Command{
 	Name:  "update-image-tag",
 	Short: "Update the image tag used by a language repo, and regenerating all APIs at the existing commit",
 	Run: func(ctx context.Context) error {
-		if !supportedLanguages[flagLanguage] {
-			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+		if err := validateLanguage(); err != nil {
+			return err
 		}
 		if err := validatePush(); err != nil {
 			return err
 		}
-		if flagTag == "" {
-			return errors.New("-tag is not provided")
+		if err := validateRequiredFlag("tag", flagTag); err != nil {
+			return err
 		}
 
 		startOfRun := time.Now()

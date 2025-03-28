@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -166,13 +165,6 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	}
 
 	return gitrepo.Commit(ctx, repo, msg, flagGitUserName, flagGitUserEmail)
-}
-
-func validatePush() error {
-	if flagPush && os.Getenv(gitHubTokenEnvironmentVariable) == "" {
-		return errors.New("no GitHub token supplied for push")
-	}
-	return nil
 }
 
 func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title, description string) error {

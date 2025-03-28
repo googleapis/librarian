@@ -29,14 +29,14 @@ var CmdGenerate = &Command{
 	Name:  "generate",
 	Short: "Generate client library code for an API",
 	Run: func(ctx context.Context) error {
-		if flagAPIPath == "" {
-			return fmt.Errorf("-api-path is not provided")
+		if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
+			return err
 		}
-		if !supportedLanguages[flagLanguage] {
-			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+		if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
+			return err
 		}
-		if flagAPIRoot == "" {
-			return fmt.Errorf("-api-root is not provided")
+		if err := validateLanguage(); err != nil {
+			return err
 		}
 
 		apiRoot, err := filepath.Abs(flagAPIRoot)

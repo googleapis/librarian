@@ -35,7 +35,7 @@ var CmdCreateReleasePR = &Command{
 	Name:  "create-release-pr",
 	Short: "Generate a PR for release",
 	Run: func(ctx context.Context) error {
-		if err := checkFlags(); err != nil {
+		if err := validateLanguage(); err != nil {
 			return err
 		}
 		if err := validatePush(); err != nil {
@@ -91,13 +91,6 @@ func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, error) {
 	}
 
 	return languageRepo, inputDir, nil
-}
-
-func checkFlags() error {
-	if !supportedLanguages[flagLanguage] {
-		return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
-	}
-	return nil
 }
 
 func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription string) error {

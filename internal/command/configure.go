@@ -29,11 +29,11 @@ var CmdConfigure = &Command{
 	Name:  "configure",
 	Short: "Configure a new API in a given language",
 	Run: func(ctx context.Context) error {
-		if flagAPIPath == "" {
-			return fmt.Errorf("-api-path is not provided")
+		if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
+			return err
 		}
-		if !supportedLanguages[flagLanguage] {
-			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+		if err := validateLanguage(); err != nil {
+			return err
 		}
 		if err := validatePush(); err != nil {
 			return err

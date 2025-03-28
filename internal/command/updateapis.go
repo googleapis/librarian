@@ -35,8 +35,8 @@ var CmdUpdateApis = &Command{
 	Short: "Update a language repo by regenerating configured APIs with new API specifications",
 	Run: func(ctx context.Context) error {
 
-		if !supportedLanguages[flagLanguage] {
-			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+		if err := validateLanguage(); err != nil {
+			return err
 		}
 		if err := validatePush(); err != nil {
 			return err
