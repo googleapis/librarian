@@ -35,8 +35,10 @@ var CmdCreateReleasePR = &Command{
 	Name:  "create-release-pr",
 	Short: "Generate a PR for release",
 	Run: func(ctx context.Context) error {
-		err := checkFlags()
-		if err != nil {
+		if err := checkFlags(); err != nil {
+			return err
+		}
+		if err := validatePush(); err != nil {
 			return err
 		}
 		languageRepo, inputDirectory, err := setupReleasePrFolders(ctx)

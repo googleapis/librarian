@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -61,7 +62,7 @@ func deriveImage(state *statepb.PipelineState) string {
 		return flagImage
 	}
 
-	defaultRepository := os.Getenv("LIBRARIAN_REPOSITORY")
+	defaultRepository := os.Getenv(defaultRepositoryEnvironmentVariable)
 	relativeImage := fmt.Sprintf("google-cloud-%s-generator", flagLanguage)
 
 	var tag string
@@ -167,21 +168,27 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 	return gitrepo.Commit(ctx, repo, msg, flagGitUserName, flagGitUserEmail)
 }
 
+func validatePush() error {
+	if flagPush && os.Getenv(gitHubTokenEnvironmentVariable) == "" {
+		return errors.New("no GitHub token supplied for push")
+	}
+	return nil
+}
+
 func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title, description string) error {
 	if !flagPush {
 		return nil
 	}
-	if flagGitHubToken == "" {
-		return fmt.Errorf("no GitHub token supplied for push")
-	}
 
+	// This should already have been validated to be non-empty by validatePush
+	gitHubAccessToken := os.Getenv(gitHubTokenEnvironmentVariable)
 	branch := fmt.Sprintf("librarian-%s", formatTimestamp(startOfRun))
-	err := gitrepo.PushBranch(ctx, repo, branch, flagGitHubToken)
+	err := gitrepo.PushBranch(ctx, repo, branch, gitHubAccessToken)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return err
 	}
-	return gitrepo.CreatePullRequest(ctx, repo, branch, flagGitHubToken, title, description)
+	return gitrepo.CreatePullRequest(ctx, repo, branch, gitHubAccessToken, title, description)
 }
 
 var Commands = []*Command{
@@ -206,7 +213,6 @@ func init() {
 		addFlagAPIRoot,
 		addFlagLanguage,
 		addFlagPush,
-		addFlagGitHubToken,
 		addFlagRepoRoot,
 	} {
 		fn(fs)
@@ -231,7 +237,6 @@ func init() {
 		addFlagWorkRoot,
 		addFlagAPIRoot,
 		addFlagBranch,
-		addFlagGitHubToken,
 		addFlagGitUserEmail,
 		addFlagGitUserName,
 		addFlagLanguage,
@@ -247,7 +252,6 @@ func init() {
 	for _, fn := range []func(fs *flag.FlagSet){
 		addFlagLanguage,
 		addFlagPush,
-		addFlagGitHubToken,
 		addFlagGitUserEmail,
 		addFlagGitUserName,
 		addFlagRepoRoot,
@@ -263,7 +267,6 @@ func init() {
 		addFlagWorkRoot,
 		addFlagAPIRoot,
 		addFlagBranch,
-		addFlagGitHubToken,
 		addFlagGitUserEmail,
 		addFlagGitUserName,
 		addFlagLanguage,

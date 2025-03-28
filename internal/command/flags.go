@@ -18,6 +18,10 @@ import (
 	"flag"
 )
 
+// Environment variables are specified here as they're used for the same sort of purpose as flags...
+const gitHubTokenEnvironmentVariable string = "LIBRARIAN_GITHUB_TOKEN"
+const defaultRepositoryEnvironmentVariable string = "LIBRARIAN_REPOSITORY"
+
 var (
 	flagAPIPath      string
 	flagAPIRoot      string
@@ -25,7 +29,6 @@ var (
 	flagBuild        bool
 	flagGitUserEmail string
 	flagGitUserName  string
-	flagGitHubToken  string
 	flagImage        string
 	flagLanguage     string
 	flagLibraryID    string
@@ -51,10 +54,6 @@ func addFlagBranch(fs *flag.FlagSet) {
 
 func addFlagBuild(fs *flag.FlagSet) {
 	fs.BoolVar(&flagBuild, "build", false, "whether to build the generated code")
-}
-
-func addFlagGitHubToken(fs *flag.FlagSet) {
-	fs.StringVar(&flagGitHubToken, "github-token", "", "GitHub access token")
 }
 
 func addFlagGitUserEmail(fs *flag.FlagSet) {

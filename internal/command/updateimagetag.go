@@ -35,8 +35,8 @@ var CmdUpdateImageTag = &Command{
 		if !supportedLanguages[flagLanguage] {
 			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 		}
-		if flagPush && flagGitHubToken == "" {
-			return errors.New("-github-token must be provided if -push is set to true")
+		if err := validatePush(); err != nil {
+			return err
 		}
 		if flagTag == "" {
 			return errors.New("-tag is not provided")

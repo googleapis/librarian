@@ -35,8 +35,8 @@ var CmdConfigure = &Command{
 		if !supportedLanguages[flagLanguage] {
 			return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 		}
-		if flagPush && flagGitHubToken == "" {
-			return fmt.Errorf("-github-token must be provided if -push is set to true")
+		if err := validatePush(); err != nil {
+			return err
 		}
 
 		startOfRun := time.Now()
