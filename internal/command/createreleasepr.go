@@ -193,7 +193,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 		}
 	}
 	if len(errorsInRelease) > 0 {
-		prDescription = fmt.Sprintf("Release Errors:\n==================\n:%s\n\n==================\nReleases Included:\n==================\n%s\n", strings.Join(errorsInRelease, "\n"), prDescription)
+		prDescription = fmt.Sprintf("Release Errors:\n==================\n%s\n\n\nReleases Included:\n==================\n%s\n", strings.Join(errorsInRelease, "\n"), prDescription)
 	}
 	return prDescription, len(errorsInRelease) > 0, nil
 }
