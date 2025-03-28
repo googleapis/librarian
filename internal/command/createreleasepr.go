@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -102,7 +101,8 @@ func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription st
 			return err
 		}
 		if errorsInGeneration {
-			err = gitrepo.AddLabelToPullRequest(ctx, repo, prMetadata.Number, "do-not-merge", flagGitHubToken)
+			gitHubAccessToken := os.Getenv(gitHubTokenEnvironmentVariable)
+			err = gitrepo.AddLabelToPullRequest(ctx, repo, prMetadata.Number, "do-not-merge", gitHubAccessToken)
 			if err != nil {
 				slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 				return nil //TODO: check if its okay to ignore
@@ -130,7 +130,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 		allSourcePaths := append(pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
 		commits, err := gitrepo.GetCommitsForPathsSinceTag(repo, allSourcePaths, previousReleaseTag)
 		if err != nil {
-			logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInGeneration)
+			logErrorAndAppendToErrorList(fmt.Sprintf("%s: unable to retrieve commits since previous release tag %s", library.Id, previousReleaseTag), errorsInRelease)
 			continue
 		}
 		for _, commit := range commits {
@@ -151,7 +151,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			}
 
 			if err := container.PrepareLibraryRelease(flagImage, repoPath, inputDirectory, library.Id, releaseVersion); err != nil {
-				errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: prepare-library-release error %s", library.Id, err), errorsInGeneration)
+				errorsInRelease = logErrorAndAppendToErrorList(fmt.Sprintf("%s: prepare-library-release error %s", library.Id, err), errorsInRelease)
 				continue
 			}
 			//TODO: make this configurable so we don't have to run per library

@@ -182,9 +182,9 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title s
 	}
 	pr, err := gitrepo.CreatePullRequest(ctx, repo, branch, gitHubAccessToken, title, description)
 	if pr != nil {
-		return pr.GetNumber(), err
+		return pr, err
 	}
-	return -1, err
+	return nil, err
 }
 
 var Commands = []*Command{
