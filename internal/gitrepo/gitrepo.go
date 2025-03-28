@@ -170,6 +170,7 @@ func IsClean(ctx context.Context, repo *Repo) (bool, error) {
 	return status.IsClean(), nil
 }
 
+// ResetHard Resets state to remote
 func ResetHard(ctx context.Context, repo *Repo) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
@@ -407,6 +408,7 @@ func AddLabelToPullRequest(ctx context.Context, repo *Repo, prNumber int, label 
 	return nil
 }
 
+// CleanWorkingTree Drops any local changes NOT committed, but keeps any local commits
 func CleanWorkingTree(repo *Repo) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
