@@ -246,13 +246,14 @@ func init() {
 
 	fs = CmdCreateReleasePR.flags
 	for _, fn := range []func(fs *flag.FlagSet){
+		addFlagImage,
+		addFlagWorkRoot,
 		addFlagLanguage,
 		addFlagPush,
 		addFlagGitUserEmail,
 		addFlagGitUserName,
 		addFlagRepoRoot,
 		addFlagOutput,
-		addFlagImage,
 		addFlagSkipBuild,
 	} {
 		fn(fs)
