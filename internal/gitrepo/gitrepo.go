@@ -170,15 +170,6 @@ func IsClean(ctx context.Context, repo *Repo) (bool, error) {
 	return status.IsClean(), nil
 }
 
-// ResetHard Resets state to remote
-func ResetHard(ctx context.Context, repo *Repo) error {
-	worktree, err := repo.repo.Worktree()
-	if err != nil {
-		return err
-	}
-	return worktree.Reset(&git.ResetOptions{Mode: git.HardReset})
-}
-
 func PrintStatus(ctx context.Context, repo *Repo) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {

@@ -52,7 +52,7 @@ var CmdUpdateApis = &Command{
 		}
 
 		var apiRepo *gitrepo.Repo
-		hardResetApiRepo := true
+		cleanWorkingTreePostGeneration := true
 		if flagAPIRoot == "" {
 			apiRepo, err = cloneGoogleapis(ctx, tmpRoot)
 			if err != nil {
@@ -74,8 +74,8 @@ var CmdUpdateApis = &Command{
 				return err
 			}
 			if !clean {
-				hardResetApiRepo = false
-				slog.Warn("API repo has modifications, so will not be reset after generation")
+				cleanWorkingTreePostGeneration = false
+				slog.Warn("API repo has modifications, so will not be cleaned after generation")
 			}
 		}
 
@@ -143,9 +143,9 @@ var CmdUpdateApis = &Command{
 			}
 		}
 
-		// Reset the API repo in case it was changed, but not if it was already dirty before the command.
-		if hardResetApiRepo {
-			gitrepo.ResetHard(ctx, apiRepo)
+		// Clean  the API repo in case it was changed, but not if it was already dirty before the command.
+		if cleanWorkingTreePostGeneration {
+			gitrepo.CleanWorkingTree(apiRepo)
 		}
 
 		if !flagPush {

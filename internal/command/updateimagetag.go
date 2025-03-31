@@ -191,7 +191,7 @@ func regenerateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo 
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
-	if err := gitrepo.ResetHard(ctx, apiRepo); err != nil {
+	if err := gitrepo.CleanWorkingTree(apiRepo); err != nil {
 		return err
 	}
 	return nil
