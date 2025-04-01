@@ -221,7 +221,7 @@ func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *git
 	// that we really are at the latest state. We could skip the build step here if there are no changes
 	// prior to updating the state, but it's probably not worth the additional complexity (and it does
 	// no harm to check the code is still "healthy").
-	var msg = createCommitMessage(commits)
+	var msg = createCommitMessage(library.Id, commits)
 	if err := commitAll(ctx, languageRepo, msg); err != nil {
 		return err
 	}
@@ -240,9 +240,15 @@ func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *git
 	return nil
 }
 
-func createCommitMessage(commits []object.Commit) string {
+func createCommitMessage(libraryID string, commits []object.Commit) string {
 	const PiperPrefix = "PiperOrigin-RevId: "
 	var builder strings.Builder
+
+	// Start the commit with a line on its own saying what's being regenerated.
+	builder.WriteString(fmt.Sprintf("regen: Regenerate %s at API commit %s", libraryID, commits[0].Hash.String()[0:7]))
+	builder.WriteString("\n")
+	builder.WriteString("\n")
+
 	piperRevIdLines := []string{}
 	sourceLinkLines := []string{}
 	// Consume the commits in reverse order, so that they're in normal chronological order,

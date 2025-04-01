@@ -97,6 +97,7 @@ func ParseCommit(commit object.Commit) *CommitMessage {
 		case "test":
 		case "tests":
 		case "deps":
+		case "regen":
 			// Conventional commit type we know about, but don't keep.
 			// TODO: Maybe we should keep deps?
 			slice = nil
