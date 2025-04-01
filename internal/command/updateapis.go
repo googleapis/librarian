@@ -183,6 +183,8 @@ func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *git
 		slog.Info(fmt.Sprintf("Skipping generation-blocked library: '%s'", library.Id))
 		return nil
 	}
+
+	initialGeneration := library.LastGeneratedCommit == ""
 	commits, err := gitrepo.GetCommitsForPathsSinceCommit(apiRepo, library.ApiPaths, library.LastGeneratedCommit)
 	if err != nil {
 		return err
@@ -221,7 +223,14 @@ func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *git
 	// that we really are at the latest state. We could skip the build step here if there are no changes
 	// prior to updating the state, but it's probably not worth the additional complexity (and it does
 	// no harm to check the code is still "healthy").
-	var msg = createCommitMessage(library.Id, commits)
+	var msg string
+	if initialGeneration {
+		// If this is the first time we've generated this library, it's not worth listing all the previous
+		// changes separately.
+		msg = fmt.Sprintf("feat: Initial generation for %s", library.Id)
+	} else {
+		msg = createCommitMessage(library.Id, commits)
+	}
 	if err := commitAll(ctx, languageRepo, msg); err != nil {
 		return err
 	}

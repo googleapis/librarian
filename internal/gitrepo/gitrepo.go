@@ -293,7 +293,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 		return "", err
 	}
 	treeEntry, err := tree.FindEntry(path)
-	if err == object.ErrEntryNotFound {
+	if err == object.ErrEntryNotFound || err == object.ErrDirectoryNotFound {
 		return "", nil
 	}
 	if err != nil {
