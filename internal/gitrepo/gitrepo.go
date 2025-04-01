@@ -302,19 +302,25 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 	return treeEntry.Hash.String(), nil
 }
 
-// Returns all commits since tagName that contains files in path
+// Returns all commits since tagName that contains files in path.
+// If tagName is empty, all commits for the given paths are returned.
 func GetCommitsForPathsSinceTag(repo *Repo, paths []string, tagName string) ([]object.Commit, error) {
-	tagRef, err := repo.repo.Tag(tagName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
-	}
+	var hash string
+	if tagName == "" {
+		hash = ""
+	} else {
+		tagRef, err := repo.repo.Tag(tagName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
+		}
 
-	tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
+		tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
+		}
+		hash = tagCommit.Hash.String()
 	}
-
-	return GetCommitsForPathsSinceCommit(repo, paths, tagCommit.Hash.String())
+	return GetCommitsForPathsSinceCommit(repo, paths, hash)
 }
 
 // Creates a branch with the given name in the default remote.
@@ -405,7 +411,10 @@ func CleanWorkingTree(repo *Repo) error {
 	if err != nil {
 		return err
 	}
-	return worktree.Clean(&git.CleanOptions{})
+	if err = worktree.Reset(&git.ResetOptions{Mode: git.HardReset}); err != nil {
+		return err
+	}
+	return worktree.Clean(&git.CleanOptions{Dir: true})
 }
 
 func getRepoMetadata(remotes []*git.Remote) (string, string, error) {
