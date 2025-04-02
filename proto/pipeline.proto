@@ -32,6 +32,11 @@ message PipelineState {
   // Paths to files/directories which can trigger
   // a release in all libraries.
   repeated string common_library_source_paths = 4;
+
+  // API paths which are deliberately not configured. (Ideally this would
+  // be empty for all languages, but there may be temporary reasons not to configure
+  // an API.)
+  repeated string ignored_api_paths = 5;
 }
 
 // Generation state of a single library.
