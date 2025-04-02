@@ -59,6 +59,12 @@ var CmdConfigure = &Command{
 			return err
 		}
 
+		outputRoot := filepath.Join(tmpRoot, "output")
+		if err := os.Mkdir(outputRoot, 0755); err != nil {
+			return err
+		}
+		slog.Info(fmt.Sprintf("Code will be generated in %s", outputRoot))
+
 		var apiRoot string
 		if flagAPIRoot == "" {
 			repo, err := cloneGoogleapis(ctx, tmpRoot)
@@ -112,7 +118,7 @@ var CmdConfigure = &Command{
 
 		prContent := ConfigurationPrContent{}
 		for _, apiPath := range apiPaths {
-			err = configureApi(ctx, image, tmpRoot, apiRoot, apiPath, languageRepo, &prContent)
+			err = configureApi(ctx, image, outputRoot, apiRoot, apiPath, languageRepo, &prContent)
 			if err != nil {
 				return err
 			}
@@ -265,7 +271,7 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 //
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
-func configureApi(ctx context.Context, image, tmpRoot, apiRoot, apiPath string, languageRepo *gitrepo.Repo, prContent *ConfigurationPrContent) error {
+func configureApi(ctx context.Context, image, outputRoot, apiRoot, apiPath string, languageRepo *gitrepo.Repo, prContent *ConfigurationPrContent) error {
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
 	generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
@@ -308,9 +314,8 @@ func configureApi(ctx context.Context, image, tmpRoot, apiRoot, apiPath string, 
 
 	// From here on, if we need to report a non-fatal error, we also need to revert the commit we've just created.
 	// We generate, clean, copy, build.
-	outputRoot := filepath.Join(tmpRoot, "output")
 	outputDir := filepath.Join(outputRoot, libraryID)
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
 

@@ -35,7 +35,6 @@ var (
 	flagImage        string
 	flagLanguage     string
 	flagLibraryID    string
-	flagOutput       string
 	flagPush         bool
 	flagRepoRoot     string
 	flagSkipBuild    bool
@@ -77,9 +76,6 @@ func addFlagLanguage(fs *flag.FlagSet) {
 
 func addFlagLibraryID(fs *flag.FlagSet) {
 	fs.StringVar(&flagLibraryID, "library-id", "", "The ID of a single library to update")
-}
-func addFlagOutput(fs *flag.FlagSet) {
-	fs.StringVar(&flagOutput, "output", "", "directory where generated code will be written")
 }
 
 func addFlagPush(fs *flag.FlagSet) {

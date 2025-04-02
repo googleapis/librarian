@@ -79,19 +79,11 @@ var CmdUpdateApis = &Command{
 			}
 		}
 
-		var outputDir string
-		if flagOutput == "" {
-			outputDir = filepath.Join(tmpRoot, "output")
-			if err := os.Mkdir(outputDir, 0755); err != nil {
-				return err
-			}
-			slog.Info(fmt.Sprintf("No output directory specified. Defaulting to %s", outputDir))
-		} else {
-			outputDir, err = filepath.Abs(flagOutput)
-			if err != nil {
-				return err
-			}
+		outputDir := filepath.Join(tmpRoot, "output")
+		if err := os.Mkdir(outputDir, 0755); err != nil {
+			return err
 		}
+		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
 		var languageRepo *gitrepo.Repo
 		if flagRepoRoot == "" {

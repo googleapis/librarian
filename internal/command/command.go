@@ -230,7 +230,6 @@ func init() {
 		addFlagAPIPath,
 		addFlagAPIRoot,
 		addFlagLanguage,
-		addFlagOutput,
 		addFlagBuild,
 	} {
 		fn(fs)
@@ -246,7 +245,6 @@ func init() {
 		addFlagGitUserName,
 		addFlagLanguage,
 		addFlagLibraryID,
-		addFlagOutput,
 		addFlagPush,
 		addFlagRepoRoot,
 	} {
@@ -262,7 +260,6 @@ func init() {
 		addFlagGitUserEmail,
 		addFlagGitUserName,
 		addFlagRepoRoot,
-		addFlagOutput,
 		addFlagSkipBuild,
 	} {
 		fn(fs)
@@ -276,7 +273,6 @@ func init() {
 		addFlagGitUserEmail,
 		addFlagGitUserName,
 		addFlagLanguage,
-		addFlagOutput,
 		addFlagPush,
 		addFlagRepoRoot,
 		addFlagTag,
