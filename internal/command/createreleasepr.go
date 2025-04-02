@@ -228,14 +228,6 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 	return &ReleasePrDescription{Releases: releases, Errors: errorsInRelease}, nil
 }
 
-// Log details of an error which prevents a single library from being released, but without
-// halting the overall process. Return a brief description to the errors to include in the PR.
-// We don't include detailed errors in the PR, as this could reveal sensitive information.
-func logPartialError(libraryID string, err error, description string) string {
-	slog.Warn(fmt.Sprintf("Error while %s %s: %s", description, libraryID, err))
-	return fmt.Sprintf("Error while %s %s", description, libraryID)
-}
-
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	features := []string{}
 	docs := []string{}

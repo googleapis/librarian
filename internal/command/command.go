@@ -187,6 +187,15 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title s
 	return nil, err
 }
 
+// Log details of an error which prevents a single API or library from being configured/released, but without
+// halting the overall process. Return a brief description to the errors to include in the PR.
+// We don't include detailed errors in the PR, as this could reveal sensitive information.
+// The action should describe what failed, e.g. "configuring", "building", "generating".
+func logPartialError(id string, err error, action string) string {
+	slog.Warn(fmt.Sprintf("Error while %s %s: %s", action, id, err))
+	return fmt.Sprintf("Error while %s %s", action, id)
+}
+
 var Commands = []*Command{
 	CmdConfigure,
 	CmdGenerate,
