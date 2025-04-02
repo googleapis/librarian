@@ -216,6 +216,8 @@ func init() {
 		addFlagWorkRoot,
 		addFlagAPIPath,
 		addFlagAPIRoot,
+		addFlagGitUserEmail,
+		addFlagGitUserName,
 		addFlagLanguage,
 		addFlagPush,
 		addFlagRepoRoot,
