@@ -108,7 +108,7 @@ var CmdUpdateApis = &Command{
 			if err != nil {
 				return err
 			}
-			clean, err := gitrepo.IsClean(ctx, apiRepo)
+			clean, err := gitrepo.IsClean(ctx, languageRepo)
 			if err != nil {
 				return err
 			}
