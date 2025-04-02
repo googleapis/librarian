@@ -417,6 +417,33 @@ func CleanWorkingTree(repo *Repo) error {
 	return worktree.Clean(&git.CleanOptions{Dir: true})
 }
 
+// Drop any local changes, and also reset to the parent of the current head commit
+func CleanAndRevertHeadCommit(repo *Repo) error {
+	headRef, err := repo.repo.Head()
+	if err != nil {
+		return err
+	}
+	headCommit, err := repo.repo.CommitObject(headRef.Hash())
+	if err != nil {
+		return err
+	}
+	if headCommit.NumParents() != 1 {
+		return errors.New("head commit has multiple parents")
+	}
+	parentCommit, err := headCommit.Parent(0)
+	if err != nil {
+		return err
+	}
+	worktree, err := repo.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	if err = worktree.Reset(&git.ResetOptions{Mode: git.HardReset, Commit: parentCommit.Hash}); err != nil {
+		return err
+	}
+	return worktree.Clean(&git.CleanOptions{Dir: true})
+}
+
 func getRepoMetadata(remotes []*git.Remote) (string, string, error) {
 	remoteUrl := remotes[0].Config().URLs[0]
 	if !strings.HasPrefix(remoteUrl, "https://github.com/") {

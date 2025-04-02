@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/google/go-github/v69 v69.2.0
 	google.golang.org/protobuf v1.36.5
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
