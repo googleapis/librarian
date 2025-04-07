@@ -51,9 +51,7 @@ var CmdCreateReleasePR = &Command{
 		if err := validatePush(); err != nil {
 			return err
 		}
-		if err := validateRequiredFlag("env-file", flagEnvFile); err != nil {
-			return err
-		}
+
 		startOfRun := time.Now()
 
 		languageRepo, inputDirectory, err := setupReleasePrFolders(startOfRun)
@@ -72,7 +70,7 @@ var CmdCreateReleasePR = &Command{
 		}
 
 		releaseID := fmt.Sprintf("release-%s", formatTimestamp(startOfRun))
-		utils.AppendToFile(flagEnvFile, fmt.Sprintf("%s:%s\n", releaseIdEnvVarName, releaseID))
+		utils.AppendToFile(flagEnvFile, fmt.Sprintf("%s=%s\n", releaseIDEnvVarName, releaseID))
 		prDescription, err := generateReleaseCommitForEachLibrary(languageRepo.Dir, languageRepo, inputDirectory, pipelineState, releaseID)
 		if err != nil {
 			return err

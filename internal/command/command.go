@@ -31,7 +31,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-const releaseIdEnvVarName = "RELEASE_ID"
+const releaseIDEnvVarName = "RELEASE_ID"
 
 type Command struct {
 	Name  string

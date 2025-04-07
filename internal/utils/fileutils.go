@@ -26,6 +26,7 @@ func AppendToFile(filePath string, content string) error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 	return writeContentToFile(*file, content)
 }
 
@@ -38,6 +39,7 @@ func CreateAndWriteToFile(fileDirectory, fileName string, content string) error 
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 	return writeContentToFile(*file, content)
 }
 

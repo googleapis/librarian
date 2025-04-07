@@ -61,7 +61,7 @@ func addFlagBuild(fs *flag.FlagSet) {
 }
 
 func addFlagEnvFile(fs *flag.FlagSet) {
-	fs.StringVar(&flagEnvFile, "env-file", "", "(Required) full path to the file where the environment variables are stored")
+	fs.StringVar(&flagEnvFile, "env-file", "/tmp/env-vars.txt", "full path to the file where the environment variables are stored.  Defaults to /tmp/env-vars.txt")
 }
 
 func addFlagGitUserEmail(fs *flag.FlagSet) {
