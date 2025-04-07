@@ -30,6 +30,7 @@ var (
 	flagAPIRoot      string
 	flagBranch       string
 	flagBuild        bool
+	flagEnvFile      string
 	flagGitUserEmail string
 	flagGitUserName  string
 	flagImage        string
@@ -57,6 +58,10 @@ func addFlagBranch(fs *flag.FlagSet) {
 
 func addFlagBuild(fs *flag.FlagSet) {
 	fs.BoolVar(&flagBuild, "build", false, "whether to build the generated code")
+}
+
+func addFlagEnvFile(fs *flag.FlagSet) {
+	fs.StringVar(&flagEnvFile, "env-file", "", "(Required) full path to the file where the environment variables are stored")
 }
 
 func addFlagGitUserEmail(fs *flag.FlagSet) {

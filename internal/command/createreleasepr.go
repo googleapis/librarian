@@ -49,9 +49,12 @@ var CmdCreateReleasePR = &Command{
 		if err := validatePush(); err != nil {
 			return err
 		}
+		if err := validateRequiredFlag("env-file", flagEnvFile); err != nil {
+			return err
+		}
 		startOfRun := time.Now()
 
-		languageRepo, inputDirectory, envDir, err := setupReleasePrFolders(startOfRun)
+		languageRepo, inputDirectory, err := setupReleasePrFolders(startOfRun)
 		if err != nil {
 			return err
 		}
@@ -67,7 +70,7 @@ var CmdCreateReleasePR = &Command{
 		}
 
 		releaseID := fmt.Sprintf("release-%s", formatTimestamp(startOfRun))
-		utils.WriteToFile(envDir, utils.ENV_VARS_FILENAME, fmt.Sprintf("$s:%s", utils.RELEASE_ID_ENV_VAR_NAME, releaseID))
+		utils.WriteToFile(flagEnvFile, fmt.Sprintf("$s:%s", utils.RELEASE_ID_ENV_VAR_NAME, releaseID))
 		prDescription, err := generateReleaseCommitForEachLibrary(languageRepo.Dir, languageRepo, inputDirectory, pipelineState, releaseID)
 		if err != nil {
 			return err
@@ -89,17 +92,17 @@ var CmdCreateReleasePR = &Command{
 			return errors.New("errors encountered but no PR to create")
 		} else if anyReleases && !anyErrors {
 			descriptionText := strings.Join(prDescription.Releases, "\n")
-			return generateReleasePr(ctx, languageRepo, title, descriptionText, envDir, false)
+			return generateReleasePr(ctx, languageRepo, title, descriptionText, false)
 		} else {
 			releasesText := strings.Join(prDescription.Releases, "\n")
 			errorsText := strings.Join(prDescription.Errors, "\n")
 			descriptionText := fmt.Sprintf("Release Errors:\n==================\n%s\n\n\nReleases Included:\n==================\n%s\n", errorsText, releasesText)
-			return generateReleasePr(ctx, languageRepo, title, descriptionText, envDir, true)
+			return generateReleasePr(ctx, languageRepo, title, descriptionText, true)
 		}
 	},
 }
 
-func setupReleasePrFolders(startOfRun time.Time) (*gitrepo.Repo, string, string error) {
+func setupReleasePrFolders(startOfRun time.Time) (*gitrepo.Repo, string, error) {
 	tmpRoot, err := createTmpWorkingRoot(startOfRun)
 	if err != nil {
 		return nil, "", err
@@ -123,16 +126,10 @@ func setupReleasePrFolders(startOfRun time.Time) (*gitrepo.Repo, string, string 
 		return nil, "", err
 	}
 
-	envDir := filepath.Join(tmpRoot, utils.ENV_VAR_DIRECTORY)
-	if err := os.Mkdir(envDir, 0755); err != nil {
-		slog.Error("Failed to create env directory")
-		return nil, "", err
-	}
-
-	return languageRepo, inputDir, envDir, nil
+	return languageRepo, inputDir, nil
 }
 
-func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, title, prDescription string, envDir, errorsInGeneration bool) error {
+func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, title, prDescription string, errorsInGeneration bool) error {
 	if !flagPush {
 		slog.Info(fmt.Sprintf("Push not specified; would have created release PR with the following description:\n%s", prDescription))
 		return nil
@@ -151,7 +148,7 @@ func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, title, prDescrip
 		}
 	}
 	if prMetadata != nil {
-		utils.WriteToFile(envDir, utils.ENV_VARS_FILENAME, fmt.Sprintf("pr_number=%d\n", prMetadata.Number))
+		utils.WriteToFile(flagEnvFile, fmt.Sprintf("pr_number=%d\n", prMetadata.Number))
 	}
 	return nil
 }

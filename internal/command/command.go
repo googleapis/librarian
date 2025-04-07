@@ -264,6 +264,7 @@ func init() {
 		addFlagGitUserName,
 		addFlagRepoRoot,
 		addFlagSkipBuild,
+		addFlagEnvFile,
 	} {
 		fn(fs)
 	}
