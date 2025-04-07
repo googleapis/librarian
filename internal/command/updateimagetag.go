@@ -53,7 +53,7 @@ var CmdUpdateImageTag = &Command{
 
 		var apiRepo *gitrepo.Repo
 		if flagAPIRoot == "" {
-			apiRepo, err = cloneGoogleapis(ctx, tmpRoot)
+			apiRepo, err = cloneGoogleapis(tmpRoot)
 			if err != nil {
 				return err
 			}
@@ -64,11 +64,11 @@ var CmdUpdateImageTag = &Command{
 				slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
 				return err
 			}
-			apiRepo, err = gitrepo.Open(ctx, apiRoot)
+			apiRepo, err = gitrepo.Open(apiRoot)
 			if err != nil {
 				return err
 			}
-			clean, err := gitrepo.IsClean(ctx, apiRepo)
+			clean, err := gitrepo.IsClean(apiRepo)
 			if err != nil {
 				return err
 			}
@@ -85,7 +85,7 @@ var CmdUpdateImageTag = &Command{
 
 		var languageRepo *gitrepo.Repo
 		if flagRepoRoot == "" {
-			languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
+			languageRepo, err = cloneLanguageRepo(flagLanguage, tmpRoot)
 			if err != nil {
 				return err
 			}
@@ -94,11 +94,11 @@ var CmdUpdateImageTag = &Command{
 			if err != nil {
 				return err
 			}
-			languageRepo, err = gitrepo.Open(ctx, repoRoot)
+			languageRepo, err = gitrepo.Open(repoRoot)
 			if err != nil {
 				return err
 			}
-			clean, err := gitrepo.IsClean(ctx, apiRepo)
+			clean, err := gitrepo.IsClean(apiRepo)
 			if err != nil {
 				return err
 			}
@@ -127,7 +127,7 @@ var CmdUpdateImageTag = &Command{
 
 		// Perform "generate, clean" on each library.
 		for _, library := range state.Libraries {
-			err = regenerateLibrary(ctx, apiRepo, languageRepo, generatorInput, image, outputDir, library)
+			err = regenerateLibrary(apiRepo, languageRepo, generatorInput, image, outputDir, library)
 			if err != nil {
 				return err
 			}
@@ -135,7 +135,7 @@ var CmdUpdateImageTag = &Command{
 
 		// Commit any changes
 		commitMsg := fmt.Sprintf("chore: update generation image tag to %s", flagTag)
-		if err := commitAll(ctx, languageRepo, commitMsg); err != nil {
+		if err := commitAll(languageRepo, commitMsg); err != nil {
 			return err
 		}
 
@@ -150,19 +150,19 @@ var CmdUpdateImageTag = &Command{
 			return nil
 		}
 
-		_, err = push(ctx, languageRepo, startOfRun, "chore: update generation image tag", "")
+		_, err = pushAndCreatePullRequest(ctx, languageRepo, startOfRun, "chore: update generation image tag", "")
 		return err
 	},
 }
 
-func regenerateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, library *statepb.LibraryState) error {
+func regenerateLibrary(apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, library *statepb.LibraryState) error {
 	if len(library.ApiPaths) == 0 {
 		slog.Info(fmt.Sprintf("Skipping non-generated library: '%s'", library.Id))
 		return nil
 	}
 
 	// TODO: Handle "no last generated commit"
-	if err := gitrepo.Checkout(ctx, apiRepo, library.LastGeneratedCommit); err != nil {
+	if err := gitrepo.Checkout(apiRepo, library.LastGeneratedCommit); err != nil {
 		return err
 	}
 
@@ -174,10 +174,10 @@ func regenerateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo 
 		return err
 	}
 
-	if err := container.GenerateLibrary(ctx, image, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := container.GenerateLibrary(image, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
-	if err := container.Clean(ctx, image, languageRepo.Dir, library.Id); err != nil {
+	if err := container.Clean(image, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

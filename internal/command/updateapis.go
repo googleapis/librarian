@@ -54,7 +54,7 @@ var CmdUpdateApis = &Command{
 		var apiRepo *gitrepo.Repo
 		cleanWorkingTreePostGeneration := true
 		if flagAPIRoot == "" {
-			apiRepo, err = cloneGoogleapis(ctx, tmpRoot)
+			apiRepo, err = cloneGoogleapis(tmpRoot)
 			if err != nil {
 				return err
 			}
@@ -65,11 +65,11 @@ var CmdUpdateApis = &Command{
 				slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
 				return err
 			}
-			apiRepo, err = gitrepo.Open(ctx, apiRoot)
+			apiRepo, err = gitrepo.Open(apiRoot)
 			if err != nil {
 				return err
 			}
-			clean, err := gitrepo.IsClean(ctx, apiRepo)
+			clean, err := gitrepo.IsClean(apiRepo)
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ var CmdUpdateApis = &Command{
 
 		var languageRepo *gitrepo.Repo
 		if flagRepoRoot == "" {
-			languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
+			languageRepo, err = cloneLanguageRepo(flagLanguage, tmpRoot)
 			if err != nil {
 				return err
 			}
@@ -96,11 +96,11 @@ var CmdUpdateApis = &Command{
 			if err != nil {
 				return err
 			}
-			languageRepo, err = gitrepo.Open(ctx, repoRoot)
+			languageRepo, err = gitrepo.Open(repoRoot)
 			if err != nil {
 				return err
 			}
-			clean, err := gitrepo.IsClean(ctx, languageRepo)
+			clean, err := gitrepo.IsClean(languageRepo)
 			if err != nil {
 				return err
 			}
@@ -122,14 +122,14 @@ var CmdUpdateApis = &Command{
 			return err
 		}
 
-		hashBefore, err := gitrepo.HeadHash(ctx, languageRepo)
+		hashBefore, err := gitrepo.HeadHash(languageRepo)
 		if err != nil {
 			return err
 		}
 
 		// Perform "generate, clean, commit, build" on each library.
 		for _, library := range state.Libraries {
-			err = updateLibrary(ctx, apiRepo, languageRepo, generatorInput, image, outputDir, state, library)
+			err = updateLibrary(apiRepo, languageRepo, generatorInput, image, outputDir, state, library)
 			if err != nil {
 				return err
 			}
@@ -145,7 +145,7 @@ var CmdUpdateApis = &Command{
 			return nil
 		}
 
-		hashAfter, err := gitrepo.HeadHash(ctx, languageRepo)
+		hashAfter, err := gitrepo.HeadHash(languageRepo)
 		if err != nil {
 			return err
 		}
@@ -155,12 +155,12 @@ var CmdUpdateApis = &Command{
 		}
 
 		title := fmt.Sprintf("feat: API regeneration: %s", formatTimestamp(startOfRun))
-		_, err = push(ctx, languageRepo, startOfRun, title, "")
+		_, err = pushAndCreatePullRequest(ctx, languageRepo, startOfRun, title, "")
 		return err
 	},
 }
 
-func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, repoState *statepb.PipelineState, library *statepb.LibraryState) error {
+func updateLibrary(apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, repoState *statepb.PipelineState, library *statepb.LibraryState) error {
 	if flagLibraryID != "" && flagLibraryID != library.Id {
 		// If flagLibraryID has been passed in, we only act on that library.
 		return nil
@@ -195,10 +195,10 @@ func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *git
 		return err
 	}
 
-	if err := container.GenerateLibrary(ctx, image, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := container.GenerateLibrary(image, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
-	if err := container.Clean(ctx, image, languageRepo.Dir, library.Id); err != nil {
+	if err := container.Clean(image, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
@@ -223,7 +223,7 @@ func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *git
 	} else {
 		msg = createCommitMessage(library.Id, commits)
 	}
-	if err := commitAll(ctx, languageRepo, msg); err != nil {
+	if err := commitAll(languageRepo, msg); err != nil {
 		return err
 	}
 
@@ -231,7 +231,7 @@ func updateLibrary(ctx context.Context, apiRepo *gitrepo.Repo, languageRepo *git
 	if err := container.BuildLibrary(image, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
-	clean, err := gitrepo.IsClean(ctx, languageRepo)
+	clean, err := gitrepo.IsClean(languageRepo)
 	if err != nil {
 		return err
 	}

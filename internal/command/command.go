@@ -154,8 +154,8 @@ func createTmpWorkingRoot(t time.Time) (string, error) {
 }
 
 // No commit is made if there are no file modifications.
-func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
-	status, err := gitrepo.AddAll(ctx, repo)
+func commitAll(repo *gitrepo.Repo, msg string) error {
+	status, err := gitrepo.AddAll(repo)
 	if err != nil {
 		return err
 	}
@@ -164,10 +164,10 @@ func commitAll(ctx context.Context, repo *gitrepo.Repo, msg string) error {
 		return nil
 	}
 
-	return gitrepo.Commit(ctx, repo, msg, flagGitUserName, flagGitUserEmail)
+	return gitrepo.Commit(repo, msg, flagGitUserName, flagGitUserEmail)
 }
 
-func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) (*gitrepo.PullRequestMetadata, error) {
+func pushAndCreatePullRequest(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) (*gitrepo.PullRequestMetadata, error) {
 	if !flagPush {
 		return nil, nil
 	}
@@ -175,7 +175,7 @@ func push(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title s
 	// This should already have been validated to be non-empty by validatePush
 	gitHubAccessToken := os.Getenv(gitHubTokenEnvironmentVariable)
 	branch := fmt.Sprintf("librarian-%s", formatTimestamp(startOfRun))
-	err := gitrepo.PushBranch(ctx, repo, branch, gitHubAccessToken)
+	err := gitrepo.PushBranch(repo, branch, gitHubAccessToken)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return nil, err

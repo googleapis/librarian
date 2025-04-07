@@ -61,7 +61,7 @@ var CmdGenerate = &Command{
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
 		image := deriveImage(nil)
-		if err := container.GenerateRaw(ctx, image, apiRoot, outputDir, flagAPIPath); err != nil {
+		if err := container.GenerateRaw(image, apiRoot, outputDir, flagAPIPath); err != nil {
 			return err
 		}
 

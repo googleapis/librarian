@@ -67,7 +67,7 @@ var CmdConfigure = &Command{
 
 		var apiRoot string
 		if flagAPIRoot == "" {
-			repo, err := cloneGoogleapis(ctx, tmpRoot)
+			repo, err := cloneGoogleapis(tmpRoot)
 			if err != nil {
 				return err
 			}
@@ -83,7 +83,7 @@ var CmdConfigure = &Command{
 
 		var languageRepo *gitrepo.Repo
 		if flagRepoRoot == "" {
-			languageRepo, err = cloneLanguageRepo(ctx, flagLanguage, tmpRoot)
+			languageRepo, err = cloneLanguageRepo(flagLanguage, tmpRoot)
 			if err != nil {
 				return err
 			}
@@ -92,11 +92,11 @@ var CmdConfigure = &Command{
 			if err != nil {
 				return err
 			}
-			languageRepo, err = gitrepo.Open(ctx, repoRoot)
+			languageRepo, err = gitrepo.Open(repoRoot)
 			if err != nil {
 				return err
 			}
-			clean, err := gitrepo.IsClean(ctx, languageRepo)
+			clean, err := gitrepo.IsClean(languageRepo)
 			if err != nil {
 				return err
 			}
@@ -118,7 +118,7 @@ var CmdConfigure = &Command{
 
 		prContent := ConfigurationPrContent{}
 		for _, apiPath := range apiPaths {
-			err = configureApi(ctx, image, outputRoot, apiRoot, apiPath, languageRepo, &prContent)
+			err = configureApi(image, outputRoot, apiRoot, apiPath, languageRepo, &prContent)
 			if err != nil {
 				return err
 			}
@@ -271,11 +271,11 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 //
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
-func configureApi(ctx context.Context, image, outputRoot, apiRoot, apiPath string, languageRepo *gitrepo.Repo, prContent *ConfigurationPrContent) error {
+func configureApi(image, outputRoot, apiRoot, apiPath string, languageRepo *gitrepo.Repo, prContent *ConfigurationPrContent) error {
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
 	generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
-	if err := container.Configure(ctx, image, apiRoot, apiPath, generatorInput); err != nil {
+	if err := container.Configure(image, apiRoot, apiPath, generatorInput); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(apiPath, err, "configuring"))
 		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 			return err
@@ -308,7 +308,7 @@ func configureApi(ctx context.Context, image, outputRoot, apiRoot, apiPath strin
 	}
 
 	msg := fmt.Sprintf("feat: Configured library %s for API %s", libraryID, apiPath)
-	if err := commitAll(ctx, languageRepo, msg); err != nil {
+	if err := commitAll(languageRepo, msg); err != nil {
 		return err
 	}
 
@@ -319,14 +319,14 @@ func configureApi(ctx context.Context, image, outputRoot, apiRoot, apiPath strin
 		return err
 	}
 
-	if err := container.GenerateLibrary(ctx, image, apiRoot, outputDir, generatorInput, libraryID); err != nil {
+	if err := container.GenerateLibrary(image, apiRoot, outputDir, generatorInput, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "generating"))
 		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
 			return err
 		}
 		return nil
 	}
-	if err := container.Clean(ctx, image, languageRepo.Dir, libraryID); err != nil {
+	if err := container.Clean(image, languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "cleaning"))
 		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
 			return err
@@ -360,6 +360,6 @@ func generateConfigurationPr(ctx context.Context, repo *gitrepo.Repo, prDescript
 	}
 
 	title := fmt.Sprintf("feat: API configuration: %s", formatTimestamp(startOfRun))
-	_, err := push(ctx, repo, time.Now(), title, prDescription)
+	_, err := pushAndCreatePullRequest(ctx, repo, time.Now(), title, prDescription)
 	return err
 }

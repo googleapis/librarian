@@ -65,11 +65,11 @@ var CmdRelease = &Command{
 		if err != nil {
 			return err
 		}
-		languageRepo, err := gitrepo.Open(ctx, repoRoot)
+		languageRepo, err := gitrepo.Open(repoRoot)
 		if err != nil {
 			return err
 		}
-		clean, err := gitrepo.IsClean(ctx, languageRepo)
+		clean, err := gitrepo.IsClean(languageRepo)
 		if err != nil {
 			return err
 		}
@@ -92,7 +92,7 @@ var CmdRelease = &Command{
 		}
 
 		for _, release := range releases {
-			if err := buildTestPackageRelease(ctx, flagImage, outputRoot, languageRepo, release); err != nil {
+			if err := buildTestPackageRelease(flagImage, outputRoot, languageRepo, release); err != nil {
 				return err
 			}
 		}
@@ -106,8 +106,8 @@ var CmdRelease = &Command{
 	},
 }
 
-func buildTestPackageRelease(ctx context.Context, image, outputRoot string, languageRepo *gitrepo.Repo, release LibraryRelease) error {
-	if err := gitrepo.Checkout(ctx, languageRepo, release.CommitHash); err != nil {
+func buildTestPackageRelease(image, outputRoot string, languageRepo *gitrepo.Repo, release LibraryRelease) error {
+	if err := gitrepo.Checkout(languageRepo, release.CommitHash); err != nil {
 		return err
 	}
 	if err := container.BuildLibrary(image, languageRepo.Dir, release.LibraryID); err != nil {

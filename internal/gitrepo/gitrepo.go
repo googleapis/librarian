@@ -50,22 +50,22 @@ type PullRequestMetadata struct {
 //
 // Otherwise, it clones the repository from the given URL (repoURL) and saves it
 // to the specified directory path (dirpath).
-func CloneOrOpen(ctx context.Context, dirpath, repoURL string) (*Repo, error) {
+func CloneOrOpen(dirpath, repoURL string) (*Repo, error) {
 	slog.Info(fmt.Sprintf("Cloning %q to %q", repoURL, dirpath))
 
 	_, err := os.Stat(dirpath)
 	if err == nil {
-		return Open(ctx, dirpath)
+		return Open(dirpath)
 	}
 	if os.IsNotExist(err) {
-		return Clone(ctx, dirpath, repoURL)
+		return Clone(dirpath, repoURL)
 	}
 	return nil, err
 }
 
 // Clone downloads a copy of a Git repository from repoURL and saves it to the
 // specified directory at dirpath.
-func Clone(ctx context.Context, dirpath, repoURL string) (*Repo, error) {
+func Clone(dirpath, repoURL string) (*Repo, error) {
 	options := &git.CloneOptions{
 		URL:           repoURL,
 		ReferenceName: plumbing.HEAD,
@@ -90,7 +90,7 @@ func Clone(ctx context.Context, dirpath, repoURL string) (*Repo, error) {
 }
 
 // Open provides access to a Git repository that exists at dirpath.
-func Open(ctx context.Context, dirpath string) (*Repo, error) {
+func Open(dirpath string) (*Repo, error) {
 	repo, err := git.PlainOpen(dirpath)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func Open(ctx context.Context, dirpath string) (*Repo, error) {
 	}, nil
 }
 
-func AddAll(ctx context.Context, repo *Repo) (git.Status, error) {
+func AddAll(repo *Repo) (git.Status, error) {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return git.Status{}, err
@@ -114,7 +114,7 @@ func AddAll(ctx context.Context, repo *Repo) (git.Status, error) {
 }
 
 // returns an error if there is nothing to commit
-func Commit(ctx context.Context, repo *Repo, msg string, userName, userEmail string) error {
+func Commit(repo *Repo, msg string, userName, userEmail string) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err
@@ -150,7 +150,7 @@ func Commit(ctx context.Context, repo *Repo, msg string, userName, userEmail str
 	return nil
 }
 
-func HeadHash(ctx context.Context, repo *Repo) (string, error) {
+func HeadHash(repo *Repo) (string, error) {
 	headRef, err := repo.repo.Head()
 	if err != nil {
 		return "", err
@@ -158,7 +158,7 @@ func HeadHash(ctx context.Context, repo *Repo) (string, error) {
 	return headRef.String(), nil
 }
 
-func IsClean(ctx context.Context, repo *Repo) (bool, error) {
+func IsClean(repo *Repo) (bool, error) {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return false, err
@@ -171,7 +171,7 @@ func IsClean(ctx context.Context, repo *Repo) (bool, error) {
 	return status.IsClean(), nil
 }
 
-func PrintStatus(ctx context.Context, repo *Repo) error {
+func PrintStatus(repo *Repo) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err
@@ -368,7 +368,7 @@ func GetCommitsForReleaseID(repo *Repo, releaseID string) ([]object.Commit, erro
 }
 
 // Creates a branch with the given name in the default remote.
-func PushBranch(ctx context.Context, repo *Repo, remoteBranch string, accessToken string) error {
+func PushBranch(repo *Repo, remoteBranch string, accessToken string) error {
 	headRef, err := repo.repo.Head()
 	if err != nil {
 		return err
@@ -501,7 +501,7 @@ func getRepoMetadata(remotes []*git.Remote) (string, string, error) {
 	return organization, repoName, nil
 }
 
-func Checkout(ctx context.Context, repo *Repo, commit string) error {
+func Checkout(repo *Repo, commit string) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err

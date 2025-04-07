@@ -86,6 +86,7 @@ func addFlagPush(fs *flag.FlagSet) {
 func addFlagReleaseID(fs *flag.FlagSet) {
 	fs.StringVar(&flagReleaseID, "release-id", "", "The ID of a release PR")
 }
+
 func addFlagRepoRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagRepoRoot, "repo-root", "", "Repository root. When this is not specified, the language repo will be cloned.")
 }

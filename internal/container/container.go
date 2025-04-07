@@ -15,7 +15,6 @@
 package container
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -24,7 +23,7 @@ import (
 	"strings"
 )
 
-func GenerateRaw(ctx context.Context, image, apiRoot, output, apiPath string) error {
+func GenerateRaw(image, apiRoot, output, apiPath string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -50,7 +49,7 @@ func GenerateRaw(ctx context.Context, image, apiRoot, output, apiPath string) er
 	return runDocker(image, mounts, containerArgs)
 }
 
-func GenerateLibrary(ctx context.Context, image, apiRoot, output, generatorInput, libraryID string) error {
+func GenerateLibrary(image, apiRoot, output, generatorInput, libraryID string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -81,7 +80,7 @@ func GenerateLibrary(ctx context.Context, image, apiRoot, output, generatorInput
 	return runDocker(image, mounts, containerArgs)
 }
 
-func Clean(ctx context.Context, image, repoRoot, libraryID string) error {
+func Clean(image, repoRoot, libraryID string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -142,7 +141,7 @@ func BuildLibrary(image, repoRoot, libraryId string) error {
 	return runDocker(image, mounts, containerArgs)
 }
 
-func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput string) error {
+func Configure(image, apiRoot, apiPath, generatorInput string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
