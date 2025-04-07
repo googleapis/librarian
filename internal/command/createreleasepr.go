@@ -34,7 +34,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const PR_NUMBER_ENV_VAR_NAME = "PR_NUMBER"
+const prNumberEnvVarName = "PR_NUMBER"
 
 type ReleasePrDescription struct {
 	Releases []string
@@ -72,7 +72,7 @@ var CmdCreateReleasePR = &Command{
 		}
 
 		releaseID := fmt.Sprintf("release-%s", formatTimestamp(startOfRun))
-		utils.WriteToFile(flagEnvFile, fmt.Sprintf("%s:%s\n", RELEASE_ID_ENV_VAR_NAME, releaseID))
+		utils.WriteToFile(flagEnvFile, fmt.Sprintf("%s:%s\n", releaseIdEnvVarName, releaseID))
 		prDescription, err := generateReleaseCommitForEachLibrary(languageRepo.Dir, languageRepo, inputDirectory, pipelineState, releaseID)
 		if err != nil {
 			return err
@@ -150,7 +150,7 @@ func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, title, prDescrip
 		}
 	}
 	if prMetadata != nil {
-		utils.WriteToFile(flagEnvFile, fmt.Sprintf("%s=%d\n", PR_NUMBER_ENV_VAR_NAME, prMetadata.Number))
+		utils.WriteToFile(flagEnvFile, fmt.Sprintf("%s=%d\n", prNumberEnvVarName, prMetadata.Number))
 	}
 	return nil
 }
