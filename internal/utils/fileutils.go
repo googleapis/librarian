@@ -1,13 +1,23 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package utils
 
 import (
 	"os"
 	"path/filepath"
 )
-
-const ENV_VAR_DIRECTORY = "env"
-const ENV_VARS_FILENAME = "env_vars.txt"
-const RELEASE_ID_ENV_VAR_NAME = "release_id"
 
 // WriteToFile writes the content to a file in the specified filePath.
 // It creates the file if it does not exist and truncates it if it does.
