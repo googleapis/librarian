@@ -12,7 +12,7 @@ const RELEASE_ID_ENV_VAR_NAME = "release_id"
 // WriteToFile writes the content to a file in the specified filePath.
 // It creates the file if it does not exist and truncates it if it does.
 func WriteToFile(filePath string, content string) error {
-	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return err
 	}

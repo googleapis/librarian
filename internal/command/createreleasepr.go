@@ -70,7 +70,7 @@ var CmdCreateReleasePR = &Command{
 		}
 
 		releaseID := fmt.Sprintf("release-%s", formatTimestamp(startOfRun))
-		utils.WriteToFile(flagEnvFile, fmt.Sprintf("$s:%s", utils.RELEASE_ID_ENV_VAR_NAME, releaseID))
+		utils.WriteToFile(flagEnvFile, fmt.Sprintf("%s:%s", utils.RELEASE_ID_ENV_VAR_NAME, releaseID))
 		prDescription, err := generateReleaseCommitForEachLibrary(languageRepo.Dir, languageRepo, inputDirectory, pipelineState, releaseID)
 		if err != nil {
 			return err
