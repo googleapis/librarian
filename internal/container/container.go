@@ -168,7 +168,7 @@ func Configure(ctx context.Context, image, apiRoot, apiPath, generatorInput stri
 	return runDocker(image, mounts, containerArgs)
 }
 
-func PrepareLibraryRelease(image string, languageRepo string, inputsDirectory string, libId string, releaseVersion string) error {
+func PrepareLibraryRelease(image, languageRepo, inputsDirectory, libId, releaseVersion string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -182,6 +182,40 @@ func PrepareLibraryRelease(image string, languageRepo string, inputsDirectory st
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", languageRepo),
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
+	}
+
+	return runDocker(image, mounts, containerArgs)
+}
+
+func IntegrationTestLibrary(image, languageRepo, libId string) error {
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
+	}
+	containerArgs := []string{
+		"integration-test-library",
+		"--repo-root=/repo",
+		fmt.Sprintf("--library-id=%s", libId),
+	}
+	mounts := []string{
+		fmt.Sprintf("%s:/repo", languageRepo),
+	}
+
+	return runDocker(image, mounts, containerArgs)
+}
+
+func PackageLibrary(image, languageRepo, libId, outputDir string) error {
+	if image == "" {
+		return fmt.Errorf("image cannot be empty")
+	}
+	containerArgs := []string{
+		"integration-test-library",
+		"--repo-root=/repo",
+		"--output=/output",
+		fmt.Sprintf("--library-id=%s", libId),
+	}
+	mounts := []string{
+		fmt.Sprintf("%s:/repo", languageRepo),
+		fmt.Sprintf("%s:/output", outputDir),
 	}
 
 	return runDocker(image, mounts, containerArgs)

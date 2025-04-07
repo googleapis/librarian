@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -321,6 +322,49 @@ func GetCommitsForPathsSinceTag(repo *Repo, paths []string, tagName string) ([]o
 		hash = tagCommit.Hash.String()
 	}
 	return GetCommitsForPathsSinceCommit(repo, paths, hash)
+}
+
+// Returns all commits with the given release ID, i.e. where the commit message contains a line of
+// Librarian-Release-Id: <release-id>. These commits are expected to be contiguous, from head,
+// with all commits having a single parent.
+func GetCommitsForReleaseID(repo *Repo, releaseID string) ([]object.Commit, error) {
+	releaseIDLine := fmt.Sprintf("Librarian-Release-Id: %s", releaseID)
+	commits := []object.Commit{}
+
+	headRef, err := repo.repo.Head()
+	if err != nil {
+		return nil, err
+	}
+	headCommit, err := repo.repo.CommitObject(headRef.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate from the head via parents, until we find a commit that doesn't
+	// have our expected line in the message.
+	candidateCommit := headCommit
+	for {
+		messageLines := strings.Split(candidateCommit.Message, "\n")
+		gotReleaseID := slices.Contains(messageLines, releaseIDLine)
+		if !gotReleaseID {
+			break
+		}
+
+		if candidateCommit.NumParents() != 1 {
+			return nil, fmt.Errorf("aborted finding release PR commits; commit %s has multiple parents", candidateCommit.Hash.String())
+		}
+		candidateCommit, err = candidateCommit.Parent(0)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(commits) == 0 {
+		return nil, fmt.Errorf("did not find any commits with release ID %s", releaseID)
+	}
+	// Present the commits in forward-chronological order.
+	slices.Reverse(commits)
+	return commits, nil
 }
 
 // Creates a branch with the given name in the default remote.

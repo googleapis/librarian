@@ -36,6 +36,7 @@ var (
 	flagLanguage     string
 	flagLibraryID    string
 	flagPush         bool
+	flagReleaseID    string
 	flagRepoRoot     string
 	flagSkipBuild    bool
 	flagTag          string
@@ -82,6 +83,9 @@ func addFlagPush(fs *flag.FlagSet) {
 	fs.BoolVar(&flagPush, "push", false, "push to GitHub if true")
 }
 
+func addFlagReleaseID(fs *flag.FlagSet) {
+	fs.StringVar(&flagReleaseID, "release-id", "", "The ID of a release PR")
+}
 func addFlagRepoRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagRepoRoot, "repo-root", "", "Repository root. When this is not specified, the language repo will be cloned.")
 }

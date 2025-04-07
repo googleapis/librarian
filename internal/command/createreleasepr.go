@@ -48,7 +48,9 @@ var CmdCreateReleasePR = &Command{
 		if err := validatePush(); err != nil {
 			return err
 		}
-		languageRepo, inputDirectory, err := setupReleasePrFolders(ctx)
+		startOfRun := time.Now()
+
+		languageRepo, inputDirectory, err := setupReleasePrFolders(ctx, startOfRun)
 		if err != nil {
 			return err
 		}
@@ -63,7 +65,8 @@ var CmdCreateReleasePR = &Command{
 			flagImage = deriveImage(pipelineState)
 		}
 
-		prDescription, err := generateReleaseCommitForEachLibrary(ctx, languageRepo.Dir, languageRepo, inputDirectory, pipelineState)
+		releaseID := fmt.Sprintf("release-%s", formatTimestamp(startOfRun))
+		prDescription, err := generateReleaseCommitForEachLibrary(ctx, languageRepo.Dir, languageRepo, inputDirectory, pipelineState, releaseID)
 		if err != nil {
 			return err
 		}
@@ -76,6 +79,7 @@ var CmdCreateReleasePR = &Command{
 		anyReleases := len(prDescription.Releases) > 0
 		anyErrors := len(prDescription.Errors) > 0
 
+		title := fmt.Sprintf("chore: Library release: %s", formatTimestamp(startOfRun))
 		if !anyReleases && !anyErrors {
 			return nil
 		} else if !anyReleases && anyErrors {
@@ -83,18 +87,17 @@ var CmdCreateReleasePR = &Command{
 			return errors.New("errors encountered but no PR to create")
 		} else if anyReleases && !anyErrors {
 			descriptionText := strings.Join(prDescription.Releases, "\n")
-			return generateReleasePr(ctx, languageRepo, descriptionText, false)
+			return generateReleasePr(ctx, languageRepo, title, descriptionText, false)
 		} else {
 			releasesText := strings.Join(prDescription.Releases, "\n")
 			errorsText := strings.Join(prDescription.Errors, "\n")
 			descriptionText := fmt.Sprintf("Release Errors:\n==================\n%s\n\n\nReleases Included:\n==================\n%s\n", errorsText, releasesText)
-			return generateReleasePr(ctx, languageRepo, descriptionText, true)
+			return generateReleasePr(ctx, languageRepo, title, descriptionText, true)
 		}
 	},
 }
 
-func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, error) {
-	startOfRun := time.Now()
+func setupReleasePrFolders(ctx context.Context, startOfRun time.Time) (*gitrepo.Repo, string, error) {
 	tmpRoot, err := createTmpWorkingRoot(startOfRun)
 	if err != nil {
 		return nil, "", err
@@ -121,12 +124,12 @@ func setupReleasePrFolders(ctx context.Context) (*gitrepo.Repo, string, error) {
 	return languageRepo, inputDir, nil
 }
 
-func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription string, errorsInGeneration bool) error {
+func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, title, prDescription string, errorsInGeneration bool) error {
 	if !flagPush {
 		slog.Info(fmt.Sprintf("Push not specified; would have created release PR with the following description:\n%s", prDescription))
 		return nil
 	}
-	prMetadata, err := push(ctx, repo, time.Now(), "chore(main): release", prDescription)
+	prMetadata, err := push(ctx, repo, time.Now(), title, prDescription)
 	if err != nil {
 		slog.Warn(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 		return err
@@ -147,7 +150,7 @@ func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, prDescription st
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState) (*ReleasePrDescription, error) {
+func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, repo *gitrepo.Repo, inputDirectory string, pipelineState *statepb.PipelineState, releaseID string) (*ReleasePrDescription, error) {
 	libraries := pipelineState.Libraries
 	var errorsInRelease []string
 	var releases []string
@@ -218,8 +221,9 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, repoPath string, r
 			//TODO: add extra meta data what is this
 			releaseDescription := fmt.Sprintf("Release library: %s version %s", library.Id, releaseVersion)
 			releases = append(releases, releaseDescription)
-
-			err = commitAll(ctx, repo, fmt.Sprintf("%s\n\n%s", releaseDescription, releaseNotes))
+			// Metadata for easy extraction later.
+			metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
+			err = commitAll(ctx, repo, fmt.Sprintf("%s\n\n%s\n\n%s", releaseDescription, releaseNotes, metadata))
 			if err != nil {
 				return nil, err
 			}

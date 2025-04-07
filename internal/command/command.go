@@ -202,6 +202,7 @@ var Commands = []*Command{
 	CmdUpdateApis,
 	CmdCreateReleasePR,
 	CmdUpdateImageTag,
+	CmdRelease,
 }
 
 func init() {
@@ -278,6 +279,17 @@ func init() {
 		addFlagPush,
 		addFlagRepoRoot,
 		addFlagTag,
+	} {
+		fn(fs)
+	}
+
+	fs = CmdRelease.flags
+	for _, fn := range []func(fs *flag.FlagSet){
+		addFlagImage,
+		addFlagWorkRoot,
+		addFlagLanguage,
+		addFlagRepoRoot,
+		addFlagReleaseID,
 	} {
 		fn(fs)
 	}
