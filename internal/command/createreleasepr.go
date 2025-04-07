@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/utils"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -66,6 +67,7 @@ var CmdCreateReleasePR = &Command{
 		}
 
 		releaseID := fmt.Sprintf("release-%s", formatTimestamp(startOfRun))
+		utils.WriteToFile(utils.OUTPUT_DIRECTORY, utils.ENV_VARS_FILENAME, fmt.Sprintf("$s:%s", utils.RELEASE_ID_ENV_VAR_NAME, releaseID))
 		prDescription, err := generateReleaseCommitForEachLibrary(languageRepo.Dir, languageRepo, inputDirectory, pipelineState, releaseID)
 		if err != nil {
 			return err
@@ -142,6 +144,9 @@ func generateReleasePr(ctx context.Context, repo *gitrepo.Repo, title, prDescrip
 			return err
 		}
 	}
+	if prMetadata != nil {
+		utils.WriteToFile(utils.OUTPUT_DIRECTORY, utils.ENV_VARS_FILENAME, fmt.Sprintf("pr_number=%d\n", prMetadata.Number))
+	}
 	return nil
 }
 
@@ -207,6 +212,14 @@ func generateReleaseCommitForEachLibrary(repoPath string, repo *gitrepo.Repo, in
 					}
 					continue
 				}
+				if err := container.IntegrationTestLibrary(flagImage, repoPath, library.Id); err != nil {
+					errorsInRelease = append(errorsInRelease, logPartialError(library.Id, err, "integration testing library"))
+					// Clean up any changes before starting the next iteration.
+					if err := gitrepo.CleanWorkingTree(repo); err != nil {
+						return nil, err
+					}
+					continue
+				}
 			}
 
 			// Update the pipeline state to record what we've released and when.
@@ -260,17 +273,8 @@ func formatReleaseNotes(commitMessages []*CommitMessage) string {
 }
 
 func createReleaseNotesFile(inputDirectory, libraryId, releaseVersion, releaseNotes string) error {
-	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", libraryId, releaseVersion))
 
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	_, err = file.WriteString(releaseNotes)
-	if err != nil {
-		return err
-	}
-	return nil
+	return utils.CreateAndWriteToFile(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", libraryId, releaseVersion), releaseNotes)
 }
 
 func maybeAppendReleaseNotesSection(builder *strings.Builder, description string, lines []string) {
