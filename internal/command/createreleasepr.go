@@ -34,7 +34,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const prNumberEnvVarName = "PR_NUMBER"
+const prNumberEnvVarName = "_PR_NUMBER"
 
 type ReleasePrDescription struct {
 	Releases []string
