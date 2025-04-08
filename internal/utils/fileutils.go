@@ -16,7 +16,6 @@ package utils
 
 import (
 	"os"
-	"path/filepath"
 )
 
 // AppendToFile writes the content to a file in the specified filePath.
@@ -30,12 +29,10 @@ func AppendToFile(filePath string, content string) error {
 	return writeContentToFile(*file, content)
 }
 
-// CreateFile creates a file with the specified name and content in the given directory.
+// CreateAndWriteToFile creates a file with the specified name and content.
 // It will truncate the file if it already exists.
-func CreateAndWriteToFile(fileDirectory, fileName string, content string) error {
-	path := filepath.Join(fileDirectory, fileName)
-
-	file, err := os.Create(path)
+func CreateAndWriteToFile(filePath string, content string) error {
+	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}

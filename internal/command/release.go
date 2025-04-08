@@ -77,14 +77,24 @@ var CmdRelease = &Command{
 			return errors.New("language repo must be clean before releasing")
 		}
 
-		if flagImage == "" {
-			pipelineState, err := loadState(languageRepo)
-			if err != nil {
-				slog.Info(fmt.Sprintf("Error loading pipeline state: %s", err))
-				return err
-			}
-			flagImage = deriveImage(pipelineState)
+		pipelineState, err := loadState(languageRepo)
+		if err != nil {
+			slog.Info(fmt.Sprintf("Error loading pipeline state: %s", err))
+			return err
 		}
+
+		pipelineConfig, err := loadConfig(languageRepo)
+		if err != nil {
+			slog.Info(fmt.Sprintf("Error loading pipeline config: %s", err))
+			return err
+		}
+
+		containerEnv, err := container.NewEnvironment(ctx, tmpRoot, flagSecretsProject, pipelineConfig)
+		if err != nil {
+			return err
+		}
+
+		flagImage = deriveImage(pipelineState)
 
 		releases, err := parseCommitsForReleases(languageRepo, flagReleaseID)
 		if err != nil {
@@ -92,7 +102,7 @@ var CmdRelease = &Command{
 		}
 
 		for _, release := range releases {
-			if err := buildTestPackageRelease(flagImage, outputRoot, languageRepo, release); err != nil {
+			if err := buildTestPackageRelease(flagImage, outputRoot, languageRepo, release, containerEnv); err != nil {
 				return err
 			}
 		}
@@ -106,14 +116,14 @@ var CmdRelease = &Command{
 	},
 }
 
-func buildTestPackageRelease(image, outputRoot string, languageRepo *gitrepo.Repo, release LibraryRelease) error {
+func buildTestPackageRelease(image, outputRoot string, languageRepo *gitrepo.Repo, release LibraryRelease, containerEnv *container.ContainerEnvironment) error {
 	if err := gitrepo.Checkout(languageRepo, release.CommitHash); err != nil {
 		return err
 	}
 	if err := container.BuildLibrary(image, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
-	if err := container.IntegrationTestLibrary(image, languageRepo.Dir, release.LibraryID); err != nil {
+	if err := container.IntegrationTestLibrary(image, languageRepo.Dir, release.LibraryID, containerEnv); err != nil {
 		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)

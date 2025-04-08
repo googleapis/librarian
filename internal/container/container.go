@@ -36,8 +36,7 @@ func GenerateRaw(image, apiRoot, output, apiPath string) error {
 	if apiPath == "" {
 		return fmt.Errorf("apiPath cannot be empty")
 	}
-	containerArgs := []string{
-		"generate-raw",
+	commandArgs := []string{
 		"--api-root=/apis",
 		"--output=/output",
 		fmt.Sprintf("--api-path=%s", apiPath),
@@ -46,7 +45,7 @@ func GenerateRaw(image, apiRoot, output, apiPath string) error {
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/output", output),
 	}
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("generate-raw", image, mounts, commandArgs, nil)
 }
 
 func GenerateLibrary(image, apiRoot, output, generatorInput, libraryID string) error {
@@ -65,8 +64,7 @@ func GenerateLibrary(image, apiRoot, output, generatorInput, libraryID string) e
 	if libraryID == "" {
 		return fmt.Errorf("libraryID cannot be empty")
 	}
-	containerArgs := []string{
-		"generate-library",
+	commandArgs := []string{
 		"--api-root=/apis",
 		"--output=/output",
 		"--generator-input=/generator-input",
@@ -77,7 +75,7 @@ func GenerateLibrary(image, apiRoot, output, generatorInput, libraryID string) e
 		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/generator-input", generatorInput),
 	}
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("generate-library", image, mounts, commandArgs, nil)
 }
 
 func Clean(image, repoRoot, libraryID string) error {
@@ -90,14 +88,13 @@ func Clean(image, repoRoot, libraryID string) error {
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
-	containerArgs := []string{
-		"clean",
+	commandArgs := []string{
 		"--repo-root=/repo",
 	}
 	if libraryID != "" {
-		containerArgs = append(containerArgs, fmt.Sprintf("--library-id=%s", libraryID))
+		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
 	}
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("clean", image, mounts, commandArgs, nil)
 }
 
 func BuildRaw(image, generatorOutput, apiPath string) error {
@@ -113,12 +110,11 @@ func BuildRaw(image, generatorOutput, apiPath string) error {
 	mounts := []string{
 		fmt.Sprintf("%s:/generator-output", generatorOutput),
 	}
-	containerArgs := []string{
-		"build-raw",
+	commandArgs := []string{
 		"--generator-output=/generator-output",
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("build-raw", image, mounts, commandArgs, nil)
 }
 
 func BuildLibrary(image, repoRoot, libraryId string) error {
@@ -131,14 +127,13 @@ func BuildLibrary(image, repoRoot, libraryId string) error {
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
-	containerArgs := []string{
-		"build-library",
+	commandArgs := []string{
 		"--repo-root=/repo",
 	}
 	if libraryId != "" {
-		containerArgs = append(containerArgs, fmt.Sprintf("--library-id=%s", libraryId))
+		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryId))
 	}
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("build-library", image, mounts, commandArgs, nil)
 }
 
 func Configure(image, apiRoot, apiPath, generatorInput string) error {
@@ -154,8 +149,7 @@ func Configure(image, apiRoot, apiPath, generatorInput string) error {
 	if generatorInput == "" {
 		return fmt.Errorf("generatorInput cannot be empty")
 	}
-	containerArgs := []string{
-		"configure",
+	commandArgs := []string{
 		"--api-root=/apis",
 		"--generator-input=/generator-input",
 		fmt.Sprintf("--api-path=%s", apiPath),
@@ -164,15 +158,14 @@ func Configure(image, apiRoot, apiPath, generatorInput string) error {
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/generator-input", generatorInput),
 	}
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("configure", image, mounts, commandArgs, nil)
 }
 
 func PrepareLibraryRelease(image, languageRepo, inputsDirectory, libId, releaseVersion string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
-	containerArgs := []string{
-		"prepare-library-release",
+	commandArgs := []string{
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libId),
 		fmt.Sprintf("--release-notes=/inputs/%s-%s-release-notes.txt", libId, releaseVersion),
@@ -183,15 +176,14 @@ func PrepareLibraryRelease(image, languageRepo, inputsDirectory, libId, releaseV
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
 
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("prepare-library-release", image, mounts, commandArgs, nil)
 }
 
-func IntegrationTestLibrary(image, languageRepo, libId string) error {
+func IntegrationTestLibrary(image, languageRepo, libId string, containerEnv *ContainerEnvironment) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
-	containerArgs := []string{
-		"integration-test-library",
+	commandArgs := []string{
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libId),
 	}
@@ -199,14 +191,14 @@ func IntegrationTestLibrary(image, languageRepo, libId string) error {
 		fmt.Sprintf("%s:/repo", languageRepo),
 	}
 
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("integration-test-library", image, mounts, commandArgs, containerEnv)
 }
 
 func PackageLibrary(image, languageRepo, libId, outputDir string) error {
 	if image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
-	containerArgs := []string{
+	commandArgs := []string{
 		"integration-test-library",
 		"--repo-root=/repo",
 		"--output=/output",
@@ -217,10 +209,10 @@ func PackageLibrary(image, languageRepo, libId, outputDir string) error {
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	return runDocker(image, mounts, containerArgs)
+	return runDocker("package-library", image, mounts, commandArgs, nil)
 }
 
-func runDocker(image string, mounts []string, containerArgs []string) error {
+func runDocker(commandName, image string, mounts []string, commandArgs []string, containerEnv *ContainerEnvironment) error {
 	mounts = maybeRelocateMounts(mounts)
 
 	args := []string{
@@ -238,9 +230,17 @@ func runDocker(image string, mounts []string, containerArgs []string) error {
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
 	}
-
+	if containerEnv != nil {
+		if err := writeEnvironmentFile(containerEnv, commandName); err != nil {
+			return err
+		}
+		args = append(args, "--env-file")
+		args = append(args, containerEnv.tmpFile)
+		defer deleteEnvironmentFile(containerEnv)
+	}
 	args = append(args, image)
-	args = append(args, containerArgs...)
+	args = append(args, commandName)
+	args = append(args, commandArgs...)
 	return runCommand("docker", args...)
 }
 

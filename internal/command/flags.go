@@ -26,22 +26,23 @@ const gitHubTokenEnvironmentVariable string = "LIBRARIAN_GITHUB_TOKEN"
 const defaultRepositoryEnvironmentVariable string = "LIBRARIAN_REPOSITORY"
 
 var (
-	flagAPIPath      string
-	flagAPIRoot      string
-	flagBranch       string
-	flagBuild        bool
-	flagEnvFile      string
-	flagGitUserEmail string
-	flagGitUserName  string
-	flagImage        string
-	flagLanguage     string
-	flagLibraryID    string
-	flagPush         bool
-	flagReleaseID    string
-	flagRepoRoot     string
-	flagSkipBuild    bool
-	flagTag          string
-	flagWorkRoot     string
+	flagAPIPath        string
+	flagAPIRoot        string
+	flagBranch         string
+	flagBuild          bool
+	flagEnvFile        string
+	flagGitUserEmail   string
+	flagGitUserName    string
+	flagImage          string
+	flagLanguage       string
+	flagLibraryID      string
+	flagPush           bool
+	flagReleaseID      string
+	flagRepoRoot       string
+	flagSecretsProject string
+	flagSkipBuild      bool
+	flagTag            string
+	flagWorkRoot       string
 )
 
 func addFlagAPIPath(fs *flag.FlagSet) {
@@ -94,6 +95,10 @@ func addFlagReleaseID(fs *flag.FlagSet) {
 
 func addFlagRepoRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagRepoRoot, "repo-root", "", "Repository root. When this is not specified, the language repo will be cloned.")
+}
+
+func addFlagSecretsProject(fs *flag.FlagSet) {
+	fs.StringVar(&flagSecretsProject, "secrets-project", "", "Project containing Secret Manager secrets.")
 }
 
 func addFlagSkipBuild(fs *flag.FlagSet) {

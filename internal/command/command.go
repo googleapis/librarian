@@ -107,6 +107,21 @@ func loadState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, error) {
 	return state, nil
 }
 
+func loadConfig(languageRepo *gitrepo.Repo) (*statepb.PipelineConfig, error) {
+	path := filepath.Join(languageRepo.Dir, "generator-input", "pipeline-config.json")
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &statepb.PipelineConfig{}
+	err = protojson.Unmarshal(bytes, config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
 func saveState(languageRepo *gitrepo.Repo, state *statepb.PipelineState) error {
 	path := filepath.Join(languageRepo.Dir, "generator-input", "pipeline-state.json")
 	// Marshal the protobuf message as JSON...
@@ -259,6 +274,7 @@ func init() {
 	fs = CmdCreateReleasePR.flags
 	for _, fn := range []func(fs *flag.FlagSet){
 		addFlagImage,
+		addFlagSecretsProject,
 		addFlagWorkRoot,
 		addFlagLanguage,
 		addFlagPush,
