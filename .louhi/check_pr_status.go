@@ -17,7 +17,7 @@ const (
 
 // checkPRStatus checks the status of a PR until it is merged or mergeable.
 // Sleeping for [pollInterval] seconds between checks.
-func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck string) error {
+func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck string) {
 
 	ctx := context.Background()
 	client := github.NewClient(nil)
@@ -33,7 +33,7 @@ func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck 
 		if statusCheck == "merged" {
 			if pr.GetMerged() {
 				slog.Info("PR is merged")
-				return nil
+				return
 			} else {
 				slog.Info("PR not merged, will try again", "merge status", pr.GetMerged())
 				time.Sleep(pollInterval)
@@ -41,7 +41,7 @@ func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck 
 		} else if statusCheck == "mergeable" {
 			if pr.GetMergeable() {
 				slog.Info("PR is mergable")
-				return nil
+				return
 			} else {
 				slog.Info("PR is not mergable, will try again", "mergeable status", pr.GetMerged())
 				time.Sleep(pollInterval)
@@ -70,10 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err := checkPRStatus(*prNumber, *owner, *repo, *statusCheck)
-	if err != nil {
-		slog.Error("Failed checking PR mergeability:", "error", err)
-		os.Exit(1)
-	}
-
+	checkPRStatus(*prNumber, *owner, *repo, *statusCheck)
+	//if it gets here it means the PR is merged or mergeable
+	os.Exit(0)
 }
