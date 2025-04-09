@@ -74,11 +74,8 @@ type CommandContext struct {
 	// The pipeline state, loaded from the language repo if there is one.
 	// (This is nil if languageRepo is nil.)
 	pipelineState *statepb.PipelineState
-	// The image to use for container operations, derived from flagImage and
-	// pipelineState
-	image string
-	// Environment information for container commands, or nil if languageRepo is nil
-	containerEnv *container.ContainerEnvironment
+	// Configuration for running container commands.
+	containerConfig *container.ContainerConfig
 }
 
 func (c *Command) Parse(args []string) error {
@@ -149,7 +146,6 @@ func RunCommand(c *Command, ctx context.Context) error {
 	}
 	var state *statepb.PipelineState = nil
 	var config *statepb.PipelineConfig = nil
-	var containerEnv *container.ContainerEnvironment = nil
 	if languageRepo != nil {
 		state, err = loadPipelineState(languageRepo)
 		if err != nil {
@@ -159,22 +155,22 @@ func RunCommand(c *Command, ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		containerEnv, err = container.NewEnvironment(ctx, workRoot, flagSecretsProject, config)
-		if err != nil {
-			return err
-		}
 	}
+
 	image := deriveImage(state)
+	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
+	if err != nil {
+		return err
+	}
 
 	cmdContext := &CommandContext{
-		ctx:            ctx,
-		startTime:      startTime,
-		workRoot:       workRoot,
-		languageRepo:   languageRepo,
-		pipelineConfig: config,
-		pipelineState:  state,
-		containerEnv:   containerEnv,
-		image:          image,
+		ctx:             ctx,
+		startTime:       startTime,
+		workRoot:        workRoot,
+		languageRepo:    languageRepo,
+		pipelineConfig:  config,
+		pipelineState:   state,
+		containerConfig: containerConfig,
 	}
 	return c.execute(cmdContext)
 }

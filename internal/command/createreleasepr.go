@@ -136,10 +136,9 @@ func generateReleasePr(ctx *CommandContext, title, prDescription string, errorsI
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
 func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory string, releaseID string) (*ReleasePrDescription, error) {
+	containerConfig := ctx.containerConfig
 	libraries := ctx.pipelineState.Libraries
 	languageRepo := ctx.languageRepo
-	image := ctx.image
-	containerEnv := ctx.containerEnv
 
 	var errorsInRelease []string
 	var releases []string
@@ -178,7 +177,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 				return nil, err
 			}
 
-			if err := container.PrepareLibraryRelease(image, languageRepo.Dir, inputDirectory, library.Id, releaseVersion, containerEnv); err != nil {
+			if err := container.PrepareLibraryRelease(containerConfig, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
 				errorsInRelease = append(errorsInRelease, logPartialError(library.Id, err, "preparing library release"))
 				// Clean up any changes before starting the next iteration.
 				if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
@@ -188,7 +187,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			}
 			// TODO: make this configurable so we don't have to run per library
 			if !flagSkipBuild {
-				if err := container.BuildLibrary(image, languageRepo.Dir, library.Id, containerEnv); err != nil {
+				if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
 					errorsInRelease = append(errorsInRelease, logPartialError(library.Id, err, "building/testing library"))
 					// Clean up any changes before starting the next iteration.
 					if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
@@ -196,7 +195,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 					}
 					continue
 				}
-				if err := container.IntegrationTestLibrary(image, languageRepo.Dir, library.Id, containerEnv); err != nil {
+				if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
 					errorsInRelease = append(errorsInRelease, logPartialError(library.Id, err, "integration testing library"))
 					if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 						return nil, err

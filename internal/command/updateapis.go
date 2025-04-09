@@ -130,9 +130,8 @@ var CmdUpdateApis = &Command{
 }
 
 func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
-	image := ctx.image
+	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
-	containerEnv := ctx.containerEnv
 
 	if flagLibraryID != "" && flagLibraryID != library.Id {
 		// If flagLibraryID has been passed in, we only act on that library.
@@ -168,10 +167,10 @@ func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput st
 		return err
 	}
 
-	if err := container.GenerateLibrary(image, apiRepo.Dir, outputDir, generatorInput, library.Id, containerEnv); err != nil {
+	if err := container.GenerateLibrary(containerConfig, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
-	if err := container.Clean(image, languageRepo.Dir, library.Id, containerEnv); err != nil {
+	if err := container.Clean(containerConfig, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
@@ -201,7 +200,7 @@ func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput st
 	}
 
 	// Once we've committed, we can build - but then check that nothing has changed afterwards.
-	if err := container.BuildLibrary(image, languageRepo.Dir, library.Id, containerEnv); err != nil {
+	if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	clean, err := gitrepo.IsClean(languageRepo)

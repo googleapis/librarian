@@ -92,7 +92,7 @@ var CmdUpdateImageTag = &Command{
 		}
 		// Derive the new image to use, and save it in the context.
 		state.ImageTag = flagTag
-		ctx.image = deriveImage(state)
+		ctx.containerConfig.Image = deriveImage(state)
 		savePipelineState(ctx)
 
 		// Take a defensive copy of the generator input directory from the language repo.
@@ -117,7 +117,7 @@ var CmdUpdateImageTag = &Command{
 
 		// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
 		slog.Info("Building all libraries.")
-		if err := container.BuildLibrary(ctx.image, languageRepo.Dir, "", ctx.containerEnv); err != nil {
+		if err := container.BuildLibrary(ctx.containerConfig, languageRepo.Dir, ""); err != nil {
 			return err
 		}
 
@@ -132,9 +132,8 @@ var CmdUpdateImageTag = &Command{
 }
 
 func regenerateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
-	image := ctx.image
+	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
-	containerEnv := ctx.containerEnv
 
 	if len(library.ApiPaths) == 0 {
 		slog.Info(fmt.Sprintf("Skipping non-generated library: '%s'", library.Id))
@@ -154,10 +153,10 @@ func regenerateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInpu
 		return err
 	}
 
-	if err := container.GenerateLibrary(image, apiRepo.Dir, outputDir, generatorInput, library.Id, containerEnv); err != nil {
+	if err := container.GenerateLibrary(containerConfig, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
-	if err := container.Clean(image, languageRepo.Dir, library.Id, containerEnv); err != nil {
+	if err := container.Clean(containerConfig, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

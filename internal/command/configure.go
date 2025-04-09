@@ -240,14 +240,13 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
 func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prContent *ConfigurationPrContent) error {
+	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
-	image := ctx.image
-	containerEnv := ctx.containerEnv
 
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
 	generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
-	if err := container.Configure(image, apiRoot, apiPath, generatorInput); err != nil {
+	if err := container.Configure(containerConfig, apiRoot, apiPath, generatorInput); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(apiPath, err, "configuring"))
 		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 			return err
@@ -291,14 +290,14 @@ func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prCo
 		return err
 	}
 
-	if err := container.GenerateLibrary(image, apiRoot, outputDir, generatorInput, libraryID, containerEnv); err != nil {
+	if err := container.GenerateLibrary(containerConfig, apiRoot, outputDir, generatorInput, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "generating"))
 		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
 			return err
 		}
 		return nil
 	}
-	if err := container.Clean(image, languageRepo.Dir, libraryID, containerEnv); err != nil {
+	if err := container.Clean(containerConfig, languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "cleaning"))
 		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
 			return err
@@ -309,7 +308,7 @@ func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prCo
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
-	if err := container.BuildLibrary(image, languageRepo.Dir, libraryID, containerEnv); err != nil {
+	if err := container.BuildLibrary(containerConfig, languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "building"))
 		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
 			return err

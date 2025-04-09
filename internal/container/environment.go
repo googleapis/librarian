@@ -27,9 +27,9 @@ import (
 	"github.com/googleapis/librarian/internal/utils"
 )
 
-// ContainerEnvironment represents configuration for environment
+// EnvironmentProvider represents configuration for environment
 // variables for container invocations.
-type ContainerEnvironment struct {
+type EnvironmentProvider struct {
 	// The context used for SecretManager requests
 	ctx context.Context
 	// The file used to store the environment variables for the duration of a docker run.
@@ -45,7 +45,10 @@ type ContainerEnvironment struct {
 	pipelineConfig *statepb.PipelineConfig
 }
 
-func NewEnvironment(ctx context.Context, tmpRoot, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*ContainerEnvironment, error) {
+func newEnvironmentProvider(ctx context.Context, workRoot, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*EnvironmentProvider, error) {
+	if pipelineConfig == nil {
+		return nil, nil
+	}
 	var secretManagerClient *secretmanager.Client
 	if secretsProject != "" {
 		client, err := secretmanager.NewClient(ctx)
@@ -56,8 +59,8 @@ func NewEnvironment(ctx context.Context, tmpRoot, secretsProject string, pipelin
 	} else {
 		secretManagerClient = nil
 	}
-	tmpFile := filepath.Join(tmpRoot, "docker-env.txt")
-	return &ContainerEnvironment{
+	tmpFile := filepath.Join(workRoot, "docker-env.txt")
+	return &EnvironmentProvider{
 		ctx:                 ctx,
 		tmpFile:             tmpFile,
 		secretManagerClient: secretManagerClient,
@@ -67,7 +70,7 @@ func NewEnvironment(ctx context.Context, tmpRoot, secretsProject string, pipelin
 	}, nil
 }
 
-func writeEnvironmentFile(containerEnv *ContainerEnvironment, commandName string) error {
+func writeEnvironmentFile(containerEnv *EnvironmentProvider, commandName string) error {
 	content, err := constructEnvironmentFileContent(containerEnv, commandName)
 	if err != nil {
 		return err
@@ -75,7 +78,7 @@ func writeEnvironmentFile(containerEnv *ContainerEnvironment, commandName string
 	return utils.CreateAndWriteToFile(containerEnv.tmpFile, content)
 }
 
-func constructEnvironmentFileContent(containerEnv *ContainerEnvironment, commandName string) (string, error) {
+func constructEnvironmentFileContent(containerEnv *EnvironmentProvider, commandName string) (string, error) {
 	commandConfig := containerEnv.pipelineConfig.Commands[commandName]
 	if commandConfig == nil {
 		return "# No environment variables", nil
@@ -111,6 +114,6 @@ func constructEnvironmentFileContent(containerEnv *ContainerEnvironment, command
 	return builder.String(), nil
 }
 
-func deleteEnvironmentFile(containerEnv *ContainerEnvironment) error {
+func deleteEnvironmentFile(containerEnv *EnvironmentProvider) error {
 	return os.Remove(containerEnv.tmpFile)
 }

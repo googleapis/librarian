@@ -75,7 +75,7 @@ var CmdRelease = &Command{
 			}
 		}
 
-		if err := publishPackages(ctx.image, outputRoot, releases); err != nil {
+		if err := publishPackages(ctx.containerConfig, outputRoot, releases); err != nil {
 			return err
 		}
 		slog.Info("Release complete.")
@@ -85,34 +85,33 @@ var CmdRelease = &Command{
 }
 
 func buildTestPackageRelease(ctx *CommandContext, outputRoot string, release LibraryRelease) error {
-	image := ctx.image
+	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
-	containerEnv := ctx.containerEnv
 
 	if err := gitrepo.Checkout(languageRepo, release.CommitHash); err != nil {
 		return err
 	}
-	if err := container.BuildLibrary(image, languageRepo.Dir, release.LibraryID, containerEnv); err != nil {
+	if err := container.BuildLibrary(containerConfig, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
-	if err := container.IntegrationTestLibrary(image, languageRepo.Dir, release.LibraryID, containerEnv); err != nil {
+	if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
 		return err
 	}
-	if err := container.PackageLibrary(image, languageRepo.Dir, release.LibraryID, outputDir, containerEnv); err != nil {
+	if err := container.PackageLibrary(containerConfig, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
 		return err
 	}
 	return nil
 }
 
-func publishPackages(image, outputRoot string, releases []LibraryRelease) error {
+func publishPackages(config *container.ContainerConfig, outputRoot string, releases []LibraryRelease) error {
 	for _, release := range releases {
 		slog.Info(fmt.Sprintf("Would create GitHub release for %s", release.LibraryID))
 	}
-	slog.Info(fmt.Sprintf("Would public packages with image %s and output root %s", image, outputRoot))
+	slog.Info(fmt.Sprintf("Would public packages with image %s and output root %s", config.Image, outputRoot))
 	return errors.New("publishing releases isn't implemented yet")
 }
 
