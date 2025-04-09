@@ -16,6 +16,7 @@ package command
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -37,6 +38,13 @@ type LibraryRelease struct {
 var CmdRelease = &Command{
 	Name:  "release",
 	Short: "Release libraries from a merged release PR",
+	flagFunctions: []func(fs *flag.FlagSet){
+		addFlagImage,
+		addFlagWorkRoot,
+		addFlagLanguage,
+		addFlagRepoRoot,
+		addFlagReleaseID,
+	},
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
 		if err := validateRequiredFlag("repo-root", flagRepoRoot); err != nil {
 			return nil, err

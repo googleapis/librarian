@@ -15,6 +15,7 @@
 package command
 
 import (
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -28,8 +29,21 @@ import (
 )
 
 var CmdUpdateApis = &Command{
-	Name:                 "update-apis",
-	Short:                "Update a language repo by regenerating configured APIs with new API specifications",
+	Name:  "update-apis",
+	Short: "Update a language repo by regenerating configured APIs with new API specifications",
+	flagFunctions: []func(fs *flag.FlagSet){
+		addFlagImage,
+		addFlagWorkRoot,
+		addFlagAPIRoot,
+		addFlagBranch,
+		addFlagGitUserEmail,
+		addFlagGitUserName,
+		addFlagLanguage,
+		addFlagLibraryID,
+		addFlagPush,
+		addFlagRepoRoot,
+		addFlagRepoUrl,
+	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {

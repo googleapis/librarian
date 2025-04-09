@@ -16,6 +16,7 @@ package command
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -27,8 +28,20 @@ import (
 )
 
 var CmdUpdateImageTag = &Command{
-	Name:                 "update-image-tag",
-	Short:                "Update the image tag used by a language repo, and regenerating all APIs at the existing commit",
+	Name:  "update-image-tag",
+	Short: "Update the image tag used by a language repo, and regenerating all APIs at the existing commit",
+	flagFunctions: []func(fs *flag.FlagSet){
+		addFlagWorkRoot,
+		addFlagAPIRoot,
+		addFlagBranch,
+		addFlagGitUserEmail,
+		addFlagGitUserName,
+		addFlagLanguage,
+		addFlagPush,
+		addFlagRepoRoot,
+		addFlagRepoUrl,
+		addFlagTag,
+	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {

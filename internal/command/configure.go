@@ -16,6 +16,7 @@ package command
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -36,8 +37,20 @@ type ConfigurationPrContent struct {
 }
 
 var CmdConfigure = &Command{
-	Name:                 "configure",
-	Short:                "Configure a new API in a given language",
+	Name:  "configure",
+	Short: "Configure a new API in a given language",
+	flagFunctions: []func(fs *flag.FlagSet){
+		addFlagImage,
+		addFlagWorkRoot,
+		addFlagAPIPath,
+		addFlagAPIRoot,
+		addFlagGitUserEmail,
+		addFlagGitUserName,
+		addFlagLanguage,
+		addFlagPush,
+		addFlagRepoRoot,
+		addFlagRepoUrl,
+	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {

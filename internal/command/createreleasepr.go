@@ -16,6 +16,7 @@ package command
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -40,8 +41,21 @@ type ReleasePrDescription struct {
 }
 
 var CmdCreateReleasePR = &Command{
-	Name:                 "create-release-pr",
-	Short:                "Generate a PR for release",
+	Name:  "create-release-pr",
+	Short: "Generate a PR for release",
+	flagFunctions: []func(fs *flag.FlagSet){
+		addFlagImage,
+		addFlagSecretsProject,
+		addFlagWorkRoot,
+		addFlagLanguage,
+		addFlagPush,
+		addFlagGitUserEmail,
+		addFlagGitUserName,
+		addFlagRepoRoot,
+		addFlagSkipBuild,
+		addFlagEnvFile,
+		addFlagRepoUrl,
+	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {

@@ -15,6 +15,7 @@
 package command
 
 import (
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -27,6 +28,14 @@ import (
 var CmdGenerate = &Command{
 	Name:  "generate",
 	Short: "Generate client library code for an API",
+	flagFunctions: []func(fs *flag.FlagSet){
+		addFlagImage,
+		addFlagWorkRoot,
+		addFlagAPIPath,
+		addFlagAPIRoot,
+		addFlagLanguage,
+		addFlagBuild,
+	},
 	// Currently we never clone a language repo, and always do raw generation.
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
 		return nil, nil

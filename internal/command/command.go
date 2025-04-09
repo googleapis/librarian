@@ -46,7 +46,11 @@ type Command struct {
 	maybeGetLanguageRepo func(workRoot string) (*gitrepo.Repo, error)
 	// Executes the command with the given pre-populated context.
 	execute func(*CommandContext) error
+	// Functions to execute when initializing the flag set for the command.
+	flagFunctions []func(fs *flag.FlagSet)
 
+	// The flag set used to parse the flags and construct usage messages.
+	// This is populated for each command in init().
 	flags *flag.FlagSet
 }
 
@@ -353,95 +357,9 @@ func init() {
 	for _, c := range Commands {
 		c.flags = flag.NewFlagSet(c.Name, flag.ContinueOnError)
 		c.flags.Usage = constructUsage(c.flags, c.Name)
-	}
-
-	fs := CmdConfigure.flags
-	for _, fn := range []func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagAPIPath,
-		addFlagAPIRoot,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagLanguage,
-		addFlagPush,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-	} {
-		fn(fs)
-	}
-
-	fs = CmdGenerate.flags
-	for _, fn := range []func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagAPIPath,
-		addFlagAPIRoot,
-		addFlagLanguage,
-		addFlagBuild,
-	} {
-		fn(fs)
-	}
-
-	fs = CmdUpdateApis.flags
-	for _, fn := range []func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagAPIRoot,
-		addFlagBranch,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagLanguage,
-		addFlagLibraryID,
-		addFlagPush,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-	} {
-		fn(fs)
-	}
-
-	fs = CmdCreateReleasePR.flags
-	for _, fn := range []func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagSecretsProject,
-		addFlagWorkRoot,
-		addFlagLanguage,
-		addFlagPush,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagRepoRoot,
-		addFlagSkipBuild,
-		addFlagEnvFile,
-		addFlagRepoUrl,
-	} {
-		fn(fs)
-	}
-
-	fs = CmdUpdateImageTag.flags
-	for _, fn := range []func(fs *flag.FlagSet){
-		addFlagWorkRoot,
-		addFlagAPIRoot,
-		addFlagBranch,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagLanguage,
-		addFlagPush,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagTag,
-	} {
-		fn(fs)
-	}
-
-	fs = CmdRelease.flags
-	for _, fn := range []func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagLanguage,
-		addFlagRepoRoot,
-		addFlagReleaseID,
-	} {
-		fn(fs)
+		for _, fn := range c.flagFunctions {
+			fn(c.flags)
+		}
 	}
 }
 
