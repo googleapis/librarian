@@ -15,27 +15,27 @@
 package command
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 var CmdGenerate = &Command{
 	Name:  "generate",
 	Short: "Generate client library code for an API",
-	Run: func(ctx context.Context) error {
+	// Currently we never clone a language repo, and always do raw generation.
+	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
+		return nil, nil
+	},
+	execute: func(ctx *CommandContext) error {
 		if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
 			return err
 		}
 		if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
-			return err
-		}
-		if err := validateLanguage(); err != nil {
 			return err
 		}
 
@@ -44,29 +44,18 @@ var CmdGenerate = &Command{
 			return err
 		}
 
-		// tmpRoot is a newly-created working directory under /tmp
-		// We do any cloning or copying under there. Currently this is only
-		// actually needed in generate if the user hasn't specified an output directory
-		// - we could potentially only create it in that case, but always creating it
-		// is a more general case.
-		tmpRoot, err := createTmpWorkingRoot(time.Now())
-		if err != nil {
-			return err
-		}
-
-		outputDir := filepath.Join(tmpRoot, "output")
+		outputDir := filepath.Join(ctx.workRoot, "output")
 		if err := os.Mkdir(outputDir, 0755); err != nil {
 			return err
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		image := deriveImage(nil)
-		if err := container.GenerateRaw(image, apiRoot, outputDir, flagAPIPath); err != nil {
+		if err := container.GenerateRaw(ctx.image, apiRoot, outputDir, flagAPIPath); err != nil {
 			return err
 		}
 
 		if flagBuild {
-			if err := container.BuildRaw(image, outputDir, flagAPIPath); err != nil {
+			if err := container.BuildRaw(ctx.image, outputDir, flagAPIPath); err != nil {
 				return err
 			}
 		}

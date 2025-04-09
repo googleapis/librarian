@@ -15,14 +15,12 @@
 package command
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/container"
@@ -39,75 +37,37 @@ type LibraryRelease struct {
 var CmdRelease = &Command{
 	Name:  "release",
 	Short: "Release libraries from a merged release PR",
-	Run: func(ctx context.Context) error {
-		if err := validateLanguage(); err != nil {
-			return err
+	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
+		if err := validateRequiredFlag("repo-root", flagRepoRoot); err != nil {
+			return nil, err
 		}
+		// This will always open the repo root, because we've just validated
+		// that the flag has been specified.
+		return cloneOrOpenLanguageRepo(workRoot)
+	},
+	execute: func(ctx *CommandContext) error {
 		if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
 			return err
 		}
-		if err := validateRequiredFlag("repo-root", flagRepoRoot); err != nil {
-			return err
-		}
 
-		tmpRoot, err := createTmpWorkingRoot(time.Now())
-		if err != nil {
-			return err
-		}
-
-		outputRoot := filepath.Join(tmpRoot, "output")
+		outputRoot := filepath.Join(ctx.workRoot, "output")
 		if err := os.Mkdir(outputRoot, 0755); err != nil {
 			return err
 		}
 		slog.Info(fmt.Sprintf("Packages will be created in %s", outputRoot))
 
-		repoRoot, err := filepath.Abs(flagRepoRoot)
-		if err != nil {
-			return err
-		}
-		languageRepo, err := gitrepo.Open(repoRoot)
-		if err != nil {
-			return err
-		}
-		clean, err := gitrepo.IsClean(languageRepo)
-		if err != nil {
-			return err
-		}
-		if !clean {
-			return errors.New("language repo must be clean before releasing")
-		}
-
-		pipelineState, err := loadState(languageRepo)
-		if err != nil {
-			slog.Info(fmt.Sprintf("Error loading pipeline state: %s", err))
-			return err
-		}
-
-		pipelineConfig, err := loadConfig(languageRepo)
-		if err != nil {
-			slog.Info(fmt.Sprintf("Error loading pipeline config: %s", err))
-			return err
-		}
-
-		containerEnv, err := container.NewEnvironment(ctx, tmpRoot, flagSecretsProject, pipelineConfig)
-		if err != nil {
-			return err
-		}
-
-		flagImage = deriveImage(pipelineState)
-
-		releases, err := parseCommitsForReleases(languageRepo, flagReleaseID)
+		releases, err := parseCommitsForReleases(ctx.languageRepo, flagReleaseID)
 		if err != nil {
 			return err
 		}
 
 		for _, release := range releases {
-			if err := buildTestPackageRelease(flagImage, outputRoot, languageRepo, release, containerEnv); err != nil {
+			if err := buildTestPackageRelease(ctx, outputRoot, release); err != nil {
 				return err
 			}
 		}
 
-		if err := publishPackages(flagImage, outputRoot, releases); err != nil {
+		if err := publishPackages(ctx.image, outputRoot, releases); err != nil {
 			return err
 		}
 		slog.Info("Release complete.")
@@ -116,11 +76,15 @@ var CmdRelease = &Command{
 	},
 }
 
-func buildTestPackageRelease(image, outputRoot string, languageRepo *gitrepo.Repo, release LibraryRelease, containerEnv *container.ContainerEnvironment) error {
+func buildTestPackageRelease(ctx *CommandContext, outputRoot string, release LibraryRelease) error {
+	image := ctx.image
+	languageRepo := ctx.languageRepo
+	containerEnv := ctx.containerEnv
+
 	if err := gitrepo.Checkout(languageRepo, release.CommitHash); err != nil {
 		return err
 	}
-	if err := container.BuildLibrary(image, languageRepo.Dir, release.LibraryID); err != nil {
+	if err := container.BuildLibrary(image, languageRepo.Dir, release.LibraryID, containerEnv); err != nil {
 		return err
 	}
 	if err := container.IntegrationTestLibrary(image, languageRepo.Dir, release.LibraryID, containerEnv); err != nil {
@@ -130,7 +94,7 @@ func buildTestPackageRelease(image, outputRoot string, languageRepo *gitrepo.Rep
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
 		return err
 	}
-	if err := container.PackageLibrary(image, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
+	if err := container.PackageLibrary(image, languageRepo.Dir, release.LibraryID, outputDir, containerEnv); err != nil {
 		return err
 	}
 	return nil

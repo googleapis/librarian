@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -26,6 +27,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -36,9 +38,41 @@ const releaseIDEnvVarName = "RELEASE_ID"
 type Command struct {
 	Name  string
 	Short string
-	Run   func(ctx context.Context) error
+	// Obtains a language repo where appropriate, cloning or using
+	// flags where necessary. May return a nil pointer if the command
+	// does not use a language repo.
+	maybeGetLanguageRepo func(workRoot string) (*gitrepo.Repo, error)
+	// Executes the command with the given pre-populated context.
+	execute func(*CommandContext) error
 
 	flags *flag.FlagSet
+}
+
+// Information used when executing a command. This is set up by RunCommand,
+// then passed into Command.execute.
+type CommandContext struct {
+	// Context for operations requiring cancellation etc
+	ctx context.Context
+	// The time at which the command started executing, to be used as a consistent
+	// timestamp for anything which needs one.
+	startTime time.Time
+	// Temporary directory created under /tmp by default (but can be specified via a flag)
+	// All files created by Librarian live under this directory unless otherwise a location
+	// (e.g. a repo root) is specified via a flag.
+	workRoot string
+	// The language repo for the command, where appropriate.
+	languageRepo *gitrepo.Repo
+	// The pipeline configuration, loaded from the language repo if there is one.
+	// (This is nil if languageRepo is nil.)
+	pipelineConfig *statepb.PipelineConfig
+	// The pipeline state, loaded from the language repo if there is one.
+	// (This is nil if languageRepo is nil.)
+	pipelineState *statepb.PipelineState
+	// The image to use for container operations, derived from flagImage and
+	// pipelineState
+	image string
+	// Environment information for container commands, or nil if languageRepo is nil
+	containerEnv *container.ContainerEnvironment
 }
 
 func (c *Command) Parse(args []string) error {
@@ -56,6 +90,74 @@ func Lookup(name string) (*Command, error) {
 		return nil, fmt.Errorf("invalid command: %q", name)
 	}
 	return cmd, nil
+}
+
+func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
+	var languageRepo *gitrepo.Repo
+	if flagRepoRoot == "" {
+		return cloneLanguageRepo(flagLanguage, workRoot)
+	}
+	repoRoot, err := filepath.Abs(flagRepoRoot)
+	if err != nil {
+		return nil, err
+	}
+	languageRepo, err = gitrepo.Open(repoRoot)
+	if err != nil {
+		return nil, err
+	}
+	clean, err := gitrepo.IsClean(languageRepo)
+	if err != nil {
+		return nil, err
+	}
+	if !clean {
+		return nil, errors.New("language repo must be clean")
+	}
+	return languageRepo, nil
+}
+
+func RunCommand(c *Command, ctx context.Context) error {
+	if err := validateLanguage(); err != nil {
+		return err
+	}
+	startTime := time.Now()
+	workRoot, err := createWorkRoot(startTime)
+	if err != nil {
+		return err
+	}
+	languageRepo, err := c.maybeGetLanguageRepo(workRoot)
+	if err != nil {
+		return err
+	}
+	var state *statepb.PipelineState = nil
+	var config *statepb.PipelineConfig = nil
+	var containerEnv *container.ContainerEnvironment = nil
+	if languageRepo != nil {
+		state, err = loadPipelineState(languageRepo)
+		if err != nil {
+			return err
+		}
+		config, err = loadPipelineConfig(languageRepo)
+		if err != nil {
+			return err
+		}
+		containerEnv, err = container.NewEnvironment(ctx, workRoot, flagSecretsProject, config)
+		if err != nil {
+			return err
+		}
+	}
+	image := deriveImage(state)
+
+	cmdContext := &CommandContext{
+		ctx:            ctx,
+		startTime:      startTime,
+		workRoot:       workRoot,
+		languageRepo:   languageRepo,
+		pipelineConfig: config,
+		pipelineState:  state,
+		containerEnv:   containerEnv,
+		image:          image,
+	}
+	return c.execute(cmdContext)
 }
 
 func deriveImage(state *statepb.PipelineState) string {
@@ -92,7 +194,7 @@ func findLibrary(state *statepb.PipelineState, apiPath string) string {
 	return ""
 }
 
-func loadState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, error) {
+func loadPipelineState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, error) {
 	path := filepath.Join(languageRepo.Dir, "generator-input", "pipeline-state.json")
 	bytes, err := os.ReadFile(path)
 	if err != nil {
@@ -107,7 +209,7 @@ func loadState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, error) {
 	return state, nil
 }
 
-func loadConfig(languageRepo *gitrepo.Repo) (*statepb.PipelineConfig, error) {
+func loadPipelineConfig(languageRepo *gitrepo.Repo) (*statepb.PipelineConfig, error) {
 	path := filepath.Join(languageRepo.Dir, "generator-input", "pipeline-config.json")
 	bytes, err := os.ReadFile(path)
 	if err != nil {
@@ -122,10 +224,10 @@ func loadConfig(languageRepo *gitrepo.Repo) (*statepb.PipelineConfig, error) {
 	return config, nil
 }
 
-func saveState(languageRepo *gitrepo.Repo, state *statepb.PipelineState) error {
-	path := filepath.Join(languageRepo.Dir, "generator-input", "pipeline-state.json")
+func savePipelineState(ctx *CommandContext) error {
+	path := filepath.Join(ctx.languageRepo.Dir, "generator-input", "pipeline-state.json")
 	// Marshal the protobuf message as JSON...
-	unformatted, err := protojson.Marshal(state)
+	unformatted, err := protojson.Marshal(ctx.pipelineState)
 	if err != nil {
 		return err
 	}
@@ -146,7 +248,7 @@ func formatTimestamp(t time.Time) string {
 	return t.Format(yyyyMMddHHmmss)
 }
 
-func createTmpWorkingRoot(t time.Time) (string, error) {
+func createWorkRoot(t time.Time) (string, error) {
 	if flagWorkRoot != "" {
 		slog.Info(fmt.Sprintf("Using specified working directory: %s", flagWorkRoot))
 		return flagWorkRoot, nil
@@ -184,20 +286,21 @@ func commitAll(repo *gitrepo.Repo, msg string) error {
 	return gitrepo.Commit(repo, msg, flagGitUserName, flagGitUserEmail)
 }
 
-func pushAndCreatePullRequest(ctx context.Context, repo *gitrepo.Repo, startOfRun time.Time, title string, description string) (*gitrepo.PullRequestMetadata, error) {
+// Push the contents of the language repo and create a new pull request.
+func pushAndCreatePullRequest(ctx *CommandContext, title string, description string) (*gitrepo.PullRequestMetadata, error) {
 	if !flagPush {
 		return nil, nil
 	}
 
 	// This should already have been validated to be non-empty by validatePush
 	gitHubAccessToken := os.Getenv(gitHubTokenEnvironmentVariable)
-	branch := fmt.Sprintf("librarian-%s", formatTimestamp(startOfRun))
-	err := gitrepo.PushBranch(repo, branch, gitHubAccessToken)
+	branch := fmt.Sprintf("librarian-%s", formatTimestamp(ctx.startTime))
+	err := gitrepo.PushBranch(ctx.languageRepo, branch, gitHubAccessToken)
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return nil, err
 	}
-	pr, err := gitrepo.CreatePullRequest(ctx, repo, branch, gitHubAccessToken, title, description)
+	pr, err := gitrepo.CreatePullRequest(ctx.ctx, ctx.languageRepo, branch, gitHubAccessToken, title, description)
 	if pr != nil {
 		return pr, err
 	}

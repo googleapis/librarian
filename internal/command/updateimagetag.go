@@ -15,13 +15,11 @@
 package command
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -29,12 +27,10 @@ import (
 )
 
 var CmdUpdateImageTag = &Command{
-	Name:  "update-image-tag",
-	Short: "Update the image tag used by a language repo, and regenerating all APIs at the existing commit",
-	Run: func(ctx context.Context) error {
-		if err := validateLanguage(); err != nil {
-			return err
-		}
+	Name:                 "update-image-tag",
+	Short:                "Update the image tag used by a language repo, and regenerating all APIs at the existing commit",
+	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
+	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {
 			return err
 		}
@@ -42,18 +38,10 @@ var CmdUpdateImageTag = &Command{
 			return err
 		}
 
-		startOfRun := time.Now()
-
-		// tmpRoot is a newly-created working directory under /tmp
-		// We do any cloning or copying under there.
-		tmpRoot, err := createTmpWorkingRoot(startOfRun)
-		if err != nil {
-			return err
-		}
-
 		var apiRepo *gitrepo.Repo
 		if flagAPIRoot == "" {
-			apiRepo, err = cloneGoogleapis(tmpRoot)
+			var err error
+			apiRepo, err = cloneGoogleapis(ctx.workRoot)
 			if err != nil {
 				return err
 			}
@@ -77,57 +65,32 @@ var CmdUpdateImageTag = &Command{
 			}
 		}
 
-		outputDir := filepath.Join(tmpRoot, "output")
+		outputDir := filepath.Join(ctx.workRoot, "output")
 		if err := os.Mkdir(outputDir, 0755); err != nil {
 			return err
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		var languageRepo *gitrepo.Repo
-		if flagRepoRoot == "" {
-			languageRepo, err = cloneLanguageRepo(flagLanguage, tmpRoot)
-			if err != nil {
-				return err
-			}
-		} else {
-			repoRoot, err := filepath.Abs(flagRepoRoot)
-			if err != nil {
-				return err
-			}
-			languageRepo, err = gitrepo.Open(repoRoot)
-			if err != nil {
-				return err
-			}
-			clean, err := gitrepo.IsClean(apiRepo)
-			if err != nil {
-				return err
-			}
-			if !clean {
-				return errors.New("language repo must be clean before update")
-			}
-		}
-
-		state, err := loadState(languageRepo)
-		if err != nil {
-			return err
-		}
+		state := ctx.pipelineState
+		languageRepo := ctx.languageRepo
 
 		if state.ImageTag == flagTag {
 			return errors.New("specified tag is already in language repo state")
 		}
+		// Derive the new image to use, and save it in the context.
 		state.ImageTag = flagTag
-		image := deriveImage(state)
-		saveState(languageRepo, state)
+		ctx.image = deriveImage(state)
+		savePipelineState(ctx)
 
 		// Take a defensive copy of the generator input directory from the language repo.
-		generatorInput := filepath.Join(tmpRoot, "generator-input")
+		generatorInput := filepath.Join(ctx.workRoot, "generator-input")
 		if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, "generator-input"))); err != nil {
 			return err
 		}
 
 		// Perform "generate, clean" on each library.
 		for _, library := range state.Libraries {
-			err = regenerateLibrary(apiRepo, languageRepo, generatorInput, image, outputDir, library)
+			err := regenerateLibrary(ctx, apiRepo, generatorInput, outputDir, library)
 			if err != nil {
 				return err
 			}
@@ -141,7 +104,7 @@ var CmdUpdateImageTag = &Command{
 
 		// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
 		slog.Info("Building all libraries.")
-		if err := container.BuildLibrary(image, languageRepo.Dir, ""); err != nil {
+		if err := container.BuildLibrary(ctx.image, languageRepo.Dir, "", ctx.containerEnv); err != nil {
 			return err
 		}
 
@@ -150,12 +113,16 @@ var CmdUpdateImageTag = &Command{
 			return nil
 		}
 
-		_, err = pushAndCreatePullRequest(ctx, languageRepo, startOfRun, "chore: update generation image tag", "")
+		_, err := pushAndCreatePullRequest(ctx, "chore: update generation image tag", "")
 		return err
 	},
 }
 
-func regenerateLibrary(apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, library *statepb.LibraryState) error {
+func regenerateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+	image := ctx.image
+	languageRepo := ctx.languageRepo
+	containerEnv := ctx.containerEnv
+
 	if len(library.ApiPaths) == 0 {
 		slog.Info(fmt.Sprintf("Skipping non-generated library: '%s'", library.Id))
 		return nil
@@ -174,10 +141,10 @@ func regenerateLibrary(apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, genera
 		return err
 	}
 
-	if err := container.GenerateLibrary(image, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := container.GenerateLibrary(image, apiRepo.Dir, outputDir, generatorInput, library.Id, containerEnv); err != nil {
 		return err
 	}
-	if err := container.Clean(image, languageRepo.Dir, library.Id); err != nil {
+	if err := container.Clean(image, languageRepo.Dir, library.Id, containerEnv); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

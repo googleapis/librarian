@@ -15,14 +15,11 @@
 package command
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/container"
@@ -31,30 +28,19 @@ import (
 )
 
 var CmdUpdateApis = &Command{
-	Name:  "update-apis",
-	Short: "Update a language repo by regenerating configured APIs with new API specifications",
-	Run: func(ctx context.Context) error {
-
-		if err := validateLanguage(); err != nil {
-			return err
-		}
+	Name:                 "update-apis",
+	Short:                "Update a language repo by regenerating configured APIs with new API specifications",
+	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
+	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {
-			return err
-		}
-
-		startOfRun := time.Now()
-
-		// tmpRoot is a newly-created working directory under /tmp
-		// We do any cloning or copying under there.
-		tmpRoot, err := createTmpWorkingRoot(startOfRun)
-		if err != nil {
 			return err
 		}
 
 		var apiRepo *gitrepo.Repo
 		cleanWorkingTreePostGeneration := true
 		if flagAPIRoot == "" {
-			apiRepo, err = cloneGoogleapis(tmpRoot)
+			var err error
+			apiRepo, err = cloneGoogleapis(ctx.workRoot)
 			if err != nil {
 				return err
 			}
@@ -79,57 +65,26 @@ var CmdUpdateApis = &Command{
 			}
 		}
 
-		outputDir := filepath.Join(tmpRoot, "output")
+		outputDir := filepath.Join(ctx.workRoot, "output")
 		if err := os.Mkdir(outputDir, 0755); err != nil {
 			return err
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		var languageRepo *gitrepo.Repo
-		if flagRepoRoot == "" {
-			languageRepo, err = cloneLanguageRepo(flagLanguage, tmpRoot)
-			if err != nil {
-				return err
-			}
-		} else {
-			repoRoot, err := filepath.Abs(flagRepoRoot)
-			if err != nil {
-				return err
-			}
-			languageRepo, err = gitrepo.Open(repoRoot)
-			if err != nil {
-				return err
-			}
-			clean, err := gitrepo.IsClean(languageRepo)
-			if err != nil {
-				return err
-			}
-			if !clean {
-				return errors.New("language repo must be clean before update")
-			}
-		}
-
-		state, err := loadState(languageRepo)
-		if err != nil {
-			return err
-		}
-
-		image := deriveImage(state)
-
 		// Take a defensive copy of the generator input directory from the language repo.
-		generatorInput := filepath.Join(tmpRoot, "generator-input")
-		if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, "generator-input"))); err != nil {
+		generatorInput := filepath.Join(ctx.workRoot, "generator-input")
+		if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(ctx.languageRepo.Dir, "generator-input"))); err != nil {
 			return err
 		}
 
-		hashBefore, err := gitrepo.HeadHash(languageRepo)
+		hashBefore, err := gitrepo.HeadHash(ctx.languageRepo)
 		if err != nil {
 			return err
 		}
 
 		// Perform "generate, clean, commit, build" on each library.
-		for _, library := range state.Libraries {
-			err = updateLibrary(apiRepo, languageRepo, generatorInput, image, outputDir, state, library)
+		for _, library := range ctx.pipelineState.Libraries {
+			err = updateLibrary(ctx, apiRepo, generatorInput, outputDir, library)
 			if err != nil {
 				return err
 			}
@@ -145,7 +100,7 @@ var CmdUpdateApis = &Command{
 			return nil
 		}
 
-		hashAfter, err := gitrepo.HeadHash(languageRepo)
+		hashAfter, err := gitrepo.HeadHash(ctx.languageRepo)
 		if err != nil {
 			return err
 		}
@@ -154,13 +109,17 @@ var CmdUpdateApis = &Command{
 			return nil
 		}
 
-		title := fmt.Sprintf("feat: API regeneration: %s", formatTimestamp(startOfRun))
-		_, err = pushAndCreatePullRequest(ctx, languageRepo, startOfRun, title, "")
+		title := fmt.Sprintf("feat: API regeneration: %s", formatTimestamp(ctx.startTime))
+		_, err = pushAndCreatePullRequest(ctx, title, "")
 		return err
 	},
 }
 
-func updateLibrary(apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorInput string, image string, outputRoot string, repoState *statepb.PipelineState, library *statepb.LibraryState) error {
+func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+	image := ctx.image
+	languageRepo := ctx.languageRepo
+	containerEnv := ctx.containerEnv
+
 	if flagLibraryID != "" && flagLibraryID != library.Id {
 		// If flagLibraryID has been passed in, we only act on that library.
 		return nil
@@ -195,10 +154,10 @@ func updateLibrary(apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorI
 		return err
 	}
 
-	if err := container.GenerateLibrary(image, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := container.GenerateLibrary(image, apiRepo.Dir, outputDir, generatorInput, library.Id, containerEnv); err != nil {
 		return err
 	}
-	if err := container.Clean(image, languageRepo.Dir, library.Id); err != nil {
+	if err := container.Clean(image, languageRepo.Dir, library.Id, containerEnv); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
@@ -206,7 +165,7 @@ func updateLibrary(apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorI
 	}
 
 	library.LastGeneratedCommit = commits[0].Hash.String()
-	if err := saveState(languageRepo, repoState); err != nil {
+	if err := savePipelineState(ctx); err != nil {
 		return err
 	}
 
@@ -228,7 +187,7 @@ func updateLibrary(apiRepo *gitrepo.Repo, languageRepo *gitrepo.Repo, generatorI
 	}
 
 	// Once we've committed, we can build - but then check that nothing has changed afterwards.
-	if err := container.BuildLibrary(image, languageRepo.Dir, library.Id); err != nil {
+	if err := container.BuildLibrary(image, languageRepo.Dir, library.Id, containerEnv); err != nil {
 		return err
 	}
 	clean, err := gitrepo.IsClean(languageRepo)

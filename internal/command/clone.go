@@ -23,13 +23,13 @@ import (
 
 const googleapisURL = "https://github.com/googleapis/googleapis"
 
-func cloneGoogleapis(tmpRoot string) (*gitrepo.Repo, error) {
-	repoPath := filepath.Join(tmpRoot, "googleapis")
+func cloneGoogleapis(workRoot string) (*gitrepo.Repo, error) {
+	repoPath := filepath.Join(workRoot, "googleapis")
 	return gitrepo.CloneOrOpen(repoPath, googleapisURL)
 }
 
-func cloneLanguageRepo(language, tmpRoot string) (*gitrepo.Repo, error) {
+func cloneLanguageRepo(language, workRoot string) (*gitrepo.Repo, error) {
 	languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", language)
-	repoPath := filepath.Join(tmpRoot, fmt.Sprintf("google-cloud-%s", language))
+	repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", language))
 	return gitrepo.CloneOrOpen(repoPath, languageRepoURL)
 }

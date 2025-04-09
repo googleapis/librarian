@@ -30,7 +30,7 @@ func Run(ctx context.Context, arg ...string) error {
 	if err := cmd.Parse(arg[1:]); err != nil {
 		return err
 	}
-	return cmd.Run(ctx)
+	return command.RunCommand(cmd, ctx)
 }
 
 func parseArgs(args []string) (*command.Command, error) {
