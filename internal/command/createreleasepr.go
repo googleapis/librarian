@@ -55,7 +55,10 @@ var CmdCreateReleasePR = &Command{
 		}
 
 		releaseID := fmt.Sprintf("release-%s", formatTimestamp(ctx.startTime))
-		utils.AppendToFile(flagEnvFile, fmt.Sprintf("%s=%s\n", releaseIDEnvVarName, releaseID))
+		if err := appendResultEnvironmentVariable(ctx, releaseIDEnvVarName, releaseID); err != nil {
+			return err
+		}
+
 		prDescription, err := generateReleaseCommitForEachLibrary(ctx, inputDirectory, releaseID)
 		if err != nil {
 			return err
@@ -106,7 +109,9 @@ func generateReleasePr(ctx *CommandContext, title, prDescription string, errorsI
 		}
 	}
 	if prMetadata != nil {
-		utils.AppendToFile(flagEnvFile, fmt.Sprintf("%s=%d\n", prNumberEnvVarName, prMetadata.Number))
+		if err := appendResultEnvironmentVariable(ctx, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
+	"github.com/googleapis/librarian/internal/utils"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -172,6 +173,15 @@ func RunCommand(c *Command, ctx context.Context) error {
 		image:          image,
 	}
 	return c.execute(cmdContext)
+}
+
+func appendResultEnvironmentVariable(ctx *CommandContext, name, value string) error {
+	envFile := flagEnvFile
+	if envFile == "" {
+		envFile = filepath.Join(ctx.workRoot, "env-vars.txt")
+	}
+
+	return utils.AppendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
 }
 
 func deriveImage(state *statepb.PipelineState) string {
