@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/container"
@@ -94,8 +95,21 @@ func Lookup(name string) (*Command, error) {
 
 func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
 	var languageRepo *gitrepo.Repo
+	if flagRepoRoot != "" && flagRepoUrl != "" {
+		return nil, errors.New("do not specify both repo-root and repo-url")
+	}
+	if flagRepoUrl != "" {
+		// Take the last part of the URL as the directory name. It feels very
+		// unlikely that will clash with anything else (e.g. "output")
+		bits := strings.Split(flagRepoUrl, "/")
+		repoName := bits[len(bits)-1]
+		repoPath := filepath.Join(workRoot, repoName)
+		return gitrepo.CloneOrOpen(repoPath, flagRepoUrl)
+	}
 	if flagRepoRoot == "" {
-		return cloneLanguageRepo(flagLanguage, workRoot)
+		languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", flagLanguage)
+		repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
+		return gitrepo.CloneOrOpen(repoPath, languageRepoURL)
 	}
 	repoRoot, err := filepath.Abs(flagRepoRoot)
 	if err != nil {
@@ -342,6 +356,7 @@ func init() {
 		addFlagLanguage,
 		addFlagPush,
 		addFlagRepoRoot,
+		addFlagRepoUrl,
 	} {
 		fn(fs)
 	}
@@ -370,6 +385,7 @@ func init() {
 		addFlagLibraryID,
 		addFlagPush,
 		addFlagRepoRoot,
+		addFlagRepoUrl,
 	} {
 		fn(fs)
 	}
@@ -386,6 +402,7 @@ func init() {
 		addFlagRepoRoot,
 		addFlagSkipBuild,
 		addFlagEnvFile,
+		addFlagRepoUrl,
 	} {
 		fn(fs)
 	}
@@ -400,6 +417,7 @@ func init() {
 		addFlagLanguage,
 		addFlagPush,
 		addFlagRepoRoot,
+		addFlagRepoUrl,
 		addFlagTag,
 	} {
 		fn(fs)

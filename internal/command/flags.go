@@ -39,6 +39,7 @@ var (
 	flagPush           bool
 	flagReleaseID      string
 	flagRepoRoot       string
+	flagRepoUrl        string
 	flagSecretsProject string
 	flagSkipBuild      bool
 	flagTag            string
@@ -94,7 +95,11 @@ func addFlagReleaseID(fs *flag.FlagSet) {
 }
 
 func addFlagRepoRoot(fs *flag.FlagSet) {
-	fs.StringVar(&flagRepoRoot, "repo-root", "", "Repository root. When this is not specified, the language repo will be cloned.")
+	fs.StringVar(&flagRepoRoot, "repo-root", "", "Repository root. When this (and repo-url) are not specified, the language repo will be cloned.")
+}
+
+func addFlagRepoUrl(fs *flag.FlagSet) {
+	fs.StringVar(&flagRepoUrl, "repo-url", "", "Repository URL to clone. If this and repo-root are not specified, the default language repo will be cloned.")
 }
 
 func addFlagSecretsProject(fs *flag.FlagSet) {
