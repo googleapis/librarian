@@ -98,7 +98,7 @@ func buildTestPackageRelease(ctx *CommandContext, outputRoot string, release Lib
 		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)
-	if err := os.Mkdir(outputRoot, 0755); err != nil {
+	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
 	if err := container.PackageLibrary(containerConfig, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
@@ -111,7 +111,7 @@ func publishPackages(config *container.ContainerConfig, outputRoot string, relea
 	for _, release := range releases {
 		slog.Info(fmt.Sprintf("Would create GitHub release for %s", release.LibraryID))
 	}
-	slog.Info(fmt.Sprintf("Would public packages with image %s and output root %s", config.Image, outputRoot))
+	slog.Info(fmt.Sprintf("Would publish packages with image %s and output root %s", config.Image, outputRoot))
 	return errors.New("publishing releases isn't implemented yet")
 }
 

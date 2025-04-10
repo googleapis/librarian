@@ -172,7 +172,6 @@ func IntegrationTestLibrary(config *ContainerConfig, languageRepo, libId string)
 
 func PackageLibrary(config *ContainerConfig, languageRepo, libId, outputDir string) error {
 	commandArgs := []string{
-		"integration-test-library",
 		"--repo-root=/repo",
 		"--output=/output",
 		fmt.Sprintf("--library-id=%s", libId),
