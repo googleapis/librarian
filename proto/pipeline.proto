@@ -123,6 +123,11 @@ message CommandEnvironmentVariable {
   // The name of the secret to be used to fetch the value of the environment
   // variable when it's not present in the host system. If this is not specified,
   // or if a Secret Manager project has not been provided to Librarian,
-  // any missing environment variables are skipped.
+  // Secret Manager will not be used as a source for the environment variable.
   string secret_name = 2;
+
+  // The default value to specify if no other source is found for the environment
+  // variable. If this is not provided and no other source is found, the environment
+  // variable will not be passed to the container at all.
+  string default_value = 3;
 }
