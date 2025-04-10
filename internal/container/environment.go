@@ -85,33 +85,53 @@ func constructEnvironmentFileContent(containerEnv *EnvironmentProvider, commandN
 	}
 	var builder strings.Builder
 	for _, variable := range commandConfig.EnvironmentVariables {
+		var err error
+		// First source: environment variables
 		value, present := os.LookupEnv(variable.Name)
+		// Second source: Secret Manager
+		if !present {
+			value, present, err = getSecretManagerValue(containerEnv, variable)
+			if err != nil {
+				return "", err
+			}
+		}
+		// Final fallback: default value
+		if !present && variable.DefaultValue != "" {
+			value = variable.DefaultValue
+			present = true
+		}
+
+		// Finally, write the value if we've got one
 		if present {
 			builder.WriteString(fmt.Sprintf("%s=%s\n", variable.Name, value))
-			continue
-		}
-		if containerEnv.secretManagerClient == nil {
+		} else {
 			builder.WriteString(fmt.Sprintf("# No value for %s\n", variable.Name))
-			continue
 		}
-		value, present = containerEnv.secretCache[variable.SecretName]
-		if present {
-			builder.WriteString(fmt.Sprintf("%s=%s", variable.Name, value))
-			continue
-		}
-		request := &secretmanagerpb.AccessSecretVersionRequest{
-			Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", containerEnv.secretsProject, variable.SecretName),
-		}
-		secret, err := containerEnv.secretManagerClient.AccessSecretVersion(containerEnv.ctx, request)
-		if err != nil {
-			return "", err
-		}
-		// We assume the payload is valid UTF-8.
-		value = string(secret.Payload.Data[:])
-		builder.WriteString(fmt.Sprintf("%s=%s\n", variable.Name, value))
-		containerEnv.secretCache[variable.SecretName] = value
+		continue
 	}
 	return builder.String(), nil
+}
+
+func getSecretManagerValue(containerEnv *EnvironmentProvider, variable *statepb.CommandEnvironmentVariable) (string, bool, error) {
+	if variable.SecretName == "" || containerEnv.secretManagerClient == nil {
+		return "", false, nil
+	}
+	value, present := containerEnv.secretCache[variable.SecretName]
+	if present {
+		return value, true, nil
+	}
+	request := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", containerEnv.secretsProject, variable.SecretName),
+	}
+	// TODO: Maybe handle a missing secret as just missing rather than an error.
+	secret, err := containerEnv.secretManagerClient.AccessSecretVersion(containerEnv.ctx, request)
+	if err != nil {
+		return "", false, err
+	}
+	// We assume the payload is valid UTF-8.
+	value = string(secret.Payload.Data[:])
+	containerEnv.secretCache[variable.SecretName] = value
+	return value, true, nil
 }
 
 func deleteEnvironmentFile(containerEnv *EnvironmentProvider) error {
