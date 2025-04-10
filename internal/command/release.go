@@ -43,16 +43,10 @@ var CmdRelease = &Command{
 		addFlagWorkRoot,
 		addFlagLanguage,
 		addFlagRepoRoot,
+		addFlagRepoUrl,
 		addFlagReleaseID,
 	},
-	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
-		if err := validateRequiredFlag("repo-root", flagRepoRoot); err != nil {
-			return nil, err
-		}
-		// This will always open the repo root, because we've just validated
-		// that the flag has been specified.
-		return cloneOrOpenLanguageRepo(workRoot)
-	},
+	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute: func(ctx *CommandContext) error {
 		if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
 			return err
