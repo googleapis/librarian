@@ -54,7 +54,7 @@ func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck 
 			}
 		} else if statusCheck == "mergeable" {
 			if pr.GetMergeable() || pr.GetMerged() {
-				slog.Info("PR is mergable")
+				slog.Info("PR is mergable or already merged", "mergeable status", pr.GetMergeable(), "merged status", pr.GetMerged())
 				return
 			} else {
 				slog.Info("PR is not mergable, will try again", "mergeable status", pr.GetMergeable(), "merged status", pr.GetMerged())
