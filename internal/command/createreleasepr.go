@@ -48,6 +48,7 @@ var CmdCreateReleasePR = &Command{
 		addFlagSecretsProject,
 		addFlagWorkRoot,
 		addFlagLanguage,
+		addFlagLibraryID,
 		addFlagPush,
 		addFlagGitUserEmail,
 		addFlagGitUserName,
@@ -76,6 +77,10 @@ var CmdCreateReleasePR = &Command{
 		prDescription, err := generateReleaseCommitForEachLibrary(ctx, inputDirectory, releaseID)
 		if err != nil {
 			return err
+		}
+
+		if flagLibraryID != "" && len(prDescription.Releases) != 1 {
+			return fmt.Errorf("library-id flag specified as '%s' but %d releases were created", flagLibraryID, len(prDescription.Releases))
 		}
 
 		// Need to handle four situations:
@@ -144,6 +149,10 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 	var releases []string
 
 	for _, library := range libraries {
+		// If we've specified a single library to release, skip all the others.
+		if flagLibraryID != "" && library.Id != flagLibraryID {
+			continue
+		}
 		if library.ReleaseAutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
 			slog.Info(fmt.Sprintf("Skipping release-blocked library: '%s'", library.Id))
 			continue
