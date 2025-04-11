@@ -184,6 +184,19 @@ func PackageLibrary(config *ContainerConfig, languageRepo, libId, outputDir stri
 	return runDocker(config, "package-library", mounts, commandArgs)
 }
 
+func PublishLibrary(config *ContainerConfig, outputDir, libId, libVersion string) error {
+	commandArgs := []string{
+		"--package-output=/output",
+		fmt.Sprintf("--library-id=%s", libId),
+		fmt.Sprintf("--version=%s", libId),
+	}
+	mounts := []string{
+		fmt.Sprintf("%s:/output", outputDir),
+	}
+
+	return runDocker(config, "publish-library", mounts, commandArgs)
+}
+
 func runDocker(config *ContainerConfig, commandName string, mounts []string, commandArgs []string) error {
 	if config.Image == "" {
 		return fmt.Errorf("image cannot be empty")

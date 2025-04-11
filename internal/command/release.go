@@ -42,14 +42,24 @@ var CmdRelease = &Command{
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagLanguage,
+		addFlagPush,
 		addFlagRepoRoot,
 		addFlagRepoUrl,
 		addFlagReleaseID,
+		addFlagTagRepoUrl,
 	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute: func(ctx *CommandContext) error {
 		if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
 			return err
+		}
+
+		if err := validatePush(); err != nil {
+			return err
+		}
+
+		if flagPush && flagTagRepoUrl == "" {
+			return errors.New("flag -tag-repo-url is required when -push is true")
 		}
 
 		outputRoot := filepath.Join(ctx.workRoot, "output")
@@ -69,8 +79,15 @@ var CmdRelease = &Command{
 			}
 		}
 
-		if err := publishPackages(ctx.containerConfig, outputRoot, releases); err != nil {
-			return err
+		if flagPush {
+			if err := publishPackages(ctx.containerConfig, outputRoot, releases); err != nil {
+				return err
+			}
+			if err := createRepoReleases(ctx, releases); err != nil {
+				return err
+			}
+		} else {
+			slog.Info("Push flag not specified; not publishing packages")
 		}
 		slog.Info("Release complete.")
 
@@ -103,10 +120,31 @@ func buildTestPackageRelease(ctx *CommandContext, outputRoot string, release Lib
 
 func publishPackages(config *container.ContainerConfig, outputRoot string, releases []LibraryRelease) error {
 	for _, release := range releases {
-		slog.Info(fmt.Sprintf("Would create GitHub release for %s", release.LibraryID))
+		outputDir := filepath.Join(outputRoot, release.LibraryID)
+		if err := container.PublishLibrary(config, outputDir, release.LibraryID, release.Version); err != nil {
+			return err
+		}
 	}
-	slog.Info(fmt.Sprintf("Would publish packages with image %s and output root %s", config.Image, outputRoot))
-	return errors.New("publishing releases isn't implemented yet")
+	slog.Info("All packages published.")
+	return nil
+}
+
+func createRepoReleases(ctx *CommandContext, releases []LibraryRelease) error {
+	accessToken := os.Getenv(gitHubTokenEnvironmentVariable)
+	repoUrl := flagTagRepoUrl
+
+	for _, release := range releases {
+		tag := formatReleaseTag(release.LibraryID, release.Version)
+		title := fmt.Sprintf("Release %s version %s", release.LibraryID, release.Version)
+		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
+		repoRelease, err := gitrepo.CreateRelease(ctx.ctx, repoUrl, accessToken, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
+		if err != nil {
+			return err
+		}
+		slog.Info(fmt.Sprintf("Created repo release '%s' with tag '%s'", *repoRelease.Name, *repoRelease.TagName))
+	}
+	slog.Info("All repo releases created.")
+	return nil
 }
 
 func parseCommitsForReleases(repo *gitrepo.Repo, releaseID string) ([]LibraryRelease, error) {

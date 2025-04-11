@@ -403,7 +403,7 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 		return nil, fmt.Errorf("can only create a PR with a single remote; number of remotes: %d", len(remotes))
 	}
 
-	organization, repoName, err := getRepoMetadata(remotes)
+	organization, repoName, err := getRepoMetadata(remotes[0].Config().URLs[0])
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +419,6 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 		Body:                github.Ptr(body),
 		MaintainerCanModify: github.Ptr(true),
 	}
-
 	pr, _, err := gitHubClient.PullRequests.Create(ctx, organization, repoName, newPR)
 	if err != nil {
 		return nil, err
@@ -430,6 +429,28 @@ func CreatePullRequest(ctx context.Context, repo *Repo, remoteBranch string, acc
 	return pullRequestMetadata, nil
 }
 
+func CreateRelease(ctx context.Context, repoUrl, accessToken, tag, commit, title, description string, prerelease bool) (*github.RepositoryRelease, error) {
+	gitHubClient := github.NewClient(nil).WithAuthToken(accessToken)
+	organization, repoName, err := getRepoMetadata(repoUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	release := &github.RepositoryRelease{
+		TagName:         &tag,
+		TargetCommitish: &commit,
+		Name:            &title,
+		Body:            &description,
+		Draft:           github.Ptr(false),
+		MakeLatest:      github.Ptr("true"),
+		Prerelease:      &prerelease,
+		// TODO: Check whether this is what we want
+		GenerateReleaseNotes: github.Ptr(false),
+	}
+	release, _, err = gitHubClient.Repositories.CreateRelease(ctx, organization, repoName, release)
+	return release, err
+}
+
 func AddLabelToPullRequest(ctx context.Context, repo *Repo, prNumber int, label string, accessToken string) error {
 	gitHubClient := github.NewClient(nil).WithAuthToken(accessToken)
 
@@ -437,7 +458,7 @@ func AddLabelToPullRequest(ctx context.Context, repo *Repo, prNumber int, label 
 	if err != nil {
 		return err
 	}
-	organization, repoName, err := getRepoMetadata(remotes)
+	organization, repoName, err := getRepoMetadata(remotes[0].Config().URLs[0])
 	if err != nil {
 		return err
 	}
@@ -490,8 +511,7 @@ func CleanAndRevertHeadCommit(repo *Repo) error {
 	return worktree.Clean(&git.CleanOptions{Dir: true})
 }
 
-func getRepoMetadata(remotes []*git.Remote) (string, string, error) {
-	remoteUrl := remotes[0].Config().URLs[0]
+func getRepoMetadata(remoteUrl string) (string, string, error) {
 	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
 		return "", "", fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)
 	}

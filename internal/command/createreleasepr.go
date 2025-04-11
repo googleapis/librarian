@@ -153,7 +153,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 		if library.CurrentVersion == "" {
 			previousReleaseTag = ""
 		} else {
-			previousReleaseTag = library.Id + "-" + library.CurrentVersion
+			previousReleaseTag = formatReleaseTag(library.Id, library.CurrentVersion)
 		}
 		allSourcePaths := append(ctx.pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
 		commits, err := gitrepo.GetCommitsForPathsSinceTag(languageRepo, allSourcePaths, previousReleaseTag)

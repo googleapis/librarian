@@ -43,6 +43,7 @@ var (
 	flagSecretsProject string
 	flagSkipBuild      bool
 	flagTag            string
+	flagTagRepoUrl     string
 	flagWorkRoot       string
 )
 
@@ -112,6 +113,10 @@ func addFlagSkipBuild(fs *flag.FlagSet) {
 
 func addFlagTag(fs *flag.FlagSet) {
 	fs.StringVar(&flagTag, "tag", "", "new tag for the language-specific container image.")
+}
+
+func addFlagTagRepoUrl(fs *flag.FlagSet) {
+	fs.StringVar(&flagTagRepoUrl, "tag-repo-url", "", "Repository URL to tag and create releases in. Requires when push is true.")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet) {

@@ -368,3 +368,7 @@ func constructUsage(fs *flag.FlagSet, name string) func() {
 		fmt.Fprintf(fs.Output(), "\n\n")
 	}
 }
+
+func formatReleaseTag(libraryID, version string) string {
+	return libraryID + "-" + version
+}
