@@ -25,6 +25,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -133,11 +134,16 @@ func createRepoReleases(ctx *CommandContext, releases []LibraryRelease) error {
 	accessToken := os.Getenv(gitHubTokenEnvironmentVariable)
 	repoUrl := flagTagRepoUrl
 
+	gitHubRepo, err := githubrepo.ParseUrl(repoUrl)
+	if err != nil {
+		return err
+	}
+
 	for _, release := range releases {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("Release %s version %s", release.LibraryID, release.Version)
 		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := gitrepo.CreateRelease(ctx.ctx, repoUrl, accessToken, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
+		repoRelease, err := githubrepo.CreateRelease(ctx.ctx, gitHubRepo, accessToken, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
 		if err != nil {
 			return err
 		}
