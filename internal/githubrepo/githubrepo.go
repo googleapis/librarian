@@ -19,6 +19,7 @@ package githubrepo
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/google/go-github/v69/github"
@@ -33,13 +34,15 @@ type PullRequestMetadata struct {
 	Number int
 }
 
+const gitHubTokenEnvironmentVariable string = "LIBRARIAN_GITHUB_TOKEN"
+
 // Creates a pull request in the remote repo. At the moment this requires a single remote to be
 // configured, which must have a GitHub HTTPS URL. We assume a base branch of "main".
-func CreatePullRequest(ctx context.Context, repo GitHubRepo, remoteBranch string, accessToken string, title string, body string) (*PullRequestMetadata, error) {
+func CreatePullRequest(ctx context.Context, repo GitHubRepo, remoteBranch string, title string, body string) (*PullRequestMetadata, error) {
 	if body == "" {
 		body = "Regenerated all changed APIs. See individual commits for details."
 	}
-	gitHubClient := github.NewClient(nil).WithAuthToken(accessToken)
+	gitHubClient := createClient()
 	newPR := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &remoteBranch,
@@ -57,8 +60,8 @@ func CreatePullRequest(ctx context.Context, repo GitHubRepo, remoteBranch string
 	return pullRequestMetadata, nil
 }
 
-func CreateRelease(ctx context.Context, repo GitHubRepo, accessToken, tag, commit, title, description string, prerelease bool) (*github.RepositoryRelease, error) {
-	gitHubClient := github.NewClient(nil).WithAuthToken(accessToken)
+func CreateRelease(ctx context.Context, repo GitHubRepo, tag, commit, title, description string, prerelease bool) (*github.RepositoryRelease, error) {
+	gitHubClient := createClient()
 
 	release := &github.RepositoryRelease{
 		TagName:         &tag,
@@ -75,8 +78,8 @@ func CreateRelease(ctx context.Context, repo GitHubRepo, accessToken, tag, commi
 	return release, err
 }
 
-func AddLabelToPullRequest(ctx context.Context, repo GitHubRepo, prNumber int, label string, accessToken string) error {
-	gitHubClient := github.NewClient(nil).WithAuthToken(accessToken)
+func AddLabelToPullRequest(ctx context.Context, repo GitHubRepo, prNumber int, label string) error {
+	gitHubClient := createClient()
 
 	labels := []string{label}
 
@@ -99,4 +102,13 @@ func ParseUrl(remoteUrl string) (GitHubRepo, error) {
 	repoName := pathParts[1]
 	repoName = strings.TrimSuffix(repoName, ".git")
 	return GitHubRepo{Owner: organization, Name: repoName}, nil
+}
+
+func createClient() *github.Client {
+	accessToken := GetAccessToken()
+	return github.NewClient(nil).WithAuthToken(accessToken)
+}
+
+func GetAccessToken() string {
+	return os.Getenv(gitHubTokenEnvironmentVariable)
 }

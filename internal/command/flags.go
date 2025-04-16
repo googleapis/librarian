@@ -18,11 +18,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
+
+	"github.com/googleapis/librarian/internal/githubrepo"
 )
 
 // Environment variables are specified here as they're used for the same sort of purpose as flags...
-const gitHubTokenEnvironmentVariable string = "LIBRARIAN_GITHUB_TOKEN"
+// ... but see also githubrepo.go
 const defaultRepositoryEnvironmentVariable string = "LIBRARIAN_REPOSITORY"
 
 var (
@@ -137,7 +138,7 @@ var supportedLanguages = map[string]bool{
 }
 
 func validatePush() error {
-	if flagPush && os.Getenv(gitHubTokenEnvironmentVariable) == "" {
+	if flagPush && githubrepo.GetAccessToken() == "" {
 		return errors.New("no GitHub token supplied for push")
 	}
 	return nil

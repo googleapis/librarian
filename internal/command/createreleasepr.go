@@ -125,8 +125,7 @@ func generateReleasePr(ctx *CommandContext, title, prDescription string, errorsI
 		return err
 	}
 	if errorsInGeneration {
-		gitHubAccessToken := os.Getenv(gitHubTokenEnvironmentVariable)
-		err = githubrepo.AddLabelToPullRequest(ctx.ctx, gitHubRepo, prMetadata.Number, "do-not-merge", gitHubAccessToken)
+		err = githubrepo.AddLabelToPullRequest(ctx.ctx, gitHubRepo, prMetadata.Number, "do-not-merge")
 		if err != nil {
 			slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 			return err

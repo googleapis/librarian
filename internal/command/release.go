@@ -131,7 +131,6 @@ func publishPackages(config *container.ContainerConfig, outputRoot string, relea
 }
 
 func createRepoReleases(ctx *CommandContext, releases []LibraryRelease) error {
-	accessToken := os.Getenv(gitHubTokenEnvironmentVariable)
 	repoUrl := flagTagRepoUrl
 
 	gitHubRepo, err := githubrepo.ParseUrl(repoUrl)
@@ -143,7 +142,7 @@ func createRepoReleases(ctx *CommandContext, releases []LibraryRelease) error {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("Release %s version %s", release.LibraryID, release.Version)
 		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := githubrepo.CreateRelease(ctx.ctx, gitHubRepo, accessToken, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
+		repoRelease, err := githubrepo.CreateRelease(ctx.ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
 		if err != nil {
 			return err
 		}

@@ -322,15 +322,13 @@ func pushAndCreatePullRequest(ctx *CommandContext, title string, description str
 		return nil, err
 	}
 
-	// This should already have been validated to be non-empty by validatePush
-	gitHubAccessToken := os.Getenv(gitHubTokenEnvironmentVariable)
 	branch := fmt.Sprintf("librarian-%s", formatTimestamp(ctx.startTime))
-	err = gitrepo.PushBranch(ctx.languageRepo, branch, gitHubAccessToken)
+	err = gitrepo.PushBranch(ctx.languageRepo, branch, githubrepo.GetAccessToken())
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return nil, err
 	}
-	pr, err := githubrepo.CreatePullRequest(ctx.ctx, gitHubRepo, branch, gitHubAccessToken, title, description)
+	pr, err := githubrepo.CreatePullRequest(ctx.ctx, gitHubRepo, branch, title, description)
 	if pr != nil {
 		return pr, err
 	}
