@@ -74,7 +74,7 @@ func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck 
 	}
 }
 
-// Gets list of review so a PR and checks if any current status is approved
+// Gets a list of reviews for a PR and checks if any current status is approved
 func checkIfPrIsApproved(client *github.Client, ctx context.Context, owner string, repo string, prNumber int) bool {
 	opt := &github.ListOptions{PerPage: 100}
 	var allReviews []*github.PullRequestReview
