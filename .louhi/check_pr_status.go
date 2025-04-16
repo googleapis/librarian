@@ -74,6 +74,7 @@ func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck 
 	}
 }
 
+// Gets list of review so a PR and checks if any current status is approved
 func checkIfPrIsApproved(client *github.Client, ctx context.Context, owner string, repo string, prNumber int) bool {
 	opt := &github.ListOptions{PerPage: 100}
 	var allReviews []*github.PullRequestReview
@@ -90,32 +91,25 @@ func checkIfPrIsApproved(client *github.Client, ctx context.Context, owner strin
 		opt.Page = resp.NextPage
 	}
 
-	// Check if any review is in the "APPROVED" state
 	isApproved := false
-	latestReviews := make(map[int64]*github.PullRequestReview) // Store latest review per user
+	latestReviews := make(map[int64]*github.PullRequestReview)
 
 	for _, review := range allReviews {
-		// Ignore PENDING reviews as they haven't been submitted
 		if review.GetState() == "PENDING" {
 			continue
 		}
 
-		// Track the latest review submitted by each user
 		userID := review.GetUser().GetID()
+		// Need to ensure review is the latest for the user
 		if current, exists := latestReviews[userID]; !exists || review.GetSubmittedAt().After(current.GetSubmittedAt().Time) {
 			latestReviews[userID] = review
 		}
 	}
 
-	// Now check the state of the latest review for each user
 	for _, review := range latestReviews {
-		// Consider it approved if the latest state from *any* relevant reviewer is APPROVED.
-		// Note: You might need more complex logic depending on branch protection rules
-		// (e.g., requiring specific number of approvals, handling DISMISSED states more carefully,
-		// checking if reviewers are code owners, etc.)
 		if review.GetState() == "APPROVED" {
 			isApproved = true
-			break // Found at least one approval
+			break
 		}
 	}
 	return isApproved
