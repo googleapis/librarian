@@ -74,7 +74,7 @@ func mergeReleasePRImpl(ctx *CommandContext) error {
 	}
 
 	baseRepo := githubrepo.CreateGitHubRepoFromRepository(pr.Base.Repo)
-	baseHeadState, err := fetchRemotePipelineState(ctx.ctx, baseRepo, "HEAD")
+	baseHeadState, err := fetchRemotePipelineState(ctx.ctx, baseRepo, *pr.Base.Ref)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,6 @@ func checkIfCommitAffectsAnySourcePath(commit *github.RepositoryCommit, sourcePa
 	for _, commitFile := range commit.Files {
 		changedPath := *commitFile.Filename
 		for _, sourcePath := range sourcePaths {
-
 			if changedPath == sourcePath || (strings.HasPrefix(changedPath, sourcePath) && strings.HasPrefix(changedPath, sourcePath+"/")) {
 				return true
 			}
@@ -185,7 +184,7 @@ func checkIfCommitAffectsAnySourcePath(commit *github.RepositoryCommit, sourcePa
 func parseRemoteCommitsForReleases(commits []*github.RepositoryCommit, releaseID string) ([]LibraryRelease, error) {
 	releases := []LibraryRelease{}
 	for _, commit := range commits {
-		release, err := parseCommitMessageForRelease(*commit.Commit.Message, *commit.Commit.SHA)
+		release, err := parseCommitMessageForRelease(*commit.Commit.Message, *commit.SHA)
 		if err != nil {
 			return nil, err
 		}

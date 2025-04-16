@@ -150,7 +150,7 @@ func HeadHash(repo *Repo) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return headRef.String(), nil
+	return headRef.Hash().String(), nil
 }
 
 func IsClean(repo *Repo) (bool, error) {
