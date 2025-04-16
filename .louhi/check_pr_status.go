@@ -18,6 +18,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"time"
@@ -60,8 +61,64 @@ func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck 
 				slog.Info("PR is not mergable, will try again", "mergeable status", pr.GetMergeable(), "merged status", pr.GetMerged())
 				time.Sleep(pollInterval)
 			}
+		} else if statusCheck == "approved" {
+			if checkIfPrIsApproved(client, ctx, repoOwner, repoName, prNumber) {
+				slog.Info("PR is approved")
+				return
+			} else {
+				slog.Info("PR is not approved, will try again")
+				time.Sleep(pollInterval)
+			}
+		}
+
+	}
+}
+
+func checkIfPrIsApproved(client *github.Client, ctx context.Context, owner string, repo string, prNumber int) bool {
+	opt := &github.ListOptions{PerPage: 100}
+	var allReviews []*github.PullRequestReview
+	for {
+		reviews, resp, err := client.PullRequests.ListReviews(ctx, owner, repo, prNumber, opt)
+		if err != nil {
+			log.Fatalf("Error listing reviews: %v", err)
+			os.Exit(1)
+		}
+		allReviews = append(allReviews, reviews...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+
+	// Check if any review is in the "APPROVED" state
+	isApproved := false
+	latestReviews := make(map[int64]*github.PullRequestReview) // Store latest review per user
+
+	for _, review := range allReviews {
+		// Ignore PENDING reviews as they haven't been submitted
+		if review.GetState() == "PENDING" {
+			continue
+		}
+
+		// Track the latest review submitted by each user
+		userID := review.GetUser().GetID()
+		if current, exists := latestReviews[userID]; !exists || review.GetSubmittedAt().After(current.GetSubmittedAt().Time) {
+			latestReviews[userID] = review
 		}
 	}
+
+	// Now check the state of the latest review for each user
+	for _, review := range latestReviews {
+		// Consider it approved if the latest state from *any* relevant reviewer is APPROVED.
+		// Note: You might need more complex logic depending on branch protection rules
+		// (e.g., requiring specific number of approvals, handling DISMISSED states more carefully,
+		// checking if reviewers are code owners, etc.)
+		if review.GetState() == "APPROVED" {
+			isApproved = true
+			break // Found at least one approval
+		}
+	}
+	return isApproved
 }
 
 func main() {
@@ -79,7 +136,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if (*statusCheck != "merged") && (*statusCheck != "mergeable") {
+	if (*statusCheck != "merged") && (*statusCheck != "mergeable") && (*statusCheck != "approved") {
 		slog.Error("Invalid status check type", "type", statusCheck)
 		os.Exit(1)
 	}
