@@ -35,6 +35,7 @@ import (
 )
 
 const prNumberEnvVarName = "_PR_NUMBER"
+const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
 type ReleasePrDescription struct {
 	Releases []string
@@ -70,6 +71,16 @@ var CmdCreateReleasePR = &Command{
 			return err
 		}
 
+		// Find the head of the language repo before we start creating any release commits.
+		// This will be validated later to check that libraries haven't changed since the release PR was created.
+		baselineCommit, err := gitrepo.HeadHash(ctx.languageRepo)
+		if err != nil {
+			return err
+		}
+		if err := appendResultEnvironmentVariable(ctx, baselineCommitEnvVarName, baselineCommit); err != nil {
+			return err
+		}
+
 		releaseID := fmt.Sprintf("release-%s", formatTimestamp(ctx.startTime))
 		if err := appendResultEnvironmentVariable(ctx, releaseIDEnvVarName, releaseID); err != nil {
 			return err
@@ -100,17 +111,17 @@ var CmdCreateReleasePR = &Command{
 			return errors.New("errors encountered but no PR to create")
 		} else if anyReleases && !anyErrors {
 			descriptionText := strings.Join(prDescription.Releases, "\n")
-			return generateReleasePr(ctx, title, descriptionText, false)
+			return generateReleasePr(ctx, title, descriptionText)
 		} else {
 			releasesText := strings.Join(prDescription.Releases, "\n")
 			errorsText := strings.Join(prDescription.Errors, "\n")
 			descriptionText := fmt.Sprintf("Release Errors:\n==================\n%s\n\n\nReleases Included:\n==================\n%s\n", errorsText, releasesText)
-			return generateReleasePr(ctx, title, descriptionText, true)
+			return generateReleasePr(ctx, title, descriptionText)
 		}
 	},
 }
 
-func generateReleasePr(ctx *CommandContext, title, prDescription string, errorsInGeneration bool) error {
+func generateReleasePr(ctx *CommandContext, title, prDescription string) error {
 	if !flagPush {
 		slog.Info(fmt.Sprintf("Push not specified; would have created release PR with the following description:\n%s", prDescription))
 		return nil
@@ -124,12 +135,11 @@ func generateReleasePr(ctx *CommandContext, title, prDescription string, errorsI
 		slog.Warn(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
 		return err
 	}
-	if errorsInGeneration {
-		err = githubrepo.AddLabelToPullRequest(ctx.ctx, gitHubRepo, prMetadata.Number, "do-not-merge")
-		if err != nil {
-			slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
-			return err
-		}
+	// We always add the do-not-merge label so that Librarian can merge later.
+	err = githubrepo.AddLabelToPullRequest(ctx.ctx, gitHubRepo, prMetadata.Number, "do-not-merge")
+	if err != nil {
+		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
+		return err
 	}
 	if prMetadata != nil {
 		if err := appendResultEnvironmentVariable(ctx, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {

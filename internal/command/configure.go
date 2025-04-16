@@ -141,7 +141,7 @@ func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language 
 				return err
 			}
 			// If we already generate this library, skip the rest of this directory.
-			if findLibrary(state, apiPath) != "" || slices.Contains(state.IgnoredApiPaths, apiPath) {
+			if findLibraryIDByApiPath(state, apiPath) != "" || slices.Contains(state.IgnoredApiPaths, apiPath) {
 				return filepath.SkipDir
 			}
 
@@ -265,7 +265,7 @@ func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prCo
 	}
 
 	// We should now have a library for the given API path, or it should be ignored.
-	libraryID := findLibrary(state, apiPath)
+	libraryID := findLibraryIDByApiPath(state, apiPath)
 	if libraryID == "" {
 		if slices.Contains(state.IgnoredApiPaths, apiPath) {
 			prContent.Changes = append(prContent.Changes, fmt.Sprintf("Ignoring API path %s", apiPath))

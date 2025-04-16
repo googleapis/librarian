@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -31,6 +30,7 @@ import (
 
 type LibraryRelease struct {
 	LibraryID    string
+	ReleaseID    string
 	Version      string
 	CommitHash   string
 	ReleaseNotes string
@@ -159,7 +159,7 @@ func parseCommitsForReleases(repo *gitrepo.Repo, releaseID string) ([]LibraryRel
 	}
 	releases := []LibraryRelease{}
 	for _, commit := range commits {
-		release, err := parseCommitMessageForRelease(commit)
+		release, err := parseCommitMessageForRelease(commit.Message, commit.Hash.String())
 		if err != nil {
 			return nil, err
 		}
@@ -168,13 +168,17 @@ func parseCommitsForReleases(repo *gitrepo.Repo, releaseID string) ([]LibraryRel
 	return releases, nil
 }
 
-func parseCommitMessageForRelease(commit object.Commit) (*LibraryRelease, error) {
-	messageLines := strings.Split(commit.Message, "\n")
+func parseCommitMessageForRelease(message, hash string) (*LibraryRelease, error) {
+	messageLines := strings.Split(message, "\n")
 	libraryID, err := findMetadataValue("Librarian-Release-Library", messageLines)
 	if err != nil {
 		return nil, err
 	}
 	version, err := findMetadataValue("Librarian-Release-Version", messageLines)
+	if err != nil {
+		return nil, err
+	}
+	releaseID, err := findMetadataValue("Librarian-Release-ID", messageLines)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +193,8 @@ func parseCommitMessageForRelease(commit object.Commit) (*LibraryRelease, error)
 		LibraryID:    libraryID,
 		Version:      version,
 		ReleaseNotes: releaseNotes,
-		CommitHash:   commit.Hash.String(),
+		CommitHash:   hash,
+		ReleaseID:    releaseID,
 	}, nil
 }
 

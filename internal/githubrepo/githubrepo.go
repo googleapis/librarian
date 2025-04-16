@@ -19,6 +19,7 @@ package githubrepo
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -90,6 +91,47 @@ func AddLabelToPullRequest(ctx context.Context, repo GitHubRepo, prNumber int, l
 	return nil
 }
 
+func RemoveLabelFromPullRequest(ctx context.Context, repo GitHubRepo, prNumber int, label string) error {
+	gitHubClient := createClient()
+
+	_, err := gitHubClient.Issues.RemoveLabelForIssue(ctx, repo.Owner, repo.Name, prNumber, label)
+	if err != nil {
+		return fmt.Errorf("failed to remove label: %w", err)
+	}
+	return nil
+}
+
+func AddCommentToPullRequest(ctx context.Context, repo GitHubRepo, prNumber int, comment string) error {
+	gitHubClient := createClient()
+	issueComment := &github.IssueComment{
+		Body: &comment,
+	}
+	_, _, err := gitHubClient.Issues.CreateComment(ctx, repo.Owner, repo.Name, prNumber, issueComment)
+	if err != nil {
+		return fmt.Errorf("failed to add comment: %w", err)
+	}
+	return nil
+}
+
+func MergePullRequest(ctx context.Context, repo GitHubRepo, prNumber int, method github.MergeMethod) (*github.PullRequestMergeResult, error) {
+	gitHubClient := createClient()
+
+	options := &github.PullRequestOptions{
+		MergeMethod: string(method),
+	}
+	result, _, err := gitHubClient.PullRequests.Merge(ctx, repo.Owner, repo.Name, prNumber, "", options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge pull request: %w", err)
+	}
+	return result, nil
+}
+
+func GetPullRequest(ctx context.Context, repo GitHubRepo, prNumber int) (*github.PullRequest, error) {
+	gitHubClient := createClient()
+	pr, _, err := gitHubClient.PullRequests.Get(ctx, repo.Owner, repo.Name, prNumber)
+	return pr, err
+}
+
 // Parses a GitHub URL (anything to do with a repository) to determine
 // the GitHub repo details (owner and name)
 func ParseUrl(remoteUrl string) (GitHubRepo, error) {
@@ -102,6 +144,39 @@ func ParseUrl(remoteUrl string) (GitHubRepo, error) {
 	repoName := pathParts[1]
 	repoName = strings.TrimSuffix(repoName, ".git")
 	return GitHubRepo{Owner: organization, Name: repoName}, nil
+}
+
+func CreateGitHubRepoFromRepository(repo *github.Repository) GitHubRepo {
+	return GitHubRepo{Owner: *repo.Owner.Login, Name: *repo.Name}
+}
+
+func GetRawContent(ctx context.Context, repo GitHubRepo, path, ref string) ([]byte, error) {
+	gitHubClient := createClient()
+	options := &github.RepositoryContentGetOptions{
+		Ref: ref,
+	}
+	closer, _, err := gitHubClient.Repositories.DownloadContents(ctx, repo.Owner, repo.Name, path, options)
+	if err != nil {
+		return nil, err
+	}
+	defer closer.Close()
+	return io.ReadAll(closer)
+}
+
+func GetDiffCommits(ctx context.Context, repo GitHubRepo, source, target string) ([]*github.RepositoryCommit, error) {
+	gitHubClient := createClient()
+	// TODO: Implement pagination or use go-github-paginate
+	listOptions := &github.ListOptions{PerPage: 100}
+	commitsComparison, _, err := gitHubClient.Repositories.CompareCommits(ctx, repo.Owner, repo.Name, source, target, listOptions)
+	return commitsComparison.Commits, err
+}
+
+func GetCommit(ctx context.Context, repo GitHubRepo, sha string) (*github.RepositoryCommit, error) {
+	gitHubClient := createClient()
+	// TODO: Implement pagination or use go-github-paginate (if necessary)
+	listOptions := &github.ListOptions{PerPage: 100}
+	commit, _, err := gitHubClient.Repositories.GetCommit(ctx, repo.Owner, repo.Name, sha, listOptions)
+	return commit, err
 }
 
 func createClient() *github.Client {

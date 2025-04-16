@@ -133,8 +133,10 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
 }
 
 func RunCommand(c *Command, ctx context.Context) error {
-	if err := validateLanguage(); err != nil {
-		return err
+	if c.flags.Lookup("language") != nil {
+		if err := validateLanguage(); err != nil {
+			return err
+		}
 	}
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime)
@@ -209,14 +211,22 @@ func deriveImage(state *statepb.PipelineState) string {
 // Finds a library which includes code generated from the given API path.
 // If there are no such libraries, an empty string is returned.
 // If there are multiple such libraries, the first match is returned.
-func findLibrary(state *statepb.PipelineState, apiPath string) string {
-
+func findLibraryIDByApiPath(state *statepb.PipelineState, apiPath string) string {
 	for _, library := range state.Libraries {
 		if slices.Contains(library.ApiPaths, apiPath) {
 			return library.Id
 		}
 	}
 	return ""
+}
+
+func findLibraryByID(state *statepb.PipelineState, libraryID string) *statepb.LibraryState {
+	for _, library := range state.Libraries {
+		if library.Id == libraryID {
+			return library
+		}
+	}
+	return nil
 }
 
 func loadPipelineState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, error) {
@@ -351,6 +361,7 @@ var Commands = []*Command{
 	CmdCreateReleasePR,
 	CmdUpdateImageTag,
 	CmdRelease,
+	CmdMergeReleasePR,
 }
 
 func init() {
