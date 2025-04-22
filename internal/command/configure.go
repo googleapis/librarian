@@ -259,6 +259,7 @@ func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prCo
 	if err != nil {
 		return err
 	}
+	ctx.pipelineState = state
 	err = savePipelineState(ctx)
 	if err != nil {
 		return err
