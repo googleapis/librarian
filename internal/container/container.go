@@ -20,8 +20,33 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"slices"
 	"strings"
 )
+
+type ContainerCommand string
+
+// The set of container commands, in a single place to avoid typos.
+const (
+	ContainerCommandGenerateRaw            ContainerCommand = "generate-raw"
+	ContainerCommandGenerateLibrary        ContainerCommand = "generate-library"
+	ContainerCommandClean                  ContainerCommand = "clean"
+	ContainerCommandBuildRaw               ContainerCommand = "build-raw"
+	ContainerCommandBuildLibrary           ContainerCommand = "build-library"
+	ContainerCommandConfigure              ContainerCommand = "configure"
+	ContainerCommandPrepareLibraryRelease                   = "prepare-library-release"
+	ContainerCommandIntegrationTestLibrary ContainerCommand = "integration-test-library"
+	ContainerCommandPackageLibrary         ContainerCommand = "package-library"
+	ContainerCommandPublishLibrary         ContainerCommand = "publish-library"
+)
+
+var networkEnabledContainerCommands = []ContainerCommand{
+	ContainerCommandBuildRaw,
+	ContainerCommandBuildLibrary,
+	ContainerCommandIntegrationTestLibrary,
+	ContainerCommandPackageLibrary,
+	ContainerCommandPublishLibrary,
+}
 
 func GenerateRaw(config *ContainerConfig, apiRoot, output, apiPath string) error {
 	if apiRoot == "" {
@@ -42,7 +67,7 @@ func GenerateRaw(config *ContainerConfig, apiRoot, output, apiPath string) error
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/output", output),
 	}
-	return runDocker(config, "generate-raw", mounts, commandArgs)
+	return runDocker(config, ContainerCommandGenerateRaw, mounts, commandArgs)
 }
 
 func GenerateLibrary(config *ContainerConfig, apiRoot, output, generatorInput, libraryID string) error {
@@ -69,7 +94,7 @@ func GenerateLibrary(config *ContainerConfig, apiRoot, output, generatorInput, l
 		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/generator-input", generatorInput),
 	}
-	return runDocker(config, "generate-library", mounts, commandArgs)
+	return runDocker(config, ContainerCommandGenerateLibrary, mounts, commandArgs)
 }
 
 func Clean(config *ContainerConfig, repoRoot, libraryID string) error {
@@ -85,7 +110,7 @@ func Clean(config *ContainerConfig, repoRoot, libraryID string) error {
 	if libraryID != "" {
 		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
 	}
-	return runDocker(config, "clean", mounts, commandArgs)
+	return runDocker(config, ContainerCommandClean, mounts, commandArgs)
 }
 
 func BuildRaw(config *ContainerConfig, generatorOutput, apiPath string) error {
@@ -102,7 +127,7 @@ func BuildRaw(config *ContainerConfig, generatorOutput, apiPath string) error {
 		"--generator-output=/generator-output",
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
-	return runDocker(config, "build-raw", mounts, commandArgs)
+	return runDocker(config, ContainerCommandBuildRaw, mounts, commandArgs)
 }
 
 func BuildLibrary(config *ContainerConfig, repoRoot, libraryId string) error {
@@ -118,7 +143,7 @@ func BuildLibrary(config *ContainerConfig, repoRoot, libraryId string) error {
 	if libraryId != "" {
 		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryId))
 	}
-	return runDocker(config, "build-library", mounts, commandArgs)
+	return runDocker(config, ContainerCommandBuildLibrary, mounts, commandArgs)
 }
 
 func Configure(config *ContainerConfig, apiRoot, apiPath, generatorInput string) error {
@@ -140,7 +165,7 @@ func Configure(config *ContainerConfig, apiRoot, apiPath, generatorInput string)
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/generator-input", generatorInput),
 	}
-	return runDocker(config, "configure", mounts, commandArgs)
+	return runDocker(config, ContainerCommandConfigure, mounts, commandArgs)
 }
 
 func PrepareLibraryRelease(config *ContainerConfig, languageRepo, inputsDirectory, libId, releaseVersion string) error {
@@ -155,7 +180,7 @@ func PrepareLibraryRelease(config *ContainerConfig, languageRepo, inputsDirector
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
 
-	return runDocker(config, "prepare-library-release", mounts, commandArgs)
+	return runDocker(config, ContainerCommandPrepareLibraryRelease, mounts, commandArgs)
 }
 
 func IntegrationTestLibrary(config *ContainerConfig, languageRepo, libId string) error {
@@ -167,7 +192,7 @@ func IntegrationTestLibrary(config *ContainerConfig, languageRepo, libId string)
 		fmt.Sprintf("%s:/repo", languageRepo),
 	}
 
-	return runDocker(config, "integration-test-library", mounts, commandArgs)
+	return runDocker(config, ContainerCommandIntegrationTestLibrary, mounts, commandArgs)
 }
 
 func PackageLibrary(config *ContainerConfig, languageRepo, libId, outputDir string) error {
@@ -181,7 +206,7 @@ func PackageLibrary(config *ContainerConfig, languageRepo, libId, outputDir stri
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	return runDocker(config, "package-library", mounts, commandArgs)
+	return runDocker(config, ContainerCommandPackageLibrary, mounts, commandArgs)
 }
 
 func PublishLibrary(config *ContainerConfig, outputDir, libId, libVersion string) error {
@@ -194,10 +219,10 @@ func PublishLibrary(config *ContainerConfig, outputDir, libId, libVersion string
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	return runDocker(config, "publish-library", mounts, commandArgs)
+	return runDocker(config, ContainerCommandPublishLibrary, mounts, commandArgs)
 }
 
-func runDocker(config *ContainerConfig, commandName string, mounts []string, commandArgs []string) error {
+func runDocker(config *ContainerConfig, command ContainerCommand, mounts []string, commandArgs []string) error {
 	if config.Image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -220,15 +245,18 @@ func runDocker(config *ContainerConfig, commandName string, mounts []string, com
 		args = append(args, "-v", mount)
 	}
 	if config.envProvider != nil {
-		if err := writeEnvironmentFile(config.envProvider, commandName); err != nil {
+		if err := writeEnvironmentFile(config.envProvider, string(command)); err != nil {
 			return err
 		}
 		args = append(args, "--env-file")
 		args = append(args, config.envProvider.tmpFile)
 		defer deleteEnvironmentFile(config.envProvider)
 	}
+	if !slices.Contains(networkEnabledContainerCommands, command) {
+		args = append(args, "--network=none")
+	}
 	args = append(args, config.Image)
-	args = append(args, commandName)
+	args = append(args, string(command))
 	args = append(args, commandArgs...)
 	return runCommand("docker", args...)
 }
