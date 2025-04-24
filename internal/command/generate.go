@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -35,6 +36,7 @@ var CmdGenerate = &Command{
 		addFlagAPIRoot,
 		addFlagLanguage,
 		addFlagBuild,
+		addFlagRepoRoot,
 	},
 	// Currently we never clone a language repo, and always do raw generation.
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
@@ -59,7 +61,19 @@ var CmdGenerate = &Command{
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		if err := container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath); err != nil {
+		// check if the library exists in the remote pipeline state, if so use GenerateLibrary command
+		// otherwise use GenerateRaw command
+		// In case of error when looking up library, we will fallback to GenerateRaw command
+		// and log the error
+		libraryId := checkIfLibraryExists(ctx)
+		if libraryId != "" {
+			cloneOrOpenLanguageRepo(ctx.workRoot)
+			generatorInput := filepath.Join(ctx.workRoot, "generator-input")
+			err = container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryId)
+		} else {
+			err = container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath)
+		}
+		if err != nil {
 			return err
 		}
 
@@ -70,4 +84,31 @@ var CmdGenerate = &Command{
 		}
 		return nil
 	},
+}
+
+func checkIfLibraryExists(ctx *CommandContext) string {
+
+	githubrepo, err := githubrepo.ParseUrl(flagRepoUrl)
+	if err != nil {
+		slog.Error("failed to parse repo URL %q: %w", flagRepoUrl, err)
+		return ""
+	}
+	pipelineState, err := fetchRemotePipelineState(ctx.ctx, githubrepo, "HEAD")
+	if err != nil {
+		slog.Error("failed to get pipeline state file", "error", err)
+		return ""
+	}
+
+	if pipelineState != nil {
+		for _, library := range pipelineState.Libraries {
+
+			for _, path := range library.ApiPaths {
+				if path == flagAPIRoot {
+					return library.Id
+				}
+			}
+		}
+	}
+	slog.Error("Pipeline state file is null")
+	return ""
 }

@@ -15,7 +15,6 @@
 package command
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -26,7 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var CmdMergeReleasePR = &Command{
@@ -199,18 +197,4 @@ func parseRemoteCommitsForReleases(commits []*github.RepositoryCommit, releaseID
 func parsePrNumberFromUrl(url string) (int, error) {
 	parts := strings.Split(url, "/")
 	return strconv.Atoi(parts[len(parts)-1])
-}
-
-func fetchRemotePipelineState(ctx context.Context, repo githubrepo.GitHubRepo, ref string) (*statepb.PipelineState, error) {
-	bytes, err := githubrepo.GetRawContent(ctx, repo, "generator-input/pipeline-state.json", ref)
-	if err != nil {
-		return nil, err
-	}
-
-	state := &statepb.PipelineState{}
-	err = protojson.Unmarshal(bytes, state)
-	if err != nil {
-		return nil, err
-	}
-	return state, nil
 }

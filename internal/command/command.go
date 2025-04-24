@@ -387,3 +387,17 @@ func constructUsage(fs *flag.FlagSet, name string) func() {
 func formatReleaseTag(libraryID, version string) string {
 	return libraryID + "-" + version
 }
+
+func fetchRemotePipelineState(ctx context.Context, repo githubrepo.GitHubRepo, ref string) (*statepb.PipelineState, error) {
+	bytes, err := githubrepo.GetRawContent(ctx, repo, "generator-input/pipeline-state.json", ref)
+	if err != nil {
+		return nil, err
+	}
+
+	state := &statepb.PipelineState{}
+	err = protojson.Unmarshal(bytes, state)
+	if err != nil {
+		return nil, err
+	}
+	return state, nil
+}
