@@ -91,7 +91,6 @@ func checkIfLibraryExists(ctx *CommandContext) string {
 		slog.Error("repo url is not specified, cannot check if library exists")
 		return ""
 	}
-
 	githubrepo, err := githubrepo.ParseUrl(flagRepoUrl)
 	if err != nil {
 		slog.Error("failed to parse", "repo url:", flagRepoUrl, "error", err)
@@ -102,17 +101,17 @@ func checkIfLibraryExists(ctx *CommandContext) string {
 		slog.Error("failed to get pipeline state file", "error", err)
 		return ""
 	}
-
 	if pipelineState != nil {
 		for _, library := range pipelineState.Libraries {
-
 			for _, path := range library.ApiPaths {
-				if path == flagAPIRoot {
+				if path == flagAPIPath {
 					return library.Id
 				}
 			}
 		}
+		slog.Info("No matching library found for ", "flagAPIPath", flagAPIPath)
+	} else {
+		slog.Error("Pipeline state file is null")
 	}
-	slog.Error("Pipeline state file is null")
 	return ""
 }
