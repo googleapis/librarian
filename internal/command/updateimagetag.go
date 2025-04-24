@@ -121,12 +121,11 @@ var CmdUpdateImageTag = &Command{
 			return err
 		}
 
-		if !flagPush {
-			slog.Info("Pushing not specified; update complete.")
-			return nil
-		}
-
-		_, err := pushAndCreatePullRequest(ctx, "chore: update generation image tag", "")
+		// The PullRequestContent for update-image-tag is slightly different to others, but we
+		// can massage it into a similar state.
+		prContent := new(PullRequestContent)
+		addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
+		_, err := createPullRequest(ctx, prContent, "chore: update generation image tag", "update-image-tag")
 		return err
 	},
 }

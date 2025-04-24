@@ -91,14 +91,10 @@ var CmdUpdateApis = &Command{
 			return err
 		}
 
-		hashBefore, err := gitrepo.HeadHash(ctx.languageRepo)
-		if err != nil {
-			return err
-		}
-
+		prContent := new(PullRequestContent)
 		// Perform "generate, clean, commit, build" on each library.
 		for _, library := range ctx.pipelineState.Libraries {
-			err = updateLibrary(ctx, apiRepo, generatorInput, outputDir, library)
+			err := updateLibrary(ctx, apiRepo, generatorInput, outputDir, library, prContent)
 			if err != nil {
 				return err
 			}
@@ -108,28 +104,12 @@ var CmdUpdateApis = &Command{
 		if cleanWorkingTreePostGeneration {
 			gitrepo.CleanWorkingTree(apiRepo)
 		}
-
-		if !flagPush {
-			slog.Info("Pushing not specified; update complete.")
-			return nil
-		}
-
-		hashAfter, err := gitrepo.HeadHash(ctx.languageRepo)
-		if err != nil {
-			return err
-		}
-		if hashBefore == hashAfter {
-			slog.Info("No changes generated; nothing to push.")
-			return nil
-		}
-
-		title := fmt.Sprintf("feat: API regeneration: %s", formatTimestamp(ctx.startTime))
-		_, err = pushAndCreatePullRequest(ctx, title, "")
+		_, err := createPullRequest(ctx, prContent, "feat: API regeneration", "regen")
 		return err
 	},
 }
 
-func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
 	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
 
@@ -168,10 +148,16 @@ func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput st
 	}
 
 	if err := container.GenerateLibrary(containerConfig, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
-		return err
+		addErrorToPullRequest(prContent, library.Id, err, "generating")
+		return nil
 	}
 	if err := container.Clean(containerConfig, languageRepo.Dir, library.Id); err != nil {
-		return err
+		addErrorToPullRequest(prContent, library.Id, err, "cleaning")
+		// Clean up any changes before starting the next iteration.
+		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+			return err
+		}
+		return nil
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
@@ -200,9 +186,9 @@ func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput st
 	}
 
 	// Once we've committed, we can build - but then check that nothing has changed afterwards.
-	if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
-		return err
-	}
+	// We consider a "something changed" error as fatal, whereas a build error just needs to
+	// undo the commit, report the failure and continue
+	buildErr := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id)
 	clean, err := gitrepo.IsClean(languageRepo)
 	if err != nil {
 		return err
@@ -210,6 +196,16 @@ func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput st
 	if !clean {
 		return fmt.Errorf("building '%s' created changes in the repo", library.Id)
 	}
+
+	if buildErr != nil {
+		addErrorToPullRequest(prContent, library.Id, err, "building")
+		if err = gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	addSuccessToPullRequest(prContent, fmt.Sprintf("Generated %s", library.Id))
 	return nil
 }
 

@@ -31,11 +31,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ConfigurationPrContent struct {
-	Changes []string
-	Errors  []string
-}
-
 var CmdConfigure = &Command{
 	Name:  "configure",
 	Short: "Configure a new API in a given language",
@@ -84,7 +79,7 @@ var CmdConfigure = &Command{
 			return err
 		}
 
-		prContent := ConfigurationPrContent{}
+		prContent := PullRequestContent{}
 		for _, apiPath := range apiPaths {
 			err = configureApi(ctx, outputRoot, apiRoot, apiPath, &prContent)
 			if err != nil {
@@ -92,29 +87,8 @@ var CmdConfigure = &Command{
 			}
 		}
 
-		// Need to handle four situations:
-		// - No changes, no errors (no PR, process completes normally)
-		// - No changes, but there are errors (no PR, log and make the process abort as the only way of drawing attention to the failure)
-		// - Some changes, no errors (create PR, process completes normally)
-		// - Some changes, some errors (create PR with error messages, process completes normally)
-		anyChanges := len(prContent.Changes) > 0
-		anyErrors := len(prContent.Errors) > 0
-
-		if !anyChanges && !anyErrors {
-			slog.Error("No new APIs to configure.")
-			return nil
-		} else if !anyChanges && anyErrors {
-			slog.Error("No PR to create, but errors were logged. Aborting.")
-			return errors.New("errors encountered but no PR to create")
-		} else if anyChanges && !anyErrors {
-			descriptionText := strings.Join(prContent.Changes, "\n")
-			return generateConfigurationPr(ctx, descriptionText)
-		} else {
-			releasesText := strings.Join(prContent.Changes, "\n")
-			errorsText := strings.Join(prContent.Errors, "\n")
-			descriptionText := fmt.Sprintf("Configuration Errors:\n==================\n%s\n\n\nChanges Included:\n==================\n%s\n", errorsText, releasesText)
-			return generateConfigurationPr(ctx, descriptionText)
-		}
+		_, err = createPullRequest(ctx, &prContent, "feat: API configuration", "config")
+		return err
 	},
 }
 
@@ -239,7 +213,7 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 //
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
-func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prContent *ConfigurationPrContent) error {
+func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
 	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
 
@@ -247,7 +221,7 @@ func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prCo
 
 	generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
 	if err := container.Configure(containerConfig, apiRoot, apiPath, generatorInput); err != nil {
-		prContent.Errors = append(prContent.Errors, logPartialError(apiPath, err, "configuring"))
+		addErrorToPullRequest(prContent, apiPath, err, "configuring")
 		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 			return err
 		}
@@ -268,11 +242,16 @@ func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prCo
 	// We should now have a library for the given API path, or it should be ignored.
 	libraryID := findLibraryIDByApiPath(state, apiPath)
 	if libraryID == "" {
+		// If it's newly-ignored, just commit the state change. This is still a "success" case.
 		if slices.Contains(state.IgnoredApiPaths, apiPath) {
-			prContent.Changes = append(prContent.Changes, fmt.Sprintf("Ignoring API path %s", apiPath))
+			msg := fmt.Sprintf("feat: Added ignore entry for API %s", apiPath)
+			if err := commitAll(languageRepo, msg); err != nil {
+				return err
+			}
+			addSuccessToPullRequest(prContent, fmt.Sprintf("Ignored API %s", apiPath))
 			return nil
 		}
-		prContent.Errors = append(prContent.Errors, logPartialError(apiPath, err, "finding new library for"))
+		addErrorToPullRequest(prContent, apiPath, err, "finding new library for")
 		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 			return err
 		}
@@ -321,17 +300,6 @@ func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prCo
 	if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 		return err
 	}
-	prContent.Changes = append(prContent.Changes, fmt.Sprintf("Configured library %s for API %s", libraryID, apiPath))
+	addSuccessToPullRequest(prContent, fmt.Sprintf("Configured library %s for API %s", libraryID, apiPath))
 	return nil
-}
-
-func generateConfigurationPr(ctx *CommandContext, prDescription string) error {
-	if !flagPush {
-		slog.Info(fmt.Sprintf("Push not specified; would have created configuration PR with the following description:\n%s", prDescription))
-		return nil
-	}
-
-	title := fmt.Sprintf("feat: API configuration: %s", formatTimestamp(ctx.startTime))
-	_, err := pushAndCreatePullRequest(ctx, title, prDescription)
-	return err
 }

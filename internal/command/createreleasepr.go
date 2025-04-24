@@ -15,7 +15,6 @@
 package command
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -36,11 +35,6 @@ import (
 
 const prNumberEnvVarName = "_PR_NUMBER"
 const baselineCommitEnvVarName = "_BASELINE_COMMIT"
-
-type ReleasePrDescription struct {
-	Releases []string
-	Errors   []string
-}
 
 var CmdCreateReleasePR = &Command{
 	Name:  "create-release-pr",
@@ -86,67 +80,35 @@ var CmdCreateReleasePR = &Command{
 			return err
 		}
 
-		prDescription, err := generateReleaseCommitForEachLibrary(ctx, inputDirectory, releaseID)
+		prContent, err := generateReleaseCommitForEachLibrary(ctx, inputDirectory, releaseID)
 		if err != nil {
 			return err
 		}
 
-		if flagLibraryID != "" && len(prDescription.Releases) != 1 {
-			return fmt.Errorf("library-id flag specified as '%s' but %d releases were created", flagLibraryID, len(prDescription.Releases))
+		if flagLibraryID != "" && len(prContent.Successes) != 1 {
+			return fmt.Errorf("library-id flag specified as '%s' but %d releases were created", flagLibraryID, len(prContent.Successes))
 		}
 
-		// Need to handle four situations:
-		// - No releases, no errors (no PR, process completes normally)
-		// - No releases, but there are errors (no PR, log and make the process abort as the only way of drawing attention to the failure)
-		// - Some releases, no errors (create PR, process completes normally)
-		// - Some releases, some errors (create PR with error messages, process completes normally)
-		anyReleases := len(prDescription.Releases) > 0
-		anyErrors := len(prDescription.Errors) > 0
-
-		title := fmt.Sprintf("chore: Library release: %s", formatTimestamp(ctx.startTime))
-		if !anyReleases && !anyErrors {
-			return nil
-		} else if !anyReleases && anyErrors {
-			slog.Error("No PR to create, but errors were logged. Aborting.")
-			return errors.New("errors encountered but no PR to create")
-		} else if anyReleases && !anyErrors {
-			descriptionText := strings.Join(prDescription.Releases, "\n")
-			return generateReleasePr(ctx, title, descriptionText)
-		} else {
-			releasesText := strings.Join(prDescription.Releases, "\n")
-			errorsText := strings.Join(prDescription.Errors, "\n")
-			descriptionText := fmt.Sprintf("Release Errors:\n==================\n%s\n\n\nReleases Included:\n==================\n%s\n", errorsText, releasesText)
-			return generateReleasePr(ctx, title, descriptionText)
-		}
-	},
-}
-
-func generateReleasePr(ctx *CommandContext, title, prDescription string) error {
-	if !flagPush {
-		slog.Info(fmt.Sprintf("Push not specified; would have created release PR with the following description:\n%s", prDescription))
-		return nil
-	}
-	gitHubRepo, err := gitrepo.GetGitHubRepoFromRemote(ctx.languageRepo)
-	if err != nil {
-		return err
-	}
-	prMetadata, err := pushAndCreatePullRequest(ctx, title, prDescription)
-	if err != nil {
-		slog.Warn(fmt.Sprintf("Received error trying to create release PR: '%s'", err))
-		return err
-	}
-	// We always add the do-not-merge label so that Librarian can merge later.
-	err = githubrepo.AddLabelToPullRequest(ctx.ctx, gitHubRepo, prMetadata.Number, "do-not-merge")
-	if err != nil {
-		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
-		return err
-	}
-	if prMetadata != nil {
-		if err := appendResultEnvironmentVariable(ctx, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
+		prMetadata, err := createPullRequest(ctx, prContent, "chore: Library release", "release")
+		if err != nil {
 			return err
 		}
-	}
-	return nil
+		// If we've actually created a release PR, we then have to add a label and output the PR number
+		// as an environment variable. (There are ways in which we could have had a successful run, but
+		// with no PR: we may have finished with no changes, or we may not be pushing.)
+		if prMetadata != nil {
+			// We always add the do-not-merge label so that Librarian can merge later.
+			err = githubrepo.AddLabelToPullRequest(ctx.ctx, *prMetadata, "do-not-merge")
+			if err != nil {
+				slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
+				return err
+			}
+			if err := appendResultEnvironmentVariable(ctx, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
+				return err
+			}
+		}
+		return nil
+	},
 }
 
 // Iterate over all configured libraries, and check for new commits since the previous release tag for that library.
@@ -154,13 +116,12 @@ func generateReleasePr(ctx *CommandContext, title, prDescription string) error {
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory string, releaseID string) (*ReleasePrDescription, error) {
+func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory string, releaseID string) (*PullRequestContent, error) {
 	containerConfig := ctx.containerConfig
 	libraries := ctx.pipelineState.Libraries
 	languageRepo := ctx.languageRepo
 
-	var errorsInRelease []string
-	var releases []string
+	pr := new(PullRequestContent)
 
 	for _, library := range libraries {
 		// If we've specified a single library to release, skip all the others.
@@ -181,7 +142,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 		allSourcePaths := append(ctx.pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
 		commits, err := gitrepo.GetCommitsForPathsSinceTag(languageRepo, allSourcePaths, previousReleaseTag)
 		if err != nil {
-			errorsInRelease = append(errorsInRelease, logPartialError(library.Id, err, "retrieving commits since last release"))
+			addErrorToPullRequest(pr, library.Id, err, "retrieving commits since last release")
 			continue
 		}
 
@@ -201,7 +162,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			}
 
 			if err := container.PrepareLibraryRelease(containerConfig, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
-				errorsInRelease = append(errorsInRelease, logPartialError(library.Id, err, "preparing library release"))
+				addErrorToPullRequest(pr, library.Id, err, "preparing library release")
 				// Clean up any changes before starting the next iteration.
 				if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 					return nil, err
@@ -211,7 +172,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			// TODO: make this configurable so we don't have to run per library
 			if !flagSkipBuild {
 				if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
-					errorsInRelease = append(errorsInRelease, logPartialError(library.Id, err, "building/testing library"))
+					addErrorToPullRequest(pr, library.Id, err, "building/testing library")
 					// Clean up any changes before starting the next iteration.
 					if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 						return nil, err
@@ -219,7 +180,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 					continue
 				}
 				if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
-					errorsInRelease = append(errorsInRelease, logPartialError(library.Id, err, "integration testing library"))
+					addErrorToPullRequest(pr, library.Id, err, "integration testing library")
 					if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 						return nil, err
 					}
@@ -237,7 +198,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			}
 
 			releaseDescription := fmt.Sprintf("Release library: %s version %s", library.Id, releaseVersion)
-			releases = append(releases, releaseDescription)
+			addSuccessToPullRequest(pr, releaseDescription)
 			// Metadata for easy extraction later.
 			metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
 			err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s\n\n%s", releaseDescription, releaseNotes, metadata))
@@ -246,7 +207,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			}
 		}
 	}
-	return &ReleasePrDescription{Releases: releases, Errors: errorsInRelease}, nil
+	return pr, nil
 }
 
 func formatReleaseNotes(commitMessages []*CommitMessage) string {

@@ -32,6 +32,7 @@ type GitHubRepo struct {
 }
 
 type PullRequestMetadata struct {
+	Repo   GitHubRepo
 	Number int
 }
 
@@ -57,7 +58,7 @@ func CreatePullRequest(ctx context.Context, repo GitHubRepo, remoteBranch string
 	}
 
 	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
-	pullRequestMetadata := &PullRequestMetadata{Number: pr.GetNumber()}
+	pullRequestMetadata := &PullRequestMetadata{Repo: repo, Number: pr.GetNumber()}
 	return pullRequestMetadata, nil
 }
 
@@ -79,12 +80,12 @@ func CreateRelease(ctx context.Context, repo GitHubRepo, tag, commit, title, des
 	return release, err
 }
 
-func AddLabelToPullRequest(ctx context.Context, repo GitHubRepo, prNumber int, label string) error {
+func AddLabelToPullRequest(ctx context.Context, prMetadata PullRequestMetadata, label string) error {
 	gitHubClient := createClient()
 
 	labels := []string{label}
 
-	_, _, err := gitHubClient.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, prNumber, labels)
+	_, _, err := gitHubClient.Issues.AddLabelsToIssue(ctx, prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number, labels)
 	if err != nil {
 		return fmt.Errorf("failed to add label: %w", err)
 	}

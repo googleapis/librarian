@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/container"
-	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"github.com/googleapis/librarian/internal/utils"
@@ -319,30 +318,6 @@ func commitAll(repo *gitrepo.Repo, msg string) error {
 	}
 
 	return gitrepo.Commit(repo, msg, flagGitUserName, flagGitUserEmail)
-}
-
-// Push the contents of the language repo and create a new pull request.
-func pushAndCreatePullRequest(ctx *CommandContext, title string, description string) (*githubrepo.PullRequestMetadata, error) {
-	if !flagPush {
-		return nil, nil
-	}
-
-	gitHubRepo, err := gitrepo.GetGitHubRepoFromRemote(ctx.languageRepo)
-	if err != nil {
-		return nil, err
-	}
-
-	branch := fmt.Sprintf("librarian-%s", formatTimestamp(ctx.startTime))
-	err = gitrepo.PushBranch(ctx.languageRepo, branch, githubrepo.GetAccessToken())
-	if err != nil {
-		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
-		return nil, err
-	}
-	pr, err := githubrepo.CreatePullRequest(ctx.ctx, gitHubRepo, branch, title, description)
-	if pr != nil {
-		return pr, err
-	}
-	return nil, err
 }
 
 // Log details of an error which prevents a single API or library from being configured/released, but without
