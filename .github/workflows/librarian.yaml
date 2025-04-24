@@ -26,6 +26,12 @@ jobs:
         go-version-file: 'go.mod'
     - name: Display Go version
       run: go version
+    - name: Clean Go Caches
+      run: |
+        go clean -cache
+        go clean -modcache
+    - name: Download Go modules
+      run: go mod download
     - name: Run tests
       run: go test ./...
     - run: go fmt ./...
