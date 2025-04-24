@@ -67,10 +67,12 @@ var CmdGenerate = &Command{
 		// and log the error
 		libraryId := checkIfLibraryExistsInLanguageRepo(ctx)
 		if libraryId != "" {
-			cloneOrOpenLanguageRepo(ctx.workRoot)
+			ctx.languageRepo, err = cloneOrOpenLanguageRepo(ctx.workRoot)
+			slog.Warn("Unable to checkout language repo ", "error", err)
 			generatorInput := filepath.Join(ctx.languageRepo.Dir, "generator-input")
 			err = container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryId)
 		} else {
+			slog.Info("No matching library found for ", "flagAPIPath", flagAPIPath)
 			err = container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath)
 		}
 		if err != nil {
@@ -89,30 +91,23 @@ var CmdGenerate = &Command{
 // Checks if the library with the given API path exists in the remote pipeline state
 func checkIfLibraryExistsInLanguageRepo(ctx *CommandContext) string {
 	if flagRepoUrl == "" {
-		slog.Error("repo url is not specified, cannot check if library exists")
+		slog.Warn("repo url is not specified, cannot check if library exists")
 		return ""
 	}
 	githubrepo, err := githubrepo.ParseUrl(flagRepoUrl)
 	if err != nil {
-		slog.Error("failed to parse", "repo url:", flagRepoUrl, "error", err)
+		slog.Warn("failed to parse", "repo url:", flagRepoUrl, "error", err)
 		return ""
 	}
 	pipelineState, err := fetchRemotePipelineState(ctx.ctx, githubrepo, "HEAD")
 	if err != nil {
-		slog.Error("failed to get pipeline state file", "error", err)
+		slog.Warn("failed to get pipeline state file", "error", err)
 		return ""
 	}
 	if pipelineState != nil {
-		for _, library := range pipelineState.Libraries {
-			for _, path := range library.ApiPaths {
-				if path == flagAPIPath {
-					return library.Id
-				}
-			}
-		}
-		slog.Info("No matching library found for ", "flagAPIPath", flagAPIPath)
+		return findLibraryIDByApiPath(pipelineState, flagAPIPath)
 	} else {
-		slog.Error("Pipeline state file is null")
+		slog.Warn("Pipeline state file is null")
 	}
 	return ""
 }
