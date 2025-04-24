@@ -36,7 +36,7 @@ var CmdGenerate = &Command{
 		addFlagAPIRoot,
 		addFlagLanguage,
 		addFlagBuild,
-		addFlagRepoRoot,
+		addFlagRepoUrl,
 	},
 	// Currently we never clone a language repo, and always do raw generation.
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
@@ -87,10 +87,14 @@ var CmdGenerate = &Command{
 }
 
 func checkIfLibraryExists(ctx *CommandContext) string {
+	if flagRepoUrl == "" {
+		slog.Error("repo url is not specified, cannot check if library exists")
+		return ""
+	}
 
 	githubrepo, err := githubrepo.ParseUrl(flagRepoUrl)
 	if err != nil {
-		slog.Error("failed to parse repo URL %q: %w", flagRepoUrl, err)
+		slog.Error("failed to parse", "repo url:", flagRepoUrl, "error", err)
 		return ""
 	}
 	pipelineState, err := fetchRemotePipelineState(ctx.ctx, githubrepo, "HEAD")
