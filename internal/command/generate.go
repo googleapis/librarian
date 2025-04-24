@@ -38,7 +38,7 @@ var CmdGenerate = &Command{
 		addFlagBuild,
 		addFlagRepoUrl,
 	},
-	// Currently we never clone a language repo, and always do raw generation.
+	// By default don't clone a language repo, we will clone later only if library exists in language repo.
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
 		return nil, nil
 	},
