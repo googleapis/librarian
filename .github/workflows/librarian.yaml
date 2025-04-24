@@ -31,7 +31,10 @@ jobs:
         go clean -cache
         go clean -modcache
     - name: Download Go modules
-      run: go mod download
+      run: |
+        go mod download
+        go list ./...       # to verify all packages are included
+        ls -R internal/     # to inspect file/folder structure and case
     - name: Run tests
       run: go test ./...
     - run: go fmt ./...
