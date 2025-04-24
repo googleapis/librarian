@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -35,8 +36,9 @@ var CmdGenerate = &Command{
 		addFlagAPIRoot,
 		addFlagLanguage,
 		addFlagBuild,
+		addFlagRepoUrl,
 	},
-	// Currently we never clone a language repo, and always do raw generation.
+	// By default don't clone a language repo, we will clone later only if library exists in language repo.
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
 		return nil, nil
 	},
@@ -47,19 +49,31 @@ var CmdGenerate = &Command{
 		if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
 			return err
 		}
-
 		apiRoot, err := filepath.Abs(flagAPIRoot)
 		if err != nil {
 			return err
 		}
-
 		outputDir := filepath.Join(ctx.workRoot, "output")
 		if err := os.Mkdir(outputDir, 0755); err != nil {
 			return err
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		if err := container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath); err != nil {
+		// check if the library exists in the remote pipeline state, if so use GenerateLibrary command
+		// otherwise use GenerateRaw command
+		// In case of error when looking up library, we will fallback to GenerateRaw command
+		// and log the error
+		libraryId := checkIfLibraryExistsInLanguageRepo(ctx)
+		if libraryId != "" {
+			ctx.languageRepo, err = cloneOrOpenLanguageRepo(ctx.workRoot)
+			slog.Warn("Unable to checkout language repo ", "error", err)
+			generatorInput := filepath.Join(ctx.languageRepo.Dir, "generator-input")
+			err = container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryId)
+		} else {
+			slog.Info("No matching library found for ", "flagAPIPath", flagAPIPath)
+			err = container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath)
+		}
+		if err != nil {
 			return err
 		}
 
@@ -70,4 +84,28 @@ var CmdGenerate = &Command{
 		}
 		return nil
 	},
+}
+
+// Checks if the library with the given API path exists in the remote pipeline state
+func checkIfLibraryExistsInLanguageRepo(ctx *CommandContext) string {
+	if flagRepoUrl == "" {
+		slog.Warn("repo url is not specified, cannot check if library exists")
+		return ""
+	}
+	languageRepoMetadata, err := githubrepo.ParseUrl(flagRepoUrl)
+	if err != nil {
+		slog.Warn("failed to parse", "repo url:", flagRepoUrl, "error", err)
+		return ""
+	}
+	pipelineState, err := fetchRemotePipelineState(ctx.ctx, languageRepoMetadata, "HEAD")
+	if err != nil {
+		slog.Warn("failed to get pipeline state file", "error", err)
+		return ""
+	}
+	if pipelineState != nil {
+		return findLibraryIDByApiPath(pipelineState, flagAPIPath)
+	} else {
+		slog.Warn("Pipeline state file is null")
+	}
+	return ""
 }
