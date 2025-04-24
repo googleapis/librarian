@@ -65,10 +65,10 @@ var CmdGenerate = &Command{
 		// otherwise use GenerateRaw command
 		// In case of error when looking up library, we will fallback to GenerateRaw command
 		// and log the error
-		libraryId := checkIfLibraryExists(ctx)
+		libraryId := checkIfLibraryExistsInLanguageRepo(ctx)
 		if libraryId != "" {
 			cloneOrOpenLanguageRepo(ctx.workRoot)
-			generatorInput := filepath.Join(ctx.workRoot, "generator-input")
+			generatorInput := filepath.Join(ctx.languageRepo.Dir, "generator-input")
 			err = container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryId)
 		} else {
 			err = container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath)
@@ -86,7 +86,8 @@ var CmdGenerate = &Command{
 	},
 }
 
-func checkIfLibraryExists(ctx *CommandContext) string {
+// Checks if the library with the given API path exists in the remote pipeline state
+func checkIfLibraryExistsInLanguageRepo(ctx *CommandContext) string {
 	if flagRepoUrl == "" {
 		slog.Error("repo url is not specified, cannot check if library exists")
 		return ""
