@@ -94,12 +94,12 @@ func checkIfLibraryExistsInLanguageRepo(ctx *CommandContext) string {
 		slog.Warn("repo url is not specified, cannot check if library exists")
 		return ""
 	}
-	githubrepo, err := githubrepo.ParseUrl(flagRepoUrl)
+	languageRepoMetadata, err := githubrepo.ParseUrl(flagRepoUrl)
 	if err != nil {
 		slog.Warn("failed to parse", "repo url:", flagRepoUrl, "error", err)
 		return ""
 	}
-	pipelineState, err := fetchRemotePipelineState(ctx.ctx, githubrepo, "HEAD")
+	pipelineState, err := fetchRemotePipelineState(ctx.ctx, languageRepoMetadata, "HEAD")
 	if err != nil {
 		slog.Warn("failed to get pipeline state file", "error", err)
 		return ""
