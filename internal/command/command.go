@@ -345,6 +345,20 @@ func pushAndCreatePullRequest(ctx *CommandContext, title string, description str
 	return nil, err
 }
 
+func fetchRemotePipelineState(ctx context.Context, repo githubrepo.GitHubRepo, ref string) (*statepb.PipelineState, error) {
+	bytes, err := githubrepo.GetRawContent(ctx, repo, "generator-input/pipeline-state.json", ref)
+	if err != nil {
+		return nil, err
+	}
+
+	state := &statepb.PipelineState{}
+	err = protojson.Unmarshal(bytes, state)
+	if err != nil {
+		return nil, err
+	}
+	return state, nil
+}
+
 // Log details of an error which prevents a single API or library from being configured/released, but without
 // halting the overall process. Return a brief description to the errors to include in the PR.
 // We don't include detailed errors in the PR, as this could reveal sensitive information.
@@ -386,18 +400,4 @@ func constructUsage(fs *flag.FlagSet, name string) func() {
 
 func formatReleaseTag(libraryID, version string) string {
 	return libraryID + "-" + version
-}
-
-func fetchRemotePipelineState(ctx context.Context, repo githubrepo.GitHubRepo, ref string) (*statepb.PipelineState, error) {
-	bytes, err := githubrepo.GetRawContent(ctx, repo, "generator-input/pipeline-state.json", ref)
-	if err != nil {
-		return nil, err
-	}
-
-	state := &statepb.PipelineState{}
-	err = protojson.Unmarshal(bytes, state)
-	if err != nil {
-		return nil, err
-	}
-	return state, nil
 }
