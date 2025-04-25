@@ -89,6 +89,7 @@ func runGenerateCommand(ctx *CommandContext, outputDir string) error {
 			return err
 		}
 		generatorInput := filepath.Join(ctx.languageRepo.Dir, "generator-input")
+		slog.Info("Performing refined generation for library ID", "libraryID", libraryID)
 		return container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
 		slog.Info("No matching library found for - performing raw generation", "flagAPIPath", flagAPIPath)
