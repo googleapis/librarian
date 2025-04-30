@@ -62,7 +62,10 @@ func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePr
 		slog.Error("No new APIs to configure.")
 		return nil, nil
 	} else if !anySuccesses && anyErrors {
-		slog.Error("No PR to create, but errors were logged. Aborting.")
+		slog.Error("No PR to create, but errors were logged (and restated below). Aborting.")
+		for _, error := range content.Errors {
+			slog.Error(error)
+		}
 		return nil, errors.New("errors encountered but no PR to create")
 	} else if anySuccesses && !anyErrors {
 		description = strings.Join(content.Successes, "\n")
