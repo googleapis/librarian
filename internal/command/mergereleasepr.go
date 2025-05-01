@@ -18,6 +18,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -106,6 +107,7 @@ func mergeReleasePRImpl(ctx *CommandContext) error {
 
 	suspectReleases := []SuspectRelease{}
 
+	slog.Info(fmt.Sprintf("Checking %d commits against %d libraries for intervening changes", len(fullBaseCommits), len(releases)))
 	for _, release := range releases {
 		suspectRelease := checkRelease(release, baseHeadState, baselineState, fullBaseCommits)
 		if suspectRelease != nil {
@@ -114,10 +116,15 @@ func mergeReleasePRImpl(ctx *CommandContext) error {
 	}
 
 	if len(suspectReleases) > 0 {
+		// For clarity, we add warnings to both the PR and the log.
 		var builder strings.Builder
-		builder.WriteString("At least one library being released may have changed since release PR creation:\n\n")
+		intro := "At least one library being released may have changed since release PR creation:"
+		builder.WriteString(intro + "\n\n")
+		slog.Warn(intro)
 		for _, suspectRelease := range suspectReleases {
-			builder.WriteString(fmt.Sprintf("%s: %s\n", suspectRelease.LibraryID, suspectRelease.Reason))
+			line := fmt.Sprintf("%s: %s", suspectRelease.LibraryID, suspectRelease.Reason)
+			builder.WriteString(line + "\n")
+			slog.Warn(line)
 		}
 		description := builder.String()
 		if err := githubrepo.AddCommentToPullRequest(ctx.ctx, prRepo, prNumber, description); err != nil {
@@ -125,6 +132,7 @@ func mergeReleasePRImpl(ctx *CommandContext) error {
 		}
 		return errors.New("did not merge release PR due to suspected-changed libraries")
 	} else {
+		slog.Info("No intervening commits detected; merging release PR")
 		if err := githubrepo.RemoveLabelFromPullRequest(ctx.ctx, prRepo, prNumber, "do-not-merge"); err != nil {
 			return err
 		}
@@ -136,6 +144,7 @@ func mergeReleasePRImpl(ctx *CommandContext) error {
 		if err := appendResultEnvironmentVariable(ctx, mergedReleaseCommitEnvVarName, *mergeResult.SHA); err != nil {
 			return err
 		}
+		slog.Info("Release PR merged")
 		return nil
 	}
 }
