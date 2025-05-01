@@ -140,7 +140,7 @@ func createRepoReleases(ctx *CommandContext, releases []LibraryRelease) error {
 
 	for _, release := range releases {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
-		title := fmt.Sprintf("Release %s version %s", release.LibraryID, release.Version)
+		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
 		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
 		repoRelease, err := githubrepo.CreateRelease(ctx.ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
 		if err != nil {
@@ -170,6 +170,17 @@ func parseCommitsForReleases(repo *gitrepo.Repo, releaseID string) ([]LibraryRel
 
 func parseCommitMessageForRelease(message, hash string) (*LibraryRelease, error) {
 	messageLines := strings.Split(message, "\n")
+
+	// Remove the expected "title and blank line" (as we'll have a release title).
+	// We're fairly conservative about this - if the commit message has been manually
+	// changed, we'll leave it as it is.
+	if len(messageLines) > 0 && strings.HasPrefix(messageLines[0], "Release library:") {
+		messageLines = messageLines[1:]
+		if len(messageLines) > 0 && messageLines[0] == "" {
+			messageLines = messageLines[1:]
+		}
+	}
+
 	libraryID, err := findMetadataValue("Librarian-Release-Library", messageLines)
 	if err != nil {
 		return nil, err
@@ -184,7 +195,7 @@ func parseCommitMessageForRelease(message, hash string) (*LibraryRelease, error)
 	}
 	releaseNotesLines := []string{}
 	for _, line := range messageLines {
-		if !strings.HasPrefix("Librarian-Release", line) {
+		if !strings.HasPrefix(line, "Librarian-Release") {
 			releaseNotesLines = append(releaseNotesLines, line)
 		}
 	}
