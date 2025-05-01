@@ -85,16 +85,15 @@ var CmdUpdateApis = &Command{
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		// Take a defensive copy of the generator input directory from the language repo.
-		generatorInput := filepath.Join(ctx.workRoot, "generator-input")
-		if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(ctx.languageRepo.Dir, "generator-input"))); err != nil {
+		// Root for generator-input defensive copies
+		if err := os.Mkdir(filepath.Join(ctx.workRoot, "generator-input"), 0755); err != nil {
 			return err
 		}
 
 		prContent := new(PullRequestContent)
 		// Perform "generate, clean, commit, build" on each library.
 		for _, library := range ctx.pipelineState.Libraries {
-			err := updateLibrary(ctx, apiRepo, generatorInput, outputDir, library, prContent)
+			err := updateLibrary(ctx, apiRepo, outputDir, library, prContent)
 			if err != nil {
 				return err
 			}
@@ -109,7 +108,7 @@ var CmdUpdateApis = &Command{
 	},
 }
 
-func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
+func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
 	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
 
@@ -144,6 +143,15 @@ func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput st
 	// We create an output directory separately for each API.
 	outputDir := filepath.Join(outputRoot, library.Id)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return err
+	}
+
+	// Take a defensive copy of the generator input directory from the language repo.
+	// This needs to be done per library, as the previous iteration may have updated generator-input in a meaningful way.
+	// We could potentially just keep a single copy and update it, but it's clearer diagnostically if we can tell
+	// what state we passed into the container.
+	generatorInput := filepath.Join(ctx.workRoot, "generator-input", library.Id)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(ctx.languageRepo.Dir, "generator-input"))); err != nil {
 		return err
 	}
 
