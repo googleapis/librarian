@@ -8,6 +8,8 @@ require (
 	cloud.google.com/go/secretmanager v1.14.6
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/google/go-github/v69 v69.2.0
+	github.com/googleapis/gax-go/v2 v2.14.1
+	google.golang.org/grpc v1.71.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -32,7 +34,6 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
-	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
@@ -56,6 +57,5 @@ require (
 	google.golang.org/genproto v0.0.0-20250407143221-ac9807e6c755 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250404141209-ee84b53bf3d0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250404141209-ee84b53bf3d0 // indirect
-	google.golang.org/grpc v1.71.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

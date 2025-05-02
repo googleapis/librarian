@@ -16,6 +16,7 @@ package container
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,8 +24,10 @@ import (
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/googleapis/librarian/internal/statepb"
 	"github.com/googleapis/librarian/internal/utils"
+	"google.golang.org/grpc/codes"
 )
 
 // EnvironmentProvider represents configuration for environment
@@ -123,10 +126,16 @@ func getSecretManagerValue(containerEnv *EnvironmentProvider, variable *statepb.
 	request := &secretmanagerpb.AccessSecretVersionRequest{
 		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", containerEnv.secretsProject, variable.SecretName),
 	}
-	// TODO: Maybe handle a missing secret as just missing rather than an error.
 	secret, err := containerEnv.secretManagerClient.AccessSecretVersion(containerEnv.ctx, request)
 	if err != nil {
-		return "", false, err
+		// If the error is that the secret wasn't found, continue to the next source.
+		// Any other error causes a real error to be returned.
+		var ae *apierror.APIError
+		if errors.As(err, &ae) && ae.GRPCStatus().Code() == codes.NotFound {
+			return "", false, nil
+		} else {
+			return "", false, err
+		}
 	}
 	// We assume the payload is valid UTF-8.
 	value = string(secret.Payload.Data[:])
