@@ -40,6 +40,7 @@ var CmdUpdateImageTag = &Command{
 		addFlagPush,
 		addFlagRepoRoot,
 		addFlagRepoUrl,
+		addFlagSecretsProject,
 		addFlagTag,
 	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,

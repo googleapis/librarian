@@ -43,6 +43,7 @@ var CmdUpdateApis = &Command{
 		addFlagPush,
 		addFlagRepoRoot,
 		addFlagRepoUrl,
+		addFlagSecretsProject,
 	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute: func(ctx *CommandContext) error {

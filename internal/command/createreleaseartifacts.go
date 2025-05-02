@@ -46,6 +46,7 @@ var CmdCreateReleaseArtifacts = &Command{
 		addFlagRepoRoot,
 		addFlagRepoUrl,
 		addFlagReleaseID,
+		addFlagSecretsProject,
 	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute:              createReleaseArtifactsImpl,

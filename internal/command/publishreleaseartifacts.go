@@ -36,6 +36,7 @@ var CmdPublishReleaseArtifacts = &Command{
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagLanguage,
+		addFlagSecretsProject,
 		addFlagTagRepoUrl,
 	},
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {

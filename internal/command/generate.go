@@ -37,6 +37,7 @@ var CmdGenerate = &Command{
 		addFlagLanguage,
 		addFlagBuild,
 		addFlagRepoUrl,
+		addFlagSecretsProject,
 	},
 	// By default don't clone a language repo, we will clone later only if library exists in language repo.
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
