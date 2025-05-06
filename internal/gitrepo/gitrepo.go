@@ -438,14 +438,31 @@ func Checkout(repo *Repo, commit string) error {
 }
 
 // Parses the GitHub repo name from the remote for this repository.
-// There must only be a single remote, in order to provide an unambiguous result.
+// There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
+// unambiguous result.
+// Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
 func GetGitHubRepoFromRemote(repo *Repo) (githubrepo.GitHubRepo, error) {
 	remotes, err := repo.repo.Remotes()
 	if err != nil {
 		return githubrepo.GitHubRepo{}, err
 	}
-	if len(remotes) != 1 {
-		return githubrepo.GitHubRepo{}, fmt.Errorf("can only determine the GitHub repo a single remote; number of remotes: %d", len(remotes))
+	gitHubRemoteNames := []string{}
+	gitHubUrl := ""
+	for _, remote := range remotes {
+		urls := remote.Config().URLs
+		if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
+			gitHubRemoteNames = append(gitHubRemoteNames, remote.Config().Name)
+			gitHubUrl = urls[0]
+		}
 	}
-	return githubrepo.ParseUrl(remotes[0].Config().URLs[0])
+
+	if len(gitHubRemoteNames) == 0 {
+		return githubrepo.GitHubRepo{}, fmt.Errorf("no GitHub remotes found")
+	}
+
+	if len(gitHubRemoteNames) > 1 {
+		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
+		return githubrepo.GitHubRepo{}, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
+	}
+	return githubrepo.ParseUrl(gitHubUrl)
 }
