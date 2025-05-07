@@ -15,7 +15,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -27,11 +26,6 @@ import (
 const (
 	pollInterval = 60 * time.Second
 )
-
-// CommitInfo represents the structure of a Gerrit commit object (simplified)
-type CommitInfo struct {
-	Commit string `json:"commit"`
-}
 
 func main() {
 	gerritRepoURL := flag.String("repo-url", "", "Gerrit repo to check for commit (required)")
@@ -84,13 +78,6 @@ func checkCommitExistsInGerrit(repoUrl string, authToken string, commitHash stri
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
-		// The commit likely exists. We can try to decode a minimal response to confirm.
-		var commitInfo CommitInfo
-		err = json.NewDecoder(resp.Body).Decode(&commitInfo)
-		if err == nil && commitInfo.Commit == commitHash {
-			return true, nil
-		}
-		// Even if decoding fails, a 200 OK suggests the commit is there in some form.
 		return true, nil
 	} else if resp.StatusCode == http.StatusNotFound {
 		return false, nil
