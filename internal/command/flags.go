@@ -38,6 +38,7 @@ var (
 	flagImage          string
 	flagLanguage       string
 	flagLibraryID      string
+	flagLibraryVersion string
 	flagPush           bool
 	flagReleaseID      string
 	flagReleasePRUrl   string
@@ -92,6 +93,10 @@ func addFlagLanguage(fs *flag.FlagSet) {
 
 func addFlagLibraryID(fs *flag.FlagSet) {
 	fs.StringVar(&flagLibraryID, "library-id", "", "The ID of a single library to update")
+}
+
+func addFlagLibraryVersion(fs *flag.FlagSet) {
+	fs.StringVar(&flagLibraryVersion, "library-version", "", "The version to release (only valid with library-id, only when creating a release PR)")
 }
 
 func addFlagPush(fs *flag.FlagSet) {

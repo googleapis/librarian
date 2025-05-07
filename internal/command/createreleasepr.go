@@ -45,6 +45,7 @@ var CmdCreateReleasePR = &Command{
 		addFlagWorkRoot,
 		addFlagLanguage,
 		addFlagLibraryID,
+		addFlagLibraryVersion,
 		addFlagPush,
 		addFlagGitUserEmail,
 		addFlagGitUserName,
@@ -57,6 +58,10 @@ var CmdCreateReleasePR = &Command{
 	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {
 			return err
+		}
+
+		if flagLibraryVersion != "" && flagLibraryID == "" {
+			return fmt.Errorf("flag -library-version is not valid without -library-id")
 		}
 
 		inputDirectory := filepath.Join(ctx.workRoot, "inputs")
@@ -188,8 +193,9 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 				}
 			}
 
-			// Update the pipeline state to record what we've released and when.
+			// Update the pipeline state to record what we've released and when, and to clear the next version field.
 			library.CurrentVersion = releaseVersion
+			library.NextVersion = ""
 			library.LastReleasedCommit = library.LastGeneratedCommit
 			library.ReleaseTimestamp = timestamppb.Now()
 
@@ -254,6 +260,9 @@ func maybeAppendReleaseNotesSection(builder *strings.Builder, description string
 }
 
 func calculateNextVersion(library *statepb.LibraryState) (string, error) {
+	if flagLibraryVersion != "" {
+		return flagLibraryVersion, nil
+	}
 	if library.NextVersion != "" {
 		return library.NextVersion, nil
 	}
