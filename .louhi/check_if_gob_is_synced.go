@@ -40,7 +40,7 @@ func main() {
 
 	flag.Parse()
 
-	if *gerritRepoURL == "" || *gerritAuthToken == "" || *prNumber == 0*gitRepo == "" || *gitOwner == "" {
+	if *gerritRepoURL == "" || *gerritAuthToken == "" || *prNumber == 0 || *gitRepo == "" || *gitOwner == "" {
 		fmt.Println("Usage: go run check_if_gob_is_synced.go -gerrit-repo-url <Gerrit repo to check for commit> -auth-token <Authorization token for gerrit repo> -pr-number <pr to check if synced to gerrit> -git-repo <GitHub repo pr belongs to> -git-owner <GitHub owner>")
 		flag.PrintDefaults()
 		os.Exit(1)
