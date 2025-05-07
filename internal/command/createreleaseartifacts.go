@@ -47,12 +47,16 @@ var CmdCreateReleaseArtifacts = &Command{
 		addFlagRepoUrl,
 		addFlagReleaseID,
 		addFlagSecretsProject,
+		addFlagSkipIntegrationTests,
 	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute:              createReleaseArtifactsImpl,
 }
 
 func createReleaseArtifactsImpl(ctx *CommandContext) error {
+	if err := validateSkipIntegrationTests(); err != nil {
+		return err
+	}
 	if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
 		return err
 	}
@@ -95,7 +99,9 @@ func buildTestPackageRelease(ctx *CommandContext, outputRoot string, release Lib
 	if err := container.BuildLibrary(containerConfig, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
-	if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, release.LibraryID); err != nil {
+	if flagSkipIntegrationTests != "" {
+		slog.Info(fmt.Sprintf("Skipping integration tests: %s", flagSkipIntegrationTests))
+	} else if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)

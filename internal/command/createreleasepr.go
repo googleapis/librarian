@@ -50,12 +50,15 @@ var CmdCreateReleasePR = &Command{
 		addFlagGitUserEmail,
 		addFlagGitUserName,
 		addFlagRepoRoot,
-		addFlagSkipBuild,
+		addFlagSkipIntegrationTests,
 		addFlagEnvFile,
 		addFlagRepoUrl,
 	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
 	execute: func(ctx *CommandContext) error {
+		if err := validateSkipIntegrationTests(); err != nil {
+			return err
+		}
 		if err := validatePush(); err != nil {
 			return err
 		}
@@ -179,23 +182,22 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			}
 			continue
 		}
-		// TODO: make this configurable so we don't have to run per library
-		if !flagSkipBuild {
-			if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
-				addErrorToPullRequest(pr, library.Id, err, "building/testing library")
-				// Clean up any changes before starting the next iteration.
-				if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
-					return nil, err
-				}
-				continue
+		if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
+			addErrorToPullRequest(pr, library.Id, err, "building/testing library")
+			// Clean up any changes before starting the next iteration.
+			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+				return nil, err
 			}
-			if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
-				addErrorToPullRequest(pr, library.Id, err, "integration testing library")
-				if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
-					return nil, err
-				}
-				continue
+			continue
+		}
+		if flagSkipIntegrationTests != "" {
+			slog.Info(fmt.Sprintf("Skipping integration tests: %s", flagSkipIntegrationTests))
+		} else if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
+			addErrorToPullRequest(pr, library.Id, err, "integration testing library")
+			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+				return nil, err
 			}
+			continue
 		}
 
 		// Update the pipeline state to record what we've released and when, and to clear the next version field.

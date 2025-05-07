@@ -18,6 +18,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/githubrepo"
 )
@@ -27,29 +28,29 @@ import (
 const defaultRepositoryEnvironmentVariable string = "LIBRARIAN_REPOSITORY"
 
 var (
-	flagAPIPath        string
-	flagAPIRoot        string
-	flagArtifactRoot   string
-	flagBaselineCommit string
-	flagBranch         string
-	flagBuild          bool
-	flagEnvFile        string
-	flagGitUserEmail   string
-	flagGitUserName    string
-	flagImage          string
-	flagLanguage       string
-	flagLibraryID      string
-	flagLibraryVersion string
-	flagPush           bool
-	flagReleaseID      string
-	flagReleasePRUrl   string
-	flagRepoRoot       string
-	flagRepoUrl        string
-	flagSecretsProject string
-	flagSkipBuild      bool
-	flagTag            string
-	flagTagRepoUrl     string
-	flagWorkRoot       string
+	flagAPIPath              string
+	flagAPIRoot              string
+	flagArtifactRoot         string
+	flagBaselineCommit       string
+	flagBranch               string
+	flagBuild                bool
+	flagEnvFile              string
+	flagGitUserEmail         string
+	flagGitUserName          string
+	flagImage                string
+	flagLanguage             string
+	flagLibraryID            string
+	flagLibraryVersion       string
+	flagPush                 bool
+	flagReleaseID            string
+	flagReleasePRUrl         string
+	flagRepoRoot             string
+	flagRepoUrl              string
+	flagSecretsProject       string
+	flagSkipIntegrationTests string
+	flagTag                  string
+	flagTagRepoUrl           string
+	flagWorkRoot             string
 )
 
 func addFlagAPIPath(fs *flag.FlagSet) {
@@ -127,8 +128,8 @@ func addFlagSecretsProject(fs *flag.FlagSet) {
 	fs.StringVar(&flagSecretsProject, "secrets-project", "", "Project containing Secret Manager secrets.")
 }
 
-func addFlagSkipBuild(fs *flag.FlagSet) {
-	fs.BoolVar(&flagSkipBuild, "skipBuild", false, "when create release PR if this is set to true do not perform build/integration tests")
+func addFlagSkipIntegrationTests(fs *flag.FlagSet) {
+	fs.StringVar(&flagSkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
 }
 
 func addFlagTag(fs *flag.FlagSet) {
@@ -166,6 +167,13 @@ func validatePush() error {
 func validateLanguage() error {
 	if !supportedLanguages[flagLanguage] {
 		return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
+	}
+	return nil
+}
+
+func validateSkipIntegrationTests() error {
+	if flagSkipIntegrationTests != "" && !strings.HasPrefix(flagSkipIntegrationTests, "b/") {
+		return errors.New("skipping integration tests requires a bug to be specified, e.g. -skip-integration-tests=b/12345")
 	}
 	return nil
 }
