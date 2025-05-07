@@ -16,6 +16,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,28 +34,32 @@ type CommitInfo struct {
 }
 
 func main() {
-	if len(os.Args) != 4 {
-		fmt.Println("Usage: go run check_if_gob_is_synced.go <gerrit_repo_url> <token> <commit_hash>")
+	gerritRepoURL := flag.String("repo-url", "", "Gerrit repo to check for commit (required)")
+	gerritAuthToken := flag.String("auth-token", "", "Authorization token for gerrit repo (required)")
+	commitHash := flag.String("commit-hash", "", "Commit hash to check for (required)")
+
+	flag.Parse()
+
+	if *gerritRepoURL == "" || *gerritAuthToken == "" || *commitHash == "" {
+		fmt.Println("Usage: go run main.go -pr-number <pr number to check> -repo <repo> -owner <owner> -status-check <merged|mergeable>")
+		flag.PrintDefaults()
 		os.Exit(1)
 	}
-
-	gerritRepoURL := os.Args[1]
-	gerritAuthToken := os.Args[2]
-	commitHash := os.Args[3]
 
 	// Check if the commit exists in the Gerrit repository, if not and no error, sleep for pollInterval
 	// and check again.
 	for {
-		exists, err := checkCommitExistsInGerrit(gerritRepoURL, gerritAuthToken, commitHash)
+		exists, err := checkCommitExistsInGerrit(*gerritRepoURL, *gerritAuthToken, *commitHash)
 		if err != nil {
 			fmt.Printf("Error checking commit in Gerrit: %v\n", err)
 			os.Exit(1)
 		}
 
 		if exists {
-			fmt.Printf("Commit '%s' exists in the Gerrit repository.\n", commitHash)
+			fmt.Printf("Commit '%s' exists in the Gerrit repository.\n", *commitHash)
+			os.Exit(0)
 		} else {
-			fmt.Printf("Commit '%s' does NOT exist in the Gerrit repository. Sleeping for 30 seconds\n", commitHash)
+			fmt.Printf("Commit '%s' does NOT exist in the Gerrit repository. Sleeping for %f seconds\n", *commitHash, pollInterval.Seconds())
 			time.Sleep(pollInterval)
 		}
 	}
@@ -62,7 +67,8 @@ func main() {
 
 // checkCommitExistsInGerrit uses the Gerrit API to check if a commit exists.
 func checkCommitExistsInGerrit(repoUrl string, authToken string, commitHash string) (bool, error) {
-	url := fmt.Sprintf("%s/changes/%s", repoUrl, commitHash)
+	url := fmt.Sprintf("%s/+/%s", repoUrl, commitHash)
+	fmt.Printf("Checking Gerrit URL: %s\n", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return false, fmt.Errorf("error creating HTTP request: %v", err)
