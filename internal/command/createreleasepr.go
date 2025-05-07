@@ -156,7 +156,8 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 		}
 
 		// If nothing release-worthy has happened, just continue to the next library.
-		if len(commitMessages) == 0 || !isReleaseWorthy(commitMessages, library.Id) {
+		// (But if we've been asked to release a specific library, we force-release it anyway.)
+		if flagLibraryID == "" && (len(commitMessages) == 0 || !isReleaseWorthy(commitMessages, library.Id)) {
 			continue
 		}
 
@@ -240,8 +241,7 @@ func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	maybeAppendReleaseNotesSection(&builder, "Documentation improvements", docs)
 
 	if builder.Len() == 0 {
-		// TODO: Work out something rather better than this...
-		builder.WriteString("No specific release notes.")
+		builder.WriteString("FIXME: Forced release with no commit messages; please write release notes.")
 	}
 	return builder.String()
 }
