@@ -27,8 +27,7 @@ import (
 )
 
 const (
-	pollInterval       = 60 * time.Second
-	mergedCommitEnvVar = "_MERGED_COMMIT_SHA"
+	pollInterval = 60 * time.Second
 )
 
 // checkPRStatus checks the status of a PR until it is merged or mergeable.
@@ -49,7 +48,6 @@ func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck 
 		if statusCheck == "merged" {
 			if pr.GetMerged() {
 				slog.Info("PR is merged")
-				os.Setenv(mergedCommitEnvVar, pr.GetMergeCommitSHA())
 				return
 			} else {
 				slog.Info("PR not merged, will try again", "merge status", pr.GetMerged())
