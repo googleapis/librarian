@@ -1,26 +1,31 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
-	"strings"
+	"time"
 )
 
-// GerritConfig holds the Gerrit API configuration
-type GerritConfig struct {
-	BaseURL string
-	token   string
-}
-
-// GitConfig holds the local Git repository path
-type GitConfig struct {
-	RepoPath string
-}
+const (
+	pollInterval = 60 * time.Second
+)
 
 // CommitInfo represents the structure of a Gerrit commit object (simplified)
 type CommitInfo struct {
@@ -29,71 +34,41 @@ type CommitInfo struct {
 
 func main() {
 	if len(os.Args) != 4 {
-		fmt.Println("Usage: go run check_if_gob_is_synced.go <gerrit_repo_url> <token> <git_repo_path>")
+		fmt.Println("Usage: go run check_if_gob_is_synced.go <gerrit_repo_url> <token> <commit_hash>")
 		os.Exit(1)
 	}
 
 	gerritRepoURL := os.Args[1]
 	gerritAuthToken := os.Args[2]
-	gitRepoPath := os.Args[3]
+	commitHash := os.Args[3]
 
-	// Configure Gerrit access (you might want to get these from environment variables or a config file)
-	gerritConfig := GerritConfig{
-		BaseURL: strings.TrimSuffix(gerritRepoURL, "/"), // Ensure no trailing slash
-		token:   gerritAuthToken,
-	}
+	// Check if the commit exists in the Gerrit repository, if not and no error, sleep for pollInterval
+	// and check again.
+	for {
+		exists, err := checkCommitExistsInGerrit(gerritRepoURL, gerritAuthToken, commitHash)
+		if err != nil {
+			fmt.Printf("Error checking commit in Gerrit: %v\n", err)
+			os.Exit(1)
+		}
 
-	// Configure Git repository path
-	gitConfig := GitConfig{
-		RepoPath: gitRepoPath,
+		if exists {
+			fmt.Printf("Commit '%s' exists in the Gerrit repository.\n", commitHash)
+		} else {
+			fmt.Printf("Commit '%s' does NOT exist in the Gerrit repository. Sleeping for 30 seconds\n", commitHash)
+			time.Sleep(pollInterval)
+		}
 	}
-
-	// Fetch the latest commit hash from the Git repository
-	latestCommitHash, err := getLatestGitCommit(gitConfig)
-	if err != nil {
-		fmt.Printf("Error getting latest Git commit: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("Latest Git commit hash: %s\n", latestCommitHash)
-
-	// Check if the commit exists in the Gerrit repository
-	exists, err := checkCommitExistsInGerrit(gerritConfig, latestCommitHash)
-	if err != nil {
-		fmt.Printf("Error checking commit in Gerrit: %v\n", err)
-		os.Exit(1)
-	}
-
-	if exists {
-		fmt.Printf("Commit '%s' exists in the Gerrit repository.\n", latestCommitHash)
-	} else {
-		fmt.Printf("Commit '%s' does NOT exist in the Gerrit repository.\n", latestCommitHash)
-	}
-}
-
-// getLatestGitCommit executes a Git command to get the latest commit hash.
-func getLatestGitCommit(config GitConfig) (string, error) {
-	cmd := exec.Command("git", "rev-parse", "HEAD")
-	cmd.Dir = config.RepoPath
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("error running git rev-parse: %v", err)
-	}
-	return strings.TrimSpace(out.String()), nil
 }
 
 // checkCommitExistsInGerrit uses the Gerrit API to check if a commit exists.
-func checkCommitExistsInGerrit(config GerritConfig, commitHash string) (bool, error) {
-	url := fmt.Sprintf("%s/changes/%s", config.BaseURL, commitHash)
+func checkCommitExistsInGerrit(repoUrl string, authToken string, commitHash string) (bool, error) {
+	url := fmt.Sprintf("%s/changes/%s", repoUrl, commitHash)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return false, fmt.Errorf("error creating HTTP request: %v", err)
 	}
 
-	if config.Username != "" && config.Password != "" {
-		req.Header.Add("Authorization", "Bearer "+config.token)
-	}
+	req.Header.Add("Authorization", "Bearer "+authToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

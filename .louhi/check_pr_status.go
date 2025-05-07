@@ -48,6 +48,7 @@ func checkPRStatus(prNumber int, repoOwner string, repoName string, statusCheck 
 		if statusCheck == "merged" {
 			if pr.GetMerged() {
 				slog.Info("PR is merged")
+				os.Setenv("_MERGED_COMMIT_SHA", pr.GetMergeCommitSHA())
 				return
 			} else {
 				slog.Info("PR not merged, will try again", "merge status", pr.GetMerged())
