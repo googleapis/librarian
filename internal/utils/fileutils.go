@@ -15,8 +15,18 @@
 package utils
 
 import (
+	"io"
 	"os"
 )
+
+func ReadAllBytesFromFile(filePath string) ([]byte, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return io.ReadAll(file)
+}
 
 // AppendToFile writes the content to a file in the specified filePath.
 // It creates the file if it does not exist, otherwise it appends to existing file.
@@ -40,8 +50,27 @@ func CreateAndWriteToFile(filePath string, content string) error {
 	return writeContentToFile(*file, content)
 }
 
+// CreateAndWriteBytesToFile creates a file with the specified name and content.
+// It will truncate the file if it already exists.
+func CreateAndWriteBytesToFile(filePath string, content []byte) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return writeBytesToFile(*file, content)
+}
+
 func writeContentToFile(file os.File, content string) error {
 	_, err := file.WriteString(content)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeBytesToFile(file os.File, content []byte) error {
+	_, err := file.Write(content)
 	if err != nil {
 		return err
 	}

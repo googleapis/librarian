@@ -15,7 +15,7 @@
 package command
 
 import (
-	"errors"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -24,8 +24,8 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/container"
-	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/utils"
 )
 
 type LibraryRelease struct {
@@ -36,64 +36,52 @@ type LibraryRelease struct {
 	ReleaseNotes string
 }
 
-var CmdRelease = &Command{
-	Name:  "release",
-	Short: "Release libraries from a merged release PR",
+var CmdCreateReleaseArtifacts = &Command{
+	Name:  "create-release-artifacts",
+	Short: "Create release artifacts from a merged release PR",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagLanguage,
-		addFlagPush,
 		addFlagRepoRoot,
 		addFlagRepoUrl,
 		addFlagReleaseID,
-		addFlagTagRepoUrl,
 	},
 	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
-	execute: func(ctx *CommandContext) error {
-		if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
+	execute:              createReleaseArtifactsImpl,
+}
+
+func createReleaseArtifactsImpl(ctx *CommandContext) error {
+	if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
+		return err
+	}
+
+	outputRoot := filepath.Join(ctx.workRoot, "output")
+	if err := os.Mkdir(outputRoot, 0755); err != nil {
+		return err
+	}
+	slog.Info(fmt.Sprintf("Packages will be created in %s", outputRoot))
+
+	releases, err := parseCommitsForReleases(ctx.languageRepo, flagReleaseID)
+	if err != nil {
+		return err
+	}
+
+	for _, release := range releases {
+		if err := buildTestPackageRelease(ctx, outputRoot, release); err != nil {
 			return err
 		}
+	}
 
-		if err := validatePush(); err != nil {
-			return err
-		}
+	// Save the release details in the output directory, so that's all way need later.
+	releasesJson, err := json.Marshal(releases)
+	if err != nil {
+		return err
+	}
+	utils.CreateAndWriteBytesToFile(filepath.Join(outputRoot, "releases.json"), releasesJson)
 
-		if flagPush && flagTagRepoUrl == "" {
-			return errors.New("flag -tag-repo-url is required when -push is true")
-		}
-
-		outputRoot := filepath.Join(ctx.workRoot, "output")
-		if err := os.Mkdir(outputRoot, 0755); err != nil {
-			return err
-		}
-		slog.Info(fmt.Sprintf("Packages will be created in %s", outputRoot))
-
-		releases, err := parseCommitsForReleases(ctx.languageRepo, flagReleaseID)
-		if err != nil {
-			return err
-		}
-
-		for _, release := range releases {
-			if err := buildTestPackageRelease(ctx, outputRoot, release); err != nil {
-				return err
-			}
-		}
-
-		if flagPush {
-			if err := publishPackages(ctx.containerConfig, outputRoot, releases); err != nil {
-				return err
-			}
-			if err := createRepoReleases(ctx, releases); err != nil {
-				return err
-			}
-		} else {
-			slog.Info("Push flag not specified; not publishing packages")
-		}
-		slog.Info("Release complete.")
-
-		return nil
-	},
+	slog.Info(fmt.Sprintf("Release artifact creation complete. Artifact root: %s", outputRoot))
+	return nil
 }
 
 func buildTestPackageRelease(ctx *CommandContext, outputRoot string, release LibraryRelease) error {
@@ -116,39 +104,6 @@ func buildTestPackageRelease(ctx *CommandContext, outputRoot string, release Lib
 	if err := container.PackageLibrary(containerConfig, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
 		return err
 	}
-	return nil
-}
-
-func publishPackages(config *container.ContainerConfig, outputRoot string, releases []LibraryRelease) error {
-	for _, release := range releases {
-		outputDir := filepath.Join(outputRoot, release.LibraryID)
-		if err := container.PublishLibrary(config, outputDir, release.LibraryID, release.Version); err != nil {
-			return err
-		}
-	}
-	slog.Info("All packages published.")
-	return nil
-}
-
-func createRepoReleases(ctx *CommandContext, releases []LibraryRelease) error {
-	repoUrl := flagTagRepoUrl
-
-	gitHubRepo, err := githubrepo.ParseUrl(repoUrl)
-	if err != nil {
-		return err
-	}
-
-	for _, release := range releases {
-		tag := formatReleaseTag(release.LibraryID, release.Version)
-		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
-		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := githubrepo.CreateRelease(ctx.ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
-		if err != nil {
-			return err
-		}
-		slog.Info(fmt.Sprintf("Created repo release '%s' with tag '%s'", *repoRelease.Name, *repoRelease.TagName))
-	}
-	slog.Info("All repo releases created.")
 	return nil
 }
 

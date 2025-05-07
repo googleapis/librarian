@@ -336,8 +336,9 @@ var Commands = []*Command{
 	CmdUpdateApis,
 	CmdCreateReleasePR,
 	CmdUpdateImageTag,
-	CmdRelease,
 	CmdMergeReleasePR,
+	CmdCreateReleaseArtifacts,
+	CmdPublishReleaseArtifacts,
 }
 
 func init() {

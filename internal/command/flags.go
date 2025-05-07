@@ -29,6 +29,7 @@ const defaultRepositoryEnvironmentVariable string = "LIBRARIAN_REPOSITORY"
 var (
 	flagAPIPath        string
 	flagAPIRoot        string
+	flagArtifactRoot   string
 	flagBaselineCommit string
 	flagBranch         string
 	flagBuild          bool
@@ -58,6 +59,9 @@ func addFlagAPIRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagAPIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to the work-root")
 }
 
+func addFlagArtifactRoot(fs *flag.FlagSet) {
+	fs.StringVar(&flagArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
+}
 func addFlagBaselineCommit(fs *flag.FlagSet) {
 	fs.StringVar(&flagBaselineCommit, "baseline-commit", "", "the commit hash that was at HEAD for the language repo when create-release-pr was run")
 }
