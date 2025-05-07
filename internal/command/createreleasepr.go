@@ -214,7 +214,8 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 		addSuccessToPullRequest(pr, releaseDescription)
 		// Metadata for easy extraction later.
 		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
-		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s\n\n%s", releaseDescription, releaseNotes, metadata))
+		// Note that releaseDescription will already end with two line breaks, so we don't need any more before the metadata.
+		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata))
 		if err != nil {
 			return nil, err
 		}
@@ -243,7 +244,7 @@ func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	maybeAppendReleaseNotesSection(&builder, "Documentation improvements", docs)
 
 	if builder.Len() == 0 {
-		builder.WriteString("FIXME: Forced release with no commit messages; please write release notes.")
+		builder.WriteString("FIXME: Forced release with no commit messages; please write release notes.\n\n")
 	}
 	return builder.String()
 }
@@ -259,6 +260,11 @@ func maybeAppendReleaseNotesSection(builder *strings.Builder, description string
 	}
 	fmt.Fprintf(builder, "### %s\n\n", description)
 	for _, line := range lines {
+		if len(line) > 1 {
+			// This assumes the first character is ASCII, but that's reasonable for all our
+			// actual use cases.
+			line = strings.ToUpper(line[0:1]) + line[1:]
+		}
 		fmt.Fprintf(builder, "- %s\n", line)
 	}
 	builder.WriteString("\n")

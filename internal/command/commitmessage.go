@@ -87,19 +87,26 @@ func ParseCommit(commit object.Commit) *CommitMessage {
 		case "feat":
 			slice = &features
 		case "doc":
+			slice = &docs
 		case "docs":
 			slice = &docs
-		case "fixes":
+		case "fix":
 			slice = &fixes
+		// Conventional commit type we know about, but don't keep.
+		// TODO: Maybe we should keep deps?
 		case "refactor":
+			slice = nil
 		case "tools":
+			slice = nil
 		case "chore":
+			slice = nil
 		case "test":
+			slice = nil
 		case "tests":
+			slice = nil
 		case "deps":
+			slice = nil
 		case "regen":
-			// Conventional commit type we know about, but don't keep.
-			// TODO: Maybe we should keep deps?
 			slice = nil
 		default:
 			// Not a conventional commit line (that we recognise, anyway) - ignore it
