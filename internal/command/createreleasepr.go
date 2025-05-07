@@ -271,6 +271,9 @@ func calculateNextVersion(library *statepb.LibraryState) (string, error) {
 	if library.NextVersion != "" {
 		return library.NextVersion, nil
 	}
+	if library.CurrentVersion == "" {
+		return "", fmt.Errorf("cannot determine new version for %s; no current version", library.Id)
+	}
 	current, err := semver.StrictNewVersion(library.CurrentVersion)
 	if err != nil {
 		return "", err
