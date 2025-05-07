@@ -34,9 +34,9 @@ const (
 func main() {
 	gerritRepoURL := flag.String("gerrit-repo-url", "", "Gerrit repo to check for commit (required)")
 	gerritAuthToken := flag.String("auth-token", "", "Authorization token for gerrit repo (required)")
-	prNumber := flag.Int("pr-number", 0, "Commit hash to check for (required)")
-	gitRepo := flag.String("git-repo", "", "Commit hash to check for (required)")
-	gitOwner := flag.String("git-owner", "", "Commit hash to check for (required)")
+	prNumber := flag.Int("pr-number", 0, "PR number to check if merged in gerrit (required)")
+	gitRepo := flag.String("git-repo", "", "Git repo for PR (required)")
+	gitOwner := flag.String("git-owner", "", "Git owner for PR (required)")
 
 	flag.Parse()
 
