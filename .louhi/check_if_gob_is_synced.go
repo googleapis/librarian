@@ -35,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	if *gerritRepoURL == "" || *gerritAuthToken == "" || *commitHash == "" {
-		fmt.Println("Usage: go run main.go -pr-number <pr number to check> -repo <repo> -owner <owner> -status-check <merged|mergeable>")
+		fmt.Println("Usage: go run check_if_gob_is_synced.go -repo-url <Gerrit repo to check for commit> -auth-token <Authorization token for gerrit repo> -commit-hash <Commit hash to check for>")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
