@@ -64,6 +64,10 @@ var CmdCreateReleasePR = &Command{
 			return fmt.Errorf("flag -library-version is not valid without -library-id")
 		}
 
+		if flagLibraryID != "" && findLibraryByID(ctx.pipelineState, flagLibraryID) == nil {
+			return fmt.Errorf("no such library: %s", flagLibraryID)
+		}
+
 		inputDirectory := filepath.Join(ctx.workRoot, "inputs")
 		if err := os.Mkdir(inputDirectory, 0755); err != nil {
 			slog.Error("Failed to create input directory")
@@ -88,10 +92,6 @@ var CmdCreateReleasePR = &Command{
 		prContent, err := generateReleaseCommitForEachLibrary(ctx, inputDirectory, releaseID)
 		if err != nil {
 			return err
-		}
-
-		if flagLibraryID != "" && len(prContent.Successes) != 1 {
-			return fmt.Errorf("library-id flag specified as '%s' but %d releases were created", flagLibraryID, len(prContent.Successes))
 		}
 
 		prMetadata, err := createPullRequest(ctx, prContent, "chore: Library release", "release")
@@ -155,62 +155,65 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			commitMessages = append(commitMessages, ParseCommit(commit))
 		}
 
-		if len(commitMessages) > 0 && isReleaseWorthy(commitMessages, library.Id) {
-			releaseVersion, err := calculateNextVersion(library)
-			if err != nil {
+		// If nothing release-worthy has happened, just continue to the next library.
+		if len(commitMessages) == 0 || !isReleaseWorthy(commitMessages, library.Id) {
+			continue
+		}
+
+		releaseVersion, err := calculateNextVersion(library)
+		if err != nil {
+			return nil, err
+		}
+
+		releaseNotes := formatReleaseNotes(commitMessages)
+		if err = createReleaseNotesFile(inputDirectory, library.Id, releaseVersion, releaseNotes); err != nil {
+			return nil, err
+		}
+
+		if err := container.PrepareLibraryRelease(containerConfig, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
+			addErrorToPullRequest(pr, library.Id, err, "preparing library release")
+			// Clean up any changes before starting the next iteration.
+			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 				return nil, err
 			}
-
-			releaseNotes := formatReleaseNotes(commitMessages)
-			if err = createReleaseNotesFile(inputDirectory, library.Id, releaseVersion, releaseNotes); err != nil {
-				return nil, err
-			}
-
-			if err := container.PrepareLibraryRelease(containerConfig, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
-				addErrorToPullRequest(pr, library.Id, err, "preparing library release")
+			continue
+		}
+		// TODO: make this configurable so we don't have to run per library
+		if !flagSkipBuild {
+			if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
+				addErrorToPullRequest(pr, library.Id, err, "building/testing library")
 				// Clean up any changes before starting the next iteration.
 				if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 					return nil, err
 				}
 				continue
 			}
-			// TODO: make this configurable so we don't have to run per library
-			if !flagSkipBuild {
-				if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
-					addErrorToPullRequest(pr, library.Id, err, "building/testing library")
-					// Clean up any changes before starting the next iteration.
-					if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
-						return nil, err
-					}
-					continue
+			if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
+				addErrorToPullRequest(pr, library.Id, err, "integration testing library")
+				if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+					return nil, err
 				}
-				if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
-					addErrorToPullRequest(pr, library.Id, err, "integration testing library")
-					if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
-						return nil, err
-					}
-					continue
-				}
+				continue
 			}
+		}
 
-			// Update the pipeline state to record what we've released and when, and to clear the next version field.
-			library.CurrentVersion = releaseVersion
-			library.NextVersion = ""
-			library.LastReleasedCommit = library.LastGeneratedCommit
-			library.ReleaseTimestamp = timestamppb.Now()
+		// Update the pipeline state to record what we've released and when, and to clear the next version field.
+		library.CurrentVersion = releaseVersion
+		library.NextVersion = ""
+		library.LastReleasedCommit = library.LastGeneratedCommit
+		library.ReleaseTimestamp = timestamppb.Now()
 
-			if err = savePipelineState(ctx); err != nil {
-				return nil, err
-			}
+		if err = savePipelineState(ctx); err != nil {
+			return nil, err
+		}
 
-			releaseDescription := fmt.Sprintf("Release library: %s version %s", library.Id, releaseVersion)
-			addSuccessToPullRequest(pr, releaseDescription)
-			// Metadata for easy extraction later.
-			metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
-			err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s\n\n%s", releaseDescription, releaseNotes, metadata))
-			if err != nil {
-				return nil, err
-			}
+		releaseDescription := fmt.Sprintf("Release library: %s version %s", library.Id, releaseVersion)
+		addSuccessToPullRequest(pr, releaseDescription)
+		// Metadata for easy extraction later.
+		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
+		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s\n\n%s", releaseDescription, releaseNotes, metadata))
+		if err != nil {
+			return nil, err
 		}
 	}
 	return pr, nil
