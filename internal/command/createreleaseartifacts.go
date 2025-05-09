@@ -143,15 +143,15 @@ func parseCommitMessageForRelease(message, hash string) (*LibraryRelease, error)
 		}
 	}
 
-	libraryID, err := findMetadataValue("Librarian-Release-Library", messageLines)
+	libraryID, err := findMetadataValue("Librarian-Release-Library", messageLines, hash)
 	if err != nil {
 		return nil, err
 	}
-	version, err := findMetadataValue("Librarian-Release-Version", messageLines)
+	version, err := findMetadataValue("Librarian-Release-Version", messageLines, hash)
 	if err != nil {
 		return nil, err
 	}
-	releaseID, err := findMetadataValue("Librarian-Release-ID", messageLines)
+	releaseID, err := findMetadataValue("Librarian-Release-ID", messageLines, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -171,12 +171,12 @@ func parseCommitMessageForRelease(message, hash string) (*LibraryRelease, error)
 	}, nil
 }
 
-func findMetadataValue(key string, lines []string) (string, error) {
+func findMetadataValue(key string, lines []string, hash string) (string, error) {
 	prefix := key + ": "
 	for _, line := range lines {
 		if strings.HasPrefix(line, prefix) {
 			return line[len(prefix):], nil
 		}
 	}
-	return "", fmt.Errorf("unable to find metadata value for key '%s'", key)
+	return "", fmt.Errorf("unable to find metadata value for key '%s' in commit %s", key, hash)
 }
