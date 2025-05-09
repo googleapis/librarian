@@ -335,20 +335,25 @@ func GetCommitsForReleaseID(repo *Repo, releaseID string) ([]object.Commit, erro
 		return nil, err
 	}
 
+	slog.Info(fmt.Sprintf("Looking for release ID '%s'", releaseID))
+
 	// Iterate from the head via parents:
 	// - First until we find a commit that *does* have our expected release ID line
 	// - Then until we find a commit that *doesn't* have our expected line
 	// This way we don't require that the repo HEAD is the merged release PR.
 	candidateCommit := headCommit
 	for {
+		slog.Info(fmt.Sprintf("Looking for release ID in candidate commit '%s'", candidateCommit.Hash.String()))
 		messageLines := strings.Split(candidateCommit.Message, "\n")
 		gotReleaseID := slices.Contains(messageLines, releaseIDLine)
 		// If we now don't have the release ID, but we did before, we're done.
 		if !gotReleaseID && len(commits) > 0 {
+			slog.Info(fmt.Sprintf("Release ID not present in candidate commit '%s'", candidateCommit.Hash.String()))
 			break
 		}
 
 		if gotReleaseID {
+			slog.Info(fmt.Sprintf("Found release ID in commit '%s'", candidateCommit.Hash.String()))
 			commits = append(commits, *candidateCommit)
 		}
 
