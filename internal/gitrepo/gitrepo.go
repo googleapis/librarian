@@ -335,17 +335,22 @@ func GetCommitsForReleaseID(repo *Repo, releaseID string) ([]object.Commit, erro
 		return nil, err
 	}
 
-	// Iterate from the head via parents, until we find a commit that doesn't
-	// have our expected line in the message.
+	// Iterate from the head via parents:
+	// - First until we find a commit that *does* have our expected release ID line
+	// - Then until we find a commit that *doesn't* have our expected line
+	// This way we don't require that the repo HEAD is the merged release PR.
 	candidateCommit := headCommit
 	for {
 		messageLines := strings.Split(candidateCommit.Message, "\n")
 		gotReleaseID := slices.Contains(messageLines, releaseIDLine)
-		if !gotReleaseID {
+		// If we now don't have the release ID, but we did before, we're done.
+		if !gotReleaseID && len(commits) > 0 {
 			break
 		}
 
-		commits = append(commits, *candidateCommit)
+		if gotReleaseID {
+			commits = append(commits, *candidateCommit)
+		}
 
 		if candidateCommit.NumParents() != 1 {
 			return nil, fmt.Errorf("aborted finding release PR commits; commit %s has multiple parents", candidateCommit.Hash.String())
