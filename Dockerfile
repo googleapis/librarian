@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.23 AS build
+FROM golang:1.24 AS build
 
 WORKDIR /src
 
@@ -28,13 +28,20 @@ RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
 # while in Docker. Note that for this to work, *this*
 # docker image should be run with
 #  -v /var/run/docker.sock:/var/run/docker.sock
-FROM golang:1.23
+FROM golang:1.24
 WORKDIR /app
 
 # From https://docs.docker.com/engine/install/debian/
-# Add Docker's official GPG key
+
 RUN apt update
-RUN apt install -y ca-certificates curl
+RUN apt-get install -y unzip \
+  gnupg \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
+
+  # Add Docker's official GPG key
 RUN install -m 0755 -d /etc/apt/keyrings
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
 RUN chmod a+r /etc/apt/keyrings/docker.asc
@@ -48,6 +55,17 @@ RUN apt update
 
 # Install Docker
 RUN apt-get -y install docker-ce
+
+# Add the Google Cloud SDK distribution URI as a package source
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+    > /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+
+# Install the gcloud CLI
+RUN apt-get update && apt-get install -y google-cloud-sdk
+
+RUN gcloud --version
 
 COPY --from=build /src/librarian .
 ENTRYPOINT ["/app/librarian"]
