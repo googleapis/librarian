@@ -57,12 +57,17 @@ var CmdGenerate = &Command{
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		if err := runGenerateCommand(ctx, outputDir); err != nil {
+		err, existingLibraryId := runGenerateCommand(ctx, outputDir)
+		if err != nil {
 			return err
 		}
 
 		if flagBuild {
-			if err := container.BuildRaw(ctx.containerConfig, outputDir, flagAPIPath); err != nil {
+			apiOutputDir := flagAPIPath
+			if existingLibraryId != "" {
+				apiOutputDir = "apis/" + existingLibraryId
+			}
+			if err := container.BuildRaw(ctx.containerConfig, outputDir, apiOutputDir); err != nil {
 				return err
 			}
 		}
@@ -74,27 +79,28 @@ var CmdGenerate = &Command{
 // otherwise use GenerateRaw command
 // In case of non fatal error when looking up library, we will fallback to GenerateRaw command
 // and log the error
-func runGenerateCommand(ctx *CommandContext, outputDir string) error {
+func runGenerateCommand(ctx *CommandContext, outputDir string) (error, string) {
 	libraryID, err := checkIfLibraryExistsInLanguageRepo(ctx)
 	if err != nil {
-		return err
+		return err, ""
 	}
 	apiRoot, err := filepath.Abs(flagAPIRoot)
 	if err != nil {
-		return err
+		return err, ""
 	}
 	if libraryID != "" {
 		ctx.languageRepo, err = cloneOrOpenLanguageRepo(ctx.workRoot)
 		if err != nil {
 			slog.Warn("Unable to checkout language repo ", "error", err)
-			return err
+			return err, ""
 		}
 		generatorInput := filepath.Join(ctx.languageRepo.Dir, "generator-input")
 		slog.Info("Performing refined generation for library ID", "libraryID", libraryID)
-		return container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryID)
+
+		return container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryID), libraryID
 	} else {
 		slog.Info("No matching library found performing raw generation", "flagAPIPath", flagAPIPath)
-		return container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath)
+		return container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath), ""
 	}
 }
 
