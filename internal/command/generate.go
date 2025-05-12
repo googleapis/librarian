@@ -57,12 +57,23 @@ var CmdGenerate = &Command{
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		if err := runGenerateCommand(ctx, outputDir); err != nil {
+		libraryID, err := runGenerateCommand(ctx, outputDir)
+		if err != nil {
 			return err
 		}
-
 		if flagBuild {
-			if err := container.BuildRaw(ctx.containerConfig, outputDir, flagAPIPath); err != nil {
+			if libraryID != "" {
+				slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
+				if err := container.Clean(ctx.containerConfig, ctx.languageRepo.Dir, libraryID); err != nil {
+					return err
+				}
+				if err := os.CopyFS(ctx.languageRepo.Dir, os.DirFS(outputDir)); err != nil {
+					return err
+				}
+				if err := container.BuildLibrary(ctx.containerConfig, ctx.languageRepo.Dir, libraryID); err != nil {
+					return err
+				}
+			} else if err := container.BuildRaw(ctx.containerConfig, outputDir, flagAPIPath); err != nil {
 				return err
 			}
 		}
@@ -71,30 +82,32 @@ var CmdGenerate = &Command{
 }
 
 // Checks if the library exists in the remote pipeline state, if so use GenerateLibrary command
-// otherwise use GenerateRaw command
+// otherwise use GenerateRaw command.
 // In case of non fatal error when looking up library, we will fallback to GenerateRaw command
-// and log the error
-func runGenerateCommand(ctx *CommandContext, outputDir string) error {
+// and log the error.
+// If refined generation is used, the context's languageRepo field will be populated and the
+// library ID will be returned; otherwise, an empty string will be returned.
+func runGenerateCommand(ctx *CommandContext, outputDir string) (string, error) {
 	libraryID, err := checkIfLibraryExistsInLanguageRepo(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 	apiRoot, err := filepath.Abs(flagAPIRoot)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if libraryID != "" {
 		ctx.languageRepo, err = cloneOrOpenLanguageRepo(ctx.workRoot)
 		if err != nil {
 			slog.Warn("Unable to checkout language repo ", "error", err)
-			return err
+			return "", err
 		}
 		generatorInput := filepath.Join(ctx.languageRepo.Dir, "generator-input")
 		slog.Info("Performing refined generation for library ID", "libraryID", libraryID)
-		return container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryID)
+		return libraryID, container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
 		slog.Info("No matching library found performing raw generation", "flagAPIPath", flagAPIPath)
-		return container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath)
+		return "", container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath)
 	}
 }
 

@@ -152,7 +152,7 @@ func CreateGitHubRepoFromRepository(repo *github.Repository) GitHubRepo {
 }
 
 func GetRawContent(ctx context.Context, repo GitHubRepo, path, ref string) ([]byte, error) {
-	gitHubClient := createClient()
+	gitHubClient := github.NewClient(nil)
 	options := &github.RepositoryContentGetOptions{
 		Ref: ref,
 	}
