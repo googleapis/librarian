@@ -1,6 +1,6 @@
 module github.com/googleapis/librarian
 
-go 1.23.8
+go 1.24.0
 
 require github.com/go-git/go-git/v5 v5.14.0
 
