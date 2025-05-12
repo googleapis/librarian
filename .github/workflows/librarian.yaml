@@ -21,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Go 1.23.0
+    - name: Set up Go 1.23.10
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23.0'  # 👈 Pin to the desired Go 1.23.x version
+        go-version: '1.23.10'  # 👈 Pin to the desired Go 1.23.x version
     - name: Display Go version
       run: go version
     - name: Run tests
