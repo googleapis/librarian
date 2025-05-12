@@ -1,0 +1,6 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-docker.pkg.dev/cloud-sdk-production-pipeline/test-cloud-sdk-production-pipeline/librarian', '.']
+
+images:
+  - 'us-docker.pkg.dev/cloud-sdk-production-pipeline/test-cloud-sdk-production-pipeline/librarian:latest'
