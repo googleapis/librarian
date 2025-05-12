@@ -41,7 +41,7 @@ RUN apt-get install -y unzip \
   curl \
   && rm -rf /var/lib/apt/lists/*
 
-  # Add Docker's official GPG key
+# Add Docker's official GPG key
 RUN install -m 0755 -d /etc/apt/keyrings
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
 RUN chmod a+r /etc/apt/keyrings/docker.asc
