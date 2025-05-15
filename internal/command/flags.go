@@ -46,6 +46,7 @@ var (
 	flagReleasePRUrl         string
 	flagRepoRoot             string
 	flagRepoUrl              string
+	flagSyncUrlPrefix        string
 	flagSecretsProject       string
 	flagSkipIntegrationTests string
 	flagTag                  string
@@ -130,6 +131,10 @@ func addFlagSecretsProject(fs *flag.FlagSet) {
 
 func addFlagSkipIntegrationTests(fs *flag.FlagSet) {
 	fs.StringVar(&flagSkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
+}
+
+func addFlagSyncUrlPrefix(fs *flag.FlagSet) {
+	fs.StringVar(&flagSyncUrlPrefix, "sync-url-prefix", "", "the prefix of the URL to check for commit synchronization; the commit hash will be appended to this")
 }
 
 func addFlagTag(fs *flag.FlagSet) {

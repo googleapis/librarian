@@ -18,7 +18,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +31,11 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
+
+// The environment variable expected to hold an auth token which can be used
+// when communicating with the repo which syncs with the language repo,
+// as specified via flagSyncUrlPrefix.
+const syncAuthTokenEnvironmentVariable string = "LIBRARIAN_SYNC_AUTH_TOKEN"
 
 // The label used to avoid users merging the PR themselves.
 const DoNotMergeLabel = "do-not-merge"
@@ -48,6 +56,7 @@ var CmdMergeReleasePR = &Command{
 		addFlagBaselineCommit,
 		addFlagReleaseID,
 		addFlagReleasePRUrl,
+		addFlagSyncUrlPrefix,
 	},
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
 		return nil, nil
@@ -63,6 +72,9 @@ type SuspectRelease struct {
 const mergedReleaseCommitEnvVarName = "_MERGED_RELEASE_COMMIT"
 
 func mergeReleasePRImpl(ctx *CommandContext) error {
+	if flagSyncUrlPrefix != "" && os.Getenv(syncAuthTokenEnvironmentVariable) == "" {
+		return errors.New("-sync-url-prefix specified, but no sync auth token present")
+	}
 	if githubrepo.GetAccessToken() == "" {
 		return errors.New("no GitHub access token specified")
 	}
@@ -83,7 +95,12 @@ func mergeReleasePRImpl(ctx *CommandContext) error {
 		return err
 	}
 
-	if err := mergePullRequest(ctx, prMetadata); err != nil {
+	mergeCommit, err := mergePullRequest(ctx, prMetadata)
+	if err != nil {
+		return err
+	}
+
+	if err := waitForSync(mergeCommit); err != nil {
 		return err
 	}
 	return nil
@@ -201,21 +218,62 @@ func waitForPullRequestReadinessSingleIteration(ctx *CommandContext, prMetadata 
 	return true, nil
 }
 
-func mergePullRequest(ctx *CommandContext, prMetadata githubrepo.PullRequestMetadata) error {
+func mergePullRequest(ctx *CommandContext, prMetadata githubrepo.PullRequestMetadata) (string, error) {
 	slog.Info("Merging release PR")
 	if err := githubrepo.RemoveLabelFromPullRequest(ctx.ctx, prMetadata.Repo, prMetadata.Number, "do-not-merge"); err != nil {
-		return err
+		return "", err
 	}
 	mergeResult, err := githubrepo.MergePullRequest(ctx.ctx, prMetadata.Repo, prMetadata.Number, github.MergeMethodRebase)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if err := appendResultEnvironmentVariable(ctx, mergedReleaseCommitEnvVarName, *mergeResult.SHA); err != nil {
-		return err
+		return "", err
 	}
 	slog.Info("Release PR merged")
-	return nil
+	return *mergeResult.SHA, nil
+}
+
+// If flagSyncUrlPrefix is empty, this returns immediately.
+// Otherwise, polls for up to 10 minutes (once every 15 seconds) for the
+// given merge commit to be available at the repo specified via flagSyncUrlPrefix.
+func waitForSync(mergeCommit string) error {
+	if flagSyncUrlPrefix == "" {
+		return nil
+	}
+	req, err := http.NewRequest("GET", flagSyncUrlPrefix+mergeCommit, nil)
+	if err != nil {
+		return fmt.Errorf("error creating HTTP request: %v", err)
+	}
+	authToken := os.Getenv(syncAuthTokenEnvironmentVariable)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+	client := &http.Client{}
+
+	end := time.Now().Add(time.Duration(10) * time.Minute)
+
+	for time.Now().Before(end) {
+		slog.Info("Checking if merge commit has synchronized")
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		// A status of OK means the commit has synced; we're done.
+		// A status of NotFound means the commit hasn't *yet* synced; sleep and keep trying.
+		// Any other status is unexpected, and we abort.
+		if resp.StatusCode == http.StatusOK {
+			slog.Info("Merge commit has synchronized")
+			return nil
+		} else if resp.StatusCode == http.StatusNotFound {
+			slog.Info("Merge commit has not yet synchronized; sleeping before next attempt")
+			time.Sleep(time.Duration(15) * time.Minute)
+			continue
+		} else {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("unexpected status fetching commit: %d - %s", resp.StatusCode, string(bodyBytes))
+		}
+	}
+	return fmt.Errorf("timed out waiting for commit to sync")
 }
 
 // For each commit in the pull request, check:
