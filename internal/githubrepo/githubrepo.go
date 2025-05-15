@@ -133,6 +133,25 @@ func GetPullRequest(ctx context.Context, repo GitHubRepo, prNumber int) (*github
 	return pr, err
 }
 
+func GetPullRequestCheckRuns(ctx context.Context, pullRequest *github.PullRequest) ([]*github.CheckRun, error) {
+	gitHubClient := createClient()
+	prHead := pullRequest.Head
+	options := &github.ListCheckRunsOptions{}
+	checkRuns, _, err := gitHubClient.Checks.ListCheckRunsForRef(ctx, *prHead.User.Login, *prHead.Repo.Name, *prHead.Ref, options)
+	if checkRuns == nil {
+		return nil, err
+	}
+	return checkRuns.CheckRuns, err
+}
+
+func GetPullRequestReviews(ctx context.Context, prMetadata PullRequestMetadata) ([]*github.PullRequestReview, error) {
+	gitHubClient := createClient()
+	// TODO: Implement pagination or use go-github-paginate
+	listOptions := &github.ListOptions{PerPage: 100}
+	reviews, _, err := gitHubClient.PullRequests.ListReviews(ctx, prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number, listOptions)
+	return reviews, err
+}
+
 // Parses a GitHub URL (anything to do with a repository) to determine
 // the GitHub repo details (owner and name)
 func ParseUrl(remoteUrl string) (GitHubRepo, error) {
