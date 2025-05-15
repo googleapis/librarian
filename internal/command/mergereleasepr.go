@@ -130,6 +130,22 @@ func waitForPullRequestReadinessSingleIteration(ctx *CommandContext, prMetadata 
 		return false, errors.New("pull request already merged")
 	}
 
+	// If the PR is closed, wait a minute and check if it's *still* closed (to allow for deliberate "close/reopen" workflows),
+	// and if it is, abort the job.
+	if pr.ClosedAt != nil {
+		slog.Info("PR is closed; sleeping for a minute before checking again.")
+		time.Sleep(time.Duration(60) * time.Second)
+		pr, err = githubrepo.GetPullRequest(ctx.ctx, prMetadata.Repo, prMetadata.Number)
+		if err != nil {
+			return false, err
+		}
+		if pr.ClosedAt != nil {
+			slog.Info("PR is still closed; aborting.")
+			return false, errors.New("pull request closed")
+		}
+		slog.Info("PR has been reopened. Continuing.")
+	}
+
 	// If we've already blocked this PR, and the user hasn't cleared the label yet, don't check anything else.
 	gotDoNotMergeLabel := false
 	for _, label := range pr.Labels {
@@ -302,15 +318,19 @@ func checkPullRequestApproval(ctx *CommandContext, prMetadata githubrepo.PullReq
 		return false, err
 	}
 
+	slog.Info(fmt.Sprintf("Considering %d reviews (including history)", len(reviews)))
 	// Collect all latest non-pending reviews from members/owners of the repository.
 	latestReviews := make(map[int64]*github.PullRequestReview)
 	for _, review := range reviews {
 		association := review.GetAuthorAssociation()
-		if association != "MEMBER" && association != "OWNER" {
+		// TODO: Check the required approvals (b/417995406)
+		if association != "MEMBER" && association != "OWNER" && association != "COLLABORATOR" && association != "CONTRIBUTOR" {
+			slog.Info(fmt.Sprintf("Ignoring review with author association '%s'", association))
 			continue
 		}
 
 		if review.GetState() == "PENDING" {
+			slog.Info("Ignoring pending review")
 			continue
 		}
 
@@ -323,9 +343,11 @@ func checkPullRequestApproval(ctx *CommandContext, prMetadata githubrepo.PullReq
 
 	approved := false
 	for _, review := range latestReviews {
+		slog.Info(fmt.Sprintf("Review at %s: %s", review.GetSubmittedAt().Format(time.RFC3339), review.GetState()))
 		if review.GetState() == "APPROVED" {
 			approved = true
 		} else if review.GetState() == "CHANGES_REQUESTED" {
+			slog.Info("Changes requested by at least one member/owner review; treating as unapproved.")
 			return false, nil
 		}
 	}
