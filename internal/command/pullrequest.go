@@ -53,7 +53,7 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 // If content is empty, the pull request is not created and no error is returned.
 // If content only contains errors, the pull request is not created and an error is returned (to highlight that everything failed)
 // If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
-func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePrefix, branchType string) (*githubrepo.PullRequestMetadata, error) {
+func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string) (*githubrepo.PullRequestMetadata, error) {
 	anySuccesses := len(content.Successes) > 0
 	anyErrors := len(content.Errors) > 0
 
@@ -68,19 +68,24 @@ func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePr
 		}
 		return nil, errors.New("errors encountered but no PR to create")
 	} else if anySuccesses && !anyErrors {
-		description = strings.Join(content.Successes, "\n")
+		description = formatListAsMarkdown(content.Successes)
 	} else {
-		errorsText := strings.Join(content.Errors, "\n")
-		releasesText := strings.Join(content.Successes, "\n")
-		description = fmt.Sprintf("Errors:\n==================\n%s\n\n\nChanges Included:\n==================\n%s\n", errorsText, releasesText)
+		errorsText := formatListAsMarkdown(content.Errors)
+		releasesText := formatListAsMarkdown(content.Successes)
+		description = fmt.Sprintf("Errors:\n==================\n%s\n\nChanges Included:\n==================\n%s", errorsText, releasesText)
 	}
 
-	if !flagPush {
-		slog.Info(fmt.Sprintf("Push not specified; would have created PR with the following description:\n%s", description))
-		return nil, nil
+	// Append any PR-specific additional information.
+	if descriptionSuffix != "" {
+		description = description + "\n" + descriptionSuffix
 	}
 
 	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(ctx.startTime))
+
+	if !flagPush {
+		slog.Info(fmt.Sprintf("Push not specified; would have created PR with the following title and description:\n%s\n\n%s", title, description))
+		return nil, nil
+	}
 
 	gitHubRepo, err := gitrepo.GetGitHubRepoFromRemote(ctx.languageRepo)
 	if err != nil {
@@ -94,4 +99,14 @@ func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePr
 		return nil, err
 	}
 	return githubrepo.CreatePullRequest(ctx.ctx, gitHubRepo, branch, title, description)
+}
+
+// Formats the given list as a single Markdown string, with a "- " at the
+// start of each value and a line break at the end of each value
+func formatListAsMarkdown(list []string) string {
+	var builder strings.Builder
+	for _, value := range list {
+		builder.WriteString(fmt.Sprintf("- %s\n", value))
+	}
+	return builder.String()
 }

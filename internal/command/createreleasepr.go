@@ -97,7 +97,7 @@ var CmdCreateReleasePR = &Command{
 			return err
 		}
 
-		prMetadata, err := createPullRequest(ctx, prContent, "chore: Library release", "release")
+		prMetadata, err := createPullRequest(ctx, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release")
 		if err != nil {
 			return err
 		}
@@ -106,7 +106,7 @@ var CmdCreateReleasePR = &Command{
 		// with no PR: we may have finished with no changes, or we may not be pushing.)
 		if prMetadata != nil {
 			// We always add the do-not-merge label so that Librarian can merge later.
-			err = githubrepo.AddLabelToPullRequest(ctx.ctx, *prMetadata, "do-not-merge")
+			err = githubrepo.AddLabelToPullRequest(ctx.ctx, *prMetadata, DoNotMergeLabel)
 			if err != nil {
 				slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 				return err
@@ -210,7 +210,7 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			return nil, err
 		}
 
-		releaseDescription := fmt.Sprintf("Release library: %s version %s", library.Id, releaseVersion)
+		releaseDescription := fmt.Sprintf("chore: Release library %s version %s", library.Id, releaseVersion)
 		addSuccessToPullRequest(pr, releaseDescription)
 		// Metadata for easy extraction later.
 		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)

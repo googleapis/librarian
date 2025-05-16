@@ -88,7 +88,7 @@ var CmdConfigure = &Command{
 			}
 		}
 
-		_, err = createPullRequest(ctx, &prContent, "feat: API configuration", "config")
+		_, err = createPullRequest(ctx, &prContent, "feat: API configuration", "", "config")
 		return err
 	},
 }

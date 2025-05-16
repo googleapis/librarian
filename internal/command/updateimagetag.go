@@ -126,7 +126,7 @@ var CmdUpdateImageTag = &Command{
 		// can massage it into a similar state.
 		prContent := new(PullRequestContent)
 		addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
-		_, err := createPullRequest(ctx, prContent, "chore: update generation image tag", "update-image-tag")
+		_, err := createPullRequest(ctx, prContent, "chore: update generation image tag", "", "update-image-tag")
 		return err
 	},
 }

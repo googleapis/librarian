@@ -136,7 +136,7 @@ func parseCommitMessageForRelease(message, hash string) (*LibraryRelease, error)
 	// Remove the expected "title and blank line" (as we'll have a release title).
 	// We're fairly conservative about this - if the commit message has been manually
 	// changed, we'll leave it as it is.
-	if len(messageLines) > 0 && strings.HasPrefix(messageLines[0], "Release library:") {
+	if len(messageLines) > 0 && strings.HasPrefix(messageLines[0], "chore: Release library ") {
 		messageLines = messageLines[1:]
 		if len(messageLines) > 0 && messageLines[0] == "" {
 			messageLines = messageLines[1:]

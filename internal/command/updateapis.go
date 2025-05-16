@@ -104,7 +104,7 @@ var CmdUpdateApis = &Command{
 		if cleanWorkingTreePostGeneration {
 			gitrepo.CleanWorkingTree(apiRepo)
 		}
-		_, err := createPullRequest(ctx, prContent, "feat: API regeneration", "regen")
+		_, err := createPullRequest(ctx, prContent, "feat: API regeneration", "", "regen")
 		return err
 	},
 }

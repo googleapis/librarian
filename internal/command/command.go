@@ -279,7 +279,7 @@ func savePipelineState(ctx *CommandContext) error {
 }
 
 func formatTimestamp(t time.Time) string {
-	const yyyyMMddHHmmss = "20060102T150405" // Expected format by time library
+	const yyyyMMddHHmmss = "20060102T150405Z" // Expected format by time library
 	return t.Format(yyyyMMddHHmmss)
 }
 
