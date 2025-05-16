@@ -252,7 +252,7 @@ func mergePullRequest(ctx *CommandContext, prMetadata githubrepo.PullRequestMeta
 }
 
 // If flagSyncUrlPrefix is empty, this returns immediately.
-// Otherwise, polls for up to 10 minutes (once every 15 seconds) for the
+// Otherwise, polls for up to 10 minutes (once every 30 seconds) for the
 // given merge commit to be available at the repo specified via flagSyncUrlPrefix.
 func waitForSync(mergeCommit string) error {
 	if flagSyncUrlPrefix == "" {
@@ -282,7 +282,7 @@ func waitForSync(mergeCommit string) error {
 			return nil
 		} else if resp.StatusCode == http.StatusNotFound {
 			slog.Info("Merge commit has not yet synchronized; sleeping before next attempt")
-			time.Sleep(time.Duration(2) * time.Minute)
+			time.Sleep(time.Duration(30) * time.Second)
 			continue
 		} else {
 			bodyBytes, _ := io.ReadAll(resp.Body)
