@@ -282,7 +282,7 @@ func waitForSync(mergeCommit string) error {
 			return nil
 		} else if resp.StatusCode == http.StatusNotFound {
 			slog.Info("Merge commit has not yet synchronized; sleeping before next attempt")
-			time.Sleep(time.Duration(15) * time.Minute)
+			time.Sleep(time.Duration(2) * time.Minute)
 			continue
 		} else {
 			bodyBytes, _ := io.ReadAll(resp.Body)
