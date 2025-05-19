@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,11 +89,13 @@ func constructEnvironmentFileContent(containerEnv *EnvironmentProvider, commandN
 	}
 	var builder strings.Builder
 	for _, variable := range commandConfig.EnvironmentVariables {
+		source := "host environment"
 		var err error
 		// First source: environment variables
 		value, present := os.LookupEnv(variable.Name)
 		// Second source: Secret Manager
 		if !present {
+			source = "Secret Manager"
 			value, present, err = getSecretManagerValue(containerEnv, variable)
 			if err != nil {
 				return "", err
@@ -100,14 +103,17 @@ func constructEnvironmentFileContent(containerEnv *EnvironmentProvider, commandN
 		}
 		// Final fallback: default value
 		if !present && variable.DefaultValue != "" {
+			source = "default value"
 			value = variable.DefaultValue
 			present = true
 		}
 
 		// Finally, write the value if we've got one
 		if present {
+			slog.Info(fmt.Sprintf("Using %s to provide value to container for %s", source, variable.Name))
 			builder.WriteString(fmt.Sprintf("%s=%s\n", variable.Name, value))
 		} else {
+			slog.Info(fmt.Sprintf("No value to provide to container for '%s'", variable.Name))
 			builder.WriteString(fmt.Sprintf("# No value for %s\n", variable.Name))
 		}
 		continue
