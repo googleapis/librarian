@@ -16,6 +16,7 @@ package command
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -63,12 +64,32 @@ func publishReleaseArtifactsImpl(ctx *CommandContext) error {
 		return err
 	}
 
+	if len(releases) == 0 {
+		return errors.New("no releases to publish")
+	}
+
+	// Load the pipeline config from the commit of the first release, using the tag repo, then
+	// update our context to use it for the container config.
+	// TODO: Refactor this to also fetch the remote pipeline state, derive the image etc.
+	gitHubRepo, err := githubrepo.ParseUrl(flagTagRepoUrl)
+	if err != nil {
+		return err
+	}
+	ctx.pipelineConfig, err = fetchRemotePipelineConfig(ctx.ctx, gitHubRepo, releases[0].CommitHash)
+	if err != nil {
+		return err
+	}
+	ctx.containerConfig, err = container.NewContainerConfig(ctx.ctx, ctx.workRoot, ctx.containerConfig.Image, flagSecretsProject, ctx.pipelineConfig)
+	if err != nil {
+		return err
+	}
+
 	slog.Info(fmt.Sprintf("Publishing packages for %d libraries", len(releases)))
 
 	if err := publishPackages(ctx.containerConfig, flagArtifactRoot, releases); err != nil {
 		return err
 	}
-	if err := createRepoReleases(ctx, releases); err != nil {
+	if err := createRepoReleases(ctx, releases, gitHubRepo); err != nil {
 		return err
 	}
 	slog.Info("Release complete.")
@@ -87,14 +108,7 @@ func publishPackages(config *container.ContainerConfig, outputRoot string, relea
 	return nil
 }
 
-func createRepoReleases(ctx *CommandContext, releases []LibraryRelease) error {
-	repoUrl := flagTagRepoUrl
-
-	gitHubRepo, err := githubrepo.ParseUrl(repoUrl)
-	if err != nil {
-		return err
-	}
-
+func createRepoReleases(ctx *CommandContext, releases []LibraryRelease, gitHubRepo githubrepo.GitHubRepo) error {
 	for _, release := range releases {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)

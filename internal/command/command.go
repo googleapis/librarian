@@ -378,3 +378,17 @@ func fetchRemotePipelineState(ctx context.Context, repo githubrepo.GitHubRepo, r
 	}
 	return state, nil
 }
+
+func fetchRemotePipelineConfig(ctx context.Context, repo githubrepo.GitHubRepo, ref string) (*statepb.PipelineConfig, error) {
+	bytes, err := githubrepo.GetRawContent(ctx, repo, "generator-input/pipeline-config.json", ref)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &statepb.PipelineConfig{}
+	err = protojson.Unmarshal(bytes, config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
