@@ -101,19 +101,25 @@ var CmdCreateReleasePR = &Command{
 		if err != nil {
 			return err
 		}
-		// If we've actually created a release PR, we then have to add a label and output the PR number
-		// as an environment variable. (There are ways in which we could have had a successful run, but
-		// with no PR: we may have finished with no changes, or we may not be pushing.)
-		if prMetadata != nil {
-			// We always add the do-not-merge label so that Librarian can merge later.
-			err = githubrepo.AddLabelToPullRequest(ctx.ctx, *prMetadata, DoNotMergeLabel)
-			if err != nil {
-				slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
-				return err
-			}
-			if err := appendResultEnvironmentVariable(ctx, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
-				return err
-			}
+
+		if prMetadata == nil {
+			// We haven't created a release PR, and there are no errors. This could be because:
+			// - There are no changes to release
+			// - The -push flag wasn't specified.
+			// Either way, complete successfully at this point.
+			return nil
+		}
+
+		// Final steps if we've actually created a release PR.
+		// - We always add the do-not-merge label so that Librarian can merge later.
+		// - Add a result environment variable with the PR number, for the next stage of the process.
+		err = githubrepo.AddLabelToPullRequest(ctx.ctx, *prMetadata, DoNotMergeLabel)
+		if err != nil {
+			slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
+			return err
+		}
+		if err := appendResultEnvironmentVariable(ctx, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
+			return err
 		}
 		return nil
 	},
