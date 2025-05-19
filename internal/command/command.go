@@ -285,7 +285,21 @@ func formatTimestamp(t time.Time) string {
 
 func createWorkRoot(t time.Time) (string, error) {
 	if flagWorkRoot != "" {
+		// If the work root is specified, create it if it doesn't already exist, but it's fine if it does.
 		slog.Info(fmt.Sprintf("Using specified working directory: %s", flagWorkRoot))
+		_, err := os.Stat(flagWorkRoot)
+		switch {
+		case os.IsNotExist(err):
+			if err := os.Mkdir(flagWorkRoot, 0755); err != nil {
+				return "", fmt.Errorf("unable to create working directory '%s': %w", flagWorkRoot, err)
+			}
+		case err == nil:
+			// No error; the directory already exists, so we'll just use it.
+			// (Go doesn't have fall-through, so this will break out of the switch.)
+		default:
+			return "", fmt.Errorf("unable to check directory '%s': %w", flagWorkRoot, err)
+
+		}
 		return flagWorkRoot, nil
 	}
 
