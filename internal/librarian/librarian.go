@@ -35,7 +35,7 @@ func Run(ctx context.Context, arg ...string) error {
 
 func parseArgs(args []string) (*command.Command, error) {
 	fs := flag.NewFlagSet("librarian", flag.ContinueOnError)
-	output := `Librarian manages client libraries for Google APIsmanages
+	output := `Librarian manages client libraries for Google APIs
 Usage:
 
   librarian <command> [arguments]
