@@ -18,6 +18,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 
 	"github.com/googleapis/librarian/internal/command"
 )
@@ -30,6 +31,7 @@ func Run(ctx context.Context, arg ...string) error {
 	if err := cmd.Parse(arg[1:]); err != nil {
 		return err
 	}
+	slog.Info("librarian", "arguments", arg)
 	return command.RunCommand(cmd, ctx)
 }
 

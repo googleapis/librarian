@@ -34,7 +34,7 @@ const (
 	ContainerCommandBuildRaw               ContainerCommand = "build-raw"
 	ContainerCommandBuildLibrary           ContainerCommand = "build-library"
 	ContainerCommandConfigure              ContainerCommand = "configure"
-	ContainerCommandPrepareLibraryRelease                   = "prepare-library-release"
+	ContainerCommandPrepareLibraryRelease  ContainerCommand = "prepare-library-release"
 	ContainerCommandIntegrationTestLibrary ContainerCommand = "integration-test-library"
 	ContainerCommandPackageLibrary         ContainerCommand = "package-library"
 	ContainerCommandPublishLibrary         ContainerCommand = "publish-library"
