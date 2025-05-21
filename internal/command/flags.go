@@ -152,7 +152,7 @@ func addFlagWorkRoot(fs *flag.FlagSet) {
 var supportedLanguages = map[string]bool{
 	"cpp":    false,
 	"dotnet": true,
-	"go":     true,
+	"go":     false,
 	"java":   false,
 	"node":   false,
 	"php":    false,
