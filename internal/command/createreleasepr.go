@@ -38,7 +38,7 @@ const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
 var CmdCreateReleasePR = &Command{
 	Name:  "create-release-pr",
-	Short: "Generate a PR for release",
+	Short: "Generate a release PR.",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,

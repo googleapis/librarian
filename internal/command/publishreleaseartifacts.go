@@ -31,7 +31,7 @@ import (
 
 var CmdPublishReleaseArtifacts = &Command{
 	Name:  "publish-release-artifacts",
-	Short: "Publishes previously-created release artifacts to package managers etc",
+	Short: "Publish release artifacts to package managers.",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagArtifactRoot,
 		addFlagImage,

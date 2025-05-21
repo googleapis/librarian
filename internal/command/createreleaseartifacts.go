@@ -38,7 +38,7 @@ type LibraryRelease struct {
 
 var CmdCreateReleaseArtifacts = &Command{
 	Name:  "create-release-artifacts",
-	Short: "Create release artifacts from a merged release PR",
+	Short: "Generate release artifacts from a merged PR.",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,

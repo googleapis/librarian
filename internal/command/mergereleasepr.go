@@ -48,7 +48,7 @@ const MergeBlockedLabel = "merge-blocked-see-comments"
 
 var CmdMergeReleasePR = &Command{
 	Name:  "merge-release-pr",
-	Short: "Merge a release PR after validating it",
+	Short: "Merge a validated release PR.",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,

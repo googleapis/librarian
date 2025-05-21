@@ -29,7 +29,7 @@ import (
 
 var CmdUpdateImageTag = &Command{
 	Name:  "update-image-tag",
-	Short: "Update the image tag used by a language repo, and regenerating all APIs at the existing commit",
+	Short: "Update a language repo's image tag and regenerate APIs.",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagWorkRoot,
 		addFlagAPIRoot,

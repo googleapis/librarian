@@ -24,12 +24,6 @@ import (
 
 func main() {
 	ctx := context.Background()
-
-	log.Println("Arguments passed to librarian:")
-	for i, arg := range os.Args {
-		log.Printf("Argument %d: %s", i, arg)
-	}
-
 	if err := librarian.Run(ctx, os.Args[1:]...); err != nil {
 		log.Fatal(err)
 	}

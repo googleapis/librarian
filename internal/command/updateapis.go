@@ -30,7 +30,7 @@ import (
 
 var CmdUpdateApis = &Command{
 	Name:  "update-apis",
-	Short: "Update a language repo by regenerating configured APIs with new API specifications",
+	Short: "Regenerate APIs in a language repo with new specifications.",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,

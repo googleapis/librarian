@@ -33,7 +33,7 @@ import (
 
 var CmdConfigure = &Command{
 	Name:  "configure",
-	Short: "Configure a new API in a given language",
+	Short: "Set up a new API for a language.",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,

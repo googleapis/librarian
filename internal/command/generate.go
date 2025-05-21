@@ -28,7 +28,7 @@ import (
 
 var CmdGenerate = &Command{
 	Name:  "generate",
-	Short: "Generate client library code for an API",
+	Short: "Generate client library code for an API.",
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,

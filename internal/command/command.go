@@ -147,8 +147,10 @@ func RunCommand(c *Command, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	var state *statepb.PipelineState = nil
-	var config *statepb.PipelineConfig = nil
+	var (
+		state  *statepb.PipelineState
+		config *statepb.PipelineConfig
+	)
 	if languageRepo != nil {
 		state, err = loadPipelineState(languageRepo)
 		if err != nil {
@@ -372,8 +374,7 @@ func fetchRemotePipelineState(ctx context.Context, repo githubrepo.GitHubRepo, r
 	}
 
 	state := &statepb.PipelineState{}
-	err = protojson.Unmarshal(bytes, state)
-	if err != nil {
+	if err := protojson.Unmarshal(bytes, state); err != nil {
 		return nil, err
 	}
 	return state, nil
@@ -386,8 +387,7 @@ func fetchRemotePipelineConfig(ctx context.Context, repo githubrepo.GitHubRepo, 
 	}
 
 	config := &statepb.PipelineConfig{}
-	err = protojson.Unmarshal(bytes, config)
-	if err != nil {
+	if err := protojson.Unmarshal(bytes, config); err != nil {
 		return nil, err
 	}
 	return config, nil

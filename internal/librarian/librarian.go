@@ -35,7 +35,8 @@ func Run(ctx context.Context, arg ...string) error {
 
 func parseArgs(args []string) (*command.Command, error) {
 	fs := flag.NewFlagSet("librarian", flag.ContinueOnError)
-	output := `Librarian manages client libraries for Google APIs
+	output := `Librarian manages client libraries for Google APIs.
+
 Usage:
 
   librarian <command> [arguments]
@@ -43,7 +44,7 @@ Usage:
 The commands are:
 `
 	for _, c := range command.Commands {
-		output += fmt.Sprintf("\n  %s  %s", c.Name, c.Short)
+		output += fmt.Sprintf("\n  %-25s  %s", c.Name, c.Short)
 	}
 
 	fs.Usage = func() {
@@ -57,7 +58,7 @@ The commands are:
 	}
 	if len(fs.Args()) == 0 {
 		fs.Usage()
-		return nil, fmt.Errorf("missing command")
+		return nil, fmt.Errorf("command not specified")
 	}
 	return command.Lookup(fs.Args()[0])
 }
