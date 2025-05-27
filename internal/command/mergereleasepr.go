@@ -309,7 +309,10 @@ func checkPullRequestCommits(ctx *CommandContext, prMetadata githubrepo.PullRequ
 		return false, err
 	}
 
-	prCommits, err := githubrepo.GetDiffCommits(ctx.ctx, prMetadata.Repo, flagBaselineCommit, *pr.Head.SHA)
+	// Fetch the commits which are in the PR, compared with the base (the target of the merge).
+	// In most cases pr.Base.SHA will be the same as flagBaselineCommit, but the PR may have been rebased -
+	// and we always only want the commits in the PR, not any that it's been rebased on top of.
+	prCommits, err := githubrepo.GetDiffCommits(ctx.ctx, prMetadata.Repo, *pr.Base.SHA, *pr.Head.SHA)
 	if err != nil {
 		return false, err
 	}
