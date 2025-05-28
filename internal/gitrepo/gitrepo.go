@@ -403,8 +403,15 @@ func CleanWorkingTree(repo *Repo) error {
 	return worktree.Clean(&git.CleanOptions{Dir: true})
 }
 
-// Drop any local changes, and also reset to the parent of the current head commit
+// Drop any local changes, and also reset to the parent of the current head commit.
+// This is a special case of CleanAndRevertCommits where the count is 1.
 func CleanAndRevertHeadCommit(repo *Repo) error {
+	return CleanAndRevertCommits(repo, 1)
+}
+
+// Reverts the specified number of commits in the repo (by resetting to
+// the
+func CleanAndRevertCommits(repo *Repo, count int) error {
 	headRef, err := repo.repo.Head()
 	if err != nil {
 		return err
@@ -413,18 +420,22 @@ func CleanAndRevertHeadCommit(repo *Repo) error {
 	if err != nil {
 		return err
 	}
-	if headCommit.NumParents() != 1 {
-		return errors.New("head commit has multiple parents")
-	}
-	parentCommit, err := headCommit.Parent(0)
-	if err != nil {
-		return err
+	targetCommit := headCommit
+	for range count {
+		if targetCommit.NumParents() != 1 {
+			return fmt.Errorf("commit %s has multiple parents", targetCommit.Hash.String())
+		}
+		var err error
+		targetCommit, err = targetCommit.Parent(0)
+		if err != nil {
+			return err
+		}
 	}
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err
 	}
-	if err = worktree.Reset(&git.ResetOptions{Mode: git.HardReset, Commit: parentCommit.Hash}); err != nil {
+	if err = worktree.Reset(&git.ResetOptions{Mode: git.HardReset, Commit: targetCommit.Hash}); err != nil {
 		return err
 	}
 	return worktree.Clean(&git.CleanOptions{Dir: true})

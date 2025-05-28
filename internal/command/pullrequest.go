@@ -28,6 +28,9 @@ import (
 // Each entry in "Successes" represents a commit from a successful
 // operation; each entry in "Errors" represents an unsuccessful
 // operation which would otherwise have created a commit.
+// (It's important that each entry in "Successes" represents *exactly*
+// one commit, in the same order in which the commits were created. This
+// is assumed when observing pull request commit limits.)
 type PullRequestContent struct {
 	Successes []string
 	Errors    []string
@@ -53,9 +56,25 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 // If content is empty, the pull request is not created and no error is returned.
 // If content only contains errors, the pull request is not created and an error is returned (to highlight that everything failed)
 // If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
+// If the pull request would contain an excessive number of commits (as configured in pipeline-config.json)
 func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string) (*githubrepo.PullRequestMetadata, error) {
 	anySuccesses := len(content.Successes) > 0
 	anyErrors := len(content.Errors) > 0
+	languageRepo := ctx.languageRepo
+
+	excessSuccesses := []string{}
+	if ctx.pipelineConfig != nil {
+		maxCommits := int(ctx.pipelineConfig.MaxPullRequestCommits)
+		if maxCommits > 0 && len(content.Successes) > maxCommits {
+			// We've got too many commits. Roll some back locally, and we'll add them to the description.
+			excessSuccesses = content.Successes[maxCommits:]
+			content.Successes = content.Successes[:maxCommits]
+			slog.Info(fmt.Sprintf("%d excess commits created; winding back language repo.", len(excessSuccesses)))
+			if err := gitrepo.CleanAndRevertCommits(languageRepo, len(excessSuccesses)); err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	var description string
 	if !anySuccesses && !anyErrors {
@@ -67,18 +86,13 @@ func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePr
 			slog.Error(error)
 		}
 		return nil, errors.New("errors encountered but no PR to create")
-	} else if anySuccesses && !anyErrors {
-		description = formatListAsMarkdown(content.Successes)
-	} else {
-		errorsText := formatListAsMarkdown(content.Errors)
-		releasesText := formatListAsMarkdown(content.Successes)
-		description = fmt.Sprintf("Errors:\n==================\n%s\n\nChanges Included:\n==================\n%s", errorsText, releasesText)
 	}
 
-	// Append any PR-specific additional information.
-	if descriptionSuffix != "" {
-		description = description + "\n" + descriptionSuffix
-	}
+	successesText := formatListAsMarkdown("Changes in this PR", content.Successes)
+	errorsText := formatListAsMarkdown("Errors", content.Errors)
+	excessText := formatListAsMarkdown("Excess changes not included", excessSuccesses)
+
+	description = strings.TrimSpace(successesText + errorsText + excessText + "\n" + descriptionSuffix)
 
 	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(ctx.startTime))
 
@@ -87,13 +101,13 @@ func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePr
 		return nil, nil
 	}
 
-	gitHubRepo, err := gitrepo.GetGitHubRepoFromRemote(ctx.languageRepo)
+	gitHubRepo, err := gitrepo.GetGitHubRepoFromRemote(languageRepo)
 	if err != nil {
 		return nil, err
 	}
 
 	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(ctx.startTime))
-	err = gitrepo.PushBranch(ctx.languageRepo, branch, githubrepo.GetAccessToken())
+	err = gitrepo.PushBranch(languageRepo, branch, githubrepo.GetAccessToken())
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return nil, err
@@ -101,12 +115,20 @@ func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePr
 	return githubrepo.CreatePullRequest(ctx.ctx, gitHubRepo, branch, title, description)
 }
 
-// Formats the given list as a single Markdown string, with a "- " at the
-// start of each value and a line break at the end of each value
-func formatListAsMarkdown(list []string) string {
+// Formats the given list as a single Markdown string, with a title preceding the list,
+// a "- " at the start of each value and a line break at the end of each value.
+// If the list is empty, an empty string is returned instead.
+func formatListAsMarkdown(title string, list []string) string {
+	if len(list) == 0 {
+		return ""
+	}
 	var builder strings.Builder
+	builder.WriteString("## ")
+	builder.WriteString(title)
+	builder.WriteString("\n\n")
 	for _, value := range list {
 		builder.WriteString(fmt.Sprintf("- %s\n", value))
 	}
+	builder.WriteString("\n\n")
 	return builder.String()
 }

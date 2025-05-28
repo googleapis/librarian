@@ -107,6 +107,13 @@ message PipelineConfig {
 
   // Specific configuration for each individual command.
   map<string, CommandConfig> commands = 2;
+
+  // The maximum number (inclusive) of commits to create
+  // in a single pull request. If this is non-positive, it is
+  // ignored. If a process would generate a pull request with more
+  // commits than this, excess commits are trimmed and the commits
+  // which *would* have been present are described in the PR.
+  int32 max_pull_request_commits = 3;
 }
 
 // Configuration for a specific container command.
