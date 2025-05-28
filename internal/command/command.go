@@ -15,9 +15,7 @@
 package command
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -29,11 +27,9 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/container"
-	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"github.com/googleapis/librarian/internal/utils"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const releaseIDEnvVarName = "_RELEASE_ID"
@@ -45,6 +41,9 @@ type Command struct {
 	// flags where necessary. May return a nil pointer if the command
 	// does not use a language repo.
 	maybeGetLanguageRepo func(workRoot string) (*gitrepo.Repo, error)
+	// Loads the pipeline state and config where possible. This is called
+	// whether or not a language repo has been obtained.
+	maybeLoadStateAndConfig func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error)
 	// Executes the command with the given pre-populated context.
 	execute func(*CommandContext) error
 	// Functions to execute when initializing the flag set for the command.
@@ -147,19 +146,10 @@ func RunCommand(c *Command, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	var (
-		state  *statepb.PipelineState
-		config *statepb.PipelineConfig
-	)
-	if languageRepo != nil {
-		state, err = loadPipelineState(languageRepo)
-		if err != nil {
-			return err
-		}
-		config, err = loadPipelineConfig(languageRepo)
-		if err != nil {
-			return err
-		}
+
+	state, config, err := c.maybeLoadStateAndConfig(languageRepo)
+	if err != nil {
+		return err
 	}
 
 	image := deriveImage(state)
@@ -229,55 +219,6 @@ func findLibraryByID(state *statepb.PipelineState, libraryID string) *statepb.Li
 		}
 	}
 	return nil
-}
-
-func loadPipelineState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, error) {
-	path := filepath.Join(languageRepo.Dir, "generator-input", "pipeline-state.json")
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	state := &statepb.PipelineState{}
-	err = protojson.Unmarshal(bytes, state)
-	if err != nil {
-		return nil, err
-	}
-	return state, nil
-}
-
-func loadPipelineConfig(languageRepo *gitrepo.Repo) (*statepb.PipelineConfig, error) {
-	path := filepath.Join(languageRepo.Dir, "generator-input", "pipeline-config.json")
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	config := &statepb.PipelineConfig{}
-	err = protojson.Unmarshal(bytes, config)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
-}
-
-func savePipelineState(ctx *CommandContext) error {
-	path := filepath.Join(ctx.languageRepo.Dir, "generator-input", "pipeline-state.json")
-	// Marshal the protobuf message as JSON...
-	unformatted, err := protojson.Marshal(ctx.pipelineState)
-	if err != nil {
-		return err
-	}
-	// ... then reformat it
-	var formatted bytes.Buffer
-	err = json.Indent(&formatted, unformatted, "", "    ")
-	if err != nil {
-		return err
-	}
-	// The file mode is likely to be irrelevant, given that the permissions aren't changed
-	// if the file exists, which we expect it to anyway.
-	err = os.WriteFile(path, formatted.Bytes(), os.FileMode(0644))
-	return err
 }
 
 func formatTimestamp(t time.Time) string {
@@ -365,30 +306,4 @@ func constructUsage(fs *flag.FlagSet, name string) func() {
 
 func formatReleaseTag(libraryID, version string) string {
 	return libraryID + "-" + version
-}
-
-func fetchRemotePipelineState(ctx context.Context, repo githubrepo.GitHubRepo, ref string) (*statepb.PipelineState, error) {
-	bytes, err := githubrepo.GetRawContent(ctx, repo, "generator-input/pipeline-state.json", ref)
-	if err != nil {
-		return nil, err
-	}
-
-	state := &statepb.PipelineState{}
-	if err := protojson.Unmarshal(bytes, state); err != nil {
-		return nil, err
-	}
-	return state, nil
-}
-
-func fetchRemotePipelineConfig(ctx context.Context, repo githubrepo.GitHubRepo, ref string) (*statepb.PipelineConfig, error) {
-	bytes, err := githubrepo.GetRawContent(ctx, repo, "generator-input/pipeline-config.json", ref)
-	if err != nil {
-		return nil, err
-	}
-
-	config := &statepb.PipelineConfig{}
-	if err := protojson.Unmarshal(bytes, config); err != nil {
-		return nil, err
-	}
-	return config, nil
 }

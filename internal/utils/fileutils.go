@@ -61,6 +61,14 @@ func CreateAndWriteBytesToFile(filePath string, content []byte) error {
 	return writeBytesToFile(*file, content)
 }
 
+func CopyFile(sourcePath, destPath string) error {
+	bytes, err := ReadAllBytesFromFile(sourcePath)
+	if err != nil {
+		return err
+	}
+	return CreateAndWriteBytesToFile(destPath, bytes)
+}
+
 func writeContentToFile(file os.File, content string) error {
 	_, err := file.WriteString(content)
 	if err != nil {

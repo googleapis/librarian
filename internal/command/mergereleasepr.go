@@ -61,6 +61,9 @@ var CmdMergeReleasePR = &Command{
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
 		return nil, nil
 	},
+	maybeLoadStateAndConfig: func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error) {
+		return nil, nil, nil
+	},
 	execute: mergeReleasePRImpl,
 }
 

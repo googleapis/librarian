@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/statepb"
 	"github.com/googleapis/librarian/internal/utils"
 )
 
@@ -42,6 +43,18 @@ var CmdPublishReleaseArtifacts = &Command{
 	},
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
 		return nil, nil
+	},
+	maybeLoadStateAndConfig: func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error) {
+		// Load the state and config from the artifact directory. These will have been created by create-release-artifacts.
+		state, err := loadPipelineStateFile(filepath.Join(flagArtifactRoot, pipelineStateFile))
+		if err != nil {
+			return nil, nil, err
+		}
+		config, err := loadPipelineConfigFile(filepath.Join(flagArtifactRoot, pipelineConfigFile))
+		if err != nil {
+			return nil, nil, err
+		}
+		return state, config, nil
 	},
 	execute: publishReleaseArtifactsImpl,
 }
@@ -70,20 +83,10 @@ func publishReleaseArtifactsImpl(ctx *CommandContext) error {
 
 	// Load the pipeline config from the commit of the first release, using the tag repo, then
 	// update our context to use it for the container config.
-	// TODO: Refactor this to also fetch the remote pipeline state, derive the image etc.
 	gitHubRepo, err := githubrepo.ParseUrl(flagTagRepoUrl)
 	if err != nil {
 		return err
 	}
-	ctx.pipelineConfig, err = fetchRemotePipelineConfig(ctx.ctx, gitHubRepo, releases[0].CommitHash)
-	if err != nil {
-		return err
-	}
-	ctx.containerConfig, err = container.NewContainerConfig(ctx.ctx, ctx.workRoot, ctx.containerConfig.Image, flagSecretsProject, ctx.pipelineConfig)
-	if err != nil {
-		return err
-	}
-
 	slog.Info(fmt.Sprintf("Publishing packages for %d libraries", len(releases)))
 
 	if err := publishPackages(ctx.containerConfig, flagArtifactRoot, releases); err != nil {

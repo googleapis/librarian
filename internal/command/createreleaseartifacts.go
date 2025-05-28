@@ -49,8 +49,9 @@ var CmdCreateReleaseArtifacts = &Command{
 		addFlagSecretsProject,
 		addFlagSkipIntegrationTests,
 	},
-	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
-	execute:              createReleaseArtifactsImpl,
+	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
+	maybeLoadStateAndConfig: loadRepoStateAndConfig,
+	execute:                 createReleaseArtifactsImpl,
 }
 
 func createReleaseArtifactsImpl(ctx *CommandContext) error {
@@ -78,14 +79,45 @@ func createReleaseArtifactsImpl(ctx *CommandContext) error {
 		}
 	}
 
-	// Save the release details in the output directory, so that's all way need later.
+	if err := copyMetadataFiles(ctx, outputRoot, releases); err != nil {
+		return err
+	}
+
+	slog.Info(fmt.Sprintf("Release artifact creation complete. Artifact root: %s", outputRoot))
+	return nil
+}
+
+// The publish-release-artifacts stage will need bits of metadata:
+// - The releases we're creating
+// - The pipeline config
+// - (Just in case) The pipeline state
+// The pipeline config and state files are copied by checking out the commit of the last
+// release, which should effectively be the tip of the release PR.
+func copyMetadataFiles(ctx *CommandContext, outputRoot string, releases []LibraryRelease) error {
 	releasesJson, err := json.Marshal(releases)
 	if err != nil {
 		return err
 	}
-	utils.CreateAndWriteBytesToFile(filepath.Join(outputRoot, "releases.json"), releasesJson)
+	if err := utils.CreateAndWriteBytesToFile(filepath.Join(outputRoot, "releases.json"), releasesJson); err != nil {
+		return err
+	}
 
-	slog.Info(fmt.Sprintf("Release artifact creation complete. Artifact root: %s", outputRoot))
+	languageRepo := ctx.languageRepo
+	finalRelease := releases[len(releases)-1]
+	if err := gitrepo.Checkout(languageRepo, finalRelease.CommitHash); err != nil {
+		return err
+	}
+	sourceStateFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineStateFile)
+	destStateFile := filepath.Join(outputRoot, pipelineStateFile)
+	if err := utils.CopyFile(sourceStateFile, destStateFile); err != nil {
+		return err
+	}
+
+	sourceConfigFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineConfigFile)
+	destConfigFile := filepath.Join(outputRoot, pipelineConfigFile)
+	if err := utils.CopyFile(sourceConfigFile, destConfigFile); err != nil {
+		return err
+	}
 	return nil
 }
 

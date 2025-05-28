@@ -47,7 +47,8 @@ var CmdConfigure = &Command{
 		addFlagRepoUrl,
 		addFlagSecretsProject,
 	},
-	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
+	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
+	maybeLoadStateAndConfig: loadRepoStateAndConfig,
 	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {
 			return err
@@ -230,7 +231,7 @@ func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prCo
 	}
 
 	// Reload (and then resave, to reformat) the state, so we can find the newly-configured library
-	state, err := loadPipelineState(languageRepo)
+	state, err := loadRepoPipelineState(languageRepo)
 	if err != nil {
 		return err
 	}

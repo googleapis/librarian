@@ -45,7 +45,8 @@ var CmdUpdateApis = &Command{
 		addFlagRepoUrl,
 		addFlagSecretsProject,
 	},
-	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
+	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
+	maybeLoadStateAndConfig: loadRepoStateAndConfig,
 	execute: func(ctx *CommandContext) error {
 		if err := validatePush(); err != nil {
 			return err

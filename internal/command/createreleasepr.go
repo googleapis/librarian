@@ -54,7 +54,8 @@ var CmdCreateReleasePR = &Command{
 		addFlagEnvFile,
 		addFlagRepoUrl,
 	},
-	maybeGetLanguageRepo: cloneOrOpenLanguageRepo,
+	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
+	maybeLoadStateAndConfig: loadRepoStateAndConfig,
 	execute: func(ctx *CommandContext) error {
 		if err := validateSkipIntegrationTests(); err != nil {
 			return err
