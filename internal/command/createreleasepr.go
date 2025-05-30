@@ -181,6 +181,17 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 			return nil, err
 		}
 
+		// Update the pipeline state to record what we're releasing and when, and to clear the next version field.
+		// Performing this before anything else means that container code can use the pipeline state for the steps
+		// below, if it doesn't want/need to store the version separately.
+		library.CurrentVersion = releaseVersion
+		library.NextVersion = ""
+		library.LastReleasedCommit = library.LastGeneratedCommit
+		library.ReleaseTimestamp = timestamppb.Now()
+		if err = savePipelineState(ctx); err != nil {
+			return nil, err
+		}
+
 		if err := container.PrepareLibraryRelease(containerConfig, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "preparing library release")
 			// Clean up any changes before starting the next iteration.
@@ -205,16 +216,6 @@ func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory str
 				return nil, err
 			}
 			continue
-		}
-
-		// Update the pipeline state to record what we've released and when, and to clear the next version field.
-		library.CurrentVersion = releaseVersion
-		library.NextVersion = ""
-		library.LastReleasedCommit = library.LastGeneratedCommit
-		library.ReleaseTimestamp = timestamppb.Now()
-
-		if err = savePipelineState(ctx); err != nil {
-			return nil, err
 		}
 
 		releaseDescription := fmt.Sprintf("chore: Release library %s version %s", library.Id, releaseVersion)
