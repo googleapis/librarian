@@ -212,6 +212,7 @@ func PackageLibrary(config *ContainerConfig, languageRepo, libId, outputDir stri
 func PublishLibrary(config *ContainerConfig, outputDir, libId, libVersion string) error {
 	commandArgs := []string{
 		"--package-output=/output",
+		"--network=cloudbuild",
 		fmt.Sprintf("--library-id=%s", libId),
 		fmt.Sprintf("--version=%s", libId),
 	}
