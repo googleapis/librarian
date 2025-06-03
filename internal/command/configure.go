@@ -49,7 +49,7 @@ var CmdConfigure = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *CommandContext) error {
+	execute: func(ctx *commandState) error {
 		if err := validatePush(); err != nil {
 			return err
 		}
@@ -215,7 +215,7 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 //
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
-func configureApi(ctx *CommandContext, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
+func configureApi(ctx *commandState, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
 	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
 

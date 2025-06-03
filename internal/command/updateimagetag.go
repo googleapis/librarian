@@ -45,7 +45,7 @@ var CmdUpdateImageTag = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *CommandContext) error {
+	execute: func(ctx *commandState) error {
 		if err := validatePush(); err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ var CmdUpdateImageTag = &Command{
 	},
 }
 
-func regenerateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+func regenerateLibrary(ctx *commandState, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
 	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
 

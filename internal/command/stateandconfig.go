@@ -65,7 +65,7 @@ func loadPipelineConfigFile(path string) (*statepb.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func savePipelineState(ctx *CommandContext) error {
+func savePipelineState(ctx *commandState) error {
 	path := filepath.Join(ctx.languageRepo.Dir, "generator-input", pipelineStateFile)
 	// Marshal the protobuf message as JSON...
 	unformatted, err := protojson.Marshal(ctx.pipelineState)

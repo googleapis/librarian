@@ -51,7 +51,7 @@ type Command struct {
 	maybeLoadStateAndConfig func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error)
 
 	// execute runs the command's with the provided context.
-	execute func(*CommandContext) error
+	execute func(*commandState) error
 
 	// flagFunctions are functions to initialize the command's flag set.
 	flagFunctions []func(fs *flag.FlagSet)
@@ -61,8 +61,8 @@ type Command struct {
 	flags *flag.FlagSet
 }
 
-// CommandContext holds all necessary information for a command execution.
-type CommandContext struct {
+// commandState holds all necessary information for a command execution.
+type commandState struct {
 	// ctx provides context for cancellable operations.
 	ctx context.Context
 
@@ -171,7 +171,7 @@ func RunCommand(c *Command, ctx context.Context) error {
 		return err
 	}
 
-	cmdContext := &CommandContext{
+	cmdContext := &commandState{
 		ctx:             ctx,
 		startTime:       startTime,
 		workRoot:        workRoot,
@@ -183,7 +183,7 @@ func RunCommand(c *Command, ctx context.Context) error {
 	return c.execute(cmdContext)
 }
 
-func appendResultEnvironmentVariable(ctx *CommandContext, name, value string) error {
+func appendResultEnvironmentVariable(ctx *commandState, name, value string) error {
 	envFile := flagEnvFile
 	if envFile == "" {
 		envFile = filepath.Join(ctx.workRoot, "env-vars.txt")

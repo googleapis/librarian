@@ -54,7 +54,7 @@ var CmdCreateReleaseArtifacts = &Command{
 	execute:                 createReleaseArtifactsImpl,
 }
 
-func createReleaseArtifactsImpl(ctx *CommandContext) error {
+func createReleaseArtifactsImpl(ctx *commandState) error {
 	if err := validateSkipIntegrationTests(); err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func createReleaseArtifactsImpl(ctx *CommandContext) error {
 // - (Just in case) The pipeline state
 // The pipeline config and state files are copied by checking out the commit of the last
 // release, which should effectively be the tip of the release PR.
-func copyMetadataFiles(ctx *CommandContext, outputRoot string, releases []LibraryRelease) error {
+func copyMetadataFiles(ctx *commandState, outputRoot string, releases []LibraryRelease) error {
 	releasesJson, err := json.Marshal(releases)
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func copyMetadataFiles(ctx *CommandContext, outputRoot string, releases []Librar
 	return nil
 }
 
-func buildTestPackageRelease(ctx *CommandContext, outputRoot string, release LibraryRelease) error {
+func buildTestPackageRelease(ctx *commandState, outputRoot string, release LibraryRelease) error {
 	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
 

@@ -57,7 +57,7 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 // If content only contains errors, the pull request is not created and an error is returned (to highlight that everything failed)
 // If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
 // If the pull request would contain an excessive number of commits (as configured in pipeline-config.json)
-func createPullRequest(ctx *CommandContext, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string) (*githubrepo.PullRequestMetadata, error) {
+func createPullRequest(ctx *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string) (*githubrepo.PullRequestMetadata, error) {
 	anySuccesses := len(content.Successes) > 0
 	anyErrors := len(content.Errors) > 0
 	languageRepo := ctx.languageRepo

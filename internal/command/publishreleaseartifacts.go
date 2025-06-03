@@ -59,7 +59,7 @@ var CmdPublishReleaseArtifacts = &Command{
 	execute: publishReleaseArtifactsImpl,
 }
 
-func publishReleaseArtifactsImpl(ctx *CommandContext) error {
+func publishReleaseArtifactsImpl(ctx *commandState) error {
 	if err := validateRequiredFlag("artifact-root", flagArtifactRoot); err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func publishPackages(config *container.ContainerConfig, outputRoot string, relea
 	return nil
 }
 
-func createRepoReleases(ctx *CommandContext, releases []LibraryRelease, gitHubRepo githubrepo.GitHubRepo) error {
+func createRepoReleases(ctx *commandState, releases []LibraryRelease, gitHubRepo githubrepo.GitHubRepo) error {
 	for _, release := range releases {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
