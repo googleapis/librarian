@@ -90,10 +90,14 @@ type CommandContext struct {
 	containerConfig *container.ContainerConfig
 }
 
+// Parse parses the provided command-line arguments using the command's flag
+// set.
 func (c *Command) Parse(args []string) error {
 	return c.flags.Parse(args)
 }
 
+// Lookup finds a command by its name, and returns an error if the command is
+// not found.
 func Lookup(name string) (*Command, error) {
 	var cmd *Command
 	for _, sub := range Commands {
@@ -143,6 +147,8 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
 	return languageRepo, nil
 }
 
+// RunCommand executes a given command, setting up its context including work
+// directory, language repository, pipeline state, and container configuration.
 func RunCommand(c *Command, ctx context.Context) error {
 	if c.flags.Lookup("language") != nil {
 		if err := validateLanguage(); err != nil {
