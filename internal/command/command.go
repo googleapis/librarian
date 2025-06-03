@@ -150,11 +150,6 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
 // RunCommand executes a given command, setting up its context including work
 // directory, language repository, pipeline state, and container configuration.
 func RunCommand(c *Command, ctx context.Context) error {
-	if c.flags.Lookup("language") != nil {
-		if err := validateLanguage(); err != nil {
-			return err
-		}
-	}
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime)
 	if err != nil {

@@ -149,29 +149,9 @@ func addFlagWorkRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagWorkRoot, "work-root", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
 }
 
-var supportedLanguages = map[string]bool{
-	"cpp":    false,
-	"dotnet": true,
-	"go":     false,
-	"java":   false,
-	"node":   false,
-	"php":    false,
-	"python": false,
-	"ruby":   false,
-	"rust":   false,
-	"all":    false,
-}
-
 func validatePush() error {
 	if flagPush && githubrepo.GetAccessToken() == "" {
 		return errors.New("no GitHub token supplied for push")
-	}
-	return nil
-}
-
-func validateLanguage() error {
-	if !supportedLanguages[flagLanguage] {
-		return fmt.Errorf("invalid -language flag specified: %q", flagLanguage)
 	}
 	return nil
 }
