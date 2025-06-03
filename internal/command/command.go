@@ -46,7 +46,7 @@ type Command struct {
 	// repository, cloning if necessary.  Returns nil if not applicable.
 	maybeGetLanguageRepo func(workRoot string) (*gitrepo.Repo, error)
 
-	// maybeLoadStateAndConfig loads pipeline state and config, even if no
+	// maybeLoadStateAndConfig attempts to load pipeline state and config, even if no
 	// language repo is present.
 	maybeLoadStateAndConfig func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error)
 
