@@ -34,47 +34,59 @@ import (
 
 const releaseIDEnvVarName = "_RELEASE_ID"
 
+// Command represents a single command that can be executed by the application.
 type Command struct {
-	Name  string
+	// Name is the unique identifier for the command.
+	Name string
+
+	// Short is a concise description shown in the 'librarian -h' output.
 	Short string
-	// Obtains a language repo where appropriate, cloning or using
-	// flags where necessary. May return a nil pointer if the command
-	// does not use a language repo.
+
+	// maybeGetLanguageRepo attempts to obtain a language-specific Git
+	// repository, cloning if necessary.  Returns nil if not applicable.
 	maybeGetLanguageRepo func(workRoot string) (*gitrepo.Repo, error)
-	// Loads the pipeline state and config where possible. This is called
-	// whether or not a language repo has been obtained.
+
+	// maybeLoadStateAndConfig loads pipeline state and config, even if no
+	// language repo is present.
 	maybeLoadStateAndConfig func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error)
-	// Executes the command with the given pre-populated context.
+
+	// execute runs the command's with the provided context.
 	execute func(*CommandContext) error
-	// Functions to execute when initializing the flag set for the command.
+
+	// flagFunctions are functions to initialize the command's flag set.
 	flagFunctions []func(fs *flag.FlagSet)
 
-	// The flag set used to parse the flags and construct usage messages.
-	// This is populated for each command in init().
+	// flags is the command's flag set for parsing arguments and generating
+	// usage messages. This is populated for each command in init().
 	flags *flag.FlagSet
 }
 
-// Information used when executing a command. This is set up by RunCommand,
-// then passed into Command.execute.
+// CommandContext holds all necessary information for a command execution.
 type CommandContext struct {
-	// Context for operations requiring cancellation etc
+	// ctx provides context for cancellable operations.
 	ctx context.Context
-	// The time at which the command started executing, to be used as a consistent
-	// timestamp for anything which needs one.
+
+	// startTime records when the command began execution. This is used as a
+	// consistent timestamp for commands when necessary.
 	startTime time.Time
-	// Temporary directory created under /tmp by default (but can be specified via a flag)
-	// All files created by Librarian live under this directory unless otherwise a location
-	// (e.g. a repo root) is specified via a flag.
+
+	// workRoot is the base directory for all command operations. The default
+	// location is /tmp.
 	workRoot string
-	// The language repo for the command, where appropriate.
+
+	// languageRepo is the relevant language-specific Git repository, if
+	// applicable.
 	languageRepo *gitrepo.Repo
-	// The pipeline configuration, loaded from the language repo if there is one.
-	// (This is nil if languageRepo is nil.)
+
+	// pipelineConfig holds the pipeline configuration, loaded from the
+	// language repo if present.
 	pipelineConfig *statepb.PipelineConfig
-	// The pipeline state, loaded from the language repo if there is one.
-	// (This is nil if languageRepo is nil.)
+
+	// pipelineState holds the pipeline's current state, loaded from the
+	// language repo if present.
 	pipelineState *statepb.PipelineState
-	// Configuration for running container commands.
+
+	// containerConfig provides settings for running containerized commands.
 	containerConfig *container.ContainerConfig
 }
 
