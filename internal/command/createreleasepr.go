@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
@@ -57,6 +58,7 @@ var CmdCreateReleasePR = &Command{
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
 	execute: func(ctx *commandState) error {
+		start := time.Now()
 		if err := validateSkipIntegrationTests(); err != nil {
 			return err
 		}
@@ -88,7 +90,7 @@ var CmdCreateReleasePR = &Command{
 			return err
 		}
 
-		releaseID := fmt.Sprintf("release-%s", formatTimestamp(ctx.startTime))
+		releaseID := fmt.Sprintf("release-%s", formatTimestamp(start))
 		if err := appendResultEnvironmentVariable(ctx, releaseIDEnvVarName, releaseID); err != nil {
 			return err
 		}

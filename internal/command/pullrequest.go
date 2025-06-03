@@ -94,7 +94,7 @@ func createPullRequest(ctx *commandState, content *PullRequestContent, titlePref
 
 	description = strings.TrimSpace(successesText + errorsText + excessText + "\n" + descriptionSuffix)
 
-	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(ctx.startTime))
+	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(start))
 
 	if !flagPush {
 		slog.Info(fmt.Sprintf("Push not specified; would have created PR with the following title and description:\n%s\n\n%s", title, description))
@@ -106,7 +106,7 @@ func createPullRequest(ctx *commandState, content *PullRequestContent, titlePref
 		return nil, err
 	}
 
-	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(ctx.startTime))
+	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(start))
 	err = gitrepo.PushBranch(languageRepo, branch, githubrepo.GetAccessToken())
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))

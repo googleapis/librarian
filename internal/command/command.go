@@ -66,10 +66,6 @@ type commandState struct {
 	// ctx provides context for cancellable operations.
 	ctx context.Context
 
-	// startTime records when the command began execution. This is used as a
-	// consistent timestamp for commands when necessary.
-	startTime time.Time
-
 	// workRoot is the base directory for all command operations. The default
 	// location is /tmp.
 	workRoot string
@@ -173,11 +169,9 @@ func RunCommand(c *Command, ctx context.Context) error {
 
 	cmdContext := &commandState{
 		ctx:             ctx,
-		startTime:       startTime,
 		workRoot:        workRoot,
 		languageRepo:    languageRepo,
 		pipelineConfig:  config,
-		pipelineState:   state,
 		containerConfig: containerConfig,
 	}
 	return c.execute(cmdContext)
