@@ -56,7 +56,7 @@ var CmdCreateReleasePR = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *CommandContext) error {
+	execute: func(ctx *commandState) error {
 		if err := validateSkipIntegrationTests(); err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ var CmdCreateReleasePR = &Command{
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(ctx *CommandContext, inputDirectory string, releaseID string) (*PullRequestContent, error) {
+func generateReleaseCommitForEachLibrary(ctx *commandState, inputDirectory string, releaseID string) (*PullRequestContent, error) {
 	containerConfig := ctx.containerConfig
 	libraries := ctx.pipelineState.Libraries
 	languageRepo := ctx.languageRepo

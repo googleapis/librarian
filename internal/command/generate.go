@@ -49,7 +49,7 @@ var CmdGenerate = &Command{
 	// We should do so by moving the clone part to maybeGetLanguageRepo - because then we'll be set up
 	// with the right image etc.
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *CommandContext) error {
+	execute: func(ctx *commandState) error {
 		if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
 			return err
 		}
@@ -93,7 +93,7 @@ var CmdGenerate = &Command{
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(ctx *CommandContext, outputDir string) (string, error) {
+func runGenerateCommand(ctx *commandState, outputDir string) (string, error) {
 	apiRoot, err := filepath.Abs(flagAPIRoot)
 	if err != nil {
 		return "", err

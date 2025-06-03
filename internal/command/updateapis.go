@@ -47,7 +47,7 @@ var CmdUpdateApis = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *CommandContext) error {
+	execute: func(ctx *commandState) error {
 		if err := validatePush(); err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ var CmdUpdateApis = &Command{
 	},
 }
 
-func updateLibrary(ctx *CommandContext, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
+func updateLibrary(ctx *commandState, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
 	containerConfig := ctx.containerConfig
 	languageRepo := ctx.languageRepo
 
