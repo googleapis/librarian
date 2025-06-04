@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
@@ -32,6 +33,7 @@ import (
 var CmdGenerate = &Command{
 	Name:  "generate",
 	Short: "Generate client library code for an API.",
+	Run:   runGenerate,
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
@@ -49,10 +51,48 @@ var CmdGenerate = &Command{
 	// We should do so by moving the clone part to maybeGetLanguageRepo - because then we'll be set up
 	// with the right image etc.
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 runGenerate,
+	execute:                 executeGenerate,
 }
 
-func runGenerate(state *commandState) error {
+func runGenerate(ctx context.Context) error {
+	startTime := time.Now()
+	workRoot, err := createWorkRoot(startTime)
+	if err != nil {
+		return err
+	}
+	workRoot, err = resolveLibraryWorkRoot(workRoot)
+	if err != nil {
+		return err
+	}
+	repo, err := cloneOrOpenLanguageRepo(workRoot)
+	if err != nil {
+		return err
+	}
+
+	ps, config, err := loadRepoStateAndConfig(repo)
+	if err != nil {
+		return err
+	}
+
+	image := deriveImage(ps)
+	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
+	if err != nil {
+		return err
+	}
+
+	state := &commandState{
+		ctx:             ctx,
+		startTime:       startTime,
+		workRoot:        workRoot,
+		languageRepo:    repo,
+		pipelineConfig:  config,
+		pipelineState:   ps,
+		containerConfig: containerConfig,
+	}
+	return executeGenerate(state)
+}
+
+func executeGenerate(state *commandState) error {
 	if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
 		return err
 	}
