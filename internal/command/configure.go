@@ -49,9 +49,6 @@ var CmdConfigure = &Command{
 		addFlagRepoUrl,
 		addFlagSecretsProject,
 	},
-	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
-	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 executeConfigure,
 }
 
 func runConfigure(ctx context.Context) error {

@@ -45,9 +45,6 @@ var CmdUpdateImageTag = &Command{
 		addFlagSecretsProject,
 		addFlagTag,
 	},
-	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
-	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 updateImageTag,
 }
 
 func runUpdateImageTag(ctx context.Context) error {

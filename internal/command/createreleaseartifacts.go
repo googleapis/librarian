@@ -51,9 +51,6 @@ var CmdCreateReleaseArtifacts = &Command{
 		addFlagSecretsProject,
 		addFlagSkipIntegrationTests,
 	},
-	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
-	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 createReleaseArtifactsImpl,
 }
 
 func runCreateReleaseArtifacts(ctx context.Context) error {

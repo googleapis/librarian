@@ -47,9 +47,6 @@ var CmdUpdateApis = &Command{
 		addFlagRepoUrl,
 		addFlagSecretsProject,
 	},
-	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
-	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 updateAPIs,
 }
 
 func runUpdateAPIs(ctx context.Context) error {

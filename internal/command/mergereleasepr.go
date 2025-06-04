@@ -29,7 +29,6 @@ import (
 
 	"github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/githubrepo"
-	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
@@ -60,13 +59,6 @@ var CmdMergeReleasePR = &Command{
 		addFlagReleasePRUrl,
 		addFlagSyncUrlPrefix,
 	},
-	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
-		return nil, nil
-	},
-	maybeLoadStateAndConfig: func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error) {
-		return nil, nil, nil
-	},
-	execute: mergeReleasePRImpl,
 }
 
 func runMergeReleasePR(ctx context.Context) error {
@@ -84,10 +76,6 @@ type SuspectRelease struct {
 }
 
 const mergedReleaseCommitEnvVarName = "_MERGED_RELEASE_COMMIT"
-
-func mergeReleasePRImpl(state *commandState) error {
-	return mergeReleasePR(state.ctx, state.workRoot)
-}
 
 func mergeReleasePR(ctx context.Context, workRoot string) error {
 	if flagSyncUrlPrefix != "" && os.Getenv(syncAuthTokenEnvironmentVariable) == "" {
