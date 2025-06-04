@@ -49,12 +49,12 @@ var CmdConfigure = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *commandState) error {
+	execute: func(state *commandState) error {
 		if err := validatePush(); err != nil {
 			return err
 		}
 
-		outputRoot := filepath.Join(ctx.workRoot, "output")
+		outputRoot := filepath.Join(state.workRoot, "output")
 		if err := os.Mkdir(outputRoot, 0755); err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ var CmdConfigure = &Command{
 
 		var apiRoot string
 		if flagAPIRoot == "" {
-			repo, err := cloneGoogleapis(ctx.workRoot)
+			repo, err := cloneGoogleapis(state.workRoot)
 			if err != nil {
 				return err
 			}
@@ -76,20 +76,20 @@ var CmdConfigure = &Command{
 			}
 			apiRoot = absRoot
 		}
-		apiPaths, err := findApisToConfigure(apiRoot, ctx.pipelineState, flagLanguage)
+		apiPaths, err := findApisToConfigure(apiRoot, state.pipelineState, flagLanguage)
 		if err != nil {
 			return err
 		}
 
 		prContent := PullRequestContent{}
 		for _, apiPath := range apiPaths {
-			err = configureApi(ctx, outputRoot, apiRoot, apiPath, &prContent)
+			err = configureApi(state, outputRoot, apiRoot, apiPath, &prContent)
 			if err != nil {
 				return err
 			}
 		}
 
-		_, err = createPullRequest(ctx, &prContent, "feat: API configuration", "", "config")
+		_, err = createPullRequest(state, &prContent, "feat: API configuration", "", "config")
 		return err
 	},
 }
@@ -215,9 +215,9 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 //
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
-func configureApi(ctx *commandState, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
-	containerConfig := ctx.containerConfig
-	languageRepo := ctx.languageRepo
+func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
+	containerConfig := state.containerConfig
+	languageRepo := state.languageRepo
 
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
@@ -230,22 +230,22 @@ func configureApi(ctx *commandState, outputRoot, apiRoot, apiPath string, prCont
 		return nil
 	}
 
-	// Reload (and then resave, to reformat) the state, so we can find the newly-configured library
-	state, err := loadRepoPipelineState(languageRepo)
+	// Reload (and then resave, to reformat) the ps, so we can find the newly-configured library
+	ps, err := loadRepoPipelineState(languageRepo)
 	if err != nil {
 		return err
 	}
-	ctx.pipelineState = state
-	err = savePipelineState(ctx)
+	state.pipelineState = ps
+	err = savePipelineState(state)
 	if err != nil {
 		return err
 	}
 
 	// We should now have a library for the given API path, or it should be ignored.
-	libraryID := findLibraryIDByApiPath(state, apiPath)
+	libraryID := findLibraryIDByApiPath(ps, apiPath)
 	if libraryID == "" {
 		// If it's newly-ignored, just commit the state change. This is still a "success" case.
-		if slices.Contains(state.IgnoredApiPaths, apiPath) {
+		if slices.Contains(ps.IgnoredApiPaths, apiPath) {
 			msg := fmt.Sprintf("feat: Added ignore entry for API %s", apiPath)
 			if err := commitAll(languageRepo, msg); err != nil {
 				return err

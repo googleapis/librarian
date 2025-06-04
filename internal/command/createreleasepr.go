@@ -56,7 +56,7 @@ var CmdCreateReleasePR = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *commandState) error {
+	execute: func(state *commandState) error {
 		if err := validateSkipIntegrationTests(); err != nil {
 			return err
 		}
@@ -68,11 +68,11 @@ var CmdCreateReleasePR = &Command{
 			return fmt.Errorf("flag -library-version is not valid without -library-id")
 		}
 
-		if flagLibraryID != "" && findLibraryByID(ctx.pipelineState, flagLibraryID) == nil {
+		if flagLibraryID != "" && findLibraryByID(state.pipelineState, flagLibraryID) == nil {
 			return fmt.Errorf("no such library: %s", flagLibraryID)
 		}
 
-		inputDirectory := filepath.Join(ctx.workRoot, "inputs")
+		inputDirectory := filepath.Join(state.workRoot, "inputs")
 		if err := os.Mkdir(inputDirectory, 0755); err != nil {
 			slog.Error("Failed to create input directory")
 			return err
@@ -80,25 +80,25 @@ var CmdCreateReleasePR = &Command{
 
 		// Find the head of the language repo before we start creating any release commits.
 		// This will be validated later to check that libraries haven't changed since the release PR was created.
-		baselineCommit, err := gitrepo.HeadHash(ctx.languageRepo)
+		baselineCommit, err := gitrepo.HeadHash(state.languageRepo)
 		if err != nil {
 			return err
 		}
-		if err := appendResultEnvironmentVariable(ctx, baselineCommitEnvVarName, baselineCommit); err != nil {
+		if err := appendResultEnvironmentVariable(state, baselineCommitEnvVarName, baselineCommit); err != nil {
 			return err
 		}
 
-		releaseID := fmt.Sprintf("release-%s", formatTimestamp(ctx.startTime))
-		if err := appendResultEnvironmentVariable(ctx, releaseIDEnvVarName, releaseID); err != nil {
+		releaseID := fmt.Sprintf("release-%s", formatTimestamp(state.startTime))
+		if err := appendResultEnvironmentVariable(state, releaseIDEnvVarName, releaseID); err != nil {
 			return err
 		}
 
-		prContent, err := generateReleaseCommitForEachLibrary(ctx, inputDirectory, releaseID)
+		prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID)
 		if err != nil {
 			return err
 		}
 
-		prMetadata, err := createPullRequest(ctx, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release")
+		prMetadata, err := createPullRequest(state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release")
 		if err != nil {
 			return err
 		}
@@ -114,12 +114,12 @@ var CmdCreateReleasePR = &Command{
 		// Final steps if we've actually created a release PR.
 		// - We always add the do-not-merge label so that Librarian can merge later.
 		// - Add a result environment variable with the PR number, for the next stage of the process.
-		err = githubrepo.AddLabelToPullRequest(ctx.ctx, *prMetadata, DoNotMergeLabel)
+		err = githubrepo.AddLabelToPullRequest(state.ctx, *prMetadata, DoNotMergeLabel)
 		if err != nil {
 			slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 			return err
 		}
-		if err := appendResultEnvironmentVariable(ctx, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
+		if err := appendResultEnvironmentVariable(state, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
 			return err
 		}
 		return nil
@@ -131,10 +131,10 @@ var CmdCreateReleasePR = &Command{
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(ctx *commandState, inputDirectory string, releaseID string) (*PullRequestContent, error) {
-	containerConfig := ctx.containerConfig
-	libraries := ctx.pipelineState.Libraries
-	languageRepo := ctx.languageRepo
+func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory string, releaseID string) (*PullRequestContent, error) {
+	containerConfig := state.containerConfig
+	libraries := state.pipelineState.Libraries
+	languageRepo := state.languageRepo
 
 	pr := new(PullRequestContent)
 
@@ -154,7 +154,7 @@ func generateReleaseCommitForEachLibrary(ctx *commandState, inputDirectory strin
 		} else {
 			previousReleaseTag = formatReleaseTag(library.Id, library.CurrentVersion)
 		}
-		allSourcePaths := append(ctx.pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
+		allSourcePaths := append(state.pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
 		commits, err := gitrepo.GetCommitsForPathsSinceTag(languageRepo, allSourcePaths, previousReleaseTag)
 		if err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "retrieving commits since last release")
@@ -188,7 +188,7 @@ func generateReleaseCommitForEachLibrary(ctx *commandState, inputDirectory strin
 		library.NextVersion = ""
 		library.LastReleasedCommit = library.LastGeneratedCommit
 		library.ReleaseTimestamp = timestamppb.Now()
-		if err = savePipelineState(ctx); err != nil {
+		if err = savePipelineState(state); err != nil {
 			return nil, err
 		}
 

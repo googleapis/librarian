@@ -47,7 +47,7 @@ var CmdUpdateApis = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *commandState) error {
+	execute: func(state *commandState) error {
 		if err := validatePush(); err != nil {
 			return err
 		}
@@ -56,7 +56,7 @@ var CmdUpdateApis = &Command{
 		cleanWorkingTreePostGeneration := true
 		if flagAPIRoot == "" {
 			var err error
-			apiRepo, err = cloneGoogleapis(ctx.workRoot)
+			apiRepo, err = cloneGoogleapis(state.workRoot)
 			if err != nil {
 				return err
 			}
@@ -81,21 +81,21 @@ var CmdUpdateApis = &Command{
 			}
 		}
 
-		outputDir := filepath.Join(ctx.workRoot, "output")
+		outputDir := filepath.Join(state.workRoot, "output")
 		if err := os.Mkdir(outputDir, 0755); err != nil {
 			return err
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
 		// Root for generator-input defensive copies
-		if err := os.Mkdir(filepath.Join(ctx.workRoot, "generator-input"), 0755); err != nil {
+		if err := os.Mkdir(filepath.Join(state.workRoot, "generator-input"), 0755); err != nil {
 			return err
 		}
 
 		prContent := new(PullRequestContent)
 		// Perform "generate, clean, commit, build" on each library.
-		for _, library := range ctx.pipelineState.Libraries {
-			err := updateLibrary(ctx, apiRepo, outputDir, library, prContent)
+		for _, library := range state.pipelineState.Libraries {
+			err := updateLibrary(state, apiRepo, outputDir, library, prContent)
 			if err != nil {
 				return err
 			}
@@ -105,14 +105,14 @@ var CmdUpdateApis = &Command{
 		if cleanWorkingTreePostGeneration {
 			gitrepo.CleanWorkingTree(apiRepo)
 		}
-		_, err := createPullRequest(ctx, prContent, "feat: API regeneration", "", "regen")
+		_, err := createPullRequest(state, prContent, "feat: API regeneration", "", "regen")
 		return err
 	},
 }
 
-func updateLibrary(ctx *commandState, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
-	containerConfig := ctx.containerConfig
-	languageRepo := ctx.languageRepo
+func updateLibrary(state *commandState, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
+	containerConfig := state.containerConfig
+	languageRepo := state.languageRepo
 
 	if flagLibraryID != "" && flagLibraryID != library.Id {
 		// If flagLibraryID has been passed in, we only act on that library.
@@ -152,8 +152,8 @@ func updateLibrary(ctx *commandState, apiRepo *gitrepo.Repo, outputRoot string, 
 	// This needs to be done per library, as the previous iteration may have updated generator-input in a meaningful way.
 	// We could potentially just keep a single copy and update it, but it's clearer diagnostically if we can tell
 	// what state we passed into the container.
-	generatorInput := filepath.Join(ctx.workRoot, "generator-input", library.Id)
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(ctx.languageRepo.Dir, "generator-input"))); err != nil {
+	generatorInput := filepath.Join(state.workRoot, "generator-input", library.Id)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, "generator-input"))); err != nil {
 		return err
 	}
 
@@ -174,7 +174,7 @@ func updateLibrary(ctx *commandState, apiRepo *gitrepo.Repo, outputRoot string, 
 	}
 
 	library.LastGeneratedCommit = commits[0].Hash.String()
-	if err := savePipelineState(ctx); err != nil {
+	if err := savePipelineState(state); err != nil {
 		return err
 	}
 

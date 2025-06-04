@@ -183,10 +183,10 @@ func RunCommand(c *Command, ctx context.Context) error {
 	return c.execute(cmdContext)
 }
 
-func appendResultEnvironmentVariable(ctx *commandState, name, value string) error {
+func appendResultEnvironmentVariable(state *commandState, name, value string) error {
 	envFile := flagEnvFile
 	if envFile == "" {
-		envFile = filepath.Join(ctx.workRoot, "env-vars.txt")
+		envFile = filepath.Join(state.workRoot, "env-vars.txt")
 	}
 
 	return utils.AppendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))

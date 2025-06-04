@@ -59,7 +59,7 @@ var CmdPublishReleaseArtifacts = &Command{
 	execute: publishReleaseArtifactsImpl,
 }
 
-func publishReleaseArtifactsImpl(ctx *commandState) error {
+func publishReleaseArtifactsImpl(state *commandState) error {
 	if err := validateRequiredFlag("artifact-root", flagArtifactRoot); err != nil {
 		return err
 	}
@@ -89,10 +89,10 @@ func publishReleaseArtifactsImpl(ctx *commandState) error {
 	}
 	slog.Info(fmt.Sprintf("Publishing packages for %d libraries", len(releases)))
 
-	if err := publishPackages(ctx.containerConfig, flagArtifactRoot, releases); err != nil {
+	if err := publishPackages(state.containerConfig, flagArtifactRoot, releases); err != nil {
 		return err
 	}
-	if err := createRepoReleases(ctx, releases, gitHubRepo); err != nil {
+	if err := createRepoReleases(state, releases, gitHubRepo); err != nil {
 		return err
 	}
 	slog.Info("Release complete.")
@@ -111,12 +111,12 @@ func publishPackages(config *container.ContainerConfig, outputRoot string, relea
 	return nil
 }
 
-func createRepoReleases(ctx *commandState, releases []LibraryRelease, gitHubRepo githubrepo.GitHubRepo) error {
+func createRepoReleases(state *commandState, releases []LibraryRelease, gitHubRepo githubrepo.GitHubRepo) error {
 	for _, release := range releases {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
 		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := githubrepo.CreateRelease(ctx.ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
+		repoRelease, err := githubrepo.CreateRelease(state.ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
 		if err != nil {
 			return err
 		}
