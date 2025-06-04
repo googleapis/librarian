@@ -51,7 +51,10 @@ var CmdMergeReleasePR = &cli.Command{
 	Name:  "merge-release-pr",
 	Short: "Merge a validated release PR.",
 	Run:   runMergeReleasePR,
-	FlagFunctions: []func(fs *flag.FlagSet){
+}
+
+func init() {
+	CmdMergeReleasePR.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
 		addFlagWorkRoot,
@@ -59,7 +62,7 @@ var CmdMergeReleasePR = &cli.Command{
 		addFlagReleaseID,
 		addFlagReleasePRUrl,
 		addFlagSyncUrlPrefix,
-	},
+	})
 }
 
 func runMergeReleasePR(ctx context.Context) error {

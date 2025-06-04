@@ -34,7 +34,10 @@ var CmdGenerate = &cli.Command{
 	Name:  "generate",
 	Short: "Generate client library code for an API.",
 	Run:   runGenerate,
-	FlagFunctions: []func(fs *flag.FlagSet){
+}
+
+func init() {
+	CmdGenerate.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIPath,
@@ -44,7 +47,7 @@ var CmdGenerate = &cli.Command{
 		addFlagRepoRoot,
 		addFlagRepoUrl,
 		addFlagSecretsProject,
-	},
+	})
 }
 
 func runGenerate(ctx context.Context) error {

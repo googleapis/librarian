@@ -37,7 +37,10 @@ var CmdConfigure = &cli.Command{
 	Name:  "configure",
 	Short: "Set up a new API for a language.",
 	Run:   runConfigure,
-	FlagFunctions: []func(fs *flag.FlagSet){
+}
+
+func init() {
+	CmdConfigure.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIPath,
@@ -49,7 +52,7 @@ var CmdConfigure = &cli.Command{
 		addFlagRepoRoot,
 		addFlagRepoUrl,
 		addFlagSecretsProject,
-	},
+	})
 }
 
 func runConfigure(ctx context.Context) error {

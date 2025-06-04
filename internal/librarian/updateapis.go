@@ -34,7 +34,10 @@ var CmdUpdateApis = &cli.Command{
 	Name:  "update-apis",
 	Short: "Regenerate APIs in a language repo with new specifications.",
 	Run:   runUpdateAPIs,
-	FlagFunctions: []func(fs *flag.FlagSet){
+}
+
+func init() {
+	CmdUpdateApis.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIRoot,
@@ -47,7 +50,7 @@ var CmdUpdateApis = &cli.Command{
 		addFlagRepoRoot,
 		addFlagRepoUrl,
 		addFlagSecretsProject,
-	},
+	})
 }
 
 func runUpdateAPIs(ctx context.Context) error {

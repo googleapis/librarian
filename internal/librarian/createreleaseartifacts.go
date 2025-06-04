@@ -42,7 +42,10 @@ var CmdCreateReleaseArtifacts = &cli.Command{
 	Name:  "create-release-artifacts",
 	Short: "Create release artifacts from a merged release PR.",
 	Run:   runCreateReleaseArtifacts,
-	FlagFunctions: []func(fs *flag.FlagSet){
+}
+
+func init() {
+	CmdCreateReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagLanguage,
@@ -51,7 +54,7 @@ var CmdCreateReleaseArtifacts = &cli.Command{
 		addFlagReleaseID,
 		addFlagSecretsProject,
 		addFlagSkipIntegrationTests,
-	},
+	})
 }
 
 func runCreateReleaseArtifacts(ctx context.Context) error {

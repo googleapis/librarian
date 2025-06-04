@@ -42,7 +42,10 @@ var CmdCreateReleasePR = &cli.Command{
 	Name:  "create-release-pr",
 	Short: "Generate a release PR.",
 	Run:   runCreateReleasePR,
-	FlagFunctions: []func(fs *flag.FlagSet){
+}
+
+func init() {
+	CmdCreateReleasePR.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
 		addFlagWorkRoot,
@@ -56,7 +59,7 @@ var CmdCreateReleasePR = &cli.Command{
 		addFlagSkipIntegrationTests,
 		addFlagEnvFile,
 		addFlagRepoUrl,
-	},
+	})
 }
 
 func runCreateReleasePR(ctx context.Context) error {

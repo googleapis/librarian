@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -246,26 +245,6 @@ var librarianCommands = []*cli.Command{
 	CmdMergeReleasePR,
 	CmdCreateReleaseArtifacts,
 	CmdPublishReleaseArtifacts,
-}
-
-func init() {
-	for _, c := range librarianCommands {
-		c.Flags = flag.NewFlagSet(c.Name, flag.ContinueOnError)
-		c.Flags.Usage = constructUsage(c.Flags, c.Name)
-		for _, fn := range c.FlagFunctions {
-			fn(c.Flags)
-		}
-	}
-}
-
-func constructUsage(fs *flag.FlagSet, name string) func() {
-	output := fmt.Sprintf("Usage:\n\n  librarian %s [arguments]\n", name)
-	output += "\nFlags:\n\n"
-	return func() {
-		fmt.Fprint(fs.Output(), output)
-		fs.PrintDefaults()
-		fmt.Fprintf(fs.Output(), "\n\n")
-	}
 }
 
 func formatReleaseTag(libraryID, version string) string {

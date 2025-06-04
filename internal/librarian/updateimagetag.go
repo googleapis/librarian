@@ -33,7 +33,10 @@ var CmdUpdateImageTag = &cli.Command{
 	Name:  "update-image-tag",
 	Short: "Update a language repo's image tag and regenerate APIs.",
 	Run:   runUpdateImageTag,
-	FlagFunctions: []func(fs *flag.FlagSet){
+}
+
+func init() {
+	CmdUpdateImageTag.SetFlags([]func(fs *flag.FlagSet){
 		addFlagWorkRoot,
 		addFlagAPIRoot,
 		addFlagBranch,
@@ -45,7 +48,7 @@ var CmdUpdateImageTag = &cli.Command{
 		addFlagRepoUrl,
 		addFlagSecretsProject,
 		addFlagTag,
-	},
+	})
 }
 
 func runUpdateImageTag(ctx context.Context) error {

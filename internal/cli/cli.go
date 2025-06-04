@@ -34,18 +34,15 @@ type Command struct {
 	// commands to implement this method.
 	Run func(ctx context.Context) error
 
-	// FlagFunctions are functions to initialize the command's flag set.
-	FlagFunctions []func(fs *flag.FlagSet)
-
-	// Flags is the command's flag set for parsing arguments and generating
+	// flags is the command's flag set for parsing arguments and generating
 	// usage messages. This is populated for each command in init().
-	Flags *flag.FlagSet
+	flags *flag.FlagSet
 }
 
 // Parse parses the provided command-line arguments using the command's flag
 // set.
 func (c *Command) Parse(args []string) error {
-	return c.Flags.Parse(args)
+	return c.flags.Parse(args)
 }
 
 // Lookup finds a command by its name, and returns an error if the command is
@@ -61,4 +58,25 @@ func Lookup(name string, commands []*Command) (*Command, error) {
 		return nil, fmt.Errorf("invalid command: %q", name)
 	}
 	return cmd, nil
+}
+
+// SetFlags registers a list of functions that configure flags for the command.
+func (c *Command) SetFlags(flagFunctions []func(fs *flag.FlagSet)) {
+	c.flags = flag.NewFlagSet(c.Name, flag.ContinueOnError)
+	c.flags.Usage = constructUsage(c.flags, c.Name)
+	for _, fn := range flagFunctions {
+		fn(c.flags)
+	}
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/205): clean up this
+// function so that "librarian" is not hardcoded
+func constructUsage(fs *flag.FlagSet, name string) func() {
+	output := fmt.Sprintf("Usage:\n\n  librarian %s [arguments]\n", name)
+	output += "\nFlags:\n\n"
+	return func() {
+		fmt.Fprint(fs.Output(), output)
+		fs.PrintDefaults()
+		fmt.Fprintf(fs.Output(), "\n\n")
+	}
 }

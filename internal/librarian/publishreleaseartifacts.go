@@ -35,14 +35,17 @@ var CmdPublishReleaseArtifacts = &cli.Command{
 	Name:  "publish-release-artifacts",
 	Short: "Publish (previously-created) release artifacts to package managers.",
 	Run:   runPublishReleaseArtifacts,
-	FlagFunctions: []func(fs *flag.FlagSet){
+}
+
+func init() {
+	CmdPublishReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
 		addFlagArtifactRoot,
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagLanguage,
 		addFlagSecretsProject,
 		addFlagTagRepoUrl,
-	},
+	})
 }
 
 func runPublishReleaseArtifacts(ctx context.Context) error {
