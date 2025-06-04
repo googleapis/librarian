@@ -26,7 +26,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
-	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
@@ -45,13 +44,6 @@ var CmdGenerate = &Command{
 		addFlagRepoUrl,
 		addFlagSecretsProject,
 	},
-	// By default don't clone a language repo, we will clone later only if library exists in language repo.
-	maybeGetLanguageRepo: openOrCloneLanguageRepoIfLibraryExists,
-	// Currently, we don't load any repo state and config in the initial path.
-	// We should do so by moving the clone part to maybeGetLanguageRepo - because then we'll be set up
-	// with the right image etc.
-	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 executeGenerate,
 }
 
 func runGenerate(ctx context.Context) error {
@@ -155,17 +147,6 @@ func runGenerateCommand(state *commandState, outputDir string) (string, error) {
 		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", flagAPIPath))
 		return "", container.GenerateRaw(state.containerConfig, apiRoot, outputDir, flagAPIPath)
 	}
-}
-
-// Checks if the library with the given API path exists in the repo specified either
-// by a URL or a local path, and opens or clones it if so.
-func openOrCloneLanguageRepoIfLibraryExists(workRoot string) (*gitrepo.Repo, error) {
-	workRoot, err := resolveLibraryWorkRoot(workRoot)
-	if err != nil {
-		return nil, err
-	}
-	// Otherwise (if the library *does* exist), clone or open it as normal.
-	return cloneOrOpenLanguageRepo(workRoot)
 }
 
 // resolveLibraryWorkRoot returns workRoot if the library for the given API

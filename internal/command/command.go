@@ -48,17 +48,6 @@ type Command struct {
 	// commands to implement this method.
 	Run func(ctx context.Context) error
 
-	// maybeGetLanguageRepo attempts to obtain a language-specific Git
-	// repository, cloning if necessary.  Returns nil if not applicable.
-	maybeGetLanguageRepo func(workRoot string) (*gitrepo.Repo, error)
-
-	// maybeLoadStateAndConfig attempts to load pipeline state and config, even if no
-	// language repo is present.
-	maybeLoadStateAndConfig func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error)
-
-	// execute runs the command's with the provided context.
-	execute func(*commandState) error
-
 	// flagFunctions are functions to initialize the command's flag set.
 	flagFunctions []func(fs *flag.FlagSet)
 
@@ -151,45 +140,6 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
 		return nil, errors.New("language repo must be clean")
 	}
 	return languageRepo, nil
-}
-
-// RunCommand executes a given command, setting up its context including work
-// directory, language repository, pipeline state, and container configuration.
-//
-// TODO(https://github.com/googleapis/librarian/issues/194): remove this
-// function once all code has switched over to using Command.Run.
-func RunCommand(c *Command, ctx context.Context) error {
-	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime)
-	if err != nil {
-		return err
-	}
-	languageRepo, err := c.maybeGetLanguageRepo(workRoot)
-	if err != nil {
-		return err
-	}
-
-	state, config, err := c.maybeLoadStateAndConfig(languageRepo)
-	if err != nil {
-		return err
-	}
-
-	image := deriveImage(state)
-	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
-	if err != nil {
-		return err
-	}
-
-	cmdContext := &commandState{
-		ctx:             ctx,
-		startTime:       startTime,
-		workRoot:        workRoot,
-		languageRepo:    languageRepo,
-		pipelineConfig:  config,
-		pipelineState:   state,
-		containerConfig: containerConfig,
-	}
-	return c.execute(cmdContext)
 }
 
 func createContainerForLanguage(ctx context.Context) (*commandState, error) {

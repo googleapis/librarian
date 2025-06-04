@@ -32,7 +32,7 @@ func Run(ctx context.Context, arg ...string) error {
 		return err
 	}
 	slog.Info("librarian", "arguments", arg)
-	return command.RunCommand(cmd, ctx)
+	return cmd.Run(ctx)
 }
 
 func parseArgs(args []string) (*command.Command, error) {

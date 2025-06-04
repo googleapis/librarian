@@ -56,9 +56,6 @@ var CmdCreateReleasePR = &Command{
 		addFlagEnvFile,
 		addFlagRepoUrl,
 	},
-	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
-	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 createReleasePR,
 }
 
 func runCreateReleasePR(ctx context.Context) error {
