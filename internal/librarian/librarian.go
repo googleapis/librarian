@@ -21,7 +21,6 @@ import (
 	"log/slog"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/command"
 )
 
 func Run(ctx context.Context, arg ...string) error {
@@ -46,7 +45,7 @@ Usage:
 
 The commands are:
 `
-	for _, c := range command.Commands {
+	for _, c := range librarianCommands {
 		output += fmt.Sprintf("\n  %-25s  %s", c.Name, c.Short)
 	}
 
@@ -63,5 +62,5 @@ The commands are:
 		fs.Usage()
 		return nil, fmt.Errorf("command not specified")
 	}
-	return cli.Lookup(fs.Args()[0], command.Commands)
+	return cli.Lookup(fs.Args()[0], librarianCommands)
 }

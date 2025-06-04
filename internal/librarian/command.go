@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package command
+package librarian
 
 import (
 	"context"
@@ -237,7 +237,7 @@ func logPartialError(id string, err error, action string) string {
 	return fmt.Sprintf("Error while %s %s", action, id)
 }
 
-var Commands = []*cli.Command{
+var librarianCommands = []*cli.Command{
 	CmdConfigure,
 	CmdGenerate,
 	CmdUpdateApis,
@@ -249,7 +249,7 @@ var Commands = []*cli.Command{
 }
 
 func init() {
-	for _, c := range Commands {
+	for _, c := range librarianCommands {
 		c.Flags = flag.NewFlagSet(c.Name, flag.ContinueOnError)
 		c.Flags.Usage = constructUsage(c.Flags, c.Name)
 		for _, fn := range c.FlagFunctions {
