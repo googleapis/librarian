@@ -15,6 +15,7 @@
 package command
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -34,6 +35,7 @@ import (
 var CmdConfigure = &Command{
 	Name:  "configure",
 	Short: "Set up a new API for a language.",
+	Run:   runConfigure,
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
@@ -49,10 +51,18 @@ var CmdConfigure = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 runConfigure,
+	execute:                 executeConfigure,
 }
 
-func runConfigure(state *commandState) error {
+func runConfigure(ctx context.Context) error {
+	state, err := createContainerForLanguage(ctx)
+	if err != nil {
+		return err
+	}
+	return executeConfigure(state)
+}
+
+func executeConfigure(state *commandState) error {
 	if err := validatePush(); err != nil {
 		return err
 	}

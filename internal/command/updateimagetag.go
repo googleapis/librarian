@@ -15,6 +15,7 @@
 package command
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -30,6 +31,7 @@ import (
 var CmdUpdateImageTag = &Command{
 	Name:  "update-image-tag",
 	Short: "Update a language repo's image tag and regenerate APIs.",
+	Run:   runUpdateImageTag,
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagWorkRoot,
 		addFlagAPIRoot,
@@ -46,6 +48,14 @@ var CmdUpdateImageTag = &Command{
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
 	execute:                 updateImageTag,
+}
+
+func runUpdateImageTag(ctx context.Context) error {
+	state, err := createContainerForLanguage(ctx)
+	if err != nil {
+		return err
+	}
+	return updateImageTag(state)
 }
 
 func updateImageTag(state *commandState) error {

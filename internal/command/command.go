@@ -155,6 +155,9 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
 
 // RunCommand executes a given command, setting up its context including work
 // directory, language repository, pipeline state, and container configuration.
+//
+// TODO(https://github.com/googleapis/librarian/issues/194): remove this
+// function once all code has switched over to using Command.Run.
 func RunCommand(c *Command, ctx context.Context) error {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime)
@@ -187,6 +190,40 @@ func RunCommand(c *Command, ctx context.Context) error {
 		containerConfig: containerConfig,
 	}
 	return c.execute(cmdContext)
+}
+
+func createContainerForLanguage(ctx context.Context) (*commandState, error) {
+	startTime := time.Now()
+	workRoot, err := createWorkRoot(startTime)
+	if err != nil {
+		return nil, err
+	}
+	repo, err := cloneOrOpenLanguageRepo(workRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	ps, config, err := loadRepoStateAndConfig(repo)
+	if err != nil {
+		return nil, err
+	}
+
+	image := deriveImage(ps)
+	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
+	if err != nil {
+		return nil, err
+	}
+
+	state := &commandState{
+		ctx:             ctx,
+		startTime:       startTime,
+		workRoot:        workRoot,
+		languageRepo:    repo,
+		pipelineConfig:  config,
+		pipelineState:   ps,
+		containerConfig: containerConfig,
+	}
+	return state, nil
 }
 
 func appendResultEnvironmentVariable(workRoot, name, value string) error {

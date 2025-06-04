@@ -15,6 +15,7 @@
 package command
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -39,6 +40,7 @@ const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 var CmdCreateReleasePR = &Command{
 	Name:  "create-release-pr",
 	Short: "Generate a release PR.",
+	Run:   runCreateReleasePR,
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
@@ -57,6 +59,14 @@ var CmdCreateReleasePR = &Command{
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
 	execute:                 createReleasePR,
+}
+
+func runCreateReleasePR(ctx context.Context) error {
+	state, err := createContainerForLanguage(ctx)
+	if err != nil {
+		return err
+	}
+	return createReleasePR(state)
 }
 
 func createReleasePR(state *commandState) error {
