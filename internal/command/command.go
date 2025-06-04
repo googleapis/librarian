@@ -42,6 +42,12 @@ type Command struct {
 	// Short is a concise description shown in the 'librarian -h' output.
 	Short string
 
+	// Run executes the command.
+	//
+	// TODO(https://github.com/googleapis/librarian/issues/194): migrate all
+	// commands to implement this method.
+	Run func(ctx context.Context) error
+
 	// maybeGetLanguageRepo attempts to obtain a language-specific Git
 	// repository, cloning if necessary.  Returns nil if not applicable.
 	maybeGetLanguageRepo func(workRoot string) (*gitrepo.Repo, error)
@@ -183,10 +189,10 @@ func RunCommand(c *Command, ctx context.Context) error {
 	return c.execute(cmdContext)
 }
 
-func appendResultEnvironmentVariable(state *commandState, name, value string) error {
+func appendResultEnvironmentVariable(workRoot, name, value string) error {
 	envFile := flagEnvFile
 	if envFile == "" {
-		envFile = filepath.Join(state.workRoot, "env-vars.txt")
+		envFile = filepath.Join(workRoot, "env-vars.txt")
 	}
 
 	return utils.AppendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))

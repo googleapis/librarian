@@ -87,12 +87,12 @@ func createReleasePR(state *commandState) error {
 	if err != nil {
 		return err
 	}
-	if err := appendResultEnvironmentVariable(state, baselineCommitEnvVarName, baselineCommit); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, baselineCommitEnvVarName, baselineCommit); err != nil {
 		return err
 	}
 
 	releaseID := fmt.Sprintf("release-%s", formatTimestamp(state.startTime))
-	if err := appendResultEnvironmentVariable(state, releaseIDEnvVarName, releaseID); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, releaseIDEnvVarName, releaseID); err != nil {
 		return err
 	}
 
@@ -122,7 +122,7 @@ func createReleasePR(state *commandState) error {
 		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 		return err
 	}
-	if err := appendResultEnvironmentVariable(state, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
 		return err
 	}
 	return nil
