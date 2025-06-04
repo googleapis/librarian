@@ -74,7 +74,7 @@ type SuspectRelease struct {
 
 const mergedReleaseCommitEnvVarName = "_MERGED_RELEASE_COMMIT"
 
-func mergeReleasePRImpl(ctx *commandState) error {
+func mergeReleasePRImpl(state *commandState) error {
 	if flagSyncUrlPrefix != "" && os.Getenv(syncAuthTokenEnvironmentVariable) == "" {
 		return errors.New("-sync-url-prefix specified, but no sync auth token present")
 	}
@@ -94,11 +94,11 @@ func mergeReleasePRImpl(ctx *commandState) error {
 
 	prMetadata := githubrepo.PullRequestMetadata{Repo: prRepo, Number: prNumber}
 
-	if err := waitForPullRequestReadiness(ctx, prMetadata); err != nil {
+	if err := waitForPullRequestReadiness(state, prMetadata); err != nil {
 		return err
 	}
 
-	mergeCommit, err := mergePullRequest(ctx, prMetadata)
+	mergeCommit, err := mergePullRequest(state, prMetadata)
 	if err != nil {
 		return err
 	}
@@ -109,13 +109,13 @@ func mergeReleasePRImpl(ctx *commandState) error {
 	return nil
 }
 
-func waitForPullRequestReadiness(ctx *commandState, prMetadata githubrepo.PullRequestMetadata) error {
+func waitForPullRequestReadiness(state *commandState, prMetadata githubrepo.PullRequestMetadata) error {
 	// TODO: time out here, or let Kokoro do so?
 	// TODO: make polling frequency configurable?
 
 	const pollDelaySeconds = 60
 	for {
-		ready, err := waitForPullRequestReadinessSingleIteration(ctx, prMetadata)
+		ready, err := waitForPullRequestReadinessSingleIteration(state, prMetadata)
 		if ready || err != nil {
 			return err
 		}
@@ -138,9 +138,9 @@ func waitForPullRequestReadiness(ctx *commandState, prMetadata githubrepo.PullRe
 // - No commit in the PR must start its release notes with "FIXME"
 // - There must be no commits in the head of the repo which affect libraries released by the PR
 // - There must be at least one approving reviews from a member/owner of the repo, and no reviews from members/owners requesting changes
-func waitForPullRequestReadinessSingleIteration(ctx *commandState, prMetadata githubrepo.PullRequestMetadata) (bool, error) {
+func waitForPullRequestReadinessSingleIteration(state *commandState, prMetadata githubrepo.PullRequestMetadata) (bool, error) {
 	slog.Info("Checking pull request for readiness")
-	pr, err := githubrepo.GetPullRequest(ctx.ctx, prMetadata.Repo, prMetadata.Number)
+	pr, err := githubrepo.GetPullRequest(state.ctx, prMetadata.Repo, prMetadata.Number)
 	if err != nil {
 		return false, err
 	}
@@ -155,7 +155,7 @@ func waitForPullRequestReadinessSingleIteration(ctx *commandState, prMetadata gi
 	if pr.ClosedAt != nil {
 		slog.Info("PR is closed; sleeping for a minute before checking again.")
 		time.Sleep(time.Duration(60) * time.Second)
-		pr, err = githubrepo.GetPullRequest(ctx.ctx, prMetadata.Repo, prMetadata.Number)
+		pr, err = githubrepo.GetPullRequest(state.ctx, prMetadata.Repo, prMetadata.Number)
 		if err != nil {
 			return false, err
 		}
@@ -180,17 +180,17 @@ func waitForPullRequestReadinessSingleIteration(ctx *commandState, prMetadata gi
 
 	// We expect to remove the do-not-merge label ourselves (and we'll fail otherwise).
 	if !gotDoNotMergeLabel {
-		return false, reportBlockingReason(ctx, prMetadata, fmt.Sprintf("Label '%s' has been removed already", DoNotMergeLabel))
+		return false, reportBlockingReason(state, prMetadata, fmt.Sprintf("Label '%s' has been removed already", DoNotMergeLabel))
 	}
 
 	// If the PR isn't mergeable, that requires user action.
 	if !pr.GetMergeable() {
 		// This will log the reason.
-		return false, reportBlockingReason(ctx, prMetadata, "PR is not mergeable (e.g. there are conflicting commit)")
+		return false, reportBlockingReason(state, prMetadata, "PR is not mergeable (e.g. there are conflicting commit)")
 	}
 
 	// Check that all the statuses have passed.
-	checkRuns, err := githubrepo.GetPullRequestCheckRuns(ctx.ctx, pr)
+	checkRuns, err := githubrepo.GetPullRequestCheckRuns(state.ctx, pr)
 	if err != nil {
 		return false, err
 	}
@@ -209,13 +209,13 @@ func waitForPullRequestReadinessSingleIteration(ctx *commandState, prMetadata gi
 			return false, nil
 		}
 		if checkRun.GetConclusion() != "success" {
-			return false, reportBlockingReason(ctx, prMetadata, fmt.Sprintf("Check '%s' failed", *checkRun.Name))
+			return false, reportBlockingReason(state, prMetadata, fmt.Sprintf("Check '%s' failed", *checkRun.Name))
 		}
 	}
 
 	// Check the commits in the pull request. If this returns false,
 	// the reason will already be logged (so we don't need to log it again).
-	commitStatus, err := checkPullRequestCommits(ctx, prMetadata, pr)
+	commitStatus, err := checkPullRequestCommits(state, prMetadata, pr)
 	if err != nil {
 		return false, err
 	}
@@ -224,7 +224,7 @@ func waitForPullRequestReadinessSingleIteration(ctx *commandState, prMetadata gi
 	}
 
 	// Check for approval
-	approved, err := checkPullRequestApproval(ctx, prMetadata)
+	approved, err := checkPullRequestApproval(state, prMetadata)
 	if err != nil {
 		return false, err
 	}
@@ -237,17 +237,17 @@ func waitForPullRequestReadinessSingleIteration(ctx *commandState, prMetadata gi
 	return true, nil
 }
 
-func mergePullRequest(ctx *commandState, prMetadata githubrepo.PullRequestMetadata) (string, error) {
+func mergePullRequest(state *commandState, prMetadata githubrepo.PullRequestMetadata) (string, error) {
 	slog.Info("Merging release PR")
-	if err := githubrepo.RemoveLabelFromPullRequest(ctx.ctx, prMetadata.Repo, prMetadata.Number, "do-not-merge"); err != nil {
+	if err := githubrepo.RemoveLabelFromPullRequest(state.ctx, prMetadata.Repo, prMetadata.Number, "do-not-merge"); err != nil {
 		return "", err
 	}
-	mergeResult, err := githubrepo.MergePullRequest(ctx.ctx, prMetadata.Repo, prMetadata.Number, github.MergeMethodRebase)
+	mergeResult, err := githubrepo.MergePullRequest(state.ctx, prMetadata.Repo, prMetadata.Number, github.MergeMethodRebase)
 	if err != nil {
 		return "", err
 	}
 
-	if err := appendResultEnvironmentVariable(ctx, mergedReleaseCommitEnvVarName, *mergeResult.SHA); err != nil {
+	if err := appendResultEnvironmentVariable(state, mergedReleaseCommitEnvVarName, *mergeResult.SHA); err != nil {
 		return "", err
 	}
 	slog.Info("Release PR merged")
@@ -301,13 +301,13 @@ func waitForSync(mergeCommit string) error {
 //
 // Returns true if all the commits are fine, or false if a problem was detected, in which
 // case it will have been reported on the PR, and the merge-blocking label applied.
-func checkPullRequestCommits(ctx *commandState, prMetadata githubrepo.PullRequestMetadata, pr *github.PullRequest) (bool, error) {
+func checkPullRequestCommits(state *commandState, prMetadata githubrepo.PullRequestMetadata, pr *github.PullRequest) (bool, error) {
 	baseRepo := githubrepo.CreateGitHubRepoFromRepository(pr.Base.Repo)
-	baseHeadState, err := fetchRemotePipelineState(ctx.ctx, baseRepo, *pr.Base.Ref)
+	baseHeadState, err := fetchRemotePipelineState(state.ctx, baseRepo, *pr.Base.Ref)
 	if err != nil {
 		return false, err
 	}
-	baselineState, err := fetchRemotePipelineState(ctx.ctx, baseRepo, flagBaselineCommit)
+	baselineState, err := fetchRemotePipelineState(state.ctx, baseRepo, flagBaselineCommit)
 	if err != nil {
 		return false, err
 	}
@@ -315,7 +315,7 @@ func checkPullRequestCommits(ctx *commandState, prMetadata githubrepo.PullReques
 	// Fetch the commits which are in the PR, compared with the base (the target of the merge).
 	// In most cases pr.Base.SHA will be the same as flagBaselineCommit, but the PR may have been rebased -
 	// and we always only want the commits in the PR, not any that it's been rebased on top of.
-	prCommits, err := githubrepo.GetDiffCommits(ctx.ctx, prMetadata.Repo, *pr.Base.SHA, *pr.Head.SHA)
+	prCommits, err := githubrepo.GetDiffCommits(state.ctx, prMetadata.Repo, *pr.Base.SHA, *pr.Head.SHA)
 	if err != nil {
 		return false, err
 	}
@@ -325,7 +325,7 @@ func checkPullRequestCommits(ctx *commandState, prMetadata githubrepo.PullReques
 		// This indicates that at least one commit is invalid - either it has missing
 		// metadata, or it's for the wrong release. Report that reason, then return
 		// a non-error from this function (we don't want to abort the process here).
-		if err := reportBlockingReason(ctx, prMetadata, err.Error()); err != nil {
+		if err := reportBlockingReason(state, prMetadata, err.Error()); err != nil {
 			return false, err
 		}
 
@@ -334,19 +334,19 @@ func checkPullRequestCommits(ctx *commandState, prMetadata githubrepo.PullReques
 
 	for _, release := range releases {
 		if strings.HasPrefix(release.ReleaseNotes, "FIXME") {
-			return false, reportBlockingReason(ctx, prMetadata, fmt.Sprintf("Release notes for '%s' need fixing", release.LibraryID))
+			return false, reportBlockingReason(state, prMetadata, fmt.Sprintf("Release notes for '%s' need fixing", release.LibraryID))
 		}
 	}
 
 	// Fetch the commits in the base repo since the baseline commit, but then fetch each individually
 	// so we can tell which files were affected.
-	baseCommits, err := githubrepo.GetDiffCommits(ctx.ctx, baseRepo, flagBaselineCommit, *pr.Base.Ref)
+	baseCommits, err := githubrepo.GetDiffCommits(state.ctx, baseRepo, flagBaselineCommit, *pr.Base.Ref)
 	if err != nil {
 		return false, err
 	}
 	fullBaseCommits := []*github.RepositoryCommit{}
 	for _, baseCommit := range baseCommits {
-		fullCommit, err := githubrepo.GetCommit(ctx.ctx, baseRepo, *baseCommit.SHA)
+		fullCommit, err := githubrepo.GetCommit(state.ctx, baseRepo, *baseCommit.SHA)
 		if err != nil {
 			return false, err
 		}
@@ -372,12 +372,12 @@ func checkPullRequestCommits(ctx *commandState, prMetadata githubrepo.PullReques
 	for _, suspectRelease := range suspectReleases {
 		builder.WriteString(fmt.Sprintf("%s: %s\n", suspectRelease.LibraryID, suspectRelease.Reason))
 	}
-	return false, reportBlockingReason(ctx, prMetadata, builder.String())
+	return false, reportBlockingReason(state, prMetadata, builder.String())
 }
 
 // Checks that the pull request has at least one approved review, and no "changes requested" reviews.
-func checkPullRequestApproval(ctx *commandState, prMetadata githubrepo.PullRequestMetadata) (bool, error) {
-	reviews, err := githubrepo.GetPullRequestReviews(ctx.ctx, prMetadata)
+func checkPullRequestApproval(state *commandState, prMetadata githubrepo.PullRequestMetadata) (bool, error) {
+	reviews, err := githubrepo.GetPullRequestReviews(state.ctx, prMetadata)
 	if err != nil {
 		return false, err
 	}
@@ -418,13 +418,13 @@ func checkPullRequestApproval(ctx *commandState, prMetadata githubrepo.PullReque
 	return approved, nil
 }
 
-func reportBlockingReason(ctx *commandState, prMetadata githubrepo.PullRequestMetadata, description string) error {
+func reportBlockingReason(state *commandState, prMetadata githubrepo.PullRequestMetadata, description string) error {
 	slog.Warn(fmt.Sprintf("Adding '%s' label to PR and a comment with a description of '%s'", MergeBlockedLabel, description))
 	comment := fmt.Sprintf("%s\n\nAfter resolving the issue, please remove the '%s' label.", description, MergeBlockedLabel)
-	if err := githubrepo.AddCommentToPullRequest(ctx.ctx, prMetadata.Repo, prMetadata.Number, comment); err != nil {
+	if err := githubrepo.AddCommentToPullRequest(state.ctx, prMetadata.Repo, prMetadata.Number, comment); err != nil {
 		return err
 	}
-	if err := githubrepo.AddLabelToPullRequest(ctx.ctx, prMetadata, MergeBlockedLabel); err != nil {
+	if err := githubrepo.AddLabelToPullRequest(state.ctx, prMetadata, MergeBlockedLabel); err != nil {
 		return err
 	}
 	return nil

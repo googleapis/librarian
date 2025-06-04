@@ -49,7 +49,7 @@ var CmdGenerate = &Command{
 	// We should do so by moving the clone part to maybeGetLanguageRepo - because then we'll be set up
 	// with the right image etc.
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(ctx *commandState) error {
+	execute: func(state *commandState) error {
 		if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
 			return err
 		}
@@ -57,29 +57,29 @@ var CmdGenerate = &Command{
 			return err
 		}
 
-		outputDir := filepath.Join(ctx.workRoot, "output")
+		outputDir := filepath.Join(state.workRoot, "output")
 		if err := os.Mkdir(outputDir, 0755); err != nil {
 			return err
 		}
 		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-		libraryID, err := runGenerateCommand(ctx, outputDir)
+		libraryID, err := runGenerateCommand(state, outputDir)
 		if err != nil {
 			return err
 		}
 		if flagBuild {
 			if libraryID != "" {
 				slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-				if err := container.Clean(ctx.containerConfig, ctx.languageRepo.Dir, libraryID); err != nil {
+				if err := container.Clean(state.containerConfig, state.languageRepo.Dir, libraryID); err != nil {
 					return err
 				}
-				if err := os.CopyFS(ctx.languageRepo.Dir, os.DirFS(outputDir)); err != nil {
+				if err := os.CopyFS(state.languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 					return err
 				}
-				if err := container.BuildLibrary(ctx.containerConfig, ctx.languageRepo.Dir, libraryID); err != nil {
+				if err := container.BuildLibrary(state.containerConfig, state.languageRepo.Dir, libraryID); err != nil {
 					return err
 				}
-			} else if err := container.BuildRaw(ctx.containerConfig, outputDir, flagAPIPath); err != nil {
+			} else if err := container.BuildRaw(state.containerConfig, outputDir, flagAPIPath); err != nil {
 				return err
 			}
 		}
@@ -93,7 +93,7 @@ var CmdGenerate = &Command{
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(ctx *commandState, outputDir string) (string, error) {
+func runGenerateCommand(state *commandState, outputDir string) (string, error) {
 	apiRoot, err := filepath.Abs(flagAPIRoot)
 	if err != nil {
 		return "", err
@@ -101,17 +101,17 @@ func runGenerateCommand(ctx *commandState, outputDir string) (string, error) {
 
 	// If we've got a language repo, it's because we've already found a library for the
 	// specified API, configured in the repo.
-	if ctx.languageRepo != nil {
-		libraryID := findLibraryIDByApiPath(ctx.pipelineState, flagAPIPath)
+	if state.languageRepo != nil {
+		libraryID := findLibraryIDByApiPath(state.pipelineState, flagAPIPath)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
-		generatorInput := filepath.Join(ctx.languageRepo.Dir, "generator-input")
+		generatorInput := filepath.Join(state.languageRepo.Dir, "generator-input")
 		slog.Info(fmt.Sprintf("Performing refined generation for library %s", libraryID))
-		return libraryID, container.GenerateLibrary(ctx.containerConfig, apiRoot, outputDir, generatorInput, libraryID)
+		return libraryID, container.GenerateLibrary(state.containerConfig, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
 		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", flagAPIPath))
-		return "", container.GenerateRaw(ctx.containerConfig, apiRoot, outputDir, flagAPIPath)
+		return "", container.GenerateRaw(state.containerConfig, apiRoot, outputDir, flagAPIPath)
 	}
 }
 

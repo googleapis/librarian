@@ -57,14 +57,14 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 // If content only contains errors, the pull request is not created and an error is returned (to highlight that everything failed)
 // If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
 // If the pull request would contain an excessive number of commits (as configured in pipeline-config.json)
-func createPullRequest(ctx *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string) (*githubrepo.PullRequestMetadata, error) {
+func createPullRequest(state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string) (*githubrepo.PullRequestMetadata, error) {
 	anySuccesses := len(content.Successes) > 0
 	anyErrors := len(content.Errors) > 0
-	languageRepo := ctx.languageRepo
+	languageRepo := state.languageRepo
 
 	excessSuccesses := []string{}
-	if ctx.pipelineConfig != nil {
-		maxCommits := int(ctx.pipelineConfig.MaxPullRequestCommits)
+	if state.pipelineConfig != nil {
+		maxCommits := int(state.pipelineConfig.MaxPullRequestCommits)
 		if maxCommits > 0 && len(content.Successes) > maxCommits {
 			// We've got too many commits. Roll some back locally, and we'll add them to the description.
 			excessSuccesses = content.Successes[maxCommits:]
@@ -94,7 +94,7 @@ func createPullRequest(ctx *commandState, content *PullRequestContent, titlePref
 
 	description = strings.TrimSpace(successesText + errorsText + excessText + "\n" + descriptionSuffix)
 
-	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(ctx.startTime))
+	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(state.startTime))
 
 	if !flagPush {
 		slog.Info(fmt.Sprintf("Push not specified; would have created PR with the following title and description:\n%s\n\n%s", title, description))
@@ -106,13 +106,13 @@ func createPullRequest(ctx *commandState, content *PullRequestContent, titlePref
 		return nil, err
 	}
 
-	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(ctx.startTime))
+	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(state.startTime))
 	err = gitrepo.PushBranch(languageRepo, branch, githubrepo.GetAccessToken())
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return nil, err
 	}
-	return githubrepo.CreatePullRequest(ctx.ctx, gitHubRepo, branch, title, description)
+	return githubrepo.CreatePullRequest(state.ctx, gitHubRepo, branch, title, description)
 }
 
 // Formats the given list as a single Markdown string, with a title preceding the list,
