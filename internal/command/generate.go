@@ -120,13 +120,24 @@ func runGenerateCommand(state *commandState, outputDir string) (string, error) {
 // Checks if the library with the given API path exists in the repo specified either
 // by a URL or a local path, and opens or clones it if so.
 func openOrCloneLanguageRepoIfLibraryExists(workRoot string) (*gitrepo.Repo, error) {
+	workRoot, err := resolveLibraryWorkRoot(workRoot)
+	if err != nil {
+		return nil, err
+	}
+	// Otherwise (if the library *does* exist), clone or open it as normal.
+	return cloneOrOpenLanguageRepo(workRoot)
+}
+
+// resolveLibraryWorkRoot returns workRoot if the library for the given API
+// path exists. Otherwise, returns empty string.
+func resolveLibraryWorkRoot(workRoot string) (string, error) {
 	if flagRepoUrl == "" && flagRepoRoot == "" {
 		slog.Warn("repo url and root are not specified, cannot check if library exists")
-		return nil, nil
+		return "", nil
 	}
 
 	if flagRepoRoot != "" && flagRepoUrl != "" {
-		return nil, errors.New("do not specify both repo-root and repo-url")
+		return "", errors.New("do not specify both repo-root and repo-url")
 	}
 
 	// Attempt to load the pipeline state either locally or from the repo URL
@@ -139,23 +150,23 @@ func openOrCloneLanguageRepoIfLibraryExists(workRoot string) (*gitrepo.Repo, err
 		languageRepoMetadata, err = githubrepo.ParseUrl(flagRepoUrl)
 		if err != nil {
 			slog.Warn("failed to parse", "repo url:", flagRepoUrl, "error", err)
-			return nil, err
+			return "", err
 		}
 		pipelineState, err = fetchRemotePipelineState(context.Background(), languageRepoMetadata, "HEAD")
 	}
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// If the library doesn't exist, we don't use the repo at all.
 	libraryID := findLibraryIDByApiPath(pipelineState, flagAPIPath)
 	if libraryID == "" {
 		slog.Info(fmt.Sprintf("API path %s not configured in repo", flagAPIPath))
-		return nil, nil
+		return "", nil
 	}
 
 	slog.Info(fmt.Sprintf("API path %s configured in repo library %s", flagAPIPath, libraryID))
 	// Otherwise (if the library *does* exist), clone or open it as normal.
-	return cloneOrOpenLanguageRepo(workRoot)
+	return workRoot, nil
 }
