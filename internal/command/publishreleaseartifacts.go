@@ -25,16 +25,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/utils"
 )
 
-var CmdPublishReleaseArtifacts = &Command{
+var CmdPublishReleaseArtifacts = &cli.Command{
 	Name:  "publish-release-artifacts",
 	Short: "Publish (previously-created) release artifacts to package managers.",
 	Run:   runPublishReleaseArtifacts,
-	flagFunctions: []func(fs *flag.FlagSet){
+	FlagFunctions: []func(fs *flag.FlagSet){
 		addFlagArtifactRoot,
 		addFlagImage,
 		addFlagWorkRoot,

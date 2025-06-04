@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
@@ -33,28 +34,6 @@ import (
 )
 
 const releaseIDEnvVarName = "_RELEASE_ID"
-
-// Command represents a single command that can be executed by the application.
-type Command struct {
-	// Name is the unique identifier for the command.
-	Name string
-
-	// Short is a concise description shown in the 'librarian -h' output.
-	Short string
-
-	// Run executes the command.
-	//
-	// TODO(https://github.com/googleapis/librarian/issues/194): migrate all
-	// commands to implement this method.
-	Run func(ctx context.Context) error
-
-	// flagFunctions are functions to initialize the command's flag set.
-	flagFunctions []func(fs *flag.FlagSet)
-
-	// flags is the command's flag set for parsing arguments and generating
-	// usage messages. This is populated for each command in init().
-	flags *flag.FlagSet
-}
 
 // commandState holds all necessary information for a command execution.
 type commandState struct {
@@ -83,27 +62,6 @@ type commandState struct {
 
 	// containerConfig provides settings for running containerized commands.
 	containerConfig *container.ContainerConfig
-}
-
-// Parse parses the provided command-line arguments using the command's flag
-// set.
-func (c *Command) Parse(args []string) error {
-	return c.flags.Parse(args)
-}
-
-// Lookup finds a command by its name, and returns an error if the command is
-// not found.
-func Lookup(name string) (*Command, error) {
-	var cmd *Command
-	for _, sub := range Commands {
-		if sub.Name == name {
-			cmd = sub
-		}
-	}
-	if cmd == nil {
-		return nil, fmt.Errorf("invalid command: %q", name)
-	}
-	return cmd, nil
 }
 
 func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
@@ -279,7 +237,7 @@ func logPartialError(id string, err error, action string) string {
 	return fmt.Sprintf("Error while %s %s", action, id)
 }
 
-var Commands = []*Command{
+var Commands = []*cli.Command{
 	CmdConfigure,
 	CmdGenerate,
 	CmdUpdateApis,
@@ -292,10 +250,10 @@ var Commands = []*Command{
 
 func init() {
 	for _, c := range Commands {
-		c.flags = flag.NewFlagSet(c.Name, flag.ContinueOnError)
-		c.flags.Usage = constructUsage(c.flags, c.Name)
-		for _, fn := range c.flagFunctions {
-			fn(c.flags)
+		c.Flags = flag.NewFlagSet(c.Name, flag.ContinueOnError)
+		c.Flags.Usage = constructUsage(c.Flags, c.Name)
+		for _, fn := range c.FlagFunctions {
+			fn(c.Flags)
 		}
 	}
 }

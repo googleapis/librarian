@@ -26,17 +26,18 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"gopkg.in/yaml.v3"
 )
 
-var CmdConfigure = &Command{
+var CmdConfigure = &cli.Command{
 	Name:  "configure",
 	Short: "Set up a new API for a language.",
 	Run:   runConfigure,
-	flagFunctions: []func(fs *flag.FlagSet){
+	FlagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIPath,

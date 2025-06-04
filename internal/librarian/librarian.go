@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/command"
 )
 
@@ -35,7 +36,7 @@ func Run(ctx context.Context, arg ...string) error {
 	return cmd.Run(ctx)
 }
 
-func parseArgs(args []string) (*command.Command, error) {
+func parseArgs(args []string) (*cli.Command, error) {
 	fs := flag.NewFlagSet("librarian", flag.ContinueOnError)
 	output := `Librarian manages client libraries for Google APIs.
 
@@ -62,5 +63,5 @@ The commands are:
 		fs.Usage()
 		return nil, fmt.Errorf("command not specified")
 	}
-	return command.Lookup(fs.Args()[0])
+	return cli.Lookup(fs.Args()[0], command.Commands)
 }

@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/utils"
@@ -37,11 +38,11 @@ import (
 const prNumberEnvVarName = "_PR_NUMBER"
 const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
-var CmdCreateReleasePR = &Command{
+var CmdCreateReleasePR = &cli.Command{
 	Name:  "create-release-pr",
 	Short: "Generate a release PR.",
 	Run:   runCreateReleasePR,
-	flagFunctions: []func(fs *flag.FlagSet){
+	FlagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
 		addFlagWorkRoot,

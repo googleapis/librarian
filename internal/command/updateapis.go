@@ -24,16 +24,17 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-var CmdUpdateApis = &Command{
+var CmdUpdateApis = &cli.Command{
 	Name:  "update-apis",
 	Short: "Regenerate APIs in a language repo with new specifications.",
 	Run:   runUpdateAPIs,
-	flagFunctions: []func(fs *flag.FlagSet){
+	FlagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIRoot,

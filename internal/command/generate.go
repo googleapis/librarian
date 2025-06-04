@@ -24,16 +24,17 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-var CmdGenerate = &Command{
+var CmdGenerate = &cli.Command{
 	Name:  "generate",
 	Short: "Generate client library code for an API.",
 	Run:   runGenerate,
-	flagFunctions: []func(fs *flag.FlagSet){
+	FlagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIPath,

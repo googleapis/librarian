@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v69/github"
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -46,11 +47,11 @@ const ConventionalCommitsAppId = 37172
 // until you've done something".
 const MergeBlockedLabel = "merge-blocked-see-comments"
 
-var CmdMergeReleasePR = &Command{
+var CmdMergeReleasePR = &cli.Command{
 	Name:  "merge-release-pr",
 	Short: "Merge a validated release PR.",
 	Run:   runMergeReleasePR,
-	flagFunctions: []func(fs *flag.FlagSet){
+	FlagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
 		addFlagWorkRoot,

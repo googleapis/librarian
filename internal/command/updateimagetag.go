@@ -23,16 +23,17 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-var CmdUpdateImageTag = &Command{
+var CmdUpdateImageTag = &cli.Command{
 	Name:  "update-image-tag",
 	Short: "Update a language repo's image tag and regenerate APIs.",
 	Run:   runUpdateImageTag,
-	flagFunctions: []func(fs *flag.FlagSet){
+	FlagFunctions: []func(fs *flag.FlagSet){
 		addFlagWorkRoot,
 		addFlagAPIRoot,
 		addFlagBranch,

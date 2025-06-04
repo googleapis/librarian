@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/utils"
@@ -37,11 +38,11 @@ type LibraryRelease struct {
 	ReleaseNotes string
 }
 
-var CmdCreateReleaseArtifacts = &Command{
+var CmdCreateReleaseArtifacts = &cli.Command{
 	Name:  "create-release-artifacts",
 	Short: "Create release artifacts from a merged release PR.",
 	Run:   runCreateReleaseArtifacts,
-	flagFunctions: []func(fs *flag.FlagSet){
+	FlagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagLanguage,
