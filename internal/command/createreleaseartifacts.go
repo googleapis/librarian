@@ -15,6 +15,7 @@
 package command
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -39,6 +40,7 @@ type LibraryRelease struct {
 var CmdCreateReleaseArtifacts = &Command{
 	Name:  "create-release-artifacts",
 	Short: "Create release artifacts from a merged release PR.",
+	Run:   runCreateReleaseArtifacts,
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
@@ -52,6 +54,14 @@ var CmdCreateReleaseArtifacts = &Command{
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
 	execute:                 createReleaseArtifactsImpl,
+}
+
+func runCreateReleaseArtifacts(ctx context.Context) error {
+	state, err := createContainerForLanguage(ctx)
+	if err != nil {
+		return err
+	}
+	return createReleaseArtifactsImpl(state)
 }
 
 func createReleaseArtifactsImpl(state *commandState) error {

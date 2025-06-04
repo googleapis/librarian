@@ -32,6 +32,7 @@ import (
 var CmdGenerate = &Command{
 	Name:  "generate",
 	Short: "Generate client library code for an API.",
+	Run:   runGenerate,
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
@@ -49,10 +50,18 @@ var CmdGenerate = &Command{
 	// We should do so by moving the clone part to maybeGetLanguageRepo - because then we'll be set up
 	// with the right image etc.
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute:                 runGenerate,
+	execute:                 executeGenerate,
 }
 
-func runGenerate(state *commandState) error {
+func runGenerate(ctx context.Context) error {
+	state, err := createContainerForLanguage(ctx)
+	if err != nil {
+		return err
+	}
+	return executeGenerate(state)
+}
+
+func executeGenerate(state *commandState) error {
 	if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
 		return err
 	}
