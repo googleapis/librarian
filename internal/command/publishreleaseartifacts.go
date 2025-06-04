@@ -15,6 +15,7 @@
 package command
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -22,6 +23,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
@@ -33,6 +35,7 @@ import (
 var CmdPublishReleaseArtifacts = &Command{
 	Name:  "publish-release-artifacts",
 	Short: "Publish (previously-created) release artifacts to package managers.",
+	Run:   runPublishReleaseArtifacts,
 	flagFunctions: []func(fs *flag.FlagSet){
 		addFlagArtifactRoot,
 		addFlagImage,
@@ -44,22 +47,49 @@ var CmdPublishReleaseArtifacts = &Command{
 	maybeGetLanguageRepo: func(workRoot string) (*gitrepo.Repo, error) {
 		return nil, nil
 	},
-	maybeLoadStateAndConfig: func(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error) {
-		// Load the state and config from the artifact directory. These will have been created by create-release-artifacts.
-		state, err := loadPipelineStateFile(filepath.Join(flagArtifactRoot, pipelineStateFile))
-		if err != nil {
-			return nil, nil, err
-		}
-		config, err := loadPipelineConfigFile(filepath.Join(flagArtifactRoot, pipelineConfigFile))
-		if err != nil {
-			return nil, nil, err
-		}
-		return state, config, nil
-	},
-	execute: publishReleaseArtifactsImpl,
+	maybeLoadStateAndConfig: loadReleaseArtifactState,
+	execute:                 publishReleaseArtifactsImpl,
+}
+
+func runPublishReleaseArtifacts(ctx context.Context) error {
+	// TODO(https://github.com/googleapis/librarian/issues/194): migrate logic
+	// inside this function once maybeLoadStateAndConfig is deleted.
+	a, config, err := loadReleaseArtifactState(nil)
+	if err != nil {
+		return err
+	}
+	image := deriveImage(a)
+
+	startTime := time.Now()
+	workRoot, err := createWorkRoot(startTime)
+	if err != nil {
+		return err
+	}
+	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
+	if err != nil {
+		return err
+	}
+	return publishReleaseArtifacts(ctx, containerConfig)
+}
+
+func loadReleaseArtifactState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error) {
+	// Load the state and config from the artifact directory. These will have been created by create-release-artifacts.
+	state, err := loadPipelineStateFile(filepath.Join(flagArtifactRoot, pipelineStateFile))
+	if err != nil {
+		return nil, nil, err
+	}
+	config, err := loadPipelineConfigFile(filepath.Join(flagArtifactRoot, pipelineConfigFile))
+	if err != nil {
+		return nil, nil, err
+	}
+	return state, config, nil
 }
 
 func publishReleaseArtifactsImpl(state *commandState) error {
+	return publishReleaseArtifacts(state.ctx, state.containerConfig)
+}
+
+func publishReleaseArtifacts(ctx context.Context, containerConfig *container.ContainerConfig) error {
 	if err := validateRequiredFlag("artifact-root", flagArtifactRoot); err != nil {
 		return err
 	}
@@ -89,10 +119,10 @@ func publishReleaseArtifactsImpl(state *commandState) error {
 	}
 	slog.Info(fmt.Sprintf("Publishing packages for %d libraries", len(releases)))
 
-	if err := publishPackages(state.containerConfig, flagArtifactRoot, releases); err != nil {
+	if err := publishPackages(containerConfig, flagArtifactRoot, releases); err != nil {
 		return err
 	}
-	if err := createRepoReleases(state, releases, gitHubRepo); err != nil {
+	if err := createRepoReleases(ctx, releases, gitHubRepo); err != nil {
 		return err
 	}
 	slog.Info("Release complete.")
@@ -111,12 +141,12 @@ func publishPackages(config *container.ContainerConfig, outputRoot string, relea
 	return nil
 }
 
-func createRepoReleases(state *commandState, releases []LibraryRelease, gitHubRepo githubrepo.GitHubRepo) error {
+func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo githubrepo.GitHubRepo) error {
 	for _, release := range releases {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
 		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := githubrepo.CreateRelease(state.ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
+		repoRelease, err := githubrepo.CreateRelease(ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
 		if err != nil {
 			return err
 		}
