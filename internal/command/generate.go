@@ -49,42 +49,44 @@ var CmdGenerate = &Command{
 	// We should do so by moving the clone part to maybeGetLanguageRepo - because then we'll be set up
 	// with the right image etc.
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(state *commandState) error {
-		if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
-			return err
-		}
-		if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
-			return err
-		}
+	execute:                 runGenerate,
+}
 
-		outputDir := filepath.Join(state.workRoot, "output")
-		if err := os.Mkdir(outputDir, 0755); err != nil {
-			return err
-		}
-		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
+func runGenerate(state *commandState) error {
+	if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
+		return err
+	}
+	if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
+		return err
+	}
 
-		libraryID, err := runGenerateCommand(state, outputDir)
-		if err != nil {
-			return err
-		}
-		if flagBuild {
-			if libraryID != "" {
-				slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-				if err := container.Clean(state.containerConfig, state.languageRepo.Dir, libraryID); err != nil {
-					return err
-				}
-				if err := os.CopyFS(state.languageRepo.Dir, os.DirFS(outputDir)); err != nil {
-					return err
-				}
-				if err := container.BuildLibrary(state.containerConfig, state.languageRepo.Dir, libraryID); err != nil {
-					return err
-				}
-			} else if err := container.BuildRaw(state.containerConfig, outputDir, flagAPIPath); err != nil {
+	outputDir := filepath.Join(state.workRoot, "output")
+	if err := os.Mkdir(outputDir, 0755); err != nil {
+		return err
+	}
+	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
+
+	libraryID, err := runGenerateCommand(state, outputDir)
+	if err != nil {
+		return err
+	}
+	if flagBuild {
+		if libraryID != "" {
+			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
+			if err := container.Clean(state.containerConfig, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
+			if err := os.CopyFS(state.languageRepo.Dir, os.DirFS(outputDir)); err != nil {
+				return err
+			}
+			if err := container.BuildLibrary(state.containerConfig, state.languageRepo.Dir, libraryID); err != nil {
+				return err
+			}
+		} else if err := container.BuildRaw(state.containerConfig, outputDir, flagAPIPath); err != nil {
+			return err
 		}
-		return nil
-	},
+	}
+	return nil
 }
 
 // Checks if the library exists in the remote pipeline state, if so use GenerateLibrary command

@@ -45,91 +45,93 @@ var CmdUpdateImageTag = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(state *commandState) error {
-		if err := validatePush(); err != nil {
-			return err
-		}
-		if err := validateRequiredFlag("tag", flagTag); err != nil {
-			return err
-		}
+	execute:                 updateImageTag,
+}
 
-		var apiRepo *gitrepo.Repo
-		if flagAPIRoot == "" {
-			var err error
-			apiRepo, err = cloneGoogleapis(state.workRoot)
-			if err != nil {
-				return err
-			}
-		} else {
-			apiRoot, err := filepath.Abs(flagAPIRoot)
-			slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
-			if err != nil {
-				slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
-				return err
-			}
-			apiRepo, err = gitrepo.Open(apiRoot)
-			if err != nil {
-				return err
-			}
-			clean, err := gitrepo.IsClean(apiRepo)
-			if err != nil {
-				return err
-			}
-			if !clean {
-				return errors.New("api repo must be clean before updating the language image tag")
-			}
-		}
-
-		outputDir := filepath.Join(state.workRoot, "output")
-		if err := os.Mkdir(outputDir, 0755); err != nil {
-			return err
-		}
-		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
-
-		ps := state.pipelineState
-		languageRepo := state.languageRepo
-
-		if ps.ImageTag == flagTag {
-			return errors.New("specified tag is already in language repo state")
-		}
-		// Derive the new image to use, and save it in the context.
-		ps.ImageTag = flagTag
-		state.containerConfig.Image = deriveImage(ps)
-		savePipelineState(state)
-
-		// Take a defensive copy of the generator input directory from the language repo.
-		generatorInput := filepath.Join(state.workRoot, "generator-input")
-		if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, "generator-input"))); err != nil {
-			return err
-		}
-
-		// Perform "generate, clean" on each library.
-		for _, library := range ps.Libraries {
-			err := regenerateLibrary(state, apiRepo, generatorInput, outputDir, library)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Commit any changes
-		commitMsg := fmt.Sprintf("chore: update generation image tag to %s", flagTag)
-		if err := commitAll(languageRepo, commitMsg); err != nil {
-			return err
-		}
-
-		// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
-		slog.Info("Building all libraries.")
-		if err := container.BuildLibrary(state.containerConfig, languageRepo.Dir, ""); err != nil {
-			return err
-		}
-
-		// The PullRequestContent for update-image-tag is slightly different to others, but we
-		// can massage it into a similar state.
-		prContent := new(PullRequestContent)
-		addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
-		_, err := createPullRequest(state, prContent, "chore: update generation image tag", "", "update-image-tag")
+func updateImageTag(state *commandState) error {
+	if err := validatePush(); err != nil {
 		return err
-	},
+	}
+	if err := validateRequiredFlag("tag", flagTag); err != nil {
+		return err
+	}
+
+	var apiRepo *gitrepo.Repo
+	if flagAPIRoot == "" {
+		var err error
+		apiRepo, err = cloneGoogleapis(state.workRoot)
+		if err != nil {
+			return err
+		}
+	} else {
+		apiRoot, err := filepath.Abs(flagAPIRoot)
+		slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
+		if err != nil {
+			slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
+			return err
+		}
+		apiRepo, err = gitrepo.Open(apiRoot)
+		if err != nil {
+			return err
+		}
+		clean, err := gitrepo.IsClean(apiRepo)
+		if err != nil {
+			return err
+		}
+		if !clean {
+			return errors.New("api repo must be clean before updating the language image tag")
+		}
+	}
+
+	outputDir := filepath.Join(state.workRoot, "output")
+	if err := os.Mkdir(outputDir, 0755); err != nil {
+		return err
+	}
+	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
+
+	ps := state.pipelineState
+	languageRepo := state.languageRepo
+
+	if ps.ImageTag == flagTag {
+		return errors.New("specified tag is already in language repo state")
+	}
+	// Derive the new image to use, and save it in the context.
+	ps.ImageTag = flagTag
+	state.containerConfig.Image = deriveImage(ps)
+	savePipelineState(state)
+
+	// Take a defensive copy of the generator input directory from the language repo.
+	generatorInput := filepath.Join(state.workRoot, "generator-input")
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, "generator-input"))); err != nil {
+		return err
+	}
+
+	// Perform "generate, clean" on each library.
+	for _, library := range ps.Libraries {
+		err := regenerateLibrary(state, apiRepo, generatorInput, outputDir, library)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Commit any changes
+	commitMsg := fmt.Sprintf("chore: update generation image tag to %s", flagTag)
+	if err := commitAll(languageRepo, commitMsg); err != nil {
+		return err
+	}
+
+	// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
+	slog.Info("Building all libraries.")
+	if err := container.BuildLibrary(state.containerConfig, languageRepo.Dir, ""); err != nil {
+		return err
+	}
+
+	// The PullRequestContent for update-image-tag is slightly different to others, but we
+	// can massage it into a similar state.
+	prContent := new(PullRequestContent)
+	addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
+	_, err := createPullRequest(state, prContent, "chore: update generation image tag", "", "update-image-tag")
+	return err
 }
 
 func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
