@@ -56,74 +56,76 @@ var CmdCreateReleasePR = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(state *commandState) error {
-		if err := validateSkipIntegrationTests(); err != nil {
-			return err
-		}
-		if err := validatePush(); err != nil {
-			return err
-		}
+	execute:                 createReleasePR,
+}
 
-		if flagLibraryVersion != "" && flagLibraryID == "" {
-			return fmt.Errorf("flag -library-version is not valid without -library-id")
-		}
+func createReleasePR(state *commandState) error {
+	if err := validateSkipIntegrationTests(); err != nil {
+		return err
+	}
+	if err := validatePush(); err != nil {
+		return err
+	}
 
-		if flagLibraryID != "" && findLibraryByID(state.pipelineState, flagLibraryID) == nil {
-			return fmt.Errorf("no such library: %s", flagLibraryID)
-		}
+	if flagLibraryVersion != "" && flagLibraryID == "" {
+		return fmt.Errorf("flag -library-version is not valid without -library-id")
+	}
 
-		inputDirectory := filepath.Join(state.workRoot, "inputs")
-		if err := os.Mkdir(inputDirectory, 0755); err != nil {
-			slog.Error("Failed to create input directory")
-			return err
-		}
+	if flagLibraryID != "" && findLibraryByID(state.pipelineState, flagLibraryID) == nil {
+		return fmt.Errorf("no such library: %s", flagLibraryID)
+	}
 
-		// Find the head of the language repo before we start creating any release commits.
-		// This will be validated later to check that libraries haven't changed since the release PR was created.
-		baselineCommit, err := gitrepo.HeadHash(state.languageRepo)
-		if err != nil {
-			return err
-		}
-		if err := appendResultEnvironmentVariable(state, baselineCommitEnvVarName, baselineCommit); err != nil {
-			return err
-		}
+	inputDirectory := filepath.Join(state.workRoot, "inputs")
+	if err := os.Mkdir(inputDirectory, 0755); err != nil {
+		slog.Error("Failed to create input directory")
+		return err
+	}
 
-		releaseID := fmt.Sprintf("release-%s", formatTimestamp(state.startTime))
-		if err := appendResultEnvironmentVariable(state, releaseIDEnvVarName, releaseID); err != nil {
-			return err
-		}
+	// Find the head of the language repo before we start creating any release commits.
+	// This will be validated later to check that libraries haven't changed since the release PR was created.
+	baselineCommit, err := gitrepo.HeadHash(state.languageRepo)
+	if err != nil {
+		return err
+	}
+	if err := appendResultEnvironmentVariable(state, baselineCommitEnvVarName, baselineCommit); err != nil {
+		return err
+	}
 
-		prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID)
-		if err != nil {
-			return err
-		}
+	releaseID := fmt.Sprintf("release-%s", formatTimestamp(state.startTime))
+	if err := appendResultEnvironmentVariable(state, releaseIDEnvVarName, releaseID); err != nil {
+		return err
+	}
 
-		prMetadata, err := createPullRequest(state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release")
-		if err != nil {
-			return err
-		}
+	prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID)
+	if err != nil {
+		return err
+	}
 
-		if prMetadata == nil {
-			// We haven't created a release PR, and there are no errors. This could be because:
-			// - There are no changes to release
-			// - The -push flag wasn't specified.
-			// Either way, complete successfully at this point.
-			return nil
-		}
+	prMetadata, err := createPullRequest(state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release")
+	if err != nil {
+		return err
+	}
 
-		// Final steps if we've actually created a release PR.
-		// - We always add the do-not-merge label so that Librarian can merge later.
-		// - Add a result environment variable with the PR number, for the next stage of the process.
-		err = githubrepo.AddLabelToPullRequest(state.ctx, *prMetadata, DoNotMergeLabel)
-		if err != nil {
-			slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
-			return err
-		}
-		if err := appendResultEnvironmentVariable(state, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
-			return err
-		}
+	if prMetadata == nil {
+		// We haven't created a release PR, and there are no errors. This could be because:
+		// - There are no changes to release
+		// - The -push flag wasn't specified.
+		// Either way, complete successfully at this point.
 		return nil
-	},
+	}
+
+	// Final steps if we've actually created a release PR.
+	// - We always add the do-not-merge label so that Librarian can merge later.
+	// - Add a result environment variable with the PR number, for the next stage of the process.
+	err = githubrepo.AddLabelToPullRequest(state.ctx, *prMetadata, DoNotMergeLabel)
+	if err != nil {
+		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
+		return err
+	}
+	if err := appendResultEnvironmentVariable(state, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Iterate over all configured libraries, and check for new commits since the previous release tag for that library.

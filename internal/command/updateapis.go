@@ -47,67 +47,69 @@ var CmdUpdateApis = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(state *commandState) error {
-		if err := validatePush(); err != nil {
-			return err
-		}
+	execute:                 updateAPIs,
+}
 
-		var apiRepo *gitrepo.Repo
-		cleanWorkingTreePostGeneration := true
-		if flagAPIRoot == "" {
-			var err error
-			apiRepo, err = cloneGoogleapis(state.workRoot)
-			if err != nil {
-				return err
-			}
-		} else {
-			apiRoot, err := filepath.Abs(flagAPIRoot)
-			slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
-			if err != nil {
-				slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
-				return err
-			}
-			apiRepo, err = gitrepo.Open(apiRoot)
-			if err != nil {
-				return err
-			}
-			clean, err := gitrepo.IsClean(apiRepo)
-			if err != nil {
-				return err
-			}
-			if !clean {
-				cleanWorkingTreePostGeneration = false
-				slog.Warn("API repo has modifications, so will not be cleaned after generation")
-			}
-		}
-
-		outputDir := filepath.Join(state.workRoot, "output")
-		if err := os.Mkdir(outputDir, 0755); err != nil {
-			return err
-		}
-		slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
-
-		// Root for generator-input defensive copies
-		if err := os.Mkdir(filepath.Join(state.workRoot, "generator-input"), 0755); err != nil {
-			return err
-		}
-
-		prContent := new(PullRequestContent)
-		// Perform "generate, clean, commit, build" on each library.
-		for _, library := range state.pipelineState.Libraries {
-			err := updateLibrary(state, apiRepo, outputDir, library, prContent)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Clean  the API repo in case it was changed, but not if it was already dirty before the command.
-		if cleanWorkingTreePostGeneration {
-			gitrepo.CleanWorkingTree(apiRepo)
-		}
-		_, err := createPullRequest(state, prContent, "feat: API regeneration", "", "regen")
+func updateAPIs(state *commandState) error {
+	if err := validatePush(); err != nil {
 		return err
-	},
+	}
+
+	var apiRepo *gitrepo.Repo
+	cleanWorkingTreePostGeneration := true
+	if flagAPIRoot == "" {
+		var err error
+		apiRepo, err = cloneGoogleapis(state.workRoot)
+		if err != nil {
+			return err
+		}
+	} else {
+		apiRoot, err := filepath.Abs(flagAPIRoot)
+		slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
+		if err != nil {
+			slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
+			return err
+		}
+		apiRepo, err = gitrepo.Open(apiRoot)
+		if err != nil {
+			return err
+		}
+		clean, err := gitrepo.IsClean(apiRepo)
+		if err != nil {
+			return err
+		}
+		if !clean {
+			cleanWorkingTreePostGeneration = false
+			slog.Warn("API repo has modifications, so will not be cleaned after generation")
+		}
+	}
+
+	outputDir := filepath.Join(state.workRoot, "output")
+	if err := os.Mkdir(outputDir, 0755); err != nil {
+		return err
+	}
+	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
+
+	// Root for generator-input defensive copies
+	if err := os.Mkdir(filepath.Join(state.workRoot, "generator-input"), 0755); err != nil {
+		return err
+	}
+
+	prContent := new(PullRequestContent)
+	// Perform "generate, clean, commit, build" on each library.
+	for _, library := range state.pipelineState.Libraries {
+		err := updateLibrary(state, apiRepo, outputDir, library, prContent)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Clean  the API repo in case it was changed, but not if it was already dirty before the command.
+	if cleanWorkingTreePostGeneration {
+		gitrepo.CleanWorkingTree(apiRepo)
+	}
+	_, err := createPullRequest(state, prContent, "feat: API regeneration", "", "regen")
+	return err
 }
 
 func updateLibrary(state *commandState, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {

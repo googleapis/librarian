@@ -49,49 +49,51 @@ var CmdConfigure = &Command{
 	},
 	maybeGetLanguageRepo:    cloneOrOpenLanguageRepo,
 	maybeLoadStateAndConfig: loadRepoStateAndConfig,
-	execute: func(state *commandState) error {
-		if err := validatePush(); err != nil {
-			return err
-		}
+	execute:                 runConfigure,
+}
 
-		outputRoot := filepath.Join(state.workRoot, "output")
-		if err := os.Mkdir(outputRoot, 0755); err != nil {
-			return err
-		}
-		slog.Info(fmt.Sprintf("Code will be generated in %s", outputRoot))
+func runConfigure(state *commandState) error {
+	if err := validatePush(); err != nil {
+		return err
+	}
 
-		var apiRoot string
-		if flagAPIRoot == "" {
-			repo, err := cloneGoogleapis(state.workRoot)
-			if err != nil {
-				return err
-			}
-			apiRoot = repo.Dir
-		} else {
-			// We assume it's okay not to take a defensive copy of apiRoot in the configure command,
-			// as "vanilla" configuration/generation shouldn't need to edit any protos. (That's just an escape hatch.)
-			absRoot, err := filepath.Abs(flagAPIRoot)
-			if err != nil {
-				return err
-			}
-			apiRoot = absRoot
-		}
-		apiPaths, err := findApisToConfigure(apiRoot, state.pipelineState, flagLanguage)
+	outputRoot := filepath.Join(state.workRoot, "output")
+	if err := os.Mkdir(outputRoot, 0755); err != nil {
+		return err
+	}
+	slog.Info(fmt.Sprintf("Code will be generated in %s", outputRoot))
+
+	var apiRoot string
+	if flagAPIRoot == "" {
+		repo, err := cloneGoogleapis(state.workRoot)
 		if err != nil {
 			return err
 		}
-
-		prContent := PullRequestContent{}
-		for _, apiPath := range apiPaths {
-			err = configureApi(state, outputRoot, apiRoot, apiPath, &prContent)
-			if err != nil {
-				return err
-			}
+		apiRoot = repo.Dir
+	} else {
+		// We assume it's okay not to take a defensive copy of apiRoot in the configure command,
+		// as "vanilla" configuration/generation shouldn't need to edit any protos. (That's just an escape hatch.)
+		absRoot, err := filepath.Abs(flagAPIRoot)
+		if err != nil {
+			return err
 		}
-
-		_, err = createPullRequest(state, &prContent, "feat: API configuration", "", "config")
+		apiRoot = absRoot
+	}
+	apiPaths, err := findApisToConfigure(apiRoot, state.pipelineState, flagLanguage)
+	if err != nil {
 		return err
-	},
+	}
+
+	prContent := PullRequestContent{}
+	for _, apiPath := range apiPaths {
+		err = configureApi(state, outputRoot, apiRoot, apiPath, &prContent)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = createPullRequest(state, &prContent, "feat: API configuration", "", "config")
+	return err
 }
 
 // Returns a collection of APIs to configure, either from the api-path flag,
