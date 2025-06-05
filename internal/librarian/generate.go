@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
+	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
@@ -51,23 +52,41 @@ func init() {
 }
 
 func runGenerate(ctx context.Context) error {
+	if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
+		return err
+	}
+	if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
+		return err
+	}
+
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime)
 	if err != nil {
 		return err
 	}
-	workRoot, err = resolveLibraryWorkRoot(workRoot)
-	if err != nil {
-		return err
-	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot)
+	libraryConfigured, err := detectIfLibraryConfigured()
 	if err != nil {
 		return err
 	}
 
-	ps, config, err := loadRepoStateAndConfig(repo)
-	if err != nil {
-		return err
+	var (
+		repo   *gitrepo.Repo
+		ps     *statepb.PipelineState
+		config *statepb.PipelineConfig
+	)
+
+	// We only clone/open the language repo and use the state within it
+	// if the requested API is configured as a library.
+	if libraryConfigured {
+		repo, err = cloneOrOpenLanguageRepo(workRoot)
+		if err != nil {
+			return err
+		}
+
+		ps, config, err = loadRepoStateAndConfig(repo)
+		if err != nil {
+			return err
+		}
 	}
 
 	image := deriveImage(ps)
@@ -89,13 +108,6 @@ func runGenerate(ctx context.Context) error {
 }
 
 func executeGenerate(state *commandState) error {
-	if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
-		return err
-	}
-	if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
-		return err
-	}
-
 	outputDir := filepath.Join(state.workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
@@ -153,16 +165,19 @@ func runGenerateCommand(state *commandState, outputDir string) (string, error) {
 	}
 }
 
-// resolveLibraryWorkRoot returns workRoot if the library for the given API
-// path exists. Otherwise, returns empty string.
-func resolveLibraryWorkRoot(workRoot string) (string, error) {
+// detectIfLibraryConfigured returns whether or not a library has been configured for
+// the requested API (as specified in flagAPIPath). This is done by checking the local
+// pipeline state if flagRepoRoot has been specified, or the remote pipeline state (just
+// by fetching the single file) if flatRepoUrl has been specified. If neither the repo
+// root not the repo url has been specified, we always perform raw generation.
+func detectIfLibraryConfigured() (bool, error) {
 	if flagRepoUrl == "" && flagRepoRoot == "" {
 		slog.Warn("repo url and root are not specified, cannot check if library exists")
-		return "", nil
+		return false, nil
 	}
 
 	if flagRepoRoot != "" && flagRepoUrl != "" {
-		return "", errors.New("do not specify both repo-root and repo-url")
+		return false, errors.New("do not specify both repo-root and repo-url")
 	}
 
 	// Attempt to load the pipeline state either locally or from the repo URL
@@ -175,23 +190,22 @@ func resolveLibraryWorkRoot(workRoot string) (string, error) {
 		languageRepoMetadata, err = githubrepo.ParseUrl(flagRepoUrl)
 		if err != nil {
 			slog.Warn("failed to parse", "repo url:", flagRepoUrl, "error", err)
-			return "", err
+			return false, err
 		}
 		pipelineState, err = fetchRemotePipelineState(context.Background(), languageRepoMetadata, "HEAD")
 	}
 
 	if err != nil {
-		return "", err
+		return false, err
 	}
 
 	// If the library doesn't exist, we don't use the repo at all.
 	libraryID := findLibraryIDByApiPath(pipelineState, flagAPIPath)
 	if libraryID == "" {
 		slog.Info(fmt.Sprintf("API path %s not configured in repo", flagAPIPath))
-		return "", nil
+		return false, nil
 	}
 
 	slog.Info(fmt.Sprintf("API path %s configured in repo library %s", flagAPIPath, libraryID))
-	// Otherwise (if the library *does* exist), clone or open it as normal.
-	return workRoot, nil
+	return true, nil
 }
