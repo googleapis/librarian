@@ -99,7 +99,13 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
 	return languageRepo, nil
 }
 
-func createContainerForLanguage(ctx context.Context) (*commandState, error) {
+// createCommandStateForLanguage performs common (but not universal)
+// steps for initializing a language repo, obtaining the pipeline state/config
+// from it, deriving the container image to use, and creating an appropriate
+// ContainerState based on all of the above. This should be used by all commands
+// which always have a language repo. Commands which only conditionally use
+// language repos should construct the command state themselves.
+func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime)
 	if err != nil {

@@ -54,7 +54,7 @@ func init() {
 }
 
 func runUpdateAPIs(ctx context.Context) error {
-	state, err := createContainerForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx)
 	if err != nil {
 		return err
 	}
