@@ -105,8 +105,12 @@ func mergeReleasePR(ctx context.Context, workRoot string) error {
 		return err
 	}
 
-	mergeCommit, err := mergePullRequest(ctx, prMetadata, workRoot)
+	mergeCommit, err := mergePullRequest(ctx, prMetadata)
 	if err != nil {
+		return err
+	}
+
+	if err := appendResultEnvironmentVariable(workRoot, mergedReleaseCommitEnvVarName, mergeCommit); err != nil {
 		return err
 	}
 
@@ -244,7 +248,7 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 	return true, nil
 }
 
-func mergePullRequest(ctx context.Context, prMetadata githubrepo.PullRequestMetadata, workRoot string) (string, error) {
+func mergePullRequest(ctx context.Context, prMetadata githubrepo.PullRequestMetadata) (string, error) {
 	slog.Info("Merging release PR")
 	if err := githubrepo.RemoveLabelFromPullRequest(ctx, prMetadata.Repo, prMetadata.Number, "do-not-merge"); err != nil {
 		return "", err
@@ -254,9 +258,6 @@ func mergePullRequest(ctx context.Context, prMetadata githubrepo.PullRequestMeta
 		return "", err
 	}
 
-	if err := appendResultEnvironmentVariable(workRoot, mergedReleaseCommitEnvVarName, *mergeResult.SHA); err != nil {
-		return "", err
-	}
 	slog.Info("Release PR merged")
 	return *mergeResult.SHA, nil
 }
