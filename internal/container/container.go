@@ -139,6 +139,7 @@ func BuildLibrary(config *ContainerConfig, repoRoot, libraryId string) error {
 	}
 	commandArgs := []string{
 		"--repo-root=/repo",
+		"--test=true",
 	}
 	if libraryId != "" {
 		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryId))
