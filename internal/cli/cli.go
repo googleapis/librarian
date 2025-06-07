@@ -48,16 +48,12 @@ func (c *Command) Parse(args []string) error {
 // Lookup finds a command by its name, and returns an error if the command is
 // not found.
 func Lookup(name string, commands []*Command) (*Command, error) {
-	var cmd *Command
 	for _, sub := range commands {
 		if sub.Name == name {
-			cmd = sub
+			return sub, nil
 		}
 	}
-	if cmd == nil {
-		return nil, fmt.Errorf("invalid command: %q", name)
-	}
-	return cmd, nil
+	return nil, fmt.Errorf("invalid command: %q", name)
 }
 
 // SetFlags registers a list of functions that configure flags for the command.
