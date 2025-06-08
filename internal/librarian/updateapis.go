@@ -33,6 +33,8 @@ import (
 var CmdUpdateApis = &cli.Command{
 	Name:  "update-apis",
 	Short: "Regenerate APIs in a language repo with new specifications.",
+	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
+	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
 	Run:   runUpdateAPIs,
 }
 

@@ -32,6 +32,8 @@ import (
 var CmdUpdateImageTag = &cli.Command{
 	Name:  "update-image-tag",
 	Short: "Update a language repo's image tag and regenerate APIs.",
+	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
+	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
 	Run:   runUpdateImageTag,
 }
 

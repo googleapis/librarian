@@ -25,8 +25,14 @@ type Command struct {
 	// Name is the unique identifier for the command.
 	Name string
 
-	// Short is a concise description shown in the 'librarian -h' output.
+	// Short is a concise one-line description of the command.
 	Short string
+
+	// Usage is the one line usage.
+	Usage string
+
+	// Long is the full description of the command.
+	Long string
 
 	// Run executes the command.
 	Run func(ctx context.Context) error
@@ -59,20 +65,24 @@ func Lookup(name string, commands []*Command) (*Command, error) {
 // SetFlags registers a list of functions that configure flags for the command.
 func (c *Command) SetFlags(flagFunctions []func(fs *flag.FlagSet)) {
 	c.flags = flag.NewFlagSet(c.Name, flag.ContinueOnError)
-	c.flags.Usage = constructUsage(c.flags, c.Name)
+	c.flags.Usage = c.usage()
 	for _, fn := range flagFunctions {
 		fn(c.flags)
 	}
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/205): clean up this
-// function so that "librarian" is not hardcoded
-func constructUsage(fs *flag.FlagSet, name string) func() {
-	output := fmt.Sprintf("Usage:\n\n  librarian %s [arguments]\n", name)
-	output += "\nFlags:\n\n"
+func (c *Command) usage() func() {
+	if c.Name == "" || c.Short == "" || c.Usage == "" || c.Long == "" {
+		panic(fmt.Sprintf("command %q is missing documentation", c.Name))
+	}
+
+	output := fmt.Sprintf("Name:\n  %s\n\n", c.Name)
+	output += fmt.Sprintf("Usage:\n  %s\n\n", c.Usage)
+	output += fmt.Sprintf("Description:\n  %s\n", c.Long)
+	output += "\nFlags:\n"
 	return func() {
-		fmt.Fprint(fs.Output(), output)
-		fs.PrintDefaults()
-		fmt.Fprintf(fs.Output(), "\n\n")
+		fmt.Fprint(c.flags.Output(), output)
+		c.flags.PrintDefaults()
+		fmt.Fprintf(c.flags.Output(), "\n\n")
 	}
 }

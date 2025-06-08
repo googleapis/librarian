@@ -50,6 +50,8 @@ const MergeBlockedLabel = "merge-blocked-see-comments"
 var CmdMergeReleasePR = &cli.Command{
 	Name:  "merge-release-pr",
 	Short: "Merge a validated release PR.",
+	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
+	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
 	Run:   runMergeReleasePR,
 }
 

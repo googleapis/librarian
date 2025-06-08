@@ -34,6 +34,8 @@ import (
 var CmdGenerate = &cli.Command{
 	Name:  "generate",
 	Short: "Generate client library code for an API.",
+	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
+	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
 	Run:   runGenerate,
 }
 

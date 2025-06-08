@@ -34,6 +34,8 @@ import (
 var CmdPublishReleaseArtifacts = &cli.Command{
 	Name:  "publish-release-artifacts",
 	Short: "Publish (previously-created) release artifacts to package managers.",
+	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
+	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
 	Run:   runPublishReleaseArtifacts,
 }
 

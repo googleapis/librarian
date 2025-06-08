@@ -41,6 +41,8 @@ const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 var CmdCreateReleasePR = &cli.Command{
 	Name:  "create-release-pr",
 	Short: "Generate a release PR.",
+	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
+	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
 	Run:   runCreateReleasePR,
 }
 

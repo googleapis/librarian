@@ -36,6 +36,8 @@ import (
 var CmdConfigure = &cli.Command{
 	Name:  "configure",
 	Short: "Set up a new API for a language.",
+	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
+	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
 	Run:   runConfigure,
 }
 

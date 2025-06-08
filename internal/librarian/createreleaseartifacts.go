@@ -41,6 +41,8 @@ type LibraryRelease struct {
 var CmdCreateReleaseArtifacts = &cli.Command{
 	Name:  "create-release-artifacts",
 	Short: "Create release artifacts from a merged release PR.",
+	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
+	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
 	Run:   runCreateReleaseArtifacts,
 }
 
