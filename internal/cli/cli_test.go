@@ -51,28 +51,35 @@ func TestParseAndSetFlags(t *testing.T) {
 }
 
 func TestLookup(t *testing.T) {
-	test1 := "foo"
 	commands := []*Command{
-		{Name: test1},
+		{Name: "foo"},
+		{Name: "bar"},
 	}
 
-	cmd, err := Lookup(test1, commands)
-	if err != nil {
-		t.Fatalf("Lookup failed: %v", err)
-	}
-	if cmd.Name != test1 {
-		t.Errorf("expected command 'second', got %q", cmd.Name)
-	}
-}
+	for _, test := range []struct {
+		name    string
+		wantErr bool
+	}{
+		{"foo", false},
+		{"bar", false},
+		{"baz", true}, // not found case
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cmd, err := Lookup(test.name, commands)
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("Lookup(%q): expected error, got nil", test.name)
+				}
+				return
+			}
 
-func TestLookup_Error(t *testing.T) {
-	test1 := "foo"
-	commands := []*Command{
-		{Name: test1},
-	}
-	test2 := "bar"
-	if _, err := Lookup(test2, commands); err == nil {
-		t.Fatalf("expected error for command %q", test2)
+			if err != nil {
+				t.Fatalf("Lookup(%q): unexpected error: %v", test.name, err)
+			}
+			if cmd.Name != test.name {
+				t.Errorf("Lookup(%q): got %q, want %q", test.name, cmd.Name, test.name)
+			}
+		})
 	}
 }
 
