@@ -39,6 +39,9 @@ type Command struct {
 // Parse parses the provided command-line arguments using the command's flag
 // set.
 func (c *Command) Parse(args []string) error {
+	if c.flags == nil {
+		return nil
+	}
 	return c.flags.Parse(args)
 }
 

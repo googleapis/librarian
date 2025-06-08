@@ -251,6 +251,7 @@ var librarianCommands = []*cli.Command{
 	CmdMergeReleasePR,
 	CmdCreateReleaseArtifacts,
 	CmdPublishReleaseArtifacts,
+	CmdVersion,
 }
 
 func formatReleaseTag(libraryID, version string) string {
