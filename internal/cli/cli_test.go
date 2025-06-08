@@ -68,16 +68,16 @@ func TestLookup(t *testing.T) {
 			cmd, err := Lookup(test.name, commands)
 			if test.wantErr {
 				if err == nil {
-					t.Fatalf("Lookup(%q): expected error, got nil", test.name)
+					t.Fatal(err)
 				}
 				return
 			}
 
 			if err != nil {
-				t.Fatalf("Lookup(%q): unexpected error: %v", test.name, err)
+				t.Fatal(err)
 			}
 			if cmd.Name != test.name {
-				t.Errorf("Lookup(%q): got %q, want %q", test.name, cmd.Name, test.name)
+				t.Errorf("got = %q, want = %q", cmd.Name, test.name)
 			}
 		})
 	}
