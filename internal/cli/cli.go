@@ -29,9 +29,6 @@ type Command struct {
 	Short string
 
 	// Run executes the command.
-	//
-	// TODO(https://github.com/googleapis/librarian/issues/194): migrate all
-	// commands to implement this method.
 	Run func(ctx context.Context) error
 
 	// flags is the command's flag set for parsing arguments and generating
