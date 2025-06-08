@@ -1,4 +1,4 @@
-# librarian
+# Librarian CLI
 
 This repository contains code for a unified command line tool for
 SDK client library configuration, generation and releasing.
