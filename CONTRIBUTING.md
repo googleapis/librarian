@@ -1,36 +1,29 @@
 # How to Contribute
 
-We'd love to accept your patches and contributions to this project. There are
-just a few small guidelines you need to follow.
+This repository is intended to support Google Cloud SDK in
+generating and releasing client libraries for Google Cloud APIs.
 
-## Contributor License Agreement
+We do not expect this repository to be particularly relevant to
+developers outside Google, and we don't expect or seek external code
+contributions. That doesn't mean it will never happen, but it would
+be unusual.
 
-Contributions to this project must be accompanied by a Contributor License
-Agreement (CLA). You (or your employer) retain the copyright to your
-contribution; this simply gives us permission to use and redistribute your
-contributions as part of the project. Head over to
-<https://cla.developers.google.com/> to see your current agreements on file or
-to sign a new one.
-
-You generally only need to submit a CLA once, so if you've already submitted one
-(even if it was for a different project), you probably don't need to do it
-again.
+If you want to request a change within this repository and you're
+not a member of the Google Cloud SDK team, please create an
+[issue](https://github.com/googleapis/google-cloud-dotnet/issues)
+for discussion first, clearly explaining your intended use. We will
+close pull requests from external contributors which aren't the
+result of a suitable discussion.
 
 ## Code Reviews
 
-All submissions, including submissions by project members, require review. We
-use GitHub pull requests for this purpose. Consult
-[GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
-information on using pull requests.
+All submissions, including submissions by project members, require
+review. We use GitHub pull requests for this purpose. If you have a
+specific team member in mind, please request their review directly,
+otherwise just leave the default group reviewer.
 
-## Community Guidelines
+## Issues
 
-We welcome contributors to the project. All contributors must follow our
-[Code of Conduct](/CODE_OF_CONDUCT.md), in all communications, including pull
-requests, and code comments. Thank you for keeping an inclusive and respectful
-culture in the project.
-
-## More Information
-
-This document used to be much longer. We have refactored the documents to
-separate [Contributor Guides](/doc/contributor/README.md).
+When creating an issue, feel free to assign it to an individual if
+there is a natural owner. Otherwise, leave it unassigned for a
+triage rotation to pick up.
