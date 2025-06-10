@@ -48,11 +48,13 @@ func version(info *debug.BuildInfo) string {
 		return "not available"
 	}
 
+	// Construct the pseudo-version string per
+	// https://go.dev/ref/mod#pseudo-versions.
 	buf := strings.Builder{}
 	buf.WriteString("0.0.0")
 	if revision != "" {
 		buf.WriteString("-")
-		buf.WriteString(revision[:12])
+		buf.WriteString(revision)
 	}
 	if at != "" {
 		// commit time is of the form 2023-01-25T19:57:54Z
