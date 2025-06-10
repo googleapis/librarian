@@ -20,7 +20,8 @@ import (
 	"time"
 )
 
-// Version prints the version information for the binary.
+// Version return the version information for the binary, which is constructed
+// following https://go.dev/ref/mod#versions.
 func Version() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
