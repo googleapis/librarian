@@ -24,10 +24,8 @@ import (
 var CmdVersion = &cli.Command{
 	Name:  "version",
 	Short: "Print version information.",
-	Run:   runVersion,
-}
-
-func runVersion(ctx context.Context) error {
-	fmt.Println(cli.Version())
-	return nil
+	Run: func(ctx context.Context) error {
+		fmt.Println(cli.Version())
+		return nil
+	},
 }
