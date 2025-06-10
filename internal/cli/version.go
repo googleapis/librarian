@@ -55,7 +55,9 @@ func version(info *debug.BuildInfo) string {
 	buf.WriteString("0.0.0")
 	if revision != "" {
 		buf.WriteString("-")
-		buf.WriteString(revision)
+		// Per https://go.dev/ref/mod#pseudo-versions, only use the first 12
+		// letters of the commit hash.
+		buf.WriteString(revision[:12])
 	}
 	if at != "" {
 		// commit time is of the form 2023-01-25T19:57:54Z
