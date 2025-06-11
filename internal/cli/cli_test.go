@@ -29,6 +29,8 @@ func TestParseAndSetFlags(t *testing.T) {
 	cmd := &Command{
 		Name:  "test",
 		Short: "test command is used for testing",
+		Long:  "This is the long documentation for command test.",
+		Usage: "foobar test [arguments]",
 	}
 	cmd.SetFlags([]func(fs *flag.FlagSet){
 		func(fs *flag.FlagSet) {
