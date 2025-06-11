@@ -44,7 +44,10 @@ var noHeaderRequiredFiles = []string{".github/CODEOWNERS", "go.sum", "go.mod", "
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
-	fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, _ error) error {
+	fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		if d.IsDir() {
 			if d.Name() == "testdata" || d.Name() == ".git" {
 				return fs.SkipDir
@@ -53,17 +56,18 @@ func TestHeaders(t *testing.T) {
 		}
 
 		var requiredHeader *regexp.Regexp
-		if strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".proto") {
+		switch {
+		case strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".proto"):
 			requiredHeader = doubleSlashHeader
-		} else if strings.HasSuffix(path, ".sh") {
+		case strings.HasSuffix(path, ".sh"):
 			requiredHeader = shellHeader
-		} else if strings.HasSuffix(path, ".yaml") || strings.HasPrefix(path, "Dockerfile") {
+		case strings.HasSuffix(path, ".yaml") || strings.HasPrefix(path, "Dockerfile"):
 			requiredHeader = hashHeader
-		} else if strings.HasSuffix(path, ".md") {
+		case strings.HasSuffix(path, ".md"):
 			return nil
-		} else if slices.Contains(noHeaderRequiredFiles, path) {
+		case slices.Contains(noHeaderRequiredFiles, path):
 			return nil
-		} else {
+		default:
 			// Given the mixture of allow-lists and requirements, if there's a file which
 			// isn't covered, we report an error.
 			t.Errorf("%q: unknown header requirements", path)
