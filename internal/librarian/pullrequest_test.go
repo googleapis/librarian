@@ -17,7 +17,6 @@ package librarian
 import (
 	"errors"
 	"slices"
-	"strings"
 	"testing"
 )
 
@@ -28,12 +27,12 @@ func TestAddErrorToPullRequest(t *testing.T) {
 	}
 	addErrorToPullRequest(&pr, "library-id", errors.New("bang"), "generating")
 	if !slices.Equal([]string{"s1", "s2"}, pr.Successes) {
-		t.Errorf("addErrorToPullRequest modified successes: %s", strings.Join(pr.Successes, ", "))
+		t.Errorf("addErrorToPullRequest modified successes: %q", pr.Successes)
 	}
 	// Note the error isn't included here; it's logged, but not added to the PullRequestContent
-	expected := "Error while generating library-id"
-	if !slices.Equal([]string{"e1", "e2", expected}, pr.Errors) {
-		t.Errorf("unexpected errors after addErrorToPullRequest: %s", strings.Join(pr.Errors, ", "))
+	want := "Error while generating library-id"
+	if !slices.Equal([]string{"e1", "e2", want}, pr.Errors) {
+		t.Errorf("unexpected errors after addErrorToPullRequest: %q", pr.Errors)
 	}
 }
 
@@ -44,17 +43,17 @@ func TestAddSuccessToPullRequest(t *testing.T) {
 	}
 	addSuccessToPullRequest(&pr, "s3")
 	if !slices.Equal([]string{"s1", "s2", "s3"}, pr.Successes) {
-		t.Errorf("unexpected successes after addSuccessToPullRequest: %s", strings.Join(pr.Successes, ", "))
+		t.Errorf("unexpected successes after addSuccessToPullRequest: %q", pr.Successes)
 	}
 	if !slices.Equal([]string{"e1", "e2"}, pr.Errors) {
-		t.Errorf("addSuccessToPullRequest modified errors: %s", strings.Join(pr.Errors, ", "))
+		t.Errorf("addSuccessToPullRequest modified errors: %q", pr.Errors)
 	}
 }
 
 func TestFormatListAsMarkdownEmptyList(t *testing.T) {
 	got := formatListAsMarkdown("Title", []string{})
 	if got != "" {
-		t.Errorf("formatting empty list produced non-empty output '%s'", got)
+		t.Errorf("formatting empty list produced non-empty output %q", got)
 	}
 }
 
@@ -62,6 +61,6 @@ func TestFormatListAsMarkdownNonEmptyList(t *testing.T) {
 	got := formatListAsMarkdown("Title", []string{"x1", "x2"})
 	want := "## Title\n\n- x1\n- x2\n\n\n"
 	if got != want {
-		t.Errorf("want '%s'; got '%s'", want, got)
+		t.Errorf("got %q, want %q", got, want)
 	}
 }
