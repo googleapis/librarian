@@ -51,7 +51,7 @@ func version(info *debug.BuildInfo) string {
 
 	// Construct the pseudo-version string per
 	// https://go.dev/ref/mod#pseudo-versions.
-	buf := strings.Builder{}
+	var buf strings.Builder
 	buf.WriteString("0.0.0")
 	if revision != "" {
 		buf.WriteString("-")
