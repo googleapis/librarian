@@ -131,6 +131,14 @@ func copyMetadataFiles(state *commandState, outputRoot string, releases []Librar
 	return nil
 }
 
+func copyFile(sourcePath, destPath string) error {
+	bytes, err := readAllBytesFromFile(sourcePath)
+	if err != nil {
+		return err
+	}
+	return createAndWriteBytesToFile(destPath, bytes)
+}
+
 func buildTestPackageRelease(state *commandState, outputRoot string, release LibraryRelease) error {
 	containerConfig := state.containerConfig
 	languageRepo := state.languageRepo

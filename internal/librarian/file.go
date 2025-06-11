@@ -46,7 +46,7 @@ func appendToFile(filePath string, content string) (err error) {
 			err = cerr
 		}
 	}()
-	_, err := file.WriteString(content)
+	_, err = file.WriteString(content)
 	return err
 }
 
@@ -63,7 +63,7 @@ func createAndWriteToFile(filePath string, content string) (err error) {
 			err = cerr
 		}
 	}()
-	_, err := file.WriteString(content)
+	_, err = file.WriteString(content)
 	return err
 }
 
@@ -80,6 +80,6 @@ func createAndWriteBytesToFile(filePath string, content []byte) (err error) {
 			err = cerr
 		}
 	}()
-	_, err := file.Write(content)
+	_, err = file.Write(content)
 	return err
 }

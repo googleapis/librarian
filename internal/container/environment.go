@@ -91,7 +91,7 @@ func createAndWriteToFile(filePath string, content string) (err error) {
 		err = cerr
 	}()
 
-	_, err := file.WriteString(content)
+	_, err = file.WriteString(content)
 	return err
 }
 
