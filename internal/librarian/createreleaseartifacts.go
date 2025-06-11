@@ -27,7 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/utils"
 )
 
 type LibraryRelease struct {
@@ -109,7 +108,7 @@ func copyMetadataFiles(state *commandState, outputRoot string, releases []Librar
 	if err != nil {
 		return err
 	}
-	if err := utils.CreateAndWriteBytesToFile(filepath.Join(outputRoot, "releases.json"), releasesJson); err != nil {
+	if err := createAndWriteBytesToFile(filepath.Join(outputRoot, "releases.json"), releasesJson); err != nil {
 		return err
 	}
 
@@ -120,13 +119,13 @@ func copyMetadataFiles(state *commandState, outputRoot string, releases []Librar
 	}
 	sourceStateFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineStateFile)
 	destStateFile := filepath.Join(outputRoot, pipelineStateFile)
-	if err := utils.CopyFile(sourceStateFile, destStateFile); err != nil {
+	if err := copyFile(sourceStateFile, destStateFile); err != nil {
 		return err
 	}
 
 	sourceConfigFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineConfigFile)
 	destConfigFile := filepath.Join(outputRoot, pipelineConfigFile)
-	if err := utils.CopyFile(sourceConfigFile, destConfigFile); err != nil {
+	if err := copyFile(sourceConfigFile, destConfigFile); err != nil {
 		return err
 	}
 	return nil

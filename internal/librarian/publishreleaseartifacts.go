@@ -28,7 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
-	"github.com/googleapis/librarian/internal/utils"
 )
 
 var CmdPublishReleaseArtifacts = &cli.Command{
@@ -83,7 +82,7 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *container.Con
 		return err
 	}
 
-	releasesJson, err := utils.ReadAllBytesFromFile(filepath.Join(flagArtifactRoot, "releases.json"))
+	releasesJson, err := readAllBytesFromFile(filepath.Join(flagArtifactRoot, "releases.json"))
 	if err != nil {
 		return err
 	}

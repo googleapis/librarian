@@ -27,7 +27,6 @@ import (
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/googleapis/librarian/internal/statepb"
-	"github.com/googleapis/librarian/internal/utils"
 	"google.golang.org/grpc/codes"
 )
 
@@ -79,7 +78,21 @@ func writeEnvironmentFile(containerEnv *EnvironmentProvider, commandName string)
 	if err != nil {
 		return err
 	}
-	return utils.CreateAndWriteToFile(containerEnv.tmpFile, content)
+	return createAndWriteToFile(containerEnv.tmpFile, content)
+}
+
+func createAndWriteToFile(filePath string, content string) (err error) {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cerr := file.Close()
+		err = cerr
+	}()
+
+	_, err := file.WriteString(content)
+	return err
 }
 
 func constructEnvironmentFileContent(containerEnv *EnvironmentProvider, commandName string) (string, error) {

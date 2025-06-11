@@ -27,7 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
-	"github.com/googleapis/librarian/internal/utils"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -272,7 +271,7 @@ func formatReleaseNotes(commitMessages []*CommitMessage) string {
 
 func createReleaseNotesFile(inputDirectory, libraryId, releaseVersion, releaseNotes string) error {
 	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", libraryId, releaseVersion))
-	return utils.CreateAndWriteToFile(path, releaseNotes)
+	return createAndWriteToFile(path, releaseNotes)
 }
 
 func maybeAppendReleaseNotesSection(builder *strings.Builder, description string, lines []string) {

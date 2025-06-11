@@ -29,7 +29,6 @@ import (
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
-	"github.com/googleapis/librarian/internal/utils"
 )
 
 const releaseIDEnvVarName = "_RELEASE_ID"
@@ -145,7 +144,7 @@ func appendResultEnvironmentVariable(workRoot, name, value string) error {
 		envFile = filepath.Join(workRoot, "env-vars.txt")
 	}
 
-	return utils.AppendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
+	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
 }
 
 func deriveImage(state *statepb.PipelineState) string {

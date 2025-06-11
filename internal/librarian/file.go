@@ -12,56 +12,74 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package librarian
 
 import (
 	"io"
 	"os"
 )
 
-func ReadAllBytesFromFile(filePath string) ([]byte, error) {
+func readAllBytesFromFile(filePath string) (_ []byte, err error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		cerr := file.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 	return io.ReadAll(file)
 }
 
-// AppendToFile writes the content to a file in the specified filePath.
+// appendToFile writes the content to a file in the specified filePath.
 // It creates the file if it does not exist, otherwise it appends to existing file.
-func AppendToFile(filePath string, content string) error {
+func appendToFile(filePath string, content string) (err error) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	return writeContentToFile(*file, content)
+	defer func() {
+		cerr := file.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	_, err := file.WriteString(content)
+	return err
 }
 
-// CreateAndWriteBytesToFile creates a file with the specified name and content.
+// createAndWriteToFile creates a file with the specified name and content.
 // It will truncate the file if it already exists.
-func CreateAndWriteBytesToFile(filePath string, content []byte) error {
+func createAndWriteToFile(filePath string, content string) (err error) {
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	return writeBytesToFile(*file, content)
+	defer func() {
+		cerr := file.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	_, err := file.WriteString(content)
+	return err
 }
 
-func CopyFile(sourcePath, destPath string) error {
-	bytes, err := ReadAllBytesFromFile(sourcePath)
+// createAndWriteBytesToFile creates a file with the specified name and content.
+// It will truncate the file if it already exists.
+func createAndWriteBytesToFile(filePath string, content []byte) (err error) {
+	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
-	return CreateAndWriteBytesToFile(destPath, bytes)
-}
-
-func writeBytesToFile(file os.File, content []byte) error {
+	defer func() {
+		cerr := file.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 	_, err := file.Write(content)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
