@@ -61,7 +61,7 @@ func TestHeaders(t *testing.T) {
 			requiredHeader = doubleSlashHeader
 		case strings.HasSuffix(path, ".sh"):
 			requiredHeader = shellHeader
-		case strings.HasSuffix(path, ".yaml") || strings.HasPrefix(path, "Dockerfile"):
+		case strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || strings.HasPrefix(path, "Dockerfile"):
 			requiredHeader = hashHeader
 		case strings.HasSuffix(path, ".md"):
 			return nil
