@@ -25,7 +25,6 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -126,7 +125,7 @@ func updateAPIs(state *commandState) error {
 }
 
 func updateLibrary(state *commandState, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
-	containerConfig := state.containerConfig
+	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
 	if flagLibraryID != "" && flagLibraryID != library.Id {
@@ -172,11 +171,11 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repo, outputRoot string
 		return err
 	}
 
-	if err := container.GenerateLibrary(containerConfig, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := cc.GenerateLibrary(apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "generating")
 		return nil
 	}
-	if err := container.Clean(containerConfig, languageRepo.Dir, library.Id); err != nil {
+	if err := cc.Clean(languageRepo.Dir, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "cleaning")
 		// Clean up any changes before starting the next iteration.
 		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
@@ -213,7 +212,7 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repo, outputRoot string
 	// Once we've committed, we can build - but then check that nothing has changed afterwards.
 	// We consider a "something changed" error as fatal, whereas a build error just needs to
 	// undo the commit, report the failure and continue
-	buildErr := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id)
+	buildErr := cc.BuildLibrary(languageRepo.Dir, library.Id)
 	clean, err := gitrepo.IsClean(languageRepo)
 	if err != nil {
 		return err

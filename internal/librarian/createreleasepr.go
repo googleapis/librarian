@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
 
 	"github.com/Masterminds/semver/v3"
@@ -146,7 +145,7 @@ func createReleasePR(state *commandState) error {
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
 func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory string, releaseID string) (*PullRequestContent, error) {
-	containerConfig := state.containerConfig
+	cc := state.containerConfig
 	libraries := state.pipelineState.Libraries
 	languageRepo := state.languageRepo
 
@@ -206,7 +205,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 			return nil, err
 		}
 
-		if err := container.PrepareLibraryRelease(containerConfig, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
+		if err := cc.PrepareLibraryRelease(languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "preparing library release")
 			// Clean up any changes before starting the next iteration.
 			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
@@ -214,7 +213,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 			}
 			continue
 		}
-		if err := container.BuildLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
+		if err := cc.BuildLibrary(languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "building/testing library")
 			// Clean up any changes before starting the next iteration.
 			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
@@ -224,7 +223,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 		}
 		if flagSkipIntegrationTests != "" {
 			slog.Info(fmt.Sprintf("Skipping integration tests: %s", flagSkipIntegrationTests))
-		} else if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, library.Id); err != nil {
+		} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "integration testing library")
 			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 				return nil, err

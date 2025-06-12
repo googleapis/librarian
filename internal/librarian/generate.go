@@ -123,16 +123,16 @@ func executeGenerate(state *commandState) error {
 	if flagBuild {
 		if libraryID != "" {
 			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-			if err := container.Clean(state.containerConfig, state.languageRepo.Dir, libraryID); err != nil {
+			if err := state.containerConfig.Clean(state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
 			if err := os.CopyFS(state.languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 				return err
 			}
-			if err := container.BuildLibrary(state.containerConfig, state.languageRepo.Dir, libraryID); err != nil {
+			if err := state.containerConfig.BuildLibrary(state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
-		} else if err := container.BuildRaw(state.containerConfig, outputDir, flagAPIPath); err != nil {
+		} else if err := state.containerConfig.BuildRaw(outputDir, flagAPIPath); err != nil {
 			return err
 		}
 	}
@@ -160,10 +160,10 @@ func runGenerateCommand(state *commandState, outputDir string) (string, error) {
 		}
 		generatorInput := filepath.Join(state.languageRepo.Dir, "generator-input")
 		slog.Info(fmt.Sprintf("Performing refined generation for library %s", libraryID))
-		return libraryID, container.GenerateLibrary(state.containerConfig, apiRoot, outputDir, generatorInput, libraryID)
+		return libraryID, state.containerConfig.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID)
 	} else {
 		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", flagAPIPath))
-		return "", container.GenerateRaw(state.containerConfig, apiRoot, outputDir, flagAPIPath)
+		return "", state.containerConfig.GenerateRaw(apiRoot, outputDir, flagAPIPath)
 	}
 }
 

@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -142,25 +141,25 @@ func copyFile(sourcePath, destPath string) error {
 }
 
 func buildTestPackageRelease(state *commandState, outputRoot string, release LibraryRelease) error {
-	containerConfig := state.containerConfig
+	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
 	if err := gitrepo.Checkout(languageRepo, release.CommitHash); err != nil {
 		return err
 	}
-	if err := container.BuildLibrary(containerConfig, languageRepo.Dir, release.LibraryID); err != nil {
+	if err := cc.BuildLibrary(languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	if flagSkipIntegrationTests != "" {
 		slog.Info(fmt.Sprintf("Skipping integration tests: %s", flagSkipIntegrationTests))
-	} else if err := container.IntegrationTestLibrary(containerConfig, languageRepo.Dir, release.LibraryID); err != nil {
+	} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
-	if err := container.PackageLibrary(containerConfig, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
+	if err := cc.PackageLibrary(languageRepo.Dir, release.LibraryID, outputDir); err != nil {
 		return err
 	}
 	return nil

@@ -119,7 +119,7 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *container.Con
 func publishPackages(config *container.ContainerConfig, outputRoot string, releases []LibraryRelease) error {
 	for _, release := range releases {
 		outputDir := filepath.Join(outputRoot, release.LibraryID)
-		if err := container.PublishLibrary(config, outputDir, release.LibraryID, release.Version); err != nil {
+		if err := config.PublishLibrary(outputDir, release.LibraryID, release.Version); err != nil {
 			return err
 		}
 	}

@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"gopkg.in/yaml.v3"
@@ -231,13 +230,13 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
 func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
-	containerConfig := state.containerConfig
+	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
 	generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
-	if err := container.Configure(containerConfig, apiRoot, apiPath, generatorInput); err != nil {
+	if err := cc.Configure(apiRoot, apiPath, generatorInput); err != nil {
 		addErrorToPullRequest(prContent, apiPath, err, "configuring")
 		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
 			return err
@@ -287,14 +286,14 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 		return err
 	}
 
-	if err := container.GenerateLibrary(containerConfig, apiRoot, outputDir, generatorInput, libraryID); err != nil {
+	if err := cc.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "generating"))
 		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
 			return err
 		}
 		return nil
 	}
-	if err := container.Clean(containerConfig, languageRepo.Dir, libraryID); err != nil {
+	if err := cc.Clean(languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "cleaning"))
 		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
 			return err
@@ -305,7 +304,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
-	if err := container.BuildLibrary(containerConfig, languageRepo.Dir, libraryID); err != nil {
+	if err := cc.BuildLibrary(languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "building"))
 		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
 			return err

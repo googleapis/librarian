@@ -73,12 +73,12 @@ func newEnvironmentProvider(ctx context.Context, workRoot, secretsProject string
 	}, nil
 }
 
-func writeEnvironmentFile(containerEnv *EnvironmentProvider, commandName string) error {
-	content, err := constructEnvironmentFileContent(containerEnv, commandName)
+func (e *EnvironmentProvider) writeEnvironmentFile(commandName string) error {
+	content, err := e.constructEnvironmentFileContent(commandName)
 	if err != nil {
 		return err
 	}
-	return createAndWriteToFile(containerEnv.tmpFile, content)
+	return createAndWriteToFile(e.tmpFile, content)
 }
 
 func createAndWriteToFile(filePath string, content string) (err error) {
@@ -95,8 +95,8 @@ func createAndWriteToFile(filePath string, content string) (err error) {
 	return err
 }
 
-func constructEnvironmentFileContent(containerEnv *EnvironmentProvider, commandName string) (string, error) {
-	commandConfig := containerEnv.pipelineConfig.Commands[commandName]
+func (e *EnvironmentProvider) constructEnvironmentFileContent(commandName string) (string, error) {
+	commandConfig := e.pipelineConfig.Commands[commandName]
 	if commandConfig == nil {
 		return "# No environment variables", nil
 	}
@@ -109,7 +109,7 @@ func constructEnvironmentFileContent(containerEnv *EnvironmentProvider, commandN
 		// Second source: Secret Manager
 		if !present {
 			source = "Secret Manager"
-			value, present, err = getSecretManagerValue(containerEnv, variable)
+			value, present, err = getSecretManagerValue(e, variable)
 			if err != nil {
 				return "", err
 			}

@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -135,7 +134,7 @@ func updateImageTag(state *commandState) error {
 
 	// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
 	slog.Info("Building all libraries.")
-	if err := container.BuildLibrary(state.containerConfig, languageRepo.Dir, ""); err != nil {
+	if err := state.containerConfig.BuildLibrary(languageRepo.Dir, ""); err != nil {
 		return err
 	}
 
@@ -148,7 +147,7 @@ func updateImageTag(state *commandState) error {
 }
 
 func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
-	containerConfig := state.containerConfig
+	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
 	if len(library.ApiPaths) == 0 {
@@ -169,10 +168,10 @@ func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repo, generatorInpu
 		return err
 	}
 
-	if err := container.GenerateLibrary(containerConfig, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := cc.GenerateLibrary(apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
-	if err := container.Clean(containerConfig, languageRepo.Dir, library.Id); err != nil {
+	if err := cc.Clean(languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
