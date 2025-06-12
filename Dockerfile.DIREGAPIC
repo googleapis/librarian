@@ -1,0 +1,31 @@
+#!/bin/bash
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG CONVERTER_IMAGE_AND_TAG
+ARG LIBRARIAN_STD_IMAGE_AND_TAG
+
+FROM ${CONVERTER_IMAGE_AND_TAG} AS converter
+
+FROM ${LIBRARIAN_STD_IMAGE_AND_TAG}
+WORKDIR /app
+COPY diregapic_pipeline.sh .
+COPY --from=converter /app/disco-to-proto3-converter.jar .
+ADD https://raw.githubusercontent.com/googleapis/discovery-artifact-manager/master/scripts/normalize_discovery.py /app/normalize_discovery.py
+RUN apt-get install -y default-jre python3
+
+# TODO: Set non-root user, since output files produced by the script
+#       below are written with "root" ownership in the host filesystem
+
+ENTRYPOINT ["/app/diregapic_pipeline.sh"]
