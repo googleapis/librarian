@@ -64,11 +64,7 @@ func runUpdateAPIs(ctx context.Context) error {
 }
 
 func updateAPIs(state *commandState) error {
-	if err := validatePush(); err != nil {
-		return err
-	}
-
-	var apiRepo *gitrepo.Repo
+	var apiRepo *gitrepo.Repository
 	cleanWorkingTreePostGeneration := true
 	if flagAPIRoot == "" {
 		var err error
@@ -125,7 +121,7 @@ func updateAPIs(state *commandState) error {
 	return err
 }
 
-func updateLibrary(state *commandState, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
+func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
 	containerConfig := state.containerConfig
 	languageRepo := state.languageRepo
 

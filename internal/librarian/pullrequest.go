@@ -58,6 +58,10 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 // If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
 // If the pull request would contain an excessive number of commits (as configured in pipeline-config.json)
 func createPullRequest(state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string) (*githubrepo.PullRequestMetadata, error) {
+	ghClient, err := githubrepo.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	anySuccesses := len(content.Successes) > 0
 	anyErrors := len(content.Errors) > 0
 	languageRepo := state.languageRepo
@@ -101,18 +105,18 @@ func createPullRequest(state *commandState, content *PullRequestContent, titlePr
 		return nil, nil
 	}
 
-	gitHubRepo, err := gitrepo.GetGitHubRepoFromRemote(languageRepo)
+	gitHubRepo, err := getGitHubRepoFromRemote(languageRepo)
 	if err != nil {
 		return nil, err
 	}
 
 	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(state.startTime))
-	err = gitrepo.PushBranch(languageRepo, branch, githubrepo.GetAccessToken())
+	err = gitrepo.PushBranch(languageRepo, branch, ghClient.Token())
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return nil, err
 	}
-	return githubrepo.CreatePullRequest(state.ctx, gitHubRepo, branch, title, description)
+	return ghClient.CreatePullRequest(state.ctx, gitHubRepo, branch, title, description)
 }
 
 // Formats the given list as a single Markdown string, with a title preceding the list,
@@ -131,4 +135,34 @@ func formatListAsMarkdown(title string, list []string) string {
 	}
 	builder.WriteString("\n\n")
 	return builder.String()
+}
+
+// Parses the GitHub repo name from the remote for this repository.
+// There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
+// unambiguous result.
+// Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
+func getGitHubRepoFromRemote(repo *gitrepo.Repository) (*githubrepo.Repository, error) {
+	remotes, err := repo.Remotes()
+	if err != nil {
+		return nil, err
+	}
+	gitHubRemoteNames := []string{}
+	gitHubUrl := ""
+	for _, remote := range remotes {
+		urls := remote.Config().URLs
+		if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
+			gitHubRemoteNames = append(gitHubRemoteNames, remote.Config().Name)
+			gitHubUrl = urls[0]
+		}
+	}
+
+	if len(gitHubRemoteNames) == 0 {
+		return nil, fmt.Errorf("no GitHub remotes found")
+	}
+
+	if len(gitHubRemoteNames) > 1 {
+		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
+		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
+	}
+	return githubrepo.ParseUrl(gitHubUrl)
 }

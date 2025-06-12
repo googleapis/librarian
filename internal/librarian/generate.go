@@ -72,7 +72,7 @@ func runGenerate(ctx context.Context) error {
 	}
 
 	var (
-		repo   *gitrepo.Repo
+		repo   *gitrepo.Repository
 		ps     *statepb.PipelineState
 		config *statepb.PipelineConfig
 	)
@@ -187,20 +187,20 @@ func detectIfLibraryConfigured() (bool, error) {
 	var err error
 	if flagRepoRoot != "" {
 		pipelineState, err = loadPipelineStateFile(filepath.Join(flagRepoRoot, "generator-input", pipelineStateFile))
+		if err != nil {
+			return false, err
+		}
 	} else {
-		var languageRepoMetadata githubrepo.GitHubRepo
-		languageRepoMetadata, err = githubrepo.ParseUrl(flagRepoUrl)
+		languageRepoMetadata, err := githubrepo.ParseUrl(flagRepoUrl)
 		if err != nil {
 			slog.Warn("failed to parse", "repo url:", flagRepoUrl, "error", err)
 			return false, err
 		}
 		pipelineState, err = fetchRemotePipelineState(context.Background(), languageRepoMetadata, "HEAD")
+		if err != nil {
+			return false, err
+		}
 	}
-
-	if err != nil {
-		return false, err
-	}
-
 	// If the library doesn't exist, we don't use the repo at all.
 	libraryID := findLibraryIDByApiPath(pipelineState, flagAPIPath)
 	if libraryID == "" {

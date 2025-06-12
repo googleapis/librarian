@@ -48,7 +48,7 @@ type commandState struct {
 
 	// languageRepo is the relevant language-specific Git repository, if
 	// applicable.
-	languageRepo *gitrepo.Repo
+	languageRepo *gitrepo.Repository
 
 	// pipelineConfig holds the pipeline configuration, loaded from the
 	// language repo if present.
@@ -62,8 +62,8 @@ type commandState struct {
 	containerConfig *container.ContainerConfig
 }
 
-func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repo, error) {
-	var languageRepo *gitrepo.Repo
+func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
+	var languageRepo *gitrepo.Repository
 	if flagRepoRoot != "" && flagRepoUrl != "" {
 		return nil, errors.New("do not specify both repo-root and repo-url")
 	}
@@ -219,7 +219,7 @@ func createWorkRoot(t time.Time) (string, error) {
 }
 
 // No commit is made if there are no file modifications.
-func commitAll(repo *gitrepo.Repo, msg string) error {
+func commitAll(repo *gitrepo.Repository, msg string) error {
 	status, err := gitrepo.AddAll(repo)
 	if err != nil {
 		return err

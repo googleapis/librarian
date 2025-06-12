@@ -62,14 +62,11 @@ func runUpdateImageTag(ctx context.Context) error {
 }
 
 func updateImageTag(state *commandState) error {
-	if err := validatePush(); err != nil {
-		return err
-	}
 	if err := validateRequiredFlag("tag", flagTag); err != nil {
 		return err
 	}
 
-	var apiRepo *gitrepo.Repo
+	var apiRepo *gitrepo.Repository
 	if flagAPIRoot == "" {
 		var err error
 		apiRepo, err = cloneGoogleapis(state.workRoot)
@@ -147,7 +144,7 @@ func updateImageTag(state *commandState) error {
 	return err
 }
 
-func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
 	containerConfig := state.containerConfig
 	languageRepo := state.languageRepo
 

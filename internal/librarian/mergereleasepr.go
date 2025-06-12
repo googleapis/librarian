@@ -87,9 +87,6 @@ func mergeReleasePR(ctx context.Context, workRoot string) error {
 	if flagSyncUrlPrefix != "" && os.Getenv(syncAuthTokenEnvironmentVariable) == "" {
 		return errors.New("-sync-url-prefix specified, but no sync auth token present")
 	}
-	if githubrepo.GetAccessToken() == "" {
-		return errors.New("no GitHub access token specified")
-	}
 	// We'll assume the PR URL is in the format https://github.com/{owner}/{name}/pulls/{pull-number}
 	prRepo, err := githubrepo.ParseUrl(flagReleasePRUrl)
 	if err != nil {
@@ -101,7 +98,7 @@ func mergeReleasePR(ctx context.Context, workRoot string) error {
 		return err
 	}
 
-	prMetadata := githubrepo.PullRequestMetadata{Repo: prRepo, Number: prNumber}
+	prMetadata := &githubrepo.PullRequestMetadata{Repo: prRepo, Number: prNumber}
 
 	if err := waitForPullRequestReadiness(ctx, prMetadata); err != nil {
 		return err
@@ -122,7 +119,7 @@ func mergeReleasePR(ctx context.Context, workRoot string) error {
 	return nil
 }
 
-func waitForPullRequestReadiness(ctx context.Context, prMetadata githubrepo.PullRequestMetadata) error {
+func waitForPullRequestReadiness(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata) error {
 	// TODO: time out here, or let Kokoro do so?
 	// TODO: make polling frequency configurable?
 
@@ -151,9 +148,13 @@ func waitForPullRequestReadiness(ctx context.Context, prMetadata githubrepo.Pull
 // - No commit in the PR must start its release notes with "FIXME"
 // - There must be no commits in the head of the repo which affect libraries released by the PR
 // - There must be at least one approving reviews from a member/owner of the repo, and no reviews from members/owners requesting changes
-func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata githubrepo.PullRequestMetadata) (bool, error) {
+func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata) (bool, error) {
 	slog.Info("Checking pull request for readiness")
-	pr, err := githubrepo.GetPullRequest(ctx, prMetadata.Repo, prMetadata.Number)
+	ghClient, err := githubrepo.NewClient()
+	if err != nil {
+		return false, err
+	}
+	pr, err := ghClient.GetPullRequest(ctx, prMetadata.Repo, prMetadata.Number)
 	if err != nil {
 		return false, err
 	}
@@ -168,7 +169,7 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 	if pr.ClosedAt != nil {
 		slog.Info("PR is closed; sleeping for a minute before checking again.")
 		time.Sleep(time.Duration(60) * time.Second)
-		pr, err = githubrepo.GetPullRequest(ctx, prMetadata.Repo, prMetadata.Number)
+		pr, err = ghClient.GetPullRequest(ctx, prMetadata.Repo, prMetadata.Number)
 		if err != nil {
 			return false, err
 		}
@@ -203,7 +204,7 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 	}
 
 	// Check that all the statuses have passed.
-	checkRuns, err := githubrepo.GetPullRequestCheckRuns(ctx, pr)
+	checkRuns, err := ghClient.GetPullRequestCheckRuns(ctx, pr)
 	if err != nil {
 		return false, err
 	}
@@ -250,12 +251,16 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 	return true, nil
 }
 
-func mergePullRequest(ctx context.Context, prMetadata githubrepo.PullRequestMetadata) (string, error) {
-	slog.Info("Merging release PR")
-	if err := githubrepo.RemoveLabelFromPullRequest(ctx, prMetadata.Repo, prMetadata.Number, "do-not-merge"); err != nil {
+func mergePullRequest(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata) (string, error) {
+	ghClient, err := githubrepo.NewClient()
+	if err != nil {
 		return "", err
 	}
-	mergeResult, err := githubrepo.MergePullRequest(ctx, prMetadata.Repo, prMetadata.Number, github.MergeMethodRebase)
+	slog.Info("Merging release PR")
+	if err := ghClient.RemoveLabelFromPullRequest(ctx, prMetadata.Repo, prMetadata.Number, "do-not-merge"); err != nil {
+		return "", err
+	}
+	mergeResult, err := ghClient.MergePullRequest(ctx, prMetadata.Repo, prMetadata.Number, github.MergeMethodRebase)
 	if err != nil {
 		return "", err
 	}
@@ -311,7 +316,7 @@ func waitForSync(mergeCommit string) error {
 //
 // Returns true if all the commits are fine, or false if a problem was detected, in which
 // case it will have been reported on the PR, and the merge-blocking label applied.
-func checkPullRequestCommits(ctx context.Context, prMetadata githubrepo.PullRequestMetadata, pr *github.PullRequest) (bool, error) {
+func checkPullRequestCommits(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata, pr *github.PullRequest) (bool, error) {
 	baseRepo := githubrepo.CreateGitHubRepoFromRepository(pr.Base.Repo)
 	baseHeadState, err := fetchRemotePipelineState(ctx, baseRepo, *pr.Base.Ref)
 	if err != nil {
@@ -325,7 +330,11 @@ func checkPullRequestCommits(ctx context.Context, prMetadata githubrepo.PullRequ
 	// Fetch the commits which are in the PR, compared with the base (the target of the merge).
 	// In most cases pr.Base.SHA will be the same as flagBaselineCommit, but the PR may have been rebased -
 	// and we always only want the commits in the PR, not any that it's been rebased on top of.
-	prCommits, err := githubrepo.GetDiffCommits(ctx, prMetadata.Repo, *pr.Base.SHA, *pr.Head.SHA)
+	ghClient, err := githubrepo.NewClient()
+	if err != nil {
+		return false, err
+	}
+	prCommits, err := ghClient.GetDiffCommits(ctx, prMetadata.Repo, *pr.Base.SHA, *pr.Head.SHA)
 	if err != nil {
 		return false, err
 	}
@@ -350,13 +359,13 @@ func checkPullRequestCommits(ctx context.Context, prMetadata githubrepo.PullRequ
 
 	// Fetch the commits in the base repo since the baseline commit, but then fetch each individually
 	// so we can tell which files were affected.
-	baseCommits, err := githubrepo.GetDiffCommits(ctx, baseRepo, flagBaselineCommit, *pr.Base.Ref)
+	baseCommits, err := ghClient.GetDiffCommits(ctx, baseRepo, flagBaselineCommit, *pr.Base.Ref)
 	if err != nil {
 		return false, err
 	}
 	fullBaseCommits := []*github.RepositoryCommit{}
 	for _, baseCommit := range baseCommits {
-		fullCommit, err := githubrepo.GetCommit(ctx, baseRepo, *baseCommit.SHA)
+		fullCommit, err := ghClient.GetCommit(ctx, baseRepo, *baseCommit.SHA)
 		if err != nil {
 			return false, err
 		}
@@ -386,8 +395,12 @@ func checkPullRequestCommits(ctx context.Context, prMetadata githubrepo.PullRequ
 }
 
 // Checks that the pull request has at least one approved review, and no "changes requested" reviews.
-func checkPullRequestApproval(ctx context.Context, prMetadata githubrepo.PullRequestMetadata) (bool, error) {
-	reviews, err := githubrepo.GetPullRequestReviews(ctx, prMetadata)
+func checkPullRequestApproval(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata) (bool, error) {
+	ghClient, err := githubrepo.NewClient()
+	if err != nil {
+		return false, err
+	}
+	reviews, err := ghClient.GetPullRequestReviews(ctx, prMetadata)
 	if err != nil {
 		return false, err
 	}
@@ -428,13 +441,17 @@ func checkPullRequestApproval(ctx context.Context, prMetadata githubrepo.PullReq
 	return approved, nil
 }
 
-func reportBlockingReason(ctx context.Context, prMetadata githubrepo.PullRequestMetadata, description string) error {
+func reportBlockingReason(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata, description string) error {
 	slog.Warn(fmt.Sprintf("Adding '%s' label to PR and a comment with a description of '%s'", MergeBlockedLabel, description))
 	comment := fmt.Sprintf("%s\n\nAfter resolving the issue, please remove the '%s' label.", description, MergeBlockedLabel)
-	if err := githubrepo.AddCommentToPullRequest(ctx, prMetadata.Repo, prMetadata.Number, comment); err != nil {
+	ghClient, err := githubrepo.NewClient()
+	if err != nil {
 		return err
 	}
-	if err := githubrepo.AddLabelToPullRequest(ctx, prMetadata, MergeBlockedLabel); err != nil {
+	if err := ghClient.AddCommentToPullRequest(ctx, prMetadata.Repo, prMetadata.Number, comment); err != nil {
+		return err
+	}
+	if err := ghClient.AddLabelToPullRequest(ctx, prMetadata, MergeBlockedLabel); err != nil {
 		return err
 	}
 	return nil

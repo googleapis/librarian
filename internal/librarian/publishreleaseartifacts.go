@@ -127,12 +127,16 @@ func publishPackages(config *container.ContainerConfig, outputRoot string, relea
 	return nil
 }
 
-func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo githubrepo.GitHubRepo) error {
+func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *githubrepo.Repository) error {
+	ghClient, err := githubrepo.NewClient()
+	if err != nil {
+		return err
+	}
 	for _, release := range releases {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
 		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := githubrepo.CreateRelease(ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
+		repoRelease, err := ghClient.CreateRelease(ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
 		if err != nil {
 			return err
 		}
