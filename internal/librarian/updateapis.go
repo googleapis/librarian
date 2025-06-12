@@ -33,9 +33,55 @@ import (
 var CmdUpdateApis = &cli.Command{
 	Name:  "update-apis",
 	Short: "Regenerate APIs in a language repo with new specifications.",
-	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Run:   runUpdateAPIs,
+	Usage: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
+environment variable must be populated with an access token which has write access to the
+language repo in which the pull request will be created.
+`,
+	Long: `After acquiring the API and language repositories, each configured library is potentially regenerated.
+
+The state for each library is used to determine:
+- The generation mode for the library (blocked, manual, automatic)
+- The last API specification commit that was generated (if any)
+- The paths within the API repository which contribute to the library
+
+The command immediately skips any library which:
+- Does not specify any paths within the API repository
+- Has a generation mode of "blocked"
+- Is not the one specified by the -library-id flag, when that has been specified
+- Has not changed in terms of API specifications since the API commit at
+  which it was last generated
+
+For any other library, the command determines the last API commit containing
+a change to any of the paths within the API repository, along with a message describing
+all the changes to those paths since the last API specification that was generated
+(or a "initial generation" if this is the first time the library has been generated).
+
+The command runs the following language container commands for each library:
+- "generate-library" to generate the source code for the library into an empty directory
+- "clean" to clean any previously-generated source code from the language repository
+- "build-library" (after copying the newly-generated code into place in the repository)
+
+If all of these steps succeed, a commit is created (still on a per library basis)
+with the results of the regeneration, and updated state to indicate the new
+"last generated API commit" for that library.
+
+If any container command fails, the error is reported, and the repository is reset as
+if generation hadn't occurred for that library.
+
+After iterating across all libraries, if the -push flag has been specified and any
+libraries were successfully regenerated, a pull request is created in the
+language repository, containing the generated commits. The pull request description
+includes an overview list of what's in each commit, along with any failures in other
+libraries. (The details of the failures are not included; consult the logs for
+the command to see exactly what happened.)
+
+If the -push flag has not been specified but a pull request would have been created,
+the description of the pull request that would have been created is included in the
+output of the command. Even if a pull request isn't created, any successful regeneration
+commits will still be present in the language repo.
+`,
+	Run: runUpdateAPIs,
 }
 
 func init() {
