@@ -102,7 +102,7 @@ func updateImageTag(state *commandState) error {
 		return err
 	}
 
-	var apiRepo *gitrepo.Repo
+	var apiRepo *gitrepo.Repository
 	if flagAPIRoot == "" {
 		var err error
 		apiRepo, err = cloneGoogleapis(state.workRoot)
@@ -180,7 +180,7 @@ func updateImageTag(state *commandState) error {
 	return err
 }
 
-func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repo, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 

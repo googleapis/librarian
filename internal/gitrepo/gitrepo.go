@@ -29,11 +29,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/googleapis/librarian/internal/githubrepo"
 )
 
-// Repo represents a git repository.
-type Repo struct {
+// Repository represents a git repository.
+type Repository struct {
 	Dir  string
 	repo *git.Repository
 }
@@ -45,7 +44,7 @@ type Repo struct {
 //
 // Otherwise, it clones the repository from the given URL (repoURL) and saves it
 // to the specified directory path (dirpath).
-func CloneOrOpen(dirpath, repoURL string) (*Repo, error) {
+func CloneOrOpen(dirpath, repoURL string) (*Repository, error) {
 	slog.Info(fmt.Sprintf("Cloning %q to %q", repoURL, dirpath))
 
 	_, err := os.Stat(dirpath)
@@ -60,7 +59,7 @@ func CloneOrOpen(dirpath, repoURL string) (*Repo, error) {
 
 // Clone downloads a copy of a Git repository from repoURL and saves it to the
 // specified directory at dirpath.
-func Clone(dirpath, repoURL string) (*Repo, error) {
+func Clone(dirpath, repoURL string) (*Repository, error) {
 	options := &git.CloneOptions{
 		URL:           repoURL,
 		ReferenceName: plumbing.HEAD,
@@ -78,25 +77,25 @@ func Clone(dirpath, repoURL string) (*Repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Repo{
+	return &Repository{
 		Dir:  dirpath,
 		repo: repo,
 	}, nil
 }
 
 // Open provides access to a Git repository that exists at dirpath.
-func Open(dirpath string) (*Repo, error) {
+func Open(dirpath string) (*Repository, error) {
 	repo, err := git.PlainOpen(dirpath)
 	if err != nil {
 		return nil, err
 	}
-	return &Repo{
+	return &Repository{
 		Dir:  dirpath,
 		repo: repo,
 	}, nil
 }
 
-func AddAll(repo *Repo) (git.Status, error) {
+func AddAll(repo *Repository) (git.Status, error) {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return git.Status{}, err
@@ -109,7 +108,7 @@ func AddAll(repo *Repo) (git.Status, error) {
 }
 
 // returns an error if there is nothing to commit
-func Commit(repo *Repo, msg string, userName, userEmail string) error {
+func Commit(repo *Repository, msg string, userName, userEmail string) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err
@@ -145,7 +144,7 @@ func Commit(repo *Repo, msg string, userName, userEmail string) error {
 	return nil
 }
 
-func HeadHash(repo *Repo) (string, error) {
+func HeadHash(repo *Repository) (string, error) {
 	headRef, err := repo.repo.Head()
 	if err != nil {
 		return "", err
@@ -153,7 +152,7 @@ func HeadHash(repo *Repo) (string, error) {
 	return headRef.Hash().String(), nil
 }
 
-func IsClean(repo *Repo) (bool, error) {
+func IsClean(repo *Repository) (bool, error) {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return false, err
@@ -166,7 +165,7 @@ func IsClean(repo *Repo) (bool, error) {
 	return status.IsClean(), nil
 }
 
-func PrintStatus(repo *Repo) error {
+func PrintStatus(repo *Repository) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err
@@ -220,7 +219,7 @@ func PrintStatus(repo *Repo) error {
 // The returned commits are ordered such that the most recent commit is first.
 // If sinceCommit is not provided, all commits are searched. Otherwise, if no commit
 // matching sinceCommit is found, an error is returned.
-func GetCommitsForPathsSinceCommit(repo *Repo, paths []string, sinceCommit string) ([]object.Commit, error) {
+func GetCommitsForPathsSinceCommit(repo *Repository, paths []string, sinceCommit string) ([]object.Commit, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
@@ -300,7 +299,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 
 // Returns all commits since tagName that contains files in path.
 // If tagName is empty, all commits for the given paths are returned.
-func GetCommitsForPathsSinceTag(repo *Repo, paths []string, tagName string) ([]object.Commit, error) {
+func GetCommitsForPathsSinceTag(repo *Repository, paths []string, tagName string) ([]object.Commit, error) {
 	var hash string
 	if tagName == "" {
 		hash = ""
@@ -322,7 +321,7 @@ func GetCommitsForPathsSinceTag(repo *Repo, paths []string, tagName string) ([]o
 // Returns all commits with the given release ID, i.e. where the commit message contains a line of
 // Librarian-Release-Id: <release-id>. These commits are expected to be contiguous, from head,
 // with all commits having a single parent.
-func GetCommitsForReleaseID(repo *Repo, releaseID string) ([]object.Commit, error) {
+func GetCommitsForReleaseID(repo *Repository, releaseID string) ([]object.Commit, error) {
 	releaseIDLine := fmt.Sprintf("Librarian-Release-ID: %s", releaseID)
 	commits := []object.Commit{}
 
@@ -370,7 +369,7 @@ func GetCommitsForReleaseID(repo *Repo, releaseID string) ([]object.Commit, erro
 }
 
 // Creates a branch with the given name in the default remote.
-func PushBranch(repo *Repo, remoteBranch string, accessToken string) error {
+func PushBranch(repo *Repository, remoteBranch string, accessToken string) error {
 	headRef, err := repo.repo.Head()
 	if err != nil {
 		return err
@@ -392,7 +391,7 @@ func PushBranch(repo *Repo, remoteBranch string, accessToken string) error {
 }
 
 // CleanWorkingTree Drops any local changes NOT committed, but keeps any local commits
-func CleanWorkingTree(repo *Repo) error {
+func CleanWorkingTree(repo *Repository) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err
@@ -405,13 +404,13 @@ func CleanWorkingTree(repo *Repo) error {
 
 // Drop any local changes, and also reset to the parent of the current head commit.
 // This is a special case of CleanAndRevertCommits where the count is 1.
-func CleanAndRevertHeadCommit(repo *Repo) error {
+func CleanAndRevertHeadCommit(repo *Repository) error {
 	return CleanAndRevertCommits(repo, 1)
 }
 
 // Reverts the specified number of commits in the repo (by resetting to
 // the
-func CleanAndRevertCommits(repo *Repo, count int) error {
+func CleanAndRevertCommits(repo *Repository, count int) error {
 	headRef, err := repo.repo.Head()
 	if err != nil {
 		return err
@@ -441,7 +440,7 @@ func CleanAndRevertCommits(repo *Repo, count int) error {
 	return worktree.Clean(&git.CleanOptions{Dir: true})
 }
 
-func Checkout(repo *Repo, commit string) error {
+func Checkout(repo *Repository, commit string) error {
 	worktree, err := repo.repo.Worktree()
 	if err != nil {
 		return err
@@ -453,32 +452,6 @@ func Checkout(repo *Repo, commit string) error {
 	return worktree.Checkout(&checkoutOptions)
 }
 
-// Parses the GitHub repo name from the remote for this repository.
-// There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
-// unambiguous result.
-// Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
-func GetGitHubRepoFromRemote(repo *Repo) (githubrepo.GitHubRepo, error) {
-	remotes, err := repo.repo.Remotes()
-	if err != nil {
-		return githubrepo.GitHubRepo{}, err
-	}
-	gitHubRemoteNames := []string{}
-	gitHubUrl := ""
-	for _, remote := range remotes {
-		urls := remote.Config().URLs
-		if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
-			gitHubRemoteNames = append(gitHubRemoteNames, remote.Config().Name)
-			gitHubUrl = urls[0]
-		}
-	}
-
-	if len(gitHubRemoteNames) == 0 {
-		return githubrepo.GitHubRepo{}, fmt.Errorf("no GitHub remotes found")
-	}
-
-	if len(gitHubRemoteNames) > 1 {
-		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
-		return githubrepo.GitHubRepo{}, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
-	}
-	return githubrepo.ParseUrl(gitHubUrl)
+func (r *Repository) Remotes() ([]*git.Remote, error) {
+	return r.repo.Remotes()
 }

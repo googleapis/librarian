@@ -113,11 +113,11 @@ func updateAPIs(state *commandState) error {
 		return err
 	}
 
-	var apiRepo *gitrepo.Repo
+	var apiRepo *gitrepo.Repository
 	cleanWorkingTreePostGeneration := true
 	if flagAPIRoot == "" {
 		var err error
-		apiRepo, err = cloneGoogleapis(state.workRoot)
+	apiRepo, err = cloneGoogleapis(state.workRoot)
 		if err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ func updateAPIs(state *commandState) error {
 	return err
 }
 
-func updateLibrary(state *commandState, apiRepo *gitrepo.Repo, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
+func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 

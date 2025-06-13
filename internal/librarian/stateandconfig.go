@@ -32,7 +32,7 @@ const pipelineConfigFile = "pipeline-config.json"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
-func loadRepoStateAndConfig(languageRepo *gitrepo.Repo) (*statepb.PipelineState, *statepb.PipelineConfig, error) {
+func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*statepb.PipelineState, *statepb.PipelineConfig, error) {
 	if languageRepo == nil {
 		return nil, nil, nil
 	}
@@ -47,7 +47,7 @@ func loadRepoStateAndConfig(languageRepo *gitrepo.Repo) (*statepb.PipelineState,
 	return state, config, nil
 }
 
-func loadRepoPipelineState(languageRepo *gitrepo.Repo) (*statepb.PipelineState, error) {
+func loadRepoPipelineState(languageRepo *gitrepo.Repository) (*statepb.PipelineState, error) {
 	path := filepath.Join(languageRepo.Dir, "generator-input", pipelineStateFile)
 	return loadPipelineStateFile(path)
 }
@@ -56,7 +56,7 @@ func loadPipelineStateFile(path string) (*statepb.PipelineState, error) {
 	return parsePipelineState(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func loadRepoPipelineConfig(languageRepo *gitrepo.Repo) (*statepb.PipelineConfig, error) {
+func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*statepb.PipelineConfig, error) {
 	path := filepath.Join(languageRepo.Dir, "generator-input", "pipeline-config.json")
 	return loadPipelineConfigFile(path)
 }
@@ -84,9 +84,13 @@ func savePipelineState(state *commandState) error {
 	return err
 }
 
-func fetchRemotePipelineState(ctx context.Context, repo githubrepo.GitHubRepo, ref string) (*statepb.PipelineState, error) {
+func fetchRemotePipelineState(ctx context.Context, repo *githubrepo.Repository, ref string) (*statepb.PipelineState, error) {
+	ghClient, err := githubrepo.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	return parsePipelineState(func() ([]byte, error) {
-		return githubrepo.GetRawContent(ctx, repo, "generator-input/"+pipelineStateFile, ref)
+		return ghClient.GetRawContent(ctx, repo, "generator-input/"+pipelineStateFile, ref)
 	})
 }
 

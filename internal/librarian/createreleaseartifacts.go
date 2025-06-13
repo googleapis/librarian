@@ -190,7 +190,7 @@ func buildTestPackageRelease(state *commandState, outputRoot string, release Lib
 	return nil
 }
 
-func parseCommitsForReleases(repo *gitrepo.Repo, releaseID string) ([]LibraryRelease, error) {
+func parseCommitsForReleases(repo *gitrepo.Repository, releaseID string) ([]LibraryRelease, error) {
 	commits, err := gitrepo.GetCommitsForReleaseID(repo, releaseID)
 	if err != nil {
 		return nil, err

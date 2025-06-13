@@ -18,6 +18,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/githubrepo"
@@ -150,7 +151,7 @@ func addFlagWorkRoot(fs *flag.FlagSet) {
 }
 
 func validatePush() error {
-	if flagPush && githubrepo.GetAccessToken() == "" {
+	if flagPush && os.Getenv(githubrepo.GitHubTokenEnvironmentVariable) == "" {
 		return errors.New("no GitHub token supplied for push")
 	}
 	return nil
