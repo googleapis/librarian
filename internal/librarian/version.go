@@ -23,9 +23,9 @@ import (
 
 var CmdVersion = &cli.Command{
 	Name:  "version",
-	Short: "Print version information.",
+	Short: "Prints version information.",
 	Usage: "librarian version",
-	Long:  "Print version information for the librarian binary.",
+	Long:  "Prints version information for the librarian binary.",
 	Run: func(ctx context.Context) error {
 		fmt.Println(cli.Version())
 		return nil

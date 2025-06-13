@@ -39,10 +39,35 @@ type LibraryRelease struct {
 
 var CmdCreateReleaseArtifacts = &cli.Command{
 	Name:  "create-release-artifacts",
-	Short: "Create release artifacts from a merged release PR.",
-	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Run:   runCreateReleaseArtifacts,
+	Short: "Creates release artifacts from a merged release PR.",
+	Usage: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
+The release ID is specified in the the release PR and in each commit within it, in a line starting "Librarian-Release-ID: ".
+`,
+	Long: `After acquiring the language repository, the repository is scanned backwards from the head commit to find
+commits belonging to the single release for which the command is creating artifacts. The head commit is not required to
+belong to the release, but the commits for the release are expected to be contiguous.
+(In other words, once the command has found a commit that *is* part of the release, when it encounters a commit which
+*isn't* part of the release, it assumes it's found all the relevant commits.) If this phase doesn't find any commits,
+the command fails.
+
+The command creates a root output folder for all the release artifacts.
+
+The commits are examined to determine the libraries which are being released. For each library, the following steps
+are taken:
+- The language repository is checked out at the commit associated with that library's release.
+- The container commands of "build-library", "integration-test-library" and "package-library" are run. The last
+  of these places the release artifacts in an empty folder created by the CLI command. (Each library has a separate
+  subfolder of the root output folder.)
+
+Finally, metadata files for the Librarian state and config, and the libraries that are being released, is copied
+into the root output folder for use in the "publish-release-artifacts" command.
+
+This command does not create any pull requests. Any failure is considered fatal for this command: if one library
+fails its integration tests for example, the whole job fails. This is to avoid a situation where a release is half-published.
+The command can safely be rerun, e.g. if a service outage caused a failure and the release can be expected to succeed
+if retried.
+`,
+	Run: runCreateReleaseArtifacts,
 }
 
 func init() {

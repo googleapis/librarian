@@ -31,10 +31,44 @@ import (
 
 var CmdUpdateImageTag = &cli.Command{
 	Name:  "update-image-tag",
-	Short: "Update a language repo's image tag and regenerate APIs.",
-	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Run:   runUpdateImageTag,
+	Short: "Updates a language repo's image tag and regenerates APIs.",
+	Usage: `Specify the language, the new tag, and optional flags to use non-default repositories, e.g. for testing.
+A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
+environment variable must be populated with an access token which has write access to the
+language repo in which the pull request will be created.`,
+	Long: `The update-image-tag command is used to change which tag for the language image is used
+for language-specific operations. The most common reasons for doing this are if the code handling
+language container commands has changed (e.g. to fix bugs) or because the generator has been updated
+to a newer version.
+
+After acquiring the API and language repositories, every library which has any API paths specified
+and a last generated commit is regenerated - even if regeneration is otherwise blocked. The API repository
+is checked out to the commit at which the library was last regenerated, so that the resulting pull request
+*only* contains changes due to updating the image tag.
+
+Regeneration uses the "generate-library" and "clean" language container commands (using the image with the
+newly-specified tag), copying the code after the clean operation as normal. The libraries are *not* built
+one at a time, however.
+
+If all generation operations are successful, a single commit is created with all the generated code changes and
+the state change to indicate the new tag.
+
+After this, the "build-library" command is run, without specifying a library ID.
+This means that all configured libraries in the language repository should be rebuilt and unit tested. This
+is more efficient than building libraries after regeneration - and coincidentally also checks that libraries
+which don't contain generated code still build with the new image tag.
+
+A failure at any point makes the command fail: this command does not support partial success.
+(If some libraries can't be regenerated or built with the new image tag, that should be addressed
+before using the image for anything.)
+
+If everything has succeeded, and if the -push flag has been specified, a pull request is created in the
+language repository, containing the new commit. If the -push flag has not been specified,
+the description of the pull request that would have been created is included in the
+output of the command. Even if a pull request isn't created, the resulting commit will still be present
+in the language repo.
+`,
+	Run: runUpdateImageTag,
 }
 
 func init() {
@@ -157,6 +191,7 @@ func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repo, generatorInpu
 	}
 
 	// TODO: Handle "no last generated commit"
+	// https://github.com/googleapis/librarian/issues/341
 	if err := gitrepo.Checkout(apiRepo, library.LastGeneratedCommit); err != nil {
 		return err
 	}

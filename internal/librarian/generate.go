@@ -33,10 +33,42 @@ import (
 
 var CmdGenerate = &cli.Command{
 	Name:  "generate",
-	Short: "Generate client library code for an API.",
-	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Run:   runGenerate,
+	Short: "Generates client library code for a single API.",
+	Usage: `Specify the language, the API repository root and the path within it for the API to generate.
+Optional flags can be specified to use a non-default language repository, and to indicate whether or not
+to build the generated library.`,
+	Long: `First, the generation mode is determined by examining the language repository (remotely if
+a local clone has not been specified). The Librarian state for the repository is examined to see if the
+specified API path is already configured for a library in the repository. If it is, the refined generation
+mode is used. Otherwise the raw generation mode is used. These are described separately below.
+
+*Refined generation* is intended to give an accurate result for how an existing library would change when
+generated with the new API specification. Generation for this library might include pregeneration or postgeneration
+fixes, and the library may include handwritten code, unit tests and integration tests.
+
+The process for refined generation requires the language repo to be cloned (if a local clone hasn't been
+specified). Generation then proceeds by executing the following language container commands:
+- "generate-library" to generate the source code for the library into an empty directory
+- "clean" to clean any previously-generated source code from the language repository
+- "build-library" (after copying the newly-generated code into place in the repository)
+
+(The "clean" and "build-library" commands are skipped if the -build flag is not specified.)
+
+The result of the generation is not committed anywhere, but the language repository will be left with any
+working tree changes available to be checked. (Changes are not reverted.)
+
+
+*Raw generation* is intended to give an early indication of whether an API can successfully be generated
+as a library, and whether that library can then be built, without any additional information from the language
+repo. The language repo is not cloned, but instead the following language container commands are executed:
+- "generate-raw" to generate the source code for the library into an empty directory
+- "build-raw" (if the -build flag is specified)
+
+There is no "clean" operation or copying of the generated code in raw generation mode, because there is no
+other source code to be preserved/cleaned. Instead, the "build-raw" command is provided with the same
+output directory that was specified for the "generate-raw" command.
+`,
+	Run: runGenerate,
 }
 
 func init() {

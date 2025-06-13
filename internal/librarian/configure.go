@@ -35,10 +35,52 @@ import (
 
 var CmdConfigure = &cli.Command{
 	Name:  "configure",
-	Short: "Set up a new API for a language.",
-	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Run:   runConfigure,
+	Short: "Configures libraries for new APIs in a language.",
+	Usage: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+A single API path may be specified if desired; otherwise all API paths will be checked.
+A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
+environment variable must be populated with an access token which has write access to the
+language repo in which the pull request will be created.
+`,
+	Long: `After acquiring the API and language repositories, the Librarian state for the language
+repository is loaded and the API repository is scanned for API paths to configure. (If the -api-path
+flag is specified, the scanning is skipped and only that API path is configured.) API scanning involves
+searching for service config .yaml files, and checking for a publishing.library_settings section that
+requests a library specifically for the language we're configuring. Scanning skips API paths which are
+already part of a library or which are explicitly ignored.
+
+Having determined the API paths to configure, the command executes the following steps for each API path
+separately:
+- Run the language container "configure" command
+- Commit all changes. (This will not include the generated code.)
+- If the API path is still not in a library, presumably it's now ignored. We're done for this API path.
+- Otherwise, the process continues in a manner similar to update-apis, running the following
+  language container commands:
+  - "generate-library" to generate the source code for the library into an empty directory
+  - "clean" to clean any previously-generated source code from the language repository
+  - "build-library" (after copying the newly-generated code into place in the repository)
+
+If any container command fails, the error is reported, and the repository is reset as
+if configuration hadn't occurred for that API path.
+
+Note that the results of generation are *not* committed. It is expected that the
+configuration commit is small, and may be manually edited with any missing information.
+Once the configuration has been merged, new libraries will be generated the next time
+update-apis is run.
+
+After iterating across all API paths, if the -push flag has been specified and any
+libraries were successfully regenerated, a pull request is created in the
+language repository, containing the generated commits. The pull request description
+includes an overview list of what's in each commit, along with any failures in other
+libraries. (The details of the failures are not included; consult the logs for
+the command to see exactly what happened.)
+
+If the -push flag has not been specified but a pull request would have been created,
+the description of the pull request that would have been created is included in the
+output of the command. Even if a pull request isn't created, any successful configuration
+commits will still be present in the language repo.
+`,
+	Run: runConfigure,
 }
 
 func init() {

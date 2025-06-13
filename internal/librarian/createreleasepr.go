@@ -39,10 +39,69 @@ const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
 var CmdCreateReleasePR = &cli.Command{
 	Name:  "create-release-pr",
-	Short: "Generate a release PR.",
-	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Run:   runCreateReleasePR,
+	Short: "Creates a release PR.",
+	Usage: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+A single library may be specified if desired (with an optional version override);
+otherwise all configured libraries will be checked to see if they should be released.
+A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
+environment variable must be populated with an access token which has write access to the
+language repo in which the pull request will be created.`,
+	Long: `After acquiring the language repository, the Librarian state for the language
+repository is loaded and each configured library is checked to see if it should be released.
+(If the -library-id flag is specified, only the specified library is considered.)
+
+Each library is considered separately for release. Libraries which have releases blocked
+are skipped. Otherwise, the commits in the repository are considered backwards from the head
+to the tagged commit for the current release version of the library (if any). Each commit is checked
+to see if it affects any of the source paths specified for the library. Each commit which *does*
+affect one of the source paths for the library is then checked for lines representing conventional commit messages.
+(See https://www.conventionalcommits.org/ for details on conventional commits.)
+
+Conventional commit messages with types of "doc" (or "docs"), "feat" and "fix" are retained.
+Additionally, lines beginning "TriggerRelease:" and "NoTriggerRelease:" are retained as further signals for releasing.
+
+Any individual commit will trigger a release for a library if either:
+- It contains a TriggerRelease line specifying the library being considered
+- It contains a "feat" or "fix" message
+
+If the commit contains a NoTriggerRelease line specifying the library being considered, that stops
+that specific commit from triggering a release, but other commits may still trigger a release (and
+messages within the "NoTriggerRelease" commit are still used for release notes).
+
+After examining the commits, if none of them triggers a release for the library, the command proceeds to
+the next library - unless the library has been specified with the -library-id flag, in which case the flag
+is considered an override, and the library will still be released. If the library *is* to be released:
+
+- The next version is determined based on the current version, the commit messages, any configured "next version"
+  in the Librarian state.
+- Release notes are formatted based on the commit messages
+- The Librarian state is updated with the new version
+- The following language container commands are run:
+  - "prepare-library-release" (used to update any other occurrences of the version number and version history files)
+  - "build-library"
+  - "integration-test-library"
+
+A commit is then created, including metadata in the commit message to indicate which library is being released,
+at which version, and for which release ID. (A single timestamp-based release ID is used for all commits for a single
+run of the create-release-pr command.)
+
+If any container command fails, the error is reported, and the repository is reset as
+if the release hadn't been triggered for that library.
+
+After iterating across all libraries, if the -push flag has been specified and a release commit
+was successfully created for any library, a pull request is created in the
+language repository, containing the release commits. The pull request description
+includes an overview list of what's in each commit, along with any failures in other
+libraries, and the release ID. (The details of the failures are not included; consult the logs for
+the command to see exactly what happened.) The pull request has the "do not merge" label added,
+which the "merge-release-pr" command is expected to remove before merging.
+
+If the -push flag has not been specified but a pull request would have been created,
+the description of the pull request that would have been created is included in the
+output of the command. Even if a pull request isn't created, any successful release
+commits will still be present in the language repo.
+`,
+	Run: runCreateReleasePR,
 }
 
 func init() {

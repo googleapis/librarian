@@ -32,10 +32,30 @@ import (
 
 var CmdPublishReleaseArtifacts = &cli.Command{
 	Name:  "publish-release-artifacts",
-	Short: "Publish (previously-created) release artifacts to package managers.",
-	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Run:   runPublishReleaseArtifacts,
+	Short: "Publishes (previously-created) release artifacts to package managers and documentation sites.",
+	Usage: `Specify the language, the root output directory created by create-release-artifacts, and
+the GitHub repository in which to create tags/releases.`,
+	Long: `The command first loads the metadata created by create-release-artifacts. This
+includes all the relevant state and configuration, as well as which libraries are being released (including
+the version number, release notes, and the commit to tag for each library).
+
+The command iterates over the libraries being released, calling the language container "publish-library"
+command for each library, passing in the directory in which the artifacts for that library have been created.
+
+The command then iterates over all the libraries again, creating tags with appropriate release notes in
+GitHub.
+
+If any operation fails, the whole command fails immediately. This means that on failure we can have
+inconsistent states of:
+- Some packages being published but not all
+- All packages being published, but not all tags being created (potentially none)
+
+However, if *any* tags are created, that means *all* packages have already been published. If package publication
+for the language being released ignores republication errors, and if no tags have been created,
+the command can be rerun to resolve partial publication. (Currently the command will fail if it attempts to
+create a tag which already exists.)
+`,
+	Run: runPublishReleaseArtifacts,
 }
 
 func init() {

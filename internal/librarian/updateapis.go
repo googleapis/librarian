@@ -32,7 +32,7 @@ import (
 
 var CmdUpdateApis = &cli.Command{
 	Name:  "update-apis",
-	Short: "Regenerate APIs in a language repo with new specifications.",
+	Short: "Regenerates APIs in a language repo with new specifications.",
 	Usage: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
