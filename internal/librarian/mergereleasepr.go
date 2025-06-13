@@ -49,10 +49,49 @@ const MergeBlockedLabel = "merge-blocked-see-comments"
 
 var CmdMergeReleasePR = &cli.Command{
 	Name:  "merge-release-pr",
-	Short: "Merge a validated release PR.",
-	Usage: "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Long:  "TODO(https://github.com/googleapis/librarian/issues/237): add documentation",
-	Run:   runMergeReleasePR,
+	Short: "Merges a validated release PR.",
+	Usage: `Specify a GitHub access token as an environment variable, the URL for a release PR, and the release ID.
+An optional additional URL prefix can be specified in order to wait for a mirror to have synchronized before the
+command completes.`,
+	Long: `This command does not clone any repository locally. Instead, it:
+- Polls GitHub until all the conditions required to merge the release PR have been met
+- Removes the "do-not-merge" label from the PR
+- Merges the PR
+- Waits for a mirror repository to be synchronized (if -sync-url-prefix has been specified) to
+  include the merged PR
+
+The following conditions are checked before merging:
+
+- The PR must not have the "merge-blocked-see-comments" label
+- The PR must not be merged
+- The PR must not be closed
+- The PR must be mergeable (i.e. not have merge conflicts)
+- All required status checks other than the absence of a "do not merge" label must be successful
+- The PR must be approved
+- All commits in the PR must have the specified Librarian-Release-Id
+- No commit in the PR must have a commit message line beginning with "FIXME"
+- No source paths contributing to a library that will be released should have been modified
+  since the commit at which the release PR was created. (This avoids race conditions between features
+  and releases missing out release notes.)
+
+If the PR is merged externally (e.g. by a human), this command fails. It's possible that the step can be skipped
+and the release recovered, but this should be validated manually.
+
+If the PR is closed without being merged, and stays closed for at least a minute, this command fails.
+If it is closed and reopened within a minute, polling continues: this allows for accidental closures to be reverted,
+and for status checks that are triggered by the PR being opened to be re-evaluated.
+
+It's valid for a release PR to be fetched by a human, edited, and then repushed.
+Potential reasons for doing this include:
+- Modifying release notes (including fixing any "FIXME" lines)
+- Rebasing the PR
+- Removing a commit for a library that shouldn't be released
+
+If a release PR is observed to be not-ready for a reason that should be addressed by a human (rather than just
+waiting for statuses to change, for example) a comment is added to the PR and the "merge-blocked-see-comments" label
+is added.
+`,
+	Run: runMergeReleasePR,
 }
 
 func init() {

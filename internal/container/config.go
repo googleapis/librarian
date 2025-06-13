@@ -25,7 +25,7 @@ type ContainerConfig struct {
 	Image string
 
 	// The provider for environment variables, if any.
-	envProvider *EnvironmentProvider
+	env *EnvironmentProvider
 }
 
 func NewContainerConfig(ctx context.Context, workRoot, image, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*ContainerConfig, error) {
@@ -34,7 +34,7 @@ func NewContainerConfig(ctx context.Context, workRoot, image, secretsProject str
 		return nil, err
 	}
 	return &ContainerConfig{
-		Image:       image,
-		envProvider: envProvider,
+		Image: image,
+		env:   envProvider,
 	}, nil
 }

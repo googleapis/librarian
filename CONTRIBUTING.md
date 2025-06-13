@@ -14,16 +14,3 @@ not a member of the Google Cloud SDK team, please create an
 for discussion first, clearly explaining your intended use. We will
 close pull requests from external contributors which aren't the
 result of a suitable discussion.
-
-## Code Reviews
-
-All submissions, including submissions by project members, require
-review. We use GitHub pull requests for this purpose. If you have a
-specific team member in mind, please request their review directly,
-otherwise just leave the default group reviewer.
-
-## Issues
-
-When creating an issue, feel free to assign it to an individual if
-there is a natural owner. Otherwise, leave it unassigned for a
-triage rotation to pick up.
