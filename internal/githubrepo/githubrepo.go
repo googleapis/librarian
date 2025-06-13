@@ -18,7 +18,6 @@ package githubrepo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,7 +26,7 @@ import (
 	"github.com/google/go-github/v69/github"
 )
 
-const gitHubTokenEnvironmentVariable string = "LIBRARIAN_GITHUB_TOKEN"
+const GitHubTokenEnvironmentVariable string = "LIBRARIAN_GITHUB_TOKEN"
 
 type Client struct {
 	*github.Client
@@ -35,10 +34,7 @@ type Client struct {
 }
 
 func NewClient() (*Client, error) {
-	accessToken := os.Getenv(gitHubTokenEnvironmentVariable)
-	if accessToken == "" {
-		return nil, errors.New("no GitHub access token specified")
-	}
+	accessToken := os.Getenv(GitHubTokenEnvironmentVariable)
 	return &Client{
 		Client:      github.NewClient(nil).WithAuthToken(accessToken),
 		accessToken: accessToken,

@@ -109,11 +109,15 @@ func runUpdateAPIs(ctx context.Context) error {
 }
 
 func updateAPIs(state *commandState) error {
+	if err := validatePush(); err != nil {
+		return err
+	}
+
 	var apiRepo *gitrepo.Repository
 	cleanWorkingTreePostGeneration := true
 	if flagAPIRoot == "" {
 		var err error
-		apiRepo, err = cloneGoogleapis(state.workRoot)
+	apiRepo, err = cloneGoogleapis(state.workRoot)
 		if err != nil {
 			return err
 		}

@@ -95,6 +95,9 @@ func runUpdateImageTag(ctx context.Context) error {
 }
 
 func updateImageTag(state *commandState) error {
+	if err := validatePush(); err != nil {
+		return err
+	}
 	if err := validateRequiredFlag("tag", flagTag); err != nil {
 		return err
 	}

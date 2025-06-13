@@ -126,6 +126,9 @@ func mergeReleasePR(ctx context.Context, workRoot string) error {
 	if flagSyncUrlPrefix != "" && os.Getenv(syncAuthTokenEnvironmentVariable) == "" {
 		return errors.New("-sync-url-prefix specified, but no sync auth token present")
 	}
+	if os.Getenv(githubrepo.GitHubTokenEnvironmentVariable) == "" {
+		return errors.New("no GitHub access token specified")
+	}
 	// We'll assume the PR URL is in the format https://github.com/{owner}/{name}/pulls/{pull-number}
 	prRepo, err := githubrepo.ParseUrl(flagReleasePRUrl)
 	if err != nil {

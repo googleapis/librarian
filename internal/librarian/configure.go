@@ -107,6 +107,10 @@ func runConfigure(ctx context.Context) error {
 }
 
 func executeConfigure(state *commandState) error {
+	if err := validatePush(); err != nil {
+		return err
+	}
+
 	outputRoot := filepath.Join(state.workRoot, "output")
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
 		return err

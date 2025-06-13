@@ -18,7 +18,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/githubrepo"
 )
 
 // Environment variables are specified here as they're used for the same sort of purpose as flags...
@@ -145,6 +148,13 @@ func addFlagTagRepoUrl(fs *flag.FlagSet) {
 
 func addFlagWorkRoot(fs *flag.FlagSet) {
 	fs.StringVar(&flagWorkRoot, "work-root", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
+}
+
+func validatePush() error {
+	if flagPush && os.Getenv(githubrepo.GitHubTokenEnvironmentVariable) == "" {
+		return errors.New("no GitHub token supplied for push")
+	}
+	return nil
 }
 
 func validateSkipIntegrationTests() error {
