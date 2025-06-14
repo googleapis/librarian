@@ -1,0 +1,86 @@
+#!/bin/bash
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# This is the "outer" script called by users or automations to invoke the DIREGAPIC pipeline via Librarian.
+#
+# USAGE:
+#   run-diregapic DISCOVERY_FILE CONFIG_FILE OUTPUT_DIR [LIBRARIAN_IMAGE_AND_TAG]
+#
+# Example:
+#   If ${CONVERTER_REPO} is the local path to a clone of
+#   https://github.com/googleapis/disco-to-proto3-converter, then the sample run
+#   shown in that README can be executed here by the following:
+#     ./run_diregapic \
+#         ${CONVERTER_REPO}/src/test/resources/google/cloud/compute/v1/compute.v1.json \
+#         ${CONVERTER_REPO}/src/test/resources/google/cloud/compute/v1/compute.v1.config.input.json \
+#         ${CONVERTER_REPO}/google/cloud/compute/v1/
+
+# TODO: Configure this outer script and the inner script together so that they
+# call the rest of Librarian. One possible invocation might be:
+#   run-diregapic DISCOVERY_FILE CONFIG_FILE OUTPUT_DIR [LIBRARIAN_ARGS...]
+# so that after getting the synthetic proto, it and the standard LIBRARIAN_ARGS
+# are passed to the Librarian executable.
+  
+
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+  echo "Please execute this script directly; don't source it"
+  return -1
+fi
+
+which jq >& /dev/null|| {
+  echo "This function relies on jq"
+  echo "  On Debian, install it via: sudo apt install jq"
+  return -1
+}
+
+
+### Validate inputs.
+
+DISCOVERY_FILE="$1"
+shift
+[[ -f "${DISCOVERY_FILE}" ]] || { echo "error: Discovery file not found: ${DISCOVERY_FILE}" ; exit -2 ; }
+API_NAME=$(jq '.name' "${DISCOVERY_FILE}")
+[[ -n "${API_NAME}" ]] || { echo "error: API name not found in Discovery file: ${DISCOVERY_FILE}" ; exit -2 ; }
+echo "DISCOVERY_FILE: ${DISCOVERY_FILE}"
+
+CONVERTER_CONFIG="$1"
+shift
+[[ -f "${CONVERTER_CONFIG}" ]] || { echo "error: Converter configuration file not found: ${CONVERTER_CONFIG}" ; exit -2 ; }
+echo "CONVERTER_CONFIG: ${CONVERTER_CONFIG}"
+
+OUTPUT_DIR="$1"
+shift
+[[ -d "${OUTPUT_DIR}" ]] || { echo "error: Output directory  not found: ${OUTPUT_DIR}" ; exit -2 ; }
+echo "OUTPUT_DIR: ${OUTPUT_DIR}"
+
+LIBRARIAN_DIREGAPIC_IMAGE_AND_TAG="${1:-librarian-diregapic:build}"
+[[ -n "${LIBRARIAN_DIREGAPIC_IMAGE_AND_TAG}" ]] || { echo "error: Docker image specifier must be non-empty" ; exit -2 ; }
+
+
+### Set up directories to mount.
+
+DISCOVERIES_DIR=$(mktemp -d)
+cp "${DISCOVERY_FILE}" "${DISCOVERIES_DIR}"
+
+DIREGAPIC_DIR=$(mktemp -d)
+cp "${CONVERTER_CONFIG}" "${DIREGAPIC_DIR}"
+
+docker run \
+  -v ${DISCOVERIES_DIR}:/app/discoveries \
+  -v ${DIREGAPIC_DIR}:/app/diregapic \
+  -v ${OUTPUT_DIR}:/app/output \
+  ${LIBRARIAN_DIREGAPIC_IMAGE_AND_TAG} \
+  ${API_NAME}
