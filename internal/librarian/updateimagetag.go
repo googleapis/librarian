@@ -30,11 +30,13 @@ import (
 
 var CmdUpdateImageTag = &cli.Command{
 	Short: "update-image-tag updates a language repo's image tag and regenerates APIs",
-	Usage: `Specify the language, the new tag, and optional flags to use non-default repositories, e.g. for testing.
+	Usage: "librarian update-image-tag -language=<language> [flags]",
+	Long: `Specify the language, the new tag, and optional flags to use non-default repositories, e.g. for testing.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
-language repo in which the pull request will be created.`,
-	Long: `The update-image-tag command is used to change which tag for the language image is used
+language repo in which the pull request will be created.
+
+The update-image-tag command is used to change which tag for the language image is used
 for language-specific operations. The most common reasons for doing this are if the code handling
 language container commands has changed (e.g. to fix bugs) or because the generator has been updated
 to a newer version.
