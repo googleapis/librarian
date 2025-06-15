@@ -18,13 +18,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"strings"
 )
 
 // Command represents a single command that can be executed by the application.
 type Command struct {
-	// Name is the unique identifier for the command.
-	Name string
-
 	// Short is a concise one-line description of the command.
 	Short string
 
@@ -51,11 +49,21 @@ func (c *Command) Parse(args []string) error {
 	return c.flags.Parse(args)
 }
 
+// Name is the command name. Command.Short is always expected to begin with
+// this name.
+func (c *Command) Name() string {
+	if c.Short == "" {
+		panic("command is missing documentation")
+	}
+	parts := strings.Fields(c.Short)
+	return parts[0]
+}
+
 // Lookup finds a command by its name, and returns an error if the command is
 // not found.
 func Lookup(name string, commands []*Command) (*Command, error) {
 	for _, sub := range commands {
-		if sub.Name == name {
+		if sub.Name() == name {
 			return sub, nil
 		}
 	}
@@ -64,7 +72,7 @@ func Lookup(name string, commands []*Command) (*Command, error) {
 
 // SetFlags registers a list of functions that configure flags for the command.
 func (c *Command) SetFlags(flagFunctions []func(fs *flag.FlagSet)) {
-	c.flags = flag.NewFlagSet(c.Name, flag.ContinueOnError)
+	c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.flags.Usage = c.usage()
 	for _, fn := range flagFunctions {
 		fn(c.flags)
@@ -72,11 +80,11 @@ func (c *Command) SetFlags(flagFunctions []func(fs *flag.FlagSet)) {
 }
 
 func (c *Command) usage() func() {
-	if c.Name == "" || c.Short == "" || c.Usage == "" || c.Long == "" {
-		panic(fmt.Sprintf("command %q is missing documentation", c.Name))
+	if c.Short == "" || c.Usage == "" || c.Long == "" {
+		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
 	}
 
-	output := fmt.Sprintf("Name:\n  %s\n\n", c.Name)
+	output := fmt.Sprintf("Name:\n  %s\n\n", c.Name())
 	output += fmt.Sprintf("Usage:\n  %s\n\n", c.Usage)
 	output += fmt.Sprintf("Description:\n  %s\n", c.Long)
 	output += "\nFlags:\n"

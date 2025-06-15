@@ -19,6 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
 )
@@ -46,7 +47,9 @@ Usage:
 The commands are:
 `
 	for _, c := range librarianCommands {
-		output += fmt.Sprintf("\n  %-25s  %s", c.Name, c.Short)
+		parts := strings.Fields(c.Short)
+		short := strings.Join(parts[1:], " ")
+		output += fmt.Sprintf("\n  %-25s  %s", c.Name(), short)
 	}
 
 	fs.Usage = func() {

@@ -37,8 +37,7 @@ type LibraryRelease struct {
 }
 
 var CmdCreateReleaseArtifacts = &cli.Command{
-	Name:  "create-release-artifacts",
-	Short: "Creates release artifacts from a merged release PR.",
+	Short: "create-release-artifacts creates release artifacts from a merged release PR",
 	Usage: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
 The release ID is specified in the the release PR and in each commit within it, in a line starting "Librarian-Release-ID: ".
 `,

@@ -31,8 +31,7 @@ import (
 )
 
 var CmdPublishReleaseArtifacts = &cli.Command{
-	Name:  "publish-release-artifacts",
-	Short: "Publishes (previously-created) release artifacts to package managers and documentation sites.",
+	Short: "publish-release-artifacts publishes (previously-created) release artifacts to package managers and documentation sites",
 	Usage: `Specify the language, the root output directory created by create-release-artifacts, and
 the GitHub repository in which to create tags/releases.`,
 	Long: `The command first loads the metadata created by create-release-artifacts. This

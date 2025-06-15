@@ -33,8 +33,7 @@ import (
 )
 
 var CmdConfigure = &cli.Command{
-	Name:  "configure",
-	Short: "Configures libraries for new APIs in a language.",
+	Short: "configure configures libraries for new APIs in a language",
 	Usage: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A single API path may be specified if desired; otherwise all API paths will be checked.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN

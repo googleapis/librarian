@@ -22,8 +22,7 @@ import (
 )
 
 var CmdVersion = &cli.Command{
-	Name:  "version",
-	Short: "Prints version information.",
+	Short: "version prints the version information",
 	Usage: "librarian version",
 	Long:  "Prints version information for the librarian binary.",
 	Run: func(ctx context.Context) error {
