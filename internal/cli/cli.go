@@ -84,9 +84,9 @@ func (c *Command) usage() func() {
 		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
 	}
 
-	output := fmt.Sprintf("Name:\n  %s\n\n", c.Name())
-	output += fmt.Sprintf("Usage:\n  %s\n\n", c.Usage)
-	output += fmt.Sprintf("Description:\n  %s\n", c.Long)
+	// output := fmt.Sprintf("NAME:\n%s\n\n", c.Short)
+	output := fmt.Sprintf("\n%s\n", c.Long)
+	output += fmt.Sprintf("Usage:\n  %s\n", c.Usage)
 	output += "\nFlags:\n"
 	return func() {
 		fmt.Fprint(c.flags.Output(), output)
