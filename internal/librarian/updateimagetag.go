@@ -29,8 +29,7 @@ import (
 )
 
 var CmdUpdateImageTag = &cli.Command{
-	Name:  "update-image-tag",
-	Short: "Updates a language repo's image tag and regenerates APIs.",
+	Short: "update-image-tag updates a language repo's image tag and regenerates APIs",
 	Usage: `Specify the language, the new tag, and optional flags to use non-default repositories, e.g. for testing.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the

@@ -27,8 +27,7 @@ func TestParseAndSetFlags(t *testing.T) {
 	)
 
 	cmd := &Command{
-		Name:  "test",
-		Short: "test command is used for testing",
+		Short: "test is used for testing",
 		Long:  "This is the long documentation for command test.",
 		Usage: "foobar test [arguments]",
 	}
@@ -54,8 +53,8 @@ func TestParseAndSetFlags(t *testing.T) {
 
 func TestLookup(t *testing.T) {
 	commands := []*Command{
-		{Name: "foo"},
-		{Name: "bar"},
+		{Short: "foo runs the foo command"},
+		{Short: "bar runs the bar command"},
 	}
 
 	for _, test := range []struct {
@@ -78,8 +77,8 @@ func TestLookup(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if cmd.Name != test.name {
-				t.Errorf("got = %q, want = %q", cmd.Name, test.name)
+			if cmd.Name() != test.name {
+				t.Errorf("got = %q, want = %q", cmd.Name(), test.name)
 			}
 		})
 	}
@@ -88,7 +87,7 @@ func TestLookup(t *testing.T) {
 func TestRun(t *testing.T) {
 	executed := false
 	cmd := &Command{
-		Name: "run",
+		Short: "run runs the command",
 		Run: func(ctx context.Context) error {
 			executed = true
 			return nil

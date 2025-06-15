@@ -37,8 +37,7 @@ const prNumberEnvVarName = "_PR_NUMBER"
 const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
 var CmdCreateReleasePR = &cli.Command{
-	Name:  "create-release-pr",
-	Short: "Creates a release PR.",
+	Short: "create-release-pr creates a release PR",
 	Usage: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A single library may be specified if desired (with an optional version override);
 otherwise all configured libraries will be checked to see if they should be released.
