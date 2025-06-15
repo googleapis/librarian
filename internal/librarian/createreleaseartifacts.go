@@ -38,10 +38,11 @@ type LibraryRelease struct {
 
 var CmdCreateReleaseArtifacts = &cli.Command{
 	Short: "create-release-artifacts creates release artifacts from a merged release PR",
-	Usage: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
+	Usage: "librarian create-release-artifacts -language=<language> [flags]",
+	Long: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
 The release ID is specified in the the release PR and in each commit within it, in a line starting "Librarian-Release-ID: ".
-`,
-	Long: `After acquiring the language repository, the repository is scanned backwards from the head commit to find
+
+After acquiring the language repository, the repository is scanned backwards from the head commit to find
 commits belonging to the single release for which the command is creating artifacts. The head commit is not required to
 belong to the release, but the commits for the release are expected to be contiguous.
 (In other words, once the command has found a commit that *is* part of the release, when it encounters a commit which

@@ -38,13 +38,15 @@ const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
 var CmdCreateReleasePR = &cli.Command{
 	Short: "create-release-pr creates a release PR",
-	Usage: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+	Usage: "librarian create-release-pr -language=<language> [flags]",
+	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A single library may be specified if desired (with an optional version override);
 otherwise all configured libraries will be checked to see if they should be released.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
-language repo in which the pull request will be created.`,
-	Long: `After acquiring the language repository, the Librarian state for the language
+language repo in which the pull request will be created.
+
+After acquiring the language repository, the Librarian state for the language
 repository is loaded and each configured library is checked to see if it should be released.
 (If the -library-id flag is specified, only the specified library is considered.)
 

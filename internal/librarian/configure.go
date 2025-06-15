@@ -34,13 +34,15 @@ import (
 
 var CmdConfigure = &cli.Command{
 	Short: "configure configures libraries for new APIs in a language",
-	Usage: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+	Usage: "librarian configure -language=<language> [flags]",
+	Long: `
+Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A single API path may be specified if desired; otherwise all API paths will be checked.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
 language repo in which the pull request will be created.
-`,
-	Long: `After acquiring the API and language repositories, the Librarian state for the language
+
+After acquiring the API and language repositories, the Librarian state for the language
 repository is loaded and the API repository is scanned for API paths to configure. (If the -api-path
 flag is specified, the scanning is skipped and only that API path is configured.) API scanning involves
 searching for service config .yaml files, and checking for a publishing.library_settings section that
