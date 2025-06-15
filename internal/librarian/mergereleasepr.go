@@ -49,10 +49,12 @@ const MergeBlockedLabel = "merge-blocked-see-comments"
 
 var CmdMergeReleasePR = &cli.Command{
 	Short: "merge-release-pr merges a validated release PR",
-	Usage: `Specify a GitHub access token as an environment variable, the URL for a release PR, and the release ID.
+	Usage: "librarian merge-release-pr [flags]",
+	Long: `Specify a GitHub access token as an environment variable, the URL for a release PR, and the release ID.
 An optional additional URL prefix can be specified in order to wait for a mirror to have synchronized before the
-command completes.`,
-	Long: `This command does not clone any repository locally. Instead, it:
+command completes.
+
+This command does not clone any repository locally. Instead, it:
 - Polls GitHub until all the conditions required to merge the release PR have been met
 - Removes the "do-not-merge" label from the PR
 - Merges the PR

@@ -33,10 +33,12 @@ import (
 
 var CmdGenerate = &cli.Command{
 	Short: "generate generates client library code for a single API",
-	Usage: `Specify the language, the API repository root and the path within it for the API to generate.
+	Usage: "librarian generate -api-path=<api-path> -language=<language> [flags]",
+	Long: `Specify the language, the API repository root and the path within it for the API to generate.
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
-to build the generated library.`,
-	Long: `First, the generation mode is determined by examining the language repository (remotely if
+to build the generated library.
+
+First, the generation mode is determined by examining the language repository (remotely if
 a local clone has not been specified). The Librarian state for the repository is examined to see if the
 specified API path is already configured for a library in the repository. If it is, the refined generation
 mode is used. Otherwise the raw generation mode is used. These are described separately below.
