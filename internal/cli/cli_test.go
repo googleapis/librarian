@@ -107,9 +107,9 @@ func TestRun(t *testing.T) {
 
 func TestUsage(t *testing.T) {
 	c := &Command{
-		Short: "version prints the version information",
-		Usage: "librarian version",
-		Long:  "Command version prints version information for the librarian binary.",
+		Short: "test prints test information",
+		Usage: "test [flags]",
+		Long:  "Command test prints test information",
 	}
 
 	want := fmt.Sprintf(`%s
