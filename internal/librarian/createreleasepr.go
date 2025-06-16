@@ -133,6 +133,9 @@ func createReleasePR(state *commandState) error {
 	if err := validateSkipIntegrationTests(); err != nil {
 		return err
 	}
+	if err := validatePush(); err != nil {
+		return err
+	}
 
 	if flagLibraryVersion != "" && flagLibraryID == "" {
 		return fmt.Errorf("flag -library-version is not valid without -library-id")
