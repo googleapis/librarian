@@ -117,7 +117,7 @@ func updateAPIs(state *commandState) error {
 	cleanWorkingTreePostGeneration := true
 	if flagAPIRoot == "" {
 		var err error
-	apiRepo, err = cloneGoogleapis(state.workRoot)
+		apiRepo, err = cloneGoogleapis(state.workRoot)
 		if err != nil {
 			return err
 		}
