@@ -38,7 +38,7 @@ type LibraryRelease struct {
 
 var CmdCreateReleaseArtifacts = &cli.Command{
 	Short: "create-release-artifacts creates release artifacts from a merged release PR",
-	Usage: "librarian create-release-artifacts -language=<language> [flags]",
+	Usage: "librarian create-release-artifacts -language=<language> -release-id=<id> [flags]",
 	Long: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
 The release ID is specified in the the release PR and in each commit within it, in a line starting "Librarian-Release-ID: ".
 
@@ -97,7 +97,6 @@ func createReleaseArtifactsImpl(state *commandState) error {
 	if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
 		return err
 	}
-
 	outputRoot := filepath.Join(state.workRoot, "output")
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
 		return err

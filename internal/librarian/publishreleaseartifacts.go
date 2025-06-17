@@ -32,7 +32,7 @@ import (
 
 var CmdPublishReleaseArtifacts = &cli.Command{
 	Short: "publish-release-artifacts publishes (previously-created) release artifacts to package managers and documentation sites",
-	Usage: "librarian publish-release-artifacts -language=<language> [flags]",
+	Usage: "librarian publish-release-artifacts -language=<language> -artifact-root=<artifact-root> -tag-repo-url=<repo-url> [flags]",
 	Long: `Specify the language, the root output directory created by create-release-artifacts, and
 the GitHub repository in which to create tags/releases.
 
@@ -71,6 +71,9 @@ func init() {
 }
 
 func runPublishReleaseArtifacts(ctx context.Context) error {
+	if err := validateRequiredFlag("artifact-root", flagArtifactRoot); err != nil {
+		return err
+	}
 	// Load the state and config from the artifact directory. These will have been created by create-release-artifacts.
 	ps, err := loadPipelineStateFile(filepath.Join(flagArtifactRoot, pipelineStateFile))
 	if err != nil {
@@ -97,10 +100,6 @@ func runPublishReleaseArtifacts(ctx context.Context) error {
 }
 
 func publishReleaseArtifacts(ctx context.Context, containerConfig *container.ContainerConfig) error {
-	if err := validateRequiredFlag("artifact-root", flagArtifactRoot); err != nil {
-		return err
-	}
-
 	if err := validateRequiredFlag("tag-repo-url", flagTagRepoUrl); err != nil {
 		return err
 	}

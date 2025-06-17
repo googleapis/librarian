@@ -49,8 +49,9 @@ const MergeBlockedLabel = "merge-blocked-see-comments"
 
 var CmdMergeReleasePR = &cli.Command{
 	Short: "merge-release-pr merges a validated release PR",
-	Usage: "librarian merge-release-pr [flags]",
-	Long: `Specify a GitHub access token as an environment variable, the URL for a release PR, and the release ID.
+	Usage: "librarian merge-release-pr -release-id=<id> -release-pr-url=<url> -baseline-commit=<commit> [flags]",
+	Long: `Specify a GitHub access token as an environment variable, the URL for a release PR, the baseline
+commit of the repo when the release PR was being created, and the release ID.
 An optional additional URL prefix can be specified in order to wait for a mirror to have synchronized before the
 command completes.
 
@@ -130,6 +131,16 @@ func mergeReleasePR(ctx context.Context, workRoot string) error {
 	if os.Getenv(githubrepo.GitHubTokenEnvironmentVariable) == "" {
 		return errors.New("no GitHub access token specified")
 	}
+	if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
+		return err
+	}
+	if err := validateRequiredFlag("release-pr-url", flagReleasePRUrl); err != nil {
+		return err
+	}
+	if err := validateRequiredFlag("baseline-commit", flagBaselineCommit); err != nil {
+		return err
+	}
+
 	// We'll assume the PR URL is in the format https://github.com/{owner}/{name}/pulls/{pull-number}
 	prRepo, err := githubrepo.ParseUrl(flagReleasePRUrl)
 	if err != nil {
