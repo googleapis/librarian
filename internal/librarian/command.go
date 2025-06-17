@@ -73,22 +73,32 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
 		bits := strings.Split(flagRepoUrl, "/")
 		repoName := bits[len(bits)-1]
 		repoPath := filepath.Join(workRoot, repoName)
-		return gitrepo.CloneOrOpen(repoPath, flagRepoUrl)
+		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+			Dir:        repoPath,
+			MaybeClone: true,
+			RemoteURL:  flagRepoUrl,
+		})
 	}
 	if flagRepoRoot == "" {
 		languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", flagLanguage)
 		repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
-		return gitrepo.CloneOrOpen(repoPath, languageRepoURL)
+		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+			Dir:        repoPath,
+			MaybeClone: true,
+			RemoteURL:  languageRepoURL,
+		})
 	}
 	repoRoot, err := filepath.Abs(flagRepoRoot)
 	if err != nil {
 		return nil, err
 	}
-	languageRepo, err = gitrepo.Open(repoRoot)
+	languageRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir: repoRoot,
+	})
 	if err != nil {
 		return nil, err
 	}
-	clean, err := gitrepo.IsClean(languageRepo)
+	clean, err := languageRepo.IsClean()
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +230,7 @@ func createWorkRoot(t time.Time) (string, error) {
 
 // No commit is made if there are no file modifications.
 func commitAll(repo *gitrepo.Repository, msg string) error {
-	status, err := gitrepo.AddAll(repo)
+	status, err := repo.AddAll()
 	if err != nil {
 		return err
 	}
@@ -229,7 +239,7 @@ func commitAll(repo *gitrepo.Repository, msg string) error {
 		return nil
 	}
 
-	return gitrepo.Commit(repo, msg, flagGitUserName, flagGitUserEmail)
+	return repo.Commit(msg, flagGitUserName, flagGitUserEmail)
 }
 
 // Log details of an error which prevents a single API or library from being configured/released, but without

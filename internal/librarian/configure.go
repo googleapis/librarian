@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"gopkg.in/yaml.v3"
 )
@@ -281,7 +280,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 	generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
 	if err := cc.Configure(apiRoot, apiPath, generatorInput); err != nil {
 		addErrorToPullRequest(prContent, apiPath, err, "configuring")
-		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+		if err := languageRepo.CleanWorkingTree(); err != nil {
 			return err
 		}
 		return nil
@@ -311,7 +310,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 			return nil
 		}
 		addErrorToPullRequest(prContent, apiPath, err, "finding new library for")
-		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+		if err := languageRepo.CleanWorkingTree(); err != nil {
 			return err
 		}
 		return nil
@@ -331,14 +330,14 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 
 	if err := cc.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "generating"))
-		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
+		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err
 		}
 		return nil
 	}
 	if err := cc.Clean(languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "cleaning"))
-		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
+		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err
 		}
 		return nil
@@ -349,14 +348,14 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 	}
 	if err := cc.BuildLibrary(languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "building"))
-		if err := gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
+		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err
 		}
 		return nil
 	}
 
 	// Success!
-	if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+	if err := languageRepo.CleanWorkingTree(); err != nil {
 		return err
 	}
 	addSuccessToPullRequest(prContent, fmt.Sprintf("Configured library %s for API %s", libraryID, apiPath))

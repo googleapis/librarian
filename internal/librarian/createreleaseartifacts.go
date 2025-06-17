@@ -139,7 +139,7 @@ func copyMetadataFiles(state *commandState, outputRoot string, releases []Librar
 
 	languageRepo := state.languageRepo
 	finalRelease := releases[len(releases)-1]
-	if err := gitrepo.Checkout(languageRepo, finalRelease.CommitHash); err != nil {
+	if err := languageRepo.Checkout(finalRelease.CommitHash); err != nil {
 		return err
 	}
 	sourceStateFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineStateFile)
@@ -168,7 +168,7 @@ func buildTestPackageRelease(state *commandState, outputRoot string, release Lib
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
-	if err := gitrepo.Checkout(languageRepo, release.CommitHash); err != nil {
+	if err := languageRepo.Checkout(release.CommitHash); err != nil {
 		return err
 	}
 	if err := cc.BuildLibrary(languageRepo.Dir, release.LibraryID); err != nil {
@@ -190,7 +190,7 @@ func buildTestPackageRelease(state *commandState, outputRoot string, release Lib
 }
 
 func parseCommitsForReleases(repo *gitrepo.Repository, releaseID string) ([]LibraryRelease, error) {
-	commits, err := gitrepo.GetCommitsForReleaseID(repo, releaseID)
+	commits, err := repo.GetCommitsForReleaseID(releaseID)
 	if err != nil {
 		return nil, err
 	}

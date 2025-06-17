@@ -117,11 +117,13 @@ func updateImageTag(state *commandState) error {
 			slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
 			return err
 		}
-		apiRepo, err = gitrepo.Open(apiRoot)
+		apiRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+			Dir: apiRoot,
+		})
 		if err != nil {
 			return err
 		}
-		clean, err := gitrepo.IsClean(apiRepo)
+		clean, err := apiRepo.IsClean()
 		if err != nil {
 			return err
 		}
@@ -192,7 +194,7 @@ func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repository, generat
 
 	// TODO: Handle "no last generated commit"
 	// https://github.com/googleapis/librarian/issues/341
-	if err := gitrepo.Checkout(apiRepo, library.LastGeneratedCommit); err != nil {
+	if err := apiRepo.Checkout(library.LastGeneratedCommit); err != nil {
 		return err
 	}
 
@@ -213,7 +215,7 @@ func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repository, generat
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
-	if err := gitrepo.CleanWorkingTree(apiRepo); err != nil {
+	if err := apiRepo.CleanWorkingTree(); err != nil {
 		return err
 	}
 	return nil

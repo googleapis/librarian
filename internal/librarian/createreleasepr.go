@@ -28,7 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/githubrepo"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -154,7 +153,7 @@ func createReleasePR(state *commandState) error {
 
 	// Find the head of the language repo before we start creating any release commits.
 	// This will be validated later to check that libraries haven't changed since the release PR was created.
-	baselineCommit, err := gitrepo.HeadHash(state.languageRepo)
+	baselineCommit, err := state.languageRepo.HeadHash()
 	if err != nil {
 		return err
 	}
@@ -232,7 +231,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 			previousReleaseTag = formatReleaseTag(library.Id, library.CurrentVersion)
 		}
 		allSourcePaths := append(state.pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
-		commits, err := gitrepo.GetCommitsForPathsSinceTag(languageRepo, allSourcePaths, previousReleaseTag)
+		commits, err := languageRepo.GetCommitsForPathsSinceTag(allSourcePaths, previousReleaseTag)
 		if err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "retrieving commits since last release")
 			continue
@@ -272,7 +271,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 		if err := cc.PrepareLibraryRelease(languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "preparing library release")
 			// Clean up any changes before starting the next iteration.
-			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+			if err := languageRepo.CleanWorkingTree(); err != nil {
 				return nil, err
 			}
 			continue
@@ -280,7 +279,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 		if err := cc.BuildLibrary(languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "building/testing library")
 			// Clean up any changes before starting the next iteration.
-			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+			if err := languageRepo.CleanWorkingTree(); err != nil {
 				return nil, err
 			}
 			continue
@@ -289,7 +288,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 			slog.Info(fmt.Sprintf("Skipping integration tests: %s", flagSkipIntegrationTests))
 		} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "integration testing library")
-			if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+			if err := languageRepo.CleanWorkingTree(); err != nil {
 				return nil, err
 			}
 			continue

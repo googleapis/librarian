@@ -128,11 +128,13 @@ func updateAPIs(state *commandState) error {
 			slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
 			return err
 		}
-		apiRepo, err = gitrepo.Open(apiRoot)
+		apiRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+			Dir: apiRoot,
+		})
 		if err != nil {
 			return err
 		}
-		clean, err := gitrepo.IsClean(apiRepo)
+		clean, err := apiRepo.IsClean()
 		if err != nil {
 			return err
 		}
@@ -164,7 +166,7 @@ func updateAPIs(state *commandState) error {
 
 	// Clean  the API repo in case it was changed, but not if it was already dirty before the command.
 	if cleanWorkingTreePostGeneration {
-		gitrepo.CleanWorkingTree(apiRepo)
+		apiRepo.CleanWorkingTree()
 	}
 	_, err := createPullRequest(state, prContent, "feat: API regeneration", "", "regen")
 	return err
@@ -190,7 +192,7 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	}
 
 	initialGeneration := library.LastGeneratedCommit == ""
-	commits, err := gitrepo.GetCommitsForPathsSinceCommit(apiRepo, library.ApiPaths, library.LastGeneratedCommit)
+	commits, err := apiRepo.GetCommitsForPathsSinceCommit(library.ApiPaths, library.LastGeneratedCommit)
 	if err != nil {
 		return err
 	}
@@ -224,7 +226,7 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	if err := cc.Clean(languageRepo.Dir, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "cleaning")
 		// Clean up any changes before starting the next iteration.
-		if err := gitrepo.CleanWorkingTree(languageRepo); err != nil {
+		if err := languageRepo.CleanWorkingTree(); err != nil {
 			return err
 		}
 		return nil
@@ -259,7 +261,7 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	// We consider a "something changed" error as fatal, whereas a build error just needs to
 	// undo the commit, report the failure and continue
 	buildErr := cc.BuildLibrary(languageRepo.Dir, library.Id)
-	clean, err := gitrepo.IsClean(languageRepo)
+	clean, err := languageRepo.IsClean()
 	if err != nil {
 		return err
 	}
@@ -269,7 +271,7 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 
 	if buildErr != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "building")
-		if err = gitrepo.CleanAndRevertHeadCommit(languageRepo); err != nil {
+		if err = languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err
 		}
 		return nil

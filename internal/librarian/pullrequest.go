@@ -74,7 +74,7 @@ func createPullRequest(state *commandState, content *PullRequestContent, titlePr
 			excessSuccesses = content.Successes[maxCommits:]
 			content.Successes = content.Successes[:maxCommits]
 			slog.Info(fmt.Sprintf("%d excess commits created; winding back language repo.", len(excessSuccesses)))
-			if err := gitrepo.CleanAndRevertCommits(languageRepo, len(excessSuccesses)); err != nil {
+			if err := languageRepo.CleanAndRevertCommits(len(excessSuccesses)); err != nil {
 				return nil, err
 			}
 		}
@@ -111,7 +111,7 @@ func createPullRequest(state *commandState, content *PullRequestContent, titlePr
 	}
 
 	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(state.startTime))
-	err = gitrepo.PushBranch(languageRepo, branch, ghClient.Token())
+	err = languageRepo.PushBranch(branch, ghClient.Token())
 	if err != nil {
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return nil, err

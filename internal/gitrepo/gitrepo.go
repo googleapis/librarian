@@ -37,31 +37,62 @@ type Repository struct {
 	repo *git.Repository
 }
 
-// CloneOrOpen provides access to a Git repository.
-//
-// If a repository already exists at the specified directory path (dirpath),
-// it opens and provides access to that repository.
-//
-// Otherwise, it clones the repository from the given URL (repoURL) and saves it
-// to the specified directory path (dirpath).
-func CloneOrOpen(dirpath, repoURL string) (*Repository, error) {
-	slog.Info(fmt.Sprintf("Cloning %q to %q", repoURL, dirpath))
-
-	_, err := os.Stat(dirpath)
-	if err == nil {
-		return Open(dirpath)
-	}
-	if os.IsNotExist(err) {
-		return Clone(dirpath, repoURL)
-	}
-	return nil, err
+// RepositoryOptions are used to configure a [Repository].
+type RepositoryOptions struct {
+	// Dir is the directory where the repository will reside locally. Required.
+	Dir string
+	// MaybeClone will try to clone the repository if it does not exist locally.
+	// If set to true, RemoteURL must also be set. Optional.
+	MaybeClone bool
+	// RemoteURL is the URL of the remote repository to clone from. Required if Clone is not CloneOptionNone.
+	RemoteURL string
 }
 
-// Clone downloads a copy of a Git repository from repoURL and saves it to the
-// specified directory at dirpath.
-func Clone(dirpath, repoURL string) (*Repository, error) {
+// NewRepository provides access to a git repository based on the provided options.
+//
+// If opts.Clone is CloneOptionNone, it opens an existing repository at opts.Dir.
+// If opts.Clone is CloneOptionMaybe, it opens the repository if it exists,
+// otherwise it clones from opts.RemoteURL.
+// If opts.Clone is CloneOptionAlways, it always clones from opts.RemoteURL.
+func NewRepository(opts *RepositoryOptions) (*Repository, error) {
+	if opts.Dir == "" {
+		return nil, errors.New("gitrepo: dir is required")
+	}
+
+	if !opts.MaybeClone {
+		return open(opts.Dir)
+	}
+	slog.Info(fmt.Sprintf("Checking for repository at %q", opts.Dir))
+	_, err := os.Stat(opts.Dir)
+	if err == nil {
+		return open(opts.Dir)
+	}
+	if os.IsNotExist(err) {
+		if opts.RemoteURL == "" {
+			return nil, fmt.Errorf("gitrepo: remote URL is required when cloning")
+		}
+		slog.Info("Repository not found, executing clone")
+		return clone(opts.Dir, opts.RemoteURL)
+	}
+	return nil, fmt.Errorf("failed to check for repository at %q: %w", opts.Dir, err)
+}
+
+func open(dir string) (*Repository, error) {
+	slog.Info(fmt.Sprintf("Opening repository at %q", dir))
+	repo, err := git.PlainOpen(dir)
+	if err != nil {
+		return nil, err
+	}
+	return &Repository{
+		Dir:  dir,
+		repo: repo,
+	}, nil
+}
+
+func clone(dir, url string) (*Repository, error) {
+	slog.Info(fmt.Sprintf("Cloning repository from %q to %q", url, dir))
 	options := &git.CloneOptions{
-		URL:           repoURL,
+		URL:           url,
 		ReferenceName: plumbing.HEAD,
 		SingleBranch:  true,
 		Tags:          git.AllTags,
@@ -73,30 +104,18 @@ func Clone(dirpath, repoURL string) (*Repository, error) {
 		options.Progress = os.Stdout // When not a CI build, output progress.
 	}
 
-	repo, err := git.PlainClone(dirpath, false, options)
+	repo, err := git.PlainClone(dir, false, options)
 	if err != nil {
 		return nil, err
 	}
 	return &Repository{
-		Dir:  dirpath,
+		Dir:  dir,
 		repo: repo,
 	}, nil
 }
 
-// Open provides access to a Git repository that exists at dirpath.
-func Open(dirpath string) (*Repository, error) {
-	repo, err := git.PlainOpen(dirpath)
-	if err != nil {
-		return nil, err
-	}
-	return &Repository{
-		Dir:  dirpath,
-		repo: repo,
-	}, nil
-}
-
-func AddAll(repo *Repository) (git.Status, error) {
-	worktree, err := repo.repo.Worktree()
+func (r *Repository) AddAll() (git.Status, error) {
+	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return git.Status{}, err
 	}
@@ -108,8 +127,8 @@ func AddAll(repo *Repository) (git.Status, error) {
 }
 
 // returns an error if there is nothing to commit
-func Commit(repo *Repository, msg string, userName, userEmail string) error {
-	worktree, err := repo.repo.Worktree()
+func (r *Repository) Commit(msg string, userName, userEmail string) error {
+	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
 	}
@@ -144,16 +163,16 @@ func Commit(repo *Repository, msg string, userName, userEmail string) error {
 	return nil
 }
 
-func HeadHash(repo *Repository) (string, error) {
-	headRef, err := repo.repo.Head()
+func (r *Repository) HeadHash() (string, error) {
+	headRef, err := r.repo.Head()
 	if err != nil {
 		return "", err
 	}
 	return headRef.Hash().String(), nil
 }
 
-func IsClean(repo *Repository) (bool, error) {
-	worktree, err := repo.repo.Worktree()
+func (r *Repository) IsClean() (bool, error) {
+	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return false, err
 	}
@@ -165,8 +184,8 @@ func IsClean(repo *Repository) (bool, error) {
 	return status.IsClean(), nil
 }
 
-func PrintStatus(repo *Repository) error {
-	worktree, err := repo.repo.Worktree()
+func (r *Repository) PrintStatus() error {
+	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
 	}
@@ -219,14 +238,14 @@ func PrintStatus(repo *Repository) error {
 // The returned commits are ordered such that the most recent commit is first.
 // If sinceCommit is not provided, all commits are searched. Otherwise, if no commit
 // matching sinceCommit is found, an error is returned.
-func GetCommitsForPathsSinceCommit(repo *Repository, paths []string, sinceCommit string) ([]object.Commit, error) {
+func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]object.Commit, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
 	commits := []object.Commit{}
 	finalHash := plumbing.NewHash(sinceCommit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
-	logIterator, err := repo.repo.Log(&logOptions)
+	logIterator, err := r.repo.Log(&logOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -299,37 +318,37 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 
 // Returns all commits since tagName that contains files in path.
 // If tagName is empty, all commits for the given paths are returned.
-func GetCommitsForPathsSinceTag(repo *Repository, paths []string, tagName string) ([]object.Commit, error) {
+func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]object.Commit, error) {
 	var hash string
 	if tagName == "" {
 		hash = ""
 	} else {
-		tagRef, err := repo.repo.Tag(tagName)
+		tagRef, err := r.repo.Tag(tagName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
 		}
 
-		tagCommit, err := repo.repo.CommitObject(tagRef.Hash())
+		tagCommit, err := r.repo.CommitObject(tagRef.Hash())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 		}
 		hash = tagCommit.Hash.String()
 	}
-	return GetCommitsForPathsSinceCommit(repo, paths, hash)
+	return r.GetCommitsForPathsSinceCommit(paths, hash)
 }
 
 // Returns all commits with the given release ID, i.e. where the commit message contains a line of
 // Librarian-Release-Id: <release-id>. These commits are expected to be contiguous, from head,
 // with all commits having a single parent.
-func GetCommitsForReleaseID(repo *Repository, releaseID string) ([]object.Commit, error) {
+func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]object.Commit, error) {
 	releaseIDLine := fmt.Sprintf("Librarian-Release-ID: %s", releaseID)
 	commits := []object.Commit{}
 
-	headRef, err := repo.repo.Head()
+	headRef, err := r.repo.Head()
 	if err != nil {
 		return nil, err
 	}
-	headCommit, err := repo.repo.CommitObject(headRef.Hash())
+	headCommit, err := r.repo.CommitObject(headRef.Hash())
 	if err != nil {
 		return nil, err
 	}
@@ -369,8 +388,8 @@ func GetCommitsForReleaseID(repo *Repository, releaseID string) ([]object.Commit
 }
 
 // Creates a branch with the given name in the default remote.
-func PushBranch(repo *Repository, remoteBranch string, accessToken string) error {
-	headRef, err := repo.repo.Head()
+func (r *Repository) PushBranch(remoteBranch string, accessToken string) error {
+	headRef, err := r.repo.Head()
 	if err != nil {
 		return err
 	}
@@ -387,12 +406,12 @@ func PushBranch(repo *Repository, remoteBranch string, accessToken string) error
 	}
 
 	slog.Info(fmt.Sprintf("Pushing to branch %s", remoteBranch))
-	return repo.repo.Push(&pushOptions)
+	return r.repo.Push(&pushOptions)
 }
 
 // CleanWorkingTree Drops any local changes NOT committed, but keeps any local commits
-func CleanWorkingTree(repo *Repository) error {
-	worktree, err := repo.repo.Worktree()
+func (r *Repository) CleanWorkingTree() error {
+	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
 	}
@@ -404,18 +423,18 @@ func CleanWorkingTree(repo *Repository) error {
 
 // Drop any local changes, and also reset to the parent of the current head commit.
 // This is a special case of CleanAndRevertCommits where the count is 1.
-func CleanAndRevertHeadCommit(repo *Repository) error {
-	return CleanAndRevertCommits(repo, 1)
+func (r *Repository) CleanAndRevertHeadCommit() error {
+	return r.CleanAndRevertCommits(1)
 }
 
 // Reverts the specified number of commits in the repo (by resetting to
 // the
-func CleanAndRevertCommits(repo *Repository, count int) error {
-	headRef, err := repo.repo.Head()
+func (r *Repository) CleanAndRevertCommits(count int) error {
+	headRef, err := r.repo.Head()
 	if err != nil {
 		return err
 	}
-	headCommit, err := repo.repo.CommitObject(headRef.Hash())
+	headCommit, err := r.repo.CommitObject(headRef.Hash())
 	if err != nil {
 		return err
 	}
@@ -430,7 +449,7 @@ func CleanAndRevertCommits(repo *Repository, count int) error {
 			return err
 		}
 	}
-	worktree, err := repo.repo.Worktree()
+	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
 	}
@@ -440,8 +459,8 @@ func CleanAndRevertCommits(repo *Repository, count int) error {
 	return worktree.Clean(&git.CleanOptions{Dir: true})
 }
 
-func Checkout(repo *Repository, commit string) error {
-	worktree, err := repo.repo.Worktree()
+func (r *Repository) Checkout(commit string) error {
+	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
 	}

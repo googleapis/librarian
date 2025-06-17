@@ -24,5 +24,9 @@ const googleapisURL = "https://github.com/googleapis/googleapis"
 
 func cloneGoogleapis(workRoot string) (*gitrepo.Repository, error) {
 	repoPath := filepath.Join(workRoot, "googleapis")
-	return gitrepo.CloneOrOpen(repoPath, googleapisURL)
+	return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir:        repoPath,
+		MaybeClone: true,
+		RemoteURL:  googleapisURL,
+	})
 }
