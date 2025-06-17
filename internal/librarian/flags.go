@@ -56,7 +56,7 @@ var (
 )
 
 func addFlagAPIPath(fs *flag.FlagSet) {
-	fs.StringVar(&flagAPIPath, "api-path", "", "path api-root to the API to be configured/generated (e.g., google/cloud/functions/v2)")
+	fs.StringVar(&flagAPIPath, "api-path", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
 func addFlagAPIRoot(fs *flag.FlagSet) {
@@ -95,7 +95,7 @@ func addFlagImage(fs *flag.FlagSet) {
 }
 
 func addFlagLanguage(fs *flag.FlagSet) {
-	fs.StringVar(&flagLanguage, "language", "", "(Required) language to configure/generate/release code for")
+	fs.StringVar(&flagLanguage, "language", "", "(Required) language for which to configure/generate/release code")
 }
 
 func addFlagLibraryID(fs *flag.FlagSet) {
