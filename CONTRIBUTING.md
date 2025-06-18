@@ -1,16 +1,256 @@
 # How to Contribute
 
-This repository is intended to support Google Cloud SDK in
-generating and releasing client libraries for Google Cloud APIs.
+We'd love to accept your patches and contributions to this project. There are
+just a few small guidelines you need to follow.
 
-We do not expect this repository to be particularly relevant to
-developers outside Google, and we don't expect or seek external code
-contributions. That doesn't mean it will never happen, but it would
-be unusual.
+## Contributor License Agreement
 
-If you want to request a change within this repository and you're
-not a member of the Google Cloud SDK team, please create an
-[issue](https://github.com/googleapis/google-cloud-dotnet/issues)
-for discussion first, clearly explaining your intended use. We will
-close pull requests from external contributors which aren't the
-result of a suitable discussion.
+Contributions to this project must be accompanied by a Contributor License
+Agreement. You (or your employer) retain the copyright to your contribution;
+this simply gives us permission to use and redistribute your contributions as
+part of the project. Head over to <https://cla.developers.google.com/> to see
+your current agreements on file or to sign a new one.
+
+You generally only need to submit a CLA once, so if you've already submitted one
+(even if it was for a different project), you probably don't need to do it
+again.
+
+## Code Reviews
+
+All submissions, including submissions by project members, require review. We
+use GitHub pull requests for this purpose. Consult
+[GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
+information on using pull requests.
+
+## Community Guidelines
+
+This project follows
+[Google's Open Source Community Guidelines](https://opensource.google/conduct/).
+
+---
+
+The section above follows the standard googleapis organization’s
+CONTRIBUTING.md template. The section below is specific to the Librarian
+project. It explains how we work, how we use GitHub, and what contributors can
+expect when engaging with this repository.
+
+---
+
+# How We Work
+
+The Librarian project supports the Google Cloud SDK ecosystem and is maintained
+primarily by the internal Cloud SDK team. While the repository is open source,
+we operate with a limited contribution model.
+
+## Becoming a contributor
+
+To contribute to this repository, ask a member of
+[cloud-sdk-librarian-admin](https://github.com/orgs/googleapis/teams/cloud-sdk-librarian-admin)
+to add you to the
+[cloud-sdk-librarian-team](https://github.com/orgs/googleapis/teams/cloud-sdk-librarian-team).
+
+## Before contributing code
+
+Before doing any significant work, open an issue to propose your idea and
+ensure alignment. You can either
+[file a new issue](https://github.com/googleapis/librarian/issues/new/choose), or comment
+on an [existing one](https://github.com/googleapis/librarian/issues).
+
+A pull request (PR) that does not go through this coordination process may be
+closed to avoid wasted effort.
+
+## Checking the issue tracker
+
+We use GitHub issues to track tasks, bugs, and discussions.
+
+> _If it didn’t happen in a GitHub issue, it never happened._
+
+Use the [issue tracker](https://github.com/googleapis/librarian/issues) as your
+source of truth.
+
+Every issue will also have an associated
+[milestone](https://github.com/googleapis/librarian/milestones). If an issue is
+not our roadmap, it will be under
+[Unplanned](https://github.com/googleapis/librarian/milestone/7).
+
+## Filing a new issue
+
+All changes, except trivial ones, should start with a GitHub issue.
+
+This process gives everyone a chance to validate the design, helps prevent
+duplication of effort, and ensures that the idea fits inside the goals for the
+language and tools. It also checks that the design is sound before code is
+written; the code review tool is not the place for high-level discussions.
+
+Significant changes must go through a design review process before they are
+accepted.
+
+All issues should have a path prefix to indicate the relevant domain. For
+issues related to the librarian codebase, use the package name as a prefix (for
+example, `librarian:` or `cli:`). For issues related to code outside this
+repository, use the repository name (for example, `google-cloud-python`).
+
+Aside from proper nouns, issue titles should use lowercase.
+
+Always include a clear description in the body of the issue. The description
+should provide enough context for any team member to understand the problem or
+request without needing to contact you directly for clarification.
+
+Default to assigning the issue to someone if there’s a
+clear owner. Otherwise, leave it for triage.
+
+## Sending a pull request
+
+All code changes must go through a pull request. First-time contributors should
+review
+[GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow).
+
+Before sending a pull request, it should include tests if there are logic
+changes, copyright headers in every file, and a commit message following the
+conventions below.
+
+## Commit messages
+
+Commit messages for Librarian follow the conventions below.
+
+Here is an example:
+
+```
+feat(internal/librarian): add version subcommand
+
+A version subcommand is added to librarian, which prints the current version of
+the tool.
+
+The version follows the versioning conventions described at
+https://go.dev/ref/mod#versions.
+
+Fixes https://github.com/googleapis/librarian/issues/238
+```
+
+### First line
+
+The first line of the change description is a short one-line summary of the
+change, following the structure `<type>(<package>): <description>`:
+
+#### type
+
+A structural element defined by the conventions at
+https://www.conventionalcommits.org/en/v1.0.0/#summary.
+
+Conventional commits are parsed by the Librarian CLI’s release tooling to
+generate release notes. Since the Librarian CLI uses itself for its own release
+process, writing proper conventional commits not only improves release notes
+but also helps us dogfood the tooling.
+
+#### package
+
+The name of the package affected by the change, and should by provided in
+parentheses before the colon.
+
+#### description
+
+A short one-line summary of the change, that it should be written so to complete
+the sentence "This change modifies Librarian to ..." That means it does not
+start with a capital letter, is not a complete sentence, and actually
+summarizes the result of the change. Note that the verb after the colon is
+lowercase, and there is no trailing period
+
+The first line should be kept as short as possible (many git viewing tools
+prefer under ~76 characters).
+
+Follow the first line by a blank line.
+
+### Main content
+
+The rest of the commit message should provide context for the change and
+explain what it does. Write in complete sentences with correct punctuation.
+Don't use HTML, Markdown, or any other markup language.
+
+Add any relevant information, such as benchmark data if the change affects
+performance. The benchstat tool is conventionally used to format benchmark data
+for change descriptions.
+
+### Referencing issues
+
+The special notation "Fixes #12345" associates the change with issue 12345 in
+the Librarian issue tracker. When this change is eventually applied, the issue
+tracker will automatically mark the issue as fixed.
+
+If the change is a partial step towards the resolution of the issue, write
+"For #12345" instead. This will leave a comment in the issue linking back
+to the pull request, but it will not close the issue when the change is
+applied.
+
+Please don’t use alternate GitHub-supported aliases like Close or Resolves
+instead of Fixes.
+
+## The review process
+
+This section explains the review process in detail and how to approach reviews
+after a change has been mailed.
+
+### Getting a code review
+
+Before creating a pull request, make sure that your commit message follows the
+suggested format. Otherwise, it can be common for the pull request to be sent
+back with that request without review.
+
+After creating a pull request, request a specific reviewer if relevant, or leave it for
+the default group.
+
+Creating additional commits to address reviewer feedback is generally preferred
+over amending and force-pushing. This makes it easier for reviewers to see what
+has changed since their last review.
+
+Pull requests are always squashed and merged. Before merging, please review and
+edit the resulting commit message to ensure it clearly describes the change.
+
+### Opening a pull request with multiple commits
+
+When opening a pull request, it can be helpful to structure the commits for review. If
+your pull request has multiple commits, note in the description whether reviewers should
+review them individually or just focus on the final result. (For example, if
+earlier commits are exploratory and only the end state matters, make that clear
+to avoid wasting reviewer time.)
+
+### Merging a pull request
+
+Pull requests are generally merged by the author, so they can review and edit
+the final commit message before merging. However, this is not a strict rule. If
+the pull request is trivial, already consists of a single well-formed commit, or is
+blocking other work and the author is unavailable, the reviewer may go ahead
+and merge it.
+
+### Keeping the pull request dashboard clean
+
+We aim to keep https://github.com/googleapis/librarian/pulls clean so that we
+can quickly notice and review incoming changes that require attention.
+
+Given that goal, please do not open a pull request unless you are ready for a
+code review. Draft pull requests and ones without author activity for more than
+one business day may be closed (they can always be reopened later).
+
+If you're still working on something, continue iterating on your branch without
+creating a pull request until it’s ready for review.
+
+## Language guidelines
+
+Unless there is a clear reason otherwise, all new code should be written in Go.
+Please avoid writing Bash scripts. If you believe non-Go code is necessary,
+file an issue following the guidelines above and include a clear justification.
+
+## Expectations for the team
+
+A lot of our communication will happen on GitHub issues. Team members are
+expected to configure their inboxes to receive GitHub notifications alerts for
+all issues and pull requests to ensure effective communication.
+
+While we don’t have strict SLOs, we aim to review pull requests within
+**4 business hours**.
+
+If a pull request becomes inactive or misaligned with current priorities, we
+may close it to respect contributor and reviewer time. If you’d like to revisit
+it, just comment and reopen the conversation.
+
+If your pull request or issue is stuck, feel free to follow up over chat. We
+encourage it!
