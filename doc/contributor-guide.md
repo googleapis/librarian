@@ -66,15 +66,14 @@ may merge the PR.
 
 ## Issues
 
-When creating an issue, include a "type:"-prefixed label (e.g. "type: docs") rather
-than using the GitHub "Type" field, so that the issue mirrors appropriately with
-internal bug tracking.
+When creating an issue:
 
-Feel free to assign the issue to an individual if there is a natural owner.
-Otherwise, leave it unassigned for a triage rotation to pick up.
-
-To highlight the importance of an issue, use one of the "priority: p0" or
-"priority: p1" labels. (Not specifying a priority is equivalent to "priority: p2".)
-A p0 issue indicates that the team should drop other work to address the issue
-as soon as possible. A p1 issue indicates that the issue should be addressed urgently,
-ahead of other work - this will usually block the next release, for example.
+- Use the "Type" field to indicate the type of issue. (We don't have
+  the "type:"-prefixed labels used in some other repos.)
+- For a language-specific, use the language name as a prefix on the
+  issue title, e.g. "Python: migrate to Library Onboarding" and
+  specify the corresponding milestone
+- Use the ["Unplanned" milestone](https://github.com/googleapis/librarian/milestone/7)
+  for low-priority work
+- Feel free to assign the issue to an individual if there is a natural owner.
+  Otherwise, leave it unassigned for a triage rotation to pick up.
