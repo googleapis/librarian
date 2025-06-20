@@ -187,7 +187,7 @@ instead of Fixes.
 ## The review process
 
 This section explains the review process in detail and how to approach reviews
-after a change has been mailed.
+after a pull request has been sent for review.
 
 ### Getting a code review
 
