@@ -169,7 +169,7 @@ func validateSkipIntegrationTests() error {
 // start executing the command. (At least for simple cases where a flag is required;
 // note that this isn't always going to be the same for all commands for one flag.)
 func validateRequiredFlag(name, value string) error {
-	if value == "" {
+	if strings.TrimSpace(value) == "" {
 		return fmt.Errorf("required flag -%s not specified", name)
 	}
 	return nil
