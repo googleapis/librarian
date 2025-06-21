@@ -56,9 +56,11 @@ func TestParseAndSetFlags(t *testing.T) {
 }
 
 func TestLookup(t *testing.T) {
-	commands := []*Command{
-		{Short: "foo runs the foo command"},
-		{Short: "bar runs the bar command"},
+	testCmd := &Command{
+		Commands: []*Command{
+			{Short: "foo runs the foo command"},
+			{Short: "bar runs the bar command"},
+		},
 	}
 
 	for _, test := range []struct {
@@ -70,7 +72,7 @@ func TestLookup(t *testing.T) {
 		{"baz", true}, // not found case
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cmd, err := Lookup(test.name, commands)
+			cmd, err := testCmd.Lookup(test.name)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal(err)

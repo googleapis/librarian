@@ -16,17 +16,31 @@ package librarian
 
 import (
 	"context"
-	"flag"
-	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
 )
 
+var CmdLibrarian = &cli.Command{
+	Short: "librarian manages client libraries for Google APIs",
+	Usage: "librarian <command> [arguments]",
+	Long:  "Librarian manages client libraries for Google APIs.",
+}
+
+func init() {
+	for _, cmd := range librarianCommands {
+		CmdLibrarian.Register(cmd)
+	}
+}
+
 func Run(ctx context.Context, arg ...string) error {
-	cmd, err := parseArgs(arg)
+	if len(arg) == 0 {
+		CmdLibrarian.Help()
+		return nil
+	}
+	cmd, err := CmdLibrarian.Lookup(arg[0])
 	if err != nil {
+		cmd.Help()
 		return err
 	}
 	if err := cmd.Parse(arg[1:]); err != nil {
@@ -34,36 +48,4 @@ func Run(ctx context.Context, arg ...string) error {
 	}
 	slog.Info("librarian", "arguments", arg)
 	return cmd.Run(ctx)
-}
-
-func parseArgs(args []string) (*cli.Command, error) {
-	fs := flag.NewFlagSet("librarian", flag.ContinueOnError)
-	output := `Librarian manages client libraries for Google APIs.
-
-Usage:
-
-  librarian <command> [arguments]
-
-The commands are:
-`
-	for _, c := range librarianCommands {
-		parts := strings.Fields(c.Short)
-		short := strings.Join(parts[1:], " ")
-		output += fmt.Sprintf("\n  %-25s  %s", c.Name(), short)
-	}
-
-	fs.Usage = func() {
-		fmt.Fprint(fs.Output(), output)
-		fs.PrintDefaults()
-		fmt.Fprintf(fs.Output(), "\n\n")
-	}
-
-	if err := fs.Parse(args); err != nil {
-		return nil, err
-	}
-	if len(fs.Args()) == 0 {
-		fs.Usage()
-		return nil, fmt.Errorf("command not specified")
-	}
-	return cli.Lookup(fs.Args()[0], librarianCommands)
 }

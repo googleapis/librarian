@@ -36,17 +36,22 @@ type Command struct {
 	// Run executes the command.
 	Run func(ctx context.Context) error
 
+	// Commands are the sub commands.
+	Commands []*Command
+
 	// flags is the command's flag set for parsing arguments and generating
 	// usage messages. This is populated for each command in init().
 	flags *flag.FlagSet
 }
 
+// Register adds a subcommand to the command.
+func (c *Command) Register(sub *Command) {
+	c.Commands = append(c.Commands, sub)
+}
+
 // Parse parses the provided command-line arguments using the command's flag
 // set.
 func (c *Command) Parse(args []string) error {
-	if c.flags == nil {
-		return nil
-	}
 	return c.flags.Parse(args)
 }
 
@@ -62,8 +67,8 @@ func (c *Command) Name() string {
 
 // Lookup finds a command by its name, and returns an error if the command is
 // not found.
-func Lookup(name string, commands []*Command) (*Command, error) {
-	for _, sub := range commands {
+func (c *Command) Lookup(name string) (*Command, error) {
+	for _, sub := range c.Commands {
 		if sub.Name() == name {
 			return sub, nil
 		}
@@ -79,6 +84,14 @@ func (c *Command) SetFlags(flagFunctions []func(fs *flag.FlagSet)) {
 	}
 }
 
+// Usage prints the command usage.
+func (c *Command) Help() {
+	if c == nil {
+		initFlags(c)
+	}
+	c.flags.Usage()
+}
+
 func (c *Command) usage(w io.Writer) {
 	if c.Short == "" || c.Usage == "" || c.Long == "" {
 		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
@@ -86,6 +99,13 @@ func (c *Command) usage(w io.Writer) {
 
 	fmt.Fprintf(w, "%s\n\n", c.Long)
 	fmt.Fprintf(w, "Usage:\n  %s", c.Usage)
+	if len(c.Commands) > 0 {
+		fmt.Fprint(w, "\n\nCommands:\n")
+		parts := strings.Fields(c.Short)
+		short := strings.Join(parts[1:], " ")
+		fmt.Fprintf(w, "\n  %-25s  %s", c.Name(), short)
+	}
+
 	if hasFlags(c.flags) {
 		fmt.Fprint(w, "\n\nFlags:\n")
 	}
@@ -94,12 +114,11 @@ func (c *Command) usage(w io.Writer) {
 	fmt.Fprintf(w, "\n\n")
 }
 
-func initFlags(c *Command) *Command {
+func initFlags(c *Command) {
 	c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.flags.Usage = func() {
 		c.usage(c.flags.Output())
 	}
-	return c
 }
 
 func hasFlags(fs *flag.FlagSet) bool {
