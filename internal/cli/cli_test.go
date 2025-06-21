@@ -15,6 +15,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -106,21 +107,53 @@ func TestRun(t *testing.T) {
 }
 
 func TestUsage(t *testing.T) {
-	c := &Command{
-		Short: "test prints test information",
-		Usage: "test [flags]",
-		Long:  "Command test prints test information",
-	}
-
-	want := fmt.Sprintf(`%s
+	preamble := `Test prints test information.
 
 Usage:
-  %s
+  test [flags]
 
-Flags:
-`, c.Long, c.Usage)
-	got := constructUsage(c.Long, c.Usage)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch(-want + got):\n%s", diff)
+`
+
+	for _, test := range []struct {
+		name  string
+		flags []func(fs *flag.FlagSet)
+		want  string
+	}{
+		{
+			name:  "no flags",
+			flags: nil,
+			want:  preamble,
+		},
+		{
+			name: "with string flag",
+			flags: []func(fs *flag.FlagSet){
+				func(fs *flag.FlagSet) {
+					fs.String("name", "default", "name flag")
+				},
+			},
+			want: fmt.Sprintf(`%sFlags:
+  -name string
+    	name flag (default "default")
+
+
+`, preamble),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := &Command{
+				Short: "test prints test information",
+				Usage: "test [flags]",
+				Long:  "Test prints test information.",
+			}
+			initFlags(c)
+			c.SetFlags(test.flags)
+
+			var buf bytes.Buffer
+			c.usage(&buf)
+			got := buf.String()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch(-want + got):\n%s", diff)
+			}
+		})
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -72,29 +73,39 @@ func Lookup(name string, commands []*Command) (*Command, error) {
 
 // SetFlags registers a list of functions that configure flags for the command.
 func (c *Command) SetFlags(flagFunctions []func(fs *flag.FlagSet)) {
-	c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
-	c.flags.Usage = c.usage()
+	initFlags(c)
 	for _, fn := range flagFunctions {
 		fn(c.flags)
 	}
 }
 
-func (c *Command) usage() func() {
+func (c *Command) usage(w io.Writer) {
 	if c.Short == "" || c.Usage == "" || c.Long == "" {
 		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
 	}
 
-	output := constructUsage(c.Long, c.Usage)
-	return func() {
-		fmt.Fprint(c.flags.Output(), output)
-		c.flags.PrintDefaults()
-		fmt.Fprintf(c.flags.Output(), "\n\n")
+	fmt.Fprintf(w, "%s\n\n", c.Long)
+	fmt.Fprintf(w, "Usage:\n  %s", c.Usage)
+	if hasFlags(c.flags) {
+		fmt.Fprint(w, "\n\nFlags:\n")
 	}
+	c.flags.SetOutput(w)
+	c.flags.PrintDefaults()
+	fmt.Fprintf(w, "\n\n")
 }
 
-func constructUsage(long, usage string) string {
-	output := fmt.Sprintf("%s\n\n", long)
-	output += fmt.Sprintf("Usage:\n  %s\n", usage)
-	output += "\nFlags:\n"
-	return output
+func initFlags(c *Command) *Command {
+	c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
+	c.flags.Usage = func() {
+		c.usage(c.flags.Output())
+	}
+	return c
+}
+
+func hasFlags(fs *flag.FlagSet) bool {
+	visited := false
+	fs.VisitAll(func(f *flag.Flag) {
+		visited = true
+	})
+	return visited
 }
