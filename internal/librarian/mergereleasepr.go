@@ -520,7 +520,10 @@ func checkRelease(release LibraryRelease, baseHeadState, baselineState *statepb.
 	if baselineLibrary == nil {
 		return &SuspectRelease{LibraryID: release.LibraryID, Reason: "Library does not exist in baseline commit pipeline state"}
 	}
-	// TODO: Find a better way of comparing these.
+	// Adding 'good first issue' label for onboarding new contributors
+if isGoodFirstIssue(pr) {
+    addLabelToPullRequest(pr, "good first issue")
+}
 	if baseHeadLibrary.String() != baselineLibrary.String() {
 		return &SuspectRelease{LibraryID: release.LibraryID, Reason: "Pipeline state has changed between baseline and head"}
 	}
