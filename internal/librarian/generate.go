@@ -245,6 +245,6 @@ func detectIfLibraryConfigured(apiPath, repoURL, repoRoot string) (bool, error) 
 		return false, nil
 	}
 
-	slog.Info(fmt.Sprintf("API path %s configured in repo library %s", apiPath, libraryID))
+	slog.Info("API configured", "path", apiPath, "library", libraryID)
 	return true, nil
 }
