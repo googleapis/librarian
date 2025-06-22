@@ -17,9 +17,13 @@ package main_test
 import (
 	"bufio"
 	"errors"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -103,6 +107,80 @@ func TestGoModTidy(t *testing.T) {
 
 func TestGovulncheck(t *testing.T) {
 	rungo(t, "run", "golang.org/x/vuln/cmd/govulncheck@latest", "./...")
+}
+
+func TestExportedSymbolsHaveDocs(t *testing.T) {
+	// TODO(https://github.com/googleapis/librarian/issues/522): turn on once
+	// all existing symbols have docs.
+	t.Skip()
+
+	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+
+		fset := token.NewFileSet()
+		node, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+		if err != nil {
+			t.Errorf("failed to parse file %q: %v", path, err)
+			return nil
+		}
+
+		for _, decl := range node.Decls {
+			gen, ok := decl.(*ast.GenDecl)
+			if ok && (gen.Tok == token.TYPE || gen.Tok == token.CONST || gen.Tok == token.VAR) {
+				for _, spec := range gen.Specs {
+					switch s := spec.(type) {
+					case *ast.TypeSpec:
+						if s.Name.IsExported() {
+							if gen.Doc == nil {
+								t.Errorf("%s: exported type %q is missing doc comment",
+									path, s.Name.Name)
+							} else if !startsWithName(gen.Doc.Text(), s.Name.Name) {
+								t.Errorf("%s: doc comment for exported type %q should start with the name",
+									path, s.Name.Name)
+							}
+						}
+					case *ast.ValueSpec:
+						for _, name := range s.Names {
+							if name.IsExported() {
+								if gen.Doc == nil {
+									t.Errorf("%s: exported %s %q is missing doc comment",
+										path, strings.ToLower(gen.Tok.String()), name.Name)
+								} else if !startsWithName(gen.Doc.Text(), name.Name) {
+									t.Errorf("%s: doc comment for exported %s %q should start with the name",
+										path, strings.ToLower(gen.Tok.String()), name.Name)
+								}
+							}
+						}
+					}
+				}
+			}
+			if fn, ok := decl.(*ast.FuncDecl); ok {
+				if fn.Name.IsExported() {
+					if fn.Doc == nil {
+						t.Errorf("%s: exported func %q is missing doc comment",
+							path, fn.Name.Name)
+					} else if !startsWithName(fn.Doc.Text(), fn.Name.Name) {
+						t.Errorf("%s: doc comment for exported func %q should start with the name",
+							path, fn.Name.Name)
+					}
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func startsWithName(comment, name string) bool {
+	words := strings.Fields(comment)
+	if len(words) == 0 {
+		return false
+	}
+	return words[0] == name
 }
 
 func rungo(t *testing.T, args ...string) {
