@@ -157,7 +157,7 @@ func appendResultEnvironmentVariable(workRoot, name, value string) error {
 	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
 }
 
-func deriveImage(state *statepb.PipelineState) string {
+func deriveImage(language, imageOverride, defaultRepo string, state *statepb.PipelineState) string {
 	if flagImage != "" {
 		return flagImage
 	}
