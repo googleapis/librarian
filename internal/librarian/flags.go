@@ -21,6 +21,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/githubrepo"
 )
 
@@ -174,4 +175,31 @@ func validateRequiredFlag(name, value string) error {
 		return fmt.Errorf("required flag -%s not specified", name)
 	}
 	return nil
+}
+
+func applyFlags(cfg *config.Config) {
+	cfg.APIPath = flagAPIPath
+	cfg.APIRoot = flagAPIRoot
+	cfg.ArtifactRoot = flagArtifactRoot
+	cfg.BaselineCommit = flagBaselineCommit
+	cfg.Branch = flagBranch
+	cfg.Build = flagBuild
+	cfg.EnvFile = flagEnvFile
+	cfg.GitUserEmail = flagGitUserEmail
+	cfg.GitUserName = flagGitUserName
+	cfg.Image = flagImage
+	cfg.Language = flagLanguage
+	cfg.LibraryID = flagLibraryID
+	cfg.LibraryVersion = flagLibraryVersion
+	cfg.Push = flagPush
+	cfg.ReleaseID = flagReleaseID
+	cfg.ReleasePRURL = flagReleasePRUrl
+	cfg.RepoRoot = flagRepoRoot
+	cfg.RepoURL = flagRepoUrl
+	cfg.SyncURLPrefix = flagSyncUrlPrefix
+	cfg.SecretsProject = flagSecretsProject
+	cfg.SkipIntegrationTests = flagSkipIntegrationTests
+	cfg.Tag = flagTag
+	cfg.TagRepoURL = flagTagRepoUrl
+	cfg.WorkRoot = flagWorkRoot
 }

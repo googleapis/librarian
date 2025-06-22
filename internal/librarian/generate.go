@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -76,7 +77,9 @@ output directory that was specified for the "generate-raw" command.
 		if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
 			return err
 		}
-		return runGenerate(ctx, flagAPIPath, flagAPIRoot, flagRepoRoot, flagRepoUrl, flagSecretsProject, flagBuild)
+		cfg := config.New()
+		applyFlags(cfg)
+		return runGenerate(ctx, cfg)
 	},
 }
 
@@ -94,8 +97,8 @@ func init() {
 	})
 }
 
-func runGenerate(ctx context.Context, apiPath, apiRoot, repoRoot, repoURL, secretsProject string, build bool) error {
-	libraryConfigured, err := detectIfLibraryConfigured(apiPath, repoURL, repoRoot)
+func runGenerate(ctx context.Context, cfg *config.Config) error {
+	libraryConfigured, err := detectIfLibraryConfigured(cfg.APIPath, cfg.RepoURL, cfg.RepoRoot)
 	if err != nil {
 		return err
 	}
@@ -128,7 +131,7 @@ func runGenerate(ctx context.Context, apiPath, apiRoot, repoRoot, repoURL, secre
 	}
 
 	image := deriveImage(ps)
-	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, secretsProject, config)
+	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, cfg.SecretsProject, config)
 	if err != nil {
 		return err
 	}
@@ -142,7 +145,7 @@ func runGenerate(ctx context.Context, apiPath, apiRoot, repoRoot, repoURL, secre
 		pipelineState:   ps,
 		containerConfig: containerConfig,
 	}
-	return executeGenerate(state, apiPath, apiRoot, build)
+	return executeGenerate(state, cfg.APIPath, cfg.APIRoot, cfg.Build)
 }
 
 func executeGenerate(state *commandState, apiPath, apiRoot string, build bool) error {
