@@ -102,7 +102,7 @@ clear owner. Otherwise, leave it for triage.
 ## Leaving a TODO
 
 When adding a TODO to the codebase, always include a link to an issue, no
-matter how small the task:
+matter how small the task.
 
 Use the format:
 
