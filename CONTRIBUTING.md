@@ -99,6 +99,20 @@ request without needing to contact you directly for clarification.
 Default to assigning the issue to someone if there’s a
 clear owner. Otherwise, leave it for triage.
 
+## Leaving a TODO
+
+When adding a TODO to the codebase, always include a link to an issue, no
+matter how small the task:
+
+Use the format:
+
+```
+// TODO(https://github.com/googleapis/librarian/issues/<number>): explain what needs to be done
+```
+
+This helps provide context for future readers and keeps the TODO relevant and
+actionable as the project evolves.
+
 ## Sending a pull request
 
 All code changes must go through a pull request. First-time contributors should
