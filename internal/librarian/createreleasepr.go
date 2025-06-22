@@ -207,7 +207,7 @@ func createReleasePR(state *commandState) error {
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory string, releaseID string) (*PullRequestContent, error) {
+func generateReleaseCommitForEachLibrary(containerConfig ContainerConfig, libraries []Library, inputDirectory string, releaseID string) (*PullRequestContent, error) {
 	cc := state.containerConfig
 	libraries := state.pipelineState.Libraries
 	languageRepo := state.languageRepo
