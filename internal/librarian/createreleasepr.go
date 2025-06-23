@@ -19,8 +19,10 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -308,24 +310,29 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 }
 
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
-	features := []string{}
-	docs := []string{}
-	fixes := []string{}
+	features := make(map[string]bool)
+	docs := make(map[string]bool)
+	fixes := make(map[string]bool)
 
-	// TODO(https://github.com/googleapis/librarian/issues/549): deduping (same message across multiple commits)
 	// TODO(https://github.com/googleapis/librarian/issues/547): perhaps record breaking changes in a separate section
 	// TODO(https://github.com/googleapis/librarian/issues/550): include backlinks, googleapis commits etc
 	for _, commitMessage := range commitMessages {
-		features = append(features, commitMessage.Features...)
-		docs = append(docs, commitMessage.Docs...)
-		fixes = append(fixes, commitMessage.Fixes...)
+		for _, feature := range commitMessage.Features {
+			features[feature] = true
+		}
+		for _, doc := range commitMessage.Docs {
+			docs[doc] = true
+		}
+		for _, fix := range commitMessage.Fixes {
+			fixes[fix] = true
+		}
 	}
 
 	var builder strings.Builder
 
-	maybeAppendReleaseNotesSection(&builder, "New features", features)
-	maybeAppendReleaseNotesSection(&builder, "Bug fixes", fixes)
-	maybeAppendReleaseNotesSection(&builder, "Documentation improvements", docs)
+	maybeAppendReleaseNotesSection(&builder, "New features", slices.Collect(maps.Keys(features)))
+	maybeAppendReleaseNotesSection(&builder, "Bug fixes", slices.Collect(maps.Keys(fixes)))
+	maybeAppendReleaseNotesSection(&builder, "Documentation improvements", slices.Collect(maps.Keys(docs)))
 
 	if builder.Len() == 0 {
 		builder.WriteString("FIXME: Forced release with no commit messages; please write release notes.\n\n")
