@@ -17,6 +17,7 @@ package librarian
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
@@ -72,6 +73,73 @@ func TestCalculateNextVersion(t *testing.T) {
 
 		if test.want != got {
 			t.Errorf("calculateNextVersion(%s) expected %s, got %s", test.current, test.want, got)
+		}
+	}
+}
+
+func TestFormatReleaseNotes(t *testing.T) {
+	tests := []struct {
+		name    string
+		commits []*CommitMessage
+		want    string
+	}{
+		{
+			name: "Basic",
+			commits: []*CommitMessage{
+				{
+					Features: []string{"feature A"},
+				},
+			},
+			want: `### New features
+
+- Feature A
+
+`,
+		},
+		{
+			name: "Duplicated Feature",
+			commits: []*CommitMessage{
+				{
+					Features: []string{"feature A", "feature A"},
+				},
+			},
+			want: `### New features
+
+- Feature A
+
+`,
+		},
+		{
+			name: "Duplicated Docs",
+			commits: []*CommitMessage{
+				{
+					Docs: []string{"Doc A", "Doc A"},
+				},
+			},
+			want: `### Documentation improvements
+
+- Doc A
+
+`,
+		},
+		{
+			name: "Duplicated Bugs",
+			commits: []*CommitMessage{
+				{
+					Fixes: []string{"Bugfix A", "Bugfix A"},
+				},
+			},
+			want: `### Bug fixes
+
+- Bugfix A
+
+`,
+		},
+	}
+	for _, test := range tests {
+		got := formatReleaseNotes(test.commits)
+		if diff := cmp.Diff(test.want, got); diff != "" {
+			t.Errorf("[%s] mismatch (-want +got):\n%s", test.name, diff)
 		}
 	}
 }
