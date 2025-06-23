@@ -76,6 +76,9 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			current, _ := worktree.Commit(test.messages[i], &git.CommitOptions{
 				Parents: []plumbing.Hash{parent},
 			})
+			t.Logf("current is %s", current)
+			t.Logf("parent is %s", parent)
+			t.Logf("======")
 			parent = current
 		}
 
