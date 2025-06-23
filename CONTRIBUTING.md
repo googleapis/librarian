@@ -44,6 +44,9 @@ we operate with a limited contribution model.
 
 ## Becoming a contributor
 
+Review the guide for
+[Onboarding to Librarian](https://github.com/googleapis/librarian/blob/main/doc/onboarding.md).
+
 To contribute to this repository, ask a member of
 [cloud-sdk-librarian-admin](https://github.com/orgs/googleapis/teams/cloud-sdk-librarian-admin)
 to add you to the
@@ -58,6 +61,9 @@ on an [existing one](https://github.com/googleapis/librarian/issues).
 
 A pull request (PR) that does not go through this coordination process may be
 closed to avoid wasted effort.
+
+Make sure your code follows the guidelines at
+[How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md). 
 
 ## Checking the issue tracker
 
@@ -252,6 +258,9 @@ creating a pull request until it’s ready for review.
 Unless there is a clear reason otherwise, all new code should be written in Go.
 Please avoid writing Bash scripts. If you believe non-Go code is necessary,
 file an issue following the guidelines above and include a clear justification.
+
+See the guidelines for
+[How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md).
 
 ## Expectations for the team
 
