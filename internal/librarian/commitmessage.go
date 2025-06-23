@@ -65,9 +65,9 @@ func ParseCommit(commit gitrepo.Commit) *CommitMessage {
 	for _, line := range messageLines {
 		// Handle any known prefixes that we just want to keep in a simple way.
 		if maybeAppendString(line, PiperPrefix, &piperOrigins) ||
-				maybeAppendString(line, SourceLinkPrefix, &sourceLinks) ||
-				maybeAppendString(line, TriggerReleasePrefix, &triggerLibraries) ||
-				maybeAppendString(line, NoTriggerReleasePrefix, &noTriggerLibraries) {
+			maybeAppendString(line, SourceLinkPrefix, &sourceLinks) ||
+			maybeAppendString(line, TriggerReleasePrefix, &triggerLibraries) ||
+			maybeAppendString(line, NoTriggerReleasePrefix, &noTriggerLibraries) {
 			continue
 		}
 
