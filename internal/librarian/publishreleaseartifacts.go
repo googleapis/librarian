@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -84,10 +85,11 @@ func runPublishReleaseArtifacts(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	image := deriveImage(ps)
+
+	image := deriveImage(flagLanguage, flagImage, os.Getenv(DefaultRepositoryEnvironmentVariable), ps)
 
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime)
+	workRoot, err := createWorkRoot(startTime, flagWorkRoot)
 	if err != nil {
 		return err
 	}

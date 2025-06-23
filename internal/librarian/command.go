@@ -62,38 +62,38 @@ type commandState struct {
 	containerConfig *container.Docker
 }
 
-func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
+func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language string) (*gitrepo.Repository, error) {
 	var languageRepo *gitrepo.Repository
-	if flagRepoRoot != "" && flagRepoUrl != "" {
+	if repoRoot != "" && repoURL != "" {
 		return nil, errors.New("do not specify both repo-root and repo-url")
 	}
-	if flagRepoUrl != "" {
+	if repoURL != "" {
 		// Take the last part of the URL as the directory name. It feels very
 		// unlikely that will clash with anything else (e.g. "output")
-		bits := strings.Split(flagRepoUrl, "/")
+		bits := strings.Split(repoURL, "/")
 		repoName := bits[len(bits)-1]
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir:        repoPath,
 			MaybeClone: true,
-			RemoteURL:  flagRepoUrl,
+			RemoteURL:  repoURL,
 		})
 	}
-	if flagRepoRoot == "" {
-		languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", flagLanguage)
-		repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
+	if repoRoot == "" {
+		languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", language)
+		repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", language))
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir:        repoPath,
 			MaybeClone: true,
 			RemoteURL:  languageRepoURL,
 		})
 	}
-	repoRoot, err := filepath.Abs(flagRepoRoot)
+	absRepoRoot, err := filepath.Abs(repoRoot)
 	if err != nil {
 		return nil, err
 	}
 	languageRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-		Dir: repoRoot,
+		Dir: absRepoRoot,
 	})
 	if err != nil {
 		return nil, err
@@ -116,11 +116,11 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
 // language repos should construct the command state themselves.
 func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime)
+	workRoot, err := createWorkRoot(startTime, flagWorkRoot)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot)
+	repo, err := cloneOrOpenLanguageRepo(workRoot, flagRepoRoot, flagRepoUrl, flagLanguage)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
 		return nil, err
 	}
 
-	image := deriveImage(ps)
+	image := deriveImage(flagLanguage, flagImage, os.Getenv(DefaultRepositoryEnvironmentVariable), ps)
 	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
 	if err != nil {
 		return nil, err
@@ -157,13 +157,12 @@ func appendResultEnvironmentVariable(workRoot, name, value string) error {
 	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
 }
 
-func deriveImage(state *statepb.PipelineState) string {
-	if flagImage != "" {
-		return flagImage
+func deriveImage(language, imageOverride, defaultRepository string, state *statepb.PipelineState) string {
+	if imageOverride != "" {
+		return imageOverride
 	}
 
-	defaultRepository := os.Getenv(defaultRepositoryEnvironmentVariable)
-	relativeImage := fmt.Sprintf("google-cloud-%s-generator", flagLanguage)
+	relativeImage := fmt.Sprintf("google-cloud-%s-generator", language)
 
 	var tag string
 	if state == nil {
@@ -204,10 +203,10 @@ func formatTimestamp(t time.Time) string {
 	return t.Format(yyyyMMddHHmmss)
 }
 
-func createWorkRoot(t time.Time) (string, error) {
-	if flagWorkRoot != "" {
-		slog.Info(fmt.Sprintf("Using specified working directory: %s", flagWorkRoot))
-		return flagWorkRoot, nil
+func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
+	if workRootOverride != "" {
+		slog.Info(fmt.Sprintf("Using specified working directory: %s", workRootOverride))
+		return workRootOverride, nil
 	}
 
 	path := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(t)))

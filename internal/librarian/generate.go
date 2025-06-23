@@ -103,10 +103,8 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/482): pass in
-	// flagWorkroot explicitly.
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime)
+	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
 	if err != nil {
 		return err
 	}
@@ -119,7 +117,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	// We only clone/open the language repo and use the state within it
 	// if the requested API is configured as a library.
 	if libraryConfigured {
-		repo, err = cloneOrOpenLanguageRepo(workRoot)
+		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language)
 		if err != nil {
 			return err
 		}
@@ -130,7 +128,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		}
 	}
 
-	image := deriveImage(ps)
+	image := deriveImage(cfg.Language, cfg.Image, os.Getenv(DefaultRepositoryEnvironmentVariable), ps)
 	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, cfg.SecretsProject, config)
 	if err != nil {
 		return err
