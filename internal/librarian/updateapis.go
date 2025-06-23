@@ -101,7 +101,7 @@ func init() {
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx, flagWorkRoot, flagRepoRoot, flagRepoUrl, flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), flagSecretsProject)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,8 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	} else {
 		msg = createCommitMessage(library.Id, commits)
 	}
-	if err := commitAll(languageRepo, msg); err != nil {
+	if err := commitAll(languageRepo, msg,
+		flagGitUserName, flagGitUserEmail); err != nil {
 		return err
 	}
 

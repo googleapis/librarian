@@ -123,7 +123,7 @@ func init() {
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx, flagWorkRoot, flagRepoRoot, flagRepoUrl, flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), flagSecretsProject)
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,8 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 		// Metadata for easy extraction later.
 		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
 		// Note that releaseDescription will already end with two line breaks, so we don't need any more before the metadata.
-		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata))
+		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata),
+			flagGitUserName, flagGitUserEmail)
 		if err != nil {
 			return nil, err
 		}

@@ -100,7 +100,7 @@ func init() {
 }
 
 func runConfigure(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx, flagWorkRoot, flagRepoRoot, flagRepoUrl, flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), flagSecretsProject)
 	if err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 		// If it's newly-ignored, just commit the state change. This is still a "success" case.
 		if slices.Contains(ps.IgnoredApiPaths, apiPath) {
 			msg := fmt.Sprintf("feat: Added ignore entry for API %s", apiPath)
-			if err := commitAll(languageRepo, msg); err != nil {
+			if err := commitAll(languageRepo, msg, flagGitUserName, flagGitUserEmail); err != nil {
 				return err
 			}
 			addSuccessToPullRequest(prContent, fmt.Sprintf("Ignored API %s", apiPath))
@@ -315,7 +315,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 	}
 
 	msg := fmt.Sprintf("feat: Configured library %s for API %s", libraryID, apiPath)
-	if err := commitAll(languageRepo, msg); err != nil {
+	if err := commitAll(languageRepo, msg, flagGitUserName, flagGitUserEmail); err != nil {
 		return err
 	}
 

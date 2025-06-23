@@ -89,7 +89,7 @@ func init() {
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx, flagWorkRoot, flagRepoRoot, flagRepoUrl, flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), flagSecretsProject)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,8 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 
 	// Commit any changes
 	commitMsg := fmt.Sprintf("chore: update generation image tag to %s", flagTag)
-	if err := commitAll(languageRepo, commitMsg); err != nil {
+	if err := commitAll(languageRepo, commitMsg,
+		flagGitUserName, flagGitUserEmail); err != nil {
 		return err
 	}
 

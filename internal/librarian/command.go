@@ -113,7 +113,7 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language string) (*git
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
+func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRoot, repoURL, language, imageOverride, defaultRepository, secretsProject string) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, flagWorkRoot)
 	if err != nil {
@@ -227,7 +227,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 }
 
 // No commit is made if there are no file modifications.
-func commitAll(repo *gitrepo.Repository, msg string) error {
+func commitAll(repo *gitrepo.Repository, msg, userName, userEmail string) error {
 	status, err := repo.AddAll()
 	if err != nil {
 		return err
@@ -237,7 +237,7 @@ func commitAll(repo *gitrepo.Repository, msg string) error {
 		return nil
 	}
 
-	return repo.Commit(msg, flagGitUserName, flagGitUserEmail)
+	return repo.Commit(msg, userName, userEmail)
 }
 
 // Log details of an error which prevents a single API or library from being configured/released, but without
