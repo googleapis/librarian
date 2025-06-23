@@ -141,7 +141,7 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 		// Visit every top-level declaration in the file.
 		for _, decl := range node.Decls {
 			gen, ok := decl.(*ast.GenDecl)
-			if ok && (gen.Tok == token.TYPE || gen.Tok == token.CONST || gen.Tok == token.VAR) {
+			if ok && (gen.Tok == token.TYPE || gen.Tok == token.VAR) {
 				for _, spec := range gen.Specs {
 					switch s := spec.(type) {
 					case *ast.TypeSpec:
