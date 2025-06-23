@@ -173,18 +173,20 @@ func mergeReleasePR(ctx context.Context, workRoot string) error {
 	return nil
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
+const sleepDelay = time.Duration(60) * time.Second
+
 func waitForPullRequestReadiness(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata) error {
 	// TODO(https://github.com/googleapis/librarian/issues/543): time out here, or let Kokoro do so?
-	// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
 
-	const pollDelaySeconds = 60
 	for {
 		ready, err := waitForPullRequestReadinessSingleIteration(ctx, prMetadata)
 		if ready || err != nil {
 			return err
 		}
 		slog.Info("Sleeping before next iteration")
-		time.Sleep(time.Duration(pollDelaySeconds) * time.Second)
+		// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
+		time.Sleep(sleepDelay)
 	}
 }
 
@@ -222,7 +224,7 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 	// and if it is, abort the job.
 	if pr.ClosedAt != nil {
 		slog.Info("PR is closed; sleeping for a minute before checking again.")
-		time.Sleep(time.Duration(60) * time.Second)
+		time.Sleep(sleepDelay)
 		pr, err = ghClient.GetPullRequest(ctx, prMetadata.Repo, prMetadata.Number)
 		if err != nil {
 			return false, err
@@ -323,6 +325,11 @@ func mergePullRequest(ctx context.Context, prMetadata *githubrepo.PullRequestMet
 	return *mergeResult.SHA, nil
 }
 
+// The maximum amount of time that waitForSync will poll to see if
+// the merge commit has syncrhonized
+// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
+const waitForSyncMaxDuration = time.Duration(10) * time.Minute
+
 // If flagSyncUrlPrefix is empty, this returns immediately.
 // Otherwise, polls for up to 10 minutes (once every 30 seconds) for the
 // given merge commit to be available at the repo specified via flagSyncUrlPrefix.
@@ -339,7 +346,7 @@ func waitForSync(mergeCommit string) error {
 	client := &http.Client{}
 
 	// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
-	end := time.Now().Add(time.Duration(10) * time.Minute)
+	end := time.Now().Add(waitForSyncMaxDuration)
 
 	for time.Now().Before(end) {
 		slog.Info("Checking if merge commit has synchronized")
@@ -356,7 +363,7 @@ func waitForSync(mergeCommit string) error {
 		} else if resp.StatusCode == http.StatusNotFound {
 			slog.Info("Merge commit has not yet synchronized; sleeping before next attempt")
 			// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
-			time.Sleep(time.Duration(30) * time.Second)
+			time.Sleep(sleepDelay)
 			continue
 		} else {
 			bodyBytes, _ := io.ReadAll(resp.Body)
