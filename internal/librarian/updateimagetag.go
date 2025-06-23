@@ -192,8 +192,7 @@ func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repository, generat
 		return nil
 	}
 
-	// TODO: Handle "no last generated commit"
-	// https://github.com/googleapis/librarian/issues/341
+	// TODO(https://github.com/googleapis/librarian/issues/341): handle "no last generated commit"
 	if err := apiRepo.Checkout(library.LastGeneratedCommit); err != nil {
 		return err
 	}

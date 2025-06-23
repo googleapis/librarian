@@ -312,9 +312,9 @@ func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	docs := []string{}
 	fixes := []string{}
 
-	// TODO: Deduping (same message across multiple commits)
-	// TODO: Breaking changes
-	// TODO: Use the source links etc
+	// TODO(https://github.com/googleapis/librarian/issues/549): deduping (same message across multiple commits)
+	// TODO(https://github.com/googleapis/librarian/issues/547): perhaps record breaking changes in a separate section
+	// TODO(https://github.com/googleapis/librarian/issues/550): include backlinks, googleapis commits etc
 	for _, commitMessage := range commitMessages {
 		features = append(features, commitMessage.Features...)
 		docs = append(docs, commitMessage.Docs...)
@@ -414,7 +414,6 @@ func calculateNextPrerelease(prerelease string) (string, error) {
 
 func isReleaseWorthy(messages []*CommitMessage, libraryId string) bool {
 	for _, message := range messages {
-		// TODO: Work out why we can't call message.IsReleaseWorthy(libraryId)
 		if IsReleaseWorthy(message, libraryId) {
 			return true
 		}

@@ -87,7 +87,7 @@ func (c *Client) CreateRelease(ctx context.Context, repo *Repository, tag, commi
 		Draft:           github.Ptr(false),
 		MakeLatest:      github.Ptr("true"),
 		Prerelease:      &prerelease,
-		// TODO: Check whether this is what we want
+		// TODO(https://github.com/googleapis/librarian/issues/541): check GenerateReleaseNotes value
 		GenerateReleaseNotes: github.Ptr(false),
 	}
 	release, _, err := c.Repositories.CreateRelease(ctx, repo.Owner, repo.Name, release)
@@ -150,7 +150,7 @@ func (c *Client) GetPullRequestCheckRuns(ctx context.Context, pullRequest *githu
 }
 
 func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequestMetadata) ([]*github.PullRequestReview, error) {
-	// TODO: Implement pagination or use go-github-paginate
+	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
 	reviews, _, err := c.PullRequests.ListReviews(ctx, prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number, listOptions)
 	return reviews, err
@@ -187,14 +187,14 @@ func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref 
 }
 
 func (c *Client) GetDiffCommits(ctx context.Context, repo *Repository, source, target string) ([]*github.RepositoryCommit, error) {
-	// TODO: Implement pagination or use go-github-paginate
+	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
 	commitsComparison, _, err := c.Repositories.CompareCommits(ctx, repo.Owner, repo.Name, source, target, listOptions)
 	return commitsComparison.Commits, err
 }
 
 func (c *Client) GetCommit(ctx context.Context, repo *Repository, sha string) (*github.RepositoryCommit, error) {
-	// TODO: Implement pagination or use go-github-paginate (if necessary)
+	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
 	commit, _, err := c.Repositories.GetCommit(ctx, repo.Owner, repo.Name, sha, listOptions)
 	return commit, err

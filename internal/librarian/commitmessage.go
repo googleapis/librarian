@@ -31,7 +31,7 @@ type CommitMessage struct {
 	Fixes        []string
 	PiperOrigins []string
 	SourceLinks  []string
-	// TODO: Keep a list of the breaking change lines?
+	// TODO(https://github.com/googleapis/librarian/issues/547): keep a list of the breaking change lines?
 	Breaking   bool
 	CommitHash string
 	// Libraries which should be released by this commit, even if they would not be normally.
@@ -93,7 +93,7 @@ func ParseCommit(commit object.Commit) *CommitMessage {
 		case "fix":
 			slice = &fixes
 		// Conventional commit type we know about, but don't keep.
-		// TODO: Maybe we should keep deps?
+		// TODO(https://github.com/googleapis/librarian/issues/548): Maybe we should keep deps?
 		case "refactor":
 			slice = nil
 		case "tools":

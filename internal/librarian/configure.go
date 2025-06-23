@@ -166,7 +166,7 @@ func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language 
 		if err != nil {
 			return err
 		}
-		// TODO: Validate that we only have a single yaml file per directory.
+		// TODO(https://github.com/googleapis/librarian/issues/551): validate that we only have a single yaml file per directory.
 		if !d.IsDir() && strings.HasSuffix(d.Name(), ".yaml") && !strings.HasSuffix(d.Name(), "gapic.yaml") {
 			apiPath, err := filepath.Rel(apiRoot, filepath.Dir(path))
 			if err != nil {

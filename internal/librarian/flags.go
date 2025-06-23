@@ -165,7 +165,8 @@ func validateSkipIntegrationTests() error {
 }
 
 // Validate that the flag with the given name has been provided.
-// TODO: Rework how we add flags so that these can be validated before we even
+// TODO(https://github.com/googleapis/librarian/issues/488): add support for required string flags
+// We should rework how we add flags so that these can be validated before we even
 // start executing the command. (At least for simple cases where a flag is required;
 // note that this isn't always going to be the same for all commands for one flag.)
 func validateRequiredFlag(name, value string) error {

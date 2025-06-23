@@ -174,8 +174,8 @@ func mergeReleasePR(ctx context.Context, workRoot string) error {
 }
 
 func waitForPullRequestReadiness(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata) error {
-	// TODO: time out here, or let Kokoro do so?
-	// TODO: make polling frequency configurable?
+	// TODO(https://github.com/googleapis/librarian/issues/543): time out here, or let Kokoro do so?
+	// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
 
 	const pollDelaySeconds = 60
 	for {
@@ -338,6 +338,7 @@ func waitForSync(mergeCommit string) error {
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	client := &http.Client{}
 
+	// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
 	end := time.Now().Add(time.Duration(10) * time.Minute)
 
 	for time.Now().Before(end) {
@@ -354,6 +355,7 @@ func waitForSync(mergeCommit string) error {
 			return nil
 		} else if resp.StatusCode == http.StatusNotFound {
 			slog.Info("Merge commit has not yet synchronized; sleeping before next attempt")
+			// TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
 			time.Sleep(time.Duration(30) * time.Second)
 			continue
 		} else {
@@ -464,7 +466,7 @@ func checkPullRequestApproval(ctx context.Context, prMetadata *githubrepo.PullRe
 	latestReviews := make(map[int64]*github.PullRequestReview)
 	for _, review := range reviews {
 		association := review.GetAuthorAssociation()
-		// TODO: Check the required approvals (b/417995406)
+		// TODO(https://github.com/googleapis/librarian/issues/545): check the required approvals
 		if association != "MEMBER" && association != "OWNER" && association != "COLLABORATOR" && association != "CONTRIBUTOR" {
 			slog.Info(fmt.Sprintf("Ignoring review with author association '%s'", association))
 			continue
@@ -520,7 +522,7 @@ func checkRelease(release LibraryRelease, baseHeadState, baselineState *statepb.
 	if baselineLibrary == nil {
 		return &SuspectRelease{LibraryID: release.LibraryID, Reason: "Library does not exist in baseline commit pipeline state"}
 	}
-	// TODO: Find a better way of comparing these.
+	// TODO(https://github.com/googleapis/librarian/issues/546): find a better way of comparing these.
 	if baseHeadLibrary.String() != baselineLibrary.String() {
 		return &SuspectRelease{LibraryID: release.LibraryID, Reason: "Pipeline state has changed between baseline and head"}
 	}
