@@ -46,7 +46,7 @@ type CommitMessage struct {
 //
 // Currently, ignores any line of the message which does not contain a conventional
 // commit.
-func ParseCommit(commit gitrepo.Commit) *CommitMessage {
+func ParseCommit(commit *gitrepo.Commit) *CommitMessage {
 	const PiperPrefix = "PiperOrigin-RevId: "
 	const SourceLinkPrefix = "SourceLink: "
 	const TriggerReleasePrefix = "TriggerRelease: "
@@ -65,9 +65,9 @@ func ParseCommit(commit gitrepo.Commit) *CommitMessage {
 	for _, line := range messageLines {
 		// Handle any known prefixes that we just want to keep in a simple way.
 		if maybeAppendString(line, PiperPrefix, &piperOrigins) ||
-			maybeAppendString(line, SourceLinkPrefix, &sourceLinks) ||
-			maybeAppendString(line, TriggerReleasePrefix, &triggerLibraries) ||
-			maybeAppendString(line, NoTriggerReleasePrefix, &noTriggerLibraries) {
+				maybeAppendString(line, SourceLinkPrefix, &sourceLinks) ||
+				maybeAppendString(line, TriggerReleasePrefix, &triggerLibraries) ||
+				maybeAppendString(line, NoTriggerReleasePrefix, &noTriggerLibraries) {
 			continue
 		}
 

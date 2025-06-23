@@ -280,7 +280,7 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	return nil
 }
 
-func createCommitMessage(libraryID string, commits []gitrepo.Commit) string {
+func createCommitMessage(libraryID string, commits []*gitrepo.Commit) string {
 	const PiperPrefix = "PiperOrigin-RevId: "
 	var builder strings.Builder
 

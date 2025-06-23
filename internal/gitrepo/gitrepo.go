@@ -252,11 +252,11 @@ func (r *Repository) PrintStatus() error {
 //
 // If sinceCommit is not provided, all commits are searched; otherwise, if no
 // commit matching sinceCommit is found, an error is returned.
-func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]Commit, error) {
+func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
-	commits := []Commit{}
+	commits := []*Commit{}
 	finalHash := plumbing.NewHash(sinceCommit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
 	logIterator, err := r.repo.Log(&logOptions)
@@ -299,7 +299,7 @@ func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit s
 			// add it to our list of commits and proceed to the next commit.
 			if currentPathHash != parentPathHash {
 
-				commits = append(commits, Commit{
+				commits = append(commits, &Commit{
 					Hash:    commit.Hash,
 					Message: commit.Message,
 				})
@@ -339,7 +339,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 // files in path.
 //
 // If tagName is empty, all commits for the given paths are returned.
-func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]Commit, error) {
+func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error) {
 	var hash string
 	if tagName == "" {
 		hash = ""
