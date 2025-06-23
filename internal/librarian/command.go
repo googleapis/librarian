@@ -147,8 +147,8 @@ func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRo
 	return state, nil
 }
 
-func appendResultEnvironmentVariable(workRoot, name, value string) error {
-	envFile := flagEnvFile
+func appendResultEnvironmentVariable(workRoot, name, value, envFileOverride string) error {
+	envFile := envFileOverride
 	if envFile == "" {
 		envFile = filepath.Join(workRoot, "env-vars.txt")
 	}

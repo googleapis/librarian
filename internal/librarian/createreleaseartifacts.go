@@ -84,7 +84,8 @@ func init() {
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+		os.Getenv(defaultRepositoryEnvironmentVariable), cfg.SecretsProject)
 	if err != nil {
 		return err
 	}
