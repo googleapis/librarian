@@ -109,6 +109,18 @@ func TestGovulncheck(t *testing.T) {
 	rungo(t, "run", "golang.org/x/vuln/cmd/govulncheck@latest", "./...")
 }
 
+func rungo(t *testing.T, args ...string) {
+	t.Helper()
+
+	cmd := exec.Command("go", args...)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) && len(ee.Stderr) > 0 {
+			t.Fatalf("%v: %v\n%s", cmd, err, ee.Stderr)
+		}
+		t.Fatalf("%v: %v\n%s", cmd, err, output)
+	}
+}
+
 func TestExportedSymbolsHaveDocs(t *testing.T) {
 	// TODO(https://github.com/googleapis/librarian/issues/522): turn on once
 	// all existing symbols have docs.
@@ -126,46 +138,23 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 			return nil
 		}
 
+		// Visit every top-level declaration in the file.
 		for _, decl := range node.Decls {
 			gen, ok := decl.(*ast.GenDecl)
 			if ok && (gen.Tok == token.TYPE || gen.Tok == token.CONST || gen.Tok == token.VAR) {
 				for _, spec := range gen.Specs {
 					switch s := spec.(type) {
 					case *ast.TypeSpec:
-						if s.Name.IsExported() {
-							if gen.Doc == nil {
-								t.Errorf("%s: exported type %q is missing doc comment",
-									path, s.Name.Name)
-							} else if !startsWithName(gen.Doc.Text(), s.Name.Name) {
-								t.Errorf("%s: doc comment for exported type %q should start with the name",
-									path, s.Name.Name)
-							}
-						}
+						checkDoc(t, s.Name, s.Doc, path)
 					case *ast.ValueSpec:
 						for _, name := range s.Names {
-							if name.IsExported() {
-								if gen.Doc == nil {
-									t.Errorf("%s: exported %s %q is missing doc comment",
-										path, strings.ToLower(gen.Tok.String()), name.Name)
-								} else if !startsWithName(gen.Doc.Text(), name.Name) {
-									t.Errorf("%s: doc comment for exported %s %q should start with the name",
-										path, strings.ToLower(gen.Tok.String()), name.Name)
-								}
-							}
+							checkDoc(t, name, gen.Doc, path)
 						}
 					}
 				}
 			}
 			if fn, ok := decl.(*ast.FuncDecl); ok {
-				if fn.Name.IsExported() {
-					if fn.Doc == nil {
-						t.Errorf("%s: exported func %q is missing doc comment",
-							path, fn.Name.Name)
-					} else if !startsWithName(fn.Doc.Text(), fn.Name.Name) {
-						t.Errorf("%s: doc comment for exported func %q should start with the name",
-							path, fn.Name.Name)
-					}
-				}
+				checkDoc(t, fn.Name, fn.Doc, path)
 			}
 		}
 		return nil
@@ -175,22 +164,13 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	}
 }
 
-func startsWithName(comment, name string) bool {
-	words := strings.Fields(comment)
-	if len(words) == 0 {
-		return false
-	}
-	return words[0] == name
-}
-
-func rungo(t *testing.T, args ...string) {
+func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string) {
 	t.Helper()
-
-	cmd := exec.Command("go", args...)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) && len(ee.Stderr) > 0 {
-			t.Fatalf("%v: %v\n%s", cmd, err, ee.Stderr)
-		}
-		t.Fatalf("%v: %v\n%s", cmd, err, output)
+	if !name.IsExported() {
+		return
+	}
+	if doc == nil {
+		t.Errorf("%s: %q is missing doc comment",
+			path, name.Name)
 	}
 }
