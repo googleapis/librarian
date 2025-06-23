@@ -70,7 +70,9 @@ func TestLookup(t *testing.T) {
 		{"baz", true}, // not found case
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cmd, err := Lookup(test.name, commands)
+			cmd := &Command{}
+			cmd.Commands = commands
+			sub, err := cmd.Lookup(test.name)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal(err)
@@ -81,8 +83,8 @@ func TestLookup(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if cmd.Name() != test.name {
-				t.Errorf("got = %q, want = %q", cmd.Name(), test.name)
+			if sub.Name() != test.name {
+				t.Errorf("got = %q, want = %q", sub.Name(), test.name)
 			}
 		})
 	}
@@ -145,7 +147,7 @@ Usage:
 				Usage: "test [flags]",
 				Long:  "Test prints test information.",
 			}
-			initFlags(c)
+			c.InitFlags()
 			c.SetFlags(test.flags)
 
 			var buf bytes.Buffer

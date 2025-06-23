@@ -20,7 +20,7 @@ import (
 )
 
 func TestCommandUsage(t *testing.T) {
-	for _, c := range librarianCommands {
+	for _, c := range CmdLibrarian.Commands {
 		t.Run(c.Name(), func(t *testing.T) {
 			parts := strings.Fields(c.Usage)
 			// The first word should always be "librarian".

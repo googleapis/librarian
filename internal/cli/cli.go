@@ -36,9 +36,17 @@ type Command struct {
 	// Run executes the command.
 	Run func(ctx context.Context) error
 
+	// Commands are the sub commands.
+	Commands []*Command
+
 	// flags is the command's flag set for parsing arguments and generating
 	// usage messages. This is populated for each command in init().
 	flags *flag.FlagSet
+}
+
+// Help prints the help text.
+func (c *Command) Help() {
+	c.flags.Usage()
 }
 
 // Parse parses the provided command-line arguments using the command's flag
@@ -62,8 +70,8 @@ func (c *Command) Name() string {
 
 // Lookup finds a command by its name, and returns an error if the command is
 // not found.
-func Lookup(name string, commands []*Command) (*Command, error) {
-	for _, sub := range commands {
+func (c *Command) Lookup(name string) (*Command, error) {
+	for _, sub := range c.Commands {
 		if sub.Name() == name {
 			return sub, nil
 		}
@@ -73,7 +81,7 @@ func Lookup(name string, commands []*Command) (*Command, error) {
 
 // SetFlags registers a list of functions that configure flags for the command.
 func (c *Command) SetFlags(flagFunctions []func(fs *flag.FlagSet)) {
-	initFlags(c)
+	c.InitFlags()
 	for _, fn := range flagFunctions {
 		fn(c.flags)
 	}
@@ -86,6 +94,14 @@ func (c *Command) usage(w io.Writer) {
 
 	fmt.Fprintf(w, "%s\n\n", c.Long)
 	fmt.Fprintf(w, "Usage:\n  %s", c.Usage)
+	if len(c.Commands) > 0 {
+		fmt.Fprint(w, "\n\nCommands:\n")
+		for _, c := range c.Commands {
+			parts := strings.Fields(c.Short)
+			short := strings.Join(parts[1:], " ")
+			fmt.Fprintf(w, "\n  %-25s  %s", c.Name(), short)
+		}
+	}
 	if hasFlags(c.flags) {
 		fmt.Fprint(w, "\n\nFlags:\n")
 	}
@@ -94,7 +110,7 @@ func (c *Command) usage(w io.Writer) {
 	fmt.Fprintf(w, "\n\n")
 }
 
-func initFlags(c *Command) *Command {
+func (c *Command) InitFlags() *Command {
 	c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.flags.Usage = func() {
 		c.usage(c.flags.Output())

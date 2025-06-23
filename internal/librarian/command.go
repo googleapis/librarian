@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
@@ -249,18 +248,6 @@ func commitAll(repo *gitrepo.Repository, msg string) error {
 func logPartialError(id string, err error, action string) string {
 	slog.Warn(fmt.Sprintf("Error while %s %s: %s", action, id, err))
 	return fmt.Sprintf("Error while %s %s", action, id)
-}
-
-var librarianCommands = []*cli.Command{
-	CmdConfigure,
-	CmdGenerate,
-	CmdUpdateApis,
-	CmdCreateReleasePR,
-	CmdUpdateImageTag,
-	CmdMergeReleasePR,
-	CmdCreateReleaseArtifacts,
-	CmdPublishReleaseArtifacts,
-	CmdVersion,
 }
 
 func formatReleaseTag(libraryID, version string) string {
