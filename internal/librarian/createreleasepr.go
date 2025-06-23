@@ -310,11 +310,9 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 // TODO(https://github.com/googleapis/librarian/issues/564): decide on release notes ordering
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	// Group release notes by type, preserving ordering (FIFO)
-	features := []string{}
+	var features, docs, fixes []string
 	featuresSeen := make(map[string]bool)
-	docs := []string{}
 	docsSeen := make(map[string]bool)
-	fixes := []string{}
 	fixesSeen := make(map[string]bool)
 
 	// TODO(https://github.com/googleapis/librarian/issues/547): perhaps record breaking changes in a separate section
