@@ -63,9 +63,9 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 		repoDir, _ := os.MkdirTemp(dir, "test-repo-*")
 		localRepo, _ := git.PlainInit(repoDir, false)
 		worktree, _ := localRepo.Worktree()
-		firstCommit, _ := worktree.Commit("empty commit", &git.CommitOptions{
-			AllowEmptyCommits: true,
-		})
+		_, _ = os.Create(strings.Join([]string{repoDir, "test.txt"}, "/"))
+		_, _ = worktree.Add("test.txt")
+		firstCommit, _ := worktree.Commit("empty commit", &git.CommitOptions{})
 		parent := firstCommit
 		for i := 0; i < len(test.filePaths); i++ {
 			absFilePath := strings.Join([]string{repoDir, test.filePaths[i]}, "/")
