@@ -19,10 +19,8 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"maps"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -309,30 +307,44 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 	return pr, nil
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/564): decide on release notes ordering
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
-	features := make(map[string]bool)
-	docs := make(map[string]bool)
-	fixes := make(map[string]bool)
+	// Group release notes by type, preserving ordering (FIFO)
+	features := []string{}
+	featuresSeen := make(map[string]bool)
+	docs := []string{}
+	docsSeen := make(map[string]bool)
+	fixes := []string{}
+	fixesSeen := make(map[string]bool)
 
 	// TODO(https://github.com/googleapis/librarian/issues/547): perhaps record breaking changes in a separate section
 	// TODO(https://github.com/googleapis/librarian/issues/550): include backlinks, googleapis commits etc
 	for _, commitMessage := range commitMessages {
 		for _, feature := range commitMessage.Features {
-			features[feature] = true
+			if !featuresSeen[feature] {
+				featuresSeen[feature] = true
+				features = append(features, feature)
+			}
 		}
 		for _, doc := range commitMessage.Docs {
-			docs[doc] = true
+			if !docsSeen[doc] {
+				docsSeen[doc] = true
+				docs = append(docs, doc)
+			}
 		}
 		for _, fix := range commitMessage.Fixes {
-			fixes[fix] = true
+			if !fixesSeen[fix] {
+				fixesSeen[fix] = true
+				fixes = append(fixes, fix)
+			}
 		}
 	}
 
 	var builder strings.Builder
 
-	maybeAppendReleaseNotesSection(&builder, "New features", slices.Collect(maps.Keys(features)))
-	maybeAppendReleaseNotesSection(&builder, "Bug fixes", slices.Collect(maps.Keys(fixes)))
-	maybeAppendReleaseNotesSection(&builder, "Documentation improvements", slices.Collect(maps.Keys(docs)))
+	maybeAppendReleaseNotesSection(&builder, "New features", features)
+	maybeAppendReleaseNotesSection(&builder, "Bug fixes", fixes)
+	maybeAppendReleaseNotesSection(&builder, "Documentation improvements", docs)
 
 	if builder.Len() == 0 {
 		builder.WriteString("FIXME: Forced release with no commit messages; please write release notes.\n\n")

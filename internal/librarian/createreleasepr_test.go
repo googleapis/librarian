@@ -119,6 +119,18 @@ func TestFormatReleaseNotes(t *testing.T) {
 			},
 			"### Bug fixes\n\n- Bugfix A\n\n",
 		},
+		{
+			"Sequential Sorting",
+			[]*CommitMessage{
+				{
+					Fixes: []string{"Bugfix B"},
+				},
+				{
+					Fixes: []string{"Bugfix A"},
+				},
+			},
+			"### Bug fixes\n\n- Bugfix B\n- Bugfix A\n\n",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := formatReleaseNotes(test.commits)
