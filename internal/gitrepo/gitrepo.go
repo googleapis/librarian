@@ -43,6 +43,13 @@ type Repository struct {
 	repo *git.Repository
 }
 
+// Commit represents a git commit.
+type Commit struct {
+	Hash    plumbing.Hash
+	Message string
+	commit  *object.Commit
+}
+
 // RepositoryOptions are used to configure a [Repository].
 type RepositoryOptions struct {
 	// Dir is the directory where the repository will reside locally. Required.
