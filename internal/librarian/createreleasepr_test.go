@@ -78,68 +78,53 @@ func TestCalculateNextVersion(t *testing.T) {
 }
 
 func TestFormatReleaseNotes(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name    string
 		commits []*CommitMessage
 		want    string
 	}{
 		{
-			name: "Basic",
-			commits: []*CommitMessage{
+			"Basic",
+			[]*CommitMessage{
 				{
 					Features: []string{"feature A"},
 				},
 			},
-			want: `### New features
-
-- Feature A
-
-`,
+			"### New features\n\n- Feature A\n\n",
 		},
 		{
-			name: "Duplicated Feature",
-			commits: []*CommitMessage{
+			"Duplicated Feature",
+			[]*CommitMessage{
 				{
 					Features: []string{"feature A", "feature A"},
 				},
 			},
-			want: `### New features
-
-- Feature A
-
-`,
+			"### New features\n\n- Feature A\n\n",
 		},
 		{
-			name: "Duplicated Docs",
-			commits: []*CommitMessage{
+			"Duplicated Docs",
+			[]*CommitMessage{
 				{
 					Docs: []string{"Doc A", "Doc A"},
 				},
 			},
-			want: `### Documentation improvements
-
-- Doc A
-
-`,
+			"### Documentation improvements\n\n- Doc A\n\n",
 		},
 		{
-			name: "Duplicated Bugs",
-			commits: []*CommitMessage{
+			"Duplicated Bugs",
+			[]*CommitMessage{
 				{
 					Fixes: []string{"Bugfix A", "Bugfix A"},
 				},
 			},
-			want: `### Bug fixes
-
-- Bugfix A
-
-`,
+			"### Bug fixes\n\n- Bugfix A\n\n",
 		},
-	}
-	for _, test := range tests {
-		got := formatReleaseNotes(test.commits)
-		if diff := cmp.Diff(test.want, got); diff != "" {
-			t.Errorf("[%s] mismatch (-want +got):\n%s", test.name, diff)
-		}
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatReleaseNotes(test.commits)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
