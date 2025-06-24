@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/googleapis/librarian/internal/constants"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -143,13 +144,13 @@ func copyMetadataFiles(state *commandState, outputRoot string, releases []Librar
 	if err := languageRepo.Checkout(finalRelease.CommitHash); err != nil {
 		return err
 	}
-	sourceStateFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineStateFile)
+	sourceStateFile := filepath.Join(languageRepo.Dir, constants.GeneratorInputDir, pipelineStateFile)
 	destStateFile := filepath.Join(outputRoot, pipelineStateFile)
 	if err := copyFile(sourceStateFile, destStateFile); err != nil {
 		return err
 	}
 
-	sourceConfigFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineConfigFile)
+	sourceConfigFile := filepath.Join(languageRepo.Dir, constants.GeneratorInputDir, pipelineConfigFile)
 	destConfigFile := filepath.Join(outputRoot, pipelineConfigFile)
 	if err := copyFile(sourceConfigFile, destConfigFile); err != nil {
 		return err

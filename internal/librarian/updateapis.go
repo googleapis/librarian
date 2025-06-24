@@ -18,6 +18,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/googleapis/librarian/internal/constants"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -147,7 +148,7 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
 	// Root for generator-input defensive copies
-	if err := os.Mkdir(filepath.Join(state.workRoot, "generator-input"), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(state.workRoot, constants.GeneratorInputDir), 0755); err != nil {
 		return err
 	}
 
@@ -210,8 +211,8 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	// This needs to be done per library, as the previous iteration may have updated generator-input in a meaningful way.
 	// We could potentially just keep a single copy and update it, but it's clearer diagnostically if we can tell
 	// what state we passed into the container.
-	generatorInput := filepath.Join(state.workRoot, "generator-input", library.Id)
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, "generator-input"))); err != nil {
+	generatorInput := filepath.Join(state.workRoot, constants.GeneratorInputDir, library.Id)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, constants.GeneratorInputDir))); err != nil {
 		return err
 	}
 
