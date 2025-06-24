@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/githubrepo"
 
 	"github.com/Masterminds/semver/v3"
@@ -121,7 +122,7 @@ func init() {
 	})
 }
 
-func runCreateReleasePR(ctx context.Context) error {
+func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
 	state, err := createCommandStateForLanguage(ctx)
 	if err != nil {
 		return err

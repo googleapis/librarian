@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -87,7 +88,7 @@ func init() {
 	})
 }
 
-func runUpdateImageTag(ctx context.Context) error {
+func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
 	state, err := createCommandStateForLanguage(ctx)
 	if err != nil {
 		return err

@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -108,7 +109,7 @@ func init() {
 	})
 }
 
-func runMergeReleasePR(ctx context.Context) error {
+func runMergeReleasePR(ctx context.Context, cfg *config.Config) error {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime)
 	if err != nil {

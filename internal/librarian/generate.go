@@ -70,15 +70,13 @@ There is no "clean" operation or copying of the generated code in raw generation
 other source code to be preserved/cleaned. Instead, the "build-raw" command is provided with the same
 output directory that was specified for the "generate-raw" command.
 `,
-	Run: func(ctx context.Context) error {
+	Run: func(ctx context.Context, cfg *config.Config) error {
 		if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
 			return err
 		}
 		if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
 			return err
 		}
-		cfg := config.New()
-		applyFlags(cfg)
 		return runGenerate(ctx, cfg)
 	},
 }

@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
 // Command represents a single command that can be executed by the application.
@@ -34,7 +36,7 @@ type Command struct {
 	Long string
 
 	// Run executes the command.
-	Run func(ctx context.Context) error
+	Run func(ctx context.Context, cfg *config.Config) error
 
 	// flags is the command's flag set for parsing arguments and generating
 	// usage messages. This is populated for each command in init().

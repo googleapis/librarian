@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/githubrepo"
 )
@@ -70,7 +71,7 @@ func init() {
 	})
 }
 
-func runPublishReleaseArtifacts(ctx context.Context) error {
+func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 	if err := validateRequiredFlag("artifact-root", flagArtifactRoot); err != nil {
 		return err
 	}

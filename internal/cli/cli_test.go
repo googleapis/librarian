@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestParseAndSetFlags(t *testing.T) {
@@ -92,13 +93,14 @@ func TestRun(t *testing.T) {
 	executed := false
 	cmd := &Command{
 		Short: "run runs the command",
-		Run: func(ctx context.Context) error {
+		Run: func(ctx context.Context, cfg *config.Config) error {
 			executed = true
 			return nil
 		},
 	}
 
-	if err := cmd.Run(context.Background()); err != nil {
+	cfg := &config.Config{}
+	if err := cmd.Run(context.Background(), cfg); err != nil {
 		t.Fatal(err)
 	}
 	if !executed {

@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func Run(ctx context.Context, arg ...string) error {
@@ -33,7 +34,10 @@ func Run(ctx context.Context, arg ...string) error {
 		return err
 	}
 	slog.Info("librarian", "arguments", arg)
-	return cmd.Run(ctx)
+
+	cfg := config.New()
+	applyFlags(cfg)
+	return cmd.Run(ctx, cfg)
 }
 
 func parseArgs(args []string) (*cli.Command, error) {

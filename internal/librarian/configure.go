@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/statepb"
 	"gopkg.in/yaml.v3"
 )
@@ -98,7 +99,7 @@ func init() {
 	})
 }
 
-func runConfigure(ctx context.Context) error {
+func runConfigure(ctx context.Context, cfg *config.Config) error {
 	state, err := createCommandStateForLanguage(ctx)
 	if err != nil {
 		return err

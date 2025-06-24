@@ -25,6 +25,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -100,7 +101,7 @@ func init() {
 	})
 }
 
-func runUpdateAPIs(ctx context.Context) error {
+func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
 	state, err := createCommandStateForLanguage(ctx)
 	if err != nil {
 		return err
