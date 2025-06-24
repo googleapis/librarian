@@ -90,7 +90,7 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 	image := deriveImage(flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime, flagWorkRoot)
+	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
 	if err != nil {
 		return err
 	}
