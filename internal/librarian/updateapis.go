@@ -155,7 +155,7 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 	prContent := new(PullRequestContent)
 	// Perform "generate, clean, commit, build" on each library.
 	for _, library := range state.pipelineState.Libraries {
-		err := updateLibrary(state, apiRepo, outputDir, library, prContent, cfg.LibraryID)
+		err := updateLibrary(state, apiRepo, outputDir, library, prContent, cfg.LibraryID, cfg.GitUserName, cfg.GitUserEmail)
 		if err != nil {
 			return err
 		}
@@ -169,7 +169,8 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 	return err
 }
 
-func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent, libraryID string) error {
+func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState,
+	prContent *PullRequestContent, libraryID, gitUserName, gitUserEmail string) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
@@ -251,7 +252,7 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 		msg = createCommitMessage(library.Id, commits)
 	}
 	if err := commitAll(languageRepo, msg,
-		flagGitUserName, flagGitUserEmail); err != nil {
+		gitUserName, gitUserEmail); err != nil {
 		return err
 	}
 

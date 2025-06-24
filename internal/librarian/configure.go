@@ -139,7 +139,7 @@ func executeConfigure(state *commandState, cfg *config.Config) error {
 
 	prContent := PullRequestContent{}
 	for _, apiPath := range apiPaths {
-		err = configureApi(state, outputRoot, apiRoot, apiPath, &prContent)
+		err = configureApi(state, outputRoot, apiRoot, apiPath, cfg.GitUserName, cfg.GitUserEmail, &prContent)
 		if err != nil {
 			return err
 		}
@@ -270,7 +270,7 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 //
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
-func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
+func configureApi(state *commandState, outputRoot, apiRoot, apiPath, gitUserName, gitUserEmail string, prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
@@ -302,7 +302,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 		// If it's newly-ignored, just commit the state change. This is still a "success" case.
 		if slices.Contains(ps.IgnoredApiPaths, apiPath) {
 			msg := fmt.Sprintf("feat: Added ignore entry for API %s", apiPath)
-			if err := commitAll(languageRepo, msg, flagGitUserName, flagGitUserEmail); err != nil {
+			if err := commitAll(languageRepo, msg, gitUserName, gitUserEmail); err != nil {
 				return err
 			}
 			addSuccessToPullRequest(prContent, fmt.Sprintf("Ignored API %s", apiPath))
@@ -316,7 +316,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 	}
 
 	msg := fmt.Sprintf("feat: Configured library %s for API %s", libraryID, apiPath)
-	if err := commitAll(languageRepo, msg, flagGitUserName, flagGitUserEmail); err != nil {
+	if err := commitAll(languageRepo, msg, gitUserName, gitUserEmail); err != nil {
 		return err
 	}
 
