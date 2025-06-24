@@ -127,7 +127,8 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	t.Skip()
 
 	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
+			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
 			return nil
 		}
 
