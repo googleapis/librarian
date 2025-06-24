@@ -81,7 +81,7 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	config, err := loadPipelineConfigFile(filepath.Join(flagArtifactRoot, pipelineConfigFile))
+	pipelineConfig, err := loadPipelineConfigFile(filepath.Join(flagArtifactRoot, pipelineConfigFile))
 	if err != nil {
 		return err
 	}
@@ -93,19 +93,19 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	containerConfig, err := docker.New(ctx, workRoot, image, flagSecretsProject, config)
+	containerConfig, err := docker.New(ctx, workRoot, image, cfg.SecretsProject, pipelineConfig)
 	if err != nil {
 		return err
 	}
-	return publishReleaseArtifacts(ctx, containerConfig)
+	return publishReleaseArtifacts(ctx, containerConfig, cfg.ArtifactRoot, cfg.TagRepoURL, cfg.GitHubToken)
 }
 
-func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker) error {
-	if err := validateRequiredFlag("tag-repo-url", flagTagRepoUrl); err != nil {
+func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker, artifactRoot, tagRepoURL, gitHubToken string) error {
+	if err := validateRequiredFlag("tag-repo-url", tagRepoURL); err != nil {
 		return err
 	}
 
-	releasesJson, err := readAllBytesFromFile(filepath.Join(flagArtifactRoot, "releases.json"))
+	releasesJson, err := readAllBytesFromFile(filepath.Join(artifactRoot, "releases.json"))
 	if err != nil {
 		return err
 	}
@@ -120,16 +120,16 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 
 	// Load the pipeline config from the commit of the first release, using the tag repo, then
 	// update our context to use it for the container config.
-	gitHubRepo, err := githubrepo.ParseUrl(flagTagRepoUrl)
+	gitHubRepo, err := githubrepo.ParseUrl(tagRepoURL)
 	if err != nil {
 		return err
 	}
 	slog.Info(fmt.Sprintf("Publishing packages for %d libraries", len(releases)))
 
-	if err := publishPackages(containerConfig, flagArtifactRoot, releases); err != nil {
+	if err := publishPackages(containerConfig, artifactRoot, releases); err != nil {
 		return err
 	}
-	if err := createRepoReleases(ctx, releases, gitHubRepo); err != nil {
+	if err := createRepoReleases(ctx, releases, gitHubRepo, gitHubToken); err != nil {
 		return err
 	}
 	slog.Info("Release complete.")
@@ -148,8 +148,8 @@ func publishPackages(config *docker.Docker, outputRoot string, releases []Librar
 	return nil
 }
 
-func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *githubrepo.Repository) error {
-	ghClient, err := githubrepo.NewClient()
+func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *githubrepo.Repository, gitHubToken string) error {
+	ghClient, err := githubrepo.NewClient(gitHubToken)
 	if err != nil {
 		return err
 	}

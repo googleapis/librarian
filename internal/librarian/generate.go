@@ -96,7 +96,7 @@ func init() {
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config) error {
-	libraryConfigured, err := detectIfLibraryConfigured(cfg.APIPath, cfg.RepoURL, cfg.RepoRoot)
+	libraryConfigured, err := detectIfLibraryConfigured(cfg.APIPath, cfg.RepoURL, cfg.RepoRoot, cfg.GitHubToken)
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string)
 // pipeline state if repoRoot has been specified, or the remote pipeline state (just
 // by fetching the single file) if flatRepoUrl has been specified. If neither the repo
 // root not the repo url has been specified, we always perform raw generation.
-func detectIfLibraryConfigured(apiPath, repoURL, repoRoot string) (bool, error) {
+func detectIfLibraryConfigured(apiPath, repoURL, repoRoot, gitHubToken string) (bool, error) {
 	if repoURL == "" && repoRoot == "" {
 		slog.Warn("repo url and root are not specified, cannot check if library exists")
 		return false, nil
@@ -234,7 +234,7 @@ func detectIfLibraryConfigured(apiPath, repoURL, repoRoot string) (bool, error) 
 			slog.Warn("failed to parse", "repo url:", repoURL, "error", err)
 			return false, err
 		}
-		pipelineState, err = fetchRemotePipelineState(context.Background(), languageRepoMetadata, "HEAD")
+		pipelineState, err = fetchRemotePipelineState(context.Background(), languageRepoMetadata, "HEAD", gitHubToken)
 		if err != nil {
 			return false, err
 		}

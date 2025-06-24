@@ -93,26 +93,23 @@ func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return updateImageTag(state)
+	return updateImageTag(state, cfg)
 }
 
-func updateImageTag(state *commandState) error {
-	if err := validatePush(); err != nil {
-		return err
-	}
-	if err := validateRequiredFlag("tag", flagTag); err != nil {
+func updateImageTag(state *commandState, cfg *config.Config) error {
+	if err := validateRequiredFlag("tag", cfg.Tag); err != nil {
 		return err
 	}
 
 	var apiRepo *gitrepo.Repository
-	if flagAPIRoot == "" {
+	if cfg.APIRoot == "" {
 		var err error
 		apiRepo, err = cloneGoogleapis(state.workRoot)
 		if err != nil {
 			return err
 		}
 	} else {
-		apiRoot, err := filepath.Abs(flagAPIRoot)
+		apiRoot, err := filepath.Abs(cfg.APIRoot)
 		slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
 		if err != nil {
 			slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
@@ -142,11 +139,11 @@ func updateImageTag(state *commandState) error {
 	ps := state.pipelineState
 	languageRepo := state.languageRepo
 
-	if ps.ImageTag == flagTag {
+	if ps.ImageTag == cfg.Tag {
 		return errors.New("specified tag is already in language repo state")
 	}
 	// Derive the new image to use, and save it in the context.
-	ps.ImageTag = flagTag
+	ps.ImageTag = cfg.Tag
 	state.containerConfig.Image = deriveImage(ps)
 	savePipelineState(state)
 
@@ -180,7 +177,7 @@ func updateImageTag(state *commandState) error {
 	// can massage it into a similar state.
 	prContent := new(PullRequestContent)
 	addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
-	_, err := createPullRequest(state, prContent, "chore: update generation image tag", "", "update-image-tag")
+	_, err := createPullRequest(state, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push)
 	return err
 }
 

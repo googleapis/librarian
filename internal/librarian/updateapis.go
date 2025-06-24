@@ -106,24 +106,20 @@ func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return updateAPIs(state)
+	return updateAPIs(state, cfg)
 }
 
-func updateAPIs(state *commandState) error {
-	if err := validatePush(); err != nil {
-		return err
-	}
-
+func updateAPIs(state *commandState, cfg *config.Config) error {
 	var apiRepo *gitrepo.Repository
 	cleanWorkingTreePostGeneration := true
-	if flagAPIRoot == "" {
+	if cfg.APIRoot == "" {
 		var err error
 		apiRepo, err = cloneGoogleapis(state.workRoot)
 		if err != nil {
 			return err
 		}
 	} else {
-		apiRoot, err := filepath.Abs(flagAPIRoot)
+		apiRoot, err := filepath.Abs(cfg.APIRoot)
 		slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
 		if err != nil {
 			slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
@@ -159,7 +155,7 @@ func updateAPIs(state *commandState) error {
 	prContent := new(PullRequestContent)
 	// Perform "generate, clean, commit, build" on each library.
 	for _, library := range state.pipelineState.Libraries {
-		err := updateLibrary(state, apiRepo, outputDir, library, prContent)
+		err := updateLibrary(state, apiRepo, outputDir, library, prContent, cfg.LibraryID)
 		if err != nil {
 			return err
 		}
@@ -169,16 +165,16 @@ func updateAPIs(state *commandState) error {
 	if cleanWorkingTreePostGeneration {
 		apiRepo.CleanWorkingTree()
 	}
-	_, err := createPullRequest(state, prContent, "feat: API regeneration", "", "regen")
+	_, err := createPullRequest(state, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push)
 	return err
 }
 
-func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
+func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent, libraryID string) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
-	if flagLibraryID != "" && flagLibraryID != library.Id {
-		// If flagLibraryID has been passed in, we only act on that library.
+	if libraryID != "" && libraryID != library.Id {
+		// If LibraryID has been passed in, we only act on that library.
 		return nil
 	}
 

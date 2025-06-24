@@ -104,13 +104,10 @@ func runConfigure(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return executeConfigure(state)
+	return executeConfigure(state, cfg)
 }
 
-func executeConfigure(state *commandState) error {
-	if err := validatePush(); err != nil {
-		return err
-	}
+func executeConfigure(state *commandState, cfg *config.Config) error {
 
 	outputRoot := filepath.Join(state.workRoot, "output")
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
@@ -119,7 +116,7 @@ func executeConfigure(state *commandState) error {
 	slog.Info(fmt.Sprintf("Code will be generated in %s", outputRoot))
 
 	var apiRoot string
-	if flagAPIRoot == "" {
+	if cfg.APIRoot == "" {
 		repo, err := cloneGoogleapis(state.workRoot)
 		if err != nil {
 			return err
@@ -128,13 +125,13 @@ func executeConfigure(state *commandState) error {
 	} else {
 		// We assume it's okay not to take a defensive copy of apiRoot in the configure command,
 		// as "vanilla" configuration/generation shouldn't need to edit any protos. (That's just an escape hatch.)
-		absRoot, err := filepath.Abs(flagAPIRoot)
+		absRoot, err := filepath.Abs(cfg.APIRoot)
 		if err != nil {
 			return err
 		}
 		apiRoot = absRoot
 	}
-	apiPaths, err := findApisToConfigure(apiRoot, state.pipelineState, flagLanguage)
+	apiPaths, err := findApisToConfigure(apiRoot, state.pipelineState, cfg.Language, cfg.APIPath)
 	if err != nil {
 		return err
 	}
@@ -147,17 +144,17 @@ func executeConfigure(state *commandState) error {
 		}
 	}
 
-	_, err = createPullRequest(state, &prContent, "feat: API configuration", "", "config")
+	_, err = createPullRequest(state, &prContent, "feat: API configuration", "", "config", cfg.GitHubToken, cfg.Push)
 	return err
 }
 
 // Returns a collection of APIs to configure, either from the api-path flag,
 // or by examining the service config YAML files to find APIs which have requested libraries,
 // but which aren't yet configured.
-func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language string) ([]string, error) {
+func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language string, apiPath string) ([]string, error) {
 	languageSettingsName := language + "_settings"
-	if flagAPIPath != "" {
-		return []string{flagAPIPath}, nil
+	if apiPath != "" {
+		return []string{apiPath}, nil
 	}
 	var apiPaths []string
 	err := filepath.WalkDir(apiRoot, func(path string, d fs.DirEntry, err error) error {

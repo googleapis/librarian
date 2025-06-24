@@ -127,23 +127,20 @@ func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return createReleasePR(state)
+	return createReleasePR(state, cfg)
 }
 
-func createReleasePR(state *commandState) error {
+func createReleasePR(state *commandState, cfg *config.Config) error {
 	if err := validateSkipIntegrationTests(); err != nil {
 		return err
 	}
-	if err := validatePush(); err != nil {
-		return err
-	}
 
-	if flagLibraryVersion != "" && flagLibraryID == "" {
+	if cfg.LibraryVersion != "" && cfg.LibraryID == "" {
 		return fmt.Errorf("flag -library-version is not valid without -library-id")
 	}
 
-	if flagLibraryID != "" && findLibraryByID(state.pipelineState, flagLibraryID) == nil {
-		return fmt.Errorf("no such library: %s", flagLibraryID)
+	if cfg.LibraryID != "" && findLibraryByID(state.pipelineState, cfg.LibraryID) == nil {
+		return fmt.Errorf("no such library: %s", cfg.LibraryID)
 	}
 
 	inputDirectory := filepath.Join(state.workRoot, "inputs")
@@ -167,12 +164,12 @@ func createReleasePR(state *commandState) error {
 		return err
 	}
 
-	prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID)
+	prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID, cfg.LibraryID, cfg.LibraryVersion, cfg.SkipIntegrationTests)
 	if err != nil {
 		return err
 	}
 
-	prMetadata, err := createPullRequest(state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release")
+	prMetadata, err := createPullRequest(state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release", cfg.GitHubToken, cfg.Push)
 	if err != nil {
 		return err
 	}
@@ -188,7 +185,7 @@ func createReleasePR(state *commandState) error {
 	// Final steps if we've actually created a release PR.
 	// - We always add the do-not-merge label so that Librarian can merge later.
 	// - Add a result environment variable with the PR number, for the next stage of the process.
-	ghClient, err := githubrepo.NewClient()
+	ghClient, err := githubrepo.NewClient(cfg.GitHubToken)
 	if err != nil {
 		return err
 	}
@@ -208,7 +205,7 @@ func createReleasePR(state *commandState) error {
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory string, releaseID string) (*PullRequestContent, error) {
+func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory string, releaseID string, libraryID, libraryVersion, skipIntegrationTests string) (*PullRequestContent, error) {
 	cc := state.containerConfig
 	libraries := state.pipelineState.Libraries
 	languageRepo := state.languageRepo
@@ -217,7 +214,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 
 	for _, library := range libraries {
 		// If we've specified a single library to release, skip all the others.
-		if flagLibraryID != "" && library.Id != flagLibraryID {
+		if libraryID != "" && library.Id != libraryID {
 			continue
 		}
 		if library.ReleaseAutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
@@ -244,11 +241,11 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 
 		// If nothing release-worthy has happened, just continue to the next library.
 		// (But if we've been asked to release a specific library, we force-release it anyway.)
-		if flagLibraryID == "" && (len(commitMessages) == 0 || !isReleaseWorthy(commitMessages, library.Id)) {
+		if libraryID == "" && (len(commitMessages) == 0 || !isReleaseWorthy(commitMessages, library.Id)) {
 			continue
 		}
 
-		releaseVersion, err := calculateNextVersion(library)
+		releaseVersion, err := calculateNextVersion(library, libraryVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -285,8 +282,8 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 			}
 			continue
 		}
-		if flagSkipIntegrationTests != "" {
-			slog.Info(fmt.Sprintf("Skipping integration tests: %s", flagSkipIntegrationTests))
+		if skipIntegrationTests != "" {
+			slog.Info(fmt.Sprintf("Skipping integration tests: %s", skipIntegrationTests))
 		} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "integration testing library")
 			if err := languageRepo.CleanWorkingTree(); err != nil {
@@ -355,9 +352,9 @@ func maybeAppendReleaseNotesSection(builder *strings.Builder, description string
 	builder.WriteString("\n")
 }
 
-func calculateNextVersion(library *statepb.LibraryState) (string, error) {
-	if flagLibraryVersion != "" {
-		return flagLibraryVersion, nil
+func calculateNextVersion(library *statepb.LibraryState, libraryVersion string) (string, error) {
+	if libraryVersion != "" {
+		return libraryVersion, nil
 	}
 	if library.NextVersion != "" {
 		return library.NextVersion, nil
