@@ -180,7 +180,7 @@ func applyFlags(cfg *config.Config) {
 	cfg.BaselineCommit = flagBaselineCommit
 	cfg.Branch = flagBranch
 	cfg.Build = flagBuild
-	cfg.Ci = flagCi
+	cfg.CI = flagCi
 	cfg.EnvFile = flagEnvFile
 	cfg.GitUserEmail = flagGitUserEmail
 	cfg.GitUserName = flagGitUserName

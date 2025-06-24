@@ -60,7 +60,7 @@ type RepositoryOptions struct {
 	RemoteURL string
 	// CI identifies the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
-	Ci string
+	CI string
 }
 
 // NewRepository provides access to a git repository based on the provided options.
@@ -87,7 +87,7 @@ func NewRepository(opts *RepositoryOptions) (*Repository, error) {
 			return nil, fmt.Errorf("gitrepo: remote URL is required when cloning")
 		}
 		slog.Info("Repository not found, executing clone")
-		return clone(opts.Dir, opts.RemoteURL, opts.Ci)
+		return clone(opts.Dir, opts.RemoteURL, opts.CI)
 	}
 	return nil, fmt.Errorf("failed to check for repository at %q: %w", opts.Dir, err)
 }

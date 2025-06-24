@@ -79,7 +79,7 @@ type Config struct {
 
 	// CI identifies the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
-	Ci string
+	CI string
 
 	// EnvFile is the path to the file used to store environment variables, to
 	// propagate information from one step to another in a CI flow. The file

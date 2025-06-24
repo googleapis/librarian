@@ -77,7 +77,7 @@ func cloneOrOpenLanguageRepo(workRoot string, ci string) (*gitrepo.Repository, e
 			Dir:        repoPath,
 			MaybeClone: true,
 			RemoteURL:  flagRepoUrl,
-			Ci:         ci,
+			CI:         ci,
 		})
 	}
 	if flagRepoRoot == "" {
@@ -87,7 +87,7 @@ func cloneOrOpenLanguageRepo(workRoot string, ci string) (*gitrepo.Repository, e
 			Dir:        repoPath,
 			MaybeClone: true,
 			RemoteURL:  languageRepoURL,
-			Ci:         ci,
+			CI:         ci,
 		})
 	}
 	repoRoot, err := filepath.Abs(flagRepoRoot)
@@ -96,7 +96,7 @@ func cloneOrOpenLanguageRepo(workRoot string, ci string) (*gitrepo.Repository, e
 	}
 	languageRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 		Dir: repoRoot,
-		Ci:  ci,
+		CI:  ci,
 	})
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func createCommandStateForLanguage(ctx context.Context, cfg *config.Config) (*co
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot, cfg.Ci)
+	repo, err := cloneOrOpenLanguageRepo(workRoot, cfg.CI)
 	if err != nil {
 		return nil, err
 	}

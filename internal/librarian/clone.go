@@ -28,6 +28,6 @@ func cloneGoogleapis(workRoot string, ci string) (*gitrepo.Repository, error) {
 		Dir:        repoPath,
 		MaybeClone: true,
 		RemoteURL:  googleapisURL,
-		Ci:         ci,
+		CI:         ci,
 	})
 }

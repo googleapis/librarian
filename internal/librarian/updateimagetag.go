@@ -105,7 +105,7 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	var apiRepo *gitrepo.Repository
 	if cfg.APIRoot == "" {
 		var err error
-		apiRepo, err = cloneGoogleapis(state.workRoot, cfg.Ci)
+		apiRepo, err = cloneGoogleapis(state.workRoot, cfg.CI)
 		if err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 		}
 		apiRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir: apiRoot,
-			Ci:  cfg.Ci,
+			CI:  cfg.CI,
 		})
 		if err != nil {
 			return err

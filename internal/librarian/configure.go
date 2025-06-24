@@ -118,7 +118,7 @@ func executeConfigure(state *commandState, cfg *config.Config) error {
 
 	var apiRoot string
 	if cfg.APIRoot == "" {
-		repo, err := cloneGoogleapis(state.workRoot, cfg.Ci)
+		repo, err := cloneGoogleapis(state.workRoot, cfg.CI)
 		if err != nil {
 			return err
 		}

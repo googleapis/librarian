@@ -114,7 +114,7 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 	cleanWorkingTreePostGeneration := true
 	if cfg.APIRoot == "" {
 		var err error
-		apiRepo, err = cloneGoogleapis(state.workRoot, cfg.Ci)
+		apiRepo, err = cloneGoogleapis(state.workRoot, cfg.CI)
 		if err != nil {
 			return err
 		}
@@ -127,7 +127,7 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 		}
 		apiRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir: apiRoot,
-			Ci:  cfg.Ci,
+			CI:  cfg.CI,
 		})
 		if err != nil {
 			return err
