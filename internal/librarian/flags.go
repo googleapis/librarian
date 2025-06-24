@@ -79,7 +79,7 @@ func addFlagBuild(fs *flag.FlagSet) {
 }
 
 func addFlagCi(fs *flag.FlagSet) {
-	fs.StringVar(&flagCi, "ci", "", "Type of ci build")
+	fs.StringVar(&flagCi, "ci", "", "Identifies the type of Continuous Integration (CI) environment in which the tool is executing.")
 }
 
 func addFlagEnvFile(fs *flag.FlagSet) {

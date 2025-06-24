@@ -77,7 +77,8 @@ type Config struct {
 	// Build is specified with the -build flag.
 	Build bool
 
-	// Type of ci build
+	// Identifies the type of Continuous Integration (CI) environment in which
+	// the tool is executing.
 	Ci string
 
 	// EnvFile is the path to the file used to store environment variables, to

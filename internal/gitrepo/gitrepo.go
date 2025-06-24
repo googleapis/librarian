@@ -58,7 +58,8 @@ type RepositoryOptions struct {
 	MaybeClone bool
 	// RemoteURL is the URL of the remote repository to clone from. Required if Clone is not CloneOptionNone.
 	RemoteURL string
-	// Type of ci build
+	// Identifies the type of Continuous Integration (CI) environment in which
+	// the tool is executing.
 	Ci string
 }
 
