@@ -164,6 +164,17 @@ review them individually or just focus on the final result. (For example, if
 earlier commits are exploratory and only the end state matters, make that clear
 to avoid wasting reviewer time.)
 
+### Keeping pull requests up to date with base branch
+
+The repository is configured to not require branches to be up to date before merging.
+This means that you do not have to have the latest changes from the base branch
+integrated, unless GitHub detects merge conflicts.
+
+If you do need to integrate the latest changes from the base branch into your
+pull request branch, use `git merge` instead of `git rebase`. This avoids
+problems caused by rewriting the commit history unnecessarily because the
+commits will be squashed when the pull request is merged anyway.
+
 ## Commit messages
 
 Commit messages for Librarian follow the conventions below.
