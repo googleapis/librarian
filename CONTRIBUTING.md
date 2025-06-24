@@ -119,7 +119,15 @@ Use the format:
 This helps provide context for future readers and keeps the TODO relevant and
 actionable as the project evolves.
 
-## Opening a pull request
+## Sending a pull request
+
+All code changes must go through a pull request. First-time contributors should
+review
+[GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow).
+
+Before sending a pull request, it should include tests if there are logic
+changes, copyright headers in every file, and a commit message following the
+conventions in "Commit messages" section below.
 
 A pull request can be opened from a branch within the repository or from a
 fork. External contributors are only able to open pull requests from forks,
@@ -149,16 +157,6 @@ your pull request has multiple commits, note in the description whether reviewer
 review them individually or just focus on the final result. (For example, if
 earlier commits are exploratory and only the end state matters, make that clear
 to avoid wasting reviewer time.)
-
-## Sending a pull request
-
-All code changes must go through a pull request. First-time contributors should
-review
-[GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow).
-
-Before sending a pull request, it should include tests if there are logic
-changes, copyright headers in every file, and a commit message following the
-conventions below.
 
 ## Commit messages
 
