@@ -131,7 +131,7 @@ func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
 	}
 
 	image := deriveImage(ps)
-	containerConfig, err := docker.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
+	containerConfig, err := docker.New(ctx, workRoot, image, flagSecretsProject, config)
 	if err != nil {
 		return nil, err
 	}

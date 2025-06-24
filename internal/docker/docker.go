@@ -15,6 +15,7 @@
 package docker
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -22,30 +23,51 @@ import (
 	"os/user"
 	"slices"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/statepb"
 )
 
-type ContainerCommand string
+type Command string
 
-// The set of container commands, in a single place to avoid typos.
+// The set of docker commands, in a single place to avoid typos.
 const (
-	ContainerCommandGenerateRaw            ContainerCommand = "generate-raw"
-	ContainerCommandGenerateLibrary        ContainerCommand = "generate-library"
-	ContainerCommandClean                  ContainerCommand = "clean"
-	ContainerCommandBuildRaw               ContainerCommand = "build-raw"
-	ContainerCommandBuildLibrary           ContainerCommand = "build-library"
-	ContainerCommandConfigure              ContainerCommand = "configure"
-	ContainerCommandPrepareLibraryRelease  ContainerCommand = "prepare-library-release"
-	ContainerCommandIntegrationTestLibrary ContainerCommand = "integration-test-library"
-	ContainerCommandPackageLibrary         ContainerCommand = "package-library"
-	ContainerCommandPublishLibrary         ContainerCommand = "publish-library"
+	CommandGenerateRaw            Command = "generate-raw"
+	CommandGenerateLibrary        Command = "generate-library"
+	CommandClean                  Command = "clean"
+	CommandBuildRaw               Command = "build-raw"
+	CommandBuildLibrary           Command = "build-library"
+	CommandConfigure              Command = "configure"
+	CommandPrepareLibraryRelease  Command = "prepare-library-release"
+	CommandIntegrationTestLibrary Command = "integration-test-library"
+	CommandPackageLibrary         Command = "package-library"
+	CommandPublishLibrary         Command = "publish-library"
 )
 
-var networkEnabledContainerCommands = []ContainerCommand{
-	ContainerCommandBuildRaw,
-	ContainerCommandBuildLibrary,
-	ContainerCommandIntegrationTestLibrary,
-	ContainerCommandPackageLibrary,
-	ContainerCommandPublishLibrary,
+var networkEnabledCommands = []Command{
+	CommandBuildRaw,
+	CommandBuildLibrary,
+	CommandIntegrationTestLibrary,
+	CommandPackageLibrary,
+	CommandPublishLibrary,
+}
+
+type Docker struct {
+	// The Docker image to run.
+	Image string
+
+	// The provider for environment variables, if any.
+	env *EnvironmentProvider
+}
+
+func New(ctx context.Context, workRoot, image, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
+	envProvider, err := newEnvironmentProvider(ctx, workRoot, secretsProject, pipelineConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &Docker{
+		Image: image,
+		env:   envProvider,
+	}, nil
 }
 
 func (c *Docker) GenerateRaw(apiRoot, output, apiPath string) error {
@@ -67,7 +89,7 @@ func (c *Docker) GenerateRaw(apiRoot, output, apiPath string) error {
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/output", output),
 	}
-	return c.runDocker(ContainerCommandGenerateRaw, mounts, commandArgs)
+	return c.runDocker(CommandGenerateRaw, mounts, commandArgs)
 }
 
 func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID string) error {
@@ -94,7 +116,7 @@ func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID stri
 		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/generator-input", generatorInput),
 	}
-	return c.runDocker(ContainerCommandGenerateLibrary, mounts, commandArgs)
+	return c.runDocker(CommandGenerateLibrary, mounts, commandArgs)
 }
 
 func (c *Docker) Clean(repoRoot, libraryID string) error {
@@ -110,7 +132,7 @@ func (c *Docker) Clean(repoRoot, libraryID string) error {
 	if libraryID != "" {
 		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
 	}
-	return c.runDocker(ContainerCommandClean, mounts, commandArgs)
+	return c.runDocker(CommandClean, mounts, commandArgs)
 }
 
 func (c *Docker) BuildRaw(generatorOutput, apiPath string) error {
@@ -127,7 +149,7 @@ func (c *Docker) BuildRaw(generatorOutput, apiPath string) error {
 		"--generator-output=/generator-output",
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
-	return c.runDocker(ContainerCommandBuildRaw, mounts, commandArgs)
+	return c.runDocker(CommandBuildRaw, mounts, commandArgs)
 }
 
 func (c *Docker) BuildLibrary(repoRoot, libraryId string) error {
@@ -144,7 +166,7 @@ func (c *Docker) BuildLibrary(repoRoot, libraryId string) error {
 	if libraryId != "" {
 		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryId))
 	}
-	return c.runDocker(ContainerCommandBuildLibrary, mounts, commandArgs)
+	return c.runDocker(CommandBuildLibrary, mounts, commandArgs)
 }
 
 func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
@@ -166,7 +188,7 @@ func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/generator-input", generatorInput),
 	}
-	return c.runDocker(ContainerCommandConfigure, mounts, commandArgs)
+	return c.runDocker(CommandConfigure, mounts, commandArgs)
 }
 
 func (c *Docker) PrepareLibraryRelease(languageRepo, inputsDirectory, libId, releaseVersion string) error {
@@ -181,7 +203,7 @@ func (c *Docker) PrepareLibraryRelease(languageRepo, inputsDirectory, libId, rel
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
 
-	return c.runDocker(ContainerCommandPrepareLibraryRelease, mounts, commandArgs)
+	return c.runDocker(CommandPrepareLibraryRelease, mounts, commandArgs)
 }
 
 func (c *Docker) IntegrationTestLibrary(languageRepo, libId string) error {
@@ -193,7 +215,7 @@ func (c *Docker) IntegrationTestLibrary(languageRepo, libId string) error {
 		fmt.Sprintf("%s:/repo", languageRepo),
 	}
 
-	return c.runDocker(ContainerCommandIntegrationTestLibrary, mounts, commandArgs)
+	return c.runDocker(CommandIntegrationTestLibrary, mounts, commandArgs)
 }
 
 func (c *Docker) PackageLibrary(languageRepo, libId, outputDir string) error {
@@ -207,7 +229,7 @@ func (c *Docker) PackageLibrary(languageRepo, libId, outputDir string) error {
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	return c.runDocker(ContainerCommandPackageLibrary, mounts, commandArgs)
+	return c.runDocker(CommandPackageLibrary, mounts, commandArgs)
 }
 
 func (c *Docker) PublishLibrary(outputDir, libId, libVersion string) error {
@@ -220,10 +242,10 @@ func (c *Docker) PublishLibrary(outputDir, libId, libVersion string) error {
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	return c.runDocker(ContainerCommandPublishLibrary, mounts, commandArgs)
+	return c.runDocker(CommandPublishLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) runDocker(command ContainerCommand, mounts []string, commandArgs []string) error {
+func (c *Docker) runDocker(command Command, mounts []string, commandArgs []string) error {
 	if c.Image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -232,9 +254,9 @@ func (c *Docker) runDocker(command ContainerCommand, mounts []string, commandArg
 
 	args := []string{
 		"run",
-		"--rm", // Automatically delete the container after completion
+		"--rm", // Automatically delete the docker after completion
 	}
-	// Run as the current user in the container - primarily so that any
+	// Run as the current user in the docker - primarily so that any
 	// files we create end up being owned by the current user (and easily deletable).
 	currentUser, err := user.Current()
 	if err != nil {
@@ -253,7 +275,7 @@ func (c *Docker) runDocker(command ContainerCommand, mounts []string, commandArg
 		args = append(args, c.env.tmpFile)
 		defer deleteEnvironmentFile(c.env)
 	}
-	if !slices.Contains(networkEnabledContainerCommands, command) {
+	if !slices.Contains(networkEnabledCommands, command) {
 		args = append(args, "--network=none")
 	}
 	args = append(args, c.Image)
@@ -263,7 +285,7 @@ func (c *Docker) runDocker(command ContainerCommand, mounts []string, commandArg
 }
 
 func maybeRelocateMounts(mounts []string) []string {
-	// When running in Kokoro, we'll be running sibling containers.
+	// When running in Kokoro, we'll be running sibling dockers.
 	// Make sure we specify the "from" part of the mount as the host directory.
 	kokoroHostRootDir := os.Getenv("KOKORO_HOST_ROOT_DIR")
 	kokoroRootDir := os.Getenv("KOKORO_ROOT_DIR")

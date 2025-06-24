@@ -31,7 +31,7 @@ import (
 )
 
 // EnvironmentProvider represents configuration for environment
-// variables for container invocations.
+// variables for docker invocations.
 type EnvironmentProvider struct {
 	// The context used for SecretManager requests
 	ctx context.Context
@@ -123,10 +123,10 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(commandName string
 
 		// Finally, write the value if we've got one
 		if present {
-			slog.Info(fmt.Sprintf("Using %s to provide value to container for %s", source, variable.Name))
+			slog.Info(fmt.Sprintf("Using %s to provide value to docker for %s", source, variable.Name))
 			builder.WriteString(fmt.Sprintf("%s=%s\n", variable.Name, value))
 		} else {
-			slog.Info(fmt.Sprintf("No value to provide to container for '%s'", variable.Name))
+			slog.Info(fmt.Sprintf("No value to provide to docker for '%s'", variable.Name))
 			builder.WriteString(fmt.Sprintf("# No value for %s\n", variable.Name))
 		}
 		continue
@@ -134,18 +134,18 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(commandName string
 	return builder.String(), nil
 }
 
-func getSecretManagerValue(containerEnv *EnvironmentProvider, variable *statepb.CommandEnvironmentVariable) (string, bool, error) {
-	if variable.SecretName == "" || containerEnv.secretManagerClient == nil {
+func getSecretManagerValue(dockerEnv *EnvironmentProvider, variable *statepb.CommandEnvironmentVariable) (string, bool, error) {
+	if variable.SecretName == "" || dockerEnv.secretManagerClient == nil {
 		return "", false, nil
 	}
-	value, present := containerEnv.secretCache[variable.SecretName]
+	value, present := dockerEnv.secretCache[variable.SecretName]
 	if present {
 		return value, true, nil
 	}
 	request := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", containerEnv.secretsProject, variable.SecretName),
+		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", dockerEnv.secretsProject, variable.SecretName),
 	}
-	secret, err := containerEnv.secretManagerClient.AccessSecretVersion(containerEnv.ctx, request)
+	secret, err := dockerEnv.secretManagerClient.AccessSecretVersion(dockerEnv.ctx, request)
 	if err != nil {
 		// If the error is that the secret wasn't found, continue to the next source.
 		// Any other error causes a real error to be returned.
@@ -158,10 +158,10 @@ func getSecretManagerValue(containerEnv *EnvironmentProvider, variable *statepb.
 	}
 	// We assume the payload is valid UTF-8.
 	value = string(secret.Payload.Data[:])
-	containerEnv.secretCache[variable.SecretName] = value
+	dockerEnv.secretCache[variable.SecretName] = value
 	return value, true, nil
 }
 
-func deleteEnvironmentFile(containerEnv *EnvironmentProvider) error {
-	return os.Remove(containerEnv.tmpFile)
+func deleteEnvironmentFile(dockerEnv *EnvironmentProvider) error {
+	return os.Remove(dockerEnv.tmpFile)
 }
