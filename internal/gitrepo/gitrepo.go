@@ -362,9 +362,9 @@ func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) 
 // where the commit message contains a line of Librarian-Release-Id: <release-id>.
 // These commits are expected to be contiguous, from head, with all commits
 // having a single parent.
-func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]Commit, error) {
+func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]*Commit, error) {
 	releaseIDLine := fmt.Sprintf("Librarian-Release-ID: %s", releaseID)
-	commits := []Commit{}
+	commits := []*Commit{}
 
 	headRef, err := r.repo.Head()
 	if err != nil {
@@ -389,7 +389,7 @@ func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]Commit, error) 
 		}
 
 		if gotReleaseID {
-			commits = append(commits, Commit{
+			commits = append(commits, &Commit{
 				Hash:    candidateCommit.Hash,
 				Message: candidateCommit.Message,
 			})
