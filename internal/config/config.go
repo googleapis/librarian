@@ -15,6 +15,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 )
 
@@ -102,6 +103,9 @@ type Config struct {
 
 	// WorkRoot is the root directory used for temporary working files.
 	WorkRoot string
+
+	// GitHubToken is the access token used to interact with the GitHub API.
+	GitHubToken string
 }
 
 // New returns a new Config populated with environment variables.
@@ -111,5 +115,14 @@ func New() *Config {
 		// os.Getenv calls in other functions with these values.
 		KokoroHostRootDir: os.Getenv("KOKORO_HOST_ROOT_DIR"),
 		KokoroRootDir:     os.Getenv("KOKORO_ROOT_DIR"),
+		GitHubToken:       os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
 	}
+}
+
+// IsValid ensures the values contained in a Config are valid.
+func (c *Config) IsValid() (bool, error) {
+	if c.Push && c.GitHubToken == "" {
+		return false, errors.New("no GitHub token supplied for push")
+	}
+	return true, nil
 }

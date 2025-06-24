@@ -25,8 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -59,7 +58,7 @@ type commandState struct {
 	pipelineState *statepb.PipelineState
 
 	// containerConfig provides settings for running containerized commands.
-	containerConfig *container.Docker
+	containerConfig *docker.Docker
 }
 
 func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language string) (*gitrepo.Repository, error) {
@@ -131,7 +130,7 @@ func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
 	}
 
 	image := deriveImage(flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
-	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
+	containerConfig, err := docker.New(ctx, workRoot, image, flagSecretsProject, config)
 	if err != nil {
 		return nil, err
 	}
@@ -248,18 +247,6 @@ func commitAll(repo *gitrepo.Repository, msg string) error {
 func logPartialError(id string, err error, action string) string {
 	slog.Warn(fmt.Sprintf("Error while %s %s: %s", action, id, err))
 	return fmt.Sprintf("Error while %s %s", action, id)
-}
-
-var librarianCommands = []*cli.Command{
-	CmdConfigure,
-	CmdGenerate,
-	CmdUpdateApis,
-	CmdCreateReleasePR,
-	CmdUpdateImageTag,
-	CmdMergeReleasePR,
-	CmdCreateReleaseArtifacts,
-	CmdPublishReleaseArtifacts,
-	CmdVersion,
 }
 
 func formatReleaseTag(libraryID, version string) string {

@@ -16,54 +16,53 @@ package librarian
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 )
 
+var CmdLibrarian = &cli.Command{
+	Short: "librarian manages client libraries for Google APIs",
+	Usage: "librarian <command> [arguments]",
+	Long:  "Librarian manages client libraries for Google APIs.",
+}
+
+func init() {
+	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
+		CmdConfigure,
+		CmdGenerate,
+		CmdUpdateApis,
+		CmdCreateReleasePR,
+		CmdUpdateImageTag,
+		CmdMergeReleasePR,
+		CmdCreateReleaseArtifacts,
+		CmdPublishReleaseArtifacts,
+		CmdVersion,
+	)
+}
+
 func Run(ctx context.Context, arg ...string) error {
-	cmd, err := parseArgs(arg)
+	CmdLibrarian.InitFlags()
+	if err := CmdLibrarian.Parse(arg); err != nil {
+		return err
+	}
+	if len(arg) == 0 {
+		CmdLibrarian.Help()
+		return fmt.Errorf("command not specified")
+	}
+	cmd, err := CmdLibrarian.Lookup(arg[0])
 	if err != nil {
+		CmdLibrarian.Help()
 		return err
 	}
 	if err := cmd.Parse(arg[1:]); err != nil {
 		return err
 	}
 	slog.Info("librarian", "arguments", arg)
-	return cmd.Run(ctx)
-}
 
-func parseArgs(args []string) (*cli.Command, error) {
-	fs := flag.NewFlagSet("librarian", flag.ContinueOnError)
-	output := `Librarian manages client libraries for Google APIs.
-
-Usage:
-
-  librarian <command> [arguments]
-
-The commands are:
-`
-	for _, c := range librarianCommands {
-		parts := strings.Fields(c.Short)
-		short := strings.Join(parts[1:], " ")
-		output += fmt.Sprintf("\n  %-25s  %s", c.Name(), short)
-	}
-
-	fs.Usage = func() {
-		fmt.Fprint(fs.Output(), output)
-		fs.PrintDefaults()
-		fmt.Fprintf(fs.Output(), "\n\n")
-	}
-
-	if err := fs.Parse(args); err != nil {
-		return nil, err
-	}
-	if len(fs.Args()) == 0 {
-		fs.Usage()
-		return nil, fmt.Errorf("command not specified")
-	}
-	return cli.Lookup(fs.Args()[0], librarianCommands)
+	cfg := config.New()
+	applyFlags(cfg)
+	return cmd.Run(ctx, cfg)
 }

@@ -43,6 +43,12 @@ type Repository struct {
 	repo *git.Repository
 }
 
+// Commit represents a git commit.
+type Commit struct {
+	Hash    plumbing.Hash
+	Message string
+}
+
 // RepositoryOptions are used to configure a [Repository].
 type RepositoryOptions struct {
 	// Dir is the directory where the repository will reside locally. Required.
@@ -239,16 +245,18 @@ func (r *Repository) PrintStatus() error {
 	return nil
 }
 
-// Returns the commits affecting any of the given paths, stopping looking at the
-// given commit (which is not included in the results).
+// GetCommitsForPathsSinceCommit returns the commits affecting any of the given
+// paths, stopping looking at the given commit (which is not included in the
+// results).
 // The returned commits are ordered such that the most recent commit is first.
-// If sinceCommit is not provided, all commits are searched. Otherwise, if no commit
-// matching sinceCommit is found, an error is returned.
-func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]object.Commit, error) {
+//
+// If sinceCommit is not provided, all commits are searched; otherwise, if no
+// commit matching sinceCommit is found, an error is returned.
+func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
-	commits := []object.Commit{}
+	commits := []*Commit{}
 	finalHash := plumbing.NewHash(sinceCommit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
 	logIterator, err := r.repo.Log(&logOptions)
@@ -274,9 +282,10 @@ func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit s
 
 		// We perform filtering by finding out if the tree hash for the given
 		// path at the commit we're looking at is the same as the tree hash
-		// for the commit's parent. This is much, much faster than any other filtering
-		// option, it seems. In theory we should be able to remember our "current"
-		// commit for each path, but that's likely to be significantly more complex.
+		// for the commit's parent.
+		// This is much, much faster than any other filtering option, it seems.
+		// In theory, we should be able to remember our "current" commit for each
+		// path, but that's likely to be significantly more complex.
 		for _, candidatePath := range paths {
 			currentPathHash, err := getHashForPathOrEmpty(commit, candidatePath)
 			if err != nil {
@@ -289,7 +298,11 @@ func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit s
 			// If we've found a change (including a path being added or removed),
 			// add it to our list of commits and proceed to the next commit.
 			if currentPathHash != parentPathHash {
-				commits = append(commits, *commit)
+
+				commits = append(commits, &Commit{
+					Hash:    commit.Hash,
+					Message: commit.Message,
+				})
 				return nil
 			}
 		}
@@ -322,9 +335,11 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 	return treeEntry.Hash.String(), nil
 }
 
-// Returns all commits since tagName that contains files in path.
+// GetCommitsForPathsSinceTag returns all commits since tagName that contains
+// files in path.
+//
 // If tagName is empty, all commits for the given paths are returned.
-func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]object.Commit, error) {
+func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error) {
 	var hash string
 	if tagName == "" {
 		hash = ""
@@ -343,12 +358,13 @@ func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) 
 	return r.GetCommitsForPathsSinceCommit(paths, hash)
 }
 
-// Returns all commits with the given release ID, i.e. where the commit message contains a line of
-// Librarian-Release-Id: <release-id>. These commits are expected to be contiguous, from head,
-// with all commits having a single parent.
-func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]object.Commit, error) {
+// GetCommitsForReleaseID returns all commits with the given release ID, i.e.,
+// where the commit message contains a line of Librarian-Release-Id: <release-id>.
+// These commits are expected to be contiguous, from head, with all commits
+// having a single parent.
+func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]*Commit, error) {
 	releaseIDLine := fmt.Sprintf("Librarian-Release-ID: %s", releaseID)
-	commits := []object.Commit{}
+	commits := []*Commit{}
 
 	headRef, err := r.repo.Head()
 	if err != nil {
@@ -373,7 +389,10 @@ func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]object.Commit, 
 		}
 
 		if gotReleaseID {
-			commits = append(commits, *candidateCommit)
+			commits = append(commits, &Commit{
+				Hash:    candidateCommit.Hash,
+				Message: candidateCommit.Message,
+			})
 		}
 
 		if candidateCommit.NumParents() != 1 {

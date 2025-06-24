@@ -20,21 +20,17 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/google/go-github/v69/github"
 )
-
-const GitHubTokenEnvironmentVariable string = "LIBRARIAN_GITHUB_TOKEN"
 
 type Client struct {
 	*github.Client
 	accessToken string
 }
 
-func NewClient() (*Client, error) {
-	accessToken := os.Getenv(GitHubTokenEnvironmentVariable)
+func NewClient(accessToken string) (*Client, error) {
 	return &Client{
 		Client:      github.NewClient(nil).WithAuthToken(accessToken),
 		accessToken: accessToken,

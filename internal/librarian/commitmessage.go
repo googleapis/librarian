@@ -18,7 +18,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 // CommitMessage represents the result of parsing a git commit message,
@@ -40,11 +40,13 @@ type CommitMessage struct {
 	NoTriggerLibraries []string
 }
 
-// Parses a message from a commit, remembering the hash of the commit it
+// ParseCommit parses a message from a commit, remembering the hash of the commit it
 // came from and extracting conventional commit information
 // (and PiperOrigin-RevId/SourceLink details) from it.
-// Currently ignores any line of the message which does not contain a conventional commit.
-func ParseCommit(commit object.Commit) *CommitMessage {
+//
+// Currently, ignores any line of the message which does not contain a conventional
+// commit.
+func ParseCommit(commit *gitrepo.Commit) *CommitMessage {
 	const PiperPrefix = "PiperOrigin-RevId: "
 	const SourceLinkPrefix = "SourceLink: "
 	const TriggerReleasePrefix = "TriggerRelease: "

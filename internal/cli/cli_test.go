@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestParseAndSetFlags(t *testing.T) {
@@ -70,7 +71,9 @@ func TestLookup(t *testing.T) {
 		{"baz", true}, // not found case
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cmd, err := Lookup(test.name, commands)
+			cmd := &Command{}
+			cmd.Commands = commands
+			sub, err := cmd.Lookup(test.name)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal(err)
@@ -81,8 +84,8 @@ func TestLookup(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if cmd.Name() != test.name {
-				t.Errorf("got = %q, want = %q", cmd.Name(), test.name)
+			if sub.Name() != test.name {
+				t.Errorf("got = %q, want = %q", sub.Name(), test.name)
 			}
 		})
 	}
@@ -92,13 +95,14 @@ func TestRun(t *testing.T) {
 	executed := false
 	cmd := &Command{
 		Short: "run runs the command",
-		Run: func(ctx context.Context) error {
+		Run: func(ctx context.Context, cfg *config.Config) error {
 			executed = true
 			return nil
 		},
 	}
 
-	if err := cmd.Run(context.Background()); err != nil {
+	cfg := &config.Config{}
+	if err := cmd.Run(context.Background(), cfg); err != nil {
 		t.Fatal(err)
 	}
 	if !executed {
@@ -145,7 +149,7 @@ Usage:
 				Usage: "test [flags]",
 				Long:  "Test prints test information.",
 			}
-			initFlags(c)
+			c.InitFlags()
 			c.SetFlags(test.flags)
 
 			var buf bytes.Buffer

@@ -58,7 +58,7 @@ func TestCalculateNextVersion(t *testing.T) {
 		library := &statepb.LibraryState{
 			CurrentVersion: test.current,
 		}
-		got, err := calculateNextVersion(library)
+		got, err := calculateNextVersion(library, "")
 		if test.want == "" {
 			if err == nil {
 				t.Errorf("calculateNextVersion(%s); error expected", test.current)

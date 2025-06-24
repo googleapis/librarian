@@ -19,13 +19,14 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 var CmdVersion = &cli.Command{
 	Short: "version prints the version information",
 	Usage: "librarian version",
 	Long:  "Version prints version information for the librarian binary.",
-	Run: func(ctx context.Context) error {
+	Run: func(ctx context.Context, cfg *config.Config) error {
 		fmt.Println(cli.Version())
 		return nil
 	},

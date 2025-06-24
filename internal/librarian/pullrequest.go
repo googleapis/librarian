@@ -57,8 +57,8 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 // If content only contains errors, the pull request is not created and an error is returned (to highlight that everything failed)
 // If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
 // If the pull request would contain an excessive number of commits (as configured in pipeline-config.json)
-func createPullRequest(state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string) (*githubrepo.PullRequestMetadata, error) {
-	ghClient, err := githubrepo.NewClient()
+func createPullRequest(state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool) (*githubrepo.PullRequestMetadata, error) {
+	ghClient, err := githubrepo.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func createPullRequest(state *commandState, content *PullRequestContent, titlePr
 
 	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(state.startTime))
 
-	if !flagPush {
+	if !push {
 		slog.Info(fmt.Sprintf("Push not specified; would have created PR with the following title and description:\n%s\n\n%s", title, description))
 		return nil, nil
 	}

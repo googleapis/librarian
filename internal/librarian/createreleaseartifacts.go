@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -82,7 +83,7 @@ func init() {
 	})
 }
 
-func runCreateReleaseArtifacts(ctx context.Context) error {
+func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 	state, err := createCommandStateForLanguage(ctx)
 	if err != nil {
 		return err
