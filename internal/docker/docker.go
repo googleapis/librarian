@@ -109,7 +109,7 @@ func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID stri
 	commandArgs := []string{
 		"--api-root=/apis",
 		"--output=/output",
-		fmt.Sprintf("--generator-input=/%s", constants.GeneratorInputDir),
+		fmt.Sprintf("--%s=/%s", constants.GeneratorInputDir, constants.GeneratorInputDir),
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
@@ -182,7 +182,7 @@ func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
 	}
 	commandArgs := []string{
 		"--api-root=/apis",
-		fmt.Sprintf("--generator-input=/%s", constants.GeneratorInputDir),
+		fmt.Sprintf("--%s=/%s", constants.GeneratorInputDir, constants.GeneratorInputDir),
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
 	mounts := []string{
