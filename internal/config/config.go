@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config provides configuration for all other internal packages.
-// In production, this configuration is derived from flags and environment
-// variables. In tests, it is directly constructed.
+// Package config defines configuration used by the CLI.
 package config
 
 import (

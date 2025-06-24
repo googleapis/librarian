@@ -31,31 +31,31 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-// String representation of the command, as passed to the language-specific
+// Command is the string representation of a command to be passed to the language-specific
 // container's entry point as the first argument.
 type Command string
 
 // The set of commands passed to the language container, in a single place to avoid typos.
 const (
-	// Command to perform raw (unconfigured) generation.
+	// CommandGenerateRaw performs raw (unconfigured) generation.
 	CommandGenerateRaw Command = "generate-raw"
-	// Command to perform generation for a configured library.
+	// CommandGenerateLibrary performs generation for a configured library.
 	CommandGenerateLibrary Command = "generate-library"
-	// Command to clean files generated for a library.
+	// CommandClean cleans files generated for a library.
 	CommandClean Command = "clean"
-	// Command to build the results of generate-raw.
+	// CommandBuildRaw builds the results of generate-raw.
 	CommandBuildRaw Command = "build-raw"
-	// Command to build a library.
+	// CommandBuildLibrary builds a library.
 	CommandBuildLibrary Command = "build-library"
-	// Command to configure a new API as a library.
+	// CommandConfigure configures a new API as a library.
 	CommandConfigure Command = "configure"
-	// Command to prepare a repository for the release of a library.
+	// CommandPrepareLibraryRelease prepares a repository for the release of a library.
 	CommandPrepareLibraryRelease Command = "prepare-library-release"
-	// Command to run integration tests on a library.
+	// CommandIntegrationTestLibrary runs integration tests on a library.
 	CommandIntegrationTestLibrary Command = "integration-test-library"
-	// Command to package a library's artifacts for publication.
+	// CommandPackageLibrary packages a library's artifacts for publication.
 	CommandPackageLibrary Command = "package-library"
-	// Command to publish a library's artifacts.
+	// CommandPublishLibrary publishes a library's artifacts.
 	CommandPublishLibrary Command = "publish-library"
 )
 
@@ -240,7 +240,7 @@ func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
 	return c.runDocker(CommandConfigure, mounts, commandArgs)
 }
 
-// Prepares the repository languageRepo for the release of a library with
+// PrepareLibraryRelease prepares the repository languageRepo for the release of a library with
 // ID libraryID within repoRoot, with version releaseVersion. Release notes
 // are expected to be present within inputsDirectory, in a file named
 // `{libraryID}-{releaseVersion}-release-notes.txt`.
@@ -259,7 +259,7 @@ func (c *Docker) PrepareLibraryRelease(repoRoot, inputsDirectory, libraryID, rel
 	return c.runDocker(CommandPrepareLibraryRelease, mounts, commandArgs)
 }
 
-// Runs the integration tests for a library with ID libraryID within repoRoot.
+// IntegrationTestLibrary runs the integration tests for a library with ID libraryID within repoRoot.
 func (c *Docker) IntegrationTestLibrary(repoRoot, libraryID string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
@@ -272,7 +272,7 @@ func (c *Docker) IntegrationTestLibrary(repoRoot, libraryID string) error {
 	return c.runDocker(CommandIntegrationTestLibrary, mounts, commandArgs)
 }
 
-// Packages release artifacts for a library with ID libraryID within repoRoot,
+// PackageLibrary packages release artifacts for a library with ID libraryID within repoRoot,
 // creating the artifacts within outputDir.
 func (c *Docker) PackageLibrary(repoRoot, libraryID, outputDir string) error {
 	commandArgs := []string{
@@ -288,7 +288,7 @@ func (c *Docker) PackageLibrary(repoRoot, libraryID, outputDir string) error {
 	return c.runDocker(CommandPackageLibrary, mounts, commandArgs)
 }
 
-// Publishes release artifacts for a library with ID libraryID and version releaseVersion
+// PublishLibrary publishes release artifacts for a library with ID libraryID and version releaseVersion
 // to package managers, documentation sites etc. The artifacts will previously have been
 // created by PackageLibrary.
 func (c *Docker) PublishLibrary(outputDir, libraryID, releaseVersion string) error {

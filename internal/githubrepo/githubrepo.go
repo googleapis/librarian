@@ -56,9 +56,9 @@ type Repository struct {
 
 // PullRequestMetadata identifies a pull request within a repository.
 type PullRequestMetadata struct {
-	// The repository containing the pull request.
+	// Repo is the repository containing the pull request.
 	Repo *Repository
-	// The number of the pull request.
+	// Number is the number of the pull request.
 	Number int
 }
 

@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cli implements a general purpose framework for command line
-// interfaces. Despite being internal to the Librarian module, it contains
-// no Librarian-specific code. (There are no assumptions about specific
-// environment variables or flags.)
+// Package cli defines a lightweight framework for building CLI commands.
+// It's designed to be generic and self-contained, with no embedded business logic
+// or dependencies on the surrounding application's configuration or behavior.
 package cli
 
 import (
