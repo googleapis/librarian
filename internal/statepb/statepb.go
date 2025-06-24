@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main is the entry point for the Librarian CLI.
-package main
-
-import (
-	"context"
-	"log"
-	"os"
-
-	"github.com/googleapis/librarian/internal/librarian"
-)
-
-func main() {
-	ctx := context.Background()
-	if err := librarian.Run(ctx, os.Args[1:]...); err != nil {
-		log.Fatal(err)
-	}
-}
+// Package statepb contains code generated from proto/pipeline.proto, for
+// Librarian state and config files. This package is likely to be deleted
+// as part of https://github.com/googleapis/librarian/issues/326. No
+// handwritten code should be added to this package.
+package statepb
