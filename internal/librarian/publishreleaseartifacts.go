@@ -73,7 +73,7 @@ func init() {
 }
 
 func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	if err := validateRequiredFlag("artifact-root", flagArtifactRoot); err != nil {
+	if err := validateRequiredFlag("artifact-root", cfg.ArtifactRoot); err != nil {
 		return err
 	}
 	// Load the state and config from the artifact directory. These will have been created by create-release-artifacts.
@@ -82,12 +82,12 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	pipelineConfig, err := loadPipelineConfigFile(filepath.Join(flagArtifactRoot, pipelineConfigFile))
+	pipelineConfig, err := loadPipelineConfigFile(filepath.Join(cfg.ArtifactRoot, pipelineConfigFile))
 	if err != nil {
 		return err
 	}
 
-	image := deriveImage(flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
+	image := deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
