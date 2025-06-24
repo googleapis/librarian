@@ -115,11 +115,11 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language string) (*git
 // language repos should construct the command state themselves.
 func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRoot, repoURL, language, imageOverride, defaultRepository, secretsProject string) (*commandState, error) {
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime, flagWorkRoot)
+	workRoot, err := createWorkRoot(startTime, workRootOverride)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot, flagRepoRoot, flagRepoUrl, flagLanguage)
+	repo, err := cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +129,8 @@ func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRo
 		return nil, err
 	}
 
-	image := deriveImage(flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
-	containerConfig, err := docker.New(ctx, workRoot, image, flagSecretsProject, config)
+	image := deriveImage(language, imageOverride, defaultRepository, ps)
+	containerConfig, err := docker.New(ctx, workRoot, image, secretsProject, config)
 	if err != nil {
 		return nil, err
 	}
