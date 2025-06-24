@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/githubrepo"
 )
 
@@ -92,14 +92,14 @@ func runPublishReleaseArtifacts(ctx context.Context) error {
 		return err
 	}
 
-	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
+	containerConfig, err := docker.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
 	if err != nil {
 		return err
 	}
 	return publishReleaseArtifacts(ctx, containerConfig)
 }
 
-func publishReleaseArtifacts(ctx context.Context, containerConfig *container.Docker) error {
+func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker) error {
 	if err := validateRequiredFlag("tag-repo-url", flagTagRepoUrl); err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *container.Doc
 	return nil
 }
 
-func publishPackages(config *container.Docker, outputRoot string, releases []LibraryRelease) error {
+func publishPackages(config *docker.Docker, outputRoot string, releases []LibraryRelease) error {
 	for _, release := range releases {
 		outputDir := filepath.Join(outputRoot, release.LibraryID)
 		if err := config.PublishLibrary(outputDir, release.LibraryID, release.Version); err != nil {

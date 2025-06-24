@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -59,7 +59,7 @@ type commandState struct {
 	pipelineState *statepb.PipelineState
 
 	// containerConfig provides settings for running containerized commands.
-	containerConfig *container.Docker
+	containerConfig *docker.Docker
 }
 
 func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
@@ -131,7 +131,7 @@ func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
 	}
 
 	image := deriveImage(ps)
-	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
+	containerConfig, err := docker.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
 	if err != nil {
 		return nil, err
 	}

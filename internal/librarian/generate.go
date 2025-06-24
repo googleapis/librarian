@@ -26,7 +26,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/container"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/githubrepo"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
@@ -131,7 +131,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	}
 
 	image := deriveImage(ps)
-	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, cfg.SecretsProject, config)
+	containerConfig, err := docker.NewContainerConfig(ctx, workRoot, image, cfg.SecretsProject, config)
 	if err != nil {
 		return err
 	}
