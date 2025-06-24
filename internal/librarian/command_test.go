@@ -303,3 +303,57 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 		})
 	}
 }
+
+func TestCommitAll(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		setup      func(t *testing.T, repoDir string)
+		wantCommit bool
+	}{
+		{
+			name: "clean repo, no commit",
+			setup: func(t *testing.T, repoDir string) {
+			},
+			wantCommit: false,
+		},
+		{
+			name: "dirty repo, with commit",
+			setup: func(t *testing.T, repoDir string) {
+				filePath := filepath.Join(repoDir, "new-file.txt")
+				if err := os.WriteFile(filePath, []byte("some content"), 0644); err != nil {
+					t.Fatalf("WriteFile: %v", err)
+				}
+			},
+			wantCommit: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			repoDir := newTestGitRepoWithCommit(t, "")
+			repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
+			if err != nil {
+				t.Fatalf("NewRepository() error = %v", err)
+			}
+
+			initialHead, err := repo.HeadHash()
+			if err != nil {
+				t.Fatalf("repo.HeadHash() error = %v", err)
+			}
+
+			tt.setup(t, repoDir)
+
+			if err := commitAll(repo, "test commit", "tester", "tester@example.com"); err != nil {
+				t.Errorf("commitAll() error = %v, wantErr nil", err)
+			}
+
+			finalHead, err := repo.HeadHash()
+			if err != nil {
+				t.Fatalf("repo.HeadHash() error = %v", err)
+			}
+
+			hasCommitted := initialHead != finalHead
+			if hasCommitted != tt.wantCommit {
+				t.Errorf("commitAll() commit status = %v, want %v", hasCommitted, tt.wantCommit)
+			}
+		})
+	}
+}
