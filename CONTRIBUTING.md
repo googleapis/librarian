@@ -228,11 +228,12 @@ to avoid wasting reviewer time.)
 
 ### Merging a pull request
 
-Pull requests are generally merged by the author, so they can review and edit
-the final commit message before merging. However, this is not a strict rule. If
-the pull request is trivial, already consists of a single well-formed commit, or is
-blocking other work and the author is unavailable, the reviewer may go ahead
-and merge it.
+The pull request title and description must follow the conventions described in
+the "commit messages" section above. This allows the approvers to review and edit
+the final commit message before the PR is merged. Once the pull request has been
+approved and all of the required checks have passed, a reviewer or the author
+can merge the pull request using the "squash and merge" option, with the presented
+commit message which by default will be based on the pull request title and description.
 
 ### Keeping the pull request dashboard clean
 
