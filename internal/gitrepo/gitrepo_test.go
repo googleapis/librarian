@@ -26,11 +26,17 @@ import (
 
 func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 	tests := []struct {
-		filePaths    []string
-		messages     []string
-		wantPaths    []string
-		numOfCommits int
+		filePaths       []string
+		messages        []string
+		inputPaths      []string
+		expectedCommits int
 	}{
+		{
+			[]string{"local/first", "local/second", "local/third"},
+			[]string{"first commit", "2nd commit", "3rd commit"},
+			[]string{},
+			0,
+		},
 		{
 			[]string{"local/first", "local/second", "local/third"},
 			[]string{"first commit", "2nd commit", "3rd commit"},
@@ -41,12 +47,6 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			[]string{"local/first", "local/second", "local/third"},
 			[]string{"first commit", "2nd commit", "3rd commit"},
 			[]string{"local/zero"},
-			0,
-		},
-		{
-			[]string{"local/first", "local/second", "local/third"},
-			[]string{"first commit", "2nd commit", "3rd commit"},
-			[]string{},
 			0,
 		},
 	}
@@ -65,19 +65,14 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 		repoDir, _ := os.MkdirTemp(dir, "test-repo-*")
 		localRepo, _ := git.PlainInit(repoDir, false)
 		worktree, _ := localRepo.Worktree()
-		_, _ = os.Create(strings.Join([]string{repoDir, "test.txt"}, "/"))
-		_, _ = worktree.Add("test.txt")
-		firstCommit, err := worktree.Commit("empty commit", &git.CommitOptions{
+		firstCommit, _ := worktree.Commit("empty commit", &git.CommitOptions{
+			AllowEmptyCommits: true,
 			Author: &object.Signature{
 				Name:  "test-user",
 				Email: "test@email.com",
 				When:  time.Now(),
 			},
 		})
-		if err != nil {
-			t.Logf("git-commit file has error: %s", err)
-		}
-		t.Logf("first commit is %s", firstCommit)
 		parent := firstCommit
 		for i := 0; i < len(test.filePaths); i++ {
 			absFilePath := strings.Join([]string{repoDir, test.filePaths[i]}, "/")
@@ -104,20 +99,25 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			t.Errorf("NewRepository(%s); got error %v", repoDir, err)
 			continue
 		}
-		commits, err := repo.GetCommitsForPathsSinceCommit(test.wantPaths, firstCommit.String())
-		if len(test.wantPaths) == 0 && err == nil {
-			t.Errorf("GetCommitsForPathsSinceCommit(%s) should fail", test.filePaths)
+		commits, err := repo.GetCommitsForPathsSinceCommit(test.inputPaths, firstCommit.String())
+		if len(test.inputPaths) == 0 {
+			// First test case, testing early exit.
+			if err == nil {
+				t.Errorf("GetCommitsForPathsSinceCommit(%s) should fail", test.filePaths)
+			}
+			return
 		}
-		if len(test.wantPaths) != 0 && err != nil {
+
+		if err != nil {
 			t.Errorf("GetCommitsForPathsSinceCommit(%s) expected %d commit(s), got error %v",
-				test.wantPaths,
-				test.numOfCommits,
+				test.inputPaths,
+				test.expectedCommits,
 				err)
 		}
-		if len(test.wantPaths) != 0 && len(commits) != test.numOfCommits {
+		if len(commits) != test.expectedCommits {
 			t.Errorf("GetCommitsForPathsSinceCommit(%s) expected %d commit(s), got %d",
-				test.wantPaths,
-				test.numOfCommits,
+				test.inputPaths,
+				test.expectedCommits,
 				len(commits))
 		}
 	}
