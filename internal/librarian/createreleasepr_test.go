@@ -17,6 +17,7 @@ package librarian
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
@@ -73,5 +74,69 @@ func TestCalculateNextVersion(t *testing.T) {
 		if test.want != got {
 			t.Errorf("calculateNextVersion(%s) expected %s, got %s", test.current, test.want, got)
 		}
+	}
+}
+
+func TestFormatReleaseNotes(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		commits []*CommitMessage
+		want    string
+	}{
+		{
+			"Basic",
+			[]*CommitMessage{
+				{
+					Features: []string{"feature A"},
+				},
+			},
+			"### New features\n\n- Feature A\n\n",
+		},
+		{
+			"Duplicated Feature",
+			[]*CommitMessage{
+				{
+					Features: []string{"feature A", "feature A"},
+				},
+			},
+			"### New features\n\n- Feature A\n\n",
+		},
+		{
+			"Duplicated Docs",
+			[]*CommitMessage{
+				{
+					Docs: []string{"Doc A", "Doc A"},
+				},
+			},
+			"### Documentation improvements\n\n- Doc A\n\n",
+		},
+		{
+			"Duplicated Bugs",
+			[]*CommitMessage{
+				{
+					Fixes: []string{"Bugfix A", "Bugfix A"},
+				},
+			},
+			"### Bug fixes\n\n- Bugfix A\n\n",
+		},
+		{
+			"Sequential Sorting",
+			[]*CommitMessage{
+				{
+					Fixes: []string{"Bugfix B"},
+				},
+				{
+					Fixes: []string{"Bugfix A"},
+				},
+			},
+			"### Bug fixes\n\n- Bugfix B\n- Bugfix A\n\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatReleaseNotes(test.commits)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

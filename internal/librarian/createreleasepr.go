@@ -305,18 +305,35 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 	return pr, nil
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/564): decide on release notes ordering
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
-	features := []string{}
-	docs := []string{}
-	fixes := []string{}
+	// Group release notes by type, preserving ordering (FIFO)
+	var features, docs, fixes []string
+	featuresSeen := make(map[string]bool)
+	docsSeen := make(map[string]bool)
+	fixesSeen := make(map[string]bool)
 
-	// TODO(https://github.com/googleapis/librarian/issues/549): deduping (same message across multiple commits)
 	// TODO(https://github.com/googleapis/librarian/issues/547): perhaps record breaking changes in a separate section
 	// TODO(https://github.com/googleapis/librarian/issues/550): include backlinks, googleapis commits etc
 	for _, commitMessage := range commitMessages {
-		features = append(features, commitMessage.Features...)
-		docs = append(docs, commitMessage.Docs...)
-		fixes = append(fixes, commitMessage.Fixes...)
+		for _, feature := range commitMessage.Features {
+			if !featuresSeen[feature] {
+				featuresSeen[feature] = true
+				features = append(features, feature)
+			}
+		}
+		for _, doc := range commitMessage.Docs {
+			if !docsSeen[doc] {
+				docsSeen[doc] = true
+				docs = append(docs, doc)
+			}
+		}
+		for _, fix := range commitMessage.Fixes {
+			if !fixesSeen[fix] {
+				fixesSeen[fix] = true
+				fixes = append(fixes, fix)
+			}
+		}
 	}
 
 	var builder strings.Builder
