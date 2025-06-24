@@ -19,7 +19,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/googleapis/librarian/internal/constants"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -196,7 +195,7 @@ func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
-		generatorInput := filepath.Join(state.languageRepo.Dir, constants.GeneratorInputDir)
+		generatorInput := filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir)
 		slog.Info(fmt.Sprintf("Performing refined generation for library %s", libraryID))
 		return libraryID, state.containerConfig.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID)
 	} else {
@@ -225,7 +224,7 @@ func detectIfLibraryConfigured(apiPath, repoURL, repoRoot, gitHubToken string) (
 		err           error
 	)
 	if repoRoot != "" {
-		pipelineState, err = loadPipelineStateFile(filepath.Join(repoRoot, constants.GeneratorInputDir, pipelineStateFile))
+		pipelineState, err = loadPipelineStateFile(filepath.Join(repoRoot, config.GeneratorInputDir, pipelineStateFile))
 		if err != nil {
 			return false, err
 		}

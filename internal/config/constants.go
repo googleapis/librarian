@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package constants
+package config
 
 const (
 	// GeneratorInputDir is the default directory to store files that generator

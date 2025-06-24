@@ -19,7 +19,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/googleapis/librarian/internal/constants"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -276,7 +275,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
-	generatorInput := filepath.Join(languageRepo.Dir, constants.GeneratorInputDir)
+	generatorInput := filepath.Join(languageRepo.Dir, config.GeneratorInputDir)
 	if err := cc.Configure(apiRoot, apiPath, generatorInput); err != nil {
 		addErrorToPullRequest(prContent, apiPath, err, "configuring")
 		if err := languageRepo.CleanWorkingTree(); err != nil {

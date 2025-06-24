@@ -19,7 +19,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/googleapis/librarian/internal/constants"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -149,8 +148,8 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	savePipelineState(state)
 
 	// Take a defensive copy of the generator input directory from the language repo.
-	generatorInput := filepath.Join(state.workRoot, constants.GeneratorInputDir)
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, constants.GeneratorInputDir))); err != nil {
+	generatorInput := filepath.Join(state.workRoot, config.GeneratorInputDir)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
 
