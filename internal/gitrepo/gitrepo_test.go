@@ -17,9 +17,11 @@ package gitrepo
 import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestGetCommitsForPathsSinceCommit(t *testing.T) {
@@ -63,15 +65,15 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 		repoDir, _ := os.MkdirTemp(dir, "test-repo-*")
 		localRepo, _ := git.PlainInit(repoDir, false)
 		worktree, _ := localRepo.Worktree()
-		_, err = os.Create(strings.Join([]string{repoDir, "test.txt"}, "/"))
-		if err != nil {
-			t.Logf("create file has error: %s", err)
-		}
-		_, err = worktree.Add("test.txt")
-		if err != nil {
-			t.Logf("git-add file has error: %s", err)
-		}
-		firstCommit, err := worktree.Commit("empty commit", &git.CommitOptions{})
+		_, _ = os.Create(strings.Join([]string{repoDir, "test.txt"}, "/"))
+		_, _ = worktree.Add("test.txt")
+		firstCommit, err := worktree.Commit("empty commit", &git.CommitOptions{
+			Author: &object.Signature{
+				Name:  "test-user",
+				Email: "test@email.com",
+				When:  time.Now(),
+			},
+		})
 		if err != nil {
 			t.Logf("git-commit file has error: %s", err)
 		}
@@ -84,6 +86,11 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			_, _ = os.Create(absFileName)
 			_, _ = worktree.Add(test.filePaths[i] + "/file.txt")
 			current, _ := worktree.Commit(test.messages[i], &git.CommitOptions{
+				Author: &object.Signature{
+					Name:  "test-user",
+					Email: "test@email.com",
+					When:  time.Now(),
+				},
 				Parents: []plumbing.Hash{parent},
 			})
 			parent = current
