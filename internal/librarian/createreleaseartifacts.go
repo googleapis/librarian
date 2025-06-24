@@ -29,11 +29,20 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+// LibraryRelease contains information about the release of a single
+// library.
 type LibraryRelease struct {
-	LibraryID    string
-	ReleaseID    string
-	Version      string
-	CommitHash   string
+	// The ID of the library being released.
+	LibraryID string
+	// The release ID of the PR containing this release
+	// (as specified in commit messages and the PR description).
+	ReleaseID string
+	// The version of the library being released.
+	Version string
+	// The hash of the commit which should be tagged when the library is released.
+	CommitHash string
+	// The release notes for the library release, to be included in the GitHub
+	// release.
 	ReleaseNotes string
 }
 

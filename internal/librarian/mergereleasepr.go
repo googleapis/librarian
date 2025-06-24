@@ -118,6 +118,9 @@ func runMergeReleasePR(ctx context.Context, cfg *config.Config) error {
 	return mergeReleasePR(ctx, workRoot, cfg)
 }
 
+// A SuspectRelease is a library release which is probably invalid due
+// to other changes (e.g. to the pipeline state for the library, or the source
+// code) which have been committed since the release process was initiated.
 type SuspectRelease struct {
 	LibraryID string
 	Reason    string

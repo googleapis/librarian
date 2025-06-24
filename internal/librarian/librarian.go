@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// CmdLibrarian is the top-level command for the Librarian CLI.
 var CmdLibrarian = &cli.Command{
 	Short: "librarian manages client libraries for Google APIs",
 	Usage: "librarian <command> [arguments]",
@@ -46,6 +47,8 @@ func init() {
 	)
 }
 
+// Run executes the Librarian CLI with the given command line
+// arguments.
 func Run(ctx context.Context, arg ...string) error {
 	CmdLibrarian.InitFlags()
 	if err := CmdLibrarian.Parse(arg); err != nil {
