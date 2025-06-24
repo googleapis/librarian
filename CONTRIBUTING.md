@@ -63,7 +63,7 @@ A pull request (PR) that does not go through this coordination process may be
 closed to avoid wasted effort.
 
 Make sure your code follows the guidelines at
-[How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md). 
+[How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md).
 
 ## Checking the issue tracker
 
@@ -218,13 +218,6 @@ back with that request without review.
 After creating a pull request, request a specific reviewer if relevant, or leave it for
 the default group.
 
-Creating additional commits to address reviewer feedback is generally preferred
-over amending and force-pushing. This makes it easier for reviewers to see what
-has changed since their last review.
-
-Pull requests are always squashed and merged. Before merging, please review and
-edit the resulting commit message to ensure it clearly describes the change.
-
 ### Opening a pull request with multiple commits
 
 When opening a pull request, it can be helpful to structure the commits for review. If
@@ -253,6 +246,19 @@ one business day may be closed (they can always be reopened later).
 If you're still working on something, continue iterating on your branch without
 creating a pull request until it’s ready for review.
 
+### Addressing code review comments
+
+Creating additional commits to address reviewer feedback is generally preferred
+over amending and force-pushing. This makes it easier for reviewers to see what
+has changed since their last review.
+
+Pull requests are always squashed and merged. Before merging, please review and
+edit the resulting commit message to ensure it clearly describes the change.
+
+After pushing,
+[click the button](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review#requesting-reviews-from-collaborators-and-organization-members)
+to ask a reviewer to re-request your review.
+
 ## Language guidelines
 
 Unless there is a clear reason otherwise, all new code should be written in Go.
@@ -268,12 +274,34 @@ A lot of our communication will happen on GitHub issues. Team members are
 expected to configure their inboxes to receive GitHub notifications alerts for
 all issues and pull requests to ensure effective communication.
 
-While we don’t have strict SLOs, we aim to review pull requests within
-**4 business hours**.
-
 If a pull request becomes inactive or misaligned with current priorities, we
 may close it to respect contributor and reviewer time. If you’d like to revisit
 it, just comment and reopen the conversation.
 
 If your pull request or issue is stuck, feel free to follow up over chat. We
 encourage it!
+
+### Reviewing a pull request
+
+While we don’t have strict SLOs, we aim to review pull requests within **4
+business hours**.
+
+When reviewing a pull request:
+
+- Start by reading the PR description to understand the purpose and context. If
+  the commit message doesn’t follow the
+  [commit message guidelines](https://github.com/googleapis/librarian/blob/main/CONTRIBUTING.md#commit-messages),
+  request changes.
+- Use `Approve` or `Request changes` explicitly. Avoid leaving ambiguous
+  feedback.
+- Focus on what is in scope. If unrelated issues arise, suggest filing a
+  separate PR or issue.
+- If you’ve requested changes, approve the PR once the updates are
+  satisfactory, even if the author forgot to click the re-request review.
+- If a review has stalled or the context has shifted, leave a comment to
+  clarify expectations, or close the PR. Keeping the
+  [dashboard clean](https://github.com/googleapis/librarian/blob/main/CONTRIBUTING.md#keeping-the-pull-request-dashboard-clean)
+  is encouraged, and new PRs are easy to open.
+- The
+  [user-review-requested:@me](https://github.com/googleapis/librarian/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A%40me)
+  search view is helpful for tracking PRs awaiting your review.
