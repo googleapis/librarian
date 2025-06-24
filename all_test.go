@@ -145,7 +145,7 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 				for _, spec := range gen.Specs {
 					switch s := spec.(type) {
 					case *ast.TypeSpec:
-						checkDoc(t, s.Name, s.Doc, path)
+						checkDoc(t, s.Name, gen.Doc, path)
 					case *ast.ValueSpec:
 						for _, name := range s.Names {
 							checkDoc(t, name, gen.Doc, path)
