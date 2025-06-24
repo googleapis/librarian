@@ -284,21 +284,16 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			}()
 
 			repo, err := cloneOrOpenLanguageRepo(workRoot, test.repoRoot, test.repoURL, test.language)
-
 			if test.wantErr {
 				if err == nil {
 					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")
 				}
-				// If we expected an error, we're done with this test case.
 				return
 			}
-
-			// From here, we do not expect an error.
 			if err != nil {
 				t.Errorf("cloneOrOpenLanguageRepo() got unexpected error: %v", err)
 				return
 			}
-
 			if test.check != nil {
 				if repo == nil {
 					t.Fatal("cloneOrOpenLanguageRepo() returned nil repo but no error")

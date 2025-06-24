@@ -111,7 +111,7 @@ func init() {
 
 func runMergeReleasePR(ctx context.Context, cfg *config.Config) error {
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime, flagWorkRoot)
+	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
 	if err != nil {
 		return err
 	}

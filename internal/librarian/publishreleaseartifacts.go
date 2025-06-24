@@ -77,7 +77,7 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 	// Load the state and config from the artifact directory. These will have been created by create-release-artifacts.
-	ps, err := loadPipelineStateFile(filepath.Join(flagArtifactRoot, pipelineStateFile))
+	ps, err := loadPipelineStateFile(filepath.Join(cfg.ArtifactRoot, pipelineStateFile))
 	if err != nil {
 		return err
 	}

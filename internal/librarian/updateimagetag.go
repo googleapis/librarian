@@ -144,7 +144,7 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	}
 	// Derive the new image to use, and save it in the context.
 	ps.ImageTag = cfg.Tag
-	state.containerConfig.Image = deriveImage(flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
+	state.containerConfig.Image = deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 	savePipelineState(state)
 
 	// Take a defensive copy of the generator input directory from the language repo.
