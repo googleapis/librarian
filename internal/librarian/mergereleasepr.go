@@ -161,7 +161,7 @@ func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) er
 		return err
 	}
 
-	if err := appendResultEnvironmentVariable(workRoot, mergedReleaseCommitEnvVarName, mergeCommit, flagEnvFile); err != nil {
+	if err := appendResultEnvironmentVariable(workRoot, mergedReleaseCommitEnvVarName, mergeCommit, cfg.EnvFile); err != nil {
 		return err
 	}
 

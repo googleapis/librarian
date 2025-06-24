@@ -165,7 +165,7 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	// Commit any changes
 	commitMsg := fmt.Sprintf("chore: update generation image tag to %s", flagTag)
 	if err := commitAll(languageRepo, commitMsg,
-		flagGitUserName, flagGitUserEmail); err != nil {
+		cfg.GitUserName, cfg.GitUserEmail); err != nil {
 		return err
 	}
 
