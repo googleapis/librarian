@@ -57,6 +57,8 @@ type Docker struct {
 
 	// The provider for environment variables, if any.
 	env *EnvironmentProvider
+
+	run func(args ...string) error
 }
 
 func New(ctx context.Context, workRoot, image, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
@@ -67,6 +69,9 @@ func New(ctx context.Context, workRoot, image, secretsProject string, pipelineCo
 	return &Docker{
 		Image: image,
 		env:   envProvider,
+		run: func(args ...string) error {
+			return runCommand("docker", args...)
+		},
 	}, nil
 }
 
@@ -281,7 +286,7 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 	args = append(args, c.Image)
 	args = append(args, string(command))
 	args = append(args, commandArgs...)
-	return runCommand("docker", args...)
+	return c.run(args...)
 }
 
 func maybeRelocateMounts(mounts []string) []string {
