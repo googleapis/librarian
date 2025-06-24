@@ -63,9 +63,18 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 		repoDir, _ := os.MkdirTemp(dir, "test-repo-*")
 		localRepo, _ := git.PlainInit(repoDir, false)
 		worktree, _ := localRepo.Worktree()
-		_, _ = os.Create(strings.Join([]string{repoDir, "test.txt"}, "/"))
-		_, _ = worktree.Add("test.txt")
-		firstCommit, _ := worktree.Commit("empty commit", &git.CommitOptions{})
+		_, err = os.Create(strings.Join([]string{repoDir, "test.txt"}, "/"))
+		if err != nil {
+			t.Logf("create file has error: %s", err)
+		}
+		_, err = worktree.Add("test.txt")
+		if err != nil {
+			t.Logf("git-add file has error: %s", err)
+		}
+		firstCommit, err := worktree.Commit("empty commit", &git.CommitOptions{})
+		if err != nil {
+			t.Logf("git-commit file has error: %s", err)
+		}
 		t.Logf("first commit is %s", firstCommit)
 		parent := firstCommit
 		for i := 0; i < len(test.filePaths); i++ {
@@ -77,9 +86,6 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			current, _ := worktree.Commit(test.messages[i], &git.CommitOptions{
 				Parents: []plumbing.Hash{parent},
 			})
-			t.Logf("current is %s", current)
-			t.Logf("parent is %s", parent)
-			t.Logf("======")
 			parent = current
 		}
 
