@@ -121,15 +121,8 @@ func New() *Config {
 
 // IsValid ensures the values contained in a Config are valid.
 func (c *Config) IsValid() (bool, error) {
-	if err := c.validatePush(); err != nil {
-		return false, err
+	if c.Push && c.GitHubToken == "" {
+		return false, errors.New("no GitHub token supplied for push")
 	}
 	return true, nil
-}
-
-func (c *Config) validatePush() error {
-	if c.Push && c.GitHubToken == "" {
-		return errors.New("no GitHub token supplied for push")
-	}
-	return nil
 }
