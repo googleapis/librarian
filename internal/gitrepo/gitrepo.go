@@ -58,6 +58,8 @@ type RepositoryOptions struct {
 	MaybeClone bool
 	// RemoteURL is the URL of the remote repository to clone from. Required if Clone is not CloneOptionNone.
 	RemoteURL string
+	// Type of ci build
+	Ci string
 }
 
 // NewRepository provides access to a git repository based on the provided options.
@@ -84,7 +86,7 @@ func NewRepository(opts *RepositoryOptions) (*Repository, error) {
 			return nil, fmt.Errorf("gitrepo: remote URL is required when cloning")
 		}
 		slog.Info("Repository not found, executing clone")
-		return clone(opts.Dir, opts.RemoteURL)
+		return clone(opts.Dir, opts.RemoteURL, opts.Ci)
 	}
 	return nil, fmt.Errorf("failed to check for repository at %q: %w", opts.Dir, err)
 }
@@ -101,7 +103,7 @@ func open(dir string) (*Repository, error) {
 	}, nil
 }
 
-func clone(dir, url string) (*Repository, error) {
+func clone(dir, url string, ci string) (*Repository, error) {
 	slog.Info(fmt.Sprintf("Cloning repository from %q to %q", url, dir))
 	options := &git.CloneOptions{
 		URL:           url,
@@ -112,7 +114,7 @@ func clone(dir, url string) (*Repository, error) {
 		// (There may be other examples too.)
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
 	}
-	if ci := os.Getenv("CI"); ci == "" {
+	if ci == "" {
 		options.Progress = os.Stdout // When not a CI build, output progress.
 	}
 

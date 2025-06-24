@@ -119,11 +119,12 @@ func init() {
 		addFlagSkipIntegrationTests,
 		addFlagEnvFile,
 		addFlagRepoUrl,
+		addFlagCi,
 	})
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx, cfg)
 	if err != nil {
 		return err
 	}

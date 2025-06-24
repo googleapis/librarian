@@ -34,6 +34,7 @@ var (
 	flagBaselineCommit       string
 	flagBranch               string
 	flagBuild                bool
+	flagCi                   string
 	flagEnvFile              string
 	flagGitUserEmail         string
 	flagGitUserName          string
@@ -75,6 +76,10 @@ func addFlagBranch(fs *flag.FlagSet) {
 
 func addFlagBuild(fs *flag.FlagSet) {
 	fs.BoolVar(&flagBuild, "build", false, "whether to build the generated code")
+}
+
+func addFlagCi(fs *flag.FlagSet) {
+	fs.StringVar(&flagCi, "ci", "", "Type of ci build")
 }
 
 func addFlagEnvFile(fs *flag.FlagSet) {
@@ -175,6 +180,7 @@ func applyFlags(cfg *config.Config) {
 	cfg.BaselineCommit = flagBaselineCommit
 	cfg.Branch = flagBranch
 	cfg.Build = flagBuild
+	cfg.Ci = flagCi
 	cfg.EnvFile = flagEnvFile
 	cfg.GitUserEmail = flagGitUserEmail
 	cfg.GitUserName = flagGitUserName

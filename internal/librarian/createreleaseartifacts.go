@@ -80,11 +80,12 @@ func init() {
 		addFlagReleaseID,
 		addFlagSecretsProject,
 		addFlagSkipIntegrationTests,
+		addFlagCi,
 	})
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx, cfg)
 	if err != nil {
 		return err
 	}

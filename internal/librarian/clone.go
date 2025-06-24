@@ -22,11 +22,12 @@ import (
 
 const googleapisURL = "https://github.com/googleapis/googleapis"
 
-func cloneGoogleapis(workRoot string) (*gitrepo.Repository, error) {
+func cloneGoogleapis(workRoot string, ci string) (*gitrepo.Repository, error) {
 	repoPath := filepath.Join(workRoot, "googleapis")
 	return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 		Dir:        repoPath,
 		MaybeClone: true,
 		RemoteURL:  googleapisURL,
+		Ci:         ci,
 	})
 }

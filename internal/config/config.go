@@ -42,6 +42,9 @@ type Config struct {
 	// Build determines whether to build the generated library.
 	Build bool
 
+	// Type of ci build
+	Ci string
+
 	// EnvFile is the path to the file storing environment variables.
 	EnvFile string
 

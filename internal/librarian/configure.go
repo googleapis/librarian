@@ -96,11 +96,12 @@ func init() {
 		addFlagRepoRoot,
 		addFlagRepoUrl,
 		addFlagSecretsProject,
+		addFlagCi,
 	})
 }
 
 func runConfigure(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx)
+	state, err := createCommandStateForLanguage(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -117,7 +118,7 @@ func executeConfigure(state *commandState, cfg *config.Config) error {
 
 	var apiRoot string
 	if cfg.APIRoot == "" {
-		repo, err := cloneGoogleapis(state.workRoot)
+		repo, err := cloneGoogleapis(state.workRoot, cfg.Ci)
 		if err != nil {
 			return err
 		}

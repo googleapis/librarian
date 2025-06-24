@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
@@ -61,7 +62,7 @@ type commandState struct {
 	containerConfig *docker.Docker
 }
 
-func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
+func cloneOrOpenLanguageRepo(workRoot string, ci string) (*gitrepo.Repository, error) {
 	var languageRepo *gitrepo.Repository
 	if flagRepoRoot != "" && flagRepoUrl != "" {
 		return nil, errors.New("do not specify both repo-root and repo-url")
@@ -76,6 +77,7 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
 			Dir:        repoPath,
 			MaybeClone: true,
 			RemoteURL:  flagRepoUrl,
+			Ci:         ci,
 		})
 	}
 	if flagRepoRoot == "" {
@@ -85,6 +87,7 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
 			Dir:        repoPath,
 			MaybeClone: true,
 			RemoteURL:  languageRepoURL,
+			Ci:         ci,
 		})
 	}
 	repoRoot, err := filepath.Abs(flagRepoRoot)
@@ -93,6 +96,7 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
 	}
 	languageRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 		Dir: repoRoot,
+		Ci:  ci,
 	})
 	if err != nil {
 		return nil, err
@@ -113,13 +117,13 @@ func cloneOrOpenLanguageRepo(workRoot string) (*gitrepo.Repository, error) {
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
+func createCommandStateForLanguage(ctx context.Context, cfg *config.Config) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot)
+	repo, err := cloneOrOpenLanguageRepo(workRoot, cfg.Ci)
 	if err != nil {
 		return nil, err
 	}
