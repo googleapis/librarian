@@ -29,7 +29,7 @@ import (
 
 type Command string
 
-// The set of docker commands, in a single place to avoid typos.
+// The set of commands passed to the language container, in a single place to avoid typos.
 const (
 	CommandGenerateRaw            Command = "generate-raw"
 	CommandGenerateLibrary        Command = "generate-library"
@@ -254,9 +254,9 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 
 	args := []string{
 		"run",
-		"--rm", // Automatically delete the docker after completion
+		"--rm", // Automatically delete the container after completion
 	}
-	// Run as the current user in the docker - primarily so that any
+	// Run as the current user in the container - primarily so that any
 	// files we create end up being owned by the current user (and easily deletable).
 	currentUser, err := user.Current()
 	if err != nil {
@@ -285,7 +285,7 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 }
 
 func maybeRelocateMounts(mounts []string) []string {
-	// When running in Kokoro, we'll be running sibling dockers.
+	// When running in Kokoro, we'll be running sibling containers.
 	// Make sure we specify the "from" part of the mount as the host directory.
 	kokoroHostRootDir := os.Getenv("KOKORO_HOST_ROOT_DIR")
 	kokoroRootDir := os.Getenv("KOKORO_ROOT_DIR")

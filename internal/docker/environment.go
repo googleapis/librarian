@@ -123,10 +123,10 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(commandName string
 
 		// Finally, write the value if we've got one
 		if present {
-			slog.Info(fmt.Sprintf("Using %s to provide value to docker for %s", source, variable.Name))
+			slog.Info(fmt.Sprintf("Using %s to provide value to container for %s", source, variable.Name))
 			builder.WriteString(fmt.Sprintf("%s=%s\n", variable.Name, value))
 		} else {
-			slog.Info(fmt.Sprintf("No value to provide to docker for '%s'", variable.Name))
+			slog.Info(fmt.Sprintf("No value to provide to container for '%s'", variable.Name))
 			builder.WriteString(fmt.Sprintf("# No value for %s\n", variable.Name))
 		}
 		continue
