@@ -48,7 +48,7 @@ const ConventionalCommitsAppId = 37172
 // until you've done something".
 const MergeBlockedLabel = "merge-blocked-see-comments"
 
-var CmdMergeReleasePR = &cli.Command{
+var cmdMergeReleasePR = &cli.Command{
 	Short: "merge-release-pr merges a validated release PR",
 	Usage: "librarian merge-release-pr -release-id=<id> -release-pr-url=<url> -baseline-commit=<commit> [flags]",
 	Long: `Specify a GitHub access token as an environment variable, the URL for a release PR, the baseline
@@ -98,7 +98,7 @@ is added.
 }
 
 func init() {
-	CmdMergeReleasePR.SetFlags([]func(fs *flag.FlagSet){
+	cmdMergeReleasePR.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
 		addFlagWorkRoot,

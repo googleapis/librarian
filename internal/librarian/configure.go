@@ -32,7 +32,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var CmdConfigure = &cli.Command{
+var cmdConfigure = &cli.Command{
 	Short: "configure configures libraries for new APIs in a language",
 	Usage: "librarian configure -language=<language> [flags]",
 	Long: `
@@ -84,7 +84,7 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	CmdConfigure.SetFlags([]func(fs *flag.FlagSet){
+	cmdConfigure.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIPath,

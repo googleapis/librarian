@@ -37,7 +37,7 @@ type LibraryRelease struct {
 	ReleaseNotes string
 }
 
-var CmdCreateReleaseArtifacts = &cli.Command{
+var cmdCreateReleaseArtifacts = &cli.Command{
 	Short: "create-release-artifacts creates release artifacts from a merged release PR",
 	Usage: "librarian create-release-artifacts -language=<language> -release-id=<id> [flags]",
 	Long: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
@@ -71,7 +71,7 @@ if retried.
 }
 
 func init() {
-	CmdCreateReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
+	cmdCreateReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagLanguage,

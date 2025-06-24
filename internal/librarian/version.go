@@ -22,7 +22,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-var CmdVersion = &cli.Command{
+var cmdVersion = &cli.Command{
 	Short: "version prints the version information",
 	Usage: "librarian version",
 	Long:  "Version prints version information for the librarian binary.",

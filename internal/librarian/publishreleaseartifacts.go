@@ -31,7 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/githubrepo"
 )
 
-var CmdPublishReleaseArtifacts = &cli.Command{
+var cmdPublishReleaseArtifacts = &cli.Command{
 	Short: "publish-release-artifacts publishes (previously-created) release artifacts to package managers and documentation sites",
 	Usage: "librarian publish-release-artifacts -language=<language> -artifact-root=<artifact-root> -tag-repo-url=<repo-url> [flags]",
 	Long: `Specify the language, the root output directory created by create-release-artifacts, and
@@ -61,7 +61,7 @@ create a tag which already exists.)
 }
 
 func init() {
-	CmdPublishReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
+	cmdPublishReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
 		addFlagArtifactRoot,
 		addFlagImage,
 		addFlagWorkRoot,

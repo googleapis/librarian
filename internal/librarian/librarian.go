@@ -34,15 +34,15 @@ var CmdLibrarian = &cli.Command{
 
 func init() {
 	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
-		CmdConfigure,
-		CmdGenerate,
-		CmdUpdateApis,
-		CmdCreateReleasePR,
-		CmdUpdateImageTag,
-		CmdMergeReleasePR,
-		CmdCreateReleaseArtifacts,
-		CmdPublishReleaseArtifacts,
-		CmdVersion,
+		cmdConfigure,
+		cmdGenerate,
+		cmdUpdateApis,
+		cmdCreateReleasePR,
+		cmdUpdateImageTag,
+		cmdMergeReleasePR,
+		cmdCreateReleaseArtifacts,
+		cmdPublishReleaseArtifacts,
+		cmdVersion,
 	)
 }
 
