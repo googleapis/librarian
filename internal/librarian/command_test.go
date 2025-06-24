@@ -44,7 +44,7 @@ func TestCommandUsage(t *testing.T) {
 }
 
 func TestDeriveImage(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name              string
 		language          string
 		imageOverride     string
@@ -82,13 +82,12 @@ func TestDeriveImage(t *testing.T) {
 			state:             &statepb.PipelineState{ImageTag: "v1.2.3"},
 			want:              "path/to/repo/google-cloud-go-generator:v1.2.3",
 		},
-	}
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveImage(test.language, test.imageOverride, test.defaultRepository, test.state)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := deriveImage(tt.language, tt.imageOverride, tt.defaultRepository, tt.state)
-			if got != tt.want {
-				t.Errorf("deriveImage() = %q, want %q", got, tt.want)
+			if got != test.want {
+				t.Errorf("deriveImage() = %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -96,7 +95,7 @@ func TestDeriveImage(t *testing.T) {
 
 func TestCreateWorkRoot(t *testing.T) {
 	now := time.Now()
-	tests := []struct {
+	for _, tt := range []struct {
 		name             string
 		workRootOverride string
 		setup            func(t *testing.T) (string, func())
@@ -113,7 +112,11 @@ func TestCreateWorkRoot(t *testing.T) {
 			name: "without override, new dir",
 			setup: func(t *testing.T) (string, func()) {
 				expectedPath := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(now)))
-				return expectedPath, func() { os.RemoveAll(expectedPath) }
+				return expectedPath, func() {
+					if err := os.RemoveAll(expectedPath); err != nil {
+						t.Errorf("os.RemoveAll(%q) = %v; want nil", expectedPath, err)
+					}
+				}
 			},
 		},
 		{
@@ -123,34 +126,38 @@ func TestCreateWorkRoot(t *testing.T) {
 				if err := os.Mkdir(expectedPath, 0755); err != nil {
 					t.Fatalf("failed to create test dir: %v", err)
 				}
-				return expectedPath, func() { os.RemoveAll(expectedPath) }
+				return expectedPath, func() {
+					if err := os.RemoveAll(expectedPath); err != nil {
+						t.Errorf("os.RemoveAll(%q) = %v; want nil", expectedPath, err)
+					}
+				}
 			},
 			wantErr: true,
 		},
-	}
-
-	for _, tt := range tests {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			want, cleanup := tt.setup(t)
 			defer cleanup()
 
 			got, err := createWorkRoot(now, tt.workRootOverride)
-			if err != nil && !tt.wantErr {
+			if tt.wantErr {
+				if err == nil {
+					t.Error("createWorkRoot() expected an error but got nil")
+				}
+				return
+			}
+
+			if err != nil {
 				t.Errorf("createWorkRoot() got unexpected error: %v", err)
 				return
 			}
-			if err == nil && tt.wantErr {
-				t.Errorf("createWorkRoot() expected an error but got nil")
-				return
+
+			if got != want {
+				t.Errorf("createWorkRoot() = %v, want %v", got, want)
 			}
-			if !tt.wantErr {
-				if got != want {
-					t.Errorf("createWorkRoot() = %v, want %v", got, want)
-				}
-				if tt.workRootOverride == "" {
-					if _, err := os.Stat(got); os.IsNotExist(err) {
-						t.Errorf("createWorkRoot() did not create directory %v", got)
-					}
+			if tt.workRootOverride == "" {
+				if _, err := os.Stat(got); os.IsNotExist(err) {
+					t.Errorf("createWorkRoot() did not create directory %v", got)
 				}
 			}
 		})
@@ -208,7 +215,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 	}
 	notARepoPath := t.TempDir()
 
-	tests := []struct {
+	for _, test := range []struct {
 		name     string
 		repoRoot string
 		repoURL  string
@@ -241,7 +248,11 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			setup: func(t *testing.T, wr string) func() {
 				repoPath := filepath.Join(wr, "google-cloud-go")
 				newTestGitRepoWithCommit(t, repoPath)
-				return func() { os.RemoveAll(repoPath) }
+				return func() {
+					if err := os.RemoveAll(repoPath); err != nil {
+						t.Errorf("os.RemoveAll(%q) = %v; want nil", repoPath, err)
+					}
+				}
 			},
 			check: func(t *testing.T, repo *gitrepo.Repository) {
 				wantDir := filepath.Join(workRoot, "google-cloud-go")
@@ -260,33 +271,39 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			repoRoot: notARepoPath,
 			wantErr:  true,
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			var cleanup func()
-			if tt.setup != nil {
-				cleanup = tt.setup(t, workRoot)
+			if test.setup != nil {
+				cleanup = test.setup(t, workRoot)
 			}
 			defer func() {
 				if cleanup != nil {
 					cleanup()
 				}
 			}()
-			repo, err := cloneOrOpenLanguageRepo(workRoot, tt.repoRoot, tt.repoURL, tt.language)
-			if err != nil && !tt.wantErr {
+
+			repo, err := cloneOrOpenLanguageRepo(workRoot, test.repoRoot, test.repoURL, test.language)
+
+			if test.wantErr {
+				if err == nil {
+					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")
+				}
+				// If we expected an error, we're done with this test case.
+				return
+			}
+
+			// From here, we do not expect an error.
+			if err != nil {
 				t.Errorf("cloneOrOpenLanguageRepo() got unexpected error: %v", err)
 				return
 			}
-			if err == nil && tt.wantErr {
-				t.Errorf("cloneOrOpenLanguageRepo() expected an error but got nil")
-				return
-			}
-			if tt.check != nil {
+
+			if test.check != nil {
 				if repo == nil {
-					t.Fatal("repo is nil")
+					t.Fatal("cloneOrOpenLanguageRepo() returned nil repo but no error")
 				}
-				tt.check(t, repo)
+				test.check(t, repo)
 			}
 		})
 	}
