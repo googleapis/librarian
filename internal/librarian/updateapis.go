@@ -29,7 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-var CmdUpdateApis = &cli.Command{
+var cmdUpdateApis = &cli.Command{
 	Short: "update-apis regenerates APIs in a language repo with new specifications",
 	Usage: "librarian update-apis -language=<language> [flags]",
 	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
@@ -84,7 +84,7 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	CmdUpdateApis.SetFlags([]func(fs *flag.FlagSet){
+	cmdUpdateApis.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIRoot,

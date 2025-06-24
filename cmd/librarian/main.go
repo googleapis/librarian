@@ -12,6 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Command librarian is the CLI for the Librarian project, which provides
+// automation for common operations required by the Google Cloud SDK,
+// including onboarding libraries for APIs, regenerating those libraries,
+// and releasing them to package managers.
+//
+// This command includes common language-agnostic logic and delegates
+// to Docker images for language-specific operations such as the actual
+// library generation, building and testing.
 package main
 
 import (

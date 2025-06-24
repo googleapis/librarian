@@ -48,7 +48,7 @@ const ConventionalCommitsAppId = 37172
 // until you've done something".
 const MergeBlockedLabel = "merge-blocked-see-comments"
 
-var CmdMergeReleasePR = &cli.Command{
+var cmdMergeReleasePR = &cli.Command{
 	Short: "merge-release-pr merges a validated release PR",
 	Usage: "librarian merge-release-pr -release-id=<id> -release-pr-url=<url> -baseline-commit=<commit> [flags]",
 	Long: `Specify a GitHub access token as an environment variable, the URL for a release PR, the baseline
@@ -98,7 +98,7 @@ is added.
 }
 
 func init() {
-	CmdMergeReleasePR.SetFlags([]func(fs *flag.FlagSet){
+	cmdMergeReleasePR.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
 		addFlagWorkRoot,
@@ -118,6 +118,9 @@ func runMergeReleasePR(ctx context.Context, cfg *config.Config) error {
 	return mergeReleasePR(ctx, workRoot, cfg)
 }
 
+// A SuspectRelease is a library release which is probably invalid due
+// to other changes (e.g. to the pipeline state for the library, or the source
+// code) which have been committed since the release process was initiated.
 type SuspectRelease struct {
 	LibraryID string
 	Reason    string

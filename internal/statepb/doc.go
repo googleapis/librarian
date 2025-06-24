@@ -12,22 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package librarian
-
-import (
-	"context"
-	"fmt"
-
-	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/config"
-)
-
-var cmdVersion = &cli.Command{
-	Short: "version prints the version information",
-	Usage: "librarian version",
-	Long:  "Version prints version information for the librarian binary.",
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		fmt.Println(cli.Version())
-		return nil
-	},
-}
+// Package statepb contains code generated from proto/pipeline.proto, for
+// Librarian state and config files. This package is likely to be deleted
+// as part of https://github.com/googleapis/librarian/issues/326. No
+// handwritten code should be added to this package.
+package statepb

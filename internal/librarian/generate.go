@@ -32,7 +32,7 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-var CmdGenerate = &cli.Command{
+var cmdGenerate = &cli.Command{
 	Short: "generate generates client library code for a single API",
 	Usage: "librarian generate -api-root=<api-root> -api-path=<api-path> -language=<language> [flags]",
 	Long: `Specify the language, the API repository root and the path within it for the API to generate.
@@ -82,7 +82,7 @@ output directory that was specified for the "generate-raw" command.
 }
 
 func init() {
-	CmdGenerate.SetFlags([]func(fs *flag.FlagSet){
+	cmdGenerate.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIPath,

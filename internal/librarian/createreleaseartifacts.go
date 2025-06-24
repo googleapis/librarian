@@ -29,15 +29,24 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+// LibraryRelease contains information about the release of a single
+// library.
 type LibraryRelease struct {
-	LibraryID    string
-	ReleaseID    string
-	Version      string
-	CommitHash   string
+	// The ID of the library being released.
+	LibraryID string
+	// The release ID of the PR containing this release
+	// (as specified in commit messages and the PR description).
+	ReleaseID string
+	// The version of the library being released.
+	Version string
+	// The hash of the commit which should be tagged when the library is released.
+	CommitHash string
+	// The release notes for the library release, to be included in the GitHub
+	// release.
 	ReleaseNotes string
 }
 
-var CmdCreateReleaseArtifacts = &cli.Command{
+var cmdCreateReleaseArtifacts = &cli.Command{
 	Short: "create-release-artifacts creates release artifacts from a merged release PR",
 	Usage: "librarian create-release-artifacts -language=<language> -release-id=<id> [flags]",
 	Long: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
@@ -71,7 +80,7 @@ if retried.
 }
 
 func init() {
-	CmdCreateReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
+	cmdCreateReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagLanguage,

@@ -36,7 +36,7 @@ import (
 const prNumberEnvVarName = "_PR_NUMBER"
 const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
-var CmdCreateReleasePR = &cli.Command{
+var cmdCreateReleasePR = &cli.Command{
 	Short: "create-release-pr creates a release PR",
 	Usage: "librarian create-release-pr -language=<language> [flags]",
 	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
@@ -105,7 +105,7 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	CmdCreateReleasePR.SetFlags([]func(fs *flag.FlagSet){
+	cmdCreateReleasePR.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
 		addFlagWorkRoot,
@@ -306,18 +306,35 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 	return pr, nil
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/564): decide on release notes ordering
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
-	features := []string{}
-	docs := []string{}
-	fixes := []string{}
+	// Group release notes by type, preserving ordering (FIFO)
+	var features, docs, fixes []string
+	featuresSeen := make(map[string]bool)
+	docsSeen := make(map[string]bool)
+	fixesSeen := make(map[string]bool)
 
-	// TODO(https://github.com/googleapis/librarian/issues/549): deduping (same message across multiple commits)
 	// TODO(https://github.com/googleapis/librarian/issues/547): perhaps record breaking changes in a separate section
 	// TODO(https://github.com/googleapis/librarian/issues/550): include backlinks, googleapis commits etc
 	for _, commitMessage := range commitMessages {
-		features = append(features, commitMessage.Features...)
-		docs = append(docs, commitMessage.Docs...)
-		fixes = append(fixes, commitMessage.Fixes...)
+		for _, feature := range commitMessage.Features {
+			if !featuresSeen[feature] {
+				featuresSeen[feature] = true
+				features = append(features, feature)
+			}
+		}
+		for _, doc := range commitMessage.Docs {
+			if !docsSeen[doc] {
+				docsSeen[doc] = true
+				docs = append(docs, doc)
+			}
+		}
+		for _, fix := range commitMessage.Fixes {
+			if !fixesSeen[fix] {
+				fixesSeen[fix] = true
+				fixes = append(fixes, fix)
+			}
+		}
 	}
 
 	var builder strings.Builder
