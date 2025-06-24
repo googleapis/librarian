@@ -156,16 +156,17 @@ func createReleasePR(state *commandState, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	if err := appendResultEnvironmentVariable(state.workRoot, baselineCommitEnvVarName, baselineCommit, flagEnvFile); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, baselineCommitEnvVarName, baselineCommit, cfg.EnvFile); err != nil {
 		return err
 	}
 
 	releaseID := fmt.Sprintf("release-%s", formatTimestamp(state.startTime))
-	if err := appendResultEnvironmentVariable(state.workRoot, releaseIDEnvVarName, releaseID, flagEnvFile); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, releaseIDEnvVarName, releaseID, cfg.EnvFile); err != nil {
 		return err
 	}
 
-	prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID, cfg.LibraryID, cfg.LibraryVersion, cfg.SkipIntegrationTests)
+	prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID, cfg.LibraryID, cfg.LibraryVersion,
+		cfg.SkipIntegrationTests, cfg.GitUserName, cfg.GitUserEmail)
 	if err != nil {
 		return err
 	}
@@ -195,7 +196,7 @@ func createReleasePR(state *commandState, cfg *config.Config) error {
 		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 		return err
 	}
-	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName, strconv.Itoa(prMetadata.Number), flagEnvFile); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName, strconv.Itoa(prMetadata.Number), cfg.EnvFile); err != nil {
 		return err
 	}
 	return nil
@@ -206,7 +207,8 @@ func createReleasePR(state *commandState, cfg *config.Config) error {
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory string, releaseID string, libraryID, libraryVersion, skipIntegrationTests string) (*PullRequestContent, error) {
+func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory string, releaseID string, libraryID,
+	libraryVersion, skipIntegrationTests string, gitUserName, gitUserEmail string) (*PullRequestContent, error) {
 	cc := state.containerConfig
 	libraries := state.pipelineState.Libraries
 	languageRepo := state.languageRepo
@@ -299,7 +301,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
 		// Note that releaseDescription will already end with two line breaks, so we don't need any more before the metadata.
 		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata),
-			flagGitUserName, flagGitUserEmail)
+			gitUserName, gitUserEmail)
 		if err != nil {
 			return nil, err
 		}
