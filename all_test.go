@@ -44,23 +44,26 @@ var hashHeader = regexp.MustCompile(`^# Copyright 20\d\d Google LLC
 #
 # Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
 
-var noHeaderRequiredFiles = []string{".github/CODEOWNERS", "go.sum", "go.mod", ".gitignore", "LICENSE", "renovate.json"}
-
 func TestHeaders(t *testing.T) {
+	excludeDirs, excludeFiles := loadHeaderTestExclusions()
 	sfs := os.DirFS(".")
 	fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
-			if d.Name() == "testdata" || d.Name() == ".git" {
-				return fs.SkipDir
+			for _, excludeDir := range excludeDirs {
+				if d.Name() == excludeDir {
+					return fs.SkipDir
+				}
 			}
 			return nil
 		}
 
 		var requiredHeader *regexp.Regexp
 		switch {
+		case slices.Contains(excludeFiles, path):
+			return nil
 		case strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".proto"):
 			requiredHeader = doubleSlashHeader
 		case strings.HasSuffix(path, ".sh"):
@@ -68,8 +71,6 @@ func TestHeaders(t *testing.T) {
 		case strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || strings.HasPrefix(path, "Dockerfile"):
 			requiredHeader = hashHeader
 		case strings.HasSuffix(path, ".md"):
-			return nil
-		case slices.Contains(noHeaderRequiredFiles, path):
 			return nil
 		default:
 			// Given the mixture of allow-lists and requirements, if there's a file which
@@ -87,6 +88,23 @@ func TestHeaders(t *testing.T) {
 		}
 		return nil
 	})
+}
+
+func loadHeaderTestExclusions() ([]string, []string) {
+	excludedDirs := []string{"testdata", ".git"}
+	excludedFiles := []string{".github/CODEOWNERS", "go.sum", "go.mod", ".gitignore", "LICENSE", "renovate.json"}
+	headerTestExclusions := os.Getenv("HEADER_TEST_EXCLUSIONS")
+	if headerTestExclusions != "" {
+		values := strings.Split(headerTestExclusions, ",")
+		for _, value := range values {
+			if strings.HasSuffix(value, "/") {
+				excludedDirs = append(excludedDirs, value[:len(value)-1])
+			} else {
+				excludedFiles = append(excludedFiles, value)
+			}
+		}
+	}
+	return excludedDirs, excludedFiles
 }
 
 func TestStaticCheck(t *testing.T) {
