@@ -27,12 +27,9 @@ These will teach you the foundations for how to write, run, and test Go code.
 
 Use these links to deepen your understanding as you go:
 
-- **Play with Go**: https://go.dev/play/
-  Playground to run and share Go snippets in your browser.
+- **Play with Go** (https://go.dev/play): Playground to run and share Go snippets in your browser.
 
-- **Browse Go Packages**: https://pkg.go.dev/
-  Go's official site for discovering and reading documentation for any Go
+- **Browse Go Packages** (https://pkg.go.dev): Go's official site for discovering and reading documentation for any Go
   package.
 
-- **Explore the Standard Library**: https://pkg.go.dev/std
-  Documentation for the Go standard library.
+- **Explore the Standard Library** (https://pkg.go.dev/std): Documentation for the Go standard library.
