@@ -128,7 +128,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		}
 	}
 
-	image := deriveImage(cfg.Language, cfg.Image, os.Getenv(DefaultRepositoryEnvironmentVariable), ps)
+	image := deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, cfg.SecretsProject, config)
 	if err != nil {
 		return err

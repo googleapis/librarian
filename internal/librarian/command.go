@@ -130,7 +130,7 @@ func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
 		return nil, err
 	}
 
-	image := deriveImage(flagLanguage, flagImage, os.Getenv(DefaultRepositoryEnvironmentVariable), ps)
+	image := deriveImage(flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 	containerConfig, err := container.NewContainerConfig(ctx, workRoot, image, flagSecretsProject, config)
 	if err != nil {
 		return nil, err

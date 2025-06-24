@@ -86,7 +86,7 @@ func runPublishReleaseArtifacts(ctx context.Context) error {
 		return err
 	}
 
-	image := deriveImage(flagLanguage, flagImage, os.Getenv(DefaultRepositoryEnvironmentVariable), ps)
+	image := deriveImage(flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, flagWorkRoot)
