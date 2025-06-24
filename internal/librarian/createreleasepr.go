@@ -123,7 +123,8 @@ func init() {
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, flagWorkRoot, flagRepoRoot, flagRepoUrl, flagLanguage, flagImage, os.Getenv(defaultRepositoryEnvironmentVariable), flagSecretsProject)
+	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+		os.Getenv(defaultRepositoryEnvironmentVariable), cfg.SecretsProject)
 	if err != nil {
 		return err
 	}
