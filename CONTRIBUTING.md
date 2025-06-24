@@ -140,7 +140,7 @@ If you open a pull request from a personal fork, you should allow repository
 maintainers to make edits to your fork by turning on
 "Allow edits from maintainers".
 
-Please see [Creating a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)
+Please see [creating a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)
 in the official GitHub documentation for details.
 
 ### Pull request from a branch
@@ -153,7 +153,7 @@ You should not have any long-lived branches within the repository without an
 open pull request. Such non-protected branches that don't have an associated
 open pull request, will be periodically cleaned up.
 
-Please see [Changing the branch range and destination repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request#changing-the-branch-range-and-destination-repository)
+Please see [changing the branch range and destination repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request#changing-the-branch-range-and-destination-repository)
 in the official GitHub documentation for details.
 
 ### Pull requests with multiple commits
