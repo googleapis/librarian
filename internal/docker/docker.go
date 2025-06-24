@@ -57,6 +57,9 @@ type Docker struct {
 
 	// The provider for environment variables, if any.
 	env *EnvironmentProvider
+
+	// run runs the docker command.
+	run func(args ...string) error
 }
 
 func New(ctx context.Context, workRoot, image, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
@@ -67,6 +70,9 @@ func New(ctx context.Context, workRoot, image, secretsProject string, pipelineCo
 	return &Docker{
 		Image: image,
 		env:   envProvider,
+		run: func(args ...string) error {
+			return runCommand("docker", args...)
+		},
 	}, nil
 }
 
@@ -236,7 +242,7 @@ func (c *Docker) PublishLibrary(outputDir, libId, libVersion string) error {
 	commandArgs := []string{
 		"--package-output=/output",
 		fmt.Sprintf("--library-id=%s", libId),
-		fmt.Sprintf("--version=%s", libId),
+		fmt.Sprintf("--version=%s", libVersion),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/output", outputDir),
@@ -256,13 +262,6 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 		"run",
 		"--rm", // Automatically delete the container after completion
 	}
-	// Run as the current user in the container - primarily so that any
-	// files we create end up being owned by the current user (and easily deletable).
-	currentUser, err := user.Current()
-	if err != nil {
-		return err
-	}
-	args = append(args, fmt.Sprintf("--user=%s:%s", currentUser.Uid, currentUser.Gid))
 
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
@@ -281,7 +280,7 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 	args = append(args, c.Image)
 	args = append(args, string(command))
 	args = append(args, commandArgs...)
-	return runCommand("docker", args...)
+	return c.run(args...)
 }
 
 func maybeRelocateMounts(mounts []string) []string {
@@ -303,13 +302,24 @@ func maybeRelocateMounts(mounts []string) []string {
 }
 
 func runCommand(c string, args ...string) error {
+	// Run as the current user in the container - primarily so that any files
+	// we create end up being owned by the current user (and easily deletable).
+	//
+	// TODO(https://github.com/googleapis/librarian/issues/590):
+	// temporarily lives here to support testing; move to config
+	currentUser, err := user.Current()
+	if err != nil {
+		return err
+	}
+	args = append(args, fmt.Sprintf("--user=%s:%s", currentUser.Uid, currentUser.Gid))
+
 	cmd := exec.Command(c, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	slog.Info(fmt.Sprintf("=== Docker start %s", strings.Repeat("=", 63)))
 	slog.Info(cmd.String())
 	slog.Info(strings.Repeat("-", 80))
-	err := cmd.Run()
+	err = cmd.Run()
 	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
 	return err
 }
