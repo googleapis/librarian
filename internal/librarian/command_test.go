@@ -95,7 +95,7 @@ func TestDeriveImage(t *testing.T) {
 
 func TestCreateWorkRoot(t *testing.T) {
 	now := time.Now()
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name             string
 		workRootOverride string
 		setup            func(t *testing.T) (string, func())
@@ -135,12 +135,12 @@ func TestCreateWorkRoot(t *testing.T) {
 			wantErr: true,
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			want, cleanup := tt.setup(t)
+		t.Run(test.name, func(t *testing.T) {
+			want, cleanup := test.setup(t)
 			defer cleanup()
 
-			got, err := createWorkRoot(now, tt.workRootOverride)
-			if tt.wantErr {
+			got, err := createWorkRoot(now, test.workRootOverride)
+			if test.wantErr {
 				if err == nil {
 					t.Error("createWorkRoot() expected an error but got nil")
 				}
@@ -155,7 +155,7 @@ func TestCreateWorkRoot(t *testing.T) {
 			if got != want {
 				t.Errorf("createWorkRoot() = %v, want %v", got, want)
 			}
-			if tt.workRootOverride == "" {
+			if test.workRootOverride == "" {
 				if _, err := os.Stat(got); os.IsNotExist(err) {
 					t.Errorf("createWorkRoot() did not create directory %v", got)
 				}
