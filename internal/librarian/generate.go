@@ -32,8 +32,8 @@ import (
 )
 
 var cmdGenerate = &cli.Command{
-	Short: "generate generates client library code for a single API",
-	Usage: "librarian generate -api-root=<api-root> -api-path=<api-path> -language=<language> [flags]",
+	Short:     "generate generates client library code for a single API",
+	UsageLine: "librarian generate -api-root=<api-root> -api-path=<api-path> -language=<language> [flags]",
 	Long: `Specify the language, the API repository root and the path within it for the API to generate.
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
 to build the generated library.

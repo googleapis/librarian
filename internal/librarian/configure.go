@@ -32,8 +32,8 @@ import (
 )
 
 var cmdConfigure = &cli.Command{
-	Short: "configure configures libraries for new APIs in a language",
-	Usage: "librarian configure -language=<language> [flags]",
+	Short:     "configure configures libraries for new APIs in a language",
+	UsageLine: "librarian configure -language=<language> [flags]",
 	Long: `
 Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A single API path may be specified if desired; otherwise all API paths will be checked.

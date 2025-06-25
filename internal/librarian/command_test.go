@@ -30,14 +30,14 @@ import (
 func TestCommandUsage(t *testing.T) {
 	for _, c := range CmdLibrarian.Commands {
 		t.Run(c.Name(), func(t *testing.T) {
-			parts := strings.Fields(c.Usage)
+			parts := strings.Fields(c.UsageLine)
 			// The first word should always be "librarian".
 			if parts[0] != "librarian" {
-				t.Errorf("invalid usage text: %q (the first word should be `librarian`)", c.Usage)
+				t.Errorf("invalid usage text: %q (the first word should be `librarian`)", c.UsageLine)
 			}
 			// The second word should always be the command name.
 			if parts[1] != c.Name() {
-				t.Errorf("invalid usage text: %q (second word should be command name %q)", c.Usage, c.Name())
+				t.Errorf("invalid usage text: %q (second word should be command name %q)", c.UsageLine, c.Name())
 			}
 		})
 	}

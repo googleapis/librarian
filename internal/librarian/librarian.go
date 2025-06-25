@@ -28,9 +28,9 @@ import (
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
 var CmdLibrarian = &cli.Command{
-	Short: "librarian manages client libraries for Google APIs",
-	Usage: "librarian <command> [arguments]",
-	Long:  "Librarian manages client libraries for Google APIs.",
+	Short:     "librarian manages client libraries for Google APIs",
+	UsageLine: "librarian <command> [arguments]",
+	Long:      "Librarian manages client libraries for Google APIs.",
 }
 
 func init() {

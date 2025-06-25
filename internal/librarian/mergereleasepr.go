@@ -48,8 +48,8 @@ const ConventionalCommitsAppId = 37172
 const MergeBlockedLabel = "merge-blocked-see-comments"
 
 var cmdMergeReleasePR = &cli.Command{
-	Short: "merge-release-pr merges a validated release PR",
-	Usage: "librarian merge-release-pr -release-id=<id> -release-pr-url=<url> -baseline-commit=<commit> [flags]",
+	Short:     "merge-release-pr merges a validated release PR",
+	UsageLine: "librarian merge-release-pr -release-id=<id> -release-pr-url=<url> -baseline-commit=<commit> [flags]",
 	Long: `Specify a GitHub access token as an environment variable, the URL for a release PR, the baseline
 commit of the repo when the release PR was being created, and the release ID.
 An optional additional URL prefix can be specified in order to wait for a mirror to have synchronized before the

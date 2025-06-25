@@ -32,8 +32,8 @@ type Command struct {
 	// Short is a concise one-line description of the command.
 	Short string
 
-	// Usage is the one line usage.
-	Usage string
+	// UsageLine is the one line usage.
+	UsageLine string
 
 	// Long is the full description of the command.
 	Long string
@@ -77,12 +77,12 @@ func (c *Command) Lookup(name string) (*Command, error) {
 }
 
 func (c *Command) usage(w io.Writer) {
-	if c.Short == "" || c.Usage == "" || c.Long == "" {
+	if c.Short == "" || c.UsageLine == "" || c.Long == "" {
 		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
 	}
 
 	fmt.Fprintf(w, "%s\n\n", c.Long)
-	fmt.Fprintf(w, "Usage:\n  %s", c.Usage)
+	fmt.Fprintf(w, "Usage:\n  %s", c.UsageLine)
 	if len(c.Commands) > 0 {
 		fmt.Fprint(w, "\n\nCommands:\n")
 		for _, c := range c.Commands {

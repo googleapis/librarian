@@ -32,9 +32,9 @@ func TestParseAndSetFlags(t *testing.T) {
 	)
 
 	cmd := &Command{
-		Short: "test is used for testing",
-		Long:  "This is the long documentation for command test.",
-		Usage: "foobar test [arguments]",
+		Short:     "test is used for testing",
+		Long:      "This is the long documentation for command test.",
+		UsageLine: "foobar test [arguments]",
 	}
 	cmd.InitFlags()
 	cmd.Flags.StringVar(&strFlag, "name", "default", "name flag")
@@ -142,9 +142,9 @@ Usage:
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			c := &Command{
-				Short: "test prints test information",
-				Usage: "test [flags]",
-				Long:  "Test prints test information.",
+				Short:     "test prints test information",
+				UsageLine: "test [flags]",
+				Long:      "Test prints test information.",
 			}
 			c.InitFlags()
 			for _, fn := range test.flags {
