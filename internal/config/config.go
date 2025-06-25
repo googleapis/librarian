@@ -19,6 +19,12 @@ import (
 	"os"
 )
 
+const (
+	// GeneratorInputDir is the default directory to store files that generator
+	// needs to regenerate libraries from an empty directory.
+	GeneratorInputDir string = "generator-input"
+)
+
 // Config holds all configuration values parsed from flags or environment
 // variables.
 type Config struct {
