@@ -94,15 +94,15 @@ func init() {
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
 		cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI)
 	if err != nil {
 		return err
 	}
-	return createReleaseArtifactsImpl(state, cfg.ReleaseID, cfg.SkipIntegrationTests)
+	return createReleaseArtifactsImpl(ctx, state, cfg.ReleaseID, cfg.SkipIntegrationTests)
 }
 
-func createReleaseArtifactsImpl(state *commandState, releaseID, skipIntegrationTests string) error {
+func createReleaseArtifactsImpl(ctx context.Context, state *commandState, releaseID, skipIntegrationTests string) error {
 	if err := validateSkipIntegrationTests(skipIntegrationTests); err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func createReleaseArtifactsImpl(state *commandState, releaseID, skipIntegrationT
 	}
 
 	for _, release := range releases {
-		if err := buildTestPackageRelease(state, outputRoot, release, skipIntegrationTests); err != nil {
+		if err := buildTestPackageRelease(ctx, state, outputRoot, release, skipIntegrationTests); err != nil {
 			return err
 		}
 	}
@@ -176,26 +176,26 @@ func copyFile(sourcePath, destPath string) error {
 	return createAndWriteBytesToFile(destPath, bytes)
 }
 
-func buildTestPackageRelease(state *commandState, outputRoot string, release LibraryRelease, skipIntegrationTests string) error {
+func buildTestPackageRelease(ctx context.Context, state *commandState, outputRoot string, release LibraryRelease, skipIntegrationTests string) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
 	if err := languageRepo.Checkout(release.CommitHash); err != nil {
 		return err
 	}
-	if err := cc.BuildLibrary(languageRepo.Dir, release.LibraryID); err != nil {
+	if err := cc.BuildLibrary(ctx, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	if skipIntegrationTests != "" {
 		slog.Info(fmt.Sprintf("Skipping integration tests: %s", skipIntegrationTests))
-	} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, release.LibraryID); err != nil {
+	} else if err := cc.IntegrationTestLibrary(ctx, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
-	if err := cc.PackageLibrary(languageRepo.Dir, release.LibraryID, outputDir); err != nil {
+	if err := cc.PackageLibrary(ctx, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
 		return err
 	}
 	return nil

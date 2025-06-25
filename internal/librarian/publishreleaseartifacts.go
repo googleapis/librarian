@@ -95,7 +95,7 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	containerConfig, err := docker.New(ctx, workRoot, image, cfg.SecretsProject, pipelineConfig)
+	containerConfig, err := docker.New(workRoot, image, cfg.SecretsProject, pipelineConfig)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 	}
 	slog.Info(fmt.Sprintf("Publishing packages for %d libraries", len(releases)))
 
-	if err := publishPackages(containerConfig, artifactRoot, releases); err != nil {
+	if err := publishPackages(ctx, containerConfig, artifactRoot, releases); err != nil {
 		return err
 	}
 	if err := createRepoReleases(ctx, releases, gitHubRepo, gitHubToken); err != nil {
@@ -139,10 +139,10 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 	return nil
 }
 
-func publishPackages(config *docker.Docker, outputRoot string, releases []LibraryRelease) error {
+func publishPackages(ctx context.Context, config *docker.Docker, outputRoot string, releases []LibraryRelease) error {
 	for _, release := range releases {
 		outputDir := filepath.Join(outputRoot, release.LibraryID)
-		if err := config.PublishLibrary(outputDir, release.LibraryID, release.Version); err != nil {
+		if err := config.PublishLibrary(ctx, outputDir, release.LibraryID, release.Version); err != nil {
 			return err
 		}
 	}

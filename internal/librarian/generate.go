@@ -128,7 +128,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	}
 
 	image := deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
-	containerConfig, err := docker.New(ctx, workRoot, image, cfg.SecretsProject, config)
+	containerConfig, err := docker.New(workRoot, image, cfg.SecretsProject, config)
 	if err != nil {
 		return err
 	}
@@ -141,33 +141,33 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		pipelineState:   ps,
 		containerConfig: containerConfig,
 	}
-	return executeGenerate(state, cfg.APIPath, cfg.APIRoot, cfg.Build)
+	return executeGenerate(ctx, state, cfg.APIPath, cfg.APIRoot, cfg.Build)
 }
 
-func executeGenerate(state *commandState, apiPath, apiRoot string, build bool) error {
+func executeGenerate(ctx context.Context, state *commandState, apiPath, apiRoot string, build bool) error {
 	outputDir := filepath.Join(state.workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
 	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-	libraryID, err := runGenerateCommand(state, apiRoot, apiPath, outputDir)
+	libraryID, err := runGenerateCommand(ctx, state, apiRoot, apiPath, outputDir)
 	if err != nil {
 		return err
 	}
 	if build {
 		if libraryID != "" {
 			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-			if err := state.containerConfig.Clean(state.languageRepo.Dir, libraryID); err != nil {
+			if err := state.containerConfig.Clean(ctx, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
 			if err := os.CopyFS(state.languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 				return err
 			}
-			if err := state.containerConfig.BuildLibrary(state.languageRepo.Dir, libraryID); err != nil {
+			if err := state.containerConfig.BuildLibrary(ctx, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
-		} else if err := state.containerConfig.BuildRaw(outputDir, apiPath); err != nil {
+		} else if err := state.containerConfig.BuildRaw(ctx, outputDir, apiPath); err != nil {
 			return err
 		}
 	}
@@ -180,7 +180,7 @@ func executeGenerate(state *commandState, apiPath, apiRoot string, build bool) e
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string) (string, error) {
+func runGenerateCommand(ctx context.Context, state *commandState, apiRoot, apiPath, outputDir string) (string, error) {
 	apiRoot, err := filepath.Abs(apiRoot)
 	if err != nil {
 		return "", err
@@ -195,10 +195,10 @@ func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string)
 		}
 		generatorInput := filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir)
 		slog.Info(fmt.Sprintf("Performing refined generation for library %s", libraryID))
-		return libraryID, state.containerConfig.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID)
+		return libraryID, state.containerConfig.GenerateLibrary(ctx, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
 		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", apiPath))
-		return "", state.containerConfig.GenerateRaw(apiRoot, outputDir, apiPath)
+		return "", state.containerConfig.GenerateRaw(ctx, apiRoot, outputDir, apiPath)
 	}
 }
 

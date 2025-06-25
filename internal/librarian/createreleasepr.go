@@ -124,7 +124,7 @@ func init() {
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
 		cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI)
 	if err != nil {
 		return err
@@ -166,7 +166,7 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 		return err
 	}
 
-	prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID, cfg.LibraryID, cfg.LibraryVersion,
+	prContent, err := generateReleaseCommitForEachLibrary(ctx, state, inputDirectory, releaseID, cfg.LibraryID, cfg.LibraryVersion,
 		cfg.SkipIntegrationTests, cfg.GitUserName, cfg.GitUserEmail)
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory, releaseID, libraryID,
+func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandState, inputDirectory, releaseID, libraryID,
 	libraryVersion, skipIntegrationTests, gitUserName, gitUserEmail string) (*PullRequestContent, error) {
 	cc := state.containerConfig
 	libraries := state.pipelineState.Libraries
@@ -270,7 +270,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory, re
 			return nil, err
 		}
 
-		if err := cc.PrepareLibraryRelease(languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
+		if err := cc.PrepareLibraryRelease(ctx, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "preparing library release")
 			// Clean up any changes before starting the next iteration.
 			if err := languageRepo.CleanWorkingTree(); err != nil {
@@ -278,7 +278,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory, re
 			}
 			continue
 		}
-		if err := cc.BuildLibrary(languageRepo.Dir, library.Id); err != nil {
+		if err := cc.BuildLibrary(ctx, languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "building/testing library")
 			// Clean up any changes before starting the next iteration.
 			if err := languageRepo.CleanWorkingTree(); err != nil {
@@ -288,7 +288,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory, re
 		}
 		if skipIntegrationTests != "" {
 			slog.Info(fmt.Sprintf("Skipping integration tests: %s", skipIntegrationTests))
-		} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, library.Id); err != nil {
+		} else if err := cc.IntegrationTestLibrary(ctx, languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "integration testing library")
 			if err := languageRepo.CleanWorkingTree(); err != nil {
 				return nil, err

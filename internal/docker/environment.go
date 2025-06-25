@@ -23,9 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/googleapis/gax-go/v2/apierror"
+	"github.com/googleapis/librarian/internal/secrets"
 	"github.com/googleapis/librarian/internal/statepb"
 	"google.golang.org/grpc/codes"
 )
@@ -33,12 +32,8 @@ import (
 // EnvironmentProvider represents configuration for environment
 // variables for docker invocations.
 type EnvironmentProvider struct {
-	// The context used for SecretManager requests
-	ctx context.Context
 	// The file used to store the environment variables for the duration of a docker run.
 	tmpFile string
-	// The client used to fetch secrets from Secret Manager, if any.
-	secretManagerClient *secretmanager.Client
 	// The project in which to look up secrets
 	secretsProject string
 	// A cache of secrets we've already fetched.
@@ -48,33 +43,21 @@ type EnvironmentProvider struct {
 	pipelineConfig *statepb.PipelineConfig
 }
 
-func newEnvironmentProvider(ctx context.Context, workRoot, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*EnvironmentProvider, error) {
+func newEnvironmentProvider(workRoot, secretsProject string, pipelineConfig *statepb.PipelineConfig) *EnvironmentProvider {
 	if pipelineConfig == nil {
-		return nil, nil
-	}
-	var secretManagerClient *secretmanager.Client
-	if secretsProject != "" {
-		client, err := secretmanager.NewClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-		secretManagerClient = client
-	} else {
-		secretManagerClient = nil
+		return nil
 	}
 	tmpFile := filepath.Join(workRoot, "docker-env.txt")
 	return &EnvironmentProvider{
-		ctx:                 ctx,
-		tmpFile:             tmpFile,
-		secretManagerClient: secretManagerClient,
-		secretsProject:      secretsProject,
-		secretCache:         make(map[string]string),
-		pipelineConfig:      pipelineConfig,
-	}, nil
+		tmpFile:        tmpFile,
+		secretsProject: secretsProject,
+		secretCache:    make(map[string]string),
+		pipelineConfig: pipelineConfig,
+	}
 }
 
-func (e *EnvironmentProvider) writeEnvironmentFile(commandName string) error {
-	content, err := e.constructEnvironmentFileContent(commandName)
+func (e *EnvironmentProvider) writeEnvironmentFile(ctx context.Context, commandName string) error {
+	content, err := e.constructEnvironmentFileContent(ctx, commandName)
 	if err != nil {
 		return err
 	}
@@ -95,7 +78,7 @@ func createAndWriteToFile(filePath string, content string) (err error) {
 	return err
 }
 
-func (e *EnvironmentProvider) constructEnvironmentFileContent(commandName string) (string, error) {
+func (e *EnvironmentProvider) constructEnvironmentFileContent(ctx context.Context, commandName string) (string, error) {
 	commandConfig := e.pipelineConfig.Commands[commandName]
 	if commandConfig == nil {
 		return "# No environment variables", nil
@@ -109,7 +92,7 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(commandName string
 		// Second source: Secret Manager
 		if !present {
 			source = "Secret Manager"
-			value, present, err = getSecretManagerValue(e, variable)
+			value, present, err = getSecretManagerValue(ctx, e, variable)
 			if err != nil {
 				return "", err
 			}
@@ -134,18 +117,15 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(commandName string
 	return builder.String(), nil
 }
 
-func getSecretManagerValue(dockerEnv *EnvironmentProvider, variable *statepb.CommandEnvironmentVariable) (string, bool, error) {
-	if variable.SecretName == "" || dockerEnv.secretManagerClient == nil {
+func getSecretManagerValue(ctx context.Context, dockerEnv *EnvironmentProvider, variable *statepb.CommandEnvironmentVariable) (string, bool, error) {
+	if variable.SecretName == "" {
 		return "", false, nil
 	}
 	value, present := dockerEnv.secretCache[variable.SecretName]
 	if present {
 		return value, true, nil
 	}
-	request := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", dockerEnv.secretsProject, variable.SecretName),
-	}
-	secret, err := dockerEnv.secretManagerClient.AccessSecretVersion(dockerEnv.ctx, request)
+	value, err := secrets.Get(ctx, dockerEnv.secretsProject, variable.SecretName, nil)
 	if err != nil {
 		// If the error is that the secret wasn't found, continue to the next source.
 		// Any other error causes a real error to be returned.
@@ -156,8 +136,6 @@ func getSecretManagerValue(dockerEnv *EnvironmentProvider, variable *statepb.Com
 			return "", false, err
 		}
 	}
-	// We assume the payload is valid UTF-8.
-	value = string(secret.Payload.Data[:])
 	dockerEnv.secretCache[variable.SecretName] = value
 	return value, true, nil
 }

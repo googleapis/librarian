@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -113,7 +112,7 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRoot, repoURL, language, imageOverride, defaultRepository, secretsProject, ci string) (*commandState, error) {
+func createCommandStateForLanguage(workRootOverride, repoRoot, repoURL, language, imageOverride, defaultRepository, secretsProject, ci string) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, workRootOverride)
 	if err != nil {
@@ -130,7 +129,7 @@ func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRo
 	}
 
 	image := deriveImage(language, imageOverride, defaultRepository, ps)
-	containerConfig, err := docker.New(ctx, workRoot, image, secretsProject, config)
+	containerConfig, err := docker.New(workRoot, image, secretsProject, config)
 	if err != nil {
 		return nil, err
 	}
