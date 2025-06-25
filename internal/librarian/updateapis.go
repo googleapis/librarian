@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -84,20 +83,19 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	cmdUpdateApis.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagAPIRoot,
-		addFlagBranch,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagLanguage,
-		addFlagLibraryID,
-		addFlagPush,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagSecretsProject,
-	})
+	cmdUpdateApis.InitFlags()
+	addFlagImage(cmdUpdateApis.Flags)
+	addFlagWorkRoot(cmdUpdateApis.Flags)
+	addFlagAPIRoot(cmdUpdateApis.Flags)
+	addFlagBranch(cmdUpdateApis.Flags)
+	addFlagGitUserEmail(cmdUpdateApis.Flags)
+	addFlagGitUserName(cmdUpdateApis.Flags)
+	addFlagLanguage(cmdUpdateApis.Flags)
+	addFlagLibraryID(cmdUpdateApis.Flags)
+	addFlagPush(cmdUpdateApis.Flags)
+	addFlagRepoRoot(cmdUpdateApis.Flags)
+	addFlagRepoUrl(cmdUpdateApis.Flags)
+	addFlagSecretsProject(cmdUpdateApis.Flags)
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {

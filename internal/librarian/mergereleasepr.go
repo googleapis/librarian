@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -98,15 +97,14 @@ is added.
 }
 
 func init() {
-	cmdMergeReleasePR.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagSecretsProject,
-		addFlagWorkRoot,
-		addFlagBaselineCommit,
-		addFlagReleaseID,
-		addFlagReleasePRUrl,
-		addFlagSyncUrlPrefix,
-	})
+	cmdMergeReleasePR.InitFlags()
+	addFlagImage(cmdMergeReleasePR.Flags)
+	addFlagSecretsProject(cmdMergeReleasePR.Flags)
+	addFlagWorkRoot(cmdMergeReleasePR.Flags)
+	addFlagBaselineCommit(cmdMergeReleasePR.Flags)
+	addFlagReleaseID(cmdMergeReleasePR.Flags)
+	addFlagReleasePRUrl(cmdMergeReleasePR.Flags)
+	addFlagSyncUrlPrefix(cmdMergeReleasePR.Flags)
 }
 
 func runMergeReleasePR(ctx context.Context, cfg *config.Config) error {

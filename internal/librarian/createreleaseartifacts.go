@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -80,16 +79,15 @@ if retried.
 }
 
 func init() {
-	cmdCreateReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagLanguage,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagReleaseID,
-		addFlagSecretsProject,
-		addFlagSkipIntegrationTests,
-	})
+	cmdCreateReleaseArtifacts.InitFlags()
+	addFlagImage(cmdCreateReleaseArtifacts.Flags)
+	addFlagWorkRoot(cmdCreateReleaseArtifacts.Flags)
+	addFlagLanguage(cmdCreateReleaseArtifacts.Flags)
+	addFlagRepoRoot(cmdCreateReleaseArtifacts.Flags)
+	addFlagRepoUrl(cmdCreateReleaseArtifacts.Flags)
+	addFlagReleaseID(cmdCreateReleaseArtifacts.Flags)
+	addFlagSecretsProject(cmdCreateReleaseArtifacts.Flags)
+	addFlagSkipIntegrationTests(cmdCreateReleaseArtifacts.Flags)
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {

@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -73,19 +72,18 @@ in the language repo.
 }
 
 func init() {
-	cmdUpdateImageTag.SetFlags([]func(fs *flag.FlagSet){
-		addFlagWorkRoot,
-		addFlagAPIRoot,
-		addFlagBranch,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagLanguage,
-		addFlagPush,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagSecretsProject,
-		addFlagTag,
-	})
+	cmdUpdateImageTag.InitFlags()
+	addFlagWorkRoot(cmdUpdateImageTag.Flags)
+	addFlagAPIRoot(cmdUpdateImageTag.Flags)
+	addFlagBranch(cmdUpdateImageTag.Flags)
+	addFlagGitUserEmail(cmdUpdateImageTag.Flags)
+	addFlagGitUserName(cmdUpdateImageTag.Flags)
+	addFlagLanguage(cmdUpdateImageTag.Flags)
+	addFlagPush(cmdUpdateImageTag.Flags)
+	addFlagRepoRoot(cmdUpdateImageTag.Flags)
+	addFlagRepoUrl(cmdUpdateImageTag.Flags)
+	addFlagSecretsProject(cmdUpdateImageTag.Flags)
+	addFlagTag(cmdUpdateImageTag.Flags)
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {

@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -82,17 +81,16 @@ output directory that was specified for the "generate-raw" command.
 }
 
 func init() {
-	cmdGenerate.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagAPIPath,
-		addFlagAPIRoot,
-		addFlagLanguage,
-		addFlagBuild,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagSecretsProject,
-	})
+	cmdGenerate.InitFlags()
+	addFlagImage(cmdGenerate.Flags)
+	addFlagWorkRoot(cmdGenerate.Flags)
+	addFlagAPIPath(cmdGenerate.Flags)
+	addFlagAPIRoot(cmdGenerate.Flags)
+	addFlagLanguage(cmdGenerate.Flags)
+	addFlagBuild(cmdGenerate.Flags)
+	addFlagRepoRoot(cmdGenerate.Flags)
+	addFlagRepoUrl(cmdGenerate.Flags)
+	addFlagSecretsProject(cmdGenerate.Flags)
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config) error {

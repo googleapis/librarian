@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -105,21 +104,20 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	cmdCreateReleasePR.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagSecretsProject,
-		addFlagWorkRoot,
-		addFlagLanguage,
-		addFlagLibraryID,
-		addFlagLibraryVersion,
-		addFlagPush,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagRepoRoot,
-		addFlagSkipIntegrationTests,
-		addFlagEnvFile,
-		addFlagRepoUrl,
-	})
+	cmdCreateReleasePR.InitFlags()
+	addFlagImage(cmdCreateReleasePR.Flags)
+	addFlagSecretsProject(cmdCreateReleasePR.Flags)
+	addFlagWorkRoot(cmdCreateReleasePR.Flags)
+	addFlagLanguage(cmdCreateReleasePR.Flags)
+	addFlagLibraryID(cmdCreateReleasePR.Flags)
+	addFlagLibraryVersion(cmdCreateReleasePR.Flags)
+	addFlagPush(cmdCreateReleasePR.Flags)
+	addFlagGitUserEmail(cmdCreateReleasePR.Flags)
+	addFlagGitUserName(cmdCreateReleasePR.Flags)
+	addFlagRepoRoot(cmdCreateReleasePR.Flags)
+	addFlagSkipIntegrationTests(cmdCreateReleasePR.Flags)
+	addFlagEnvFile(cmdCreateReleasePR.Flags)
+	addFlagRepoUrl(cmdCreateReleasePR.Flags)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {

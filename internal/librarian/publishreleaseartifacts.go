@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -62,14 +61,13 @@ create a tag which already exists.)
 }
 
 func init() {
-	cmdPublishReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
-		addFlagArtifactRoot,
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagLanguage,
-		addFlagSecretsProject,
-		addFlagTagRepoUrl,
-	})
+	cmdPublishReleaseArtifacts.InitFlags()
+	addFlagArtifactRoot(cmdPublishReleaseArtifacts.Flags)
+	addFlagImage(cmdPublishReleaseArtifacts.Flags)
+	addFlagWorkRoot(cmdPublishReleaseArtifacts.Flags)
+	addFlagLanguage(cmdPublishReleaseArtifacts.Flags)
+	addFlagSecretsProject(cmdPublishReleaseArtifacts.Flags)
+	addFlagTagRepoUrl(cmdPublishReleaseArtifacts.Flags)
 }
 
 func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {

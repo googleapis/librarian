@@ -31,3 +31,7 @@ var cmdVersion = &cli.Command{
 		return nil
 	},
 }
+
+func init() {
+	cmdVersion.InitFlags()
+}
