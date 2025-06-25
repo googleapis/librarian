@@ -127,10 +127,10 @@ func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return createReleasePR(state, cfg)
+	return createReleasePR(ctx, state, cfg)
 }
 
-func createReleasePR(state *commandState, cfg *config.Config) error {
+func createReleasePR(ctx context.Context, state *commandState, cfg *config.Config) error {
 	if err := validateSkipIntegrationTests(); err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func createReleasePR(state *commandState, cfg *config.Config) error {
 		return err
 	}
 
-	prMetadata, err := createPullRequest(state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release", cfg.GitHubToken, cfg.Push)
+	prMetadata, err := createPullRequest(ctx, state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release", cfg.GitHubToken, cfg.Push)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func createReleasePR(state *commandState, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	err = ghClient.AddLabelToPullRequest(state.ctx, prMetadata, DoNotMergeLabel)
+	err = ghClient.AddLabelToPullRequest(ctx, prMetadata, DoNotMergeLabel)
 	if err != nil {
 		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 		return err

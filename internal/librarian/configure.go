@@ -104,10 +104,10 @@ func runConfigure(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return executeConfigure(state, cfg)
+	return executeConfigure(ctx, state, cfg)
 }
 
-func executeConfigure(state *commandState, cfg *config.Config) error {
+func executeConfigure(ctx context.Context, state *commandState, cfg *config.Config) error {
 
 	outputRoot := filepath.Join(state.workRoot, "output")
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
@@ -144,7 +144,7 @@ func executeConfigure(state *commandState, cfg *config.Config) error {
 		}
 	}
 
-	_, err = createPullRequest(state, &prContent, "feat: API configuration", "", "config", cfg.GitHubToken, cfg.Push)
+	_, err = createPullRequest(ctx, state, &prContent, "feat: API configuration", "", "config", cfg.GitHubToken, cfg.Push)
 	return err
 }
 

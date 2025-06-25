@@ -93,10 +93,10 @@ func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return updateImageTag(state, cfg)
+	return updateImageTag(ctx, state, cfg)
 }
 
-func updateImageTag(state *commandState, cfg *config.Config) error {
+func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config) error {
 	if err := validateRequiredFlag("tag", cfg.Tag); err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	// can massage it into a similar state.
 	prContent := new(PullRequestContent)
 	addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
-	_, err := createPullRequest(state, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push)
+	_, err := createPullRequest(ctx, state, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push)
 	return err
 }
 

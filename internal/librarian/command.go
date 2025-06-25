@@ -34,9 +34,6 @@ const releaseIDEnvVarName = "_RELEASE_ID"
 
 // commandState holds all necessary information for a command execution.
 type commandState struct {
-	// ctx provides context for cancellable operations.
-	ctx context.Context
-
 	// startTime records when the command began execution. This is used as a
 	// consistent timestamp for commands when necessary.
 	startTime time.Time
@@ -136,7 +133,6 @@ func createCommandStateForLanguage(ctx context.Context) (*commandState, error) {
 	}
 
 	state := &commandState{
-		ctx:             ctx,
 		startTime:       startTime,
 		workRoot:        workRoot,
 		languageRepo:    repo,

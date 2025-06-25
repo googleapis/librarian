@@ -105,10 +105,10 @@ func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return updateAPIs(state, cfg)
+	return updateAPIs(ctx, state, cfg)
 }
 
-func updateAPIs(state *commandState, cfg *config.Config) error {
+func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) error {
 	var apiRepo *gitrepo.Repository
 	cleanWorkingTreePostGeneration := true
 	if cfg.APIRoot == "" {
@@ -164,7 +164,7 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 	if cleanWorkingTreePostGeneration {
 		apiRepo.CleanWorkingTree()
 	}
-	_, err := createPullRequest(state, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push)
+	_, err := createPullRequest(ctx, state, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push)
 	return err
 }
 

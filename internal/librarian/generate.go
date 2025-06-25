@@ -133,7 +133,6 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	}
 
 	state := &commandState{
-		ctx:             ctx,
 		startTime:       startTime,
 		workRoot:        workRoot,
 		languageRepo:    repo,
