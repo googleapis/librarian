@@ -91,7 +91,7 @@ func init() {
 	addFlagRepoRoot(cmdGenerate.Flags)
 	addFlagRepoUrl(cmdGenerate.Flags)
 	addFlagSecretsProject(cmdGenerate.Flags)
-  addFlagCi(cmdGenerate.Flags)
+	addFlagCi(cmdGenerate.Flags)
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config) error {
