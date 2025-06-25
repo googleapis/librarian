@@ -58,7 +58,7 @@ type RepositoryOptions struct {
 	MaybeClone bool
 	// RemoteURL is the URL of the remote repository to clone from. Required if Clone is not CloneOptionNone.
 	RemoteURL string
-	// CI identifies the type of Continuous Integration (CI) environment in which
+	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
 }
@@ -104,7 +104,7 @@ func open(dir string) (*Repository, error) {
 	}, nil
 }
 
-func clone(dir, url string, ci string) (*Repository, error) {
+func clone(dir, url, ci string) (*Repository, error) {
 	slog.Info(fmt.Sprintf("Cloning repository from %q to %q", url, dir))
 	options := &git.CloneOptions{
 		URL:           url,

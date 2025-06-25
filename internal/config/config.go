@@ -77,7 +77,7 @@ type Config struct {
 	// Build is specified with the -build flag.
 	Build bool
 
-	// CI identifies the type of Continuous Integration (CI) environment in which
+	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
 

@@ -62,7 +62,7 @@ type commandState struct {
 	containerConfig *docker.Docker
 }
 
-func cloneOrOpenLanguageRepo(workRoot string, ci string) (*gitrepo.Repository, error) {
+func cloneOrOpenLanguageRepo(workRoot, ci string) (*gitrepo.Repository, error) {
 	var languageRepo *gitrepo.Repository
 	if flagRepoRoot != "" && flagRepoUrl != "" {
 		return nil, errors.New("do not specify both repo-root and repo-url")
