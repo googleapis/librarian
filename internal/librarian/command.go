@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -65,8 +66,7 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 	if repoURL != "" {
 		// Take the last part of the URL as the directory name. It feels very
 		// unlikely that will clash with anything else (e.g. "output")
-		bits := strings.Split(repoURL, "/")
-		repoName := bits[len(bits)-1]
+		repoName := path.Base(strings.TrimSuffix(repoURL, "/"))
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir:        repoPath,
