@@ -209,6 +209,9 @@ type Config struct {
 	// LibraryID is specified with the -library-id flag.
 	LibraryID string
 
+	// LibrarianRepository specifies the repository where Librarian-related assets
+	// are stored.
+	//
 	// LibrarianRepository is fetched from the LIBRARIAN_REPOSITORY environment
 	// variable.
 	LibrarianRepository string
