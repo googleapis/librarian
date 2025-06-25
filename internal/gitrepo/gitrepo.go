@@ -31,12 +31,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-// Default values for username and email.
-const (
-	defaultUserName  = "Google Cloud SDK"
-	defaultUserEmail = "noreply-cloudsdk@google.com"
-)
-
 // Repository represents a git repository.
 type Repository struct {
 	Dir  string
@@ -157,12 +151,6 @@ func (r *Repository) Commit(msg string, userName, userEmail string) error {
 	}
 	if status.IsClean() {
 		return fmt.Errorf("no modifications to commit")
-	}
-	if userName == "" {
-		userName = defaultUserName
-	}
-	if userEmail == "" {
-		userEmail = defaultUserEmail
 	}
 	hash, err := worktree.Commit(msg, &git.CommitOptions{
 		Author: &object.Signature{

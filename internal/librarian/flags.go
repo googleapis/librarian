@@ -56,11 +56,11 @@ func addFlagEnvFile(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagGitUserEmail(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.GitUserEmail, "git-user-email", "", "Email address to use in Git commits")
+	fs.StringVar(&cfg.GitUserEmail, "git-user-email", "noreply-cloudsdk@google.com", "Email address to use in Git commits")
 }
 
 func addFlagGitUserName(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.GitUserName, "git-user-name", "", "Display name to use in Git commits")
+	fs.StringVar(&cfg.GitUserName, "git-user-name", "Google Cloud SDK", "Display name to use in Git commits")
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
