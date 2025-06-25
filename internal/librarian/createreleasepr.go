@@ -36,7 +36,7 @@ import (
 const prNumberEnvVarName = "_PR_NUMBER"
 const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
-var CmdCreateReleasePR = &cli.Command{
+var cmdCreateReleasePR = &cli.Command{
 	Short: "create-release-pr creates a release PR",
 	Usage: "librarian create-release-pr -language=<language> [flags]",
 	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
@@ -105,7 +105,7 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	CmdCreateReleasePR.SetFlags([]func(fs *flag.FlagSet){
+	cmdCreateReleasePR.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagSecretsProject,
 		addFlagWorkRoot,

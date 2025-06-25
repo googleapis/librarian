@@ -126,6 +126,8 @@ func clone(dir, url string) (*Repository, error) {
 	}, nil
 }
 
+// AddAll adds all pending changes from the working tree to the index,
+// so that the changes can later be committed.
 func (r *Repository) AddAll() (git.Status, error) {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
@@ -175,6 +177,7 @@ func (r *Repository) Commit(msg string, userName, userEmail string) error {
 	return nil
 }
 
+// HeadHash returns the hash of the head commit in the repository's current branch.
 func (r *Repository) HeadHash() (string, error) {
 	headRef, err := r.repo.Head()
 	if err != nil {
@@ -183,6 +186,8 @@ func (r *Repository) HeadHash() (string, error) {
 	return headRef.Hash().String(), nil
 }
 
+// IsClean reports whether the working tree of the repository is clean,
+// i.e. if there are no changes to be committed.
 func (r *Repository) IsClean() (bool, error) {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
@@ -196,6 +201,9 @@ func (r *Repository) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
+// PrintStatus prints the status of the working tree of the
+// repository, similar to running "git status" from the command
+// line.
 func (r *Repository) PrintStatus() error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
@@ -336,7 +344,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 }
 
 // GetCommitsForPathsSinceTag returns all commits since tagName that contains
-// files in path.
+// files in paths.
 //
 // If tagName is empty, all commits for the given paths are returned.
 func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error) {
@@ -358,10 +366,10 @@ func (r *Repository) GetCommitsForPathsSinceTag(paths []string, tagName string) 
 	return r.GetCommitsForPathsSinceCommit(paths, hash)
 }
 
-// GetCommitsForReleaseID returns all commits with the given release ID, i.e.,
-// where the commit message contains a line of Librarian-Release-Id: <release-id>.
-// These commits are expected to be contiguous, from head, with all commits
-// having a single parent.
+// GetCommitsForReleaseID returns all commits with the given release ID,
+// i.e. where the commit message contains a line of `Librarian-Release-Id: <release-id>`.
+// These commits are expected to be contiguous, from head,
+// with all commits having a single parent.
 func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]*Commit, error) {
 	releaseIDLine := fmt.Sprintf("Librarian-Release-ID: %s", releaseID)
 	commits := []*Commit{}
@@ -452,8 +460,9 @@ func (r *Repository) CleanAndRevertHeadCommit() error {
 	return r.CleanAndRevertCommits(1)
 }
 
-// Reverts the specified number of commits in the repo (by resetting to
-// the
+// CleanAndRevertCommits the specified number of commits in the repository,
+// by counting commits backwards from the head and then doing a hard reset
+// for the target commit, then a clean.
 func (r *Repository) CleanAndRevertCommits(count int) error {
 	headRef, err := r.repo.Head()
 	if err != nil {
@@ -484,6 +493,7 @@ func (r *Repository) CleanAndRevertCommits(count int) error {
 	return worktree.Clean(&git.CleanOptions{Dir: true})
 }
 
+// Checkout checks out the given commit in the repository.
 func (r *Repository) Checkout(commit string) error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
@@ -496,6 +506,7 @@ func (r *Repository) Checkout(commit string) error {
 	return worktree.Checkout(&checkoutOptions)
 }
 
+// Remotes returns the remotes within the repository.
 func (r *Repository) Remotes() ([]*git.Remote, error) {
 	return r.repo.Remotes()
 }

@@ -29,7 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-var CmdUpdateApis = &cli.Command{
+var cmdUpdateApis = &cli.Command{
 	Short: "update-apis regenerates APIs in a language repo with new specifications",
 	Usage: "librarian update-apis -language=<language> [flags]",
 	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
@@ -84,7 +84,7 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	CmdUpdateApis.SetFlags([]func(fs *flag.FlagSet){
+	cmdUpdateApis.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIRoot,
@@ -148,7 +148,7 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
 	// Root for generator-input defensive copies
-	if err := os.Mkdir(filepath.Join(state.workRoot, "generator-input"), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(state.workRoot, config.GeneratorInputDir), 0755); err != nil {
 		return err
 	}
 
@@ -212,8 +212,8 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	// This needs to be done per library, as the previous iteration may have updated generator-input in a meaningful way.
 	// We could potentially just keep a single copy and update it, but it's clearer diagnostically if we can tell
 	// what state we passed into the container.
-	generatorInput := filepath.Join(state.workRoot, "generator-input", library.Id)
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, "generator-input"))); err != nil {
+	generatorInput := filepath.Join(state.workRoot, config.GeneratorInputDir, library.Id)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
 

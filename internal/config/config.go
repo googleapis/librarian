@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package config defines configuration used by the CLI.
 package config
 
 import (
 	"errors"
 	"os"
+)
+
+const (
+	// GeneratorInputDir is the default directory to store files that generator
+	// needs to regenerate libraries from an empty directory.
+	GeneratorInputDir string = "generator-input"
 )
 
 // Config holds all configuration values parsed from flags or environment

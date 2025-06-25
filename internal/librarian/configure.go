@@ -32,7 +32,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var CmdConfigure = &cli.Command{
+var cmdConfigure = &cli.Command{
 	Short: "configure configures libraries for new APIs in a language",
 	Usage: "librarian configure -language=<language> [flags]",
 	Long: `
@@ -84,7 +84,7 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	CmdConfigure.SetFlags([]func(fs *flag.FlagSet){
+	cmdConfigure.SetFlags([]func(fs *flag.FlagSet){
 		addFlagImage,
 		addFlagWorkRoot,
 		addFlagAPIPath,
@@ -183,7 +183,7 @@ func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language 
 			if generate {
 				apiPaths = append(apiPaths, apiPath)
 			}
-			// Whether or not we were configured, we can skip the rest of this directory.
+			// Whether we were configured, we can skip the rest of this directory.
 			return filepath.SkipDir
 		}
 		return nil
@@ -276,7 +276,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath, gitUserName
 
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
-	generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
+	generatorInput := filepath.Join(languageRepo.Dir, config.GeneratorInputDir)
 	if err := cc.Configure(apiRoot, apiPath, generatorInput); err != nil {
 		addErrorToPullRequest(prContent, apiPath, err, "configuring")
 		if err := languageRepo.CleanWorkingTree(); err != nil {

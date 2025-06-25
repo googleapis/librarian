@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package docker provides the interface for running language-specific
+// Docker containers which conform to the Librarian container contract.
+// TODO(https://github.com/googleapis/librarian/issues/330): link to
+// the documentation when it's written.
 package docker
 
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/config"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -27,20 +32,32 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
+// Command is the string representation of a command to be passed to the language-specific
+// container's entry point as the first argument.
 type Command string
 
 // The set of commands passed to the language container, in a single place to avoid typos.
 const (
-	CommandGenerateRaw            Command = "generate-raw"
-	CommandGenerateLibrary        Command = "generate-library"
-	CommandClean                  Command = "clean"
-	CommandBuildRaw               Command = "build-raw"
-	CommandBuildLibrary           Command = "build-library"
-	CommandConfigure              Command = "configure"
-	CommandPrepareLibraryRelease  Command = "prepare-library-release"
+	// CommandGenerateRaw performs raw (unconfigured) generation.
+	CommandGenerateRaw Command = "generate-raw"
+	// CommandGenerateLibrary performs generation for a configured library.
+	CommandGenerateLibrary Command = "generate-library"
+	// CommandClean cleans files generated for a library.
+	CommandClean Command = "clean"
+	// CommandBuildRaw builds the results of generate-raw.
+	CommandBuildRaw Command = "build-raw"
+	// CommandBuildLibrary builds a library.
+	CommandBuildLibrary Command = "build-library"
+	// CommandConfigure configures a new API as a library.
+	CommandConfigure Command = "configure"
+	// CommandPrepareLibraryRelease prepares a repository for the release of a library.
+	CommandPrepareLibraryRelease Command = "prepare-library-release"
+	// CommandIntegrationTestLibrary runs integration tests on a library.
 	CommandIntegrationTestLibrary Command = "integration-test-library"
-	CommandPackageLibrary         Command = "package-library"
-	CommandPublishLibrary         Command = "publish-library"
+	// CommandPackageLibrary packages a library's artifacts for publication.
+	CommandPackageLibrary Command = "package-library"
+	// CommandPublishLibrary publishes a library's artifacts.
+	CommandPublishLibrary Command = "publish-library"
 )
 
 var networkEnabledCommands = []Command{
@@ -51,6 +68,8 @@ var networkEnabledCommands = []Command{
 	CommandPublishLibrary,
 }
 
+// Docker contains all the information required to run language-specific
+// Docker containers.
 type Docker struct {
 	// The Docker image to run.
 	Image string
@@ -62,6 +81,9 @@ type Docker struct {
 	run func(args ...string) error
 }
 
+// New constructs a Docker instance which will invoke the specified
+// Docker image as required to implement language-specific commands,
+// providing the container with required environment variables.
 func New(ctx context.Context, workRoot, image, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
 	envProvider, err := newEnvironmentProvider(ctx, workRoot, secretsProject, pipelineConfig)
 	if err != nil {
@@ -76,6 +98,12 @@ func New(ctx context.Context, workRoot, image, secretsProject string, pipelineCo
 	}, nil
 }
 
+// GenerateRaw performs generation for an API not configured in a library.
+// This does not have any context from a language repo: it requires
+// generation purely on the basis of the API specification, which is in
+// the subdirectory apiPath of the API specification repo apiRoot, and whatever
+// is in the language-specific Docker container. The code is generated
+// in the output directory, which is initially empty.
 func (c *Docker) GenerateRaw(apiRoot, output, apiPath string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
@@ -98,6 +126,11 @@ func (c *Docker) GenerateRaw(apiRoot, output, apiPath string) error {
 	return c.runDocker(CommandGenerateRaw, mounts, commandArgs)
 }
 
+// GenerateLibrary performs generation for an API which is configured as part of a library.
+// apiRoot specifies the root directory of the API specification repo,
+// output specifies the empty output directory into which the command should
+// generate code, and libraryID specifies the ID of the library to generate,
+// as configured in the Librarian state file for the repository.
 func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
@@ -114,17 +147,19 @@ func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID stri
 	commandArgs := []string{
 		"--api-root=/apis",
 		"--output=/output",
-		"--generator-input=/generator-input",
+		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/output", output),
-		fmt.Sprintf("%s:/generator-input", generatorInput),
+		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
 	return c.runDocker(CommandGenerateLibrary, mounts, commandArgs)
 }
 
+// Clean deletes files within repoRoot which are generated for library
+// libraryID, as configured in the Librarian state file for the repository.
 func (c *Docker) Clean(repoRoot, libraryID string) error {
 	if repoRoot == "" {
 		return fmt.Errorf("repoRoot cannot be empty")
@@ -141,6 +176,8 @@ func (c *Docker) Clean(repoRoot, libraryID string) error {
 	return c.runDocker(CommandClean, mounts, commandArgs)
 }
 
+// BuildRaw builds the result of GenerateRaw, which previously generated
+// code for apiPath in generatorOutput.
 func (c *Docker) BuildRaw(generatorOutput, apiPath string) error {
 	if generatorOutput == "" {
 		return fmt.Errorf("generatorOutput cannot be empty")
@@ -158,7 +195,9 @@ func (c *Docker) BuildRaw(generatorOutput, apiPath string) error {
 	return c.runDocker(CommandBuildRaw, mounts, commandArgs)
 }
 
-func (c *Docker) BuildLibrary(repoRoot, libraryId string) error {
+// BuildLibrary builds the library with an ID of libraryID, as configured in
+// the Librarian state file for the repository with a root of repoRoot.
+func (c *Docker) BuildLibrary(repoRoot, libraryID string) error {
 	if repoRoot == "" {
 		return fmt.Errorf("repoRoot cannot be empty")
 	}
@@ -169,12 +208,17 @@ func (c *Docker) BuildLibrary(repoRoot, libraryId string) error {
 		"--repo-root=/repo",
 		"--test=true",
 	}
-	if libraryId != "" {
-		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryId))
+	if libraryID != "" {
+		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
 	}
 	return c.runDocker(CommandBuildLibrary, mounts, commandArgs)
 }
 
+// Configure configures an API within a repository, either adding it to an
+// existing library or creating a new library. The API is indicated by the
+// apiPath directory within apiRoot, and the container is provided with the
+// generatorInput directory to record the results of configuration. The
+// library code is not generated.
 func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
@@ -187,62 +231,72 @@ func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
 	}
 	commandArgs := []string{
 		"--api-root=/apis",
-		"--generator-input=/generator-input",
+		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/apis", apiRoot),
-		fmt.Sprintf("%s:/generator-input", generatorInput),
+		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
 	return c.runDocker(CommandConfigure, mounts, commandArgs)
 }
 
-func (c *Docker) PrepareLibraryRelease(languageRepo, inputsDirectory, libId, releaseVersion string) error {
+// PrepareLibraryRelease prepares the repository languageRepo for the release of a library with
+// ID libraryID within repoRoot, with version releaseVersion. Release notes
+// are expected to be present within inputsDirectory, in a file named
+// `{libraryID}-{releaseVersion}-release-notes.txt`.
+func (c *Docker) PrepareLibraryRelease(repoRoot, inputsDirectory, libraryID, releaseVersion string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
-		fmt.Sprintf("--library-id=%s", libId),
-		fmt.Sprintf("--release-notes=/inputs/%s-%s-release-notes.txt", libId, releaseVersion),
+		fmt.Sprintf("--library-id=%s", libraryID),
+		fmt.Sprintf("--release-notes=/inputs/%s-%s-release-notes.txt", libraryID, releaseVersion),
 		fmt.Sprintf("--version=%s", releaseVersion),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/repo", languageRepo),
+		fmt.Sprintf("%s:/repo", repoRoot),
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
 
 	return c.runDocker(CommandPrepareLibraryRelease, mounts, commandArgs)
 }
 
-func (c *Docker) IntegrationTestLibrary(languageRepo, libId string) error {
+// IntegrationTestLibrary runs the integration tests for a library with ID libraryID within repoRoot.
+func (c *Docker) IntegrationTestLibrary(repoRoot, libraryID string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
-		fmt.Sprintf("--library-id=%s", libId),
+		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/repo", languageRepo),
+		fmt.Sprintf("%s:/repo", repoRoot),
 	}
 
 	return c.runDocker(CommandIntegrationTestLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) PackageLibrary(languageRepo, libId, outputDir string) error {
+// PackageLibrary packages release artifacts for a library with ID libraryID within repoRoot,
+// creating the artifacts within outputDir.
+func (c *Docker) PackageLibrary(repoRoot, libraryID, outputDir string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--output=/output",
-		fmt.Sprintf("--library-id=%s", libId),
+		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/repo", languageRepo),
+		fmt.Sprintf("%s:/repo", repoRoot),
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
 	return c.runDocker(CommandPackageLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) PublishLibrary(outputDir, libId, libVersion string) error {
+// PublishLibrary publishes release artifacts for a library with ID libraryID and version releaseVersion
+// to package managers, documentation sites etc. The artifacts will previously have been
+// created by PackageLibrary.
+func (c *Docker) PublishLibrary(outputDir, libraryID, releaseVersion string) error {
 	commandArgs := []string{
 		"--package-output=/output",
-		fmt.Sprintf("--library-id=%s", libId),
-		fmt.Sprintf("--version=%s", libVersion),
+		fmt.Sprintf("--library-id=%s", libraryID),
+		fmt.Sprintf("--version=%s", releaseVersion),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/output", outputDir),

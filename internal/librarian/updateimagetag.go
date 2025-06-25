@@ -29,7 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-var CmdUpdateImageTag = &cli.Command{
+var cmdUpdateImageTag = &cli.Command{
 	Short: "update-image-tag updates a language repo's image tag and regenerates APIs",
 	Usage: "librarian update-image-tag -language=<language> -tag=<new tag> [flags]",
 	Long: `Specify the language, the new tag, and optional flags to use non-default repositories, e.g. for testing.
@@ -73,7 +73,7 @@ in the language repo.
 }
 
 func init() {
-	CmdUpdateImageTag.SetFlags([]func(fs *flag.FlagSet){
+	cmdUpdateImageTag.SetFlags([]func(fs *flag.FlagSet){
 		addFlagWorkRoot,
 		addFlagAPIRoot,
 		addFlagBranch,
@@ -149,8 +149,8 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	savePipelineState(state)
 
 	// Take a defensive copy of the generator input directory from the language repo.
-	generatorInput := filepath.Join(state.workRoot, "generator-input")
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, "generator-input"))); err != nil {
+	generatorInput := filepath.Join(state.workRoot, config.GeneratorInputDir)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
 

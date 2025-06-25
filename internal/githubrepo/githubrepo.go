@@ -25,11 +25,14 @@ import (
 	"github.com/google/go-github/v69/github"
 )
 
+// Client represents this package's abstraction of a GitHub client, including
+// an access token.
 type Client struct {
 	*github.Client
 	accessToken string
 }
 
+// NewClient creates a new Client to interact with GitHub.
 func NewClient(accessToken string) (*Client, error) {
 	return &Client{
 		Client:      github.NewClient(nil).WithAuthToken(accessToken),
@@ -37,22 +40,31 @@ func NewClient(accessToken string) (*Client, error) {
 	}, nil
 }
 
+// Token returns the access token for Client.
 func (c *Client) Token() string {
 	return c.accessToken
 }
 
+// Repository represents a GitHub repository with an owner (e.g. an organization or a user)
+// and a repository name.
 type Repository struct {
+	// The owner of the repository.
 	Owner string
-	Name  string
+	// The name of the repository.
+	Name string
 }
 
+// PullRequestMetadata identifies a pull request within a repository.
 type PullRequestMetadata struct {
-	Repo   *Repository
+	// Repo is the repository containing the pull request.
+	Repo *Repository
+	// Number is the number of the pull request.
 	Number int
 }
 
-// Creates a pull request in the remote repo. At the moment this requires a single remote to be
-// configured, which must have a GitHub HTTPS URL. We assume a base branch of "main".
+// CreatePullRequest creates a pull request in the remote repo.
+// At the moment this requires a single remote to be configured,
+// which must have a GitHub HTTPS URL. We assume a base branch of "main".
 func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, title, body string) (*PullRequestMetadata, error) {
 	if body == "" {
 		body = "Regenerated all changed APIs. See individual commits for details."
@@ -74,6 +86,8 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 	return pullRequestMetadata, nil
 }
 
+// CreateRelease creates a release on GitHub for the specified commit,
+// including the named tag, with the given title and description.
 func (c *Client) CreateRelease(ctx context.Context, repo *Repository, tag, commit, title, description string, prerelease bool) (*github.RepositoryRelease, error) {
 	release := &github.RepositoryRelease{
 		TagName:         &tag,
@@ -90,6 +104,8 @@ func (c *Client) CreateRelease(ctx context.Context, repo *Repository, tag, commi
 	return release, err
 }
 
+// AddLabelToPullRequest adds a label to the pull request identified by
+// prMetadata.
 func (c *Client) AddLabelToPullRequest(ctx context.Context, prMetadata *PullRequestMetadata, label string) error {
 	labels := []string{label}
 
@@ -100,6 +116,8 @@ func (c *Client) AddLabelToPullRequest(ctx context.Context, prMetadata *PullRequ
 	return nil
 }
 
+// RemoveLabelFromPullRequest removes a label from the pull request identified
+// by prMetadata.
 func (c *Client) RemoveLabelFromPullRequest(ctx context.Context, repo *Repository, prNumber int, label string) error {
 	_, err := c.Issues.RemoveLabelForIssue(ctx, repo.Owner, repo.Name, prNumber, label)
 	if err != nil {
@@ -108,6 +126,8 @@ func (c *Client) RemoveLabelFromPullRequest(ctx context.Context, repo *Repositor
 	return nil
 }
 
+// AddCommentToPullRequest adds a comment to the pull request identified by
+// repo and prNumber.
 func (c *Client) AddCommentToPullRequest(ctx context.Context, repo *Repository, prNumber int, comment string) error {
 	issueComment := &github.IssueComment{
 		Body: &comment,
@@ -119,6 +139,8 @@ func (c *Client) AddCommentToPullRequest(ctx context.Context, repo *Repository, 
 	return nil
 }
 
+// MergePullRequest merges the pull request identified by repo and prNumber,
+// using the merge method (e.g. rebase or squash) specified as method.
 func (c *Client) MergePullRequest(ctx context.Context, repo *Repository, prNumber int, method github.MergeMethod) (*github.PullRequestMergeResult, error) {
 	options := &github.PullRequestOptions{
 		MergeMethod: string(method),
@@ -130,11 +152,16 @@ func (c *Client) MergePullRequest(ctx context.Context, repo *Repository, prNumbe
 	return result, nil
 }
 
+// GetPullRequest fetches information about the pull request identified by repo
+// and prNumber from GitHub.
 func (c *Client) GetPullRequest(ctx context.Context, repo *Repository, prNumber int) (*github.PullRequest, error) {
 	pr, _, err := c.PullRequests.Get(ctx, repo.Owner, repo.Name, prNumber)
 	return pr, err
 }
 
+// GetPullRequestCheckRuns fetches the "check runs" (e.g. tests, linters)
+// that have run against a specified pull request.
+// See https://docs.github.com/en/rest/checks/runs for m
 func (c *Client) GetPullRequestCheckRuns(ctx context.Context, pullRequest *github.PullRequest) ([]*github.CheckRun, error) {
 	prHead := pullRequest.Head
 	options := &github.ListCheckRunsOptions{}
@@ -145,6 +172,8 @@ func (c *Client) GetPullRequestCheckRuns(ctx context.Context, pullRequest *githu
 	return checkRuns.CheckRuns, err
 }
 
+// GetPullRequestReviews fetches all reviews for the pull request identified
+// by prMetadata.
 func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequestMetadata) ([]*github.PullRequestReview, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
@@ -152,7 +181,7 @@ func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequ
 	return reviews, err
 }
 
-// Parses a GitHub URL (anything to do with a repository) to determine
+// ParseUrl parses a GitHub URL (anything to do with a repository) to determine
 // the GitHub repo details (owner and name)
 func ParseUrl(remoteUrl string) (*Repository, error) {
 	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
@@ -166,10 +195,14 @@ func ParseUrl(remoteUrl string) (*Repository, error) {
 	return &Repository{Owner: organization, Name: repoName}, nil
 }
 
+// CreateGitHubRepoFromRepository creates a Repository for the underlying
+// github package representation.
 func CreateGitHubRepoFromRepository(repo *github.Repository) *Repository {
 	return &Repository{Owner: *repo.Owner.Login, Name: *repo.Name}
 }
 
+// GetRawContent fetches the raw content of a file within a repository repo,
+// identifying the file by path, at a specific commit/tag/branch of ref.
 func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref string) ([]byte, error) {
 	options := &github.RepositoryContentGetOptions{
 		Ref: ref,
@@ -182,6 +215,8 @@ func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref 
 	return io.ReadAll(closer)
 }
 
+// GetDiffCommits returns the commits in a repository repo between source
+// and target references (commit hashes, branches etc).
 func (c *Client) GetDiffCommits(ctx context.Context, repo *Repository, source, target string) ([]*github.RepositoryCommit, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
@@ -189,6 +224,7 @@ func (c *Client) GetDiffCommits(ctx context.Context, repo *Repository, source, t
 	return commitsComparison.Commits, err
 }
 
+// GetCommit returns the commit in a repository repo with the a commit hash of sha.
 func (c *Client) GetCommit(ctx context.Context, repo *Repository, sha string) (*github.RepositoryCommit, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
