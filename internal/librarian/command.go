@@ -92,8 +92,7 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 	if err != nil {
 		return nil, err
 	}
-	var languageRepo *gitrepo.Repository
-	languageRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+	languageRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 		Dir: absRepoRoot,
 		CI:  ci,
 	})
