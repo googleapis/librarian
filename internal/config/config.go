@@ -209,6 +209,10 @@ type Config struct {
 	// LibraryID is specified with the -library-id flag.
 	LibraryID string
 
+	// LibrarianRepository is fetched from the LIBRARIAN_REPOSITORY environment
+	// variable.
+	LibrarianRepository string
+
 	// LibraryVersion is the version string used when creating a release for a specific library,
 	// overriding whatever new version would otherwise be suggested. It is only used in the
 	// create-release-pr command, where it is optional and can only be specified when LibraryID
@@ -355,10 +359,11 @@ func New() *Config {
 	return &Config{
 		// TODO(https://github.com/googleapis/librarian/issues/507): replace
 		// os.Getenv calls in other functions with these values.
-		DockerHostRootDir:  os.Getenv("KOKORO_HOST_ROOT_DIR"),
-		DockerMountRootDir: os.Getenv("KOKORO_ROOT_DIR"),
-		GitHubToken:        os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
-		SyncAuthToken:      os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
+		DockerHostRootDir:   os.Getenv("KOKORO_HOST_ROOT_DIR"),
+		DockerMountRootDir:  os.Getenv("KOKORO_ROOT_DIR"),
+		GitHubToken:         os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		LibrarianRepository: os.Getenv("LIBRARIAN_REPOSITORY"),
+		SyncAuthToken:       os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
 	}
 }
 
