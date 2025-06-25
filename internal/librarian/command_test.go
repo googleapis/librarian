@@ -95,11 +95,7 @@ func TestDeriveImage(t *testing.T) {
 
 func TestCreateWorkRoot(t *testing.T) {
 	now := time.Now()
-<<<<<<< HEAD
-	for _, tt := range []struct {
-=======
 	for _, test := range []struct {
->>>>>>> main
 		name             string
 		workRootOverride string
 		setup            func(t *testing.T) (string, func())
