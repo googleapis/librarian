@@ -140,7 +140,8 @@ func (r *Repository) AddAll() (git.Status, error) {
 	return worktree.Status()
 }
 
-// returns an error if there is nothing to commit
+// Commit creates a new commit with the provided message and author
+// information.
 func (r *Repository) Commit(msg string, userName, userEmail string) error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
@@ -186,8 +187,7 @@ func (r *Repository) HeadHash() (string, error) {
 	return headRef.Hash().String(), nil
 }
 
-// IsClean reports whether the working tree of the repository is clean,
-// i.e. if there are no changes to be committed.
+// IsClean reports whether the working tree has no uncommitted changes.
 func (r *Repository) IsClean() (bool, error) {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
@@ -201,9 +201,8 @@ func (r *Repository) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
-// PrintStatus prints the status of the working tree of the
-// repository, similar to running "git status" from the command
-// line.
+// PrintStatus prints the status of the working tree of the repository, similar
+// to running "git status" from the command line.
 func (r *Repository) PrintStatus() error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
@@ -326,8 +325,8 @@ func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit s
 	return commits, nil
 }
 
-// Returns the hash for a path at a given commit, or an empty string if the path
-// (file or directory) did not exist.
+// getHashForPathOrEmpty returns the hash for a path at a given commit, or an
+// empty string if the path (file or directory) did not exist.
 func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 	tree, err := commit.Tree()
 	if err != nil {
@@ -420,7 +419,7 @@ func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]*Commit, error)
 	return commits, nil
 }
 
-// Creates a branch with the given name in the default remote.
+// PushBranch creates a branch with the given name in the default remote.
 func (r *Repository) PushBranch(remoteBranch string, accessToken string) error {
 	headRef, err := r.repo.Head()
 	if err != nil {
@@ -454,8 +453,9 @@ func (r *Repository) CleanWorkingTree() error {
 	return worktree.Clean(&git.CleanOptions{Dir: true})
 }
 
-// Drop any local changes, and also reset to the parent of the current head commit.
-// This is a special case of CleanAndRevertCommits where the count is 1.
+// CleanAndRevertHeadCommit drops any local changes, and also reset to the
+// parent of the current head commit.  This is a special case of
+// CleanAndRevertCommits where the count is 1.
 func (r *Repository) CleanAndRevertHeadCommit() error {
 	return r.CleanAndRevertCommits(1)
 }
