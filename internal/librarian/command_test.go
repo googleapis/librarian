@@ -263,6 +263,10 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			},
 		},
 		{
+			name:    "no repoRoot or repoURL, no language",
+			wantErr: true,
+		},
+		{
 			name:     "with dirty repoRoot",
 			repoRoot: dirtyRepoPath,
 			wantErr:  true,

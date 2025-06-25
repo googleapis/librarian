@@ -59,7 +59,6 @@ type commandState struct {
 }
 
 func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (*gitrepo.Repository, error) {
-	var languageRepo *gitrepo.Repository
 	if repoRoot != "" && repoURL != "" {
 		return nil, errors.New("do not specify both repo-root and repo-url")
 	}
@@ -77,6 +76,9 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 		})
 	}
 	if repoRoot == "" {
+		if language == "" {
+			return nil, errors.New("language must be specified when repo-root and repo-url are not")
+		}
 		languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", language)
 		repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", language))
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
@@ -90,6 +92,7 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 	if err != nil {
 		return nil, err
 	}
+	var languageRepo *gitrepo.Repository
 	languageRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 		Dir: absRepoRoot,
 		CI:  ci,
