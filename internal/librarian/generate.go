@@ -70,10 +70,10 @@ other source code to be preserved/cleaned. Instead, the "build-raw" command is p
 output directory that was specified for the "generate-raw" command.
 `,
 	Run: func(ctx context.Context, cfg *config.Config) error {
-		if err := validateRequiredFlag("api-path", flagAPIPath); err != nil {
+		if err := validateRequiredFlag("api-path", cfg.APIPath); err != nil {
 			return err
 		}
-		if err := validateRequiredFlag("api-root", flagAPIRoot); err != nil {
+		if err := validateRequiredFlag("api-root", cfg.APIRoot); err != nil {
 			return err
 		}
 		return runGenerate(ctx, cfg)
@@ -82,16 +82,18 @@ output directory that was specified for the "generate-raw" command.
 
 func init() {
 	cmdGenerate.InitFlags()
-	addFlagImage(cmdGenerate.Flags)
-	addFlagWorkRoot(cmdGenerate.Flags)
-	addFlagAPIPath(cmdGenerate.Flags)
-	addFlagAPIRoot(cmdGenerate.Flags)
-	addFlagLanguage(cmdGenerate.Flags)
-	addFlagBuild(cmdGenerate.Flags)
-	addFlagRepoRoot(cmdGenerate.Flags)
-	addFlagRepoUrl(cmdGenerate.Flags)
-	addFlagSecretsProject(cmdGenerate.Flags)
-	addFlagCi(cmdGenerate.Flags)
+	fs := cmdGenerate.Flags
+	cfg := cmdGenerate.Config
+
+	addFlagImage(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
+	addFlagAPIPath(fs, cfg)
+	addFlagAPIRoot(fs, cfg)
+	addFlagLanguage(fs, cfg)
+	addFlagBuild(fs, cfg)
+	addFlagRepoRoot(fs, cfg)
+	addFlagRepoUrl(fs, cfg)
+	addFlagSecretsProject(fs, cfg)
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config) error {

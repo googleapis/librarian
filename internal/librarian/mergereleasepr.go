@@ -92,13 +92,16 @@ is added.
 
 func init() {
 	cmdMergeReleasePR.InitFlags()
-	addFlagImage(cmdMergeReleasePR.Flags)
-	addFlagSecretsProject(cmdMergeReleasePR.Flags)
-	addFlagWorkRoot(cmdMergeReleasePR.Flags)
-	addFlagBaselineCommit(cmdMergeReleasePR.Flags)
-	addFlagReleaseID(cmdMergeReleasePR.Flags)
-	addFlagReleasePRUrl(cmdMergeReleasePR.Flags)
-	addFlagSyncUrlPrefix(cmdMergeReleasePR.Flags)
+	fs := cmdMergeReleasePR.Flags
+	cfg := cmdMergeReleasePR.Config
+
+	addFlagImage(fs, cfg)
+	addFlagSecretsProject(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
+	addFlagBaselineCommit(fs, cfg)
+	addFlagReleaseID(fs, cfg)
+	addFlagReleasePRUrl(fs, cfg)
+	addFlagSyncUrlPrefix(fs, cfg)
 }
 
 func runMergeReleasePR(ctx context.Context, cfg *config.Config) error {

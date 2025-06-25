@@ -47,6 +47,9 @@ type Command struct {
 	// Flags is the command's flag set for parsing arguments and generating
 	// usage messages. This is populated for each command in init().
 	Flags *flag.FlagSet
+
+	// Config contains the configs for the command.
+	Config *config.Config
 }
 
 // Parse parses the provided command-line arguments using the command's flag
@@ -102,11 +105,15 @@ func (c *Command) usage(w io.Writer) {
 // InitFlags creates a new set of flags for the command and initializes
 // them such that any parsing failures result in the command usage being
 // displayed.
+//
+// TODO(https://github.com/googleapis/librarian/issues/619): rename since this
+// now also initializes c.Config
 func (c *Command) InitFlags() *Command {
 	c.Flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.Flags.Usage = func() {
 		c.usage(c.Flags.Output())
 	}
+	c.Config = config.New()
 	return c
 }
 

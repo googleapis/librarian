@@ -62,12 +62,15 @@ create a tag which already exists.)
 
 func init() {
 	cmdPublishReleaseArtifacts.InitFlags()
-	addFlagArtifactRoot(cmdPublishReleaseArtifacts.Flags)
-	addFlagImage(cmdPublishReleaseArtifacts.Flags)
-	addFlagWorkRoot(cmdPublishReleaseArtifacts.Flags)
-	addFlagLanguage(cmdPublishReleaseArtifacts.Flags)
-	addFlagSecretsProject(cmdPublishReleaseArtifacts.Flags)
-	addFlagTagRepoUrl(cmdPublishReleaseArtifacts.Flags)
+	fs := cmdPublishReleaseArtifacts.Flags
+	cfg := cmdPublishReleaseArtifacts.Config
+
+	addFlagArtifactRoot(fs, cfg)
+	addFlagImage(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
+	addFlagLanguage(fs, cfg)
+	addFlagSecretsProject(fs, cfg)
+	addFlagTagRepoUrl(fs, cfg)
 }
 
 func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {

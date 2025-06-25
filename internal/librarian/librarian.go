@@ -23,7 +23,6 @@ import (
 	"log/slog"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
@@ -68,8 +67,5 @@ func Run(ctx context.Context, arg ...string) error {
 		return err
 	}
 	slog.Info("librarian", "arguments", arg)
-
-	cfg := config.New()
-	applyFlags(cfg)
-	return cmd.Run(ctx, cfg)
+	return cmd.Run(ctx, cmd.Config)
 }

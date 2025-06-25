@@ -105,20 +105,22 @@ commits will still be present in the language repo.
 
 func init() {
 	cmdCreateReleasePR.InitFlags()
-	addFlagImage(cmdCreateReleasePR.Flags)
-	addFlagSecretsProject(cmdCreateReleasePR.Flags)
-	addFlagWorkRoot(cmdCreateReleasePR.Flags)
-	addFlagLanguage(cmdCreateReleasePR.Flags)
-	addFlagLibraryID(cmdCreateReleasePR.Flags)
-	addFlagLibraryVersion(cmdCreateReleasePR.Flags)
-	addFlagPush(cmdCreateReleasePR.Flags)
-	addFlagGitUserEmail(cmdCreateReleasePR.Flags)
-	addFlagGitUserName(cmdCreateReleasePR.Flags)
-	addFlagRepoRoot(cmdCreateReleasePR.Flags)
-	addFlagSkipIntegrationTests(cmdCreateReleasePR.Flags)
-	addFlagEnvFile(cmdCreateReleasePR.Flags)
-	addFlagRepoUrl(cmdCreateReleasePR.Flags)
-	addFlagCi(cmdCreateReleasePR.Flags)
+	fs := cmdCreateReleasePR.Flags
+	cfg := cmdCreateReleasePR.Config
+
+	addFlagImage(fs, cfg)
+	addFlagSecretsProject(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
+	addFlagLanguage(fs, cfg)
+	addFlagLibraryID(fs, cfg)
+	addFlagLibraryVersion(fs, cfg)
+	addFlagPush(fs, cfg)
+	addFlagGitUserEmail(fs, cfg)
+	addFlagGitUserName(fs, cfg)
+	addFlagRepoRoot(fs, cfg)
+	addFlagSkipIntegrationTests(fs, cfg)
+	addFlagEnvFile(fs, cfg)
+	addFlagRepoUrl(fs, cfg)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
@@ -131,7 +133,7 @@ func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
 }
 
 func createReleasePR(ctx context.Context, state *commandState, cfg *config.Config) error {
-	if err := validateSkipIntegrationTests(); err != nil {
+	if err := validateSkipIntegrationTests(cfg.SkipIntegrationTests); err != nil {
 		return err
 	}
 

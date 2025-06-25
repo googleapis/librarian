@@ -73,18 +73,20 @@ in the language repo.
 
 func init() {
 	cmdUpdateImageTag.InitFlags()
-	addFlagWorkRoot(cmdUpdateImageTag.Flags)
-	addFlagAPIRoot(cmdUpdateImageTag.Flags)
-	addFlagBranch(cmdUpdateImageTag.Flags)
-	addFlagGitUserEmail(cmdUpdateImageTag.Flags)
-	addFlagGitUserName(cmdUpdateImageTag.Flags)
-	addFlagLanguage(cmdUpdateImageTag.Flags)
-	addFlagPush(cmdUpdateImageTag.Flags)
-	addFlagRepoRoot(cmdUpdateImageTag.Flags)
-	addFlagRepoUrl(cmdUpdateImageTag.Flags)
-	addFlagSecretsProject(cmdUpdateImageTag.Flags)
-	addFlagTag(cmdUpdateImageTag.Flags)
-	addFlagCi(cmdUpdateImageTag.Flags)
+	fs := cmdUpdateImageTag.Flags
+	cfg := cmdUpdateImageTag.Config
+
+	addFlagWorkRoot(fs, cfg)
+	addFlagAPIRoot(fs, cfg)
+	addFlagBranch(fs, cfg)
+	addFlagGitUserEmail(fs, cfg)
+	addFlagGitUserName(fs, cfg)
+	addFlagLanguage(fs, cfg)
+	addFlagPush(fs, cfg)
+	addFlagRepoRoot(fs, cfg)
+	addFlagRepoUrl(fs, cfg)
+	addFlagSecretsProject(fs, cfg)
+	addFlagTag(fs, cfg)
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {

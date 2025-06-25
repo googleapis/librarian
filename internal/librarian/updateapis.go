@@ -84,19 +84,21 @@ commits will still be present in the language repo.
 
 func init() {
 	cmdUpdateApis.InitFlags()
-	addFlagImage(cmdUpdateApis.Flags)
-	addFlagWorkRoot(cmdUpdateApis.Flags)
-	addFlagAPIRoot(cmdUpdateApis.Flags)
-	addFlagBranch(cmdUpdateApis.Flags)
-	addFlagGitUserEmail(cmdUpdateApis.Flags)
-	addFlagGitUserName(cmdUpdateApis.Flags)
-	addFlagLanguage(cmdUpdateApis.Flags)
-	addFlagLibraryID(cmdUpdateApis.Flags)
-	addFlagPush(cmdUpdateApis.Flags)
-	addFlagRepoRoot(cmdUpdateApis.Flags)
-	addFlagRepoUrl(cmdUpdateApis.Flags)
-	addFlagSecretsProject(cmdUpdateApis.Flags)
-	addFlagCi(cmdUpdateApis.Flags)
+	fs := cmdUpdateApis.Flags
+	cfg := cmdUpdateApis.Config
+
+	addFlagImage(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
+	addFlagAPIRoot(fs, cfg)
+	addFlagBranch(fs, cfg)
+	addFlagGitUserEmail(fs, cfg)
+	addFlagGitUserName(fs, cfg)
+	addFlagLanguage(fs, cfg)
+	addFlagLibraryID(fs, cfg)
+	addFlagPush(fs, cfg)
+	addFlagRepoRoot(fs, cfg)
+	addFlagRepoUrl(fs, cfg)
+	addFlagSecretsProject(fs, cfg)
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {

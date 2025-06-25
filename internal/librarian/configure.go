@@ -84,18 +84,20 @@ commits will still be present in the language repo.
 
 func init() {
 	cmdConfigure.InitFlags()
-	addFlagImage(cmdConfigure.Flags)
-	addFlagWorkRoot(cmdConfigure.Flags)
-	addFlagAPIPath(cmdConfigure.Flags)
-	addFlagAPIRoot(cmdConfigure.Flags)
-	addFlagGitUserEmail(cmdConfigure.Flags)
-	addFlagGitUserName(cmdConfigure.Flags)
-	addFlagLanguage(cmdConfigure.Flags)
-	addFlagPush(cmdConfigure.Flags)
-	addFlagRepoRoot(cmdConfigure.Flags)
-	addFlagRepoUrl(cmdConfigure.Flags)
-	addFlagSecretsProject(cmdConfigure.Flags)
-	addFlagCi(cmdConfigure.Flags)
+	fs := cmdConfigure.Flags
+	cfg := cmdConfigure.Config
+
+	addFlagImage(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
+	addFlagAPIPath(fs, cfg)
+	addFlagAPIRoot(fs, cfg)
+	addFlagGitUserEmail(fs, cfg)
+	addFlagGitUserName(fs, cfg)
+	addFlagLanguage(fs, cfg)
+	addFlagPush(fs, cfg)
+	addFlagRepoRoot(fs, cfg)
+	addFlagRepoUrl(fs, cfg)
+	addFlagSecretsProject(fs, cfg)
 }
 
 func runConfigure(ctx context.Context, cfg *config.Config) error {

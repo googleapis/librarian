@@ -80,15 +80,17 @@ if retried.
 
 func init() {
 	cmdCreateReleaseArtifacts.InitFlags()
-	addFlagImage(cmdCreateReleaseArtifacts.Flags)
-	addFlagWorkRoot(cmdCreateReleaseArtifacts.Flags)
-	addFlagLanguage(cmdCreateReleaseArtifacts.Flags)
-	addFlagRepoRoot(cmdCreateReleaseArtifacts.Flags)
-	addFlagRepoUrl(cmdCreateReleaseArtifacts.Flags)
-	addFlagReleaseID(cmdCreateReleaseArtifacts.Flags)
-	addFlagSecretsProject(cmdCreateReleaseArtifacts.Flags)
-	addFlagSkipIntegrationTests(cmdCreateReleaseArtifacts.Flags)
-	addFlagCi(cmdCreateReleaseArtifacts.Flags)
+	fs := cmdCreateReleaseArtifacts.Flags
+	cfg := cmdCreateReleaseArtifacts.Config
+
+	addFlagImage(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
+	addFlagLanguage(fs, cfg)
+	addFlagRepoRoot(fs, cfg)
+	addFlagRepoUrl(fs, cfg)
+	addFlagReleaseID(fs, cfg)
+	addFlagSecretsProject(fs, cfg)
+	addFlagSkipIntegrationTests(fs, cfg)
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
@@ -101,7 +103,7 @@ func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 }
 
 func createReleaseArtifactsImpl(state *commandState, releaseID, skipIntegrationTests string) error {
-	if err := validateSkipIntegrationTests(); err != nil {
+	if err := validateSkipIntegrationTests(skipIntegrationTests); err != nil {
 		return err
 	}
 	if err := validateRequiredFlag("release-id", releaseID); err != nil {

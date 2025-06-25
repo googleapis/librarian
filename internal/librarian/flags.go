@@ -27,135 +27,104 @@ import (
 // ... but see also githubrepo.go
 const defaultRepositoryEnvironmentVariable string = "LIBRARIAN_REPOSITORY"
 
-var (
-	flagAPIPath              string
-	flagAPIRoot              string
-	flagArtifactRoot         string
-	flagBaselineCommit       string
-	flagBranch               string
-	flagBuild                bool
-	flagCi                   string
-	flagEnvFile              string
-	flagGitUserEmail         string
-	flagGitUserName          string
-	flagImage                string
-	flagLanguage             string
-	flagLibraryID            string
-	flagLibraryVersion       string
-	flagPush                 bool
-	flagReleaseID            string
-	flagReleasePRUrl         string
-	flagRepoRoot             string
-	flagRepoUrl              string
-	flagSyncUrlPrefix        string
-	flagSecretsProject       string
-	flagSkipIntegrationTests string
-	flagTag                  string
-	flagTagRepoUrl           string
-	flagWorkRoot             string
-)
-
-func addFlagAPIPath(fs *flag.FlagSet) {
-	fs.StringVar(&flagAPIPath, "api-path", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
+func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.APIPath, "api-path", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
-func addFlagAPIRoot(fs *flag.FlagSet) {
-	fs.StringVar(&flagAPIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to the work-root")
+func addFlagAPIRoot(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.APIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to the work-root")
 }
 
-func addFlagArtifactRoot(fs *flag.FlagSet) {
-	fs.StringVar(&flagArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
-}
-func addFlagBaselineCommit(fs *flag.FlagSet) {
-	fs.StringVar(&flagBaselineCommit, "baseline-commit", "", "the commit hash that was at HEAD for the language repo when create-release-pr was run")
+func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
 }
 
-func addFlagBranch(fs *flag.FlagSet) {
-	fs.StringVar(&flagBranch, "branch", "main", "repository branch")
+func addFlagBaselineCommit(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.BaselineCommit, "baseline-commit", "", "the commit hash that was at HEAD for the language repo when create-release-pr was run")
 }
 
-func addFlagBuild(fs *flag.FlagSet) {
-	fs.BoolVar(&flagBuild, "build", false, "whether to build the generated code")
+func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Branch, "branch", "main", "repository branch")
 }
 
-func addFlagCi(fs *flag.FlagSet) {
-	fs.StringVar(&flagCi, "ci", "", "Identifies the type of Continuous Integration (CI) environment in which the tool is executing.")
+func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
+	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
 }
 
-func addFlagEnvFile(fs *flag.FlagSet) {
-	fs.StringVar(&flagEnvFile, "env-file", "", "full path to the file where the environment variables are stored. Defaults to env-vars.txt within the work-root")
+func addFlagEnvFile(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.EnvFile, "env-file", "", "full path to the file where the environment variables are stored. Defaults to env-vars.txt within the work-root")
 }
 
-func addFlagGitUserEmail(fs *flag.FlagSet) {
-	fs.StringVar(&flagGitUserEmail, "git-user-email", "", "Email address to use in Git commits")
+func addFlagGitUserEmail(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.GitUserEmail, "git-user-email", "", "Email address to use in Git commits")
 }
 
-func addFlagGitUserName(fs *flag.FlagSet) {
-	fs.StringVar(&flagGitUserName, "git-user-name", "", "Display name to use in Git commits")
+func addFlagGitUserName(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.GitUserName, "git-user-name", "", "Display name to use in Git commits")
 }
 
-func addFlagImage(fs *flag.FlagSet) {
-	fs.StringVar(&flagImage, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
+func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Image, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
 }
 
-func addFlagLanguage(fs *flag.FlagSet) {
-	fs.StringVar(&flagLanguage, "language", "", "(Required) language for which to configure/generate/release code")
+func addFlagLanguage(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Language, "language", "", "(Required) language for which to configure/generate/release code")
 }
 
-func addFlagLibraryID(fs *flag.FlagSet) {
-	fs.StringVar(&flagLibraryID, "library-id", "", "The ID of a single library to update")
+func addFlagLibraryID(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.LibraryID, "library-id", "", "The ID of a single library to update")
 }
 
-func addFlagLibraryVersion(fs *flag.FlagSet) {
-	fs.StringVar(&flagLibraryVersion, "library-version", "", "The version to release (only valid with library-id, only when creating a release PR)")
+func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.LibraryVersion, "library-version", "", "The version to release (only valid with library-id, only when creating a release PR)")
 }
 
-func addFlagPush(fs *flag.FlagSet) {
-	fs.BoolVar(&flagPush, "push", false, "push to GitHub if true")
+func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
+	fs.BoolVar(&cfg.Push, "push", false, "push to GitHub if true")
 }
 
-func addFlagReleaseID(fs *flag.FlagSet) {
-	fs.StringVar(&flagReleaseID, "release-id", "", "The ID of a release PR")
+func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.ReleaseID, "release-id", "", "The ID of a release PR")
 }
 
-func addFlagReleasePRUrl(fs *flag.FlagSet) {
-	fs.StringVar(&flagReleasePRUrl, "release-pr-url", "", "The URL of a release PR")
+func addFlagReleasePRUrl(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.ReleasePRURL, "release-pr-url", "", "The URL of a release PR")
 }
 
-func addFlagRepoRoot(fs *flag.FlagSet) {
-	fs.StringVar(&flagRepoRoot, "repo-root", "", "Repository root. When this (and repo-url) are not specified, the language repo will be cloned.")
+func addFlagRepoRoot(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.RepoRoot, "repo-root", "", "Repository root. When this (and repo-url) are not specified, the language repo will be cloned.")
 }
 
-func addFlagRepoUrl(fs *flag.FlagSet) {
-	fs.StringVar(&flagRepoUrl, "repo-url", "", "Repository URL to clone. If this and repo-root are not specified, the default language repo will be cloned.")
+func addFlagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.RepoURL, "repo-url", "", "Repository URL to clone. If this and repo-root are not specified, the default language repo will be cloned.")
 }
 
-func addFlagSecretsProject(fs *flag.FlagSet) {
-	fs.StringVar(&flagSecretsProject, "secrets-project", "", "Project containing Secret Manager secrets.")
+func addFlagSecretsProject(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.SecretsProject, "secrets-project", "", "Project containing Secret Manager secrets.")
 }
 
-func addFlagSkipIntegrationTests(fs *flag.FlagSet) {
-	fs.StringVar(&flagSkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
+func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.SkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
 }
 
-func addFlagSyncUrlPrefix(fs *flag.FlagSet) {
-	fs.StringVar(&flagSyncUrlPrefix, "sync-url-prefix", "", "the prefix of the URL to check for commit synchronization; the commit hash will be appended to this")
+func addFlagSyncUrlPrefix(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.SyncURLPrefix, "sync-url-prefix", "", "the prefix of the URL to check for commit synchronization; the commit hash will be appended to this")
 }
 
-func addFlagTag(fs *flag.FlagSet) {
-	fs.StringVar(&flagTag, "tag", "", "new tag for the language-specific container image.")
+func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Tag, "tag", "", "new tag for the language-specific container image.")
 }
 
-func addFlagTagRepoUrl(fs *flag.FlagSet) {
-	fs.StringVar(&flagTagRepoUrl, "tag-repo-url", "", "Repository URL to tag and create releases in. Requires when push is true.")
+func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.TagRepoURL, "tag-repo-url", "", "Repository URL to tag and create releases in. Requires when push is true.")
 }
 
-func addFlagWorkRoot(fs *flag.FlagSet) {
-	fs.StringVar(&flagWorkRoot, "work-root", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
+func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.WorkRoot, "work-root", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
 }
 
-func validateSkipIntegrationTests() error {
-	if flagSkipIntegrationTests != "" && !strings.HasPrefix(flagSkipIntegrationTests, "b/") {
+func validateSkipIntegrationTests(skipIntegrationTests string) error {
+	if skipIntegrationTests != "" && !strings.HasPrefix(skipIntegrationTests, "b/") {
 		return errors.New("skipping integration tests requires a bug to be specified, e.g. -skip-integration-tests=b/12345")
 	}
 	return nil
@@ -171,32 +140,4 @@ func validateRequiredFlag(name, value string) error {
 		return fmt.Errorf("required flag -%s not specified", name)
 	}
 	return nil
-}
-
-func applyFlags(cfg *config.Config) {
-	cfg.APIPath = flagAPIPath
-	cfg.APIRoot = flagAPIRoot
-	cfg.ArtifactRoot = flagArtifactRoot
-	cfg.BaselineCommit = flagBaselineCommit
-	cfg.Branch = flagBranch
-	cfg.Build = flagBuild
-	cfg.CI = flagCi
-	cfg.EnvFile = flagEnvFile
-	cfg.GitUserEmail = flagGitUserEmail
-	cfg.GitUserName = flagGitUserName
-	cfg.Image = flagImage
-	cfg.Language = flagLanguage
-	cfg.LibraryID = flagLibraryID
-	cfg.LibraryVersion = flagLibraryVersion
-	cfg.Push = flagPush
-	cfg.ReleaseID = flagReleaseID
-	cfg.ReleasePRURL = flagReleasePRUrl
-	cfg.RepoRoot = flagRepoRoot
-	cfg.RepoURL = flagRepoUrl
-	cfg.SyncURLPrefix = flagSyncUrlPrefix
-	cfg.SecretsProject = flagSecretsProject
-	cfg.SkipIntegrationTests = flagSkipIntegrationTests
-	cfg.Tag = flagTag
-	cfg.TagRepoURL = flagTagRepoUrl
-	cfg.WorkRoot = flagWorkRoot
 }
