@@ -115,6 +115,9 @@ func (c *Command) usage(w io.Writer) {
 	fmt.Fprintf(w, "\n\n")
 }
 
+// InitFlags creates a new set of flags for the command and initializes
+// them such that any parsing failures result in the command usage being
+// displayed.
 func (c *Command) InitFlags() *Command {
 	c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.flags.Usage = func() {
