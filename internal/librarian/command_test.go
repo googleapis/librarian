@@ -305,7 +305,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 }
 
 func TestCommitAll(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name       string
 		setup      func(t *testing.T, repoDir string)
 		wantCommit bool
@@ -327,7 +327,7 @@ func TestCommitAll(t *testing.T) {
 			wantCommit: true,
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			repoDir := newTestGitRepoWithCommit(t, "")
 			repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
 			if err != nil {
@@ -339,7 +339,7 @@ func TestCommitAll(t *testing.T) {
 				t.Fatalf("repo.HeadHash() error = %v", err)
 			}
 
-			tt.setup(t, repoDir)
+			test.setup(t, repoDir)
 
 			if err := commitAll(repo, "test commit", "tester", "tester@example.com"); err != nil {
 				t.Errorf("commitAll() error = %v, wantErr nil", err)
@@ -351,8 +351,8 @@ func TestCommitAll(t *testing.T) {
 			}
 
 			hasCommitted := initialHead != finalHead
-			if hasCommitted != tt.wantCommit {
-				t.Errorf("commitAll() commit status = %v, want %v", hasCommitted, tt.wantCommit)
+			if hasCommitted != test.wantCommit {
+				t.Errorf("commitAll() commit status = %v, want %v", hasCommitted, test.wantCommit)
 			}
 		})
 	}
