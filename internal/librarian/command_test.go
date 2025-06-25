@@ -242,27 +242,6 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			},
 		},
 		{
-			name:     "no repoRoot or repoURL, default to open language monorepo",
-			language: "go",
-			// Setup for this specific test case: create the expected default repo.
-			// This avoids actual network cloning.
-			setup: func(t *testing.T, wr string) func() {
-				repoPath := filepath.Join(wr, "google-cloud-go")
-				newTestGitRepoWithCommit(t, repoPath)
-				return func() {
-					if err := os.RemoveAll(repoPath); err != nil {
-						t.Errorf("os.RemoveAll(%q) = %v; want nil", repoPath, err)
-					}
-				}
-			},
-			check: func(t *testing.T, repo *gitrepo.Repository) {
-				wantDir := filepath.Join(workRoot, "google-cloud-go")
-				if repo.Dir != wantDir {
-					t.Errorf("repo.Dir got %q, want %q", repo.Dir, wantDir)
-				}
-			},
-		},
-		{
 			name:    "with repoURL with trailing slash",
 			repoURL: "https://github.com/googleapis/google-cloud-go/",
 			setup: func(t *testing.T, workRoot string) func() {
@@ -283,7 +262,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			},
 		},
 		{
-			name:    "no repoRoot or repoURL, no language",
+			name:    "no repoRoot or repoURL",
 			wantErr: true,
 		},
 		{
