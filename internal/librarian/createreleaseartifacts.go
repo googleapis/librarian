@@ -88,7 +88,7 @@ func init() {
 	addFlagReleaseID(cmdCreateReleaseArtifacts.Flags)
 	addFlagSecretsProject(cmdCreateReleaseArtifacts.Flags)
 	addFlagSkipIntegrationTests(cmdCreateReleaseArtifacts.Flags)
-  addFlagCi(cmdCreateReleaseArtifacts.Flags)
+	addFlagCi(cmdCreateReleaseArtifacts.Flags)
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {

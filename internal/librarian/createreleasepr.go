@@ -118,7 +118,7 @@ func init() {
 	addFlagSkipIntegrationTests(cmdCreateReleasePR.Flags)
 	addFlagEnvFile(cmdCreateReleasePR.Flags)
 	addFlagRepoUrl(cmdCreateReleasePR.Flags)
-  addFlagCi(cmdCreateReleasePR.Flags)
+	addFlagCi(cmdCreateReleasePR.Flags)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {

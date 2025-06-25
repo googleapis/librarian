@@ -96,7 +96,7 @@ func init() {
 	addFlagRepoRoot(cmdUpdateApis.Flags)
 	addFlagRepoUrl(cmdUpdateApis.Flags)
 	addFlagSecretsProject(cmdUpdateApis.Flags)
-  addFlagCi(cmdUpdateApis.Flags)
+	addFlagCi(cmdUpdateApis.Flags)
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {

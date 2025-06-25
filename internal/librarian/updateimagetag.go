@@ -84,7 +84,7 @@ func init() {
 	addFlagRepoUrl(cmdUpdateImageTag.Flags)
 	addFlagSecretsProject(cmdUpdateImageTag.Flags)
 	addFlagTag(cmdUpdateImageTag.Flags)
-  addFlagCi(cmdUpdateImageTag.Flags)
+	addFlagCi(cmdUpdateImageTag.Flags)
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
