@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
@@ -74,7 +73,7 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 			Dir:        repoPath,
 			MaybeClone: true,
 			RemoteURL:  repoURL,
-      CI:         ci,
+			CI:         ci,
 		})
 	}
 	if repoRoot == "" {
@@ -93,7 +92,7 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 	}
 	languageRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 		Dir: absRepoRoot,
-    CI:  ci,
+		CI:  ci,
 	})
 	if err != nil {
 		return nil, err
