@@ -205,8 +205,8 @@ func (c *Docker) BuildLibrary(repoRoot, libraryID string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--test=true",
+		fmt.Sprintf("--library-id=%s", libraryID),
 	}
-	commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
 	return c.runDocker(CommandBuildLibrary, mounts, commandArgs)
 }
 
