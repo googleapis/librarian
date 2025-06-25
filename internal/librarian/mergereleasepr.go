@@ -21,7 +21,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -33,18 +32,13 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-// The environment variable expected to hold an auth token which can be used
-// when communicating with the repo which syncs with the language repo,
-// as specified via flagSyncUrlPrefix.
-const syncAuthTokenEnvironmentVariable string = "LIBRARIAN_SYNC_AUTH_TOKEN"
-
 // The label used to avoid users merging the PR themselves.
 const DoNotMergeLabel = "do-not-merge"
 const DoNotMergeAppId = 91138
 const ConventionalCommitsAppId = 37172
 
-// The label used to indicate "I've noticed a problem with this PR; I won't check it again
-// until you've done something".
+// MergeBlockedLabel used to indicate "I've noticed a problem with this PR;
+// I won't check it again until you've done something".
 const MergeBlockedLabel = "merge-blocked-see-comments"
 
 var cmdMergeReleasePR = &cli.Command{
@@ -127,7 +121,7 @@ type SuspectRelease struct {
 const mergedReleaseCommitEnvVarName = "_MERGED_RELEASE_COMMIT"
 
 func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) error {
-	if cfg.SyncURLPrefix != "" && os.Getenv(syncAuthTokenEnvironmentVariable) == "" {
+	if cfg.SyncURLPrefix != "" && cfg.SyncAuthToken == "" {
 		return errors.New("-sync-url-prefix specified, but no sync auth token present")
 	}
 	if err := validateRequiredFlag("release-id", cfg.ReleaseID); err != nil {
@@ -166,7 +160,7 @@ func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) er
 		return err
 	}
 
-	if err := waitForSync(mergeCommit, cfg.SyncURLPrefix); err != nil {
+	if err := waitForSync(mergeCommit, cfg); err != nil {
 		return err
 	}
 	return nil
@@ -332,15 +326,15 @@ const waitForSyncMaxDuration = time.Duration(10) * time.Minute
 // If flagSyncUrlPrefix is empty, this returns immediately.
 // Otherwise, polls for up to 10 minutes (once every 30 seconds) for the
 // given merge commit to be available at the repo specified via flagSyncUrlPrefix.
-func waitForSync(mergeCommit string, syncURLPrefix string) error {
-	if syncURLPrefix == "" {
+func waitForSync(mergeCommit string, cfg *config.Config) error {
+	if cfg.SyncURLPrefix == "" {
 		return nil
 	}
-	req, err := http.NewRequest("GET", syncURLPrefix+mergeCommit, nil)
+	req, err := http.NewRequest("GET", cfg.SyncURLPrefix+mergeCommit, nil)
 	if err != nil {
 		return fmt.Errorf("error creating HTTP request: %v", err)
 	}
-	authToken := os.Getenv(syncAuthTokenEnvironmentVariable)
+	authToken := cfg.SyncAuthToken
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	client := &http.Client{}
 
