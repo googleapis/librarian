@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -88,7 +87,7 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	image := deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
+	image := deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
 
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)

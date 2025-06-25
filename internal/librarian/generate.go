@@ -127,7 +127,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		}
 	}
 
-	image := deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
+	image := deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
 	containerConfig, err := docker.New(ctx, workRoot, image, cfg.SecretsProject, config)
 	if err != nil {
 		return err
@@ -176,7 +176,7 @@ func executeGenerate(state *commandState, apiPath, apiRoot string, build bool) e
 
 // Checks if the library exists in the remote pipeline state, if so use GenerateLibrary command
 // otherwise use GenerateRaw command.
-// In case of non fatal error when looking up library, we will fallback to GenerateRaw command
+// In case of non-fatal error when looking up library, we will fall back to GenerateRaw command
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.

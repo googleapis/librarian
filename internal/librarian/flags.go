@@ -23,10 +23,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// Environment variables are specified here as they're used for the same sort of purpose as flags...
-// ... but see also githubrepo.go
-const defaultRepositoryEnvironmentVariable string = "LIBRARIAN_REPOSITORY"
-
 func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.APIPath, "api-path", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }

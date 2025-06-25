@@ -91,7 +91,7 @@ func init() {
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
 	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
-		os.Getenv(defaultRepositoryEnvironmentVariable), cfg.SecretsProject, cfg.CI)
+		cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	}
 	// Derive the new image to use, and save it in the context.
 	ps.ImageTag = cfg.Tag
-	state.containerConfig.Image = deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
+	state.containerConfig.Image = deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
 	savePipelineState(state)
 
 	// Take a defensive copy of the generator input directory from the language repo.
