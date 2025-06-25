@@ -35,9 +35,6 @@ const releaseIDEnvVarName = "_RELEASE_ID"
 
 // commandState holds all necessary information for a command execution.
 type commandState struct {
-	// ctx provides context for cancellable operations.
-	ctx context.Context
-
 	// startTime records when the command began execution. This is used as a
 	// consistent timestamp for commands when necessary.
 	startTime time.Time
@@ -62,27 +59,27 @@ type commandState struct {
 	containerConfig *docker.Docker
 }
 
-func cloneOrOpenLanguageRepo(workRoot, ci string) (*gitrepo.Repository, error) {
+func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (*gitrepo.Repository, error) {
 	var languageRepo *gitrepo.Repository
-	if flagRepoRoot != "" && flagRepoUrl != "" {
+	if repoRoot != "" && repoURL != "" {
 		return nil, errors.New("do not specify both repo-root and repo-url")
 	}
-	if flagRepoUrl != "" {
+	if repoURL != "" {
 		// Take the last part of the URL as the directory name. It feels very
 		// unlikely that will clash with anything else (e.g. "output")
-		bits := strings.Split(flagRepoUrl, "/")
+		bits := strings.Split(repoURL, "/")
 		repoName := bits[len(bits)-1]
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir:        repoPath,
 			MaybeClone: true,
-			RemoteURL:  flagRepoUrl,
-			CI:         ci,
+			RemoteURL:  repoURL,
+      CI:         ci,
 		})
 	}
-	if flagRepoRoot == "" {
-		languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", flagLanguage)
-		repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", flagLanguage))
+	if repoRoot == "" {
+		languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", language)
+		repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", language))
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir:        repoPath,
 			MaybeClone: true,
@@ -90,13 +87,13 @@ func cloneOrOpenLanguageRepo(workRoot, ci string) (*gitrepo.Repository, error) {
 			CI:         ci,
 		})
 	}
-	repoRoot, err := filepath.Abs(flagRepoRoot)
+	absRepoRoot, err := filepath.Abs(repoRoot)
 	if err != nil {
 		return nil, err
 	}
 	languageRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-		Dir: repoRoot,
-		CI:  ci,
+		Dir: absRepoRoot,
+    CI:  ci,
 	})
 	if err != nil {
 		return nil, err
@@ -117,13 +114,13 @@ func cloneOrOpenLanguageRepo(workRoot, ci string) (*gitrepo.Repository, error) {
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(ctx context.Context, cfg *config.Config) (*commandState, error) {
+func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRoot, repoURL, language, imageOverride, defaultRepository, secretsProject, ci string) (*commandState, error) {
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime)
+	workRoot, err := createWorkRoot(startTime, workRootOverride)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot, cfg.CI)
+	repo, err := cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci)
 	if err != nil {
 		return nil, err
 	}
@@ -133,14 +130,13 @@ func createCommandStateForLanguage(ctx context.Context, cfg *config.Config) (*co
 		return nil, err
 	}
 
-	image := deriveImage(ps)
-	containerConfig, err := docker.New(ctx, workRoot, image, flagSecretsProject, config)
+	image := deriveImage(language, imageOverride, defaultRepository, ps)
+	containerConfig, err := docker.New(ctx, workRoot, image, secretsProject, config)
 	if err != nil {
 		return nil, err
 	}
 
 	state := &commandState{
-		ctx:             ctx,
 		startTime:       startTime,
 		workRoot:        workRoot,
 		languageRepo:    repo,
@@ -151,8 +147,8 @@ func createCommandStateForLanguage(ctx context.Context, cfg *config.Config) (*co
 	return state, nil
 }
 
-func appendResultEnvironmentVariable(workRoot, name, value string) error {
-	envFile := flagEnvFile
+func appendResultEnvironmentVariable(workRoot, name, value, envFileOverride string) error {
+	envFile := envFileOverride
 	if envFile == "" {
 		envFile = filepath.Join(workRoot, "env-vars.txt")
 	}
@@ -160,13 +156,12 @@ func appendResultEnvironmentVariable(workRoot, name, value string) error {
 	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
 }
 
-func deriveImage(state *statepb.PipelineState) string {
-	if flagImage != "" {
-		return flagImage
+func deriveImage(language, imageOverride, defaultRepository string, state *statepb.PipelineState) string {
+	if imageOverride != "" {
+		return imageOverride
 	}
 
-	defaultRepository := os.Getenv(defaultRepositoryEnvironmentVariable)
-	relativeImage := fmt.Sprintf("google-cloud-%s-generator", flagLanguage)
+	relativeImage := fmt.Sprintf("google-cloud-%s-generator", language)
 
 	var tag string
 	if state == nil {
@@ -207,10 +202,10 @@ func formatTimestamp(t time.Time) string {
 	return t.Format(yyyyMMddHHmmss)
 }
 
-func createWorkRoot(t time.Time) (string, error) {
-	if flagWorkRoot != "" {
-		slog.Info(fmt.Sprintf("Using specified working directory: %s", flagWorkRoot))
-		return flagWorkRoot, nil
+func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
+	if workRootOverride != "" {
+		slog.Info(fmt.Sprintf("Using specified working directory: %s", workRootOverride))
+		return workRootOverride, nil
 	}
 
 	path := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(t)))
@@ -232,7 +227,7 @@ func createWorkRoot(t time.Time) (string, error) {
 }
 
 // No commit is made if there are no file modifications.
-func commitAll(repo *gitrepo.Repository, msg string) error {
+func commitAll(repo *gitrepo.Repository, msg, userName, userEmail string) error {
 	status, err := repo.AddAll()
 	if err != nil {
 		return err
@@ -242,7 +237,7 @@ func commitAll(repo *gitrepo.Repository, msg string) error {
 		return nil
 	}
 
-	return repo.Commit(msg, flagGitUserName, flagGitUserEmail)
+	return repo.Commit(msg, userName, userEmail)
 }
 
 // Log details of an error which prevents a single API or library from being configured/released, but without

@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -33,8 +32,8 @@ import (
 )
 
 var cmdGenerate = &cli.Command{
-	Short: "generate generates client library code for a single API",
-	Usage: "librarian generate -api-root=<api-root> -api-path=<api-path> -language=<language> [flags]",
+	Short:     "generate generates client library code for a single API",
+	UsageLine: "librarian generate -api-root=<api-root> -api-path=<api-path> -language=<language> [flags]",
 	Long: `Specify the language, the API repository root and the path within it for the API to generate.
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
 to build the generated library.
@@ -82,18 +81,17 @@ output directory that was specified for the "generate-raw" command.
 }
 
 func init() {
-	cmdGenerate.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagAPIPath,
-		addFlagAPIRoot,
-		addFlagLanguage,
-		addFlagBuild,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagSecretsProject,
-		addFlagCi,
-	})
+	cmdGenerate.InitFlags()
+	addFlagImage(cmdGenerate.Flags)
+	addFlagWorkRoot(cmdGenerate.Flags)
+	addFlagAPIPath(cmdGenerate.Flags)
+	addFlagAPIRoot(cmdGenerate.Flags)
+	addFlagLanguage(cmdGenerate.Flags)
+	addFlagBuild(cmdGenerate.Flags)
+	addFlagRepoRoot(cmdGenerate.Flags)
+	addFlagRepoUrl(cmdGenerate.Flags)
+	addFlagSecretsProject(cmdGenerate.Flags)
+  addFlagCi(cmdGenerate.Flags)
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config) error {
@@ -102,10 +100,8 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/482): pass in
-	// flagWorkroot explicitly.
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime)
+	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
 	if err != nil {
 		return err
 	}
@@ -118,7 +114,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	// We only clone/open the language repo and use the state within it
 	// if the requested API is configured as a library.
 	if libraryConfigured {
-		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.CI)
+		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.CI)
 		if err != nil {
 			return err
 		}
@@ -129,14 +125,13 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		}
 	}
 
-	image := deriveImage(ps)
+	image := deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 	containerConfig, err := docker.New(ctx, workRoot, image, cfg.SecretsProject, config)
 	if err != nil {
 		return err
 	}
 
 	state := &commandState{
-		ctx:             ctx,
 		startTime:       startTime,
 		workRoot:        workRoot,
 		languageRepo:    repo,
@@ -196,7 +191,7 @@ func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
-		generatorInput := filepath.Join(state.languageRepo.Dir, "generator-input")
+		generatorInput := filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir)
 		slog.Info(fmt.Sprintf("Performing refined generation for library %s", libraryID))
 		return libraryID, state.containerConfig.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID)
 	} else {
@@ -205,7 +200,7 @@ func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string)
 	}
 }
 
-// detectIfLibraryConfigured returns whether or not a library has been configured for
+// detectIfLibraryConfigured returns whether a library has been configured for
 // the requested API (as specified in apiPath). This is done by checking the local
 // pipeline state if repoRoot has been specified, or the remote pipeline state (just
 // by fetching the single file) if flatRepoUrl has been specified. If neither the repo
@@ -225,7 +220,7 @@ func detectIfLibraryConfigured(apiPath, repoURL, repoRoot, gitHubToken string) (
 		err           error
 	)
 	if repoRoot != "" {
-		pipelineState, err = loadPipelineStateFile(filepath.Join(repoRoot, "generator-input", pipelineStateFile))
+		pipelineState, err = loadPipelineStateFile(filepath.Join(repoRoot, config.GeneratorInputDir, pipelineStateFile))
 		if err != nil {
 			return false, err
 		}

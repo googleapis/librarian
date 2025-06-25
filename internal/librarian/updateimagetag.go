@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -30,8 +29,8 @@ import (
 )
 
 var cmdUpdateImageTag = &cli.Command{
-	Short: "update-image-tag updates a language repo's image tag and regenerates APIs",
-	Usage: "librarian update-image-tag -language=<language> -tag=<new tag> [flags]",
+	Short:     "update-image-tag updates a language repo's image tag and regenerates APIs",
+	UsageLine: "librarian update-image-tag -language=<language> -tag=<new tag> [flags]",
 	Long: `Specify the language, the new tag, and optional flags to use non-default repositories, e.g. for testing.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
@@ -73,31 +72,31 @@ in the language repo.
 }
 
 func init() {
-	cmdUpdateImageTag.SetFlags([]func(fs *flag.FlagSet){
-		addFlagWorkRoot,
-		addFlagAPIRoot,
-		addFlagBranch,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagLanguage,
-		addFlagPush,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagSecretsProject,
-		addFlagTag,
-		addFlagCi,
-	})
+	cmdUpdateImageTag.InitFlags()
+	addFlagWorkRoot(cmdUpdateImageTag.Flags)
+	addFlagAPIRoot(cmdUpdateImageTag.Flags)
+	addFlagBranch(cmdUpdateImageTag.Flags)
+	addFlagGitUserEmail(cmdUpdateImageTag.Flags)
+	addFlagGitUserName(cmdUpdateImageTag.Flags)
+	addFlagLanguage(cmdUpdateImageTag.Flags)
+	addFlagPush(cmdUpdateImageTag.Flags)
+	addFlagRepoRoot(cmdUpdateImageTag.Flags)
+	addFlagRepoUrl(cmdUpdateImageTag.Flags)
+	addFlagSecretsProject(cmdUpdateImageTag.Flags)
+	addFlagTag(cmdUpdateImageTag.Flags)
+  addFlagCi(cmdUpdateImageTag.Flags)
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg)
+	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+		os.Getenv(defaultRepositoryEnvironmentVariable), cfg.SecretsProject, cfg.CI)
 	if err != nil {
 		return err
 	}
-	return updateImageTag(state, cfg)
+	return updateImageTag(ctx, state, cfg)
 }
 
-func updateImageTag(state *commandState, cfg *config.Config) error {
+func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config) error {
 	if err := validateRequiredFlag("tag", cfg.Tag); err != nil {
 		return err
 	}
@@ -146,12 +145,12 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	}
 	// Derive the new image to use, and save it in the context.
 	ps.ImageTag = cfg.Tag
-	state.containerConfig.Image = deriveImage(ps)
+	state.containerConfig.Image = deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 	savePipelineState(state)
 
 	// Take a defensive copy of the generator input directory from the language repo.
-	generatorInput := filepath.Join(state.workRoot, "generator-input")
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, "generator-input"))); err != nil {
+	generatorInput := filepath.Join(state.workRoot, config.GeneratorInputDir)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
 
@@ -164,8 +163,9 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	}
 
 	// Commit any changes
-	commitMsg := fmt.Sprintf("chore: update generation image tag to %s", flagTag)
-	if err := commitAll(languageRepo, commitMsg); err != nil {
+	commitMsg := fmt.Sprintf("chore: update generation image tag to %s", cfg.Tag)
+	if err := commitAll(languageRepo, commitMsg,
+		cfg.GitUserName, cfg.GitUserEmail); err != nil {
 		return err
 	}
 
@@ -179,7 +179,7 @@ func updateImageTag(state *commandState, cfg *config.Config) error {
 	// can massage it into a similar state.
 	prContent := new(PullRequestContent)
 	addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
-	_, err := createPullRequest(state, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push)
+	_, err := createPullRequest(ctx, state, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push)
 	return err
 }
 

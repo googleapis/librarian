@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -47,8 +46,8 @@ type LibraryRelease struct {
 }
 
 var cmdCreateReleaseArtifacts = &cli.Command{
-	Short: "create-release-artifacts creates release artifacts from a merged release PR",
-	Usage: "librarian create-release-artifacts -language=<language> -release-id=<id> [flags]",
+	Short:     "create-release-artifacts creates release artifacts from a merged release PR",
+	UsageLine: "librarian create-release-artifacts -language=<language> -release-id=<id> [flags]",
 	Long: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
 The release ID is specified in the the release PR and in each commit within it, in a line starting "Librarian-Release-ID: ".
 
@@ -80,32 +79,32 @@ if retried.
 }
 
 func init() {
-	cmdCreateReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagLanguage,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagReleaseID,
-		addFlagSecretsProject,
-		addFlagSkipIntegrationTests,
-		addFlagCi,
-	})
+	cmdCreateReleaseArtifacts.InitFlags()
+	addFlagImage(cmdCreateReleaseArtifacts.Flags)
+	addFlagWorkRoot(cmdCreateReleaseArtifacts.Flags)
+	addFlagLanguage(cmdCreateReleaseArtifacts.Flags)
+	addFlagRepoRoot(cmdCreateReleaseArtifacts.Flags)
+	addFlagRepoUrl(cmdCreateReleaseArtifacts.Flags)
+	addFlagReleaseID(cmdCreateReleaseArtifacts.Flags)
+	addFlagSecretsProject(cmdCreateReleaseArtifacts.Flags)
+	addFlagSkipIntegrationTests(cmdCreateReleaseArtifacts.Flags)
+  addFlagCi(cmdCreateReleaseArtifacts.Flags)
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg)
+	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+		os.Getenv(defaultRepositoryEnvironmentVariable), cfg.SecretsProject, cfg.CI)
 	if err != nil {
 		return err
 	}
-	return createReleaseArtifactsImpl(state)
+	return createReleaseArtifactsImpl(state, cfg.ReleaseID, cfg.SkipIntegrationTests)
 }
 
-func createReleaseArtifactsImpl(state *commandState) error {
+func createReleaseArtifactsImpl(state *commandState, releaseID, skipIntegrationTests string) error {
 	if err := validateSkipIntegrationTests(); err != nil {
 		return err
 	}
-	if err := validateRequiredFlag("release-id", flagReleaseID); err != nil {
+	if err := validateRequiredFlag("release-id", releaseID); err != nil {
 		return err
 	}
 	outputRoot := filepath.Join(state.workRoot, "output")
@@ -114,13 +113,13 @@ func createReleaseArtifactsImpl(state *commandState) error {
 	}
 	slog.Info(fmt.Sprintf("Packages will be created in %s", outputRoot))
 
-	releases, err := parseCommitsForReleases(state.languageRepo, flagReleaseID)
+	releases, err := parseCommitsForReleases(state.languageRepo, releaseID)
 	if err != nil {
 		return err
 	}
 
 	for _, release := range releases {
-		if err := buildTestPackageRelease(state, outputRoot, release); err != nil {
+		if err := buildTestPackageRelease(state, outputRoot, release, skipIntegrationTests); err != nil {
 			return err
 		}
 	}
@@ -153,13 +152,13 @@ func copyMetadataFiles(state *commandState, outputRoot string, releases []Librar
 	if err := languageRepo.Checkout(finalRelease.CommitHash); err != nil {
 		return err
 	}
-	sourceStateFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineStateFile)
+	sourceStateFile := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
 	destStateFile := filepath.Join(outputRoot, pipelineStateFile)
 	if err := copyFile(sourceStateFile, destStateFile); err != nil {
 		return err
 	}
 
-	sourceConfigFile := filepath.Join(languageRepo.Dir, "generator-input", pipelineConfigFile)
+	sourceConfigFile := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineConfigFile)
 	destConfigFile := filepath.Join(outputRoot, pipelineConfigFile)
 	if err := copyFile(sourceConfigFile, destConfigFile); err != nil {
 		return err
@@ -175,7 +174,7 @@ func copyFile(sourcePath, destPath string) error {
 	return createAndWriteBytesToFile(destPath, bytes)
 }
 
-func buildTestPackageRelease(state *commandState, outputRoot string, release LibraryRelease) error {
+func buildTestPackageRelease(state *commandState, outputRoot string, release LibraryRelease, skipIntegrationTests string) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
@@ -185,8 +184,8 @@ func buildTestPackageRelease(state *commandState, outputRoot string, release Lib
 	if err := cc.BuildLibrary(languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
-	if flagSkipIntegrationTests != "" {
-		slog.Info(fmt.Sprintf("Skipping integration tests: %s", flagSkipIntegrationTests))
+	if skipIntegrationTests != "" {
+		slog.Info(fmt.Sprintf("Skipping integration tests: %s", skipIntegrationTests))
 	} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}

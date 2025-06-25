@@ -18,9 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,8 +32,8 @@ import (
 )
 
 var cmdPublishReleaseArtifacts = &cli.Command{
-	Short: "publish-release-artifacts publishes (previously-created) release artifacts to package managers and documentation sites",
-	Usage: "librarian publish-release-artifacts -language=<language> -artifact-root=<artifact-root> -tag-repo-url=<repo-url> [flags]",
+	Short:     "publish-release-artifacts publishes (previously-created) release artifacts to package managers and documentation sites",
+	UsageLine: "librarian publish-release-artifacts -language=<language> -artifact-root=<artifact-root> -tag-repo-url=<repo-url> [flags]",
 	Long: `Specify the language, the root output directory created by create-release-artifacts, and
 the GitHub repository in which to create tags/releases.
 
@@ -61,34 +61,34 @@ create a tag which already exists.)
 }
 
 func init() {
-	cmdPublishReleaseArtifacts.SetFlags([]func(fs *flag.FlagSet){
-		addFlagArtifactRoot,
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagLanguage,
-		addFlagSecretsProject,
-		addFlagTagRepoUrl,
-	})
+	cmdPublishReleaseArtifacts.InitFlags()
+	addFlagArtifactRoot(cmdPublishReleaseArtifacts.Flags)
+	addFlagImage(cmdPublishReleaseArtifacts.Flags)
+	addFlagWorkRoot(cmdPublishReleaseArtifacts.Flags)
+	addFlagLanguage(cmdPublishReleaseArtifacts.Flags)
+	addFlagSecretsProject(cmdPublishReleaseArtifacts.Flags)
+	addFlagTagRepoUrl(cmdPublishReleaseArtifacts.Flags)
 }
 
 func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	if err := validateRequiredFlag("artifact-root", flagArtifactRoot); err != nil {
+	if err := validateRequiredFlag("artifact-root", cfg.ArtifactRoot); err != nil {
 		return err
 	}
 	// Load the state and config from the artifact directory. These will have been created by create-release-artifacts.
-	ps, err := loadPipelineStateFile(filepath.Join(flagArtifactRoot, pipelineStateFile))
+	ps, err := loadPipelineStateFile(filepath.Join(cfg.ArtifactRoot, pipelineStateFile))
 	if err != nil {
 		return err
 	}
 
-	pipelineConfig, err := loadPipelineConfigFile(filepath.Join(flagArtifactRoot, pipelineConfigFile))
+	pipelineConfig, err := loadPipelineConfigFile(filepath.Join(cfg.ArtifactRoot, pipelineConfigFile))
 	if err != nil {
 		return err
 	}
-	image := deriveImage(ps)
+
+	image := deriveImage(cfg.Language, cfg.Image, os.Getenv(defaultRepositoryEnvironmentVariable), ps)
 
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime)
+	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
 	if err != nil {
 		return err
 	}

@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -37,8 +36,8 @@ const prNumberEnvVarName = "_PR_NUMBER"
 const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
 var cmdCreateReleasePR = &cli.Command{
-	Short: "create-release-pr creates a release PR",
-	Usage: "librarian create-release-pr -language=<language> [flags]",
+	Short:     "create-release-pr creates a release PR",
+	UsageLine: "librarian create-release-pr -language=<language> [flags]",
 	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A single library may be specified if desired (with an optional version override);
 otherwise all configured libraries will be checked to see if they should be released.
@@ -105,33 +104,33 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	cmdCreateReleasePR.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagSecretsProject,
-		addFlagWorkRoot,
-		addFlagLanguage,
-		addFlagLibraryID,
-		addFlagLibraryVersion,
-		addFlagPush,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagRepoRoot,
-		addFlagSkipIntegrationTests,
-		addFlagEnvFile,
-		addFlagRepoUrl,
-		addFlagCi,
-	})
+	cmdCreateReleasePR.InitFlags()
+	addFlagImage(cmdCreateReleasePR.Flags)
+	addFlagSecretsProject(cmdCreateReleasePR.Flags)
+	addFlagWorkRoot(cmdCreateReleasePR.Flags)
+	addFlagLanguage(cmdCreateReleasePR.Flags)
+	addFlagLibraryID(cmdCreateReleasePR.Flags)
+	addFlagLibraryVersion(cmdCreateReleasePR.Flags)
+	addFlagPush(cmdCreateReleasePR.Flags)
+	addFlagGitUserEmail(cmdCreateReleasePR.Flags)
+	addFlagGitUserName(cmdCreateReleasePR.Flags)
+	addFlagRepoRoot(cmdCreateReleasePR.Flags)
+	addFlagSkipIntegrationTests(cmdCreateReleasePR.Flags)
+	addFlagEnvFile(cmdCreateReleasePR.Flags)
+	addFlagRepoUrl(cmdCreateReleasePR.Flags)
+  addFlagCi(cmdCreateReleasePR.Flags)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg)
+	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+		os.Getenv(defaultRepositoryEnvironmentVariable), cfg.SecretsProject, cfg.CI)
 	if err != nil {
 		return err
 	}
-	return createReleasePR(state, cfg)
+	return createReleasePR(ctx, state, cfg)
 }
 
-func createReleasePR(state *commandState, cfg *config.Config) error {
+func createReleasePR(ctx context.Context, state *commandState, cfg *config.Config) error {
 	if err := validateSkipIntegrationTests(); err != nil {
 		return err
 	}
@@ -156,21 +155,22 @@ func createReleasePR(state *commandState, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	if err := appendResultEnvironmentVariable(state.workRoot, baselineCommitEnvVarName, baselineCommit); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, baselineCommitEnvVarName, baselineCommit, cfg.EnvFile); err != nil {
 		return err
 	}
 
 	releaseID := fmt.Sprintf("release-%s", formatTimestamp(state.startTime))
-	if err := appendResultEnvironmentVariable(state.workRoot, releaseIDEnvVarName, releaseID); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, releaseIDEnvVarName, releaseID, cfg.EnvFile); err != nil {
 		return err
 	}
 
-	prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID, cfg.LibraryID, cfg.LibraryVersion, cfg.SkipIntegrationTests)
+	prContent, err := generateReleaseCommitForEachLibrary(state, inputDirectory, releaseID, cfg.LibraryID, cfg.LibraryVersion,
+		cfg.SkipIntegrationTests, cfg.GitUserName, cfg.GitUserEmail)
 	if err != nil {
 		return err
 	}
 
-	prMetadata, err := createPullRequest(state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release", cfg.GitHubToken, cfg.Push)
+	prMetadata, err := createPullRequest(ctx, state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release", cfg.GitHubToken, cfg.Push)
 	if err != nil {
 		return err
 	}
@@ -190,12 +190,12 @@ func createReleasePR(state *commandState, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	err = ghClient.AddLabelToPullRequest(state.ctx, prMetadata, DoNotMergeLabel)
+	err = ghClient.AddLabelToPullRequest(ctx, prMetadata, DoNotMergeLabel)
 	if err != nil {
 		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
 		return err
 	}
-	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName, strconv.Itoa(prMetadata.Number)); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName, strconv.Itoa(prMetadata.Number), cfg.EnvFile); err != nil {
 		return err
 	}
 	return nil
@@ -206,7 +206,8 @@ func createReleasePR(state *commandState, cfg *config.Config) error {
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory string, releaseID string, libraryID, libraryVersion, skipIntegrationTests string) (*PullRequestContent, error) {
+func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory, releaseID, libraryID,
+	libraryVersion, skipIntegrationTests, gitUserName, gitUserEmail string) (*PullRequestContent, error) {
 	cc := state.containerConfig
 	libraries := state.pipelineState.Libraries
 	languageRepo := state.languageRepo
@@ -298,7 +299,8 @@ func generateReleaseCommitForEachLibrary(state *commandState, inputDirectory str
 		// Metadata for easy extraction later.
 		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
 		// Note that releaseDescription will already end with two line breaks, so we don't need any more before the metadata.
-		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata))
+		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata),
+			gitUserName, gitUserEmail)
 		if err != nil {
 			return nil, err
 		}

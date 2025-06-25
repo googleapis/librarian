@@ -20,8 +20,15 @@ import (
 	"os"
 )
 
+const (
+	// GeneratorInputDir is the default directory to store files that generator
+	// needs to regenerate libraries from an empty directory.
+	GeneratorInputDir string = "generator-input"
+)
+
 // Config holds all configuration values parsed from flags or environment
-// variables.
+// variables. When adding members to this struct, please keep them in
+// alphabetical order.
 type Config struct {
 	// APIPath is the path to the API to be configured or generated,
 	// relative to the root of the googleapis repository. It is a directory
@@ -80,6 +87,38 @@ type Config struct {
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
+
+	// DockerHostRootDir specifies the host view of a mount point that is
+	// mounted as DockerMountRootDir from the Librarian view, when Librarian
+	// is running in Docker. For example, if Librarian has been run via a command
+	// such as "docker run -v /home/user/librarian:/app" then DockerHostRootDir
+	// would be "/home/user/librarian" and DockerMountRootDir would be "/app".
+	//
+	// This information is required to enable Docker-in-Docker scenarios. When
+	// creating a Docker container for language-specific operations, the methods
+	// accepting directory names are all expected to be from the perspective of
+	// the Librarian code - but the mount point specified when running Docker
+	// from within Librarian needs to be specified from the host perspective,
+	// as the new Docker container is created as a sibling of the one running
+	// Librarian.
+	//
+	// For example, if we're in the scenario above, with
+	// DockerHostRootDir=/home/user/librarian and DockerMountRootDir=/app,
+	// executing a command which tries to mount the /app/work/googleapis directory
+	// as /apis in the container, the eventual Docker command would need to include
+	// "-v /home/user/librarian/work/googleapis:/apis"
+	//
+	// DockerHostRootDir and DockerMountDir are currently populated from
+	// KOKORO_HOST_ROOT_DIR and KOKORO_ROOT_DIR environment variables respectively.
+	// These are automatically supplied by Kokoro. Other Docker-in-Docker scenarios
+	// are not currently supported, but could be implemented by populating these
+	// configuration values in a similar way.
+	DockerHostRootDir string
+
+	// DockerMountRootDir specifies the Librarian view of a mount point that is
+	// mounted as DockerHostRootDir from the host view, when Librarian is running in
+	// Docker. See the documentation for DockerHostRootDir for more information.
+	DockerMountRootDir string
 
 	// EnvFile is the path to the file used to store environment variables, to
 	// propagate information from one step to another in a CI flow. The file
@@ -142,60 +181,110 @@ type Config struct {
 	// Image is specified with the -image flag.
 	Image string
 
-	// DockerHostRootDir specifies the host view of a mount point that is
-	// mounted as DockerMountRootDir from the Librarian view, when Librarian
-	// is running in Docker. For example, if Librarian has been run via a command
-	// such as "docker run -v /home/user/librarian:/app" then DockerHostRootDir
-	// would be "/home/user/librarian" and DockerMountRootDir would be "/app".
+	// Language is the language of the libraries being maintained by the current command.
+	// This affects the default language repository to clone unless otherwise specified,
+	// the default image for language-specific operations, and the section of API service
+	// configurations to check for requested libraries within the configure command. This
+	// is not validated to any particular set of values, but the expected values which would
+	// work with the configure command and clone appropriate repositories without additional
+	// effort are "cpp", "dotnet", "go", "java", "node", "php", "python", and "ruby".
+	// The values are case-sensitive.
 	//
-	// This information is required to enable Docker-in-Docker scenarios. When
-	// creating a Docker container for language-specific operations, the methods
-	// accepting directory names are all expected to be from the perspective of
-	// the Librarian code - but the mount point specified when running Docker
-	// from within Librarian needs to be specified from the host perspective,
-	// as the new Docker container is created as a sibling of the one running
-	// Librarian.
+	// Language is required for all commands except merge-release-pr.
 	//
-	// For example, if we're in the scenario above, with
-	// DockerHostRootDir=/home/user/librarian and DockerMountRootDir=/app,
-	// executing a command which tries to mount the /app/work/googleapis directory
-	// as /apis in the container, the eventual Docker command would need to include
-	// "-v /home/user/librarian/work/googleapis:/apis"
-	//
-	// DockerHostRootDir and DockerMountDir are currently populated from
-	// KOKORO_HOST_ROOT_DIR and KOKORO_ROOT_DIR environment variables respectively.
-	// These are automatically supplied by Kokoro. Other Docker-in-Docker scenarios
-	// are not currently supported, but could be implemented by populating these
-	// configuration values in a similar way.
-	DockerHostRootDir string
-
-	// DockerMountRootDir specifies the Librarian view of a mount point that is
-	// mounted as DockerHostRootDir from the host view, when Librarian is running in
-	// Docker. See the documentation for DockerHostRootDir for more information.
-	DockerMountRootDir string
-
-	// Language is the target language for library generation.
+	// Language is specified with the -language flag.
 	Language string
 
-	// LibraryID is the identifier of a specific library to operate on.
+	// TODO(https://github.com/googleapis/librarian/issues/265): refer to architecture
+	// documentation about language identifiers when the doc has been written.
+
+	// LibraryID is the identifier of a specific library to release or update, for the
+	// create-release-pr and update-apis commands respectively. In both cases it is optional;
+	// when omitted, all libraries which are configured within the repository's Librarian
+	// state file will be considered for update/release.
+	//
+	// When LibraryID is specified for create-release-pr, a release is created even if there
+	// are no commits for the library which would normally trigger a release.
+	//
+	// LibraryID is specified with the -library-id flag.
 	LibraryID string
 
-	// LibraryVersion is the version string used when creating a release.
+	// LibraryVersion is the version string used when creating a release for a specific library,
+	// overriding whatever new version would otherwise be suggested. It is only used in the
+	// create-release-pr command, where it is optional and can only be specified when LibraryID
+	// is also specified.
+	//
+	// Use cases for specifying LibraryVersion include:
+	// - Releasing a library for the first time
+	// - Promoting a library to GA
+	// - Creating a major version bump
+	//
+	// LibraryVersion is specified with the -library-version flag.
 	LibraryVersion string
 
-	// Push determines whether to push changes to GitHub.
+	// Push determines whether to push changes to GitHub. It is used in
+	// all commands that create commits in a language repository:
+	// create-release-pr, configure, update-apis and update-image-tag.
+	// These commands all create pull requests if they
+	//
+	// By default (when Push isn't explicitly specified), commits are created in
+	// the language repo (whether a fresh clone or one specified with RepoRoot)
+	// but no pull request is created. In this situation, the description of the
+	// pull request that would have been been created is displayed in the output of
+	// the command.
+	//
+	// When Push is true, GitHubToken must also be specified.
+	//
+	// Push is specified with the -push flag. No value is required.
 	Push bool
 
-	// ReleaseID is the identifier of a release PR.
+	// ReleaseID is the identifier of a release PR. Each release PR created by
+	// Librarian has a release ID, which is included in both the PR description and
+	// the commit message of every commit within the release PR. This is effectively
+	// used for internal book-keeping, to collate all library releases within a single
+	// release flow. The format of ReleaseID is effectively opaque; it is currently
+	// timestamp-based but could change to a UUID or similar in the future. It is
+	// generated by the create-release-pr command and automatically propagated to other
+	// steps within the release flow.
+	//
+	// ReleaseID is required for the merge-release-pr and create-release-artifacts commands,
+	// and is only used by those commands.
+	//
+	// ReleaseID is specified with the -release-id flag.
 	ReleaseID string
 
-	// ReleasePRURL is the URL of the release pull request.
+	// ReleasePRURL is the URL of the release PR to merge once all requirements
+	// have been satisfied. It is only used by merge-release-pr, where it is required.
+	// The format is the regular GitHub PR URL:
+	// https://github.com/googleapis/google-cloud-dotnet/pull/14910
+	//
+	// ReleasePRURL is specified with the -release-pr-url flag.
 	ReleasePRURL string
 
-	// RepoRoot is the local root directory of the language repository.
+	// RepoRoot is the local root directory of the language repository, which can
+	// be specified relative to the current working directory. The repository must
+	// be in a clean state (i.e. git status should report no changes) to avoid mixing
+	// Librarian-created changes with other changes.
+	//
+	// RepoRoot is used by all commands which operate on a language repository:
+	// configure, create-release-artifacts, create-release-pr, generate, update-apis,
+	// update-image-tag.
+	//
+	// RepoRoot is always optional, and always mutually exclusive with RepoURL, as both
+	// are used to explicitly indicate a language repository to use.
+	//
+	// When specified for the generate command, the repo is checked to determine whether the
+	// specified API path is configured as a library. See the generate command documentation
+	// for more details. For all other commands, omitting both RepoRoot and RepoUrl is equivalent
+	// to specifying a RepoUrl of https://github.com/googleapis/google-cloud-{Language}.
+	//
+	// RepoRoot is specified with the -repo-root flag.
 	RepoRoot string
 
-	// RepoURL is the URL to clone the language repository from.
+	// RepoURL is the URL to clone the language repository from. It is a mutually exclusive
+	// alternative to RepoRoot; see the RepoRoot documentation for more details.
+	//
+	// RepoURL is specified with the -repo-url flag.
 	RepoURL string
 
 	// SyncAuthToken provides an auth token used when polling a synchronization

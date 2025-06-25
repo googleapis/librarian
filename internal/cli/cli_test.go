@@ -32,16 +32,13 @@ func TestParseAndSetFlags(t *testing.T) {
 	)
 
 	cmd := &Command{
-		Short: "test is used for testing",
-		Long:  "This is the long documentation for command test.",
-		Usage: "foobar test [arguments]",
+		Short:     "test is used for testing",
+		Long:      "This is the long documentation for command test.",
+		UsageLine: "foobar test [arguments]",
 	}
-	cmd.SetFlags([]func(fs *flag.FlagSet){
-		func(fs *flag.FlagSet) {
-			fs.StringVar(&strFlag, "name", "default", "name flag")
-			fs.IntVar(&intFlag, "count", 0, "count flag")
-		},
-	})
+	cmd.InitFlags()
+	cmd.Flags.StringVar(&strFlag, "name", "default", "name flag")
+	cmd.Flags.IntVar(&intFlag, "count", 0, "count flag")
 
 	args := []string{"-name=foo", "-count=5"}
 	if err := cmd.Parse(args); err != nil {
@@ -145,12 +142,14 @@ Usage:
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			c := &Command{
-				Short: "test prints test information",
-				Usage: "test [flags]",
-				Long:  "Test prints test information.",
+				Short:     "test prints test information",
+				UsageLine: "test [flags]",
+				Long:      "Test prints test information.",
 			}
 			c.InitFlags()
-			c.SetFlags(test.flags)
+			for _, fn := range test.flags {
+				fn(c.Flags)
+			}
 
 			var buf bytes.Buffer
 			c.usage(&buf)

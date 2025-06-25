@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -57,7 +58,7 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 // If content only contains errors, the pull request is not created and an error is returned (to highlight that everything failed)
 // If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
 // If the pull request would contain an excessive number of commits (as configured in pipeline-config.json)
-func createPullRequest(state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool) (*githubrepo.PullRequestMetadata, error) {
+func createPullRequest(ctx context.Context, state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool) (*githubrepo.PullRequestMetadata, error) {
 	ghClient, err := githubrepo.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
@@ -116,7 +117,7 @@ func createPullRequest(state *commandState, content *PullRequestContent, titlePr
 		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
 		return nil, err
 	}
-	return ghClient.CreatePullRequest(state.ctx, gitHubRepo, branch, title, description)
+	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
 }
 
 // Formats the given list as a single Markdown string, with a title preceding the list,

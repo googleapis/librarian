@@ -32,8 +32,8 @@ type Command struct {
 	// Short is a concise one-line description of the command.
 	Short string
 
-	// Usage is the one line usage.
-	Usage string
+	// UsageLine is the one line usage.
+	UsageLine string
 
 	// Long is the full description of the command.
 	Long string
@@ -44,23 +44,15 @@ type Command struct {
 	// Commands are the sub commands.
 	Commands []*Command
 
-	// flags is the command's flag set for parsing arguments and generating
+	// Flags is the command's flag set for parsing arguments and generating
 	// usage messages. This is populated for each command in init().
-	flags *flag.FlagSet
-}
-
-// Help prints the help text.
-func (c *Command) Help() {
-	c.flags.Usage()
+	Flags *flag.FlagSet
 }
 
 // Parse parses the provided command-line arguments using the command's flag
 // set.
 func (c *Command) Parse(args []string) error {
-	if c.flags == nil {
-		return nil
-	}
-	return c.flags.Parse(args)
+	return c.Flags.Parse(args)
 }
 
 // Name is the command name. Command.Short is always expected to begin with
@@ -84,21 +76,13 @@ func (c *Command) Lookup(name string) (*Command, error) {
 	return nil, fmt.Errorf("invalid command: %q", name)
 }
 
-// SetFlags registers a list of functions that configure flags for the command.
-func (c *Command) SetFlags(flagFunctions []func(fs *flag.FlagSet)) {
-	c.InitFlags()
-	for _, fn := range flagFunctions {
-		fn(c.flags)
-	}
-}
-
 func (c *Command) usage(w io.Writer) {
-	if c.Short == "" || c.Usage == "" || c.Long == "" {
+	if c.Short == "" || c.UsageLine == "" || c.Long == "" {
 		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
 	}
 
 	fmt.Fprintf(w, "%s\n\n", c.Long)
-	fmt.Fprintf(w, "Usage:\n  %s", c.Usage)
+	fmt.Fprintf(w, "Usage:\n  %s", c.UsageLine)
 	if len(c.Commands) > 0 {
 		fmt.Fprint(w, "\n\nCommands:\n")
 		for _, c := range c.Commands {
@@ -107,18 +91,21 @@ func (c *Command) usage(w io.Writer) {
 			fmt.Fprintf(w, "\n  %-25s  %s", c.Name(), short)
 		}
 	}
-	if hasFlags(c.flags) {
+	if hasFlags(c.Flags) {
 		fmt.Fprint(w, "\n\nFlags:\n")
 	}
-	c.flags.SetOutput(w)
-	c.flags.PrintDefaults()
+	c.Flags.SetOutput(w)
+	c.Flags.PrintDefaults()
 	fmt.Fprintf(w, "\n\n")
 }
 
+// InitFlags creates a new set of flags for the command and initializes
+// them such that any parsing failures result in the command usage being
+// displayed.
 func (c *Command) InitFlags() *Command {
-	c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
-	c.flags.Usage = func() {
-		c.usage(c.flags.Output())
+	c.Flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
+	c.Flags.Usage = func() {
+		c.usage(c.Flags.Output())
 	}
 	return c
 }

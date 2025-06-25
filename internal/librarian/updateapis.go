@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -30,8 +29,8 @@ import (
 )
 
 var cmdUpdateApis = &cli.Command{
-	Short: "update-apis regenerates APIs in a language repo with new specifications",
-	Usage: "librarian update-apis -language=<language> [flags]",
+	Short:     "update-apis regenerates APIs in a language repo with new specifications",
+	UsageLine: "librarian update-apis -language=<language> [flags]",
 	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
@@ -84,32 +83,32 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	cmdUpdateApis.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagAPIRoot,
-		addFlagBranch,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagLanguage,
-		addFlagLibraryID,
-		addFlagPush,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagSecretsProject,
-		addFlagCi,
-	})
+	cmdUpdateApis.InitFlags()
+	addFlagImage(cmdUpdateApis.Flags)
+	addFlagWorkRoot(cmdUpdateApis.Flags)
+	addFlagAPIRoot(cmdUpdateApis.Flags)
+	addFlagBranch(cmdUpdateApis.Flags)
+	addFlagGitUserEmail(cmdUpdateApis.Flags)
+	addFlagGitUserName(cmdUpdateApis.Flags)
+	addFlagLanguage(cmdUpdateApis.Flags)
+	addFlagLibraryID(cmdUpdateApis.Flags)
+	addFlagPush(cmdUpdateApis.Flags)
+	addFlagRepoRoot(cmdUpdateApis.Flags)
+	addFlagRepoUrl(cmdUpdateApis.Flags)
+	addFlagSecretsProject(cmdUpdateApis.Flags)
+  addFlagCi(cmdUpdateApis.Flags)
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg)
+	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+		os.Getenv(defaultRepositoryEnvironmentVariable), cfg.SecretsProject, cfg.CI)
 	if err != nil {
 		return err
 	}
-	return updateAPIs(state, cfg)
+	return updateAPIs(ctx, state, cfg)
 }
 
-func updateAPIs(state *commandState, cfg *config.Config) error {
+func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) error {
 	var apiRepo *gitrepo.Repository
 	cleanWorkingTreePostGeneration := true
 	if cfg.APIRoot == "" {
@@ -149,14 +148,14 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
 	// Root for generator-input defensive copies
-	if err := os.Mkdir(filepath.Join(state.workRoot, "generator-input"), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(state.workRoot, config.GeneratorInputDir), 0755); err != nil {
 		return err
 	}
 
 	prContent := new(PullRequestContent)
 	// Perform "generate, clean, commit, build" on each library.
 	for _, library := range state.pipelineState.Libraries {
-		err := updateLibrary(state, apiRepo, outputDir, library, prContent, cfg.LibraryID)
+		err := updateLibrary(state, apiRepo, outputDir, library, prContent, cfg.LibraryID, cfg.GitUserName, cfg.GitUserEmail)
 		if err != nil {
 			return err
 		}
@@ -166,11 +165,12 @@ func updateAPIs(state *commandState, cfg *config.Config) error {
 	if cleanWorkingTreePostGeneration {
 		apiRepo.CleanWorkingTree()
 	}
-	_, err := createPullRequest(state, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push)
+	_, err := createPullRequest(ctx, state, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push)
 	return err
 }
 
-func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent, libraryID string) error {
+func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState,
+	prContent *PullRequestContent, libraryID, gitUserName, gitUserEmail string) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
@@ -212,8 +212,8 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	// This needs to be done per library, as the previous iteration may have updated generator-input in a meaningful way.
 	// We could potentially just keep a single copy and update it, but it's clearer diagnostically if we can tell
 	// what state we passed into the container.
-	generatorInput := filepath.Join(state.workRoot, "generator-input", library.Id)
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, "generator-input"))); err != nil {
+	generatorInput := filepath.Join(state.workRoot, config.GeneratorInputDir, library.Id)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
 
@@ -251,7 +251,8 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 	} else {
 		msg = createCommitMessage(library.Id, commits)
 	}
-	if err := commitAll(languageRepo, msg); err != nil {
+	if err := commitAll(languageRepo, msg,
+		gitUserName, gitUserEmail); err != nil {
 		return err
 	}
 

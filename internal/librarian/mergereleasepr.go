@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -49,8 +48,8 @@ const ConventionalCommitsAppId = 37172
 const MergeBlockedLabel = "merge-blocked-see-comments"
 
 var cmdMergeReleasePR = &cli.Command{
-	Short: "merge-release-pr merges a validated release PR",
-	Usage: "librarian merge-release-pr -release-id=<id> -release-pr-url=<url> -baseline-commit=<commit> [flags]",
+	Short:     "merge-release-pr merges a validated release PR",
+	UsageLine: "librarian merge-release-pr -release-id=<id> -release-pr-url=<url> -baseline-commit=<commit> [flags]",
 	Long: `Specify a GitHub access token as an environment variable, the URL for a release PR, the baseline
 commit of the repo when the release PR was being created, and the release ID.
 An optional additional URL prefix can be specified in order to wait for a mirror to have synchronized before the
@@ -98,20 +97,19 @@ is added.
 }
 
 func init() {
-	cmdMergeReleasePR.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagSecretsProject,
-		addFlagWorkRoot,
-		addFlagBaselineCommit,
-		addFlagReleaseID,
-		addFlagReleasePRUrl,
-		addFlagSyncUrlPrefix,
-	})
+	cmdMergeReleasePR.InitFlags()
+	addFlagImage(cmdMergeReleasePR.Flags)
+	addFlagSecretsProject(cmdMergeReleasePR.Flags)
+	addFlagWorkRoot(cmdMergeReleasePR.Flags)
+	addFlagBaselineCommit(cmdMergeReleasePR.Flags)
+	addFlagReleaseID(cmdMergeReleasePR.Flags)
+	addFlagReleasePRUrl(cmdMergeReleasePR.Flags)
+	addFlagSyncUrlPrefix(cmdMergeReleasePR.Flags)
 }
 
 func runMergeReleasePR(ctx context.Context, cfg *config.Config) error {
 	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime)
+	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
 	if err != nil {
 		return err
 	}
@@ -164,7 +162,7 @@ func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) er
 		return err
 	}
 
-	if err := appendResultEnvironmentVariable(workRoot, mergedReleaseCommitEnvVarName, mergeCommit); err != nil {
+	if err := appendResultEnvironmentVariable(workRoot, mergedReleaseCommitEnvVarName, mergeCommit, cfg.EnvFile); err != nil {
 		return err
 	}
 

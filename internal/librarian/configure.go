@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -33,8 +32,8 @@ import (
 )
 
 var cmdConfigure = &cli.Command{
-	Short: "configure configures libraries for new APIs in a language",
-	Usage: "librarian configure -language=<language> [flags]",
+	Short:     "configure configures libraries for new APIs in a language",
+	UsageLine: "librarian configure -language=<language> [flags]",
 	Long: `
 Specify the language, and optional flags to use non-default repositories, e.g. for testing.
 A single API path may be specified if desired; otherwise all API paths will be checked.
@@ -84,31 +83,31 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	cmdConfigure.SetFlags([]func(fs *flag.FlagSet){
-		addFlagImage,
-		addFlagWorkRoot,
-		addFlagAPIPath,
-		addFlagAPIRoot,
-		addFlagGitUserEmail,
-		addFlagGitUserName,
-		addFlagLanguage,
-		addFlagPush,
-		addFlagRepoRoot,
-		addFlagRepoUrl,
-		addFlagSecretsProject,
-		addFlagCi,
-	})
+	cmdConfigure.InitFlags()
+	addFlagImage(cmdConfigure.Flags)
+	addFlagWorkRoot(cmdConfigure.Flags)
+	addFlagAPIPath(cmdConfigure.Flags)
+	addFlagAPIRoot(cmdConfigure.Flags)
+	addFlagGitUserEmail(cmdConfigure.Flags)
+	addFlagGitUserName(cmdConfigure.Flags)
+	addFlagLanguage(cmdConfigure.Flags)
+	addFlagPush(cmdConfigure.Flags)
+	addFlagRepoRoot(cmdConfigure.Flags)
+	addFlagRepoUrl(cmdConfigure.Flags)
+	addFlagSecretsProject(cmdConfigure.Flags)
+  addFlagCi(cmdConfigure.Flags)
 }
 
 func runConfigure(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg)
+	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
+		os.Getenv(defaultRepositoryEnvironmentVariable), cfg.SecretsProject, cfg.ci)
 	if err != nil {
 		return err
 	}
-	return executeConfigure(state, cfg)
+	return executeConfigure(ctx, state, cfg)
 }
 
-func executeConfigure(state *commandState, cfg *config.Config) error {
+func executeConfigure(ctx context.Context, state *commandState, cfg *config.Config) error {
 
 	outputRoot := filepath.Join(state.workRoot, "output")
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
@@ -139,13 +138,13 @@ func executeConfigure(state *commandState, cfg *config.Config) error {
 
 	prContent := PullRequestContent{}
 	for _, apiPath := range apiPaths {
-		err = configureApi(state, outputRoot, apiRoot, apiPath, &prContent)
+		err = configureApi(state, outputRoot, apiRoot, apiPath, cfg.GitUserName, cfg.GitUserEmail, &prContent)
 		if err != nil {
 			return err
 		}
 	}
 
-	_, err = createPullRequest(state, &prContent, "feat: API configuration", "", "config", cfg.GitHubToken, cfg.Push)
+	_, err = createPullRequest(ctx, state, &prContent, "feat: API configuration", "", "config", cfg.GitHubToken, cfg.Push)
 	return err
 }
 
@@ -183,7 +182,7 @@ func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language 
 			if generate {
 				apiPaths = append(apiPaths, apiPath)
 			}
-			// Whether or not we were configured, we can skip the rest of this directory.
+			// Whether we were configured, we can skip the rest of this directory.
 			return filepath.SkipDir
 		}
 		return nil
@@ -270,13 +269,13 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 //
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
-func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
+func configureApi(state *commandState, outputRoot, apiRoot, apiPath, gitUserName, gitUserEmail string, prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
-	generatorInput := filepath.Join(languageRepo.Dir, "generator-input")
+	generatorInput := filepath.Join(languageRepo.Dir, config.GeneratorInputDir)
 	if err := cc.Configure(apiRoot, apiPath, generatorInput); err != nil {
 		addErrorToPullRequest(prContent, apiPath, err, "configuring")
 		if err := languageRepo.CleanWorkingTree(); err != nil {
@@ -302,7 +301,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 		// If it's newly-ignored, just commit the state change. This is still a "success" case.
 		if slices.Contains(ps.IgnoredApiPaths, apiPath) {
 			msg := fmt.Sprintf("feat: Added ignore entry for API %s", apiPath)
-			if err := commitAll(languageRepo, msg); err != nil {
+			if err := commitAll(languageRepo, msg, gitUserName, gitUserEmail); err != nil {
 				return err
 			}
 			addSuccessToPullRequest(prContent, fmt.Sprintf("Ignored API %s", apiPath))
@@ -316,7 +315,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath string, prCo
 	}
 
 	msg := fmt.Sprintf("feat: Configured library %s for API %s", libraryID, apiPath)
-	if err := commitAll(languageRepo, msg); err != nil {
+	if err := commitAll(languageRepo, msg, gitUserName, gitUserEmail); err != nil {
 		return err
 	}
 

@@ -21,6 +21,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/config"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -146,13 +147,13 @@ func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID stri
 	commandArgs := []string{
 		"--api-root=/apis",
 		"--output=/output",
-		"--generator-input=/generator-input",
+		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/output", output),
-		fmt.Sprintf("%s:/generator-input", generatorInput),
+		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
 	return c.runDocker(CommandGenerateLibrary, mounts, commandArgs)
 }
@@ -230,12 +231,12 @@ func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
 	}
 	commandArgs := []string{
 		"--api-root=/apis",
-		"--generator-input=/generator-input",
+		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/apis", apiRoot),
-		fmt.Sprintf("%s:/generator-input", generatorInput),
+		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
 	return c.runDocker(CommandConfigure, mounts, commandArgs)
 }
