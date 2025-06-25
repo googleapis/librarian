@@ -21,16 +21,26 @@ import (
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	"github.com/googleapis/gax-go/v2"
 )
 
-// Fetch the latest version of a secret as a string. This method assumes the
-// secret payload is a UTF-8 string.
-func Get(ctx context.Context, project string, secretName string) (string, error) {
-	secretsClient, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		return "", err
+// SecretsClient is an interface for interacting with the Secret Manager
+// service. Provide a secretManager.Client to reuse an existing client
+// or a fake implementation for testing.
+type SecretsClient interface {
+	AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
+}
+
+// Get fetches the latest version of a secret as a string. This method assumes
+// the secret payload is a UTF-8 string.
+func Get(ctx context.Context, project string, secretName string, secretsClient SecretsClient) (string, error) {
+	if secretsClient == nil {
+		secretsClient, err := secretmanager.NewClient(ctx)
+		if err != nil {
+			return "", err
+		}
+		defer secretsClient.Close()
 	}
-	defer secretsClient.Close()
 	request := &secretmanagerpb.AccessSecretVersionRequest{
 		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", project, secretName),
 	}
