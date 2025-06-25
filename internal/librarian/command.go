@@ -59,7 +59,6 @@ type commandState struct {
 }
 
 func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (*gitrepo.Repository, error) {
-	// var languageRepo *gitrepo.Repository
 	if repoRoot != "" && repoURL != "" {
 		return nil, errors.New("do not specify both repo-root and repo-url")
 	}
