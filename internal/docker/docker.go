@@ -21,7 +21,6 @@ package docker
 import (
 	"context"
 	"fmt"
-	"github.com/googleapis/librarian/internal/config"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -29,6 +28,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
@@ -169,9 +169,7 @@ func (c *Docker) Clean(repoRoot, libraryID string) error {
 	}
 	commandArgs := []string{
 		"--repo-root=/repo",
-	}
-	if libraryID != "" {
-		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
+		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	return c.runDocker(CommandClean, mounts, commandArgs)
 }
@@ -208,9 +206,7 @@ func (c *Docker) BuildLibrary(repoRoot, libraryID string) error {
 		"--repo-root=/repo",
 		"--test=true",
 	}
-	if libraryID != "" {
-		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
-	}
+	commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
 	return c.runDocker(CommandBuildLibrary, mounts, commandArgs)
 }
 
