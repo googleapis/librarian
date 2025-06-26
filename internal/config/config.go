@@ -360,8 +360,6 @@ type Config struct {
 // New returns a new Config populated with environment variables.
 func New() *Config {
 	return &Config{
-		// TODO(https://github.com/googleapis/librarian/issues/507): replace
-		// os.Getenv calls in other functions with these values.
 		DockerHostRootDir:   os.Getenv("KOKORO_HOST_ROOT_DIR"),
 		DockerMountRootDir:  os.Getenv("KOKORO_ROOT_DIR"),
 		GitHubToken:         os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
