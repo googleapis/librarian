@@ -47,7 +47,7 @@ func TestGetPullRequestReviews(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse server URL: %v", err)
 	}
-	client.Client.BaseURL = serverURL
+	client.BaseURL = serverURL
 
 	prMetadata := &PullRequestMetadata{
 		Repo:   &Repository{Owner: "o", Name: "r"},
@@ -87,7 +87,7 @@ func TestGetDiffCommits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse server URL: %v", err)
 	}
-	client.Client.BaseURL = serverURL
+	client.BaseURL = serverURL
 
 	repo := &Repository{Owner: "o", Name: "r"}
 	commits, err := client.GetDiffCommits(context.Background(), repo, "a", "b")
@@ -114,7 +114,7 @@ func TestGetCommit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to parse server URL: %v", err)
 	}
-	client.Client.BaseURL = serverURL
+	client.BaseURL = serverURL
 
 	repo := &Repository{Owner: "o", Name: "r"}
 	commit, err := client.GetCommit(context.Background(), repo, "abc")
