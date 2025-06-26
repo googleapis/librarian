@@ -36,7 +36,6 @@ func TestDockerRun(t *testing.T) {
 		testLibraryID       = "testLibraryID"
 		testLibraryVersion  = "testLibraryVersion"
 		testOutput          = "testOutput"
-		testOutputDir       = "testOutputDir"
 		testReleaseVersion  = "testReleaseVersion"
 		testRepoRoot        = "testRepoRoot"
 	)
@@ -184,12 +183,12 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandPackageLibrary,
 			runCommand: func(ctx context.Context) error {
-				return d.PackageLibrary(ctx, cfg, testLanguageRepo, testLibraryID, testOutputDir)
+				return d.PackageLibrary(ctx, cfg, testLanguageRepo, testLibraryID, testOutput)
 			},
 			want: []string{
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s:/repo", testLanguageRepo),
-				"-v", fmt.Sprintf("%s:/output", testOutputDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
 				string(CommandPackageLibrary),
 				"--repo-root=/repo",
@@ -200,11 +199,11 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandPublishLibrary,
 			runCommand: func(ctx context.Context) error {
-				return d.PublishLibrary(ctx, cfg, testOutputDir, testLibraryID, testLibraryVersion)
+				return d.PublishLibrary(ctx, cfg, testOutput, testLibraryID, testLibraryVersion)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/output", testOutputDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
 				string(CommandPublishLibrary),
 				"--package-output=/output",

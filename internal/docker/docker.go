@@ -273,8 +273,8 @@ func (c *Docker) IntegrationTestLibrary(ctx context.Context, cfg *config.Config,
 }
 
 // PackageLibrary packages release artifacts for a library with ID libraryID within repoRoot,
-// creating the artifacts within outputDir.
-func (c *Docker) PackageLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID, outputDir string) error {
+// creating the artifacts within output.
+func (c *Docker) PackageLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID, output string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--output=/output",
@@ -282,7 +282,7 @@ func (c *Docker) PackageLibrary(ctx context.Context, cfg *config.Config, repoRoo
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", repoRoot),
-		fmt.Sprintf("%s:/output", outputDir),
+		fmt.Sprintf("%s:/output", output),
 	}
 
 	return c.runDocker(ctx, cfg, CommandPackageLibrary, mounts, commandArgs)
@@ -291,14 +291,14 @@ func (c *Docker) PackageLibrary(ctx context.Context, cfg *config.Config, repoRoo
 // PublishLibrary publishes release artifacts for a library with ID libraryID and version releaseVersion
 // to package managers, documentation sites etc. The artifacts will previously have been
 // created by PackageLibrary.
-func (c *Docker) PublishLibrary(ctx context.Context, cfg *config.Config, outputDir, libraryID, releaseVersion string) error {
+func (c *Docker) PublishLibrary(ctx context.Context, cfg *config.Config, output, libraryID, releaseVersion string) error {
 	commandArgs := []string{
 		"--package-output=/output",
 		fmt.Sprintf("--library-id=%s", libraryID),
 		fmt.Sprintf("--version=%s", releaseVersion),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/output", outputDir),
+		fmt.Sprintf("%s:/output", output),
 	}
 
 	return c.runDocker(ctx, cfg, CommandPublishLibrary, mounts, commandArgs)
