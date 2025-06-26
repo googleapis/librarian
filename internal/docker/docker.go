@@ -21,7 +21,6 @@ package docker
 import (
 	"context"
 	"fmt"
-	"github.com/googleapis/librarian/internal/config"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -29,6 +28,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
@@ -169,9 +169,7 @@ func (c *Docker) Clean(repoRoot, libraryID string) error {
 	}
 	commandArgs := []string{
 		"--repo-root=/repo",
-	}
-	if libraryID != "" {
-		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
+		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	return c.runDocker(CommandClean, mounts, commandArgs)
 }
@@ -207,9 +205,7 @@ func (c *Docker) BuildLibrary(repoRoot, libraryID string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--test=true",
-	}
-	if libraryID != "" {
-		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
+		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	return c.runDocker(CommandBuildLibrary, mounts, commandArgs)
 }
@@ -305,7 +301,7 @@ func (c *Docker) PublishLibrary(outputDir, libraryID, releaseVersion string) err
 	return c.runDocker(CommandPublishLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) runDocker(command Command, mounts []string, commandArgs []string) error {
+func (c *Docker) runDocker(command Command, mounts []string, commandArgs []string) (err error) {
 	if c.Image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -326,7 +322,12 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 		}
 		args = append(args, "--env-file")
 		args = append(args, c.env.tmpFile)
-		defer deleteEnvironmentFile(c.env)
+		defer func() {
+			cerr := os.Remove(c.env.tmpFile)
+			if err == nil {
+				err = cerr
+			}
+		}()
 	}
 	if !slices.Contains(networkEnabledCommands, command) {
 		args = append(args, "--network=none")
