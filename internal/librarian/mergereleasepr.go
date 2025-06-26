@@ -32,14 +32,16 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-// The label used to avoid users merging the PR themselves.
-const DoNotMergeLabel = "do-not-merge"
-const DoNotMergeAppId = 91138
-const ConventionalCommitsAppId = 37172
+const (
+	// DoNotMergeLabel uses to avoid users merging the PR themselves.
+	DoNotMergeLabel          = "do-not-merge"
+	DoNotMergeAppId          = 91138
+	ConventionalCommitsAppId = 37172
 
-// MergeBlockedLabel used to indicate "I've noticed a problem with this PR;
-// I won't check it again until you've done something".
-const MergeBlockedLabel = "merge-blocked-see-comments"
+	// MergeBlockedLabel uses to indicate "I've noticed a problem with this PR;
+	// I won't check it again until you've done something".
+	MergeBlockedLabel = "merge-blocked-see-comments"
+)
 
 var cmdMergeReleasePR = &cli.Command{
 	Short:     "merge-release-pr merges a validated release PR",
