@@ -335,7 +335,7 @@ func configureApi(state *commandState, cfg *config.Config, outputRoot, apiRoot, 
 		}
 		return nil
 	}
-	if err := cc.Clean(languageRepo.Dir, libraryID); err != nil {
+	if err := cc.Clean(cfg, languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "cleaning"))
 		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err

@@ -225,7 +225,7 @@ func updateLibrary(state *commandState, cfg *config.Config, apiRepo *gitrepo.Rep
 		addErrorToPullRequest(prContent, library.Id, err, "generating")
 		return nil
 	}
-	if err := cc.Clean(languageRepo.Dir, library.Id); err != nil {
+	if err := cc.Clean(cfg, languageRepo.Dir, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "cleaning")
 		// Clean up any changes before starting the next iteration.
 		if err := languageRepo.CleanWorkingTree(); err != nil {

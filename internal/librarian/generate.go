@@ -158,7 +158,7 @@ func executeGenerate(state *commandState, cfg *config.Config) error {
 	if cfg.Build {
 		if libraryID != "" {
 			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-			if err := state.containerConfig.Clean(state.languageRepo.Dir, libraryID); err != nil {
+			if err := state.containerConfig.Clean(cfg, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
 			if err := os.CopyFS(state.languageRepo.Dir, os.DirFS(outputDir)); err != nil {

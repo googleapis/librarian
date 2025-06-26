@@ -89,7 +89,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandClean,
 			runCommand: func() error {
-				return d.Clean(testRepoRoot, testLibraryID)
+				return d.Clean(cfg, testRepoRoot, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",

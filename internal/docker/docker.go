@@ -160,7 +160,7 @@ func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID stri
 
 // Clean deletes files within repoRoot which are generated for library
 // libraryID, as configured in the Librarian state file for the repository.
-func (c *Docker) Clean(repoRoot, libraryID string) error {
+func (c *Docker) Clean(cfg *config.Config, repoRoot, libraryID string) error {
 	if repoRoot == "" {
 		return fmt.Errorf("repoRoot cannot be empty")
 	}
@@ -171,6 +171,8 @@ func (c *Docker) Clean(repoRoot, libraryID string) error {
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
+	mounts = maybeRelocateMounts(cfg, mounts)
+
 	return c.runDocker(CommandClean, mounts, commandArgs)
 }
 
