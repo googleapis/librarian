@@ -133,7 +133,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandConfigure,
 			runCommand: func() error {
-				return d.Configure(testAPIRoot, testAPIPath, testGeneratorInput)
+				return d.Configure(cfg, testAPIRoot, testAPIPath, testGeneratorInput)
 			},
 			want: []string{
 				"run", "--rm",

@@ -215,7 +215,7 @@ func (c *Docker) BuildLibrary(repoRoot, libraryID string) error {
 // apiPath directory within apiRoot, and the container is provided with the
 // generatorInput directory to record the results of configuration. The
 // library code is not generated.
-func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
+func (c *Docker) Configure(cfg *config.Config, apiRoot, apiPath, generatorInput string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
 	}
@@ -234,6 +234,8 @@ func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
+	mounts = maybeRelocateMounts(cfg, mounts)
+
 	return c.runDocker(CommandConfigure, mounts, commandArgs)
 }
 
