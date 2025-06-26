@@ -241,7 +241,7 @@ func (c *Docker) Configure(apiRoot, apiPath, generatorInput string) error {
 // ID libraryID within repoRoot, with version releaseVersion. Release notes
 // are expected to be present within inputsDirectory, in a file named
 // `{libraryID}-{releaseVersion}-release-notes.txt`.
-func (c *Docker) PrepareLibraryRelease(repoRoot, inputsDirectory, libraryID, releaseVersion string) error {
+func (c *Docker) PrepareLibraryRelease(cfg *config.Config, repoRoot, inputsDirectory, libraryID, releaseVersion string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -252,6 +252,8 @@ func (c *Docker) PrepareLibraryRelease(repoRoot, inputsDirectory, libraryID, rel
 		fmt.Sprintf("%s:/repo", repoRoot),
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
+
+	mounts = maybeRelocateMounts(cfg, mounts)
 
 	return c.runDocker(CommandPrepareLibraryRelease, mounts, commandArgs)
 }

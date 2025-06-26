@@ -268,7 +268,7 @@ func generateReleaseCommitForEachLibrary(state *commandState, cfg *config.Config
 			return nil, err
 		}
 
-		if err := cc.PrepareLibraryRelease(languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
+		if err := cc.PrepareLibraryRelease(cfg, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "preparing library release")
 			// Clean up any changes before starting the next iteration.
 			if err := languageRepo.CleanWorkingTree(); err != nil {

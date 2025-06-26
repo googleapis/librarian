@@ -150,7 +150,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandPrepareLibraryRelease,
 			runCommand: func() error {
-				return d.PrepareLibraryRelease(testLanguageRepo, testInputsDirectory, testLibraryID, testReleaseVersion)
+				return d.PrepareLibraryRelease(cfg, testLanguageRepo, testInputsDirectory, testLibraryID, testReleaseVersion)
 			},
 			want: []string{
 				"run", "--rm",
