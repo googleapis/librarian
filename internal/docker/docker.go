@@ -301,7 +301,7 @@ func (c *Docker) PublishLibrary(outputDir, libraryID, releaseVersion string) err
 	return c.runDocker(CommandPublishLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) runDocker(command Command, mounts []string, commandArgs []string) error {
+func (c *Docker) runDocker(command Command, mounts []string, commandArgs []string) (err error) {
 	if c.Image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -322,7 +322,12 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 		}
 		args = append(args, "--env-file")
 		args = append(args, c.env.tmpFile)
-		defer deleteEnvironmentFile(c.env)
+		defer func() {
+			cerr := os.Remove(c.env.tmpFile)
+			if err == nil {
+				err = cerr
+			}
+		}()
 	}
 	if !slices.Contains(networkEnabledCommands, command) {
 		args = append(args, "--network=none")

@@ -148,7 +148,9 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	// Derive the new image to use, and save it in the context.
 	ps.ImageTag = cfg.Tag
 	state.containerConfig.Image = deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
-	savePipelineState(state)
+	if err := savePipelineState(state); err != nil {
+		return err
+	}
 
 	// Take a defensive copy of the generator input directory from the language repo.
 	generatorInput := filepath.Join(state.workRoot, config.GeneratorInputDir)
