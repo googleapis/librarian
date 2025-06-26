@@ -89,16 +89,8 @@ func TestHeaders(t *testing.T) {
 	})
 }
 
-func TestStaticCheck(t *testing.T) {
-	rungo(t, "run", "honnef.co/go/tools/cmd/staticcheck@latest", "./...")
-}
-
-func TestUnparam(t *testing.T) {
-	rungo(t, "run", "mvdan.cc/unparam@latest", "./...")
-}
-
-func TestVet(t *testing.T) {
-	rungo(t, "vet", "-all", "./...")
+func TestGolangCILint(t *testing.T) {
+	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest", "run")
 }
 
 func TestGoModTidy(t *testing.T) {
