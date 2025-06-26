@@ -29,7 +29,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
