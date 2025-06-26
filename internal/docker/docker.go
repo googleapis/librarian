@@ -195,7 +195,7 @@ func (c *Docker) BuildRaw(generatorOutput, apiPath string) error {
 
 // BuildLibrary builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
-func (c *Docker) BuildLibrary(repoRoot, libraryID string) error {
+func (c *Docker) BuildLibrary(cfg *config.Config, repoRoot, libraryID string) error {
 	if repoRoot == "" {
 		return fmt.Errorf("repoRoot cannot be empty")
 	}
@@ -207,6 +207,8 @@ func (c *Docker) BuildLibrary(repoRoot, libraryID string) error {
 		"--test=true",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
+
+	mounts = maybeRelocateMounts(cfg, mounts)
 	return c.runDocker(CommandBuildLibrary, mounts, commandArgs)
 }
 

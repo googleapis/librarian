@@ -121,7 +121,7 @@ func createReleaseArtifactsImpl(state *commandState, cfg *config.Config) error {
 	}
 
 	for _, release := range releases {
-		if err := buildTestPackageRelease(state, outputRoot, release, cfg); err != nil {
+		if err := buildTestPackageRelease(state, cfg, outputRoot, release); err != nil {
 			return err
 		}
 	}
@@ -176,14 +176,14 @@ func copyFile(sourcePath, destPath string) error {
 	return createAndWriteBytesToFile(destPath, bytes)
 }
 
-func buildTestPackageRelease(state *commandState, outputRoot string, release LibraryRelease, cfg *config.Config) error {
+func buildTestPackageRelease(state *commandState, cfg *config.Config, outputRoot string, release LibraryRelease) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
 	if err := languageRepo.Checkout(release.CommitHash); err != nil {
 		return err
 	}
-	if err := cc.BuildLibrary(languageRepo.Dir, release.LibraryID); err != nil {
+	if err := cc.BuildLibrary(cfg, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	if cfg.SkipIntegrationTests != "" {

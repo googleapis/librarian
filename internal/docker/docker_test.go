@@ -118,7 +118,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandBuildLibrary,
 			runCommand: func() error {
-				return d.BuildLibrary(testRepoRoot, testLibraryID)
+				return d.BuildLibrary(cfg, testRepoRoot, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",

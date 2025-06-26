@@ -346,7 +346,7 @@ func configureApi(state *commandState, cfg *config.Config, outputRoot, apiRoot, 
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
-	if err := cc.BuildLibrary(languageRepo.Dir, libraryID); err != nil {
+	if err := cc.BuildLibrary(cfg, languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "building"))
 		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err

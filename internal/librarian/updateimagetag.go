@@ -175,7 +175,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 
 	// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
 	slog.Info("Building all libraries.")
-	if err := state.containerConfig.BuildLibrary(languageRepo.Dir, ""); err != nil {
+	if err := state.containerConfig.BuildLibrary(cfg, languageRepo.Dir, ""); err != nil {
 		return err
 	}
 
