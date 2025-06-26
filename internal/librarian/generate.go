@@ -151,7 +151,7 @@ func executeGenerate(state *commandState, cfg *config.Config) error {
 	}
 	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-	libraryID, err := runGenerateCommand(state, cfg.APIRoot, cfg.APIPath, outputDir)
+	libraryID, err := runGenerateCommand(state, cfg, outputDir)
 	if err != nil {
 		return err
 	}
@@ -180,8 +180,8 @@ func executeGenerate(state *commandState, cfg *config.Config) error {
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string) (string, error) {
-	apiRoot, err := filepath.Abs(apiRoot)
+func runGenerateCommand(state *commandState, cfg *config.Config, outputDir string) (string, error) {
+	apiRoot, err := filepath.Abs(cfg.APIRoot)
 	if err != nil {
 		return "", err
 	}
@@ -189,16 +189,16 @@ func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string)
 	// If we've got a language repo, it's because we've already found a library for the
 	// specified API, configured in the repo.
 	if state.languageRepo != nil {
-		libraryID := findLibraryIDByApiPath(state.pipelineState, apiPath)
+		libraryID := findLibraryIDByApiPath(state.pipelineState, cfg.APIPath)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
 		generatorInput := filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir)
 		slog.Info(fmt.Sprintf("Performing refined generation for library %s", libraryID))
-		return libraryID, state.containerConfig.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID)
+		return libraryID, state.containerConfig.GenerateLibrary(cfg, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
-		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", apiPath))
-		return "", state.containerConfig.GenerateRaw(apiRoot, outputDir, apiPath)
+		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", cfg.APIPath))
+		return "", state.containerConfig.GenerateRaw(apiRoot, outputDir, cfg.APIPath)
 	}
 }
 

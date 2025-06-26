@@ -209,7 +209,7 @@ func regenerateLibrary(state *commandState, cfg *config.Config, apiRepo *gitrepo
 		return err
 	}
 
-	if err := cc.GenerateLibrary(apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := cc.GenerateLibrary(cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
 	if err := cc.Clean(cfg, languageRepo.Dir, library.Id); err != nil {

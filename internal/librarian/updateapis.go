@@ -221,7 +221,7 @@ func updateLibrary(state *commandState, cfg *config.Config, apiRepo *gitrepo.Rep
 		return err
 	}
 
-	if err := cc.GenerateLibrary(apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := cc.GenerateLibrary(cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "generating")
 		return nil
 	}

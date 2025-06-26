@@ -328,7 +328,7 @@ func configureApi(state *commandState, cfg *config.Config, outputRoot, apiRoot, 
 		return err
 	}
 
-	if err := cc.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID); err != nil {
+	if err := cc.GenerateLibrary(cfg, apiRoot, outputDir, generatorInput, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "generating"))
 		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err

@@ -131,7 +131,7 @@ func (c *Docker) GenerateRaw(apiRoot, output, apiPath string) error {
 // output specifies the empty output directory into which the command should
 // generate code, and libraryID specifies the ID of the library to generate,
 // as configured in the Librarian state file for the repository.
-func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID string) error {
+func (c *Docker) GenerateLibrary(cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
 	}
@@ -155,6 +155,9 @@ func (c *Docker) GenerateLibrary(apiRoot, output, generatorInput, libraryID stri
 		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
+
+	mounts = maybeRelocateMounts(cfg, mounts)
+
 	return c.runDocker(CommandGenerateLibrary, mounts, commandArgs)
 }
 

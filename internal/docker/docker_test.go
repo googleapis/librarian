@@ -70,7 +70,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandGenerateLibrary,
 			runCommand: func() error {
-				return d.GenerateLibrary(testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
+				return d.GenerateLibrary(cfg, testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
