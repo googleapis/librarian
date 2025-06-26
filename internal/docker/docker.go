@@ -167,9 +167,7 @@ func (c *Docker) Clean(ctx context.Context, repoRoot, libraryID string) error {
 	}
 	commandArgs := []string{
 		"--repo-root=/repo",
-	}
-	if libraryID != "" {
-		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
+		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	return c.runDocker(ctx, CommandClean, mounts, commandArgs)
 }
@@ -205,9 +203,7 @@ func (c *Docker) BuildLibrary(ctx context.Context, repoRoot, libraryID string) e
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--test=true",
-	}
-	if libraryID != "" {
-		commandArgs = append(commandArgs, fmt.Sprintf("--library-id=%s", libraryID))
+		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	return c.runDocker(ctx, CommandBuildLibrary, mounts, commandArgs)
 }
