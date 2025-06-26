@@ -124,9 +124,7 @@ func (c *Docker) GenerateRaw(cfg *config.Config, apiRoot, output, apiPath string
 		fmt.Sprintf("%s:/output", output),
 	}
 
-	mounts = maybeRelocateMounts(cfg, mounts)
-
-	return c.runDocker(CommandGenerateRaw, mounts, commandArgs)
+	return c.runDocker(cfg, CommandGenerateRaw, mounts, commandArgs)
 }
 
 // GenerateLibrary performs generation for an API which is configured as part of a library.
@@ -159,9 +157,7 @@ func (c *Docker) GenerateLibrary(cfg *config.Config, apiRoot, output, generatorI
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
 
-	mounts = maybeRelocateMounts(cfg, mounts)
-
-	return c.runDocker(CommandGenerateLibrary, mounts, commandArgs)
+	return c.runDocker(cfg, CommandGenerateLibrary, mounts, commandArgs)
 }
 
 // Clean deletes files within repoRoot which are generated for library
@@ -177,9 +173,8 @@ func (c *Docker) Clean(cfg *config.Config, repoRoot, libraryID string) error {
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
-	mounts = maybeRelocateMounts(cfg, mounts)
 
-	return c.runDocker(CommandClean, mounts, commandArgs)
+	return c.runDocker(cfg, CommandClean, mounts, commandArgs)
 }
 
 // BuildRaw builds the result of GenerateRaw, which previously generated
@@ -198,9 +193,8 @@ func (c *Docker) BuildRaw(cfg *config.Config, generatorOutput, apiPath string) e
 		"--generator-output=/generator-output",
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
-	mounts = maybeRelocateMounts(cfg, mounts)
 
-	return c.runDocker(CommandBuildRaw, mounts, commandArgs)
+	return c.runDocker(cfg, CommandBuildRaw, mounts, commandArgs)
 }
 
 // BuildLibrary builds the library with an ID of libraryID, as configured in
@@ -218,8 +212,7 @@ func (c *Docker) BuildLibrary(cfg *config.Config, repoRoot, libraryID string) er
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 
-	mounts = maybeRelocateMounts(cfg, mounts)
-	return c.runDocker(CommandBuildLibrary, mounts, commandArgs)
+	return c.runDocker(cfg, CommandBuildLibrary, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -246,9 +239,8 @@ func (c *Docker) Configure(cfg *config.Config, apiRoot, apiPath, generatorInput 
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
-	mounts = maybeRelocateMounts(cfg, mounts)
 
-	return c.runDocker(CommandConfigure, mounts, commandArgs)
+	return c.runDocker(cfg, CommandConfigure, mounts, commandArgs)
 }
 
 // PrepareLibraryRelease prepares the repository languageRepo for the release of a library with
@@ -267,9 +259,7 @@ func (c *Docker) PrepareLibraryRelease(cfg *config.Config, repoRoot, inputsDirec
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
 
-	mounts = maybeRelocateMounts(cfg, mounts)
-
-	return c.runDocker(CommandPrepareLibraryRelease, mounts, commandArgs)
+	return c.runDocker(cfg, CommandPrepareLibraryRelease, mounts, commandArgs)
 }
 
 // IntegrationTestLibrary runs the integration tests for a library with ID libraryID within repoRoot.
@@ -282,9 +272,7 @@ func (c *Docker) IntegrationTestLibrary(cfg *config.Config, repoRoot, libraryID 
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
 
-	mounts = maybeRelocateMounts(cfg, mounts)
-
-	return c.runDocker(CommandIntegrationTestLibrary, mounts, commandArgs)
+	return c.runDocker(cfg, CommandIntegrationTestLibrary, mounts, commandArgs)
 }
 
 // PackageLibrary packages release artifacts for a library with ID libraryID within repoRoot,
@@ -300,9 +288,7 @@ func (c *Docker) PackageLibrary(cfg *config.Config, repoRoot, libraryID, outputD
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	mounts = maybeRelocateMounts(cfg, mounts)
-
-	return c.runDocker(CommandPackageLibrary, mounts, commandArgs)
+	return c.runDocker(cfg, CommandPackageLibrary, mounts, commandArgs)
 }
 
 // PublishLibrary publishes release artifacts for a library with ID libraryID and version releaseVersion
@@ -318,12 +304,10 @@ func (c *Docker) PublishLibrary(cfg *config.Config, outputDir, libraryID, releas
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	mounts = maybeRelocateMounts(cfg, mounts)
-
-	return c.runDocker(CommandPublishLibrary, mounts, commandArgs)
+	return c.runDocker(cfg, CommandPublishLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) runDocker(command Command, mounts []string, commandArgs []string) (err error) {
+func (c *Docker) runDocker(cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
 	if c.Image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
@@ -332,6 +316,8 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 		"run",
 		"--rm", // Automatically delete the container after completion
 	}
+
+	mounts = maybeRelocateMounts(cfg, mounts)
 
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
