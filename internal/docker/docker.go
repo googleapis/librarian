@@ -176,7 +176,7 @@ func (c *Docker) Clean(repoRoot, libraryID string) error {
 
 // BuildRaw builds the result of GenerateRaw, which previously generated
 // code for apiPath in generatorOutput.
-func (c *Docker) BuildRaw(generatorOutput, apiPath string) error {
+func (c *Docker) BuildRaw(cfg *config.Config, generatorOutput, apiPath string) error {
 	if generatorOutput == "" {
 		return fmt.Errorf("generatorOutput cannot be empty")
 	}
@@ -190,6 +190,8 @@ func (c *Docker) BuildRaw(generatorOutput, apiPath string) error {
 		"--generator-output=/generator-output",
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
+	mounts = maybeRelocateMounts(cfg, mounts)
+
 	return c.runDocker(CommandBuildRaw, mounts, commandArgs)
 }
 

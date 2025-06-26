@@ -104,7 +104,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandBuildRaw,
 			runCommand: func() error {
-				return d.BuildRaw(testGeneratorOutput, testAPIPath)
+				return d.BuildRaw(cfg, testGeneratorOutput, testAPIPath)
 			},
 			want: []string{
 				"run", "--rm",

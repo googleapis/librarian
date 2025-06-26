@@ -167,7 +167,7 @@ func executeGenerate(state *commandState, cfg *config.Config) error {
 			if err := state.containerConfig.BuildLibrary(cfg, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
-		} else if err := state.containerConfig.BuildRaw(outputDir, cfg.APIPath); err != nil {
+		} else if err := state.containerConfig.BuildRaw(cfg, outputDir, cfg.APIPath); err != nil {
 			return err
 		}
 	}
