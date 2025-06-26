@@ -104,7 +104,7 @@ func New(ctx context.Context, workRoot, image, secretsProject string, pipelineCo
 // the subdirectory apiPath of the API specification repo apiRoot, and whatever
 // is in the language-specific Docker container. The code is generated
 // in the output directory, which is initially empty.
-func (c *Docker) GenerateRaw(apiRoot, output, apiPath string) error {
+func (c *Docker) GenerateRaw(cfg *config.Config, apiRoot, output, apiPath string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
 	}
@@ -123,6 +123,9 @@ func (c *Docker) GenerateRaw(apiRoot, output, apiPath string) error {
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/output", output),
 	}
+
+	mounts = maybeRelocateMounts(cfg, mounts)
+
 	return c.runDocker(CommandGenerateRaw, mounts, commandArgs)
 }
 

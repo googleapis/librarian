@@ -198,7 +198,7 @@ func runGenerateCommand(state *commandState, cfg *config.Config, outputDir strin
 		return libraryID, state.containerConfig.GenerateLibrary(cfg, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
 		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", cfg.APIPath))
-		return "", state.containerConfig.GenerateRaw(apiRoot, outputDir, cfg.APIPath)
+		return "", state.containerConfig.GenerateRaw(cfg, apiRoot, outputDir, cfg.APIPath)
 	}
 }
 
