@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
-	"github.com/googleapis/librarian/internal/githubrepo"
+	"github.com/googleapis/librarian/internal/github"
 )
 
 var cmdPublishReleaseArtifacts = &cli.Command{
@@ -122,7 +122,7 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 
 	// Load the pipeline config from the commit of the first release, using the tag repo, then
 	// update our context to use it for the container config.
-	gitHubRepo, err := githubrepo.ParseUrl(tagRepoURL)
+	gitHubRepo, err := github.ParseUrl(tagRepoURL)
 	if err != nil {
 		return err
 	}
@@ -150,8 +150,8 @@ func publishPackages(config *docker.Docker, outputRoot string, releases []Librar
 	return nil
 }
 
-func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *githubrepo.Repository, gitHubToken string) error {
-	ghClient, err := githubrepo.NewClient(gitHubToken)
+func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *github.Repository, gitHubToken string) error {
+	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return err
 	}

@@ -25,10 +25,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/githubrepo"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
@@ -139,7 +138,7 @@ func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) er
 	}
 
 	// We'll assume the PR URL is in the format https://github.com/{owner}/{name}/pulls/{pull-number}
-	prRepo, err := githubrepo.ParseUrl(cfg.ReleasePRURL)
+	prRepo, err := github.ParseUrl(cfg.ReleasePRURL)
 	if err != nil {
 		return err
 	}
@@ -149,7 +148,7 @@ func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) er
 		return err
 	}
 
-	prMetadata := &githubrepo.PullRequestMetadata{Repo: prRepo, Number: prNumber}
+	prMetadata := &github.PullRequestMetadata{Repo: prRepo, Number: prNumber}
 
 	if err := waitForPullRequestReadiness(ctx, prMetadata, cfg); err != nil {
 		return err
@@ -173,7 +172,7 @@ func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) er
 // TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
 const sleepDelay = time.Duration(60) * time.Second
 
-func waitForPullRequestReadiness(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata, cfg *config.Config) error {
+func waitForPullRequestReadiness(ctx context.Context, prMetadata *github.PullRequestMetadata, cfg *config.Config) error {
 	// TODO(https://github.com/googleapis/librarian/issues/543): time out here, or let Kokoro do so?
 
 	for {
@@ -201,9 +200,9 @@ func waitForPullRequestReadiness(ctx context.Context, prMetadata *githubrepo.Pul
 // - No commit in the PR must start its release notes with "FIXME"
 // - There must be no commits in the head of the repo which affect libraries released by the PR
 // - There must be at least one approving reviews from a member/owner of the repo, and no reviews from members/owners requesting changes
-func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata, cfg *config.Config) (bool, error) {
+func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata *github.PullRequestMetadata, cfg *config.Config) (bool, error) {
 	slog.Info("Checking pull request for readiness")
-	ghClient, err := githubrepo.NewClient(cfg.GitHubToken)
+	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {
 		return false, err
 	}
@@ -304,8 +303,8 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 	return true, nil
 }
 
-func mergePullRequest(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata, cfg *config.Config) (string, error) {
-	ghClient, err := githubrepo.NewClient(cfg.GitHubToken)
+func mergePullRequest(ctx context.Context, prMetadata *github.PullRequestMetadata, cfg *config.Config) (string, error) {
+	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {
 		return "", err
 	}
@@ -376,8 +375,8 @@ func waitForSync(mergeCommit string, cfg *config.Config) error {
 //
 // Returns true if all the commits are fine, or false if a problem was detected, in which
 // case it will have been reported on the PR, and the merge-blocking label applied.
-func checkPullRequestCommits(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata, pr *github.PullRequest, cfg *config.Config) (bool, error) {
-	baseRepo := githubrepo.CreateGitHubRepoFromRepository(pr.Base.Repo)
+func checkPullRequestCommits(ctx context.Context, prMetadata *github.PullRequestMetadata, pr *github.PullRequest, cfg *config.Config) (bool, error) {
+	baseRepo := github.CreateGitHubRepoFromRepository(pr.Base.Repo)
 	baseHeadState, err := fetchRemotePipelineState(ctx, baseRepo, *pr.Base.Ref, cfg.GitHubToken)
 	if err != nil {
 		return false, err
@@ -390,7 +389,7 @@ func checkPullRequestCommits(ctx context.Context, prMetadata *githubrepo.PullReq
 	// Fetch the commits which are in the PR, compared with the base (the target of the merge).
 	// In most cases pr.Base.SHA will be the same as cfg.BaselineCommit, but the PR may have been rebased -
 	// and we always only want the commits in the PR, not any that it's been rebased on top of.
-	ghClient, err := githubrepo.NewClient(cfg.GitHubToken)
+	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {
 		return false, err
 	}
@@ -455,8 +454,8 @@ func checkPullRequestCommits(ctx context.Context, prMetadata *githubrepo.PullReq
 }
 
 // Checks that the pull request has at least one approved review, and no "changes requested" reviews.
-func checkPullRequestApproval(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata, cfg *config.Config) (bool, error) {
-	ghClient, err := githubrepo.NewClient(cfg.GitHubToken)
+func checkPullRequestApproval(ctx context.Context, prMetadata *github.PullRequestMetadata, cfg *config.Config) (bool, error) {
+	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {
 		return false, err
 	}
@@ -501,10 +500,10 @@ func checkPullRequestApproval(ctx context.Context, prMetadata *githubrepo.PullRe
 	return approved, nil
 }
 
-func reportBlockingReason(ctx context.Context, prMetadata *githubrepo.PullRequestMetadata, description string, cfg *config.Config) error {
+func reportBlockingReason(ctx context.Context, prMetadata *github.PullRequestMetadata, description string, cfg *config.Config) error {
 	slog.Warn(fmt.Sprintf("Adding '%s' label to PR and a comment with a description of '%s'", MergeBlockedLabel, description))
 	comment := fmt.Sprintf("%s\n\nAfter resolving the issue, please remove the '%s' label.", description, MergeBlockedLabel)
-	ghClient, err := githubrepo.NewClient(cfg.GitHubToken)
+	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {
 		return err
 	}

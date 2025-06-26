@@ -25,7 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/githubrepo"
+	"github.com/googleapis/librarian/internal/github"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/googleapis/librarian/internal/statepb"
@@ -188,7 +188,7 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 	// Final steps if we've actually created a release PR.
 	// - We always add the do-not-merge label so that Librarian can merge later.
 	// - Add a result environment variable with the PR number, for the next stage of the process.
-	ghClient, err := githubrepo.NewClient(cfg.GitHubToken)
+	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {
 		return err
 	}

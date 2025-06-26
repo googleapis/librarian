@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
-	"github.com/googleapis/librarian/internal/githubrepo"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -227,7 +227,7 @@ func detectIfLibraryConfigured(apiPath, repoURL, repoRoot, gitHubToken string) (
 			return false, err
 		}
 	} else {
-		languageRepoMetadata, err := githubrepo.ParseUrl(repoURL)
+		languageRepoMetadata, err := github.ParseUrl(repoURL)
 		if err != nil {
 			slog.Warn("failed to parse", "repo url:", repoURL, "error", err)
 			return false, err
