@@ -228,12 +228,12 @@ to avoid wasting reviewer time.)
 
 ### Merging a pull request
 
-The pull request title and description must follow the conventions described in
-the "commit messages" section above. This allows the approvers to review and edit
-the final commit message before the PR is merged. Once the pull request has been
-approved and all of the required checks have passed, a reviewer or the author
-can merge the pull request using the "squash and merge" option, with the presented
-commit message which by default will be based on the pull request title and description.
+Pull request titles and descriptions must follow the [commit messages](#commit-messages)
+conventions. This enables approvers to review the final commit message. Once the pull
+request has been approved and all checks have passed, click the
+[Squash and Merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits)
+button. The resulting commit message will be based on the pull request's title and
+description.
 
 ### Keeping the pull request dashboard clean
 
