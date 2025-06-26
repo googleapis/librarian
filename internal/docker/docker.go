@@ -298,7 +298,7 @@ func (c *Docker) PublishLibrary(ctx context.Context, outputDir, libraryID, relea
 	return c.runDocker(ctx, CommandPublishLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) runDocker(ctx context.Context, command Command, mounts []string, commandArgs []string) error {
+func (c *Docker) runDocker(ctx context.Context, command Command, mounts []string, commandArgs []string) (err error) {
 	if c.Image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
