@@ -25,6 +25,9 @@ import (
 	"github.com/google/go-github/v69/github"
 )
 
+// pageSize is used in paginated requests. Extrated into a variable for better testability.
+var pageSize = 100
+
 // Client represents this package's abstraction of a GitHub client, including
 // an access token.
 type Client struct {
@@ -176,7 +179,7 @@ func (c *Client) GetPullRequestCheckRuns(ctx context.Context, pullRequest *githu
 // by prMetadata.
 func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequestMetadata) ([]*github.PullRequestReview, error) {
 	var allReviews []*github.PullRequestReview
-	listOptions := &github.ListOptions{PerPage: 100}
+	listOptions := &github.ListOptions{PerPage: pageSize}
 	for {
 		reviews, resp, err := c.PullRequests.ListReviews(ctx, prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number, listOptions)
 		if err != nil {
@@ -234,7 +237,7 @@ func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref 
 // and target references (commit hashes, branches etc).
 func (c *Client) GetDiffCommits(ctx context.Context, repo *Repository, source, target string) ([]*github.RepositoryCommit, error) {
 	var allCommits []*github.RepositoryCommit
-	listOptions := &github.ListOptions{PerPage: 100}
+	listOptions := &github.ListOptions{PerPage: pageSize}
 	for {
 		commitsComparison, resp, err := c.Repositories.CompareCommits(ctx, repo.Owner, repo.Name, source, target, listOptions)
 		if err != nil {
