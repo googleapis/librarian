@@ -34,8 +34,11 @@ import (
 
 const (
 	// DoNotMergeLabel uses to avoid users merging the PR themselves.
-	DoNotMergeLabel          = "do-not-merge"
-	DoNotMergeAppId          = 91138
+	DoNotMergeLabel = "do-not-merge"
+	// DoNotMergeAppId is a GitHub App that skips do-not-merge check.
+	DoNotMergeAppId = 91138
+	// ConventionalCommitsAppId is a GitHub App that skips conventional commits
+	// check.
 	ConventionalCommitsAppId = 37172
 
 	// MergeBlockedLabel uses to indicate "I've noticed a problem with this PR;
