@@ -319,7 +319,12 @@ func (c *Docker) runDocker(ctx context.Context, command Command, mounts []string
 		}
 		args = append(args, "--env-file")
 		args = append(args, c.env.tmpFile)
-		defer deleteEnvironmentFile(c.env)
+		defer func() {
+			cerr := os.Remove(c.env.tmpFile)
+			if err == nil {
+				err = cerr
+			}
+		}()
 	}
 	if !slices.Contains(networkEnabledCommands, command) {
 		args = append(args, "--network=none")

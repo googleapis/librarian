@@ -33,13 +33,18 @@ type SecretsClient interface {
 
 // Get fetches the latest version of a secret as a string. This method assumes
 // the secret payload is a UTF-8 string.
-func Get(ctx context.Context, project string, secretName string, secretsClient SecretsClient) (string, error) {
+func Get(ctx context.Context, project string, secretName string, secretsClient SecretsClient) (_ string, err error) {
 	if secretsClient == nil {
 		secretsClient, err := secretmanager.NewClient(ctx)
 		if err != nil {
 			return "", err
 		}
-		defer secretsClient.Close()
+		defer func() {
+			cerr := secretsClient.Close()
+			if err == nil {
+				err = cerr
+			}
+		}()
 	}
 	request := &secretmanagerpb.AccessSecretVersionRequest{
 		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", project, secretName),

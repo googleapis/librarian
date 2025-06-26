@@ -139,7 +139,3 @@ func getSecretManagerValue(ctx context.Context, dockerEnv *EnvironmentProvider, 
 	dockerEnv.secretCache[variable.SecretName] = value
 	return value, true, nil
 }
-
-func deleteEnvironmentFile(dockerEnv *EnvironmentProvider) error {
-	return os.Remove(dockerEnv.tmpFile)
-}
