@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-github/v69/github"
 )
 
-// PullRequest is a type alia for the go-github type.
+// PullRequest is a type alias for the go-github type.
 type PullRequest = github.PullRequest
 
 // RepositoryCommit is a type alias for the go-github type.
