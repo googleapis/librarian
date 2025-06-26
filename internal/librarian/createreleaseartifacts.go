@@ -188,7 +188,7 @@ func buildTestPackageRelease(state *commandState, outputRoot string, release Lib
 	}
 	if cfg.SkipIntegrationTests != "" {
 		slog.Info(fmt.Sprintf("Skipping integration tests: %s", cfg.SkipIntegrationTests))
-	} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, release.LibraryID); err != nil {
+	} else if err := cc.IntegrationTestLibrary(cfg, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)

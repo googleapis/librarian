@@ -168,7 +168,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandIntegrationTestLibrary,
 			runCommand: func() error {
-				return d.IntegrationTestLibrary(testLanguageRepo, testLibraryID)
+				return d.IntegrationTestLibrary(cfg, testLanguageRepo, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",

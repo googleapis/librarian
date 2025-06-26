@@ -257,7 +257,7 @@ func (c *Docker) PrepareLibraryRelease(repoRoot, inputsDirectory, libraryID, rel
 }
 
 // IntegrationTestLibrary runs the integration tests for a library with ID libraryID within repoRoot.
-func (c *Docker) IntegrationTestLibrary(repoRoot, libraryID string) error {
+func (c *Docker) IntegrationTestLibrary(cfg *config.Config, repoRoot, libraryID string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -265,6 +265,8 @@ func (c *Docker) IntegrationTestLibrary(repoRoot, libraryID string) error {
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
+
+	mounts = maybeRelocateMounts(cfg, mounts)
 
 	return c.runDocker(CommandIntegrationTestLibrary, mounts, commandArgs)
 }
