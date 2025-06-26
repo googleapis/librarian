@@ -99,14 +99,14 @@ func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	return createReleaseArtifactsImpl(state, cfg.ReleaseID, cfg.SkipIntegrationTests)
+	return createReleaseArtifactsImpl(state, cfg)
 }
 
-func createReleaseArtifactsImpl(state *commandState, releaseID, skipIntegrationTests string) error {
-	if err := validateSkipIntegrationTests(skipIntegrationTests); err != nil {
+func createReleaseArtifactsImpl(state *commandState, cfg *config.Config) error {
+	if err := validateSkipIntegrationTests(cfg.SkipIntegrationTests); err != nil {
 		return err
 	}
-	if err := validateRequiredFlag("release-id", releaseID); err != nil {
+	if err := validateRequiredFlag("release-id", cfg.ReleaseID); err != nil {
 		return err
 	}
 	outputRoot := filepath.Join(state.workRoot, "output")
@@ -115,13 +115,13 @@ func createReleaseArtifactsImpl(state *commandState, releaseID, skipIntegrationT
 	}
 	slog.Info(fmt.Sprintf("Packages will be created in %s", outputRoot))
 
-	releases, err := parseCommitsForReleases(state.languageRepo, releaseID)
+	releases, err := parseCommitsForReleases(state.languageRepo, cfg.ReleaseID)
 	if err != nil {
 		return err
 	}
 
 	for _, release := range releases {
-		if err := buildTestPackageRelease(state, outputRoot, release, skipIntegrationTests); err != nil {
+		if err := buildTestPackageRelease(state, outputRoot, release, cfg); err != nil {
 			return err
 		}
 	}
@@ -176,7 +176,7 @@ func copyFile(sourcePath, destPath string) error {
 	return createAndWriteBytesToFile(destPath, bytes)
 }
 
-func buildTestPackageRelease(state *commandState, outputRoot string, release LibraryRelease, skipIntegrationTests string) error {
+func buildTestPackageRelease(state *commandState, outputRoot string, release LibraryRelease, cfg *config.Config) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
@@ -186,8 +186,8 @@ func buildTestPackageRelease(state *commandState, outputRoot string, release Lib
 	if err := cc.BuildLibrary(languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
-	if skipIntegrationTests != "" {
-		slog.Info(fmt.Sprintf("Skipping integration tests: %s", skipIntegrationTests))
+	if cfg.SkipIntegrationTests != "" {
+		slog.Info(fmt.Sprintf("Skipping integration tests: %s", cfg.SkipIntegrationTests))
 	} else if err := cc.IntegrationTestLibrary(languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func buildTestPackageRelease(state *commandState, outputRoot string, release Lib
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
-	if err := cc.PackageLibrary(languageRepo.Dir, release.LibraryID, outputDir); err != nil {
+	if err := cc.PackageLibrary(cfg, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
 		return err
 	}
 	return nil

@@ -271,7 +271,7 @@ func (c *Docker) IntegrationTestLibrary(repoRoot, libraryID string) error {
 
 // PackageLibrary packages release artifacts for a library with ID libraryID within repoRoot,
 // creating the artifacts within outputDir.
-func (c *Docker) PackageLibrary(repoRoot, libraryID, outputDir string) error {
+func (c *Docker) PackageLibrary(cfg *config.Config, repoRoot, libraryID, outputDir string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--output=/output",
@@ -281,6 +281,8 @@ func (c *Docker) PackageLibrary(repoRoot, libraryID, outputDir string) error {
 		fmt.Sprintf("%s:/repo", repoRoot),
 		fmt.Sprintf("%s:/output", outputDir),
 	}
+
+	mounts = maybeRelocateMounts(cfg, mounts)
 
 	return c.runDocker(CommandPackageLibrary, mounts, commandArgs)
 }

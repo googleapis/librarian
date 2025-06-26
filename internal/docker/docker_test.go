@@ -182,7 +182,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandPackageLibrary,
 			runCommand: func() error {
-				return d.PackageLibrary(testLanguageRepo, testLibraryID, testOutputDir)
+				return d.PackageLibrary(cfg, testLanguageRepo, testLibraryID, testOutputDir)
 			},
 			want: []string{
 				"run", "--rm",
