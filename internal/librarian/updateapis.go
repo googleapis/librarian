@@ -157,7 +157,7 @@ func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) er
 	prContent := new(PullRequestContent)
 	// Perform "generate, clean, commit, build" on each library.
 	for _, library := range state.pipelineState.Libraries {
-		err := updateLibrary(state, apiRepo, outputDir, library, prContent, cfg.LibraryID, cfg.GitUserName, cfg.GitUserEmail)
+		err := updateLibrary(state, cfg, apiRepo, outputDir, library, prContent)
 		if err != nil {
 			return err
 		}
@@ -173,12 +173,12 @@ func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) er
 	return err
 }
 
-func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState,
-	prContent *PullRequestContent, libraryID, gitUserName, gitUserEmail string) error {
+func updateLibrary(state *commandState, cfg *config.Config, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState,
+	prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
-	if libraryID != "" && libraryID != library.Id {
+	if cfg.LibraryID != "" && cfg.LibraryID != library.Id {
 		// If LibraryID has been passed in, we only act on that library.
 		return nil
 	}
@@ -221,11 +221,11 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 		return err
 	}
 
-	if err := cc.GenerateLibrary(apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := cc.GenerateLibrary(cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "generating")
 		return nil
 	}
-	if err := cc.Clean(languageRepo.Dir, library.Id); err != nil {
+	if err := cc.Clean(cfg, languageRepo.Dir, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "cleaning")
 		// Clean up any changes before starting the next iteration.
 		if err := languageRepo.CleanWorkingTree(); err != nil {
@@ -256,14 +256,14 @@ func updateLibrary(state *commandState, apiRepo *gitrepo.Repository, outputRoot 
 		msg = createCommitMessage(library.Id, commits)
 	}
 	if err := commitAll(languageRepo, msg,
-		gitUserName, gitUserEmail); err != nil {
+		cfg.GitUserName, cfg.GitUserEmail); err != nil {
 		return err
 	}
 
 	// Once we've committed, we can build - but then check that nothing has changed afterwards.
 	// We consider a "something changed" error as fatal, whereas a build error just needs to
 	// undo the commit, report the failure and continue
-	buildErr := cc.BuildLibrary(languageRepo.Dir, library.Id)
+	buildErr := cc.BuildLibrary(cfg, languageRepo.Dir, library.Id)
 	clean, err := languageRepo.IsClean()
 	if err != nil {
 		return err

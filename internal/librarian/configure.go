@@ -140,7 +140,7 @@ func executeConfigure(ctx context.Context, state *commandState, cfg *config.Conf
 
 	prContent := PullRequestContent{}
 	for _, apiPath := range apiPaths {
-		err = configureApi(state, outputRoot, apiRoot, apiPath, cfg.GitUserName, cfg.GitUserEmail, &prContent)
+		err = configureApi(state, cfg, outputRoot, apiRoot, apiPath, &prContent)
 		if err != nil {
 			return err
 		}
@@ -271,14 +271,14 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 //
 // This function only returns an error in the case of non-container failures, which are expected to be fatal.
 // If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
-func configureApi(state *commandState, outputRoot, apiRoot, apiPath, gitUserName, gitUserEmail string, prContent *PullRequestContent) error {
+func configureApi(state *commandState, cfg *config.Config, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
 	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
 
 	generatorInput := filepath.Join(languageRepo.Dir, config.GeneratorInputDir)
-	if err := cc.Configure(apiRoot, apiPath, generatorInput); err != nil {
+	if err := cc.Configure(cfg, apiRoot, apiPath, generatorInput); err != nil {
 		addErrorToPullRequest(prContent, apiPath, err, "configuring")
 		if err := languageRepo.CleanWorkingTree(); err != nil {
 			return err
@@ -303,7 +303,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath, gitUserName
 		// If it's newly-ignored, just commit the state change. This is still a "success" case.
 		if slices.Contains(ps.IgnoredApiPaths, apiPath) {
 			msg := fmt.Sprintf("feat: Added ignore entry for API %s", apiPath)
-			if err := commitAll(languageRepo, msg, gitUserName, gitUserEmail); err != nil {
+			if err := commitAll(languageRepo, msg, cfg.GitUserName, cfg.GitUserEmail); err != nil {
 				return err
 			}
 			addSuccessToPullRequest(prContent, fmt.Sprintf("Ignored API %s", apiPath))
@@ -317,7 +317,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath, gitUserName
 	}
 
 	msg := fmt.Sprintf("feat: Configured library %s for API %s", libraryID, apiPath)
-	if err := commitAll(languageRepo, msg, gitUserName, gitUserEmail); err != nil {
+	if err := commitAll(languageRepo, msg, cfg.GitUserName, cfg.GitUserEmail); err != nil {
 		return err
 	}
 
@@ -328,14 +328,14 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath, gitUserName
 		return err
 	}
 
-	if err := cc.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID); err != nil {
+	if err := cc.GenerateLibrary(cfg, apiRoot, outputDir, generatorInput, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "generating"))
 		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err
 		}
 		return nil
 	}
-	if err := cc.Clean(languageRepo.Dir, libraryID); err != nil {
+	if err := cc.Clean(cfg, languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "cleaning"))
 		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err
@@ -346,7 +346,7 @@ func configureApi(state *commandState, outputRoot, apiRoot, apiPath, gitUserName
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
-	if err := cc.BuildLibrary(languageRepo.Dir, libraryID); err != nil {
+	if err := cc.BuildLibrary(cfg, languageRepo.Dir, libraryID); err != nil {
 		prContent.Errors = append(prContent.Errors, logPartialError(libraryID, err, "building"))
 		if err := languageRepo.CleanAndRevertHeadCommit(); err != nil {
 			return err

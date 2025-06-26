@@ -116,7 +116,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	// We only clone/open the language repo and use the state within it
 	// if the requested API is configured as a library.
 	if libraryConfigured {
-		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.CI)
+		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.RepoRoot, cfg.RepoURL, cfg.CI)
 		if err != nil {
 			return err
 		}
@@ -141,33 +141,33 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		pipelineState:   ps,
 		containerConfig: containerConfig,
 	}
-	return executeGenerate(state, cfg.APIPath, cfg.APIRoot, cfg.Build)
+	return executeGenerate(state, cfg)
 }
 
-func executeGenerate(state *commandState, apiPath, apiRoot string, build bool) error {
+func executeGenerate(state *commandState, cfg *config.Config) error {
 	outputDir := filepath.Join(state.workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
 	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
 
-	libraryID, err := runGenerateCommand(state, apiRoot, apiPath, outputDir)
+	libraryID, err := runGenerateCommand(state, cfg, outputDir)
 	if err != nil {
 		return err
 	}
-	if build {
+	if cfg.Build {
 		if libraryID != "" {
 			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-			if err := state.containerConfig.Clean(state.languageRepo.Dir, libraryID); err != nil {
+			if err := state.containerConfig.Clean(cfg, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
 			if err := os.CopyFS(state.languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 				return err
 			}
-			if err := state.containerConfig.BuildLibrary(state.languageRepo.Dir, libraryID); err != nil {
+			if err := state.containerConfig.BuildLibrary(cfg, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
-		} else if err := state.containerConfig.BuildRaw(outputDir, apiPath); err != nil {
+		} else if err := state.containerConfig.BuildRaw(cfg, outputDir, cfg.APIPath); err != nil {
 			return err
 		}
 	}
@@ -180,8 +180,8 @@ func executeGenerate(state *commandState, apiPath, apiRoot string, build bool) e
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string) (string, error) {
-	apiRoot, err := filepath.Abs(apiRoot)
+func runGenerateCommand(state *commandState, cfg *config.Config, outputDir string) (string, error) {
+	apiRoot, err := filepath.Abs(cfg.APIRoot)
 	if err != nil {
 		return "", err
 	}
@@ -189,16 +189,16 @@ func runGenerateCommand(state *commandState, apiRoot, apiPath, outputDir string)
 	// If we've got a language repo, it's because we've already found a library for the
 	// specified API, configured in the repo.
 	if state.languageRepo != nil {
-		libraryID := findLibraryIDByApiPath(state.pipelineState, apiPath)
+		libraryID := findLibraryIDByApiPath(state.pipelineState, cfg.APIPath)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
 		generatorInput := filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir)
 		slog.Info(fmt.Sprintf("Performing refined generation for library %s", libraryID))
-		return libraryID, state.containerConfig.GenerateLibrary(apiRoot, outputDir, generatorInput, libraryID)
+		return libraryID, state.containerConfig.GenerateLibrary(cfg, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
-		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", apiPath))
-		return "", state.containerConfig.GenerateRaw(apiRoot, outputDir, apiPath)
+		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", cfg.APIPath))
+		return "", state.containerConfig.GenerateRaw(cfg, apiRoot, outputDir, cfg.APIPath)
 	}
 }
 
