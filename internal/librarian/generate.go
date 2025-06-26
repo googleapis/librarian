@@ -116,7 +116,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	// We only clone/open the language repo and use the state within it
 	// if the requested API is configured as a library.
 	if libraryConfigured {
-		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.CI)
+		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.RepoRoot, cfg.RepoURL, cfg.CI)
 		if err != nil {
 			return err
 		}

@@ -203,7 +203,7 @@ func CreateGitHubRepoFromRepository(repo *github.Repository) *Repository {
 
 // GetRawContent fetches the raw content of a file within a repository repo,
 // identifying the file by path, at a specific commit/tag/branch of ref.
-func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref string) ([]byte, error) {
+func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref string) (_ []byte, err error) {
 	options := &github.RepositoryContentGetOptions{
 		Ref: ref,
 	}
@@ -211,7 +211,12 @@ func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref 
 	if err != nil {
 		return nil, err
 	}
-	defer closer.Close()
+	defer func() {
+		cerr := closer.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 	return io.ReadAll(closer)
 }
 

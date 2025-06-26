@@ -161,7 +161,3 @@ func getSecretManagerValue(dockerEnv *EnvironmentProvider, variable *statepb.Com
 	dockerEnv.secretCache[variable.SecretName] = value
 	return value, true, nil
 }
-
-func deleteEnvironmentFile(dockerEnv *EnvironmentProvider) error {
-	return os.Remove(dockerEnv.tmpFile)
-}

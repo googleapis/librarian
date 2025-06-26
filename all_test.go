@@ -48,7 +48,7 @@ var noHeaderRequiredFiles = []string{".github/CODEOWNERS", "go.sum", "go.mod", "
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
-	fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -81,24 +81,23 @@ func TestHeaders(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() {
+			if cerr := f.Close(); cerr != nil {
+				t.Fatal(err)
+			}
+		}()
 		if !requiredHeader.MatchReader(bufio.NewReader(f)) {
 			t.Errorf("%q: incorrect header", path)
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
-func TestStaticCheck(t *testing.T) {
-	rungo(t, "run", "honnef.co/go/tools/cmd/staticcheck@latest", "./...")
-}
-
-func TestUnparam(t *testing.T) {
-	rungo(t, "run", "mvdan.cc/unparam@latest", "./...")
-}
-
-func TestVet(t *testing.T) {
-	rungo(t, "vet", "-all", "./...")
+func TestGolangCILint(t *testing.T) {
+	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest", "run")
 }
 
 func TestGoModTidy(t *testing.T) {

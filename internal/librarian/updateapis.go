@@ -165,7 +165,9 @@ func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) er
 
 	// Clean  the API repo in case it was changed, but not if it was already dirty before the command.
 	if cleanWorkingTreePostGeneration {
-		apiRepo.CleanWorkingTree()
+		if err := apiRepo.CleanWorkingTree(); err != nil {
+			return err
+		}
 	}
 	_, err := createPullRequest(ctx, state, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push)
 	return err
