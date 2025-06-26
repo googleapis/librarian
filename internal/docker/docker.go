@@ -101,7 +101,7 @@ func New(workRoot, image, secretsProject string, pipelineConfig *statepb.Pipelin
 // the subdirectory apiPath of the API specification repo apiRoot, and whatever
 // is in the language-specific Docker container. The code is generated
 // in the output directory, which is initially empty.
-func (c *Docker) GenerateRaw(ctx context.Context, apiRoot, output, apiPath string) error {
+func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, output, apiPath string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
 	}
@@ -120,7 +120,8 @@ func (c *Docker) GenerateRaw(ctx context.Context, apiRoot, output, apiPath strin
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/output", output),
 	}
-	return c.runDocker(ctx, CommandGenerateRaw, mounts, commandArgs)
+
+	return c.runDocker(ctx, cfg, CommandGenerateRaw, mounts, commandArgs)
 }
 
 // GenerateLibrary performs generation for an API which is configured as part of a library.
@@ -128,7 +129,7 @@ func (c *Docker) GenerateRaw(ctx context.Context, apiRoot, output, apiPath strin
 // output specifies the empty output directory into which the command should
 // generate code, and libraryID specifies the ID of the library to generate,
 // as configured in the Librarian state file for the repository.
-func (c *Docker) GenerateLibrary(ctx context.Context, apiRoot, output, generatorInput, libraryID string) error {
+func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
 	}
@@ -152,12 +153,13 @@ func (c *Docker) GenerateLibrary(ctx context.Context, apiRoot, output, generator
 		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
-	return c.runDocker(ctx, CommandGenerateLibrary, mounts, commandArgs)
+
+	return c.runDocker(ctx, cfg, CommandGenerateLibrary, mounts, commandArgs)
 }
 
 // Clean deletes files within repoRoot which are generated for library
 // libraryID, as configured in the Librarian state file for the repository.
-func (c *Docker) Clean(ctx context.Context, repoRoot, libraryID string) error {
+func (c *Docker) Clean(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
 	if repoRoot == "" {
 		return fmt.Errorf("repoRoot cannot be empty")
 	}
@@ -168,12 +170,13 @@ func (c *Docker) Clean(ctx context.Context, repoRoot, libraryID string) error {
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
-	return c.runDocker(ctx, CommandClean, mounts, commandArgs)
+
+	return c.runDocker(ctx, cfg, CommandClean, mounts, commandArgs)
 }
 
 // BuildRaw builds the result of GenerateRaw, which previously generated
 // code for apiPath in generatorOutput.
-func (c *Docker) BuildRaw(ctx context.Context, generatorOutput, apiPath string) error {
+func (c *Docker) BuildRaw(ctx context.Context, cfg *config.Config, generatorOutput, apiPath string) error {
 	if generatorOutput == "" {
 		return fmt.Errorf("generatorOutput cannot be empty")
 	}
@@ -187,12 +190,13 @@ func (c *Docker) BuildRaw(ctx context.Context, generatorOutput, apiPath string) 
 		"--generator-output=/generator-output",
 		fmt.Sprintf("--api-path=%s", apiPath),
 	}
-	return c.runDocker(ctx, CommandBuildRaw, mounts, commandArgs)
+
+	return c.runDocker(ctx, cfg, CommandBuildRaw, mounts, commandArgs)
 }
 
 // BuildLibrary builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
-func (c *Docker) BuildLibrary(ctx context.Context, repoRoot, libraryID string) error {
+func (c *Docker) BuildLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
 	if repoRoot == "" {
 		return fmt.Errorf("repoRoot cannot be empty")
 	}
@@ -204,7 +208,8 @@ func (c *Docker) BuildLibrary(ctx context.Context, repoRoot, libraryID string) e
 		"--test=true",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
-	return c.runDocker(ctx, CommandBuildLibrary, mounts, commandArgs)
+
+	return c.runDocker(ctx, cfg, CommandBuildLibrary, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -212,7 +217,7 @@ func (c *Docker) BuildLibrary(ctx context.Context, repoRoot, libraryID string) e
 // apiPath directory within apiRoot, and the container is provided with the
 // generatorInput directory to record the results of configuration. The
 // library code is not generated.
-func (c *Docker) Configure(ctx context.Context, apiRoot, apiPath, generatorInput string) error {
+func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error {
 	if apiRoot == "" {
 		return fmt.Errorf("apiRoot cannot be empty")
 	}
@@ -231,14 +236,15 @@ func (c *Docker) Configure(ctx context.Context, apiRoot, apiPath, generatorInput
 		fmt.Sprintf("%s:/apis", apiRoot),
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
-	return c.runDocker(ctx, CommandConfigure, mounts, commandArgs)
+
+	return c.runDocker(ctx, cfg, CommandConfigure, mounts, commandArgs)
 }
 
 // PrepareLibraryRelease prepares the repository languageRepo for the release of a library with
 // ID libraryID within repoRoot, with version releaseVersion. Release notes
 // are expected to be present within inputsDirectory, in a file named
 // `{libraryID}-{releaseVersion}-release-notes.txt`.
-func (c *Docker) PrepareLibraryRelease(ctx context.Context, repoRoot, inputsDirectory, libraryID, releaseVersion string) error {
+func (c *Docker) PrepareLibraryRelease(ctx context.Context, cfg *config.Config, repoRoot, inputsDirectory, libraryID, releaseVersion string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -250,11 +256,11 @@ func (c *Docker) PrepareLibraryRelease(ctx context.Context, repoRoot, inputsDire
 		fmt.Sprintf("%s:/inputs", inputsDirectory),
 	}
 
-	return c.runDocker(ctx, CommandPrepareLibraryRelease, mounts, commandArgs)
+	return c.runDocker(ctx, cfg, CommandPrepareLibraryRelease, mounts, commandArgs)
 }
 
 // IntegrationTestLibrary runs the integration tests for a library with ID libraryID within repoRoot.
-func (c *Docker) IntegrationTestLibrary(ctx context.Context, repoRoot, libraryID string) error {
+func (c *Docker) IntegrationTestLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -263,12 +269,12 @@ func (c *Docker) IntegrationTestLibrary(ctx context.Context, repoRoot, libraryID
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
 
-	return c.runDocker(ctx, CommandIntegrationTestLibrary, mounts, commandArgs)
+	return c.runDocker(ctx, cfg, CommandIntegrationTestLibrary, mounts, commandArgs)
 }
 
 // PackageLibrary packages release artifacts for a library with ID libraryID within repoRoot,
 // creating the artifacts within outputDir.
-func (c *Docker) PackageLibrary(ctx context.Context, repoRoot, libraryID, outputDir string) error {
+func (c *Docker) PackageLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID, outputDir string) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--output=/output",
@@ -279,13 +285,13 @@ func (c *Docker) PackageLibrary(ctx context.Context, repoRoot, libraryID, output
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	return c.runDocker(ctx, CommandPackageLibrary, mounts, commandArgs)
+	return c.runDocker(ctx, cfg, CommandPackageLibrary, mounts, commandArgs)
 }
 
 // PublishLibrary publishes release artifacts for a library with ID libraryID and version releaseVersion
 // to package managers, documentation sites etc. The artifacts will previously have been
 // created by PackageLibrary.
-func (c *Docker) PublishLibrary(ctx context.Context, outputDir, libraryID, releaseVersion string) error {
+func (c *Docker) PublishLibrary(ctx context.Context, cfg *config.Config, outputDir, libraryID, releaseVersion string) error {
 	commandArgs := []string{
 		"--package-output=/output",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -295,15 +301,15 @@ func (c *Docker) PublishLibrary(ctx context.Context, outputDir, libraryID, relea
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
-	return c.runDocker(ctx, CommandPublishLibrary, mounts, commandArgs)
+	return c.runDocker(ctx, cfg, CommandPublishLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) runDocker(ctx context.Context, command Command, mounts []string, commandArgs []string) (err error) {
+func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
 	if c.Image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
 
-	mounts = maybeRelocateMounts(mounts)
+	mounts = maybeRelocateMounts(cfg, mounts)
 
 	args := []string{
 		"run",
@@ -335,18 +341,16 @@ func (c *Docker) runDocker(ctx context.Context, command Command, mounts []string
 	return c.run(args...)
 }
 
-func maybeRelocateMounts(mounts []string) []string {
+func maybeRelocateMounts(cfg *config.Config, mounts []string) []string {
 	// When running in Kokoro, we'll be running sibling containers.
 	// Make sure we specify the "from" part of the mount as the host directory.
-	kokoroHostRootDir := os.Getenv("KOKORO_HOST_ROOT_DIR")
-	kokoroRootDir := os.Getenv("KOKORO_ROOT_DIR")
-	if kokoroRootDir == "" || kokoroHostRootDir == "" {
+	if cfg.DockerMountRootDir == "" || cfg.DockerHostRootDir == "" {
 		return mounts
 	}
 	relocatedMounts := []string{}
 	for _, mount := range mounts {
-		if strings.HasPrefix(mount, kokoroRootDir) {
-			mount = strings.Replace(mount, kokoroRootDir, kokoroHostRootDir, 1)
+		if strings.HasPrefix(mount, cfg.DockerMountRootDir) {
+			mount = strings.Replace(mount, cfg.DockerMountRootDir, cfg.DockerHostRootDir, 1)
 		}
 		relocatedMounts = append(relocatedMounts, mount)
 	}

@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/config"
+
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -43,6 +45,8 @@ func TestDockerRun(t *testing.T) {
 		Image: testImage,
 	}
 
+	cfg := &config.Config{}
+
 	for _, test := range []struct {
 		name       Command
 		runCommand func(ctx context.Context) error
@@ -51,7 +55,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandGenerateRaw,
 			runCommand: func(ctx context.Context) error {
-				return d.GenerateRaw(ctx, testAPIRoot, testOutput, testAPIPath)
+				return d.GenerateRaw(ctx, cfg, testAPIRoot, testOutput, testAPIPath)
 			},
 			want: []string{
 				"run", "--rm",
@@ -68,7 +72,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandGenerateLibrary,
 			runCommand: func(ctx context.Context) error {
-				return d.GenerateLibrary(ctx, testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
+				return d.GenerateLibrary(ctx, cfg, testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
@@ -87,7 +91,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandClean,
 			runCommand: func(ctx context.Context) error {
-				return d.Clean(ctx, testRepoRoot, testLibraryID)
+				return d.Clean(ctx, cfg, testRepoRoot, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
@@ -102,7 +106,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandBuildRaw,
 			runCommand: func(ctx context.Context) error {
-				return d.BuildRaw(ctx, testGeneratorOutput, testAPIPath)
+				return d.BuildRaw(ctx, cfg, testGeneratorOutput, testAPIPath)
 			},
 			want: []string{
 				"run", "--rm",
@@ -116,7 +120,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandBuildLibrary,
 			runCommand: func(ctx context.Context) error {
-				return d.BuildLibrary(ctx, testRepoRoot, testLibraryID)
+				return d.BuildLibrary(ctx, cfg, testRepoRoot, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
@@ -131,7 +135,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandConfigure,
 			runCommand: func(ctx context.Context) error {
-				return d.Configure(ctx, testAPIRoot, testAPIPath, testGeneratorInput)
+				return d.Configure(ctx, cfg, testAPIRoot, testAPIPath, testGeneratorInput)
 			},
 			want: []string{
 				"run", "--rm",
@@ -148,7 +152,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandPrepareLibraryRelease,
 			runCommand: func(ctx context.Context) error {
-				return d.PrepareLibraryRelease(ctx, testLanguageRepo, testInputsDirectory, testLibraryID, testReleaseVersion)
+				return d.PrepareLibraryRelease(ctx, cfg, testLanguageRepo, testInputsDirectory, testLibraryID, testReleaseVersion)
 			},
 			want: []string{
 				"run", "--rm",
@@ -166,7 +170,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandIntegrationTestLibrary,
 			runCommand: func(ctx context.Context) error {
-				return d.IntegrationTestLibrary(ctx, testLanguageRepo, testLibraryID)
+				return d.IntegrationTestLibrary(ctx, cfg, testLanguageRepo, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
@@ -180,7 +184,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandPackageLibrary,
 			runCommand: func(ctx context.Context) error {
-				return d.PackageLibrary(ctx, testLanguageRepo, testLibraryID, testOutputDir)
+				return d.PackageLibrary(ctx, cfg, testLanguageRepo, testLibraryID, testOutputDir)
 			},
 			want: []string{
 				"run", "--rm",
@@ -196,7 +200,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandPublishLibrary,
 			runCommand: func(ctx context.Context) error {
-				return d.PublishLibrary(ctx, testOutputDir, testLibraryID, testLibraryVersion)
+				return d.PublishLibrary(ctx, cfg, testOutputDir, testLibraryID, testLibraryVersion)
 			},
 			want: []string{
 				"run", "--rm",
