@@ -25,6 +25,9 @@ import (
 	"github.com/google/go-github/v69/github"
 )
 
+// pageSize is used in paginated requests. Extrated into a variable for better testability.
+var pageSize = 100
+
 // Client represents this package's abstraction of a GitHub client, including
 // an access token.
 type Client struct {
@@ -175,10 +178,20 @@ func (c *Client) GetPullRequestCheckRuns(ctx context.Context, pullRequest *githu
 // GetPullRequestReviews fetches all reviews for the pull request identified
 // by prMetadata.
 func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequestMetadata) ([]*github.PullRequestReview, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
-	listOptions := &github.ListOptions{PerPage: 100}
-	reviews, _, err := c.PullRequests.ListReviews(ctx, prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number, listOptions)
-	return reviews, err
+	var allReviews []*github.PullRequestReview
+	listOptions := &github.ListOptions{PerPage: pageSize}
+	for {
+		reviews, resp, err := c.PullRequests.ListReviews(ctx, prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number, listOptions)
+		if err != nil {
+			return nil, err
+		}
+		allReviews = append(allReviews, reviews...)
+		if resp.NextPage == 0 {
+			break
+		}
+		listOptions.Page = resp.NextPage
+	}
+	return allReviews, nil
 }
 
 // ParseUrl parses a GitHub URL (anything to do with a repository) to determine
@@ -223,16 +236,24 @@ func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref 
 // GetDiffCommits returns the commits in a repository repo between source
 // and target references (commit hashes, branches etc).
 func (c *Client) GetDiffCommits(ctx context.Context, repo *Repository, source, target string) ([]*github.RepositoryCommit, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
-	listOptions := &github.ListOptions{PerPage: 100}
-	commitsComparison, _, err := c.Repositories.CompareCommits(ctx, repo.Owner, repo.Name, source, target, listOptions)
-	return commitsComparison.Commits, err
+	var allCommits []*github.RepositoryCommit
+	listOptions := &github.ListOptions{PerPage: pageSize}
+	for {
+		commitsComparison, resp, err := c.Repositories.CompareCommits(ctx, repo.Owner, repo.Name, source, target, listOptions)
+		if err != nil {
+			return nil, err
+		}
+		allCommits = append(allCommits, commitsComparison.Commits...)
+		if resp.NextPage == 0 {
+			break
+		}
+		listOptions.Page = resp.NextPage
+	}
+	return allCommits, nil
 }
 
 // GetCommit returns the commit in a repository repo with the a commit hash of sha.
 func (c *Client) GetCommit(ctx context.Context, repo *Repository, sha string) (*github.RepositoryCommit, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
-	listOptions := &github.ListOptions{PerPage: 100}
-	commit, _, err := c.Repositories.GetCommit(ctx, repo.Owner, repo.Name, sha, listOptions)
+	commit, _, err := c.Repositories.GetCommit(ctx, repo.Owner, repo.Name, sha, nil)
 	return commit, err
 }
