@@ -312,12 +312,12 @@ func (c *Docker) runDocker(cfg *config.Config, command Command, mounts []string,
 		return fmt.Errorf("image cannot be empty")
 	}
 
+	mounts = maybeRelocateMounts(cfg, mounts)
+
 	args := []string{
 		"run",
 		"--rm", // Automatically delete the container after completion
 	}
-
-	mounts = maybeRelocateMounts(cfg, mounts)
 
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
