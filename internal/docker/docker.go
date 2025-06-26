@@ -288,7 +288,7 @@ func (c *Docker) PackageLibrary(repoRoot, libraryID, outputDir string) error {
 // PublishLibrary publishes release artifacts for a library with ID libraryID and version releaseVersion
 // to package managers, documentation sites etc. The artifacts will previously have been
 // created by PackageLibrary.
-func (c *Docker) PublishLibrary(outputDir, libraryID, releaseVersion string) error {
+func (c *Docker) PublishLibrary(cfg *config.Config, outputDir, libraryID, releaseVersion string) error {
 	commandArgs := []string{
 		"--package-output=/output",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -298,6 +298,8 @@ func (c *Docker) PublishLibrary(outputDir, libraryID, releaseVersion string) err
 		fmt.Sprintf("%s:/output", outputDir),
 	}
 
+	mounts = maybeRelocateMounts(cfg, mounts)
+
 	return c.runDocker(CommandPublishLibrary, mounts, commandArgs)
 }
 
@@ -305,8 +307,6 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 	if c.Image == "" {
 		return fmt.Errorf("image cannot be empty")
 	}
-
-	mounts = maybeRelocateMounts(mounts)
 
 	args := []string{
 		"run",
@@ -338,18 +338,16 @@ func (c *Docker) runDocker(command Command, mounts []string, commandArgs []strin
 	return c.run(args...)
 }
 
-func maybeRelocateMounts(mounts []string) []string {
+func maybeRelocateMounts(cfg *config.Config, mounts []string) []string {
 	// When running in Kokoro, we'll be running sibling containers.
 	// Make sure we specify the "from" part of the mount as the host directory.
-	kokoroHostRootDir := os.Getenv("KOKORO_HOST_ROOT_DIR")
-	kokoroRootDir := os.Getenv("KOKORO_ROOT_DIR")
-	if kokoroRootDir == "" || kokoroHostRootDir == "" {
+	if cfg.DockerMountRootDir == "" || cfg.DockerHostRootDir == "" {
 		return mounts
 	}
 	relocatedMounts := []string{}
 	for _, mount := range mounts {
-		if strings.HasPrefix(mount, kokoroRootDir) {
-			mount = strings.Replace(mount, kokoroRootDir, kokoroHostRootDir, 1)
+		if strings.HasPrefix(mount, cfg.DockerMountRootDir) {
+			mount = strings.Replace(mount, cfg.DockerMountRootDir, cfg.DockerHostRootDir, 1)
 		}
 		relocatedMounts = append(relocatedMounts, mount)
 	}

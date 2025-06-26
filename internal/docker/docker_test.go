@@ -16,6 +16,7 @@ package docker
 
 import (
 	"fmt"
+	"github.com/googleapis/librarian/internal/config"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -41,6 +42,8 @@ func TestDockerRun(t *testing.T) {
 	d := &Docker{
 		Image: testImage,
 	}
+
+	cfg := &config.Config{}
 
 	for _, test := range []struct {
 		name       Command
@@ -195,7 +198,7 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: CommandPublishLibrary,
 			runCommand: func() error {
-				return d.PublishLibrary(testOutputDir, testLibraryID, testLibraryVersion)
+				return d.PublishLibrary(cfg, testOutputDir, testLibraryID, testLibraryVersion)
 			},
 			want: []string{
 				"run", "--rm",
