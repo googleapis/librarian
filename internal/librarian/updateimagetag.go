@@ -72,7 +72,7 @@ in the language repo.
 }
 
 func init() {
-	cmdUpdateImageTag.InitFlags()
+	cmdUpdateImageTag.Init()
 	fs := cmdUpdateImageTag.Flags
 	cfg := cmdUpdateImageTag.Config
 

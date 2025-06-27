@@ -81,7 +81,7 @@ output directory that was specified for the "generate-raw" command.
 }
 
 func init() {
-	cmdGenerate.InitFlags()
+	cmdGenerate.Init()
 	fs := cmdGenerate.Flags
 	cfg := cmdGenerate.Config
 

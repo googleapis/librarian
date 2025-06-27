@@ -97,7 +97,7 @@ is added.
 }
 
 func init() {
-	cmdMergeReleasePR.InitFlags()
+	cmdMergeReleasePR.Init()
 	fs := cmdMergeReleasePR.Flags
 	cfg := cmdMergeReleasePR.Config
 

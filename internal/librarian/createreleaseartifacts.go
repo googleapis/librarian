@@ -79,7 +79,7 @@ if retried.
 }
 
 func init() {
-	cmdCreateReleaseArtifacts.InitFlags()
+	cmdCreateReleaseArtifacts.Init()
 	fs := cmdCreateReleaseArtifacts.Flags
 	cfg := cmdCreateReleaseArtifacts.Config
 

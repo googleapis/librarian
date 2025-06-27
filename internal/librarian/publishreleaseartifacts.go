@@ -60,7 +60,7 @@ create a tag which already exists.)
 }
 
 func init() {
-	cmdPublishReleaseArtifacts.InitFlags()
+	cmdPublishReleaseArtifacts.Init()
 	fs := cmdPublishReleaseArtifacts.Flags
 	cfg := cmdPublishReleaseArtifacts.Config
 

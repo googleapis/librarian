@@ -104,7 +104,7 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	cmdCreateReleasePR.InitFlags()
+	cmdCreateReleasePR.Init()
 	fs := cmdCreateReleasePR.Flags
 	cfg := cmdCreateReleasePR.Config
 

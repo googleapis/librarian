@@ -83,7 +83,7 @@ commits will still be present in the language repo.
 }
 
 func init() {
-	cmdUpdateApis.InitFlags()
+	cmdUpdateApis.Init()
 	fs := cmdUpdateApis.Flags
 	cfg := cmdUpdateApis.Config
 

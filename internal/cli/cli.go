@@ -102,13 +102,10 @@ func (c *Command) usage(w io.Writer) {
 	fmt.Fprintf(w, "\n\n")
 }
 
-// InitFlags creates a new set of flags for the command and initializes
+// Init creates a new set of flags for the command and initializes
 // them such that any parsing failures result in the command usage being
 // displayed.
-//
-// TODO(https://github.com/googleapis/librarian/issues/619): rename since this
-// now also initializes c.Config
-func (c *Command) InitFlags() *Command {
+func (c *Command) Init() *Command {
 	c.Flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.Flags.Usage = func() {
 		c.usage(c.Flags.Output())
