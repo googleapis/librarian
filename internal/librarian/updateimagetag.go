@@ -72,7 +72,7 @@ in the language repo.
 }
 
 func init() {
-	cmdUpdateImageTag.InitFlags()
+	cmdUpdateImageTag.Init()
 	fs := cmdUpdateImageTag.Flags
 	cfg := cmdUpdateImageTag.Config
 
@@ -90,7 +90,7 @@ func init() {
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
 		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UID, cfg.GID)
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 
 	// Perform "generate, clean" on each library.
 	for _, library := range ps.Libraries {
-		err := regenerateLibrary(state, apiRepo, generatorInput, outputDir, library)
+		err := regenerateLibrary(ctx, state, cfg, apiRepo, generatorInput, outputDir, library)
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 
 	// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
 	slog.Info("Building all libraries.")
-	if err := state.containerConfig.BuildLibrary(languageRepo.Dir, ""); err != nil {
+	if err := state.containerConfig.BuildLibrary(ctx, cfg, languageRepo.Dir, ""); err != nil {
 		return err
 	}
 
@@ -187,7 +187,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	return err
 }
 
-func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+func regenerateLibrary(ctx context.Context, state *commandState, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
@@ -209,10 +209,10 @@ func regenerateLibrary(state *commandState, apiRepo *gitrepo.Repository, generat
 		return err
 	}
 
-	if err := cc.GenerateLibrary(apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := cc.GenerateLibrary(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
-	if err := cc.Clean(languageRepo.Dir, library.Id); err != nil {
+	if err := cc.Clean(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

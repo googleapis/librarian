@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package githubrepo provides operations on GitHub repos, abstracting away go-github
+// Package github provides operations on GitHub repos, abstracting away go-github
 // (at least somewhat) to only the operations Librarian needs.
-package githubrepo
+package github
 
 import (
 	"context"
@@ -24,6 +24,18 @@ import (
 
 	"github.com/google/go-github/v69/github"
 )
+
+// PullRequest is a type alias for the go-github type.
+type PullRequest = github.PullRequest
+
+// RepositoryCommit is a type alias for the go-github type.
+type RepositoryCommit = github.RepositoryCommit
+
+// PullRequestReview is a type alias for the go-github type.
+type PullRequestReview = github.PullRequestReview
+
+// MergeMethodRebase is a constant alias for the go-github constant.
+const MergeMethodRebase = github.MergeMethodRebase
 
 // Client represents this package's abstraction of a GitHub client, including
 // an access token.

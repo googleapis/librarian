@@ -33,5 +33,5 @@ var cmdVersion = &cli.Command{
 }
 
 func init() {
-	cmdVersion.InitFlags()
+	cmdVersion.Init()
 }

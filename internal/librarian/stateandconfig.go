@@ -18,11 +18,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/googleapis/librarian/internal/config"
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/githubrepo"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
+
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -85,8 +86,8 @@ func savePipelineState(state *commandState) error {
 	return err
 }
 
-func fetchRemotePipelineState(ctx context.Context, repo *githubrepo.Repository, ref string, gitHubToken string) (*statepb.PipelineState, error) {
-	ghClient, err := githubrepo.NewClient(gitHubToken)
+func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*statepb.PipelineState, error) {
+	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
 	}

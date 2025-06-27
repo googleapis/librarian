@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
-	"github.com/googleapis/librarian/internal/githubrepo"
+	"github.com/googleapis/librarian/internal/github"
 )
 
 var cmdPublishReleaseArtifacts = &cli.Command{
@@ -60,7 +60,7 @@ create a tag which already exists.)
 }
 
 func init() {
-	cmdPublishReleaseArtifacts.InitFlags()
+	cmdPublishReleaseArtifacts.Init()
 	fs := cmdPublishReleaseArtifacts.Flags
 	cfg := cmdPublishReleaseArtifacts.Config
 
@@ -95,19 +95,19 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	containerConfig, err := docker.New(ctx, workRoot, image, cfg.SecretsProject, cfg.UID, cfg.GID, pipelineConfig)
+	containerConfig, err := docker.New(workRoot, image, cfg.SecretsProject, cfg.UID, cfg.GID, pipelineConfig)
 	if err != nil {
 		return err
 	}
-	return publishReleaseArtifacts(ctx, containerConfig, cfg.ArtifactRoot, cfg.TagRepoURL, cfg.GitHubToken)
+	return publishReleaseArtifacts(ctx, containerConfig, cfg)
 }
 
-func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker, artifactRoot, tagRepoURL, gitHubToken string) error {
-	if err := validateRequiredFlag("tag-repo-url", tagRepoURL); err != nil {
+func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker, cfg *config.Config) error {
+	if err := validateRequiredFlag("tag-repo-url", cfg.TagRepoURL); err != nil {
 		return err
 	}
 
-	releasesJson, err := readAllBytesFromFile(filepath.Join(artifactRoot, "releases.json"))
+	releasesJson, err := readAllBytesFromFile(filepath.Join(cfg.ArtifactRoot, "releases.json"))
 	if err != nil {
 		return err
 	}
@@ -122,16 +122,16 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 
 	// Load the pipeline config from the commit of the first release, using the tag repo, then
 	// update our context to use it for the container config.
-	gitHubRepo, err := githubrepo.ParseUrl(tagRepoURL)
+	gitHubRepo, err := github.ParseUrl(cfg.TagRepoURL)
 	if err != nil {
 		return err
 	}
 	slog.Info(fmt.Sprintf("Publishing packages for %d libraries", len(releases)))
 
-	if err := publishPackages(containerConfig, artifactRoot, releases); err != nil {
+	if err := publishPackages(ctx, containerConfig, cfg, releases); err != nil {
 		return err
 	}
-	if err := createRepoReleases(ctx, releases, gitHubRepo, gitHubToken); err != nil {
+	if err := createRepoReleases(ctx, releases, gitHubRepo, cfg.GitHubToken); err != nil {
 		return err
 	}
 	slog.Info("Release complete.")
@@ -139,10 +139,10 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 	return nil
 }
 
-func publishPackages(config *docker.Docker, outputRoot string, releases []LibraryRelease) error {
+func publishPackages(ctx context.Context, config *docker.Docker, cfg *config.Config, releases []LibraryRelease) error {
 	for _, release := range releases {
-		outputDir := filepath.Join(outputRoot, release.LibraryID)
-		if err := config.PublishLibrary(outputDir, release.LibraryID, release.Version); err != nil {
+		outputDir := filepath.Join(cfg.ArtifactRoot, release.LibraryID)
+		if err := config.PublishLibrary(ctx, cfg, outputDir, release.LibraryID, release.Version); err != nil {
 			return err
 		}
 	}
@@ -150,8 +150,8 @@ func publishPackages(config *docker.Docker, outputRoot string, releases []Librar
 	return nil
 }
 
-func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *githubrepo.Repository, gitHubToken string) error {
-	ghClient, err := githubrepo.NewClient(gitHubToken)
+func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *github.Repository, gitHubToken string) error {
+	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return err
 	}

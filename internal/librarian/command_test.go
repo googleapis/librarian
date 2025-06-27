@@ -219,7 +219,6 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 		name     string
 		repoRoot string
 		repoURL  string
-		language string
 		ci       string
 		wantErr  bool
 		check    func(t *testing.T, repo *gitrepo.Repository)
@@ -242,12 +241,11 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			},
 		},
 		{
-			name:     "no repoRoot or repoURL, default to open language monorepo",
-			language: "go",
-			// Setup for this specific test case: create the expected default repo.
-			// This avoids actual network cloning.
-			setup: func(t *testing.T, wr string) func() {
-				repoPath := filepath.Join(wr, "google-cloud-go")
+			name:    "with repoURL with trailing slash",
+			repoURL: "https://github.com/googleapis/google-cloud-go/",
+			setup: func(t *testing.T, workRoot string) func() {
+				// The expected directory name is `google-cloud-go`.
+				repoPath := filepath.Join(workRoot, "google-cloud-go")
 				newTestGitRepoWithCommit(t, repoPath)
 				return func() {
 					if err := os.RemoveAll(repoPath); err != nil {
@@ -261,6 +259,10 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 					t.Errorf("repo.Dir got %q, want %q", repo.Dir, wantDir)
 				}
 			},
+		},
+		{
+			name:    "no repoRoot or repoURL",
+			wantErr: true,
 		},
 		{
 			name:     "with dirty repoRoot",
@@ -284,7 +286,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 				}
 			}()
 
-			repo, err := cloneOrOpenLanguageRepo(workRoot, test.repoRoot, test.repoURL, test.language, test.ci)
+			repo, err := cloneOrOpenLanguageRepo(workRoot, test.repoRoot, test.repoURL, test.ci)
 			if test.wantErr {
 				if err == nil {
 					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")

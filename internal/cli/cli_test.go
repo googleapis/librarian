@@ -36,7 +36,7 @@ func TestParseAndSetFlags(t *testing.T) {
 		Long:      "This is the long documentation for command test.",
 		UsageLine: "foobar test [arguments]",
 	}
-	cmd.InitFlags()
+	cmd.Init()
 	cmd.Flags.StringVar(&strFlag, "name", "default", "name flag")
 	cmd.Flags.IntVar(&intFlag, "count", 0, "count flag")
 
@@ -146,7 +146,7 @@ Usage:
 				UsageLine: "test [flags]",
 				Long:      "Test prints test information.",
 			}
-			c.InitFlags()
+			c.Init()
 			for _, fn := range test.flags {
 				fn(c.Flags)
 			}

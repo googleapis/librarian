@@ -15,11 +15,11 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -58,15 +58,14 @@ type commandState struct {
 	containerConfig *docker.Docker
 }
 
-func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (*gitrepo.Repository, error) {
+func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, ci string) (*gitrepo.Repository, error) {
 	if repoRoot != "" && repoURL != "" {
 		return nil, errors.New("do not specify both repo-root and repo-url")
 	}
 	if repoURL != "" {
 		// Take the last part of the URL as the directory name. It feels very
 		// unlikely that will clash with anything else (e.g. "output")
-		bits := strings.Split(repoURL, "/")
-		repoName := bits[len(bits)-1]
+		repoName := path.Base(strings.TrimSuffix(repoURL, "/"))
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir:        repoPath,
@@ -76,14 +75,7 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 		})
 	}
 	if repoRoot == "" {
-		languageRepoURL := fmt.Sprintf("https://github.com/googleapis/google-cloud-%s", language)
-		repoPath := filepath.Join(workRoot, fmt.Sprintf("google-cloud-%s", language))
-		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-			Dir:        repoPath,
-			MaybeClone: true,
-			RemoteURL:  languageRepoURL,
-			CI:         ci,
-		})
+		return nil, errors.New("one of repo-root or repo-url must be specified")
 	}
 	absRepoRoot, err := filepath.Abs(repoRoot)
 	if err != nil {
@@ -112,13 +104,13 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci string) (
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRoot, repoURL, language, imageOverride, defaultRepository, secretsProject, ci, uid, gid string) (*commandState, error) {
+func createCommandStateForLanguage(workRootOverride, repoRoot, repoURL, language, imageOverride, defaultRepository, secretsProject, ci, uid, gid string) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, workRootOverride)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, language, ci)
+	repo, err := cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, ci)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +121,7 @@ func createCommandStateForLanguage(ctx context.Context, workRootOverride, repoRo
 	}
 
 	image := deriveImage(language, imageOverride, defaultRepository, ps)
-	containerConfig, err := docker.New(ctx, workRoot, image, secretsProject, uid, gid, config)
+	containerConfig, err := docker.New(workRoot, image, secretsProject, uid, gid, config)
 	if err != nil {
 		return nil, err
 	}

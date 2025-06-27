@@ -33,7 +33,7 @@ var CmdLibrarian = &cli.Command{
 }
 
 func init() {
-	CmdLibrarian.InitFlags()
+	CmdLibrarian.Init()
 	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
 		cmdConfigure,
 		cmdGenerate,
