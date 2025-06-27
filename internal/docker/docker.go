@@ -102,15 +102,6 @@ func New(workRoot, image, secretsProject string, pipelineConfig *statepb.Pipelin
 // is in the language-specific Docker container. The code is generated
 // in the output directory, which is initially empty.
 func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, output, apiPath string) error {
-	if apiRoot == "" {
-		return fmt.Errorf("apiRoot cannot be empty")
-	}
-	if output == "" {
-		return fmt.Errorf("output cannot be empty")
-	}
-	if apiPath == "" {
-		return fmt.Errorf("apiPath cannot be empty")
-	}
 	commandArgs := []string{
 		"--api-root=/apis",
 		"--output=/output",
@@ -130,18 +121,6 @@ func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, o
 // generate code, and libraryID specifies the ID of the library to generate,
 // as configured in the Librarian state file for the repository.
 func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
-	if apiRoot == "" {
-		return fmt.Errorf("apiRoot cannot be empty")
-	}
-	if output == "" {
-		return fmt.Errorf("output cannot be empty")
-	}
-	if generatorInput == "" {
-		return fmt.Errorf("generatorInput cannot be empty")
-	}
-	if libraryID == "" {
-		return fmt.Errorf("libraryID cannot be empty")
-	}
 	commandArgs := []string{
 		"--api-root=/apis",
 		"--output=/output",
@@ -160,9 +139,6 @@ func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoo
 // Clean deletes files within repoRoot which are generated for library
 // libraryID, as configured in the Librarian state file for the repository.
 func (c *Docker) Clean(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
-	if repoRoot == "" {
-		return fmt.Errorf("repoRoot cannot be empty")
-	}
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
@@ -177,12 +153,6 @@ func (c *Docker) Clean(ctx context.Context, cfg *config.Config, repoRoot, librar
 // BuildRaw builds the result of GenerateRaw, which previously generated
 // code for apiPath in generatorOutput.
 func (c *Docker) BuildRaw(ctx context.Context, cfg *config.Config, generatorOutput, apiPath string) error {
-	if generatorOutput == "" {
-		return fmt.Errorf("generatorOutput cannot be empty")
-	}
-	if apiPath == "" {
-		return fmt.Errorf("apiPath cannot be empty")
-	}
 	mounts := []string{
 		fmt.Sprintf("%s:/generator-output", generatorOutput),
 	}
@@ -197,9 +167,6 @@ func (c *Docker) BuildRaw(ctx context.Context, cfg *config.Config, generatorOutp
 // BuildLibrary builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
 func (c *Docker) BuildLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
-	if repoRoot == "" {
-		return fmt.Errorf("repoRoot cannot be empty")
-	}
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
@@ -218,15 +185,6 @@ func (c *Docker) BuildLibrary(ctx context.Context, cfg *config.Config, repoRoot,
 // generatorInput directory to record the results of configuration. The
 // library code is not generated.
 func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error {
-	if apiRoot == "" {
-		return fmt.Errorf("apiRoot cannot be empty")
-	}
-	if apiPath == "" {
-		return fmt.Errorf("apiPath cannot be empty")
-	}
-	if generatorInput == "" {
-		return fmt.Errorf("generatorInput cannot be empty")
-	}
 	commandArgs := []string{
 		"--api-root=/apis",
 		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
@@ -305,10 +263,6 @@ func (c *Docker) PublishLibrary(ctx context.Context, cfg *config.Config, output,
 }
 
 func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
-	if c.Image == "" {
-		return fmt.Errorf("image cannot be empty")
-	}
-
 	mounts = maybeRelocateMounts(cfg, mounts)
 
 	args := []string{
