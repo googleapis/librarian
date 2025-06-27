@@ -95,7 +95,7 @@ func init() {
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
-		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UID, cfg.GID)
+		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}

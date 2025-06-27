@@ -26,6 +26,8 @@ import (
 
 func TestDockerRun(t *testing.T) {
 	const (
+		testUID             = "1000"
+		testGID             = "1001"
 		testAPIPath         = "testAPIPath"
 		testAPIRoot         = "testAPIRoot"
 		testGeneratorInput  = "testGeneratorInput"
@@ -40,20 +42,20 @@ func TestDockerRun(t *testing.T) {
 		testRepoRoot        = "testRepoRoot"
 	)
 
-	d := &Docker{
-		Image: testImage,
-	}
-
 	cfg := &config.Config{}
 
 	for _, test := range []struct {
-		name       Command
-		runCommand func(ctx context.Context) error
+		name       string
+		docker     *Docker
+		runCommand func(ctx context.Context, d *Docker) error
 		want       []string
 	}{
 		{
-			name: CommandGenerateRaw,
-			runCommand: func(ctx context.Context) error {
+			name: "GenerateRaw",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.GenerateRaw(ctx, cfg, testAPIRoot, testOutput, testAPIPath)
 			},
 			want: []string{
@@ -69,8 +71,34 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandGenerateLibrary,
-			runCommand: func(ctx context.Context) error {
+			name: "GenerateRaw with user",
+			docker: &Docker{
+				Image: testImage,
+				uid:   testUID,
+				gid:   testGID,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				return d.GenerateRaw(ctx, cfg, testAPIRoot, testOutput, testAPIPath)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"--user", fmt.Sprintf("%s:%s", testUID, testGID),
+				"--network=none",
+				testImage,
+				string(CommandGenerateRaw),
+				"--api-root=/apis",
+				"--output=/output",
+				fmt.Sprintf("--api-path=%s", testAPIPath),
+			},
+		},
+		{
+			name: "GenerateLibrary",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.GenerateLibrary(ctx, cfg, testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
 			},
 			want: []string{
@@ -88,8 +116,11 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandClean,
-			runCommand: func(ctx context.Context) error {
+			name: "Clean",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.Clean(ctx, cfg, testRepoRoot, testLibraryID)
 			},
 			want: []string{
@@ -103,8 +134,11 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandBuildRaw,
-			runCommand: func(ctx context.Context) error {
+			name: "BuildRaw",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.BuildRaw(ctx, cfg, testGeneratorOutput, testAPIPath)
 			},
 			want: []string{
@@ -117,8 +151,11 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandBuildLibrary,
-			runCommand: func(ctx context.Context) error {
+			name: "BuildLibrary",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.BuildLibrary(ctx, cfg, testRepoRoot, testLibraryID)
 			},
 			want: []string{
@@ -132,8 +169,11 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandConfigure,
-			runCommand: func(ctx context.Context) error {
+			name: "Configure",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.Configure(ctx, cfg, testAPIRoot, testAPIPath, testGeneratorInput)
 			},
 			want: []string{
@@ -149,8 +189,11 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandPrepareLibraryRelease,
-			runCommand: func(ctx context.Context) error {
+			name: "PrepareLibraryRelease",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.PrepareLibraryRelease(ctx, cfg, testLanguageRepo, testInputsDirectory, testLibraryID, testReleaseVersion)
 			},
 			want: []string{
@@ -167,8 +210,11 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandIntegrationTestLibrary,
-			runCommand: func(ctx context.Context) error {
+			name: "IntegrationTestLibrary",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.IntegrationTestLibrary(ctx, cfg, testLanguageRepo, testLibraryID)
 			},
 			want: []string{
@@ -181,8 +227,11 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandPackageLibrary,
-			runCommand: func(ctx context.Context) error {
+			name: "PackageLibrary",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.PackageLibrary(ctx, cfg, testLanguageRepo, testLibraryID, testOutput)
 			},
 			want: []string{
@@ -197,8 +246,11 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: CommandPublishLibrary,
-			runCommand: func(ctx context.Context) error {
+			name: "PublishLibrary",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
 				return d.PublishLibrary(ctx, cfg, testOutput, testLibraryID, testLibraryVersion)
 			},
 			want: []string{
@@ -212,15 +264,15 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(string(test.name), func(t *testing.T) {
-			d.run = func(args ...string) error {
+		t.Run(test.name, func(t *testing.T) {
+			test.docker.run = func(args ...string) error {
 				if diff := cmp.Diff(test.want, args); diff != "" {
 					t.Errorf("mismatch(-want +got):\n%s", diff)
 				}
 				return nil
 			}
 			ctx := context.Background()
-			if err := test.runCommand(ctx); err != nil {
+			if err := test.runCommand(ctx, test.docker); err != nil {
 				t.Fatal(err)
 			}
 		})

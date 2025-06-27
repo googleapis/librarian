@@ -95,7 +95,7 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	containerConfig, err := docker.New(workRoot, image, cfg.SecretsProject, cfg.UID, cfg.GID, pipelineConfig)
+	containerConfig, err := docker.New(workRoot, image, cfg.SecretsProject, cfg.UserUID, cfg.UserGID, pipelineConfig)
 	if err != nil {
 		return err
 	}

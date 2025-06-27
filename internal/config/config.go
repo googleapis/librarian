@@ -166,13 +166,13 @@ type Config struct {
 	// GitUserName is specified with the -git-user-name flag.
 	GitUserName string
 
-	// GID is the group ID of the current user. It is used to run Docker
+	// UserGID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
 	// ownership.
 	//
 	// This is populated automatically after flag parsing. No user setup is
 	// expected.
-	GID string
+	UserGID string
 
 	// Image is the language-specific container image to use for language-specific
 	// operations. It is primarily used for testing Librarian and/or new images.
@@ -358,13 +358,13 @@ type Config struct {
 	// TagRepoURL is specified with the -tag-repo-url flag.
 	TagRepoURL string
 
-	// UID is the user ID of the current user. It is used to run Docker
+	// UserUID is the user ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
 	// ownership.
 	//
 	// This is populated automatically after flag parsing. No user setup is
 	// expected.
-	UID string
+	UserUID string
 
 	// WorkRoot is the root directory used for temporary working files, including
 	// any repositories that are cloned. By default, this is created in /tmp with
@@ -394,8 +394,8 @@ func (c *Config) SetupUser() error {
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
-	c.UID = currentUser.Uid
-	c.GID = currentUser.Gid
+	c.UserUID = currentUser.Uid
+	c.UserGID = currentUser.Gid
 	return nil
 }
 
