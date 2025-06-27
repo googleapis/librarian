@@ -63,9 +63,14 @@ func Run(ctx context.Context, arg ...string) error {
 		return err
 	}
 	if err := cmd.Parse(arg[1:]); err != nil {
-		CmdLibrarian.Flags.Usage()
+		// We expect that if cmd.Parse fails, it will already
+		// have printed out a command-specific usage error,
+		// so we don't need to display the general usage.
 		return err
 	}
 	slog.Info("librarian", "arguments", arg)
+	if err := cmd.Config.SetupUser(); err != nil {
+		return fmt.Errorf("failed to setup user config: %w", err)
+	}
 	return cmd.Run(ctx, cmd.Config)
 }

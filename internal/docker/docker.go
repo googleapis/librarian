@@ -24,7 +24,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"os/user"
 	"slices"
 	"strings"
 
@@ -77,6 +76,12 @@ type Docker struct {
 	// The provider for environment variables, if any.
 	env *EnvironmentProvider
 
+	// The user ID to run the container as.
+	uid string
+
+	// The group ID to run the container as.
+	gid string
+
 	// run runs the docker command.
 	run func(args ...string) error
 }
@@ -84,15 +89,18 @@ type Docker struct {
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
-func New(workRoot, image, secretsProject string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
+func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
 	envProvider := newEnvironmentProvider(workRoot, secretsProject, pipelineConfig)
-	return &Docker{
+	docker := &Docker{
 		Image: image,
 		env:   envProvider,
-		run: func(args ...string) error {
-			return runCommand("docker", args...)
-		},
-	}, nil
+		uid:   uid,
+		gid:   gid,
+	}
+	docker.run = func(args ...string) error {
+		return docker.runCommand("docker", args...)
+	}
+	return docker, nil
 }
 
 // GenerateRaw performs generation for an API not configured in a library.
@@ -273,6 +281,13 @@ func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Comm
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
 	}
+
+	// Run as the current user in the container - primarily so that any files
+	// we create end up being owned by the current user (and easily deletable).
+	if c.uid != "" && c.gid != "" {
+		args = append(args, "--user", fmt.Sprintf("%s:%s", c.uid, c.gid))
+	}
+
 	if c.env != nil {
 		if err := c.env.writeEnvironmentFile(ctx, string(command)); err != nil {
 			return err
@@ -311,25 +326,14 @@ func maybeRelocateMounts(cfg *config.Config, mounts []string) []string {
 	return relocatedMounts
 }
 
-func runCommand(c string, args ...string) error {
-	// Run as the current user in the container - primarily so that any files
-	// we create end up being owned by the current user (and easily deletable).
-	//
-	// TODO(https://github.com/googleapis/librarian/issues/590):
-	// temporarily lives here to support testing; move to config
-	currentUser, err := user.Current()
-	if err != nil {
-		return err
-	}
-	args = append(args, fmt.Sprintf("--user=%s:%s", currentUser.Uid, currentUser.Gid))
-
-	cmd := exec.Command(c, args...)
+func (c *Docker) runCommand(cmdName string, args ...string) error {
+	cmd := exec.Command(cmdName, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	slog.Info(fmt.Sprintf("=== Docker start %s", strings.Repeat("=", 63)))
 	slog.Info(cmd.String())
 	slog.Info(strings.Repeat("-", 80))
-	err = cmd.Run()
+	err := cmd.Run()
 	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
 	return err
 }

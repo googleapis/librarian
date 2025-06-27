@@ -256,11 +256,12 @@ the default group.
 
 ### Merging a pull request
 
-Pull requests are generally merged by the author, so they can review and edit
-the final commit message before merging. However, this is not a strict rule. If
-the pull request is trivial, already consists of a single well-formed commit, or is
-blocking other work and the author is unavailable, the reviewer may go ahead
-and merge it.
+Pull request titles and descriptions must follow the [commit messages](#commit-messages)
+conventions. This enables approvers to review the final commit message. Once the pull
+request has been approved and all checks have passed, click the
+[Squash and Merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits)
+button. The resulting commit message will be based on the pull request's title and
+description.
 
 ### Keeping the pull request dashboard clean
 

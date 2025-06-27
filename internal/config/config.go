@@ -17,7 +17,9 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"os/user"
 )
 
 const (
@@ -163,6 +165,14 @@ type Config struct {
 	//
 	// GitUserName is specified with the -git-user-name flag.
 	GitUserName string
+
+	// UserGID is the group ID of the current user. It is used to run Docker
+	// containers with the same user, so that created files have the correct
+	// ownership.
+	//
+	// This is populated automatically after flag parsing. No user setup is
+	// expected.
+	UserGID string
 
 	// Image is the language-specific container image to use for language-specific
 	// operations. It is primarily used for testing Librarian and/or new images.
@@ -341,6 +351,14 @@ type Config struct {
 	// TagRepoURL is specified with the -tag-repo-url flag.
 	TagRepoURL string
 
+	// UserUID is the user ID of the current user. It is used to run Docker
+	// containers with the same user, so that created files have the correct
+	// ownership.
+	//
+	// This is populated automatically after flag parsing. No user setup is
+	// expected.
+	UserUID string
+
 	// WorkRoot is the root directory used for temporary working files, including
 	// any repositories that are cloned. By default, this is created in /tmp with
 	// a timestamped directory name (e.g. /tmp/librarian-20250617T083548Z) but
@@ -359,6 +377,22 @@ func New() *Config {
 		LibrarianRepository: os.Getenv("LIBRARIAN_REPOSITORY"),
 		SyncAuthToken:       os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
 	}
+}
+
+// currentUser is a variable so it can be replaced during testing.
+var currentUser = user.Current
+
+// SetupUser performs late initialization of user-specific configuration,
+// determining the current user. This is in a separate method as it
+// can fail, and is called after flag parsing.
+func (c *Config) SetupUser() error {
+	user, err := currentUser()
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+	c.UserUID = user.Uid
+	c.UserGID = user.Gid
+	return nil
 }
 
 // IsValid ensures the values contained in a Config are valid.
