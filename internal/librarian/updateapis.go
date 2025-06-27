@@ -96,13 +96,12 @@ func init() {
 	addFlagLanguage(fs, cfg)
 	addFlagLibraryID(fs, cfg)
 	addFlagPush(fs, cfg)
-	addFlagRepoRoot(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepo(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
 		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err

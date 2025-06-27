@@ -117,14 +117,13 @@ func init() {
 	addFlagPush(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
-	addFlagRepoRoot(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
 	addFlagEnvFile(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepo(fs, cfg)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
 		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err

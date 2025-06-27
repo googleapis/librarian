@@ -278,31 +278,24 @@ type Config struct {
 	// ReleasePRURL is specified with the -release-pr-url flag.
 	ReleasePRURL string
 
-	// RepoRoot is the local root directory of the language repository, which can
-	// be specified relative to the current working directory. The repository must
+	// Repo specifies the language repository to use, as either a local root directory
+	// or a URL to clone from. If a local directory is specified, it can
+	// be relative to the current working directory. The repository must
 	// be in a clean state (i.e. git status should report no changes) to avoid mixing
 	// Librarian-created changes with other changes.
 	//
-	// RepoRoot is used by all commands which operate on a language repository:
+	// Repo is used by all commands which operate on a language repository:
 	// configure, create-release-artifacts, create-release-pr, generate, update-apis,
 	// update-image-tag.
 	//
-	// RepoRoot is always optional, and always mutually exclusive with RepoURL, as both
-	// are used to explicitly indicate a language repository to use.
+	// When a local directory is specified for the generate command, the repo is checked to
+	// determine whether the specified API path is configured as a library. See the generate
+	// command documentation for more details.
+	// For all commands other than generate, omitting Repo is equivalent to
+	// specifying Repo as https://github.com/googleapis/google-cloud-{Language}.
 	//
-	// When specified for the generate command, the repo is checked to determine whether the
-	// specified API path is configured as a library. See the generate command documentation
-	// for more details. For all other commands, omitting both RepoRoot and RepoUrl is equivalent
-	// to specifying a RepoUrl of https://github.com/googleapis/google-cloud-{Language}.
-	//
-	// RepoRoot is specified with the -repo-root flag.
-	RepoRoot string
-
-	// RepoURL is the URL to clone the language repository from. It is a mutually exclusive
-	// alternative to RepoRoot; see the RepoRoot documentation for more details.
-	//
-	// RepoURL is specified with the -repo-url flag.
-	RepoURL string
+	// Repo is specified with the -repo flag.
+	Repo string
 
 	// SyncAuthToken provides an auth token used when polling a synchronization
 	// URL at the end of the merge-release-pr command, if SyncURLPrefix has been

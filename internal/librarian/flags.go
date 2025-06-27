@@ -87,12 +87,8 @@ func addFlagReleasePRUrl(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ReleasePRURL, "release-pr-url", "", "The URL of a release PR")
 }
 
-func addFlagRepoRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.RepoRoot, "repo-root", "", "Repository root. When this (and repo-url) are not specified, the language repo will be cloned.")
-}
-
-func addFlagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.RepoURL, "repo-url", "", "Repository URL to clone. If this and repo-root are not specified, the default language repo will be cloned.")
+func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
 }
 
 func addFlagSecretsProject(fs *flag.FlagSet, cfg *config.Config) {
