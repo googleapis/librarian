@@ -91,16 +91,16 @@ type Docker struct {
 // providing the container with required environment variables.
 func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
 	envProvider := newEnvironmentProvider(workRoot, secretsProject, pipelineConfig)
-	d := &Docker{
+	docker := &Docker{
 		Image: image,
 		env:   envProvider,
 		uid:   uid,
 		gid:   gid,
 	}
-	d.run = func(args ...string) error {
-		return d.runCommand("docker", args...)
+	docker.run = func(args ...string) error {
+		return docker.runCommand("docker", args...)
 	}
-	return d, nil
+	return docker, nil
 }
 
 // GenerateRaw performs generation for an API not configured in a library.
@@ -319,14 +319,14 @@ func maybeRelocateMounts(cfg *config.Config, mounts []string) []string {
 	return relocatedMounts
 }
 
-func (d *Docker) runCommand(c string, args ...string) error {
+func (c *Docker) runCommand(cmdName string, args ...string) error {
 	// Run as the current user in the container - primarily so that any files
 	// we create end up being owned by the current user (and easily deletable).
-	if d.uid != "" && d.gid != "" {
-		args = append(args, "--user", fmt.Sprintf("%s:%s", d.uid, d.gid))
+	if c.uid != "" && c.gid != "" {
+		args = append(args, "--user", fmt.Sprintf("%s:%s", c.uid, c.gid))
 	}
 
-	cmd := exec.Command(c, args...)
+	cmd := exec.Command(cmdName, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	slog.Info(fmt.Sprintf("=== Docker start %s", strings.Repeat("=", 63)))
