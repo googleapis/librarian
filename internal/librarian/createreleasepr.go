@@ -124,8 +124,8 @@ func init() {
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language, cfg.Image,
-		cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI)
+	state, err := createCommandStateForLanguage(ctx, cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
+		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UID, cfg.GID)
 	if err != nil {
 		return err
 	}

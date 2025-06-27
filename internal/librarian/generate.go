@@ -128,7 +128,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	}
 
 	image := deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
-	containerConfig, err := docker.New(ctx, workRoot, image, cfg.SecretsProject, config)
+	containerConfig, err := docker.New(ctx, workRoot, image, cfg.SecretsProject, cfg.UID, cfg.GID, config)
 	if err != nil {
 		return err
 	}
