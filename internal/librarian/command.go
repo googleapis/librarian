@@ -58,44 +58,45 @@ type commandState struct {
 	containerConfig *docker.Docker
 }
 
-func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, ci string) (*gitrepo.Repository, error) {
-	if repoRoot != "" && repoURL != "" {
-		return nil, errors.New("do not specify both repo-root and repo-url")
+func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
+	if repo == "" {
+		return nil, errors.New("repo must be specified")
 	}
-	if repoURL != "" {
+
+	if isUrl(repo) {
+		// repo is a URL
 		// Take the last part of the URL as the directory name. It feels very
 		// unlikely that will clash with anything else (e.g. "output")
-		repoName := path.Base(strings.TrimSuffix(repoURL, "/"))
+		repoName := path.Base(strings.TrimSuffix(repo, "/"))
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 			Dir:        repoPath,
 			MaybeClone: true,
-			RemoteURL:  repoURL,
+			RemoteURL:  repo,
 			CI:         ci,
 		})
+	} else {
+		// repo is a directory
+		absRepoRoot, err := filepath.Abs(repo)
+		if err != nil {
+			return nil, err
+		}
+		languageRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+			Dir: absRepoRoot,
+			CI:  ci,
+		})
+		if err != nil {
+			return nil, err
+		}
+		clean, err := languageRepo.IsClean()
+		if err != nil {
+			return nil, err
+		}
+		if !clean {
+			return nil, errors.New("language repo must be clean")
+		}
+		return languageRepo, nil
 	}
-	if repoRoot == "" {
-		return nil, errors.New("one of repo-root or repo-url must be specified")
-	}
-	absRepoRoot, err := filepath.Abs(repoRoot)
-	if err != nil {
-		return nil, err
-	}
-	languageRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-		Dir: absRepoRoot,
-		CI:  ci,
-	})
-	if err != nil {
-		return nil, err
-	}
-	clean, err := languageRepo.IsClean()
-	if err != nil {
-		return nil, err
-	}
-	if !clean {
-		return nil, errors.New("language repo must be clean")
-	}
-	return languageRepo, nil
 }
 
 // createCommandStateForLanguage performs common (but not universal)
@@ -104,18 +105,18 @@ func cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, ci string) (*gitrepo.R
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(workRootOverride, repoRoot, repoURL, language, imageOverride, defaultRepository, secretsProject, ci string) (*commandState, error) {
+func createCommandStateForLanguage(workRootOverride, repo, language, imageOverride, defaultRepository, secretsProject, ci string) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, workRootOverride)
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot, repoRoot, repoURL, ci)
+	languageRepo, err := cloneOrOpenLanguageRepo(workRoot, repo, ci)
 	if err != nil {
 		return nil, err
 	}
 
-	ps, config, err := loadRepoStateAndConfig(repo)
+	ps, config, err := loadRepoStateAndConfig(languageRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +130,7 @@ func createCommandStateForLanguage(workRootOverride, repoRoot, repoURL, language
 	state := &commandState{
 		startTime:       startTime,
 		workRoot:        workRoot,
-		languageRepo:    repo,
+		languageRepo:    languageRepo,
 		pipelineConfig:  config,
 		pipelineState:   ps,
 		containerConfig: containerConfig,

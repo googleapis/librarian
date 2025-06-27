@@ -216,23 +216,16 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 	notARepoPath := t.TempDir()
 
 	for _, test := range []struct {
-		name     string
-		repoRoot string
-		repoURL  string
-		ci       string
-		wantErr  bool
-		check    func(t *testing.T, repo *gitrepo.Repository)
-		setup    func(t *testing.T, workRoot string) func()
+		name    string
+		repo    string
+		ci      string
+		wantErr bool
+		check   func(t *testing.T, repo *gitrepo.Repository)
+		setup   func(t *testing.T, workRoot string) func()
 	}{
 		{
-			name:     "repoRoot and repoURL both set",
-			repoRoot: "a",
-			repoURL:  "b",
-			wantErr:  true,
-		},
-		{
-			name:     "with clean repoRoot",
-			repoRoot: cleanRepoPath,
+			name: "with clean repoRoot",
+			repo: cleanRepoPath,
 			check: func(t *testing.T, repo *gitrepo.Repository) {
 				absWantDir, _ := filepath.Abs(cleanRepoPath)
 				if repo.Dir != absWantDir {
@@ -241,8 +234,8 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			},
 		},
 		{
-			name:    "with repoURL with trailing slash",
-			repoURL: "https://github.com/googleapis/google-cloud-go/",
+			name: "with repoURL with trailing slash",
+			repo: "https://github.com/googleapis/google-cloud-go/",
 			setup: func(t *testing.T, workRoot string) func() {
 				// The expected directory name is `google-cloud-go`.
 				repoPath := filepath.Join(workRoot, "google-cloud-go")
@@ -265,14 +258,14 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:     "with dirty repoRoot",
-			repoRoot: dirtyRepoPath,
-			wantErr:  true,
+			name:    "with dirty repoRoot",
+			repo:    dirtyRepoPath,
+			wantErr: true,
 		},
 		{
-			name:     "with repoRoot that is not a repo",
-			repoRoot: notARepoPath,
-			wantErr:  true,
+			name:    "with repoRoot that is not a repo",
+			repo:    notARepoPath,
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -286,7 +279,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 				}
 			}()
 
-			repo, err := cloneOrOpenLanguageRepo(workRoot, test.repoRoot, test.repoURL, test.ci)
+			repo, err := cloneOrOpenLanguageRepo(workRoot, test.repo, test.ci)
 			if test.wantErr {
 				if err == nil {
 					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")
