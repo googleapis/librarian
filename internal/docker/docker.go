@@ -281,6 +281,13 @@ func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Comm
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
 	}
+
+	// Run as the current user in the container - primarily so that any files
+	// we create end up being owned by the current user (and easily deletable).
+	if c.uid != "" && c.gid != "" {
+		args = append(args, "--user", fmt.Sprintf("%s:%s", c.uid, c.gid))
+	}
+
 	if c.env != nil {
 		if err := c.env.writeEnvironmentFile(ctx, string(command)); err != nil {
 			return err
@@ -320,12 +327,6 @@ func maybeRelocateMounts(cfg *config.Config, mounts []string) []string {
 }
 
 func (c *Docker) runCommand(cmdName string, args ...string) error {
-	// Run as the current user in the container - primarily so that any files
-	// we create end up being owned by the current user (and easily deletable).
-	if c.uid != "" && c.gid != "" {
-		args = append(args, "--user", fmt.Sprintf("%s:%s", c.uid, c.gid))
-	}
-
 	cmd := exec.Command(cmdName, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
