@@ -386,16 +386,19 @@ func New() *Config {
 	}
 }
 
+// currentUser is a variable so it can be replaced during testing.
+var currentUser = user.Current
+
 // SetupUser performs late initialization of user-specific configuration,
 // determining the current user. This is in a separate method as it
 // can fail, and is called after flag parsing.
 func (c *Config) SetupUser() error {
-	currentUser, err := user.Current()
+	user, err := currentUser()
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
-	c.UserUID = currentUser.Uid
-	c.UserGID = currentUser.Gid
+	c.UserUID = user.Uid
+	c.UserGID = user.Gid
 	return nil
 }
 
