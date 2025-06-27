@@ -266,12 +266,12 @@ description.
 ### Reverting a pull request
 
 If a merged pull request needs to be undone, for reasons such as breaking the build, the
-standard process is to revert it through the GitHub interface.
+standard process is to [revert it through the GitHub interface](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/reverting-a-pull-request).
 
 To revert a pull request:
 1.  Navigate to the merged pull request on GitHub.
 2.  Click the **Revert** button. This action automatically creates a new branch and a pull request containing the revert commit.
-3.  Edit the pull request title to comply with the [commit message guidelines](#commit-messages). 
+3.  Edit the pull request title and description to comply with the [commit message guidelines](#commit-messages). 
 4.  The newly created revert pull request should be reviewed and merged following the same process as any other pull request.
 
 Using the GitHub "Revert" button is the preferred method over manually creating a revert commit using `git revert`.
