@@ -30,6 +30,9 @@ go run ./cmd/librarian generate -h
 Most commands require a language-specific image to be available;
 there are no such images published at the moment.
 
+See https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian for
+additional documentation.
+
 ## License
 
 Apache 2.0 - See [LICENSE] for more information.
