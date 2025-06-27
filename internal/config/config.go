@@ -169,6 +169,9 @@ type Config struct {
 	// GID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
 	// ownership.
+	//
+	// This is populated automatically after flag parsing. No user setup is
+	// expected.
 	GID string
 
 	// Image is the language-specific container image to use for language-specific
@@ -358,6 +361,9 @@ type Config struct {
 	// UID is the user ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
 	// ownership.
+	//
+	// This is populated automatically after flag parsing. No user setup is
+	// expected.
 	UID string
 
 	// WorkRoot is the root directory used for temporary working files, including
@@ -380,10 +386,10 @@ func New() *Config {
 	}
 }
 
-// Init performs late initialization of the configuration, such as determining
-// the current user. This is in a separate method as it can fail, and is
-// called after flag parsing.
-func (c *Config) Init() error {
+// SetupUser performs late initialization of user-specific configuration,
+// determining the current user. This is in a separate method as it
+// can fail, and is called after flag parsing.
+func (c *Config) SetupUser() error {
 	currentUser, err := user.Current()
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
