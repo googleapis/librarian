@@ -75,28 +75,27 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 			RemoteURL:  repo,
 			CI:         ci,
 		})
-	} else {
-		// repo is a directory
-		absRepoRoot, err := filepath.Abs(repo)
-		if err != nil {
-			return nil, err
-		}
-		languageRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-			Dir: absRepoRoot,
-			CI:  ci,
-		})
-		if err != nil {
-			return nil, err
-		}
-		clean, err := languageRepo.IsClean()
-		if err != nil {
-			return nil, err
-		}
-		if !clean {
-			return nil, errors.New("language repo must be clean")
-		}
-		return languageRepo, nil
 	}
+	// repo is a directory
+	absRepoRoot, err := filepath.Abs(repo)
+	if err != nil {
+		return nil, err
+	}
+	languageRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir: absRepoRoot,
+		CI:  ci,
+	})
+	if err != nil {
+		return nil, err
+	}
+	clean, err := languageRepo.IsClean()
+	if err != nil {
+		return nil, err
+	}
+	if !clean {
+		return nil, errors.New("language repo must be clean")
+	}
+	return languageRepo, nil
 }
 
 // createCommandStateForLanguage performs common (but not universal)
