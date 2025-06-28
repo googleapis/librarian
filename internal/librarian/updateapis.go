@@ -121,9 +121,9 @@ func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) er
 		}
 	} else {
 		apiRoot, err := filepath.Abs(cfg.APIRoot)
-		slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
+		slog.Info("Using apiRoot", "api_root", apiRoot)
 		if err != nil {
-			slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
+			slog.Info("Error retrieving apiRoot", "err", err)
 			return err
 		}
 		apiRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
@@ -147,7 +147,7 @@ func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) er
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
-	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
+	slog.Info("Code will be generated", "dir", outputDir)
 
 	// Root for generator-input defensive copies
 	if err := os.Mkdir(filepath.Join(state.workRoot, config.GeneratorInputDir), 0755); err != nil {
@@ -184,12 +184,12 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 	}
 
 	if len(library.ApiPaths) == 0 {
-		slog.Info(fmt.Sprintf("Skipping non-generated library: '%s'", library.Id))
+		slog.Info("Skipping non-generated library", "id", library.Id)
 		return nil
 	}
 
 	if library.GenerationAutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
-		slog.Info(fmt.Sprintf("Skipping generation-blocked library: '%s'", library.Id))
+		slog.Info("Skipping generation-blocked library", "id", library.Id)
 		return nil
 	}
 
@@ -199,10 +199,10 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 		return err
 	}
 	if len(commits) == 0 {
-		slog.Info(fmt.Sprintf("Library '%s' has no changes.", library.Id))
+		slog.Info("Library has no changes", "id", library.Id)
 		return nil
 	}
-	slog.Info(fmt.Sprintf("Generating '%s' with %d new commit(s)", library.Id, len(commits)))
+	slog.Info("Generating library with new commits", "id", library.Id, "commits", len(commits))
 
 	// Now that we know the API has at least one new API commit, regenerate it, update the state, commit the change and build the output.
 

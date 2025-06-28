@@ -106,10 +106,11 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(ctx context.Contex
 
 		// Finally, write the value if we've got one
 		if present {
-			slog.Info(fmt.Sprintf("Using %s to provide value to container for %s", source, variable.Name))
+			slog.Info("Providing value to container", "source", source, "variable", variable.Name)
+
 			builder.WriteString(fmt.Sprintf("%s=%s\n", variable.Name, value))
 		} else {
-			slog.Info(fmt.Sprintf("No value to provide to container for '%s'", variable.Name))
+			slog.Info("No value to provide to container", "variable", variable.Name)
 			builder.WriteString(fmt.Sprintf("# No value for %s\n", variable.Name))
 		}
 		continue

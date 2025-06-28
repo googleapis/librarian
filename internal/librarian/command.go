@@ -194,7 +194,7 @@ func formatTimestamp(t time.Time) string {
 
 func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 	if workRootOverride != "" {
-		slog.Info(fmt.Sprintf("Using specified working directory: %s", workRootOverride))
+		slog.Info("Using specified working directory", "dir", workRootOverride)
 		return workRootOverride, nil
 	}
 
@@ -212,7 +212,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 		return "", fmt.Errorf("unable to check directory '%s': %w", path, err)
 	}
 
-	slog.Info(fmt.Sprintf("Temporary working directory: %s", path))
+	slog.Info("Temporary working directory", "dir", path)
 	return path, nil
 }
 
@@ -235,7 +235,7 @@ func commitAll(repo *gitrepo.Repository, msg, userName, userEmail string) error 
 // We don't include detailed errors in the PR, as this could reveal sensitive information.
 // The action should describe what failed, e.g. "configuring", "building", "generating".
 func logPartialError(id string, err error, action string) string {
-	slog.Warn(fmt.Sprintf("Error while %s %s: %s", action, id, err))
+	slog.Warn("Error", "action", action, "id", id, "err", err)
 	return fmt.Sprintf("Error while %s %s", action, id)
 }
 

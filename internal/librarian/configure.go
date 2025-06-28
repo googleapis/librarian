@@ -115,7 +115,7 @@ func executeConfigure(ctx context.Context, state *commandState, cfg *config.Conf
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
 		return err
 	}
-	slog.Info(fmt.Sprintf("Code will be generated in %s", outputRoot))
+	slog.Info("Code will be generated", "dir", outputRoot)
 
 	var apiRoot string
 	if cfg.APIRoot == "" {
@@ -275,7 +275,7 @@ func configureApi(ctx context.Context, state *commandState, cfg *config.Config, 
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
-	slog.Info(fmt.Sprintf("Configuring %s", apiPath))
+	slog.Info("Configuring", "path", apiPath)
 
 	generatorInput := filepath.Join(languageRepo.Dir, config.GeneratorInputDir)
 	if err := cc.Configure(ctx, cfg, apiRoot, apiPath, generatorInput); err != nil {

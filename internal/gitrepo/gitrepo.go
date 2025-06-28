@@ -71,7 +71,7 @@ func NewRepository(opts *RepositoryOptions) (*Repository, error) {
 	if !opts.MaybeClone {
 		return open(opts.Dir)
 	}
-	slog.Info(fmt.Sprintf("Checking for repository at %q", opts.Dir))
+	slog.Info("Checking for repository", "dir", opts.Dir)
 	_, err := os.Stat(opts.Dir)
 	if err == nil {
 		return open(opts.Dir)
@@ -87,7 +87,7 @@ func NewRepository(opts *RepositoryOptions) (*Repository, error) {
 }
 
 func open(dir string) (*Repository, error) {
-	slog.Info(fmt.Sprintf("Opening repository at %q", dir))
+	slog.Info("Opening repository", "dir", dir)
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func open(dir string) (*Repository, error) {
 }
 
 func clone(dir, url, ci string) (*Repository, error) {
-	slog.Info(fmt.Sprintf("Cloning repository from %q to %q", url, dir))
+	slog.Info("Cloning repository", "url", url, "dir", dir)
 	options := &git.CloneOptions{
 		URL:           url,
 		ReferenceName: plumbing.HEAD,
@@ -165,7 +165,7 @@ func (r *Repository) Commit(msg string, userName, userEmail string) error {
 
 	// Log commit hash (brief) and subject line (first line of commit)
 	subject := strings.Split(msg, "\n")[0]
-	slog.Info(fmt.Sprintf("Committed %s: '%s'", hash.String()[0:7], subject))
+	slog.Info("Committed", "hash", hash.String()[0:7], "subject", subject)
 	return nil
 }
 
@@ -222,7 +222,7 @@ func (r *Repository) PrintStatus() error {
 		}
 	}
 	if len(staged) > 0 {
-		slog.Info(fmt.Sprintf("git status: Staged Changes\n%s", strings.Join(staged, "\n")))
+		slog.Info("git status: Staged Changes", "files", staged)
 	}
 
 	var notStaged []string
@@ -237,7 +237,7 @@ func (r *Repository) PrintStatus() error {
 		}
 	}
 	if len(notStaged) > 0 {
-		slog.Info(fmt.Sprintf("git status: Unstaged Changes\n%s", strings.Join(notStaged, "\n")))
+		slog.Info("git status: Unstaged Changes", "files", notStaged)
 	}
 
 	return nil
@@ -428,7 +428,7 @@ func (r *Repository) PushBranch(remoteBranch string, accessToken string) error {
 		Auth:     &auth,
 	}
 
-	slog.Info(fmt.Sprintf("Pushing to branch %s", remoteBranch))
+	slog.Info("Pushing to branch", "branch", remoteBranch)
 	return r.repo.Push(&pushOptions)
 }
 

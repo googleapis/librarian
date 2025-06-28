@@ -193,7 +193,7 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 	}
 	err = ghClient.AddLabelToPullRequest(ctx, prMetadata, DoNotMergeLabel)
 	if err != nil {
-		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
+		slog.Warn("Received error trying to add label to PR", "err", err)
 		return err
 	}
 	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName, strconv.Itoa(prMetadata.Number), cfg.EnvFile); err != nil {
@@ -220,7 +220,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 			continue
 		}
 		if library.ReleaseAutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
-			slog.Info(fmt.Sprintf("Skipping release-blocked library: '%s'", library.Id))
+			slog.Info("Skipping release-blocked library", "id", library.Id)
 			continue
 		}
 		var commitMessages []*CommitMessage
@@ -285,7 +285,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 			continue
 		}
 		if cfg.SkipIntegrationTests != "" {
-			slog.Info(fmt.Sprintf("Skipping integration tests: %s", cfg.SkipIntegrationTests))
+			slog.Info("Skipping integration tests", "bug", cfg.SkipIntegrationTests)
 		} else if err := cc.IntegrationTestLibrary(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "integration testing library")
 			if err := languageRepo.CleanWorkingTree(); err != nil {
