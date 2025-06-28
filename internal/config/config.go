@@ -40,7 +40,7 @@ type Config struct {
 	//
 	// APIPath is used by generate and configure commands.
 	//
-	// API Path is specified with the -api-path flag.
+	// API Path is specified with the -api flag.
 	APIPath string
 
 	// APIRoot is the path to the root of the googleapis repository.

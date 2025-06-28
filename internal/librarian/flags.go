@@ -24,7 +24,7 @@ import (
 )
 
 func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APIPath, "api-path", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
+	fs.StringVar(&cfg.APIPath, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
 func addFlagAPIRoot(fs *flag.FlagSet, cfg *config.Config) {
