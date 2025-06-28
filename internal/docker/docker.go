@@ -113,7 +113,7 @@ func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, o
 	commandArgs := []string{
 		"--api-root=/apis",
 		"--output=/output",
-		fmt.Sprintf("--api-path=%s", apiPath),
+		fmt.Sprintf("--api=%s", apiPath),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/apis", apiRoot),
@@ -166,7 +166,7 @@ func (c *Docker) BuildRaw(ctx context.Context, cfg *config.Config, generatorOutp
 	}
 	commandArgs := []string{
 		"--generator-output=/generator-output",
-		fmt.Sprintf("--api-path=%s", apiPath),
+		fmt.Sprintf("--api=%s", apiPath),
 	}
 
 	return c.runDocker(ctx, cfg, CommandBuildRaw, mounts, commandArgs)
@@ -196,7 +196,7 @@ func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, api
 	commandArgs := []string{
 		"--api-root=/apis",
 		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
-		fmt.Sprintf("--api-path=%s", apiPath),
+		fmt.Sprintf("--api=%s", apiPath),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/apis", apiRoot),

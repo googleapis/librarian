@@ -42,7 +42,7 @@ environment variable must be populated with an access token which has write acce
 language repo in which the pull request will be created.
 
 After acquiring the API and language repositories, the Librarian state for the language
-repository is loaded and the API repository is scanned for API paths to configure. (If the -api-path
+repository is loaded and the API repository is scanned for API paths to configure. (If the -api
 flag is specified, the scanning is skipped and only that API path is configured.) API scanning involves
 searching for service config .yaml files, and checking for a publishing.library_settings section that
 requests a library specifically for the language we're configuring. Scanning skips API paths which are
@@ -150,7 +150,7 @@ func executeConfigure(ctx context.Context, state *commandState, cfg *config.Conf
 	return err
 }
 
-// Returns a collection of APIs to configure, either from the api-path flag,
+// Returns a collection of APIs to configure, either from the api flag,
 // or by examining the service config YAML files to find APIs which have requested libraries,
 // but which aren't yet configured.
 func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language string, apiPath string) ([]string, error) {
