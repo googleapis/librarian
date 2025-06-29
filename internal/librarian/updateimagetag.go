@@ -112,9 +112,9 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 		}
 	} else {
 		apiRoot, err := filepath.Abs(cfg.APIRoot)
-		slog.Info(fmt.Sprintf("Using apiRoot: %s", apiRoot))
+		slog.Info("Using apiRoot", "api_root", apiRoot)
 		if err != nil {
-			slog.Info(fmt.Sprintf("Error retrieving apiRoot: %s", err))
+			slog.Info("Error retrieving apiRoot", "err", err)
 			return err
 		}
 		apiRepo, err = gitrepo.NewRepository(&gitrepo.RepositoryOptions{
@@ -137,7 +137,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
-	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
+	slog.Info("Code will be generated", "dir", outputDir)
 
 	ps := state.pipelineState
 	languageRepo := state.languageRepo
@@ -192,7 +192,7 @@ func regenerateLibrary(ctx context.Context, state *commandState, cfg *config.Con
 	languageRepo := state.languageRepo
 
 	if len(library.ApiPaths) == 0 {
-		slog.Info(fmt.Sprintf("Skipping non-generated library: '%s'", library.Id))
+		slog.Info("Skipping non-generated library", "id", library.Id)
 		return nil
 	}
 
@@ -201,7 +201,7 @@ func regenerateLibrary(ctx context.Context, state *commandState, cfg *config.Con
 		return err
 	}
 
-	slog.Info(fmt.Sprintf("Generating '%s'", library.Id))
+	slog.Info("Generating library", "id", library.Id)
 
 	// We create an output directory separately for each API.
 	outputDir := filepath.Join(outputRoot, library.Id)

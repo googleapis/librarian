@@ -43,7 +43,7 @@ type PullRequestContent struct {
 // but we don't include detailed errors in the PR, as this could reveal sensitive information.
 // The action should describe what failed, e.g. "configuring", "building", "generating".
 func addErrorToPullRequest(pr *PullRequestContent, id string, err error, action string) {
-	slog.Warn(fmt.Sprintf("Error while %s %s: %s", action, id, err))
+	slog.Warn("Error", "action", action, "id", id, "err", err)
 	pr.Errors = append(pr.Errors, fmt.Sprintf("Error while %s %s", action, id))
 }
 
@@ -74,7 +74,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 			// We've got too many commits. Roll some back locally, and we'll add them to the description.
 			excessSuccesses = content.Successes[maxCommits:]
 			content.Successes = content.Successes[:maxCommits]
-			slog.Info(fmt.Sprintf("%d excess commits created; winding back language repo.", len(excessSuccesses)))
+			slog.Info("Excess commits created; winding back language repo", "excess_commits", len(excessSuccesses))
 			if err := languageRepo.CleanAndRevertCommits(len(excessSuccesses)); err != nil {
 				return nil, err
 			}
@@ -102,7 +102,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(state.startTime))
 
 	if !push {
-		slog.Info(fmt.Sprintf("Push not specified; would have created PR with the following title and description:\n%s\n\n%s", title, description))
+		slog.Info("Push not specified; would have created PR", "title", title, "description", description)
 		return nil, nil
 	}
 
@@ -114,7 +114,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(state.startTime))
 	err = languageRepo.PushBranch(branch, ghClient.Token())
 	if err != nil {
-		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
+		slog.Info("Received error pushing branch", "err", err)
 		return nil, err
 	}
 	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
