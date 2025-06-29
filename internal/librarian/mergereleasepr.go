@@ -509,7 +509,7 @@ func checkPullRequestApproval(ctx context.Context, prMetadata *github.PullReques
 
 func reportBlockingReason(ctx context.Context, prMetadata *github.PullRequestMetadata, description string, cfg *config.Config) error {
 	slog.Warn(fmt.Sprintf("Adding '%s' label to PR and a comment with a description of '%s'", MergeBlockedLabel, description))
- 	comment := fmt.Sprintf("%s\n\nAfter resolving the issue, please remove the '%s' label.", description, MergeBlockedLabel)
+	comment := fmt.Sprintf("%s\n\nAfter resolving the issue, please remove the '%s' label.", description, MergeBlockedLabel)
 	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {
 		return err
