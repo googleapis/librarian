@@ -330,10 +330,10 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	cmd := exec.Command(cmdName, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	slog.Info("=== Docker start " + strings.Repeat("=", 63))
+	slog.Info(fmt.Sprintf("=== Docker start %s", strings.Repeat("=", 63)))
 	slog.Info(cmd.String())
 	slog.Info(strings.Repeat("-", 80))
 	err := cmd.Run()
-	slog.Info("=== Docker end " + strings.Repeat("=", 65))
+	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
 	return err
 }
