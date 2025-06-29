@@ -21,7 +21,7 @@ import (
 )
 
 // TODO(https://github.com/googleapis/librarian/issues/202): add better tests
-// for librarian.Run
+// for librarian.Run.
 func TestRun(t *testing.T) {
 	if err := Run(context.Background(), []string{"version"}...); err != nil {
 		log.Fatal(err)

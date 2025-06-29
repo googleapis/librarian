@@ -257,20 +257,32 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 	return false, nil
 }
 
-// Attempts to configure a single API. Steps taken:
+// configureAPI ttempts to configure a single API. Steps taken:
 // - Run the configure container command
+//
 //   - If this fails, indicate that in prDescription and return
 //
-// - Reformat the state file (which we'd expect to be modified)
-// - Check that we now have a library containing the given API (or an ignore entry)
-// - Commit the change
-// - If we only have an ignore entry, indicate that in prDescription and return
-// - Otherwise, try to generate and build the new library
-//   - If the generate/build fails, revert the previous commit and indicate that in the prDescription
-//   - If the generate/build fails, just reset the working directory (so don't commit the generation) and indicate that in the prDescription
+//   - Reformat the state file (which we'd expect to be modified)
 //
-// This function only returns an error in the case of non-container failures, which are expected to be fatal.
-// If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
+//   - Check that we now have a library containing the given API (or an ignore
+//     entry)
+//
+//   - Commit the change
+//
+//   - If we only have an ignore entry, indicate that in prDescription and return
+//
+//   - Otherwise, try to generate and build the new library
+//
+//   - If the generate/build fails, revert the previous commit and indicate
+//     that in the prDescription
+//
+//   - If the generate/build fails, just reset the working directory (so don't
+//     commit the generation) and indicate that in the prDescription
+//
+// This function only returns an error in the case of non-container failures,
+// which are expected to be fatal.  If the function returns a non-error, the
+// repo will be clean when the function returns (so can be used for the next
+// step).
 func configureApi(ctx context.Context, state *commandState, cfg *config.Config, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo

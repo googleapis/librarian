@@ -52,12 +52,21 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 	pr.Successes = append(pr.Successes, text)
 }
 
-// Creates a GitHub pull request based on the given content, with a title prefix (e.g. "feat: API regeneration")
+// createPullRequest creates a GitHub pull request based on the given content,
+// with a title prefix (e.g. "feat: API regeneration")
 // using a branch with a name of the form "librarian-{branchtype}-{timestamp}".
-// If content is empty, the pull request is not created and no error is returned.
-// If content only contains errors, the pull request is not created and an error is returned (to highlight that everything failed)
-// If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
-// If the pull request would contain an excessive number of commits (as configured in pipeline-config.json)
+//
+// If content is empty, the pull request is not created and no error is
+// returned.
+//
+// If content only contains errors, the pull request is not created and an
+// error is returned (to highlight that everything failed)
+// If content contains any successes, a pull request is created and no error is
+// returned (if the creation is successful) even if the content includes
+// errors.
+//
+// If the pull request would contain an excessive number of commits (as
+// configured in pipeline-config.json).
 func createPullRequest(ctx context.Context, state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool) (*github.PullRequestMetadata, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
