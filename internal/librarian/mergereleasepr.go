@@ -496,7 +496,7 @@ func checkPullRequestApproval(ctx context.Context, prMetadata *github.PullReques
 
 	approved := false
 	for _, review := range latestReviews {
-		slog.Info("Review state","submitted_at", review.GetSubmittedAt().Format(time.RFC3339),"state", review.GetState())
+		slog.Info("Review state", "submitted_at", review.GetSubmittedAt().Format(time.RFC3339), "state", review.GetState())
 		if review.GetState() == "APPROVED" {
 			approved = true
 		} else if review.GetState() == "CHANGES_REQUESTED" {
