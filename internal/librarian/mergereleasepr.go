@@ -193,20 +193,25 @@ func waitForPullRequestReadiness(ctx context.Context, prMetadata *github.PullReq
 	}
 }
 
-// A single iteration of the loop in waitForPullRequestReadiness,
-// in a separate function to make it easy to indicate an "early out".
+// waitForPullRequestReadinessSingleIteration is a single iteration of the loop
+// in waitForPullRequestReadiness, in a separate function to make it easy to
+// indicate an "early out".
+//
 // Returns true for "PR is ready to merge", false for "keep polling".
 // If this function returns false (with no error) the reason will have been logged.
 // Checks performed:
-// - The PR must not be merged
-// - The PR must not have the label with the name specified in MergeBlockedLabel
-// - The PR must have the label with the name specified in DoNotMergeLabel
-// - The PR must be mergeable
-// - All status checks must pass, other than conventional commits and the do-not-merge check
-// - All commits in the PR must contain Librarian-Release-Id (for this release), Librarian-Release-Library and Librarian-Release-Version metadata
-// - No commit in the PR must start its release notes with "FIXME"
-// - There must be no commits in the head of the repo which affect libraries released by the PR
-// - There must be at least one approving reviews from a member/owner of the repo, and no reviews from members/owners requesting changes
+//   - The PR must not be merged
+//   - The PR must not have the label with the name specified in MergeBlockedLabel
+//   - The PR must have the label with the name specified in DoNotMergeLabel
+//   - The PR must be mergeable
+//   - All status checks must pass, other than conventional commits and the do-not-merge check
+//   - All commits in the PR must contain Librarian-Release-Id (for this
+//     release), Librarian-Release-Library and Librarian-Release-Version metadata
+//   - No commit in the PR must start its release notes with "FIXME"
+//   - There must be no commits in the head of the repo which affect libraries
+//     released by the PR
+//   - There must be at least one approving reviews from a member/owner of the
+//     repo, and no reviews from members/owners requesting changes
 func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata *github.PullRequestMetadata, cfg *config.Config) (bool, error) {
 	slog.Info("Checking pull request for readiness")
 	ghClient, err := github.NewClient(cfg.GitHubToken)

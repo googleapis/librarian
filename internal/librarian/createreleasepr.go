@@ -308,7 +308,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 	return pr, nil
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/564): decide on release notes ordering
+// TODO(https://github.com/googleapis/librarian/issues/564): decide on release
+// notes ordering.
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	// Group release notes by type, preserving ordering (FIFO)
 	var features, docs, fixes []string

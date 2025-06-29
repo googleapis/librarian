@@ -432,7 +432,8 @@ func (r *Repository) PushBranch(remoteBranch string, accessToken string) error {
 	return r.repo.Push(&pushOptions)
 }
 
-// CleanWorkingTree Drops any local changes NOT committed, but keeps any local commits
+// CleanWorkingTree Drops any local changes NOT committed, but keeps any local
+// commits.
 func (r *Repository) CleanWorkingTree() error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
