@@ -50,7 +50,7 @@ type Config struct {
 	// APIRoot is used by generate, update-apis, update-image-tag and configure
 	// commands.
 	//
-	// APIRoot is specified with the -api-root flag.
+	// APIRoot is specified with the -source flag.
 	APIRoot string
 
 	// ArtifactRoot is the path to previously-created release artifacts to be published.
