@@ -88,7 +88,8 @@ func addFlagReleasePRUrl(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagRepoRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.RepoRoot, "repo-root", "", "Repository root. When this (and repo-url) are not specified, the language repo will be cloned.")
+	fs.StringVar(&cfg.RepoRoot, "repo-root", "",
+		"Repository root. When this (and repo-url) are not specified, the language repo will be cloned.")
 }
 
 func addFlagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
