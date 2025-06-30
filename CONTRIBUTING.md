@@ -170,10 +170,9 @@ The repository is configured to not require branches to be up to date before mer
 This means that you do not have to have the latest changes from the base branch
 integrated, unless GitHub detects merge conflicts.
 
-If you do need to integrate the latest changes from the base branch into your
-pull request branch, use `git merge` instead of `git rebase`. This avoids
-problems caused by rewriting the commit history unnecessarily because the
-commits will be squashed when the pull request is merged anyway.
+To minimize the risk of the pull request getting out of date with the base branch, enable
+[auto-merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request)
+so that the pull request submits as soon as it is approved and the checks pass.
 
 ## Commit messages
 
