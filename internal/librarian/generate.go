@@ -72,7 +72,7 @@ output directory that was specified for the "generate-raw" command.
 		if err := validateRequiredFlag("api", cfg.APIPath); err != nil {
 			return err
 		}
-		if err := validateRequiredFlag("source", cfg.APIRoot); err != nil {
+		if err := validateRequiredFlag("source", cfg.Source); err != nil {
 			return err
 		}
 		return runGenerate(ctx, cfg)
@@ -84,14 +84,14 @@ func init() {
 	fs := cmdGenerate.Flags
 	cfg := cmdGenerate.Config
 
-	addFlagImage(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
 	addFlagAPIPath(fs, cfg)
-	addFlagAPIRoot(fs, cfg)
-	addFlagLanguage(fs, cfg)
 	addFlagBuild(fs, cfg)
+	addFlagImage(fs, cfg)
+	addFlagLanguage(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
+	addFlagSource(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config) error {
@@ -179,7 +179,7 @@ func executeGenerate(ctx context.Context, state *commandState, cfg *config.Confi
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
 func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Config, outputDir string) (string, error) {
-	apiRoot, err := filepath.Abs(cfg.APIRoot)
+	apiRoot, err := filepath.Abs(cfg.Source)
 	if err != nil {
 		return "", err
 	}

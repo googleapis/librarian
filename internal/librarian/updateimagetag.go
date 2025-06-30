@@ -76,8 +76,6 @@ func init() {
 	fs := cmdUpdateImageTag.Flags
 	cfg := cmdUpdateImageTag.Config
 
-	addFlagWorkRoot(fs, cfg)
-	addFlagAPIRoot(fs, cfg)
 	addFlagBranch(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
@@ -85,7 +83,9 @@ func init() {
 	addFlagPush(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
+	addFlagSource(fs, cfg)
 	addFlagTag(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
@@ -103,14 +103,14 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	}
 
 	var apiRepo *gitrepo.Repository
-	if cfg.APIRoot == "" {
+	if cfg.Source == "" {
 		var err error
 		apiRepo, err = cloneGoogleapis(state.workRoot, cfg.CI)
 		if err != nil {
 			return err
 		}
 	} else {
-		apiRoot, err := filepath.Abs(cfg.APIRoot)
+		apiRoot, err := filepath.Abs(cfg.Source)
 		slog.Info("Using apiRoot", "api_root", apiRoot)
 		if err != nil {
 			slog.Info("Error retrieving apiRoot", "err", err)

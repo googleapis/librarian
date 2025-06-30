@@ -43,15 +43,15 @@ type Config struct {
 	// API Path is specified with the -api flag.
 	APIPath string
 
-	// APIRoot is the path to the root of the googleapis repository.
+	// Source is the path to the root of the googleapis repository.
 	// When this is not specified, the googleapis repository is cloned
 	// automatically.
 	//
-	// APIRoot is used by generate, update-apis, update-image-tag and configure
+	// Source is used by generate, update-apis, update-image-tag and configure
 	// commands.
 	//
-	// APIRoot is specified with the -source flag.
-	APIRoot string
+	// Source is specified with the -source flag.
+	Source string
 
 	// ArtifactRoot is the path to previously-created release artifacts to be published.
 	// It is only used by the publish-release-artifacts command, and is expected
