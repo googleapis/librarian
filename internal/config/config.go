@@ -369,7 +369,7 @@ type Config struct {
 	// WorkRoot is the root directory used for temporary working files, including
 	// any repositories that are cloned. By default, this is created in /tmp with
 	// a timestamped directory name (e.g. /tmp/librarian-20250617T083548Z) but
-	// can be specified with the -work-root flag.
+	// can be specified with the -output flag.
 	//
 	// WorkRoot is used by all librarian commands.
 	WorkRoot string

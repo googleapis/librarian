@@ -28,7 +28,7 @@ func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagAPIRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to the work-root")
+	fs.StringVar(&cfg.APIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
@@ -48,7 +48,7 @@ func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagEnvFile(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.EnvFile, "env-file", "", "full path to the file where the environment variables are stored. Defaults to env-vars.txt within the work-root")
+	fs.StringVar(&cfg.EnvFile, "env-file", "", "full path to the file where the environment variables are stored. Defaults to env-vars.txt within the output")
 }
 
 func addFlagGitUserEmail(fs *flag.FlagSet, cfg *config.Config) {
@@ -116,7 +116,7 @@ func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.WorkRoot, "work-root", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
+	fs.StringVar(&cfg.WorkRoot, "output", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
 }
 
 func validateSkipIntegrationTests(skipIntegrationTests string) error {
