@@ -47,8 +47,8 @@ type LibraryRelease struct {
 
 var cmdCreateReleaseArtifacts = &cli.Command{
 	Short:     "create-release-artifacts creates release artifacts from a merged release PR",
-	UsageLine: "librarian create-release-artifacts -language=<language> -release-id=<id> [flags]",
-	Long: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
+	UsageLine: "librarian create-release-artifacts -release-id=<id> [flags]",
+	Long: `Specify the release ID, and optional flags to use non-default repositories, e.g. for testing.
 The release ID is specified in the the release PR and in each commit within it, in a line starting "Librarian-Release-ID: ".
 
 After acquiring the language repository, the repository is scanned backwards from the head commit to find
@@ -85,7 +85,6 @@ func init() {
 
 	addFlagImage(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
-	addFlagLanguage(fs, cfg)
 	addFlagRepoRoot(fs, cfg)
 	addFlagRepoUrl(fs, cfg)
 	addFlagReleaseID(fs, cfg)

@@ -30,8 +30,8 @@ import (
 
 var cmdUpdateImageTag = &cli.Command{
 	Short:     "update-image-tag updates a language repo's image tag and regenerates APIs",
-	UsageLine: "librarian update-image-tag -language=<language> -tag=<new tag> [flags]",
-	Long: `Specify the language, the new tag, and optional flags to use non-default repositories, e.g. for testing.
+	UsageLine: "librarian update-image-tag -tag=<new tag> [flags]",
+	Long: `Specify the the new tag, and optional flags to use non-default repositories, e.g. for testing.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
 language repo in which the pull request will be created.
@@ -81,7 +81,6 @@ func init() {
 	addFlagBranch(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
-	addFlagLanguage(fs, cfg)
 	addFlagPush(fs, cfg)
 	addFlagRepoRoot(fs, cfg)
 	addFlagRepoUrl(fs, cfg)

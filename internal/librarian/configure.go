@@ -28,9 +28,9 @@ import (
 
 var cmdConfigure = &cli.Command{
 	Short:     "configure configures libraries for new APIs in a language",
-	UsageLine: "librarian configure -language=<language> [flags]",
+	UsageLine: "librarian configure [flags]",
 	Long: `
-Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+Specify optional flags to use non-default repositories, e.g. for testing.
 A single API path may be specified if desired; otherwise all API paths will be checked.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
@@ -88,7 +88,6 @@ func init() {
 	addFlagAPIRoot(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
-	addFlagLanguage(fs, cfg)
 	addFlagPush(fs, cfg)
 	addFlagRepoRoot(fs, cfg)
 	addFlagRepoUrl(fs, cfg)
