@@ -186,7 +186,7 @@ type Config struct {
 	// - Name: As specified in language repository configuration, or
 	// a default of "google-cloud-{Language}-generator"
 	// - Tag: As specified in the language repository state file, where available
-	// - Repository: The LIBRARIAN_REPOSITORY environment variable, if set.
+	// - Repository: Specified with the -repo flag.
 	//
 	// Image is specified with the -image flag.
 	Image string
@@ -371,11 +371,10 @@ type Config struct {
 // New returns a new Config populated with environment variables.
 func New() *Config {
 	return &Config{
-		DockerHostRootDir:   os.Getenv("KOKORO_HOST_ROOT_DIR"),
-		DockerMountRootDir:  os.Getenv("KOKORO_ROOT_DIR"),
-		GitHubToken:         os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
-		LibrarianRepository: os.Getenv("LIBRARIAN_REPOSITORY"),
-		SyncAuthToken:       os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
+		DockerHostRootDir:  os.Getenv("KOKORO_HOST_ROOT_DIR"),
+		DockerMountRootDir: os.Getenv("KOKORO_ROOT_DIR"),
+		GitHubToken:        os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		SyncAuthToken:      os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
 	}
 }
 
