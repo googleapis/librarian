@@ -21,10 +21,12 @@ linters:
   default: none
   enable:
     - containedctx
+    - contextcheck
     - fatcontext
     - govet
     - ineffassign
     - staticcheck
     - unparam
     - unused
-    - contextcheck
+    - usetesting
+    

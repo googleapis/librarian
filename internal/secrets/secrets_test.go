@@ -51,7 +51,7 @@ func TestFetchSecrets(t *testing.T) {
 			client := &mockClient{
 				result: test.mockResult,
 			}
-			got, err := Get(context.Background(), test.project, test.secretName, client)
+			got, err := Get(t.Context(), test.project, test.secretName, client)
 			if err != nil {
 				t.Errorf("unexpected error fetching secret: %s", err)
 			}

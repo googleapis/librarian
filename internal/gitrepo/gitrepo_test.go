@@ -50,10 +50,7 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			0,
 		},
 	}
-	dir, err := os.MkdirTemp("", "test-*")
-	if err != nil {
-		t.Errorf("Create a temp directory in %s got error %v.", dir, err)
-	}
+	dir := t.TempDir()
 	defer func(path string) {
 		err := os.RemoveAll(path)
 		if err != nil {
@@ -62,7 +59,7 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 	}(dir)
 
 	for _, test := range tests {
-		repoDir, _ := os.MkdirTemp(dir, "test-repo-*")
+		repoDir := t.TempDir()
 		localRepo, _ := git.PlainInit(repoDir, false)
 		worktree, _ := localRepo.Worktree()
 		firstCommit, _ := worktree.Commit("empty commit", &git.CommitOptions{

@@ -271,7 +271,7 @@ func TestDockerRun(t *testing.T) {
 				}
 				return nil
 			}
-			ctx := context.Background()
+			ctx := t.Context()
 			if err := test.runCommand(ctx, test.docker); err != nil {
 				t.Fatal(err)
 			}
