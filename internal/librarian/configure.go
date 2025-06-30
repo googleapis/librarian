@@ -257,25 +257,17 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 	return false, nil
 }
 
-// configureAPI ttempts to configure a single API. Steps taken:
+// configureAPI attempts to configure a single API. Steps taken:
 // - Run the configure container command
-//
 //   - If this fails, indicate that in prDescription and return
-//
 //   - Reformat the state file (which we'd expect to be modified)
-//
 //   - Check that we now have a library containing the given API (or an ignore
 //     entry)
-//
 //   - Commit the change
-//
 //   - If we only have an ignore entry, indicate that in prDescription and return
-//
 //   - Otherwise, try to generate and build the new library
-//
 //   - If the generate/build fails, revert the previous commit and indicate
 //     that in the prDescription
-//
 //   - If the generate/build fails, just reset the working directory (so don't
 //     commit the generation) and indicate that in the prDescription
 //
