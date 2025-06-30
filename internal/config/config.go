@@ -371,15 +371,15 @@ type Config struct {
 // New returns a new Config populated with environment variables.
 func New() *Config {
 	return &Config{
-		DockerHostRootDir:   os.Getenv("KOKORO_HOST_ROOT_DIR"),
-		DockerMountRootDir:  os.Getenv("KOKORO_ROOT_DIR"),
+		DockerHostRootDir:   os.Getenv("LIBRARIAN_HOST_ROOT_DIR"),
+		DockerMountRootDir:  os.Getenv("LIBRARIAN_ROOT_DIR"),
 		GitHubToken:         os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
 		LibrarianRepository: os.Getenv("LIBRARIAN_REPOSITORY"),
 		SyncAuthToken:       os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
 	}
 }
 
-// currentUser is a variable so it can be replaced during testing.
+// currentUser is a variable, so it can be replaced during testing.
 var currentUser = user.Current
 
 // SetupUser performs late initialization of user-specific configuration,
