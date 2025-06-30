@@ -67,7 +67,7 @@ func TestDockerRun(t *testing.T) {
 				string(CommandGenerateRaw),
 				"--api-root=/apis",
 				"--output=/output",
-				fmt.Sprintf("--api-path=%s", testAPIPath),
+				fmt.Sprintf("--api=%s", testAPIPath),
 			},
 		},
 		{
@@ -90,7 +90,7 @@ func TestDockerRun(t *testing.T) {
 				string(CommandGenerateRaw),
 				"--api-root=/apis",
 				"--output=/output",
-				fmt.Sprintf("--api-path=%s", testAPIPath),
+				fmt.Sprintf("--api=%s", testAPIPath),
 			},
 		},
 		{
@@ -147,7 +147,7 @@ func TestDockerRun(t *testing.T) {
 				testImage,
 				string(CommandBuildRaw),
 				"--generator-output=/generator-output",
-				fmt.Sprintf("--api-path=%s", testAPIPath),
+				fmt.Sprintf("--api=%s", testAPIPath),
 			},
 		},
 		{
@@ -185,7 +185,7 @@ func TestDockerRun(t *testing.T) {
 				string(CommandConfigure),
 				"--api-root=/apis",
 				"--generator-input=/generator-input",
-				fmt.Sprintf("--api-path=%s", testAPIPath),
+				fmt.Sprintf("--api=%s", testAPIPath),
 			},
 		},
 		{

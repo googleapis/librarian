@@ -32,7 +32,7 @@ import (
 
 var cmdGenerate = &cli.Command{
 	Short:     "generate generates client library code for a single API",
-	UsageLine: "librarian generate -api-root=<api-root> -api-path=<api-path> [flags]",
+	UsageLine: "librarian generate -api-root=<api-root> -api=<api-path> [flags]",
 	Long: `Specify the API repository root and the path within it for the API to generate.
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
 to build the generated library.
@@ -69,7 +69,7 @@ other source code to be preserved/cleaned. Instead, the "build-raw" command is p
 output directory that was specified for the "generate-raw" command.
 `,
 	Run: func(ctx context.Context, cfg *config.Config) error {
-		if err := validateRequiredFlag("api-path", cfg.APIPath); err != nil {
+		if err := validateRequiredFlag("api", cfg.APIPath); err != nil {
 			return err
 		}
 		if err := validateRequiredFlag("api-root", cfg.APIRoot); err != nil {
@@ -89,13 +89,12 @@ func init() {
 	addFlagAPIPath(fs, cfg)
 	addFlagAPIRoot(fs, cfg)
 	addFlagBuild(fs, cfg)
-	addFlagRepoRoot(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepo(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config) error {
-	libraryConfigured, err := detectIfLibraryConfigured(ctx, cfg.APIPath, cfg.RepoURL, cfg.RepoRoot, cfg.GitHubToken)
+	libraryConfigured, err := detectIfLibraryConfigured(ctx, cfg.APIPath, cfg.Repo, cfg.GitHubToken)
 	if err != nil {
 		return err
 	}
@@ -114,7 +113,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	// We only clone/open the language repo and use the state within it
 	// if the requested API is configured as a library.
 	if libraryConfigured {
-		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.RepoRoot, cfg.RepoURL, cfg.CI)
+		repo, err = cloneOrOpenLanguageRepo(workRoot, cfg.Repo, cfg.CI)
 		if err != nil {
 			return err
 		}
@@ -208,13 +207,10 @@ func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Co
 // pipeline state if repoRoot has been specified, or the remote pipeline state (just
 // by fetching the single file) if flatRepoUrl has been specified. If neither the repo
 // root not the repo url has been specified, we always perform raw generation.
-func detectIfLibraryConfigured(ctx context.Context, apiPath, repoURL, repoRoot, gitHubToken string) (bool, error) {
-	if repoURL == "" && repoRoot == "" {
-		slog.Warn("repo url and root are not specified, cannot check if library exists")
+func detectIfLibraryConfigured(ctx context.Context, apiPath, repo, gitHubToken string) (bool, error) {
+	if repo == "" {
+		slog.Warn("repo is not specified, cannot check if library exists")
 		return false, nil
-	}
-	if repoRoot != "" && repoURL != "" {
-		return false, errors.New("do not specify both repo-root and repo-url")
 	}
 
 	// Attempt to load the pipeline state either locally or from the repo URL
@@ -222,15 +218,17 @@ func detectIfLibraryConfigured(ctx context.Context, apiPath, repoURL, repoRoot, 
 		pipelineState *statepb.PipelineState
 		err           error
 	)
-	if repoRoot != "" {
-		pipelineState, err = loadPipelineStateFile(filepath.Join(repoRoot, config.GeneratorInputDir, pipelineStateFile))
+	if !isUrl(repo) {
+		// repo is a directory
+		pipelineState, err = loadPipelineStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
 		if err != nil {
 			return false, err
 		}
 	} else {
-		languageRepoMetadata, err := github.ParseUrl(repoURL)
+		// repo is a URL
+		languageRepoMetadata, err := github.ParseUrl(repo)
 		if err != nil {
-			slog.Warn("failed to parse", "repo url", repoURL, "error", err)
+			slog.Warn("failed to parse", "repo url:", repo, "error", err)
 			return false, err
 		}
 		pipelineState, err = fetchRemotePipelineState(ctx, languageRepoMetadata, "HEAD", gitHubToken)

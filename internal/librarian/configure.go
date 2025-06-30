@@ -37,7 +37,7 @@ environment variable must be populated with an access token which has write acce
 language repo in which the pull request will be created.
 
 After acquiring the API and language repositories, the Librarian state for the language
-repository is loaded and the API repository is scanned for API paths to configure. (If the -api-path
+repository is loaded and the API repository is scanned for API paths to configure. (If the -api
 flag is specified, the scanning is skipped and only that API path is configured.) API scanning involves
 searching for service config .yaml files, and checking for a publishing.library_settings section that
 requests a library specifically for the language we're configuring. Scanning skips API paths which are
@@ -89,13 +89,12 @@ func init() {
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
 	addFlagPush(fs, cfg)
-	addFlagRepoRoot(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepo(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
 }
 
 func runConfigure(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Image, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}
@@ -140,20 +139,24 @@ func executeConfigure(ctx context.Context, state *commandState, cfg *config.Conf
 	return err
 }
 
-// Attempts to configure a single API. Steps taken:
+// configureAPI attempts to configure a single API. Steps taken:
 // - Run the configure container command
 //   - If this fails, indicate that in prDescription and return
+//   - Reformat the state file (which we'd expect to be modified)
+//   - Check that we now have a library containing the given API (or an ignore
+//     entry)
+//   - Commit the change
+//   - If we only have an ignore entry, indicate that in prDescription and return
+//   - Otherwise, try to generate and build the new library
+//   - If the generate/build fails, revert the previous commit and indicate
+//     that in the prDescription
+//   - If the generate/build fails, just reset the working directory (so don't
+//     commit the generation) and indicate that in the prDescription
 //
-// - Reformat the state file (which we'd expect to be modified)
-// - Check that we now have a library containing the given API (or an ignore entry)
-// - Commit the change
-// - If we only have an ignore entry, indicate that in prDescription and return
-// - Otherwise, try to generate and build the new library
-//   - If the generate/build fails, revert the previous commit and indicate that in the prDescription
-//   - If the generate/build fails, just reset the working directory (so don't commit the generation) and indicate that in the prDescription
-//
-// This function only returns an error in the case of non-container failures, which are expected to be fatal.
-// If the function returns a non-error, the repo will be clean when the function returns (so can be used for the next step)
+// This function only returns an error in the case of non-container failures,
+// which are expected to be fatal.  If the function returns a non-error, the
+// repo will be clean when the function returns (so can be used for the next
+// step).
 func configureApi(ctx context.Context, state *commandState, cfg *config.Config, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo

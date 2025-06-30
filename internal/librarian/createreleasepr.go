@@ -116,14 +116,13 @@ func init() {
 	addFlagPush(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
-	addFlagRepoRoot(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
 	addFlagEnvFile(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepo(fs, cfg)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Image, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}
@@ -306,7 +305,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 	return pr, nil
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/564): decide on release notes ordering
+// TODO(https://github.com/googleapis/librarian/issues/564): decide on release
+// notes ordering.
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	// Group release notes by type, preserving ordering (FIFO)
 	var features, docs, fixes []string
