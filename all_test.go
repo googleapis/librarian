@@ -108,6 +108,17 @@ func TestGovulncheck(t *testing.T) {
 	rungo(t, "run", "golang.org/x/vuln/cmd/govulncheck@latest", "./...")
 }
 
+func TestGodocLint(t *testing.T) {
+	// TODO(https://github.com/googleapis/librarian/issues/693): fix errors and
+	// turn on
+	t.Skip()
+
+	rungo(t, "run", "github.com/godoc-lint/godoc-lint/cmd/godoclint@latest",
+		"-exclude", "cmd/librarian/main.go",
+		"-exclude", "internal/statepb",
+		"./...")
+}
+
 func rungo(t *testing.T, args ...string) {
 	t.Helper()
 

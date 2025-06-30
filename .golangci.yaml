@@ -23,8 +23,10 @@ linters:
     - containedctx
     - contextcheck
     - fatcontext
+    - godot
     - govet
     - ineffassign
+    - misspell
     - staticcheck
     - unparam
     - unused

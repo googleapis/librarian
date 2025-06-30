@@ -117,14 +117,13 @@ func init() {
 	addFlagPush(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
-	addFlagRepoRoot(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
 	addFlagEnvFile(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepo(fs, cfg)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
 		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
@@ -193,7 +192,7 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 	}
 	err = ghClient.AddLabelToPullRequest(ctx, prMetadata, DoNotMergeLabel)
 	if err != nil {
-		slog.Warn(fmt.Sprintf("Received error trying to add label to PR: '%s'", err))
+		slog.Warn("Received error trying to add label to PR", "err", err)
 		return err
 	}
 	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName, strconv.Itoa(prMetadata.Number), cfg.EnvFile); err != nil {
@@ -220,7 +219,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 			continue
 		}
 		if library.ReleaseAutomationLevel == statepb.AutomationLevel_AUTOMATION_LEVEL_BLOCKED {
-			slog.Info(fmt.Sprintf("Skipping release-blocked library: '%s'", library.Id))
+			slog.Info("Skipping release-blocked library", "id", library.Id)
 			continue
 		}
 		var commitMessages []*CommitMessage
@@ -285,7 +284,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 			continue
 		}
 		if cfg.SkipIntegrationTests != "" {
-			slog.Info(fmt.Sprintf("Skipping integration tests: %s", cfg.SkipIntegrationTests))
+			slog.Info("Skipping integration tests", "bug", cfg.SkipIntegrationTests)
 		} else if err := cc.IntegrationTestLibrary(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "integration testing library")
 			if err := languageRepo.CleanWorkingTree(); err != nil {
@@ -308,7 +307,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 	return pr, nil
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/564): decide on release notes ordering
+// TODO(https://github.com/googleapis/librarian/issues/564): decide on release
+// notes ordering.
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	// Group release notes by type, preserving ordering (FIFO)
 	var features, docs, fixes []string
