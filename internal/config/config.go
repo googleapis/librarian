@@ -111,7 +111,7 @@ type Config struct {
 	// "-v /home/user/librarian/work/googleapis:/apis"
 	//
 	// DockerHostRootDir and DockerMountDir are currently populated from
-	// KOKORO_HOST_ROOT_DIR and KOKORO_ROOT_DIR environment variables respectively.
+	// LIBRARIAN_HOST_ROOT_DIR and LIBRARIAN_ROOT_DIR environment variables respectively.
 	// These are automatically supplied by Kokoro. Other Docker-in-Docker scenarios
 	// are not currently supported, but could be implemented by populating these
 	// configuration values in a similar way.
