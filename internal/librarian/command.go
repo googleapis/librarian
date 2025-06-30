@@ -120,7 +120,10 @@ func createCommandStateForLanguage(workRootOverride, repoRoot, repoURL, imageOve
 		return nil, err
 	}
 
-	image := deriveImage(imageOverride, ps)
+	image, err := deriveImage(imageOverride, ps)
+	if err != nil {
+		return nil, err
+	}
 	containerConfig, err := docker.New(workRoot, image, secretsProject, uid, gid, config)
 	if err != nil {
 		return nil, err
@@ -146,15 +149,18 @@ func appendResultEnvironmentVariable(workRoot, name, value, envFileOverride stri
 	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
 }
 
-func deriveImage(imageOverride string, state *statepb.PipelineState) string {
+func deriveImage(imageOverride string, state *statepb.PipelineState) (string, error) {
 	if imageOverride != "" {
-		return imageOverride
+		return imageOverride, nil
 	}
 	if state == nil {
-		return ""
+		return "", nil
 	}
 	// TODO: use image from state.yaml when switch to this config file. see go/librarian:cli-reimagined
-	return state.ImageTag
+	if state.ImageTag == "" {
+		return "", errors.New("pipeline state does not have image specified and no override was provided")
+	}
+	return state.ImageTag, nil
 }
 
 // Finds a library which includes code generated from the given API path.

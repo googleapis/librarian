@@ -49,6 +49,7 @@ func TestDeriveImage(t *testing.T) {
 		imageOverride string
 		state         *statepb.PipelineState
 		want          string
+		wantErr       bool
 	}{
 		{
 			name:          "with image override, nil state",
@@ -78,12 +79,16 @@ func TestDeriveImage(t *testing.T) {
 			name:          "no override, with state, empty tag",
 			imageOverride: "",
 			state:         &statepb.PipelineState{ImageTag: ""},
-			want:          "",
+			wantErr:       true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveImage(test.imageOverride, test.state)
+			got, err := deriveImage(test.imageOverride, test.state)
 
+			if (err != nil) != test.wantErr {
+				t.Errorf("deriveImage() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
 			if got != test.want {
 				t.Errorf("deriveImage() = %q, want %q", got, test.want)
 			}

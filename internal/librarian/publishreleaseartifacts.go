@@ -87,7 +87,10 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	image := deriveImage(cfg.Image, ps)
+	image, err := deriveImage(cfg.Image, ps)
+	if err != nil {
+		return err
+	}
 
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
