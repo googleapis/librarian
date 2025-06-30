@@ -325,7 +325,7 @@ type Config struct {
 	// will act as if the secret name wasn't set (so will just use a host environment variable
 	// or default value, if any).
 	//
-	// SecretsProject is specified with the -secrets-project flag.
+	// SecretsProject is specified with the -project flag.
 	SecretsProject string
 
 	// SkipIntegrationTests is used by the create-release-pr and create-release-artifacts

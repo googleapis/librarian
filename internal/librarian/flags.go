@@ -92,7 +92,7 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagSecretsProject(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.SecretsProject, "secrets-project", "", "Project containing Secret Manager secrets.")
+	fs.StringVar(&cfg.SecretsProject, "project", "", "Project containing Secret Manager secrets.")
 }
 
 func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
