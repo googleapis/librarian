@@ -126,7 +126,7 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 	if err != nil {
 		return err
 	}
-	slog.Info(fmt.Sprintf("Publishing packages for %d libraries", len(releases)))
+	slog.Info("Publishing packages for libraries", "libraries", len(releases))
 
 	if err := publishPackages(ctx, containerConfig, cfg, releases); err != nil {
 		return err
@@ -163,7 +163,7 @@ func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRe
 		if err != nil {
 			return err
 		}
-		slog.Info(fmt.Sprintf("Created repo release '%s' with tag '%s'", *repoRelease.Name, *repoRelease.TagName))
+		slog.Info("Created repo release", "name", *repoRelease.Name, "tag", *repoRelease.TagName)
 	}
 	slog.Info("All repo releases created.")
 	return nil

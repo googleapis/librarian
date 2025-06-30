@@ -193,20 +193,25 @@ func waitForPullRequestReadiness(ctx context.Context, prMetadata *github.PullReq
 	}
 }
 
-// A single iteration of the loop in waitForPullRequestReadiness,
-// in a separate function to make it easy to indicate an "early out".
+// waitForPullRequestReadinessSingleIteration is a single iteration of the loop
+// in waitForPullRequestReadiness, in a separate function to make it easy to
+// indicate an "early out".
+//
 // Returns true for "PR is ready to merge", false for "keep polling".
 // If this function returns false (with no error) the reason will have been logged.
 // Checks performed:
-// - The PR must not be merged
-// - The PR must not have the label with the name specified in MergeBlockedLabel
-// - The PR must have the label with the name specified in DoNotMergeLabel
-// - The PR must be mergeable
-// - All status checks must pass, other than conventional commits and the do-not-merge check
-// - All commits in the PR must contain Librarian-Release-Id (for this release), Librarian-Release-Library and Librarian-Release-Version metadata
-// - No commit in the PR must start its release notes with "FIXME"
-// - There must be no commits in the head of the repo which affect libraries released by the PR
-// - There must be at least one approving reviews from a member/owner of the repo, and no reviews from members/owners requesting changes
+//   - The PR must not be merged
+//   - The PR must not have the label with the name specified in MergeBlockedLabel
+//   - The PR must have the label with the name specified in DoNotMergeLabel
+//   - The PR must be mergeable
+//   - All status checks must pass, other than conventional commits and the do-not-merge check
+//   - All commits in the PR must contain Librarian-Release-Id (for this
+//     release), Librarian-Release-Library and Librarian-Release-Version metadata
+//   - No commit in the PR must start its release notes with "FIXME"
+//   - There must be no commits in the head of the repo which affect libraries
+//     released by the PR
+//   - There must be at least one approving reviews from a member/owner of the
+//     repo, and no reviews from members/owners requesting changes
 func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata *github.PullRequestMetadata, cfg *config.Config) (bool, error) {
 	slog.Info("Checking pull request for readiness")
 	ghClient, err := github.NewClient(cfg.GitHubToken)
@@ -243,7 +248,7 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 	gotDoNotMergeLabel := false
 	for _, label := range pr.Labels {
 		if label.GetName() == MergeBlockedLabel {
-			slog.Info(fmt.Sprintf("PR still has '%s' label; skipping other checks", MergeBlockedLabel))
+			slog.Info("PR still has merge-blocked label; skipping other checks", "label", MergeBlockedLabel)
 			return false, nil
 		}
 		if label.GetName() == DoNotMergeLabel {
@@ -278,7 +283,7 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 		// We can't get at the required status checks with the current access token;
 		// we can rethink this if it turns out to be too conservative.
 		if checkRun.GetStatus() != "completed" {
-			slog.Info(fmt.Sprintf("Check '%s' is not complete", *checkRun.Name))
+			slog.Info("Check is not complete", "check", *checkRun.Name)
 			return false, nil
 		}
 		if checkRun.GetConclusion() != "success" {
@@ -440,7 +445,7 @@ func checkPullRequestCommits(ctx context.Context, prMetadata *github.PullRequest
 
 	suspectReleases := []SuspectRelease{}
 
-	slog.Info(fmt.Sprintf("Checking %d commits against %d libraries for intervening changes", len(fullBaseCommits), len(releases)))
+	slog.Info("Checking commits against libraries for intervening changes", "commits", len(fullBaseCommits), "libraries", len(releases))
 	for _, release := range releases {
 		suspectRelease := checkRelease(release, baseHeadState, baselineState, fullBaseCommits)
 		if suspectRelease != nil {
@@ -471,14 +476,14 @@ func checkPullRequestApproval(ctx context.Context, prMetadata *github.PullReques
 		return false, err
 	}
 
-	slog.Info(fmt.Sprintf("Considering %d reviews (including history)", len(reviews)))
+	slog.Info("Considering reviews (including history)", "reviews", len(reviews))
 	// Collect all latest non-pending reviews from members/owners of the repository.
 	latestReviews := make(map[int64]*github.PullRequestReview)
 	for _, review := range reviews {
 		association := review.GetAuthorAssociation()
 		// TODO(https://github.com/googleapis/librarian/issues/545): check the required approvals
 		if association != "MEMBER" && association != "OWNER" && association != "COLLABORATOR" && association != "CONTRIBUTOR" {
-			slog.Info(fmt.Sprintf("Ignoring review with author association '%s'", association))
+			slog.Info("Ignoring review with author association", "association", association)
 			continue
 		}
 
@@ -496,7 +501,7 @@ func checkPullRequestApproval(ctx context.Context, prMetadata *github.PullReques
 
 	approved := false
 	for _, review := range latestReviews {
-		slog.Info(fmt.Sprintf("Review at %s: %s", review.GetSubmittedAt().Format(time.RFC3339), review.GetState()))
+		slog.Info("Review state", "submitted_at", review.GetSubmittedAt().Format(time.RFC3339), "state", review.GetState())
 		if review.GetState() == "APPROVED" {
 			approved = true
 		} else if review.GetState() == "CHANGES_REQUESTED" {
@@ -508,7 +513,7 @@ func checkPullRequestApproval(ctx context.Context, prMetadata *github.PullReques
 }
 
 func reportBlockingReason(ctx context.Context, prMetadata *github.PullRequestMetadata, description string, cfg *config.Config) error {
-	slog.Warn(fmt.Sprintf("Adding '%s' label to PR and a comment with a description of '%s'", MergeBlockedLabel, description))
+	slog.Warn("Adding label to PR and commenting with description", "label", MergeBlockedLabel, "description", description)
 	comment := fmt.Sprintf("%s\n\nAfter resolving the issue, please remove the '%s' label.", description, MergeBlockedLabel)
 	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {

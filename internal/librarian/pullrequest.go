@@ -43,7 +43,7 @@ type PullRequestContent struct {
 // but we don't include detailed errors in the PR, as this could reveal sensitive information.
 // The action should describe what failed, e.g. "configuring", "building", "generating".
 func addErrorToPullRequest(pr *PullRequestContent, id string, err error, action string) {
-	slog.Warn(fmt.Sprintf("Error while %s %s: %s", action, id, err))
+	slog.Warn("Error", "action", action, "id", id, "err", err)
 	pr.Errors = append(pr.Errors, fmt.Sprintf("Error while %s %s", action, id))
 }
 
@@ -52,12 +52,21 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 	pr.Successes = append(pr.Successes, text)
 }
 
-// Creates a GitHub pull request based on the given content, with a title prefix (e.g. "feat: API regeneration")
+// createPullRequest creates a GitHub pull request based on the given content,
+// with a title prefix (e.g. "feat: API regeneration")
 // using a branch with a name of the form "librarian-{branchtype}-{timestamp}".
-// If content is empty, the pull request is not created and no error is returned.
-// If content only contains errors, the pull request is not created and an error is returned (to highlight that everything failed)
-// If content contains any successes, a pull request is created and no error is returned (if the creation is successful) even if the content includes errors.
-// If the pull request would contain an excessive number of commits (as configured in pipeline-config.json)
+//
+// If content is empty, the pull request is not created and no error is
+// returned.
+//
+// If content only contains errors, the pull request is not created and an
+// error is returned (to highlight that everything failed)
+// If content contains any successes, a pull request is created and no error is
+// returned (if the creation is successful) even if the content includes
+// errors.
+//
+// If the pull request would contain an excessive number of commits (as
+// configured in pipeline-config.json).
 func createPullRequest(ctx context.Context, state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool) (*github.PullRequestMetadata, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
@@ -74,7 +83,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 			// We've got too many commits. Roll some back locally, and we'll add them to the description.
 			excessSuccesses = content.Successes[maxCommits:]
 			content.Successes = content.Successes[:maxCommits]
-			slog.Info(fmt.Sprintf("%d excess commits created; winding back language repo.", len(excessSuccesses)))
+			slog.Info("Excess commits created; winding back language repo", "excess_commits", len(excessSuccesses))
 			if err := languageRepo.CleanAndRevertCommits(len(excessSuccesses)); err != nil {
 				return nil, err
 			}
@@ -102,7 +111,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(state.startTime))
 
 	if !push {
-		slog.Info(fmt.Sprintf("Push not specified; would have created PR with the following title and description:\n%s\n\n%s", title, description))
+		slog.Info("Push not specified; would have created PR", "title", title, "description", description)
 		return nil, nil
 	}
 
@@ -114,7 +123,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(state.startTime))
 	err = languageRepo.PushBranch(branch, ghClient.Token())
 	if err != nil {
-		slog.Info(fmt.Sprintf("Received error pushing branch: '%s'", err))
+		slog.Info("Received error pushing branch", "err", err)
 		return nil, err
 	}
 	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)

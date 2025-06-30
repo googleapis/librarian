@@ -3,7 +3,7 @@
 This repository contains code for a unified command line tool for
 Google Cloud SDK client library configuration, generation and releasing.
 
-See [CONTRIBUTING.md][] for a guide to contributing to this repository,
+See [CONTRIBUTING.md](CONTRIBUTING.md) for a guide to contributing to this repository,
 and [the doc/ folder](doc/) for more detailed project documentation.
 
 The Librarian project supports the Google Cloud SDK ecosystem, and

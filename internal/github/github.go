@@ -171,9 +171,10 @@ func (c *Client) GetPullRequest(ctx context.Context, repo *Repository, prNumber 
 	return pr, err
 }
 
-// GetPullRequestCheckRuns fetches the "check runs" (e.g. tests, linters)
-// that have run against a specified pull request.
-// See https://docs.github.com/en/rest/checks/runs for m
+// GetPullRequestCheckRuns retrieves the check runs (tests, linters, etc.)
+// for the given pull request.
+//
+// See https://docs.github.com/en/rest/checks/runs.
 func (c *Client) GetPullRequestCheckRuns(ctx context.Context, pullRequest *github.PullRequest) ([]*github.CheckRun, error) {
 	prHead := pullRequest.Head
 	options := &github.ListCheckRunsOptions{}
@@ -194,7 +195,7 @@ func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequ
 }
 
 // ParseUrl parses a GitHub URL (anything to do with a repository) to determine
-// the GitHub repo details (owner and name)
+// the GitHub repo details (owner and name).
 func ParseUrl(remoteUrl string) (*Repository, error) {
 	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
 		return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)

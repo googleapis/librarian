@@ -86,15 +86,14 @@ func init() {
 	addFlagImage(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 	addFlagLanguage(fs, cfg)
-	addFlagRepoRoot(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepo(fs, cfg)
 	addFlagReleaseID(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
 		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
@@ -113,7 +112,7 @@ func createReleaseArtifactsImpl(ctx context.Context, state *commandState, cfg *c
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
 		return err
 	}
-	slog.Info(fmt.Sprintf("Packages will be created in %s", outputRoot))
+	slog.Info("Packages will be created", "dir", outputRoot)
 
 	releases, err := parseCommitsForReleases(state.languageRepo, cfg.ReleaseID)
 	if err != nil {
@@ -130,7 +129,7 @@ func createReleaseArtifactsImpl(ctx context.Context, state *commandState, cfg *c
 		return err
 	}
 
-	slog.Info(fmt.Sprintf("Release artifact creation complete. Artifact root: %s", outputRoot))
+	slog.Info("Release artifact creation complete", "artifact_root", outputRoot)
 	return nil
 }
 
@@ -187,7 +186,7 @@ func buildTestPackageRelease(ctx context.Context, state *commandState, cfg *conf
 		return err
 	}
 	if cfg.SkipIntegrationTests != "" {
-		slog.Info(fmt.Sprintf("Skipping integration tests: %s", cfg.SkipIntegrationTests))
+		slog.Info("Skipping integration tests", "bug", cfg.SkipIntegrationTests)
 	} else if err := cc.IntegrationTestLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
