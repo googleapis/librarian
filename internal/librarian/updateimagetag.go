@@ -90,8 +90,7 @@ func init() {
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Language,
-		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.RepoRoot, cfg.RepoURL, cfg.Image, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}
@@ -147,7 +146,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	}
 	// Derive the new image to use, and save it in the context.
 	ps.ImageTag = cfg.Tag
-	state.containerConfig.Image = deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
+	state.containerConfig.Image = deriveImage(cfg.Image, ps)
 	if err := savePipelineState(state); err != nil {
 		return err
 	}

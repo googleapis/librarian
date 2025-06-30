@@ -180,13 +180,7 @@ type Config struct {
 	// Image is used by all commands which perform language-specific operations.
 	// (This covers all commands other than merge-release-pr.) If this is set via
 	// the -image flag, it is expected to be used directly (potentially including a repository
-	// and/or tag). If the -image flag is not set, the full image specification to
-	// use is derived from the pieces of information:
-	//
-	// - Name: As specified in language repository configuration, or
-	// a default of "google-cloud-{Language}-generator"
-	// - Tag: As specified in the language repository state file, where available
-	// - Repository: The LIBRARIAN_REPOSITORY environment variable, if set.
+	// and/or tag). If the -image flag is not set, use an image configured in the `config.yaml`.
 	//
 	// Image is specified with the -image flag.
 	Image string
