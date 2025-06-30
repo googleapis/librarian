@@ -14,10 +14,14 @@
 
 package librarian
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestIsUrl(t *testing.T) {
-	testCases := []struct {
+	for _, test := range []struct {
 		name  string
 		input string
 		want  bool
@@ -67,13 +71,11 @@ func TestIsUrl(t *testing.T) {
 			input: "just-a-string",
 			want:  false,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := isUrl(tc.input)
-			if got != tc.want {
-				t.Errorf("isUrl(%q) = %v; want %v", tc.input, got, tc.want)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isUrl(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("isUrl() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
