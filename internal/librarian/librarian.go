@@ -35,9 +35,7 @@ var CmdLibrarian = &cli.Command{
 func init() {
 	CmdLibrarian.Init()
 	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
-		cmdConfigure,
 		cmdGenerate,
-		cmdUpdateApis,
 		cmdCreateReleasePR,
 		cmdUpdateImageTag,
 		cmdMergeReleasePR,
