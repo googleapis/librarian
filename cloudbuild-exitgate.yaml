@@ -12,6 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This Cloud Build configuration is used by a Louhi flow for the Artifact
+# Registry (AR) Exit Gate process (go/cloud-sdk-ar-exit-gate-onboarding).
+#
+# This build step creates the librarian container image and publishes it to the
+# 'images-dev' repository, which serves as the entry point for the AR Exit Gate.
+# After passing the gate's security checks, the image is promoted and
+# published to the 'images-prod' repository.
+
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-dev/librarian', '.']

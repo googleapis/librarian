@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -148,7 +147,7 @@ func executeGenerate(ctx context.Context, state *commandState, cfg *config.Confi
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
-	slog.Info(fmt.Sprintf("Code will be generated in %s", outputDir))
+	slog.Info("Code will be generated", "dir", outputDir)
 
 	libraryID, err := runGenerateCommand(ctx, state, cfg, outputDir)
 	if err != nil {
@@ -193,10 +192,10 @@ func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Co
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
 		generatorInput := filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir)
-		slog.Info(fmt.Sprintf("Performing refined generation for library %s", libraryID))
+		slog.Info("Performing refined generation for library", "id", libraryID)
 		return libraryID, state.containerConfig.GenerateLibrary(ctx, cfg, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
-		slog.Info(fmt.Sprintf("No matching library found (or no repo specified); performing raw generation for %s", cfg.APIPath))
+		slog.Info("No matching library found (or no repo specified); performing raw generation", "path", cfg.APIPath)
 		return "", state.containerConfig.GenerateRaw(ctx, cfg, apiRoot, outputDir, cfg.APIPath)
 	}
 }
@@ -238,7 +237,7 @@ func detectIfLibraryConfigured(ctx context.Context, apiPath, repo, gitHubToken s
 	// If the library doesn't exist, we don't use the repo at all.
 	libraryID := findLibraryIDByApiPath(pipelineState, apiPath)
 	if libraryID == "" {
-		slog.Info(fmt.Sprintf("API path %s not configured in repo", apiPath))
+		slog.Info("API path not configured in repo", "path", apiPath)
 		return false, nil
 	}
 
