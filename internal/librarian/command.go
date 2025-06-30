@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -26,6 +25,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -60,7 +60,7 @@ type commandState struct {
 
 func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
 	if repo == "" {
-		return nil, errors.New("repo must be specified")
+		return nil, errors.CustomError("repo must be specified")
 	}
 
 	if isUrl(repo) {
@@ -93,7 +93,7 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 		return nil, err
 	}
 	if !clean {
-		return nil, errors.New("language repo must be clean")
+		return nil, errors.CustomError("language repo must be clean")
 	}
 	return languageRepo, nil
 }
@@ -204,12 +204,12 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 	switch {
 	case os.IsNotExist(err):
 		if err := os.Mkdir(path, 0755); err != nil {
-			return "", fmt.Errorf("unable to create temporary working directory '%s': %w", path, err)
+			return "", errors.CustomErrorWrap(err, "unable to create temporary working directory '%s'", path)
 		}
 	case err == nil:
-		return "", fmt.Errorf("temporary working directory already exists: %s", path)
+		return "", errors.CustomError("temporary working directory already exists: %s", path)
 	default:
-		return "", fmt.Errorf("unable to check directory '%s': %w", path, err)
+		return "", errors.CustomErrorWrap(err, "unable to check directory '%s'", path)
 	}
 
 	slog.Info("Temporary working directory", "dir", path)

@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/errors"
 )
 
 // Command represents a single command that can be executed by the application.
@@ -76,7 +77,7 @@ func (c *Command) Lookup(name string) (*Command, error) {
 			return sub, nil
 		}
 	}
-	return nil, fmt.Errorf("invalid command: %q", name)
+	return nil, errors.CustomError("invalid command: %q", name)
 }
 
 func (c *Command) usage(w io.Writer) {

@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -128,7 +128,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 			return err
 		}
 		if !clean {
-			return errors.New("api repo must be clean before updating the language image tag")
+			return errors.CustomError("api repo must be clean before updating the language image tag")
 		}
 	}
 
@@ -142,7 +142,7 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	languageRepo := state.languageRepo
 
 	if ps.ImageTag == cfg.Tag {
-		return errors.New("specified tag is already in language repo state")
+		return errors.CustomError("specified tag is already in language repo state")
 	}
 	// Derive the new image to use, and save it in the context.
 	ps.ImageTag = cfg.Tag

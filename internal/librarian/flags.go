@@ -15,12 +15,11 @@
 package librarian
 
 import (
-	"errors"
 	"flag"
-	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/errors"
 )
 
 func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
@@ -117,7 +116,7 @@ func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 
 func validateSkipIntegrationTests(skipIntegrationTests string) error {
 	if skipIntegrationTests != "" && !strings.HasPrefix(skipIntegrationTests, "b/") {
-		return errors.New("skipping integration tests requires a bug to be specified, e.g. -skip-integration-tests=b/12345")
+		return errors.CustomError("skipping integration tests requires a bug to be specified, e.g. -skip-integration-tests=b/12345")
 	}
 	return nil
 }
@@ -129,7 +128,7 @@ func validateSkipIntegrationTests(skipIntegrationTests string) error {
 // note that this isn't always going to be the same for all commands for one flag.)
 func validateRequiredFlag(name, value string) error {
 	if value == "" {
-		return fmt.Errorf("required flag -%s not specified", name)
+		return errors.CustomError("required flag -%s not specified", name)
 	}
 	return nil
 }

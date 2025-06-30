@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -132,7 +132,7 @@ const mergedReleaseCommitEnvVarName = "_MERGED_RELEASE_COMMIT"
 
 func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) error {
 	if cfg.SyncURLPrefix != "" && cfg.SyncAuthToken == "" {
-		return errors.New("-sync-url-prefix specified, but no sync auth token present")
+		return errors.CustomError("-sync-url-prefix specified, but no sync auth token present")
 	}
 	if err := validateRequiredFlag("release-id", cfg.ReleaseID); err != nil {
 		return err
@@ -225,7 +225,7 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 
 	// If the PR has been merged by someone else, abort this command. (We can skip this step in the flow, if we still want to release.)
 	if pr.GetMerged() {
-		return false, errors.New("pull request already merged")
+		return false, errors.CustomError("pull request already merged")
 	}
 
 	// If the PR is closed, wait a minute and check if it's *still* closed (to allow for deliberate "close/reopen" workflows),
@@ -239,7 +239,7 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 		}
 		if pr.ClosedAt != nil {
 			slog.Info("PR is still closed; aborting.")
-			return false, errors.New("pull request closed")
+			return false, errors.CustomError("pull request closed")
 		}
 		slog.Info("PR has been reopened. Continuing.")
 	}
@@ -347,7 +347,7 @@ func waitForSync(mergeCommit string, cfg *config.Config) error {
 	}
 	req, err := http.NewRequest("GET", cfg.SyncURLPrefix+mergeCommit, nil)
 	if err != nil {
-		return fmt.Errorf("error creating HTTP request: %v", err)
+		return errors.CustomError("error creating HTTP request: %v", err)
 	}
 	authToken := cfg.SyncAuthToken
 	req.Header.Add("Authorization", "Bearer "+authToken)
@@ -375,10 +375,10 @@ func waitForSync(mergeCommit string, cfg *config.Config) error {
 			continue
 		} else {
 			bodyBytes, _ := io.ReadAll(resp.Body)
-			return fmt.Errorf("unexpected status fetching commit: %d - %s", resp.StatusCode, string(bodyBytes))
+			return errors.CustomError("unexpected status fetching commit: %d - %s", resp.StatusCode, string(bodyBytes))
 		}
 	}
-	return fmt.Errorf("timed out waiting for commit to sync")
+	return errors.CustomError("timed out waiting for commit to sync")
 }
 
 // For each commit in the pull request, check:
@@ -575,7 +575,7 @@ func parseRemoteCommitsForReleases(commits []*github.RepositoryCommit, releaseID
 			return nil, err
 		}
 		if release.ReleaseID != releaseID {
-			return nil, fmt.Errorf("while finding releases for release ID %s, found commit with release ID %s", releaseID, release.ReleaseID)
+			return nil, errors.CustomError("while finding releases for release ID %s, found commit with release ID %s", releaseID, release.ReleaseID)
 		}
 		releases = append(releases, *release)
 	}

@@ -16,11 +16,11 @@ package librarian
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -99,7 +99,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 		for _, error := range content.Errors {
 			slog.Error(error)
 		}
-		return nil, errors.New("errors encountered but no PR to create")
+		return nil, errors.CustomError("errors encountered but no PR to create")
 	}
 
 	successesText := formatListAsMarkdown("Changes in this PR", content.Successes)
@@ -167,12 +167,12 @@ func getGitHubRepoFromRemote(repo *gitrepo.Repository) (*github.Repository, erro
 	}
 
 	if len(gitHubRemoteNames) == 0 {
-		return nil, fmt.Errorf("no GitHub remotes found")
+		return nil, errors.CustomError("no GitHub remotes found")
 	}
 
 	if len(gitHubRemoteNames) > 1 {
 		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
-		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
+		return nil, errors.CustomError("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
 	}
 	return github.ParseUrl(gitHubUrl)
 }

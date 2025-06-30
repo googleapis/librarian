@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/github"
 
 	"github.com/Masterminds/semver/v3"
@@ -137,11 +138,11 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 	}
 
 	if cfg.LibraryVersion != "" && cfg.LibraryID == "" {
-		return fmt.Errorf("flag -library-version is not valid without -library-id")
+		return errors.CustomError("flag -library-version is not valid without -library-id")
 	}
 
 	if cfg.LibraryID != "" && findLibraryByID(state.pipelineState, cfg.LibraryID) == nil {
-		return fmt.Errorf("no such library: %s", cfg.LibraryID)
+		return errors.CustomError("no such library: %s", cfg.LibraryID)
 	}
 
 	inputDirectory := filepath.Join(state.workRoot, "inputs")
@@ -380,7 +381,7 @@ func calculateNextVersion(library *statepb.LibraryState, libraryVersion string) 
 		return library.NextVersion, nil
 	}
 	if library.CurrentVersion == "" {
-		return "", fmt.Errorf("cannot determine new version for %s; no current version", library.Id)
+		return "", errors.CustomError("cannot determine new version for %s; no current version", library.Id)
 	}
 	current, err := semver.StrictNewVersion(library.CurrentVersion)
 	if err != nil {
@@ -416,7 +417,7 @@ func calculateNextPrerelease(prerelease string) (string, error) {
 		}
 	}
 	if digits == 0 {
-		return "", fmt.Errorf("unable to create next prerelease from '%s'", prerelease)
+		return "", errors.CustomError("unable to create next prerelease from '%s'", prerelease)
 	}
 	currentSuffix := prerelease[len(prerelease)-digits:]
 	currentNumber, err := strconv.Atoi(currentSuffix)

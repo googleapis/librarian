@@ -23,6 +23,7 @@ import (
 	"log/slog"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/errors"
 )
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
@@ -55,7 +56,7 @@ func Run(ctx context.Context, arg ...string) error {
 	}
 	if len(arg) == 0 {
 		CmdLibrarian.Flags.Usage()
-		return fmt.Errorf("command not specified")
+		return errors.CustomError("command not specified")
 	}
 	cmd, err := CmdLibrarian.Lookup(arg[0])
 	if err != nil {

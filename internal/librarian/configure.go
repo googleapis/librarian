@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/statepb"
 	"gopkg.in/yaml.v3"
 )
@@ -226,7 +226,7 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 		return false, nil
 	}
 	if len(librarySettings) != 1 {
-		return false, errors.New("wrong number of library_settings in service config")
+		return false, errors.CustomError("wrong number of library_settings in service config")
 	}
 	firstSettings, ok := librarySettings[0].(map[string]interface{})
 	if !ok {

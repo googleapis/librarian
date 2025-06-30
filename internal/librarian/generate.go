@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
@@ -189,7 +189,7 @@ func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Co
 	if state.languageRepo != nil {
 		libraryID := findLibraryIDByApiPath(state.pipelineState, cfg.APIPath)
 		if libraryID == "" {
-			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
+			return "", errors.CustomError("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
 		generatorInput := filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir)
 		slog.Info("Performing refined generation for library", "id", libraryID)

@@ -15,9 +15,10 @@
 package librarian
 
 import (
-	"errors"
 	"slices"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/errors"
 )
 
 func TestAddErrorToPullRequest(t *testing.T) {
@@ -25,7 +26,7 @@ func TestAddErrorToPullRequest(t *testing.T) {
 		Successes: []string{"s1", "s2"},
 		Errors:    []string{"e1", "e2"},
 	}
-	addErrorToPullRequest(&pr, "library-id", errors.New("bang"), "generating")
+	addErrorToPullRequest(&pr, "library-id", errors.CustomError("bang"), "generating")
 	if !slices.Equal([]string{"s1", "s2"}, pr.Successes) {
 		t.Errorf("addErrorToPullRequest modified successes: %q", pr.Successes)
 	}

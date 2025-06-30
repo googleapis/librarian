@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -268,7 +269,7 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 		return err
 	}
 	if !clean {
-		return fmt.Errorf("building '%s' created changes in the repo", library.Id)
+		return errors.CustomError("building '%s' created changes in the repo", library.Id)
 	}
 
 	if buildErr != nil {

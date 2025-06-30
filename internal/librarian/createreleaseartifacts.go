@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -264,5 +264,5 @@ func findMetadataValue(key string, lines []string, hash string) (string, error) 
 			return line[len(prefix):], nil
 		}
 	}
-	return "", fmt.Errorf("unable to find metadata value for key '%s' in commit %s", key, hash)
+	return "", errors.CustomError("unable to find metadata value for key '%s' in commit %s", key, hash)
 }

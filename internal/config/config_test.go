@@ -15,11 +15,11 @@
 package config
 
 import (
-	"errors"
 	"os/user"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/errors"
 )
 
 func TestNew(t *testing.T) {
@@ -113,7 +113,7 @@ func TestSetupUser(t *testing.T) {
 		{
 			name:     "Error getting user",
 			mockUser: nil,
-			mockErr:  errors.New("user lookup failed"),
+			mockErr:  errors.CustomError("user lookup failed"),
 			wantUID:  "",
 			wantGID:  "",
 			wantErr:  true,

@@ -29,6 +29,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	customerrors "github.com/googleapis/librarian/internal/errors"
 )
 
 // Repository represents a git repository.
@@ -65,7 +66,7 @@ type RepositoryOptions struct {
 // If opts.Clone is CloneOptionAlways, it always clones from opts.RemoteURL.
 func NewRepository(opts *RepositoryOptions) (*Repository, error) {
 	if opts.Dir == "" {
-		return nil, errors.New("gitrepo: dir is required")
+		return nil, customerrors.CustomError("gitrepo: dir is required")
 	}
 
 	if !opts.MaybeClone {
@@ -78,7 +79,7 @@ func NewRepository(opts *RepositoryOptions) (*Repository, error) {
 	}
 	if os.IsNotExist(err) {
 		if opts.RemoteURL == "" {
-			return nil, fmt.Errorf("gitrepo: remote URL is required when cloning")
+			return nil, customerrors.CustomError("gitrepo: remote URL is required when cloning")
 		}
 		slog.Info("Repository not found, executing clone")
 		return clone(opts.Dir, opts.RemoteURL, opts.CI)
@@ -150,7 +151,7 @@ func (r *Repository) Commit(msg string, userName, userEmail string) error {
 		return err
 	}
 	if status.IsClean() {
-		return fmt.Errorf("no modifications to commit")
+		return customerrors.CustomError("no modifications to commit")
 	}
 	hash, err := worktree.Commit(msg, &git.CommitOptions{
 		Author: &object.Signature{
@@ -252,7 +253,7 @@ func (r *Repository) PrintStatus() error {
 // commit matching sinceCommit is found, an error is returned.
 func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error) {
 	if len(paths) == 0 {
-		return nil, errors.New("no paths to check for commits")
+		return nil, customerrors.CustomError("no paths to check for commits")
 	}
 	commits := []*Commit{}
 	finalHash := plumbing.NewHash(sinceCommit)
@@ -262,7 +263,7 @@ func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit s
 		return nil, err
 	}
 	// Sentinel "error" - this can be replaced using LogOptions.To when that's available.
-	var ErrStopIterating = fmt.Errorf("fake error to stop iterating")
+	var ErrStopIterating = customerrors.CustomError("fake error to stop iterating")
 	err = logIterator.ForEach(func(commit *object.Commit) error {
 		if commit.Hash == finalHash {
 			return ErrStopIterating
@@ -307,11 +308,11 @@ func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit s
 
 		return nil
 	})
-	if err != nil && err != ErrStopIterating {
+	if err != nil && !errors.Is(err, ErrStopIterating) {
 		return nil, err
 	}
-	if sinceCommit != "" && err != ErrStopIterating {
-		return nil, fmt.Errorf("did not find commit %s when iterating", sinceCommit)
+	if sinceCommit != "" && !errors.Is(err, ErrStopIterating) {
+		return nil, customerrors.CustomError("did not find commit %s when iterating", sinceCommit)
 	}
 	return commits, nil
 }
@@ -324,7 +325,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 		return "", err
 	}
 	treeEntry, err := tree.FindEntry(path)
-	if err == object.ErrEntryNotFound || err == object.ErrDirectoryNotFound {
+	if errors.Is(err, object.ErrEntryNotFound) || errors.Is(err, object.ErrDirectoryNotFound) {
 		return "", nil
 	}
 	if err != nil {
@@ -394,7 +395,7 @@ func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]*Commit, error)
 		}
 
 		if candidateCommit.NumParents() != 1 {
-			return nil, fmt.Errorf("aborted finding release PR commits; commit %s has multiple parents", candidateCommit.Hash.String())
+			return nil, customerrors.CustomError("aborted finding release PR commits; commit %s has multiple parents", candidateCommit.Hash.String())
 		}
 		candidateCommit, err = candidateCommit.Parent(0)
 		if err != nil {
@@ -403,7 +404,7 @@ func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]*Commit, error)
 	}
 
 	if len(commits) == 0 {
-		return nil, fmt.Errorf("did not find any commits with release ID %s", releaseID)
+		return nil, customerrors.CustomError("did not find any commits with release ID %s", releaseID)
 	}
 	// Present the commits in forward-chronological order.
 	slices.Reverse(commits)
@@ -467,7 +468,7 @@ func (r *Repository) CleanAndRevertCommits(count int) error {
 	targetCommit := headCommit
 	for range count {
 		if targetCommit.NumParents() != 1 {
-			return fmt.Errorf("commit %s has multiple parents", targetCommit.Hash.String())
+			return customerrors.CustomError("commit %s has multiple parents", targetCommit.Hash.String())
 		}
 		var err error
 		targetCommit, err = targetCommit.Parent(0)

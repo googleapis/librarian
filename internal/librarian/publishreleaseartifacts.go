@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -27,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/errors"
 	"github.com/googleapis/librarian/internal/github"
 )
 
@@ -117,7 +117,7 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 	}
 
 	if len(releases) == 0 {
-		return errors.New("no releases to publish")
+		return errors.CustomError("no releases to publish")
 	}
 
 	// Load the pipeline config from the commit of the first release, using the tag repo, then

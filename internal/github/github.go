@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v69/github"
+	"github.com/googleapis/librarian/internal/errors"
 )
 
 // PullRequest is a type alias for the go-github type.
@@ -198,7 +199,7 @@ func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequ
 // the GitHub repo details (owner and name).
 func ParseUrl(remoteUrl string) (*Repository, error) {
 	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
-		return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)
+		return nil, errors.CustomError("remote '%s' is not a GitHub remote", remoteUrl)
 	}
 	remotePath := remoteUrl[len("https://github.com/"):]
 	pathParts := strings.Split(remotePath, "/")

@@ -16,10 +16,11 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/user"
+
+	"github.com/googleapis/librarian/internal/errors"
 )
 
 const (
@@ -398,7 +399,7 @@ func (c *Config) SetupUser() error {
 // IsValid ensures the values contained in a Config are valid.
 func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
-		return false, errors.New("no GitHub token supplied for push")
+		return false, errors.CustomError("no GitHub token supplied for push")
 	}
 	return true, nil
 }
