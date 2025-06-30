@@ -132,7 +132,7 @@ func executeConfigure(ctx context.Context, state *commandState, cfg *config.Conf
 		}
 		apiRoot = absRoot
 	}
-	apiPaths, err := findApisToConfigure(apiRoot, state.pipelineState, cfg.Language, cfg.APIPath)
+	apiPaths, err := findApisToConfigure(apiRoot, state.pipelineState, cfg.Language, cfg.API)
 	if err != nil {
 		return err
 	}
