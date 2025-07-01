@@ -100,7 +100,8 @@ func init() {
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image,
+		cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}

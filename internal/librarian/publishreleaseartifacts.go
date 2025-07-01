@@ -31,7 +31,8 @@ import (
 )
 
 var cmdPublishReleaseArtifacts = &cli.Command{
-	Short:     "publish-release-artifacts publishes (previously-created) release artifacts to package managers and documentation sites",
+	Short: "publish-release-artifacts publishes (previously-created) release " +
+		"artifacts to package managers and documentation sites",
 	UsageLine: "librarian publish-release-artifacts -artifact-root=<artifact-root> -tag-repo-url=<repo-url> [flags]",
 	Long: `Specify the root output directory created by create-release-artifacts, and
 the GitHub repository in which to create tags/releases.

@@ -182,7 +182,8 @@ func executeGenerate(ctx context.Context, state *commandState, cfg *config.Confi
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Config, outputDir string) (string, error) {
+func runGenerateCommand(ctx context.Context, state *commandState,
+	cfg *config.Config, outputDir string) (string, error) {
 	apiRoot, err := filepath.Abs(cfg.Source)
 	if err != nil {
 		return "", err

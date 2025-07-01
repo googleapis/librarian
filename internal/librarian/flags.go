@@ -28,7 +28,8 @@ func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+	fs.StringVar(&cfg.Source, "source", "",
+		"location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
@@ -63,7 +64,8 @@ func addFlagGitUserName(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
+	fs.StringVar(&cfg.Image, "image", "",
+		"Container image to run for subcommands. Defaults to the image in the pipeline state.")
 }
 
 func addFlagLibraryID(fs *flag.FlagSet, cfg *config.Config) {
