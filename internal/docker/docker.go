@@ -111,7 +111,7 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *state
 // in the output directory, which is initially empty.
 func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, output, apiPath string) error {
 	commandArgs := []string{
-		"--api-root=/apis",
+		"--source=/apis",
 		"--output=/output",
 		fmt.Sprintf("--api=%s", apiPath),
 	}
@@ -130,7 +130,7 @@ func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, o
 // as configured in the Librarian state file for the repository.
 func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
 	commandArgs := []string{
-		"--api-root=/apis",
+		"--source=/apis",
 		"--output=/output",
 		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -194,7 +194,7 @@ func (c *Docker) BuildLibrary(ctx context.Context, cfg *config.Config, repoRoot,
 // library code is not generated.
 func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error {
 	commandArgs := []string{
-		"--api-root=/apis",
+		"--source=/apis",
 		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
 		fmt.Sprintf("--api=%s", apiPath),
 	}

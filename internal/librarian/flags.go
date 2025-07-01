@@ -28,7 +28,7 @@ func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagAPIRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+	fs.StringVar(&cfg.APIRoot, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
