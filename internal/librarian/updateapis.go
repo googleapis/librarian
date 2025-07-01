@@ -172,8 +172,8 @@ func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) er
 	return err
 }
 
-func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState,
-	prContent *PullRequestContent) error {
+func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config, apiRepo *gitrepo.Repository,
+	outputRoot string, library *statepb.LibraryState, prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 
@@ -203,7 +203,8 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 	}
 	slog.Info("Generating library with new commits", "id", library.Id, "commits", len(commits))
 
-	// Now that we know the API has at least one new API commit, regenerate it, update the state, commit the change and build the output.
+	// Now that we know the API has at least one new API commit,
+	// regenerate it, update the state, commit the change and build the output.
 
 	// We create an output directory separately for each API.
 	outputDir := filepath.Join(outputRoot, library.Id)
@@ -216,7 +217,8 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 	// We could potentially just keep a single copy and update it, but it's clearer diagnostically if we can tell
 	// what state we passed into the container.
 	generatorInput := filepath.Join(state.workRoot, config.GeneratorInputDir, library.Id)
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir))); err != nil {
+	if err := os.CopyFS(generatorInput,
+		os.DirFS(filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
 
@@ -299,7 +301,8 @@ func createCommitMessage(libraryID string, commits []*gitrepo.Commit) string {
 	for i := len(commits) - 1; i >= 0; i-- {
 		commit := commits[i]
 		messageLines := strings.Split(commit.Message, "\n")
-		sourceLinkLines = append(sourceLinkLines, fmt.Sprintf("Source-Link: https://github.com/googleapis/googleapis/commit/%s", commit.Hash.String()))
+		sourceLinkLines = append(sourceLinkLines,
+			fmt.Sprintf("Source-Link: https://github.com/googleapis/googleapis/commit/%s", commit.Hash.String()))
 		for _, line := range messageLines {
 			if strings.HasPrefix(line, PiperPrefix) {
 				piperRevIdLines = append(piperRevIdLines, line)

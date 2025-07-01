@@ -86,7 +86,8 @@ func savePipelineState(state *commandState) error {
 	return err
 }
 
-func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*statepb.PipelineState, error) {
+func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string,
+	gitHubToken string) (*statepb.PipelineState, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err

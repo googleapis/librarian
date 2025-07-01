@@ -67,7 +67,8 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 //
 // If the pull request would contain an excessive number of commits (as
 // configured in pipeline-config.json).
-func createPullRequest(ctx context.Context, state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool) (*github.PullRequestMetadata, error) {
+func createPullRequest(ctx context.Context, state *commandState, content *PullRequestContent, titlePrefix,
+	descriptionSuffix, branchType string, gitHubToken string, push bool) (*github.PullRequestMetadata, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
@@ -172,7 +173,11 @@ func getGitHubRepoFromRemote(repo *gitrepo.Repository) (*github.Repository, erro
 
 	if len(gitHubRemoteNames) > 1 {
 		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
-		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
+		return nil, fmt.Errorf(
+			"can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s",
+			joinedRemoteNames,
+		)
+
 	}
 	return github.ParseUrl(gitHubUrl)
 }

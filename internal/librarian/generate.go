@@ -155,7 +155,9 @@ func executeGenerate(ctx context.Context, state *commandState, cfg *config.Confi
 	}
 	if cfg.Build {
 		if libraryID != "" {
-			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
+			slog.Info("Build requested in the context of refined generation; " +
+				"cleaning and copying code to the local language repo before building.")
+
 			if err := state.containerConfig.Clean(ctx, cfg, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
@@ -178,7 +180,8 @@ func executeGenerate(ctx context.Context, state *commandState, cfg *config.Confi
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Config, outputDir string) (string, error) {
+func runGenerateCommand(ctx context.Context, state *commandState,
+	cfg *config.Config, outputDir string) (string, error) {
 	apiRoot, err := filepath.Abs(cfg.APIRoot)
 	if err != nil {
 		return "", err

@@ -172,7 +172,8 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 		return err
 	}
 
-	// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
+	// Build everything at the end.
+	// This is more efficient than building each library with a separate container invocation.
 	slog.Info("Building all libraries.")
 	if err := state.containerConfig.BuildLibrary(ctx, cfg, languageRepo.Dir, ""); err != nil {
 		return err
@@ -182,11 +183,13 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	// can massage it into a similar state.
 	prContent := new(PullRequestContent)
 	addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
-	_, err := createPullRequest(ctx, state, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push)
+	_, err := createPullRequest(ctx, state, prContent, "chore: update generation image tag", "",
+		"update-image-tag", cfg.GitHubToken, cfg.Push)
 	return err
 }
 
-func regenerateLibrary(ctx context.Context, state *commandState, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+func regenerateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
+	apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 

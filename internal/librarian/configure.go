@@ -152,7 +152,8 @@ func executeConfigure(ctx context.Context, state *commandState, cfg *config.Conf
 // Returns a collection of APIs to configure, either from the api flag,
 // or by examining the service config YAML files to find APIs which have requested libraries,
 // but which aren't yet configured.
-func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language string, apiPath string) ([]string, error) {
+func findApisToConfigure(apiRoot string, state *statepb.PipelineState,
+	language string, apiPath string) ([]string, error) {
 	languageSettingsName := language + "_settings"
 	if apiPath != "" {
 		return []string{apiPath}, nil
@@ -165,7 +166,8 @@ func findApisToConfigure(apiRoot string, state *statepb.PipelineState, language 
 		if err != nil {
 			return err
 		}
-		// TODO(https://github.com/googleapis/librarian/issues/551): validate that we only have a single yaml file per directory.
+		// TODO(https://github.com/googleapis/librarian/issues/551):
+		// validate that we only have a single yaml file per directory.
 		if !d.IsDir() && strings.HasSuffix(d.Name(), ".yaml") && !strings.HasSuffix(d.Name(), "gapic.yaml") {
 			apiPath, err := filepath.Rel(apiRoot, filepath.Dir(path))
 			if err != nil {
@@ -274,7 +276,8 @@ func shouldBeGenerated(serviceYamlPath, languageSettingsName string) (bool, erro
 // which are expected to be fatal.  If the function returns a non-error, the
 // repo will be clean when the function returns (so can be used for the next
 // step).
-func configureApi(ctx context.Context, state *commandState, cfg *config.Config, outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
+func configureApi(ctx context.Context, state *commandState, cfg *config.Config,
+	outputRoot, apiRoot, apiPath string, prContent *PullRequestContent) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 

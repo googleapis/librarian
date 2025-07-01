@@ -49,7 +49,8 @@ var cmdCreateReleaseArtifacts = &cli.Command{
 	Short:     "create-release-artifacts creates release artifacts from a merged release PR",
 	UsageLine: "librarian create-release-artifacts -language=<language> -release-id=<id> [flags]",
 	Long: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
-The release ID is specified in the the release PR and in each commit within it, in a line starting "Librarian-Release-ID: ".
+The release ID is specified in the the release PR and in each commit within it, 
+in a line starting "Librarian-Release-ID: ".
 
 After acquiring the language repository, the repository is scanned backwards from the head commit to find
 commits belonging to the single release for which the command is creating artifacts. The head commit is not required to
@@ -71,7 +72,8 @@ Finally, metadata files for the Librarian state and config, and the libraries th
 into the root output folder for use in the "publish-release-artifacts" command.
 
 This command does not create any pull requests. Any failure is considered fatal for this command: if one library
-fails its integration tests for example, the whole job fails. This is to avoid a situation where a release is half-published.
+fails its integration tests for example, the whole job fails. 
+This is to avoid a situation where a release is half-published.
 The command can safely be rerun, e.g. if a service outage caused a failure and the release can be expected to succeed
 if retried.
 `,
@@ -175,7 +177,8 @@ func copyFile(sourcePath, destPath string) error {
 	return createAndWriteBytesToFile(destPath, bytes)
 }
 
-func buildTestPackageRelease(ctx context.Context, state *commandState, cfg *config.Config, outputRoot string, release LibraryRelease) error {
+func buildTestPackageRelease(ctx context.Context, state *commandState, cfg *config.Config,
+	outputRoot string, release LibraryRelease) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 

@@ -28,15 +28,18 @@ func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagAPIRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APIRoot, "api-root", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+	fs.StringVar(&cfg.APIRoot, "api-root", "",
+		"location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
+	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "",
+		"Path to root of release artifacts to publish (as created by create-release-artifacts)")
 }
 
 func addFlagBaselineCommit(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.BaselineCommit, "baseline-commit", "", "the commit hash that was at HEAD for the language repo when create-release-pr was run")
+	fs.StringVar(&cfg.BaselineCommit, "baseline-commit", "",
+		"the commit hash that was at HEAD for the language repo when create-release-pr was run")
 }
 
 func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
@@ -48,7 +51,8 @@ func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagEnvFile(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.EnvFile, "env-file", "", "full path to the file where the environment variables are stored. Defaults to env-vars.txt within the output")
+	fs.StringVar(&cfg.EnvFile, "env-file", "",
+		"full path to the file where the environment variables are stored. Defaults to env-vars.txt within the output")
 }
 
 func addFlagGitUserEmail(fs *flag.FlagSet, cfg *config.Config) {
@@ -60,7 +64,8 @@ func addFlagGitUserName(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Image, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
+	fs.StringVar(&cfg.Image, "image", "",
+		"language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
 }
 
 func addFlagLanguage(fs *flag.FlagSet, cfg *config.Config) {
@@ -72,7 +77,8 @@ func addFlagLibraryID(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.LibraryVersion, "library-version", "", "The version to release (only valid with library-id, only when creating a release PR)")
+	fs.StringVar(&cfg.LibraryVersion, "library-version", "",
+		"The version to release (only valid with library-id, only when creating a release PR)")
 }
 
 func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
@@ -88,7 +94,8 @@ func addFlagReleasePRUrl(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
+	fs.StringVar(&cfg.Repo, "repo", "",
+		"Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
 }
 
 func addFlagSecretsProject(fs *flag.FlagSet, cfg *config.Config) {
@@ -96,11 +103,13 @@ func addFlagSecretsProject(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.SkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
+	fs.StringVar(&cfg.SkipIntegrationTests, "skip-integration-tests", "",
+		"set to a value of b/{explanatory-bug} to skip integration tests")
 }
 
 func addFlagSyncUrlPrefix(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.SyncURLPrefix, "sync-url-prefix", "", "the prefix of the URL to check for commit synchronization; the commit hash will be appended to this")
+	fs.StringVar(&cfg.SyncURLPrefix, "sync-url-prefix", "",
+		"the prefix of the URL to check for commit synchronization; the commit hash will be appended to this")
 }
 
 func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
@@ -108,11 +117,13 @@ func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.TagRepoURL, "tag-repo-url", "", "Repository URL to tag and create releases in. Requires when push is true.")
+	fs.StringVar(&cfg.TagRepoURL, "tag-repo-url", "",
+		"Repository URL to tag and create releases in. Requires when push is true.")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.WorkRoot, "output", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
+	fs.StringVar(&cfg.WorkRoot, "output", "",
+		"Working directory root. When this is not specified, a working directory will be created in /tmp.")
 }
 
 func validateSkipIntegrationTests(skipIntegrationTests string) error {

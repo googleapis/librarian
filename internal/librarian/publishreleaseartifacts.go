@@ -31,8 +31,10 @@ import (
 )
 
 var cmdPublishReleaseArtifacts = &cli.Command{
-	Short:     "publish-release-artifacts publishes (previously-created) release artifacts to package managers and documentation sites",
-	UsageLine: "librarian publish-release-artifacts -language=<language> -artifact-root=<artifact-root> -tag-repo-url=<repo-url> [flags]",
+	Short: "publish-release-artifacts publishes (previously-created) release artifacts " +
+		"to package managers and documentation sites",
+	UsageLine: "librarian publish-release-artifacts -language=<language> -artifact-root=<artifact-root> " +
+		"-tag-repo-url=<repo-url> [flags]",
 	Long: `Specify the language, the root output directory created by create-release-artifacts, and
 the GitHub repository in which to create tags/releases.
 
@@ -150,7 +152,8 @@ func publishPackages(ctx context.Context, config *docker.Docker, cfg *config.Con
 	return nil
 }
 
-func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *github.Repository, gitHubToken string) error {
+func createRepoReleases(ctx context.Context, releases []LibraryRelease,
+	gitHubRepo *github.Repository, gitHubToken string) error {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return err
@@ -159,7 +162,8 @@ func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRe
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
 		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := ghClient.CreateRelease(ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
+		repoRelease, err := ghClient.CreateRelease(ctx, gitHubRepo, tag, release.CommitHash, title,
+			release.ReleaseNotes, prerelease)
 		if err != nil {
 			return err
 		}

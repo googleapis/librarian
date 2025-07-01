@@ -394,7 +394,8 @@ func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]*Commit, error)
 		}
 
 		if candidateCommit.NumParents() != 1 {
-			return nil, fmt.Errorf("aborted finding release PR commits; commit %s has multiple parents", candidateCommit.Hash.String())
+			return nil, fmt.Errorf("aborted finding release PR commits; commit %s has multiple parents",
+				candidateCommit.Hash.String())
 		}
 		candidateCommit, err = candidateCommit.Parent(0)
 		if err != nil {

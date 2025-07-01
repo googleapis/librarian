@@ -43,7 +43,8 @@ type EnvironmentProvider struct {
 	pipelineConfig *statepb.PipelineConfig
 }
 
-func newEnvironmentProvider(workRoot, secretsProject string, pipelineConfig *statepb.PipelineConfig) *EnvironmentProvider {
+func newEnvironmentProvider(workRoot, secretsProject string,
+	pipelineConfig *statepb.PipelineConfig) *EnvironmentProvider {
 	if pipelineConfig == nil {
 		return nil
 	}
@@ -118,7 +119,8 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(ctx context.Contex
 	return builder.String(), nil
 }
 
-func getSecretManagerValue(ctx context.Context, dockerEnv *EnvironmentProvider, variable *statepb.CommandEnvironmentVariable) (string, bool, error) {
+func getSecretManagerValue(ctx context.Context, dockerEnv *EnvironmentProvider,
+	variable *statepb.CommandEnvironmentVariable) (string, bool, error) {
 	if variable.SecretName == "" {
 		return "", false, nil
 	}

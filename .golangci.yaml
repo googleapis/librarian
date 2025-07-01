@@ -26,6 +26,7 @@ linters:
     - godot
     - govet
     - ineffassign
+    - lll
     - misspell
     - staticcheck
     - unparam
