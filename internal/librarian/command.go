@@ -228,15 +228,6 @@ func commitAll(repo *gitrepo.Repository, msg, userName, userEmail string) error 
 	return repo.Commit(msg, userName, userEmail)
 }
 
-// Log details of an error which prevents a single API or library from being configured/released, but without
-// halting the overall process. Return a brief description to the errors to include in the PR.
-// We don't include detailed errors in the PR, as this could reveal sensitive information.
-// The action should describe what failed, e.g. "configuring", "building", "generating".
-func logPartialError(id string, err error, action string) string {
-	slog.Warn("Error", "action", action, "id", id, "err", err)
-	return fmt.Sprintf("Error while %s %s", action, id)
-}
-
 func formatReleaseTag(libraryID, version string) string {
 	return libraryID + "-" + version
 }
