@@ -32,7 +32,7 @@ import (
 
 var cmdGenerate = &cli.Command{
 	Short:     "generate generates client library code for a single API",
-	UsageLine: "librarian generate -api-root=<api-root> -api=<api-path> -language=<language> [flags]",
+	UsageLine: "librarian generate -source=<api-root> -api=<api-path> -language=<language> [flags]",
 	Long: `Specify the language, the API repository root and the path within it for the API to generate.
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
 to build the generated library.
@@ -69,10 +69,10 @@ other source code to be preserved/cleaned. Instead, the "build-raw" command is p
 output directory that was specified for the "generate-raw" command.
 `,
 	Run: func(ctx context.Context, cfg *config.Config) error {
-		if err := validateRequiredFlag("api", cfg.APIPath); err != nil {
+		if err := validateRequiredFlag("api", cfg.API); err != nil {
 			return err
 		}
-		if err := validateRequiredFlag("api-root", cfg.APIRoot); err != nil {
+		if err := validateRequiredFlag("source", cfg.Source); err != nil {
 			return err
 		}
 		return runGenerate(ctx, cfg)
@@ -84,18 +84,18 @@ func init() {
 	fs := cmdGenerate.Flags
 	cfg := cmdGenerate.Config
 
-	addFlagImage(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
 	addFlagAPIPath(fs, cfg)
-	addFlagAPIRoot(fs, cfg)
-	addFlagLanguage(fs, cfg)
 	addFlagBuild(fs, cfg)
+	addFlagImage(fs, cfg)
+	addFlagLanguage(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagProject(fs, cfg)
+	addFlagSource(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config) error {
-	libraryConfigured, err := detectIfLibraryConfigured(ctx, cfg.APIPath, cfg.Repo, cfg.GitHubToken)
+	libraryConfigured, err := detectIfLibraryConfigured(ctx, cfg.API, cfg.Repo, cfg.GitHubToken)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func executeGenerate(ctx context.Context, state *commandState, cfg *config.Confi
 			if err := state.containerConfig.BuildLibrary(ctx, cfg, state.languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
-		} else if err := state.containerConfig.BuildRaw(ctx, cfg, outputDir, cfg.APIPath); err != nil {
+		} else if err := state.containerConfig.BuildRaw(ctx, cfg, outputDir, cfg.API); err != nil {
 			return err
 		}
 	}
@@ -179,7 +179,7 @@ func executeGenerate(ctx context.Context, state *commandState, cfg *config.Confi
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
 func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Config, outputDir string) (string, error) {
-	apiRoot, err := filepath.Abs(cfg.APIRoot)
+	apiRoot, err := filepath.Abs(cfg.Source)
 	if err != nil {
 		return "", err
 	}
@@ -187,7 +187,7 @@ func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Co
 	// If we've got a language repo, it's because we've already found a library for the
 	// specified API, configured in the repo.
 	if state.languageRepo != nil {
-		libraryID := findLibraryIDByApiPath(state.pipelineState, cfg.APIPath)
+		libraryID := findLibraryIDByApiPath(state.pipelineState, cfg.API)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
@@ -195,8 +195,8 @@ func runGenerateCommand(ctx context.Context, state *commandState, cfg *config.Co
 		slog.Info("Performing refined generation for library", "id", libraryID)
 		return libraryID, state.containerConfig.GenerateLibrary(ctx, cfg, apiRoot, outputDir, generatorInput, libraryID)
 	} else {
-		slog.Info("No matching library found (or no repo specified); performing raw generation", "path", cfg.APIPath)
-		return "", state.containerConfig.GenerateRaw(ctx, cfg, apiRoot, outputDir, cfg.APIPath)
+		slog.Info("No matching library found (or no repo specified); performing raw generation", "path", cfg.API)
+		return "", state.containerConfig.GenerateRaw(ctx, cfg, apiRoot, outputDir, cfg.API)
 	}
 }
 
