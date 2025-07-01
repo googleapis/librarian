@@ -65,7 +65,7 @@ func TestDockerRun(t *testing.T) {
 				"--network=none",
 				testImage,
 				string(CommandGenerateRaw),
-				"--api-root=/apis",
+				"--source=/apis",
 				"--output=/output",
 				fmt.Sprintf("--api=%s", testAPIPath),
 			},
@@ -88,7 +88,7 @@ func TestDockerRun(t *testing.T) {
 				"--network=none",
 				testImage,
 				string(CommandGenerateRaw),
-				"--api-root=/apis",
+				"--source=/apis",
 				"--output=/output",
 				fmt.Sprintf("--api=%s", testAPIPath),
 			},
@@ -109,7 +109,7 @@ func TestDockerRun(t *testing.T) {
 				"--network=none",
 				testImage,
 				string(CommandGenerateLibrary),
-				"--api-root=/apis",
+				"--source=/apis",
 				"--output=/output",
 				"--generator-input=/generator-input",
 				fmt.Sprintf("--library-id=%s", testLibraryID),
@@ -183,7 +183,7 @@ func TestDockerRun(t *testing.T) {
 				"--network=none",
 				testImage,
 				string(CommandConfigure),
-				"--api-root=/apis",
+				"--source=/apis",
 				"--generator-input=/generator-input",
 				fmt.Sprintf("--api=%s", testAPIPath),
 			},
@@ -271,7 +271,7 @@ func TestDockerRun(t *testing.T) {
 				}
 				return nil
 			}
-			ctx := context.Background()
+			ctx := t.Context()
 			if err := test.runCommand(ctx, test.docker); err != nil {
 				t.Fatal(err)
 			}

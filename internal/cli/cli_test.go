@@ -99,7 +99,7 @@ func TestRun(t *testing.T) {
 	}
 
 	cfg := &config.Config{}
-	if err := cmd.Run(context.Background(), cfg); err != nil {
+	if err := cmd.Run(t.Context(), cfg); err != nil {
 		t.Fatal(err)
 	}
 	if !executed {

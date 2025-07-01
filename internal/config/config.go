@@ -50,7 +50,7 @@ type Config struct {
 	// APIRoot is used by generate, update-apis, update-image-tag and configure
 	// commands.
 	//
-	// APIRoot is specified with the -api-root flag.
+	// APIRoot is specified with the -source flag.
 	APIRoot string
 
 	// ArtifactRoot is the path to previously-created release artifacts to be published.
@@ -111,7 +111,7 @@ type Config struct {
 	// "-v /home/user/librarian/work/googleapis:/apis"
 	//
 	// DockerHostRootDir and DockerMountDir are currently populated from
-	// KOKORO_HOST_ROOT_DIR and KOKORO_ROOT_DIR environment variables respectively.
+	// LIBRARIAN_HOST_ROOT_DIR and LIBRARIAN_ROOT_DIR environment variables respectively.
 	// These are automatically supplied by Kokoro. Other Docker-in-Docker scenarios
 	// are not currently supported, but could be implemented by populating these
 	// configuration values in a similar way.
@@ -186,7 +186,7 @@ type Config struct {
 	// - Name: As specified in language repository configuration, or
 	// a default of "google-cloud-{Language}-generator"
 	// - Tag: As specified in the language repository state file, where available
-	// - Repository: The LIBRARIAN_REPOSITORY environment variable, if set.
+	// - Repository: Specified with the -repo flag.
 	//
 	// Image is specified with the -image flag.
 	Image string
@@ -371,15 +371,14 @@ type Config struct {
 // New returns a new Config populated with environment variables.
 func New() *Config {
 	return &Config{
-		DockerHostRootDir:   os.Getenv("KOKORO_HOST_ROOT_DIR"),
-		DockerMountRootDir:  os.Getenv("KOKORO_ROOT_DIR"),
-		GitHubToken:         os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
-		LibrarianRepository: os.Getenv("LIBRARIAN_REPOSITORY"),
-		SyncAuthToken:       os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
+		DockerHostRootDir:  os.Getenv("LIBRARIAN_HOST_ROOT_DIR"),
+		DockerMountRootDir: os.Getenv("LIBRARIAN_ROOT_DIR"),
+		GitHubToken:        os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		SyncAuthToken:      os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
 	}
 }
 
-// currentUser is a variable so it can be replaced during testing.
+// currentUser is a variable, so it can be replaced during testing.
 var currentUser = user.Current
 
 // SetupUser performs late initialization of user-specific configuration,

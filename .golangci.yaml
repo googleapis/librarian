@@ -31,3 +31,5 @@ linters:
     - staticcheck
     - unparam
     - unused
+    - usetesting
+    

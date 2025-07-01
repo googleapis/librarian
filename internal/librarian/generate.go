@@ -32,7 +32,7 @@ import (
 
 var cmdGenerate = &cli.Command{
 	Short:     "generate generates client library code for a single API",
-	UsageLine: "librarian generate -api-root=<api-root> -api=<api-path> -language=<language> [flags]",
+	UsageLine: "librarian generate -source=<api-root> -api=<api-path> -language=<language> [flags]",
 	Long: `Specify the language, the API repository root and the path within it for the API to generate.
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
 to build the generated library.
@@ -72,7 +72,7 @@ output directory that was specified for the "generate-raw" command.
 		if err := validateRequiredFlag("api", cfg.APIPath); err != nil {
 			return err
 		}
-		if err := validateRequiredFlag("api-root", cfg.APIRoot); err != nil {
+		if err := validateRequiredFlag("source", cfg.APIRoot); err != nil {
 			return err
 		}
 		return runGenerate(ctx, cfg)

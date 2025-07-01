@@ -165,6 +165,16 @@ review them individually or just focus on the final result. (For example, if
 earlier commits are exploratory and only the end state matters, make that clear
 to avoid wasting reviewer time.)
 
+### Keeping pull requests up to date with base branch
+
+The repository is configured to not require branches to be up to date before merging.
+This means that you do not have to have the latest changes from the base branch
+integrated, unless GitHub detects merge conflicts.
+
+To minimize the risk of the pull request getting out of date with the base branch, enable
+[auto-merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request)
+so that the pull request submits as soon as it is approved and the checks pass.
+
 ## Commit messages
 
 Commit messages for Librarian follow the conventions below.
