@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"strings"
 )
 
 const (
@@ -147,7 +148,7 @@ type Config struct {
 	GitHubToken string
 
 	// PushConfig specifies the email address and display name used in Git commits,
-	// in the format "name:email".
+	// in the format "email,name".
 	//
 	// PushConfig is used in all commands that create commits in a language repository:
 	// create-release-pr, configure, update-apis and update-image-tag.
@@ -368,6 +369,12 @@ func (c *Config) SetupUser() error {
 func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
 		return false, errors.New("no GitHub token supplied for push")
+	}
+	if c.Push {
+		parts := strings.Split(c.PushConfig, ",")
+		if len(parts) != 2 {
+			return false, errors.New("unable to parse push config")
+		}
 	}
 	return true, nil
 }

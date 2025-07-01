@@ -52,7 +52,8 @@ func addFlagEnvFile(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.PushConfig, "push-config", "Google Cloud SDK:noreply-cloudsdk@google.com", "Display name and email address to use in Git commits")
+	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
+	fs.StringVar(&cfg.PushConfig, "push-config", "noreply-cloudsdk@google.com,Google Cloud SDK", "The user and email for Git commits, in the format \"user:email\"")
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {

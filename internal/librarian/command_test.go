@@ -346,7 +346,7 @@ func TestCommitAll(t *testing.T) {
 
 			test.setup(t, repoDir)
 
-			if err := commitAll(repo, "test commit", "tester:tester@example.com"); err != nil {
+			if err := commitAll(repo, "test commit", "tester@example.com,tester"); err != nil {
 				t.Errorf("commitAll() error = %v, wantErr nil", err)
 			}
 
@@ -358,6 +358,59 @@ func TestCommitAll(t *testing.T) {
 			hasCommitted := initialHead != finalHead
 			if hasCommitted != test.wantCommit {
 				t.Errorf("commitAll() commit status = %v, want %v", hasCommitted, test.wantCommit)
+			}
+		})
+	}
+}
+
+func TestParsePushConfig(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		pushConfig string
+		wantEmail  string
+		wantName   string
+		wantErr    bool
+	}{
+		{
+			name:       "valid input",
+			pushConfig: "tester@example.com,tester",
+			wantEmail:  "tester@example.com",
+			wantName:   "tester",
+		},
+		{
+			name:       "invalid input, too few parts",
+			pushConfig: "tester@example.com",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid input, too many parts",
+			pushConfig: "tester@example.com,tester,extra",
+			wantErr:    true,
+		},
+		{
+			name:       "empty input",
+			pushConfig: "",
+			wantErr:    true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotEmail, gotName, err := parsePushConfig(test.pushConfig)
+
+			if test.wantErr {
+				if err == nil {
+					t.Error("parsePushConfig() expected an error but got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("parsePushConfig() got unexpected error: %v", err)
+				return
+			}
+			if gotEmail != test.wantEmail {
+				t.Errorf("parsePushConfig() email = %q, want %q", gotEmail, test.wantEmail)
+			}
+			if gotName != test.wantName {
+				t.Errorf("parsePushConfig() name = %q, want %q", gotName, test.wantName)
 			}
 		})
 	}

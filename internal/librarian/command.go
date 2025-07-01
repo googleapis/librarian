@@ -104,7 +104,7 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (*commandState, error) {
+func createCommandStateForLanguage(workRootOverride, repo, imageOverride, secretsProject, ci, uid, gid string) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, workRootOverride)
 	if err != nil {
@@ -124,7 +124,7 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 	if err != nil {
 		return nil, err
 	}
-	containerConfig, err := docker.New(workRoot, image, project, uid, gid, config)
+	containerConfig, err := docker.New(workRoot, image, secretsProject, uid, gid, config)
 	if err != nil {
 		return nil, err
 	}
@@ -216,12 +216,10 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 
 // No commit is made if there are no file modifications.
 func commitAll(repo *gitrepo.Repository, msg, pushConfig string) error {
-	parts := strings.Split(pushConfig, ":")
-	if len(parts) != 2 {
-		return fmt.Errorf("unable to parse pushConfig: %s", pushConfig)
+	userEmail, userName, err := parsePushConfig(pushConfig)
+	if err != nil {
+		return err
 	}
-	userName := parts[0]
-	userEmail := parts[1]
 
 	status, err := repo.AddAll()
 	if err != nil {
@@ -233,6 +231,16 @@ func commitAll(repo *gitrepo.Repository, msg, pushConfig string) error {
 	}
 
 	return repo.Commit(msg, userName, userEmail)
+}
+
+func parsePushConfig(pushConfig string) (string, string, error) {
+	parts := strings.Split(pushConfig, ",")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
+	}
+	userEmail := parts[0]
+	userName := parts[1]
+	return userEmail, userName, nil
 }
 
 func formatReleaseTag(libraryID, version string) string {
