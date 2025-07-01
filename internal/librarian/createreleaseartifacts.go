@@ -87,7 +87,7 @@ func init() {
 	addFlagWorkRoot(fs, cfg)
 	addFlagLanguage(fs, cfg)
 	addFlagRepoRoot(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepoURL(fs, cfg)
 	addFlagReleaseID(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)

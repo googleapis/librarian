@@ -165,5 +165,5 @@ func getGitHubRepoFromRemote(repo *gitrepo.Repository) (*github.Repository, erro
 		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
 		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
 	}
-	return github.ParseUrl(gitHubUrl)
+	return github.ParseURL(gitHubUrl)
 }

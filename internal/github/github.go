@@ -193,9 +193,9 @@ func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequ
 	return reviews, err
 }
 
-// ParseUrl parses a GitHub URL (anything to do with a repository) to determine
+// ParseURL parses a GitHub URL (anything to do with a repository) to determine
 // the GitHub repo details (owner and name)
-func ParseUrl(remoteUrl string) (*Repository, error) {
+func ParseURL(remoteUrl string) (*Repository, error) {
 	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
 		return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)
 	}

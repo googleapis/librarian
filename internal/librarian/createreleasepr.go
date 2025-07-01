@@ -120,7 +120,7 @@ func init() {
 	addFlagRepoRoot(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
 	addFlagEnvFile(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepoURL(fs, cfg)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {

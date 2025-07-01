@@ -83,7 +83,7 @@ func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ReleaseID, "release-id", "", "The ID of a release PR")
 }
 
-func addFlagReleasePRUrl(fs *flag.FlagSet, cfg *config.Config) {
+func addFlagReleasePRURL(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ReleasePRURL, "release-pr-url", "", "The URL of a release PR")
 }
 
@@ -91,7 +91,7 @@ func addFlagRepoRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.RepoRoot, "repo-root", "", "Repository root. When this (and repo-url) are not specified, the language repo will be cloned.")
 }
 
-func addFlagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
+func addFlagRepoURL(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.RepoURL, "repo-url", "", "Repository URL to clone. If this and repo-root are not specified, the default language repo will be cloned.")
 }
 
@@ -103,7 +103,7 @@ func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.SkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
 }
 
-func addFlagSyncUrlPrefix(fs *flag.FlagSet, cfg *config.Config) {
+func addFlagSyncURLPrefix(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.SyncURLPrefix, "sync-url-prefix", "", "the prefix of the URL to check for commit synchronization; the commit hash will be appended to this")
 }
 
@@ -111,7 +111,7 @@ func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Tag, "tag", "", "new tag for the language-specific container image.")
 }
 
-func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
+func addFlagTagRepoURL(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.TagRepoURL, "tag-repo-url", "", "Repository URL to tag and create releases in. Requires when push is true.")
 }
 

@@ -69,7 +69,7 @@ func init() {
 	addFlagWorkRoot(fs, cfg)
 	addFlagLanguage(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
-	addFlagTagRepoUrl(fs, cfg)
+	addFlagTagRepoURL(fs, cfg)
 }
 
 func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
@@ -122,7 +122,7 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 
 	// Load the pipeline config from the commit of the first release, using the tag repo, then
 	// update our context to use it for the container config.
-	gitHubRepo, err := github.ParseUrl(cfg.TagRepoURL)
+	gitHubRepo, err := github.ParseURL(cfg.TagRepoURL)
 	if err != nil {
 		return err
 	}

@@ -91,7 +91,7 @@ func init() {
 	addFlagLanguage(fs, cfg)
 	addFlagBuild(fs, cfg)
 	addFlagRepoRoot(fs, cfg)
-	addFlagRepoUrl(fs, cfg)
+	addFlagRepoURL(fs, cfg)
 	addFlagSecretsProject(fs, cfg)
 }
 
@@ -226,7 +226,7 @@ func detectIfLibraryConfigured(ctx context.Context, apiPath, repoURL, repoRoot, 
 			return false, err
 		}
 	} else {
-		languageRepoMetadata, err := github.ParseUrl(repoURL)
+		languageRepoMetadata, err := github.ParseURL(repoURL)
 		if err != nil {
 			slog.Warn("failed to parse", "repo url", repoURL, "error", err)
 			return false, err

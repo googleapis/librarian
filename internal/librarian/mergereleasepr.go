@@ -106,8 +106,8 @@ func init() {
 	addFlagWorkRoot(fs, cfg)
 	addFlagBaselineCommit(fs, cfg)
 	addFlagReleaseID(fs, cfg)
-	addFlagReleasePRUrl(fs, cfg)
-	addFlagSyncUrlPrefix(fs, cfg)
+	addFlagReleasePRURL(fs, cfg)
+	addFlagSyncURLPrefix(fs, cfg)
 	addFlagEnvFile(fs, cfg)
 }
 
@@ -145,12 +145,12 @@ func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) er
 	}
 
 	// We'll assume the PR URL is in the format https://github.com/{owner}/{name}/pulls/{pull-number}
-	prRepo, err := github.ParseUrl(cfg.ReleasePRURL)
+	prRepo, err := github.ParseURL(cfg.ReleasePRURL)
 	if err != nil {
 		return err
 	}
 
-	prNumber, err := parsePrNumberFromUrl(cfg.ReleasePRURL)
+	prNumber, err := parsePRNumberFromURL(cfg.ReleasePRURL)
 	if err != nil {
 		return err
 	}
@@ -577,7 +577,7 @@ func parseRemoteCommitsForReleases(commits []*github.RepositoryCommit, releaseID
 	return releases, nil
 }
 
-func parsePrNumberFromUrl(url string) (int, error) {
+func parsePRNumberFromURL(url string) (int, error) {
 	parts := strings.Split(url, "/")
 	return strconv.Atoi(parts[len(parts)-1])
 }
