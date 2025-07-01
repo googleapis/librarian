@@ -81,7 +81,6 @@ func init() {
 	addFlagGitUserName(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagProject(fs, cfg)
-	addFlagPush(fs, cfg)
 	addFlagSource(fs, cfg)
 	addFlagTag(fs, cfg)
 	addFlagWorkRoot(fs, cfg)

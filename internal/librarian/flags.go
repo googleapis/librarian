@@ -71,10 +71,6 @@ func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.LibraryVersion, "library-version", "", "The version to release (only valid with library-id, only when creating a release PR)")
 }
 
-func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
-	fs.BoolVar(&cfg.Push, "push", false, "push to GitHub if true")
-}
-
 func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ReleaseID, "release-id", "", "The ID of a release PR")
 }
