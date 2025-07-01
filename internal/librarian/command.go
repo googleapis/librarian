@@ -157,6 +157,7 @@ func deriveImage(imageOverride string, state *statepb.PipelineState) (string, er
 		return "", nil
 	}
 	// TODO: use image from state.yaml when switch to this config file. see go/librarian:cli-reimagined
+	// https://github.com/googleapis/librarian/issues/326
 	if state.ImageTag == "" {
 		return "", errors.New("pipeline state does not have image specified and no override was provided")
 	}

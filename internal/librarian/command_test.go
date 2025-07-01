@@ -85,8 +85,14 @@ func TestDeriveImage(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := deriveImage(test.imageOverride, test.state)
 
-			if (err != nil) != test.wantErr {
-				t.Errorf("deriveImage() error = %v, wantErr %v", err, test.wantErr)
+			if test.wantErr {
+				if err == nil {
+					t.Error("deriveImage() expected an error but got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("deriveImage() got unexpected error: %v", err)
 				return
 			}
 			if got != test.want {
