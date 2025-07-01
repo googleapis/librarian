@@ -87,8 +87,8 @@ func init() {
 	addFlagAPIPath(fs, cfg)
 	addFlagBuild(fs, cfg)
 	addFlagImage(fs, cfg)
+	addFlagProject(fs, cfg)
 	addFlagRepo(fs, cfg)
-	addFlagSecretsProject(fs, cfg)
 	addFlagSource(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 }
@@ -128,7 +128,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	containerConfig, err := docker.New(workRoot, image, cfg.SecretsProject, cfg.UserUID, cfg.UserGID, config)
+	containerConfig, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, config)
 	if err != nil {
 		return err
 	}

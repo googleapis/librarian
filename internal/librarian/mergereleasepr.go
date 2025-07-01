@@ -101,14 +101,14 @@ func init() {
 	fs := cmdMergeReleasePR.Flags
 	cfg := cmdMergeReleasePR.Config
 
-	addFlagImage(fs, cfg)
-	addFlagSecretsProject(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
 	addFlagBaselineCommit(fs, cfg)
+	addFlagEnvFile(fs, cfg)
+	addFlagImage(fs, cfg)
+	addFlagProject(fs, cfg)
 	addFlagReleaseID(fs, cfg)
 	addFlagReleasePRUrl(fs, cfg)
 	addFlagSyncUrlPrefix(fs, cfg)
-	addFlagEnvFile(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runMergeReleasePR(ctx context.Context, cfg *config.Config) error {

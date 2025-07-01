@@ -285,17 +285,18 @@ type Config struct {
 	// SyncURLPrefix is specified with the -sync-url-prefix flag.
 	SyncURLPrefix string
 
-	// SecretsProject is the Google Cloud project containing Secret Manager secrets
-	// to provide to the language-specific container commands via environment variables.
+	// Project is the Google Cloud project containing Secret Manager secrets to
+	// provide to the language-specific container commands via environment variables.
 	//
-	// SecretsProject is used by all commands which perform language-specific operations.
-	// (This covers all commands other than merge-release-pr.) If no value is set, any
-	// language-specific operations which include an environment variable based on a secret
-	// will act as if the secret name wasn't set (so will just use a host environment variable
-	// or default value, if any).
+	// Project is used by all commands which perform language-specific operations.
+	// (This covers all commands other than merge-release-pr.)
+	// If no value is set, any language-specific operations which include an
+	// environment variable based on a secret will act as if the secret name
+	// wasn't set (so will just use a host environment variable or default value,
+	// if any).
 	//
-	// SecretsProject is specified with the -secrets-project flag.
-	SecretsProject string
+	// Project is specified with the -project flag.
+	Project string
 
 	// SkipIntegrationTests is used by the create-release-pr and create-release-artifacts
 	// commands, and disables integration tests if it is set to a non-empty value.

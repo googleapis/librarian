@@ -83,8 +83,8 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
 }
 
-func addFlagSecretsProject(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.SecretsProject, "secrets-project", "", "Project containing Secret Manager secrets.")
+func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
 }
 
 func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
