@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
+func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
