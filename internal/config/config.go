@@ -180,33 +180,10 @@ type Config struct {
 	// Image is used by all commands which perform language-specific operations.
 	// (This covers all commands other than merge-release-pr.) If this is set via
 	// the -image flag, it is expected to be used directly (potentially including a repository
-	// and/or tag). If the -image flag is not set, the full image specification to
-	// use is derived from the pieces of information:
-	//
-	// - Name: As specified in language repository configuration, or
-	// a default of "google-cloud-{Language}-generator"
-	// - Tag: As specified in the language repository state file, where available
-	// - Repository: Specified with the -repo flag.
+	// and/or tag). If the -image flag is not set, use an image configured in the `config.yaml`.
 	//
 	// Image is specified with the -image flag.
 	Image string
-
-	// Language is the language of the libraries being maintained by the current command.
-	// This affects the default language repository to clone unless otherwise specified,
-	// the default image for language-specific operations, and the section of API service
-	// configurations to check for requested libraries within the configure command. This
-	// is not validated to any particular set of values, but the expected values which would
-	// work with the configure command and clone appropriate repositories without additional
-	// effort are "cpp", "dotnet", "go", "java", "node", "php", "python", and "ruby".
-	// The values are case-sensitive.
-	//
-	// Language is required for all commands except merge-release-pr.
-	//
-	// Language is specified with the -language flag.
-	Language string
-
-	// TODO(https://github.com/googleapis/librarian/issues/265): refer to architecture
-	// documentation about language identifiers when the doc has been written.
 
 	// LibraryID is the identifier of a specific library to release or update, for the
 	// create-release-pr and update-apis commands respectively. In both cases it is optional;

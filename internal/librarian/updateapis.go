@@ -30,8 +30,8 @@ import (
 
 var cmdUpdateApis = &cli.Command{
 	Short:     "update-apis regenerates APIs in a language repo with new specifications",
-	UsageLine: "librarian update-apis -language=<language> [flags]",
-	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+	UsageLine: "librarian update-apis [flags]",
+	Long: `Specify and optional flags to use non-default repositories, e.g. for testing.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
 language repo in which the pull request will be created.
@@ -91,7 +91,6 @@ func init() {
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
 	addFlagImage(fs, cfg)
-	addFlagLanguage(fs, cfg)
 	addFlagLibraryID(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagProject(fs, cfg)
@@ -101,8 +100,7 @@ func init() {
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
-		cfg.Image, cfg.LibrarianRepository, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}

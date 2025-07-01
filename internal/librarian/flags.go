@@ -60,11 +60,7 @@ func addFlagGitUserName(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Image, "image", "", "language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
-}
-
-func addFlagLanguage(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Language, "language", "", "(Required) language for which to configure/generate/release code")
+	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
 }
 
 func addFlagLibraryID(fs *flag.FlagSet, cfg *config.Config) {

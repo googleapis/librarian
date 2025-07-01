@@ -32,8 +32,8 @@ import (
 
 var cmdGenerate = &cli.Command{
 	Short:     "generate generates client library code for a single API",
-	UsageLine: "librarian generate -source=<api-root> -api=<api-path> -language=<language> [flags]",
-	Long: `Specify the language, the API repository root and the path within it for the API to generate.
+	UsageLine: "librarian generate -source=<api-root> -api=<api-path> [flags]",
+	Long: `Specify the API repository root and the path within it for the API to generate.
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
 to build the generated library.
 
@@ -87,7 +87,6 @@ func init() {
 	addFlagAPIPath(fs, cfg)
 	addFlagBuild(fs, cfg)
 	addFlagImage(fs, cfg)
-	addFlagLanguage(fs, cfg)
 	addFlagProject(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagSource(fs, cfg)
@@ -125,7 +124,10 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		}
 	}
 
-	image := deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
+	image, err := deriveImage(cfg.Image, ps)
+	if err != nil {
+		return err
+	}
 	containerConfig, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, config)
 	if err != nil {
 		return err
