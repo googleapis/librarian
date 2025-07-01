@@ -31,11 +31,9 @@ import (
 )
 
 var cmdPublishReleaseArtifacts = &cli.Command{
-	Short: "publish-release-artifacts publishes (previously-created) release artifacts " +
-		"to package managers and documentation sites",
-	UsageLine: "librarian publish-release-artifacts -language=<language> -artifact-root=<artifact-root> " +
-		"-tag-repo-url=<repo-url> [flags]",
-	Long: `Specify the language, the root output directory created by create-release-artifacts, and
+	Short:     "publish-release-artifacts publishes (previously-created) release artifacts to package managers and documentation sites",
+	UsageLine: "librarian publish-release-artifacts -artifact-root=<artifact-root> -tag-repo-url=<repo-url> [flags]",
+	Long: `Specify the root output directory created by create-release-artifacts, and
 the GitHub repository in which to create tags/releases.
 
 The command first loads the metadata created by create-release-artifacts. This
@@ -68,10 +66,9 @@ func init() {
 
 	addFlagArtifactRoot(fs, cfg)
 	addFlagImage(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-	addFlagLanguage(fs, cfg)
-	addFlagSecretsProject(fs, cfg)
+	addFlagProject(fs, cfg)
 	addFlagTagRepoUrl(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
@@ -89,7 +86,10 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	image := deriveImage(cfg.Language, cfg.Image, cfg.LibrarianRepository, ps)
+	image, err := deriveImage(cfg.Image, ps)
+	if err != nil {
+		return err
+	}
 
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, cfg.WorkRoot)
@@ -97,7 +97,7 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	containerConfig, err := docker.New(workRoot, image, cfg.SecretsProject, cfg.UserUID, cfg.UserGID, pipelineConfig)
+	containerConfig, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, pipelineConfig)
 	if err != nil {
 		return err
 	}

@@ -24,12 +24,11 @@ import (
 )
 
 func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APIPath, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
+	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
-func addFlagAPIRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APIRoot, "source", "",
-		"location of googleapis repository. If undefined, googleapis will be cloned to the output")
+func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
@@ -64,12 +63,7 @@ func addFlagGitUserName(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Image, "image", "",
-		"language-specific container to run for subcommands. Defaults to google-cloud-{language}-generator")
-}
-
-func addFlagLanguage(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Language, "language", "", "(Required) language for which to configure/generate/release code")
+	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
 }
 
 func addFlagLibraryID(fs *flag.FlagSet, cfg *config.Config) {
@@ -98,8 +92,8 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 		"Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
 }
 
-func addFlagSecretsProject(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.SecretsProject, "secrets-project", "", "Project containing Secret Manager secrets.")
+func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
 }
 
 func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {

@@ -32,26 +32,26 @@ const (
 // variables. When adding members to this struct, please keep them in
 // alphabetical order.
 type Config struct {
-	// APIPath is the path to the API to be configured or generated,
+	// API is the path to the API to be configured or generated,
 	// relative to the root of the googleapis repository. It is a directory
 	// name as far as (and including) the version (v1, v2, v1alpha etc). It
 	// is expected to contain a service config YAML file.
 	// Example: "google/cloud/functions/v2"
 	//
-	// APIPath is used by generate and configure commands.
+	// API is used by generate and configure commands.
 	//
 	// API Path is specified with the -api flag.
-	APIPath string
+	API string
 
-	// APIRoot is the path to the root of the googleapis repository.
+	// Source is the path to the root of the googleapis repository.
 	// When this is not specified, the googleapis repository is cloned
 	// automatically.
 	//
-	// APIRoot is used by generate, update-apis, update-image-tag and configure
+	// Source is used by generate, update-apis, update-image-tag and configure
 	// commands.
 	//
-	// APIRoot is specified with the -source flag.
-	APIRoot string
+	// Source is specified with the -source flag.
+	Source string
 
 	// ArtifactRoot is the path to previously-created release artifacts to be published.
 	// It is only used by the publish-release-artifacts command, and is expected
@@ -180,33 +180,10 @@ type Config struct {
 	// Image is used by all commands which perform language-specific operations.
 	// (This covers all commands other than merge-release-pr.) If this is set via
 	// the -image flag, it is expected to be used directly (potentially including a repository
-	// and/or tag). If the -image flag is not set, the full image specification to
-	// use is derived from the pieces of information:
-	//
-	// - Name: As specified in language repository configuration, or
-	// a default of "google-cloud-{Language}-generator"
-	// - Tag: As specified in the language repository state file, where available
-	// - Repository: Specified with the -repo flag.
+	// and/or tag). If the -image flag is not set, use an image configured in the `config.yaml`.
 	//
 	// Image is specified with the -image flag.
 	Image string
-
-	// Language is the language of the libraries being maintained by the current command.
-	// This affects the default language repository to clone unless otherwise specified,
-	// the default image for language-specific operations, and the section of API service
-	// configurations to check for requested libraries within the configure command. This
-	// is not validated to any particular set of values, but the expected values which would
-	// work with the configure command and clone appropriate repositories without additional
-	// effort are "cpp", "dotnet", "go", "java", "node", "php", "python", and "ruby".
-	// The values are case-sensitive.
-	//
-	// Language is required for all commands except merge-release-pr.
-	//
-	// Language is specified with the -language flag.
-	Language string
-
-	// TODO(https://github.com/googleapis/librarian/issues/265): refer to architecture
-	// documentation about language identifiers when the doc has been written.
 
 	// LibraryID is the identifier of a specific library to release or update, for the
 	// create-release-pr and update-apis commands respectively. In both cases it is optional;
@@ -316,17 +293,18 @@ type Config struct {
 	// SyncURLPrefix is specified with the -sync-url-prefix flag.
 	SyncURLPrefix string
 
-	// SecretsProject is the Google Cloud project containing Secret Manager secrets
-	// to provide to the language-specific container commands via environment variables.
+	// Project is the Google Cloud project containing Secret Manager secrets to
+	// provide to the language-specific container commands via environment variables.
 	//
-	// SecretsProject is used by all commands which perform language-specific operations.
-	// (This covers all commands other than merge-release-pr.) If no value is set, any
-	// language-specific operations which include an environment variable based on a secret
-	// will act as if the secret name wasn't set (so will just use a host environment variable
-	// or default value, if any).
+	// Project is used by all commands which perform language-specific operations.
+	// (This covers all commands other than merge-release-pr.)
+	// If no value is set, any language-specific operations which include an
+	// environment variable based on a secret will act as if the secret name
+	// wasn't set (so will just use a host environment variable or default value,
+	// if any).
 	//
-	// SecretsProject is specified with the -secrets-project flag.
-	SecretsProject string
+	// Project is specified with the -project flag.
+	Project string
 
 	// SkipIntegrationTests is used by the create-release-pr and create-release-artifacts
 	// commands, and disables integration tests if it is set to a non-empty value.

@@ -47,10 +47,9 @@ type LibraryRelease struct {
 
 var cmdCreateReleaseArtifacts = &cli.Command{
 	Short:     "create-release-artifacts creates release artifacts from a merged release PR",
-	UsageLine: "librarian create-release-artifacts -language=<language> -release-id=<id> [flags]",
-	Long: `Specify the language and release ID, and optional flags to use non-default repositories, e.g. for testing.
-The release ID is specified in the the release PR and in each commit within it, 
-in a line starting "Librarian-Release-ID: ".
+	UsageLine: "librarian create-release-artifacts -release-id=<id> [flags]",
+	Long: `Specify the release ID, and optional flags to use non-default repositories, e.g. for testing.
+The release ID is specified in the the release PR and in each commit within it, in a line starting "Librarian-Release-ID: ".
 
 After acquiring the language repository, the repository is scanned backwards from the head commit to find
 commits belonging to the single release for which the command is creating artifacts. The head commit is not required to
@@ -86,17 +85,16 @@ func init() {
 	cfg := cmdCreateReleaseArtifacts.Config
 
 	addFlagImage(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-	addFlagLanguage(fs, cfg)
-	addFlagRepo(fs, cfg)
+	addFlagProject(fs, cfg)
 	addFlagReleaseID(fs, cfg)
-	addFlagSecretsProject(fs, cfg)
+	addFlagRepo(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
-		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo,
+		cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}

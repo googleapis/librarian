@@ -37,8 +37,8 @@ const baselineCommitEnvVarName = "_BASELINE_COMMIT"
 
 var cmdCreateReleasePR = &cli.Command{
 	Short:     "create-release-pr creates a release PR",
-	UsageLine: "librarian create-release-pr -language=<language> [flags]",
-	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+	UsageLine: "librarian create-release-pr [flags]",
+	Long: `Specify the optional flags to use non-default repositories, e.g. for testing.
 A single library may be specified if desired (with an optional version override);
 otherwise all configured libraries will be checked to see if they should be released.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
@@ -108,23 +108,22 @@ func init() {
 	fs := cmdCreateReleasePR.Flags
 	cfg := cmdCreateReleasePR.Config
 
+	addFlagEnvFile(fs, cfg)
 	addFlagImage(fs, cfg)
-	addFlagSecretsProject(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-	addFlagLanguage(fs, cfg)
-	addFlagLibraryID(fs, cfg)
-	addFlagLibraryVersion(fs, cfg)
-	addFlagPush(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
-	addFlagSkipIntegrationTests(fs, cfg)
-	addFlagEnvFile(fs, cfg)
+	addFlagLibraryID(fs, cfg)
+	addFlagLibraryVersion(fs, cfg)
 	addFlagRepo(fs, cfg)
+	addFlagProject(fs, cfg)
+	addFlagPush(fs, cfg)
+	addFlagSkipIntegrationTests(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
-		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo,
+		cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}

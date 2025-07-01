@@ -30,8 +30,8 @@ import (
 
 var cmdUpdateApis = &cli.Command{
 	Short:     "update-apis regenerates APIs in a language repo with new specifications",
-	UsageLine: "librarian update-apis -language=<language> [flags]",
-	Long: `Specify the language, and optional flags to use non-default repositories, e.g. for testing.
+	UsageLine: "librarian update-apis [flags]",
+	Long: `Specify and optional flags to use non-default repositories, e.g. for testing.
 A pull request will only be created if -push is specified, in which case the LIBRARIAN_GITHUB_TOKEN
 environment variable must be populated with an access token which has write access to the
 language repo in which the pull request will be created.
@@ -87,22 +87,20 @@ func init() {
 	fs := cmdUpdateApis.Flags
 	cfg := cmdUpdateApis.Config
 
-	addFlagImage(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-	addFlagAPIRoot(fs, cfg)
 	addFlagBranch(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
-	addFlagLanguage(fs, cfg)
+	addFlagImage(fs, cfg)
 	addFlagLibraryID(fs, cfg)
-	addFlagPush(fs, cfg)
 	addFlagRepo(fs, cfg)
-	addFlagSecretsProject(fs, cfg)
+	addFlagProject(fs, cfg)
+	addFlagPush(fs, cfg)
+	addFlagSource(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
-		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}
@@ -112,14 +110,14 @@ func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
 func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) error {
 	var apiRepo *gitrepo.Repository
 	cleanWorkingTreePostGeneration := true
-	if cfg.APIRoot == "" {
+	if cfg.Source == "" {
 		var err error
 		apiRepo, err = cloneGoogleapis(state.workRoot, cfg.CI)
 		if err != nil {
 			return err
 		}
 	} else {
-		apiRoot, err := filepath.Abs(cfg.APIRoot)
+		apiRoot, err := filepath.Abs(cfg.Source)
 		slog.Info("Using apiRoot", "api_root", apiRoot)
 		if err != nil {
 			slog.Info("Error retrieving apiRoot", "err", err)

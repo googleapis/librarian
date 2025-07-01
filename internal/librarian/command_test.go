@@ -45,47 +45,56 @@ func TestCommandUsage(t *testing.T) {
 
 func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
-		name              string
-		language          string
-		imageOverride     string
-		defaultRepository string
-		state             *statepb.PipelineState
-		want              string
+		name          string
+		imageOverride string
+		state         *statepb.PipelineState
+		want          string
+		wantErr       bool
 	}{
 		{
-			name:          "with image override",
-			language:      "go",
+			name:          "with image override, nil state",
 			imageOverride: "my/custom-image:v1",
+			state:         nil,
 			want:          "my/custom-image:v1",
 		},
 		{
-			name:     "no override, no repo, no state",
-			language: "go",
-			want:     "google-cloud-go-generator:latest",
+			name:          "with image override, non-nil state",
+			imageOverride: "my/custom-image:v1",
+			state:         &statepb.PipelineState{ImageTag: "v1.2.3"},
+			want:          "my/custom-image:v1",
 		},
 		{
-			name:     "no override, no repo, with state",
-			language: "go",
-			state:    &statepb.PipelineState{ImageTag: "v1.2.3"},
-			want:     "google-cloud-go-generator:v1.2.3",
+			name:          "no override, nil state",
+			imageOverride: "",
+			state:         nil,
+			want:          "",
 		},
 		{
-			name:              "no override, with repo, no state",
-			language:          "go",
-			defaultRepository: "path/to/repo",
-			want:              "path/to/repo/google-cloud-go-generator:latest",
+			name:          "no override, with state",
+			imageOverride: "",
+			state:         &statepb.PipelineState{ImageTag: "v1.2.3"},
+			want:          "v1.2.3",
 		},
 		{
-			name:              "no override, with repo, with state",
-			language:          "go",
-			defaultRepository: "path/to/repo",
-			state:             &statepb.PipelineState{ImageTag: "v1.2.3"},
-			want:              "path/to/repo/google-cloud-go-generator:v1.2.3",
+			name:          "no override, with state, empty tag",
+			imageOverride: "",
+			state:         &statepb.PipelineState{ImageTag: ""},
+			wantErr:       true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveImage(test.language, test.imageOverride, test.defaultRepository, test.state)
+			got, err := deriveImage(test.imageOverride, test.state)
 
+			if test.wantErr {
+				if err == nil {
+					t.Error("deriveImage() expected an error but got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("deriveImage() got unexpected error: %v", err)
+				return
+			}
 			if got != test.want {
 				t.Errorf("deriveImage() = %q, want %q", got, test.want)
 			}
