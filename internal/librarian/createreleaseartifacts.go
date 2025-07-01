@@ -88,13 +88,13 @@ func init() {
 	addFlagLanguage(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagReleaseID(fs, cfg)
-	addFlagSecretsProject(fs, cfg)
+	addFlagProject(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Language,
-		cfg.Image, cfg.LibrarianRepository, cfg.SecretsProject, cfg.CI, cfg.UserUID, cfg.UserGID)
+		cfg.Image, cfg.LibrarianRepository, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}

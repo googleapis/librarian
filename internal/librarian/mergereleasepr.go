@@ -102,7 +102,7 @@ func init() {
 	cfg := cmdMergeReleasePR.Config
 
 	addFlagImage(fs, cfg)
-	addFlagSecretsProject(fs, cfg)
+	addFlagProject(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 	addFlagBaselineCommit(fs, cfg)
 	addFlagReleaseID(fs, cfg)
