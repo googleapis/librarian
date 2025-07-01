@@ -24,11 +24,11 @@ import (
 )
 
 func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APIPath, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
+	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
-func addFlagAPIRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APIRoot, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {

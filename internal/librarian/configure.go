@@ -85,7 +85,7 @@ func init() {
 	addFlagImage(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 	addFlagAPIPath(fs, cfg)
-	addFlagAPIRoot(fs, cfg)
+	addFlagSource(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
 	addFlagPush(fs, cfg)
@@ -110,7 +110,7 @@ func executeConfigure(ctx context.Context, state *commandState, cfg *config.Conf
 	slog.Info("Code will be generated", "dir", outputRoot)
 
 	var apiRoot string
-	if cfg.APIRoot == "" {
+	if cfg.Source == "" {
 		repo, err := cloneGoogleapis(state.workRoot, cfg.CI)
 		if err != nil {
 			return err
@@ -119,13 +119,13 @@ func executeConfigure(ctx context.Context, state *commandState, cfg *config.Conf
 	} else {
 		// We assume it's okay not to take a defensive copy of apiRoot in the configure command,
 		// as "vanilla" configuration/generation shouldn't need to edit any protos. (That's just an escape hatch.)
-		absRoot, err := filepath.Abs(cfg.APIRoot)
+		absRoot, err := filepath.Abs(cfg.Source)
 		if err != nil {
 			return err
 		}
 		apiRoot = absRoot
 	}
-	apiPaths := []string{cfg.APIPath}
+	apiPaths := []string{cfg.API}
 
 	prContent := PullRequestContent{}
 	for _, apiPath := range apiPaths {
