@@ -29,6 +29,3 @@ go.work.sum
 
 # VSCode file
 .vscode/*
-
-# Code coverage file
-coverage.txt
