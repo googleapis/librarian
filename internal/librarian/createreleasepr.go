@@ -114,8 +114,7 @@ func init() {
 	addFlagLibraryID(fs, cfg)
 	addFlagLibraryVersion(fs, cfg)
 	addFlagPush(fs, cfg)
-	addFlagGitUserEmail(fs, cfg)
-	addFlagGitUserName(fs, cfg)
+	addFlagPushConfig(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
 	addFlagEnvFile(fs, cfg)
 	addFlagRepo(fs, cfg)
@@ -297,7 +296,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
 		// Note that releaseDescription will already end with two line breaks, so we don't need any more before the metadata.
 		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata),
-			cfg.GitUserName, cfg.GitUserEmail)
+			cfg.PushConfig)
 		if err != nil {
 			return nil, err
 		}

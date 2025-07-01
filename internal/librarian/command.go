@@ -215,7 +215,14 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 }
 
 // No commit is made if there are no file modifications.
-func commitAll(repo *gitrepo.Repository, msg, userName, userEmail string) error {
+func commitAll(repo *gitrepo.Repository, msg, pushConfig string) error {
+	parts := strings.Split(pushConfig, ":")
+	if len(parts) != 2 {
+		return fmt.Errorf("unable to parse pushConfig: %s", pushConfig)
+	}
+	userName := parts[0]
+	userEmail := parts[1]
+
 	status, err := repo.AddAll()
 	if err != nil {
 		return err

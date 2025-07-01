@@ -346,7 +346,7 @@ func TestCommitAll(t *testing.T) {
 
 			test.setup(t, repoDir)
 
-			if err := commitAll(repo, "test commit", "tester", "tester@example.com"); err != nil {
+			if err := commitAll(repo, "test commit", "tester:tester@example.com"); err != nil {
 				t.Errorf("commitAll() error = %v, wantErr nil", err)
 			}
 

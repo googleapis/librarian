@@ -88,8 +88,7 @@ func init() {
 	cfg := cmdUpdateApis.Config
 
 	addFlagBranch(fs, cfg)
-	addFlagGitUserEmail(fs, cfg)
-	addFlagGitUserName(fs, cfg)
+	addFlagPushConfig(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLibraryID(fs, cfg)
 	addFlagPush(fs, cfg)
@@ -253,7 +252,7 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 		msg = createCommitMessage(library.Id, commits)
 	}
 	if err := commitAll(languageRepo, msg,
-		cfg.GitUserName, cfg.GitUserEmail); err != nil {
+		cfg.PushConfig); err != nil {
 		return err
 	}
 

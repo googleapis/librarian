@@ -146,25 +146,17 @@ type Config struct {
 	// LIBRARIAN_GITHUB_TOKEN environment variable.
 	GitHubToken string
 
-	// GitUserEmail is the email address used in Git commits. It is used in
-	// all commands that create commits in a language repository:
+	// PushConfig specifies the email address and display name used in Git commits,
+	// in the format "name:email".
+	//
+	// PushConfig is used in all commands that create commits in a language repository:
 	// create-release-pr, configure, update-apis and update-image-tag.
 	//
-	// GitUserEmail is optional, with a default value of noreply-cloudsdk@google.com
-	// being used for commits if it's unspecified.
+	// PushConfig is optional. If unspecified, commits will use a default name of
+	// "Google Cloud SDK" and a default email of noreply-cloudsdk@google.com.
 	//
-	// GitUserEmail is specified with the -git-user-email flag.
-	GitUserEmail string
-
-	// GitUserName is the display name used in Git commits. It is used in
-	// all commands that create commits in a language repository:
-	// create-release-pr, configure, update-apis and update-image-tag.
-	//
-	// GitUserName is optional, with a default value of "Google Cloud SDK"
-	// being used for commits if it's unspecified.
-	//
-	// GitUserName is specified with the -git-user-name flag.
-	GitUserName string
+	// PushConfig is specified with the -push-config flag.
+	PushConfig string
 
 	// UserGID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
