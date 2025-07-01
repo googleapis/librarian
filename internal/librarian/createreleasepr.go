@@ -108,18 +108,18 @@ func init() {
 	fs := cmdCreateReleasePR.Flags
 	cfg := cmdCreateReleasePR.Config
 
+	addFlagEnvFile(fs, cfg)
 	addFlagImage(fs, cfg)
-	addFlagProject(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
+	addFlagGitUserEmail(fs, cfg)
+	addFlagGitUserName(fs, cfg)
 	addFlagLanguage(fs, cfg)
 	addFlagLibraryID(fs, cfg)
 	addFlagLibraryVersion(fs, cfg)
-	addFlagPush(fs, cfg)
-	addFlagGitUserEmail(fs, cfg)
-	addFlagGitUserName(fs, cfg)
-	addFlagSkipIntegrationTests(fs, cfg)
-	addFlagEnvFile(fs, cfg)
 	addFlagRepo(fs, cfg)
+	addFlagProject(fs, cfg)
+	addFlagPush(fs, cfg)
+	addFlagSkipIntegrationTests(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runCreateReleasePR(ctx context.Context, cfg *config.Config) error {

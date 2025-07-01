@@ -66,10 +66,10 @@ func init() {
 
 	addFlagArtifactRoot(fs, cfg)
 	addFlagImage(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
 	addFlagLanguage(fs, cfg)
 	addFlagProject(fs, cfg)
 	addFlagTagRepoUrl(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {

@@ -87,16 +87,16 @@ func init() {
 	fs := cmdConfigure.Flags
 	cfg := cmdConfigure.Config
 
-	addFlagImage(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
 	addFlagAPIPath(fs, cfg)
-	addFlagSource(fs, cfg)
 	addFlagGitUserEmail(fs, cfg)
 	addFlagGitUserName(fs, cfg)
+	addFlagImage(fs, cfg)
 	addFlagLanguage(fs, cfg)
+	addFlagProject(fs, cfg)
 	addFlagPush(fs, cfg)
 	addFlagRepo(fs, cfg)
-	addFlagProject(fs, cfg)
+	addFlagSource(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runConfigure(ctx context.Context, cfg *config.Config) error {

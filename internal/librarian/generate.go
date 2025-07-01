@@ -88,8 +88,8 @@ func init() {
 	addFlagBuild(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLanguage(fs, cfg)
-	addFlagRepo(fs, cfg)
 	addFlagProject(fs, cfg)
+	addFlagRepo(fs, cfg)
 	addFlagSource(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 }

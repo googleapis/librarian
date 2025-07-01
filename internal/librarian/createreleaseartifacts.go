@@ -84,12 +84,12 @@ func init() {
 	cfg := cmdCreateReleaseArtifacts.Config
 
 	addFlagImage(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
 	addFlagLanguage(fs, cfg)
-	addFlagRepo(fs, cfg)
-	addFlagReleaseID(fs, cfg)
 	addFlagProject(fs, cfg)
+	addFlagReleaseID(fs, cfg)
+	addFlagRepo(fs, cfg)
 	addFlagSkipIntegrationTests(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
