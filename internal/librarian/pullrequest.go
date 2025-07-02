@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/statepb"
 )
 
 // A PullRequestContent builds up the content of a pull request.
@@ -67,18 +69,17 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 //
 // If the pull request would contain an excessive number of commits (as
 // configured in pipeline-config.json).
-func createPullRequest(ctx context.Context, state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool) (*github.PullRequestMetadata, error) {
+func createPullRequest(ctx context.Context, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool, startTime time.Time, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig) (*github.PullRequestMetadata, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
 	}
 	anySuccesses := len(content.Successes) > 0
 	anyErrors := len(content.Errors) > 0
-	languageRepo := state.languageRepo
 
 	excessSuccesses := []string{}
-	if state.pipelineConfig != nil {
-		maxCommits := int(state.pipelineConfig.MaxPullRequestCommits)
+	if pipelineConfig != nil {
+		maxCommits := int(pipelineConfig.MaxPullRequestCommits)
 		if maxCommits > 0 && len(content.Successes) > maxCommits {
 			// We've got too many commits. Roll some back locally, and we'll add them to the description.
 			excessSuccesses = content.Successes[maxCommits:]
@@ -108,7 +109,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 
 	description = strings.TrimSpace(successesText + errorsText + excessText + "\n" + descriptionSuffix)
 
-	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(state.startTime))
+	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(startTime))
 
 	if !push {
 		slog.Info("Push not specified; would have created PR", "title", title, "description", description)
@@ -120,7 +121,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 		return nil, err
 	}
 
-	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(state.startTime))
+	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(startTime))
 	err = languageRepo.PushBranch(branch, ghClient.Token())
 	if err != nil {
 		slog.Info("Received error pushing branch", "err", err)

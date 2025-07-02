@@ -104,40 +104,40 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (*commandState, error) {
-	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime, workRootOverride)
+func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (
+	startTime time.Time,
+	workRoot string,
+	languageRepo *gitrepo.Repository,
+	pipelineConfig *statepb.PipelineConfig,
+	pipelineState *statepb.PipelineState,
+	containerConfig *docker.Docker,
+	err error,
+) {
+	startTime = time.Now()
+	workRoot, err = createWorkRoot(startTime, workRootOverride)
 	if err != nil {
-		return nil, err
+		return
 	}
-	languageRepo, err := cloneOrOpenLanguageRepo(workRoot, repo, ci)
+	languageRepo, err = cloneOrOpenLanguageRepo(workRoot, repo, ci)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	ps, config, err := loadRepoStateAndConfig(languageRepo)
+	pipelineState, pipelineConfig, err = loadRepoStateAndConfig(languageRepo)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	image, err := deriveImage(imageOverride, ps)
+	image, err := deriveImage(imageOverride, pipelineState)
 	if err != nil {
-		return nil, err
+		return
 	}
-	containerConfig, err := docker.New(workRoot, image, project, uid, gid, config)
+	containerConfig, err = docker.New(workRoot, image, project, uid, gid, pipelineConfig)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	state := &commandState{
-		startTime:       startTime,
-		workRoot:        workRoot,
-		languageRepo:    languageRepo,
-		pipelineConfig:  config,
-		pipelineState:   ps,
-		containerConfig: containerConfig,
-	}
-	return state, nil
+	return startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig, nil
 }
 
 func appendResultEnvironmentVariable(workRoot, name, value, envFileOverride string) error {

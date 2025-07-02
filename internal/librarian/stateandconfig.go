@@ -67,10 +67,10 @@ func loadPipelineConfigFile(path string) (*statepb.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func savePipelineState(state *commandState) error {
-	path := filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
+func savePipelineState(languageRepo *gitrepo.Repository, pipelineState *statepb.PipelineState) error {
+	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
 	// Marshal the protobuf message as JSON...
-	unformatted, err := protojson.Marshal(state.pipelineState)
+	unformatted, err := protojson.Marshal(pipelineState)
 	if err != nil {
 		return err
 	}

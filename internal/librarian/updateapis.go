@@ -21,9 +21,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/statepb"
 )
@@ -98,19 +100,19 @@ func init() {
 }
 
 func runUpdateAPIs(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
+	startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}
-	return updateAPIs(ctx, state, cfg)
+	return updateAPIs(ctx, cfg, startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig)
 }
 
-func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) error {
+func updateAPIs(ctx context.Context, cfg *config.Config, startTime time.Time, workRoot string, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig, pipelineState *statepb.PipelineState, containerConfig *docker.Docker) error {
 	var apiRepo *gitrepo.Repository
 	cleanWorkingTreePostGeneration := true
 	if cfg.Source == "" {
 		var err error
-		apiRepo, err = cloneGoogleapis(state.workRoot, cfg.CI)
+		apiRepo, err = cloneGoogleapis(workRoot, cfg.CI)
 		if err != nil {
 			return err
 		}
@@ -138,21 +140,21 @@ func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) er
 		}
 	}
 
-	outputDir := filepath.Join(state.workRoot, "output")
+	outputDir := filepath.Join(workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
 	// Root for generator-input defensive copies
-	if err := os.Mkdir(filepath.Join(state.workRoot, config.GeneratorInputDir), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(workRoot, config.GeneratorInputDir), 0755); err != nil {
 		return err
 	}
 
 	prContent := new(PullRequestContent)
 	// Perform "generate, clean, commit, build" on each library.
-	for _, library := range state.pipelineState.Libraries {
-		err := updateLibrary(ctx, state, cfg, apiRepo, outputDir, library, prContent)
+	for _, library := range pipelineState.Libraries {
+		err := updateLibrary(ctx, cfg, apiRepo, outputDir, library, prContent, workRoot, languageRepo, pipelineState, containerConfig)
 		if err != nil {
 			return err
 		}
@@ -164,15 +166,12 @@ func updateAPIs(ctx context.Context, state *commandState, cfg *config.Config) er
 			return err
 		}
 	}
-	_, err := createPullRequest(ctx, state, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push)
+	_, err := createPullRequest(ctx, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push, startTime, languageRepo, pipelineConfig)
 	return err
 }
 
-func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState,
-	prContent *PullRequestContent) error {
-	cc := state.containerConfig
-	languageRepo := state.languageRepo
-
+func updateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState,
+	prContent *PullRequestContent, workRoot string, languageRepo *gitrepo.Repository, pipelineState *statepb.PipelineState, containerConfig *docker.Docker) error {
 	if cfg.LibraryID != "" && cfg.LibraryID != library.Id {
 		// If LibraryID has been passed in, we only act on that library.
 		return nil
@@ -211,16 +210,16 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 	// This needs to be done per library, as the previous iteration may have updated generator-input in a meaningful way.
 	// We could potentially just keep a single copy and update it, but it's clearer diagnostically if we can tell
 	// what state we passed into the container.
-	generatorInput := filepath.Join(state.workRoot, config.GeneratorInputDir, library.Id)
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(state.languageRepo.Dir, config.GeneratorInputDir))); err != nil {
+	generatorInput := filepath.Join(workRoot, config.GeneratorInputDir, library.Id)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
 
-	if err := cc.GenerateLibrary(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := containerConfig.GenerateLibrary(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "generating")
 		return nil
 	}
-	if err := cc.Clean(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
+	if err := containerConfig.Clean(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
 		addErrorToPullRequest(prContent, library.Id, err, "cleaning")
 		// Clean up any changes before starting the next iteration.
 		if err := languageRepo.CleanWorkingTree(); err != nil {
@@ -233,7 +232,7 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 	}
 
 	library.LastGeneratedCommit = commits[0].Hash.String()
-	if err := savePipelineState(state); err != nil {
+	if err := savePipelineState(languageRepo, pipelineState); err != nil {
 		return err
 	}
 
@@ -258,7 +257,7 @@ func updateLibrary(ctx context.Context, state *commandState, cfg *config.Config,
 	// Once we've committed, we can build - but then check that nothing has changed afterwards.
 	// We consider a "something changed" error as fatal, whereas a build error just needs to
 	// undo the commit, report the failure and continue
-	buildErr := cc.BuildLibrary(ctx, cfg, languageRepo.Dir, library.Id)
+	buildErr := containerConfig.BuildLibrary(ctx, cfg, languageRepo.Dir, library.Id)
 	clean, err := languageRepo.IsClean()
 	if err != nil {
 		return err

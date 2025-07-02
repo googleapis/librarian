@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -92,39 +93,39 @@ func init() {
 }
 
 func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo,
+	_, workRoot, languageRepo, _, _, containerConfig, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo,
 		cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return err
 	}
-	return createReleaseArtifactsImpl(ctx, state, cfg)
+	return createReleaseArtifactsImpl(ctx, cfg, workRoot, languageRepo, containerConfig)
 }
 
-func createReleaseArtifactsImpl(ctx context.Context, state *commandState, cfg *config.Config) error {
+func createReleaseArtifactsImpl(ctx context.Context, cfg *config.Config, workRoot string, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
 	if err := validateSkipIntegrationTests(cfg.SkipIntegrationTests); err != nil {
 		return err
 	}
 	if err := validateRequiredFlag("release-id", cfg.ReleaseID); err != nil {
 		return err
 	}
-	outputRoot := filepath.Join(state.workRoot, "output")
+	outputRoot := filepath.Join(workRoot, "output")
 	if err := os.Mkdir(outputRoot, 0755); err != nil {
 		return err
 	}
 	slog.Info("Packages will be created", "dir", outputRoot)
 
-	releases, err := parseCommitsForReleases(state.languageRepo, cfg.ReleaseID)
+	releases, err := parseCommitsForReleases(languageRepo, cfg.ReleaseID)
 	if err != nil {
 		return err
 	}
 
 	for _, release := range releases {
-		if err := buildTestPackageRelease(ctx, state, cfg, outputRoot, release); err != nil {
+		if err := buildTestPackageRelease(ctx, cfg, outputRoot, release, languageRepo, containerConfig); err != nil {
 			return err
 		}
 	}
 
-	if err := copyMetadataFiles(state, outputRoot, releases); err != nil {
+	if err := copyMetadataFiles(outputRoot, releases, languageRepo); err != nil {
 		return err
 	}
 
@@ -138,7 +139,7 @@ func createReleaseArtifactsImpl(ctx context.Context, state *commandState, cfg *c
 // - (Just in case) The pipeline state
 // The pipeline config and state files are copied by checking out the commit of the last
 // release, which should effectively be the tip of the release PR.
-func copyMetadataFiles(state *commandState, outputRoot string, releases []LibraryRelease) error {
+func copyMetadataFiles(outputRoot string, releases []LibraryRelease, languageRepo *gitrepo.Repository) error {
 	releasesJson, err := json.Marshal(releases)
 	if err != nil {
 		return err
@@ -147,7 +148,6 @@ func copyMetadataFiles(state *commandState, outputRoot string, releases []Librar
 		return err
 	}
 
-	languageRepo := state.languageRepo
 	finalRelease := releases[len(releases)-1]
 	if err := languageRepo.Checkout(finalRelease.CommitHash); err != nil {
 		return err
@@ -174,26 +174,23 @@ func copyFile(sourcePath, destPath string) error {
 	return createAndWriteBytesToFile(destPath, bytes)
 }
 
-func buildTestPackageRelease(ctx context.Context, state *commandState, cfg *config.Config, outputRoot string, release LibraryRelease) error {
-	cc := state.containerConfig
-	languageRepo := state.languageRepo
-
+func buildTestPackageRelease(ctx context.Context, cfg *config.Config, outputRoot string, release LibraryRelease, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
 	if err := languageRepo.Checkout(release.CommitHash); err != nil {
 		return err
 	}
-	if err := cc.BuildLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID); err != nil {
+	if err := containerConfig.BuildLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	if cfg.SkipIntegrationTests != "" {
 		slog.Info("Skipping integration tests", "bug", cfg.SkipIntegrationTests)
-	} else if err := cc.IntegrationTestLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID); err != nil {
+	} else if err := containerConfig.IntegrationTestLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
 	}
-	if err := cc.PackageLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
+	if err := containerConfig.PackageLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
 		return err
 	}
 	return nil
