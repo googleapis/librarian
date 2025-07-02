@@ -119,6 +119,10 @@ func TestGodocLint(t *testing.T) {
 		"./...")
 }
 
+func TestCoverage(t *testing.T) {
+	rungo(t, "test", "-coverprofile=coverage.out", "./...")
+}
+
 func rungo(t *testing.T, args ...string) {
 	t.Helper()
 
