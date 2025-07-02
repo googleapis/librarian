@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func addFlagAPIPath(fs *flag.FlagSet, cfg *config.Config) {
+func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
@@ -66,10 +66,6 @@ func addFlagLibraryID(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.LibraryVersion, "library-version", "", "The version to release (only valid with library-id, only when creating a release PR)")
-}
-
-func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
-	fs.BoolVar(&cfg.Push, "push", false, "push to GitHub if true")
 }
 
 func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {

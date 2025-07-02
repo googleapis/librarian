@@ -84,7 +84,7 @@ func init() {
 	fs := cmdGenerate.Flags
 	cfg := cmdGenerate.Config
 
-	addFlagAPIPath(fs, cfg)
+	addFlagAPI(fs, cfg)
 	addFlagBuild(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagProject(fs, cfg)
