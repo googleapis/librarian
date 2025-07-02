@@ -37,7 +37,7 @@ type PullRequestContent struct {
 	Errors    []string
 }
 
-// Add details to a PullRequestContent of a partial error which prevents a
+// addErrorToPullRequest adds details to a PullRequestContent of a partial error which prevents a
 // single API or library from being configured/regenerated/released,
 // but without halting the overall process. A warning is logged locally with the error details,
 // but we don't include detailed errors in the PR, as this could reveal sensitive information.
@@ -47,7 +47,7 @@ func addErrorToPullRequest(pr *PullRequestContent, id string, err error, action 
 	pr.Errors = append(pr.Errors, fmt.Sprintf("Error while %s %s", action, id))
 }
 
-// Adds a success entry to a PullRequestContent.
+// addSuccessToPullRequest adds a success entry to a PullRequestContent.
 func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 	pr.Successes = append(pr.Successes, text)
 }
@@ -129,7 +129,7 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
 }
 
-// Formats the given list as a single Markdown string, with a title preceding the list,
+// formatListAsMarkdown formats the given list as a single Markdown string, with a title preceding the list,
 // a "- " at the start of each value and a line break at the end of each value.
 // If the list is empty, an empty string is returned instead.
 func formatListAsMarkdown(title string, list []string) string {
@@ -147,7 +147,7 @@ func formatListAsMarkdown(title string, list []string) string {
 	return builder.String()
 }
 
-// Parses the GitHub repo name from the remote for this repository.
+// getGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
 // There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
 // unambiguous result.
 // Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.

@@ -198,7 +198,7 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 	return nil
 }
 
-// Iterate over all configured libraries, and check for new commits since the previous release tag for that library.
+// generateReleaseCommitForEachLibrary iterates over all configured libraries, and checks for new commits since the previous release tag for that library.
 // The error handling here takes one of two forms:
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
@@ -304,8 +304,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 	return pr, nil
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/564): decide on release
-// notes ordering.
+// formatReleaseNotes formats the release notes for a library release.
+// TODO(https://github.com/googleapis/librarian/issues/564): decide on release notes ordering.
 func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	// Group release notes by type, preserving ordering (FIFO)
 	var features, docs, fixes []string
@@ -397,7 +397,7 @@ func calculateNextVersion(library *statepb.LibraryState, libraryVersion string) 
 	return next.String(), nil
 }
 
-// Match trailing digits in the prerelease part, then parse those digits as an integer.
+// calculateNextPrerelease matches trailing digits in the prerelease part, then parses those digits as an integer.
 // Increment the integer, then format it again - keeping as much of the existing prerelease as is
 // required to end up with a string longer-than-or-equal to the original.
 // If there are no trailing digits, fail.

@@ -132,10 +132,11 @@ func createReleaseArtifactsImpl(ctx context.Context, state *commandState, cfg *c
 	return nil
 }
 
+// copyMetadataFiles copies the metadata files to the output root.
 // The publish-release-artifacts stage will need bits of metadata:
 // - The releases we're creating
 // - The pipeline config
-// - (Just in case) The pipeline state
+// - (Just in case) The pipeline state.
 // The pipeline config and state files are copied by checking out the commit of the last
 // release, which should effectively be the tip of the release PR.
 func copyMetadataFiles(state *commandState, outputRoot string, releases []LibraryRelease) error {

@@ -176,6 +176,7 @@ func mergeReleasePR(ctx context.Context, workRoot string, cfg *config.Config) er
 	return nil
 }
 
+// sleepDelay is the amount of time to sleep between polling iterations.
 // TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
 const sleepDelay = time.Duration(60) * time.Second
 
@@ -333,11 +334,13 @@ func mergePullRequest(ctx context.Context, prMetadata *github.PullRequestMetadat
 	return *mergeResult.SHA, nil
 }
 
-// The maximum amount of time that waitForSync will poll to see if
+// waitForSyncMaxDuration is the maximum amount of time that waitForSync will poll to see if
 // the merge commit has syncrhonized
 // TODO(https://github.com/googleapis/librarian/issues/544): make timing configurable?
 const waitForSyncMaxDuration = time.Duration(10) * time.Minute
 
+// waitForSync waits for the given merge commit to be available at the repo specified via flagSyncUrlPrefix.
+// given merge commit to be available at the repo specified via flagSyncUrlPrefix.
 // If flagSyncUrlPrefix is empty, this returns immediately.
 // Otherwise, polls for up to 10 minutes (once every 30 seconds) for the
 // given merge commit to be available at the repo specified via flagSyncUrlPrefix.
@@ -381,7 +384,7 @@ func waitForSync(mergeCommit string, cfg *config.Config) error {
 	return fmt.Errorf("timed out waiting for commit to sync")
 }
 
-// For each commit in the pull request, check:
+// checkPullRequestCommits checks each commit in the pull request, checking:
 // - We still have the Librarian metadata (release ID, library, version)
 // - None of the paths which affect the library have been modified since the base of the PR
 //
@@ -465,7 +468,7 @@ func checkPullRequestCommits(ctx context.Context, prMetadata *github.PullRequest
 	return false, reportBlockingReason(ctx, prMetadata, builder.String(), cfg)
 }
 
-// Checks that the pull request has at least one approved review, and no "changes requested" reviews.
+// checkPullRequestApproval checks that the pull request has at least one approved review, and no "changes requested" reviews.
 func checkPullRequestApproval(ctx context.Context, prMetadata *github.PullRequestMetadata, cfg *config.Config) (bool, error) {
 	ghClient, err := github.NewClient(cfg.GitHubToken)
 	if err != nil {

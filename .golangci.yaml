@@ -24,6 +24,7 @@ linters:
     - contextcheck
     - fatcontext
     - godot
+    - godoc
     - govet
     - ineffassign
     - misspell
@@ -31,4 +32,13 @@ linters:
     - unparam
     - unused
     - usetesting
+
+linters-settings:
+  godoc:
+    exclude-dirs:
+      - internal/statepb/
+
+run:
+  skip-dirs:
+    - internal/statepb/
     

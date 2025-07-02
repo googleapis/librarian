@@ -174,7 +174,7 @@ func executeGenerate(ctx context.Context, state *commandState, cfg *config.Confi
 	return nil
 }
 
-// Checks if the library exists in the remote pipeline state, if so use GenerateLibrary command
+// runGenerateCommand checks if the library exists in the remote pipeline state, if so use GenerateLibrary command
 // otherwise use GenerateRaw command.
 // In case of non-fatal error when looking up library, we will fall back to GenerateRaw command
 // and log the error.
