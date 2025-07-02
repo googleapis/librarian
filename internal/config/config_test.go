@@ -146,10 +146,11 @@ func TestIsValid(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name: "Valid config - Push false",
+			name: "Valid config - Push false, push config valid",
 			cfg: Config{
 				Push:        false,
 				GitHubToken: "",
+				PushConfig:  "def@ghi.com,abc",
 			},
 			wantValid: true,
 			wantErr:   false,

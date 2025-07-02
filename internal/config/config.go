@@ -370,11 +370,9 @@ func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
 		return false, errors.New("no GitHub token supplied for push")
 	}
-	if c.Push {
-		parts := strings.Split(c.PushConfig, ",")
-		if len(parts) != 2 {
-			return false, errors.New("unable to parse push config")
-		}
+	parts := strings.Split(c.PushConfig, ",")
+	if len(parts) != 2 {
+		return false, errors.New("unable to parse push config")
 	}
 	return true, nil
 }
