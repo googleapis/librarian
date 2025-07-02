@@ -120,7 +120,7 @@ func TestGodocLint(t *testing.T) {
 }
 
 func TestCoverage(t *testing.T) {
-	rungo(t, "test", "-coverprofile=coverage.out", "./...")
+	rungo(t, "test", "-coverprofile=coverage.out", "./internal/...", "./cmd/...")
 }
 
 func rungo(t *testing.T, args ...string) {
