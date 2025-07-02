@@ -153,7 +153,8 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 	if err != nil {
 		return err
 	}
-	if err := appendResultEnvironmentVariable(state.workRoot, baselineCommitEnvVarName, baselineCommit, cfg.EnvFile); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, baselineCommitEnvVarName,
+		baselineCommit, cfg.EnvFile); err != nil {
 		return err
 	}
 
@@ -167,7 +168,8 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 		return err
 	}
 
-	prMetadata, err := createPullRequest(ctx, state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release", cfg.GitHubToken, cfg.Push)
+	prMetadata, err := createPullRequest(ctx, state, prContent, "chore: Library release",
+		fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release", cfg.GitHubToken, cfg.Push)
 	if err != nil {
 		return err
 	}
@@ -192,7 +194,8 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 		slog.Warn("Received error trying to add label to PR", "err", err)
 		return err
 	}
-	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName, strconv.Itoa(prMetadata.Number), cfg.EnvFile); err != nil {
+	if err := appendResultEnvironmentVariable(state.workRoot, prNumberEnvVarName,
+		strconv.Itoa(prMetadata.Number), cfg.EnvFile); err != nil {
 		return err
 	}
 	return nil
@@ -202,8 +205,10 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 // The error handling here takes one of two forms:
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
-//   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandState, cfg *config.Config, inputDirectory, releaseID string) (*PullRequestContent, error) {
+//   - More fundamental errors (e.g. a failure to commit, or to save pipeline state)
+//     abort the whole process immediately.
+func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandState,
+	cfg *config.Config, inputDirectory, releaseID string) (*PullRequestContent, error) {
 	cc := state.containerConfig
 	libraries := state.pipelineState.Libraries
 	languageRepo := state.languageRepo
@@ -264,7 +269,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 			return nil, err
 		}
 
-		if err := cc.PrepareLibraryRelease(ctx, cfg, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
+		if err := cc.PrepareLibraryRelease(ctx, cfg, languageRepo.Dir, inputDirectory,
+			library.Id, releaseVersion); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "preparing library release")
 			// Clean up any changes before starting the next iteration.
 			if err := languageRepo.CleanWorkingTree(); err != nil {
@@ -293,7 +299,9 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 		releaseDescription := fmt.Sprintf("chore: Release library %s version %s", library.Id, releaseVersion)
 		addSuccessToPullRequest(pr, releaseDescription)
 		// Metadata for easy extraction later.
-		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
+		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\n"+
+			"Librarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
+
 		// Note that releaseDescription will already end with two line breaks, so we don't need any more before the metadata.
 		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata),
 			cfg.PushConfig)

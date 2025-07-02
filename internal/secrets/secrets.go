@@ -28,7 +28,8 @@ import (
 // service. Provide a secretManager.Client to reuse an existing client
 // or a fake implementation for testing.
 type SecretsClient interface {
-	AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
+	AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest,
+		opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
 }
 
 // Get fetches the latest version of a secret as a string. This method assumes

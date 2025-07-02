@@ -104,7 +104,8 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (*commandState, error) {
+func createCommandStateForLanguage(workRootOverride, repo, imageOverride,
+	project, ci, uid, gid string) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, workRootOverride)
 	if err != nil {

@@ -77,7 +77,8 @@ type PullRequestMetadata struct {
 // CreatePullRequest creates a pull request in the remote repo.
 // At the moment this requires a single remote to be configured,
 // which must have a GitHub HTTPS URL. We assume a base branch of "main".
-func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, title, body string) (*PullRequestMetadata, error) {
+func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository,
+	remoteBranch, title, body string) (*PullRequestMetadata, error) {
 	if body == "" {
 		body = "Regenerated all changed APIs. See individual commits for details."
 	}
@@ -100,7 +101,8 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 
 // CreateRelease creates a release on GitHub for the specified commit,
 // including the named tag, with the given title and description.
-func (c *Client) CreateRelease(ctx context.Context, repo *Repository, tag, commit, title, description string, prerelease bool) (*github.RepositoryRelease, error) {
+func (c *Client) CreateRelease(ctx context.Context, repo *Repository, tag, commit,
+	title, description string, prerelease bool) (*github.RepositoryRelease, error) {
 	release := &github.RepositoryRelease{
 		TagName:         &tag,
 		TargetCommitish: &commit,
@@ -153,7 +155,8 @@ func (c *Client) AddCommentToPullRequest(ctx context.Context, repo *Repository, 
 
 // MergePullRequest merges the pull request identified by repo and prNumber,
 // using the merge method (e.g. rebase or squash) specified as method.
-func (c *Client) MergePullRequest(ctx context.Context, repo *Repository, prNumber int, method github.MergeMethod) (*github.PullRequestMergeResult, error) {
+func (c *Client) MergePullRequest(ctx context.Context, repo *Repository, prNumber int,
+	method github.MergeMethod) (*github.PullRequestMergeResult, error) {
 	options := &github.PullRequestOptions{
 		MergeMethod: string(method),
 	}
@@ -175,7 +178,8 @@ func (c *Client) GetPullRequest(ctx context.Context, repo *Repository, prNumber 
 // for the given pull request.
 //
 // See https://docs.github.com/en/rest/checks/runs.
-func (c *Client) GetPullRequestCheckRuns(ctx context.Context, pullRequest *github.PullRequest) ([]*github.CheckRun, error) {
+func (c *Client) GetPullRequestCheckRuns(ctx context.Context,
+	pullRequest *github.PullRequest) ([]*github.CheckRun, error) {
 	prHead := pullRequest.Head
 	options := &github.ListCheckRunsOptions{}
 	checkRuns, _, err := c.Checks.ListCheckRunsForRef(ctx, *prHead.User.Login, *prHead.Repo.Name, *prHead.Ref, options)
@@ -187,10 +191,12 @@ func (c *Client) GetPullRequestCheckRuns(ctx context.Context, pullRequest *githu
 
 // GetPullRequestReviews fetches all reviews for the pull request identified
 // by prMetadata.
-func (c *Client) GetPullRequestReviews(ctx context.Context, prMetadata *PullRequestMetadata) ([]*github.PullRequestReview, error) {
+func (c *Client) GetPullRequestReviews(ctx context.Context,
+	prMetadata *PullRequestMetadata) ([]*github.PullRequestReview, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
-	reviews, _, err := c.PullRequests.ListReviews(ctx, prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number, listOptions)
+	reviews, _, err := c.PullRequests.ListReviews(ctx, prMetadata.Repo.Owner,
+		prMetadata.Repo.Name, prMetadata.Number, listOptions)
 	return reviews, err
 }
 
@@ -235,7 +241,8 @@ func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref 
 
 // GetDiffCommits returns the commits in a repository repo between source
 // and target references (commit hashes, branches etc).
-func (c *Client) GetDiffCommits(ctx context.Context, repo *Repository, source, target string) ([]*github.RepositoryCommit, error) {
+func (c *Client) GetDiffCommits(ctx context.Context, repo *Repository,
+	source, target string) ([]*github.RepositoryCommit, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
 	commitsComparison, _, err := c.Repositories.CompareCommits(ctx, repo.Owner, repo.Name, source, target, listOptions)
