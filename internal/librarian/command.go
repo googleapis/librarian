@@ -32,32 +32,6 @@ import (
 
 const releaseIDEnvVarName = "_RELEASE_ID"
 
-// commandState holds all necessary information for a command execution.
-type commandState struct {
-	// startTime records when the command began execution. This is used as a
-	// consistent timestamp for commands when necessary.
-	startTime time.Time
-
-	// workRoot is the base directory for all command operations. The default
-	// location is /tmp.
-	workRoot string
-
-	// languageRepo is the relevant language-specific Git repository, if
-	// applicable.
-	languageRepo *gitrepo.Repository
-
-	// pipelineConfig holds the pipeline configuration, loaded from the
-	// language repo if present.
-	pipelineConfig *statepb.PipelineConfig
-
-	// pipelineState holds the pipeline's current state, loaded from the
-	// language repo if present.
-	pipelineState *statepb.PipelineState
-
-	// containerConfig provides settings for running containerized commands.
-	containerConfig *docker.Docker
-}
-
 func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
