@@ -196,7 +196,8 @@ func TestIsValid(t *testing.T) {
 			if (err != nil) != test.wantErr {
 				t.Errorf("IsValid() got error = %v, want error = %t", err, test.wantErr)
 			}
-			if test.wantErr && err != nil && err.Error() != "no GitHub token supplied for push" && err.Error() != "unable to parse push config" {
+			if test.wantErr && err != nil && err.Error() != "no GitHub token supplied for push" &&
+				err.Error() != "unable to parse push config" {
 				t.Errorf("IsValid() got unexpected error message: %q", err.Error())
 			}
 		})

@@ -86,7 +86,15 @@ func init() {
 }
 
 func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
-	state, err := createCommandStateForLanguage(cfg.WorkRoot, cfg.Repo, cfg.Image, cfg.Project, cfg.CI, cfg.UserUID, cfg.UserGID)
+	state, err := createCommandStateForLanguage(
+		cfg.WorkRoot,
+		cfg.Repo,
+		cfg.Image,
+		cfg.Project,
+		cfg.CI,
+		cfg.UserUID,
+		cfg.UserGID,
+	)
 	if err != nil {
 		return err
 	}
@@ -182,11 +190,28 @@ func updateImageTag(ctx context.Context, state *commandState, cfg *config.Config
 	// can massage it into a similar state.
 	prContent := new(PullRequestContent)
 	addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
-	_, err = createPullRequest(ctx, state, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push)
+	_, err = createPullRequest(
+		ctx,
+		state,
+		prContent,
+		"chore: update generation image tag",
+		"",
+		"update-image-tag",
+		cfg.GitHubToken,
+		cfg.Push,
+	)
 	return err
 }
 
-func regenerateLibrary(ctx context.Context, state *commandState, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState) error {
+func regenerateLibrary(
+	ctx context.Context,
+	state *commandState,
+	cfg *config.Config,
+	apiRepo *gitrepo.Repository,
+	generatorInput string,
+	outputRoot string,
+	library *statepb.LibraryState,
+) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 

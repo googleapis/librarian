@@ -127,6 +127,14 @@ handling:
 - [Generics Tutorial](https://go.dev/doc/tutorial/generics)
 - [Error Handling with Generics](https://go.dev/blog/error-syntax)
 
+## Linters and Formatter
+
+This repository has linters and formatters configured in .golangci.yaml.
+To install golangci-lint locally, see https://golangci-lint.run/welcome/install/#binaries
+
+To run linter: `golangci-lint run`
+
+To run formatter: `golangci-lint run --fix`
 
 ## Need Help? Just Ask!
 

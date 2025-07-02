@@ -250,7 +250,10 @@ func (r *Repository) PrintStatus() error {
 //
 // If sinceCommit is not provided, all commits are searched; otherwise, if no
 // commit matching sinceCommit is found, an error is returned.
-func (r *Repository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error) {
+func (r *Repository) GetCommitsForPathsSinceCommit(
+	paths []string,
+	sinceCommit string,
+) ([]*Commit, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
@@ -394,7 +397,10 @@ func (r *Repository) GetCommitsForReleaseID(releaseID string) ([]*Commit, error)
 		}
 
 		if candidateCommit.NumParents() != 1 {
-			return nil, fmt.Errorf("aborted finding release PR commits; commit %s has multiple parents", candidateCommit.Hash.String())
+			return nil, fmt.Errorf(
+				"aborted finding release PR commits; commit %s has multiple parents",
+				candidateCommit.Hash.String(),
+			)
 		}
 		candidateCommit, err = candidateCommit.Parent(0)
 		if err != nil {

@@ -44,7 +44,15 @@ var hashHeader = regexp.MustCompile(`^# Copyright 20\d\d Google LLC
 #
 # Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
 
-var noHeaderRequiredFiles = []string{".github/CODEOWNERS", "go.sum", "go.mod", ".gitignore", "LICENSE", "renovate.json", "coverage.out"}
+var noHeaderRequiredFiles = []string{
+	".github/CODEOWNERS",
+	"go.sum",
+	"go.mod",
+	".gitignore",
+	"LICENSE",
+	"renovate.json",
+	"coverage.out",
+}
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")

@@ -100,7 +100,11 @@ func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 	return createReleaseArtifactsImpl(ctx, state, cfg)
 }
 
-func createReleaseArtifactsImpl(ctx context.Context, state *commandState, cfg *config.Config) error {
+func createReleaseArtifactsImpl(
+	ctx context.Context,
+	state *commandState,
+	cfg *config.Config,
+) error {
 	if err := validateSkipIntegrationTests(cfg.SkipIntegrationTests); err != nil {
 		return err
 	}
@@ -158,7 +162,11 @@ func copyMetadataFiles(state *commandState, outputRoot string, releases []Librar
 		return err
 	}
 
-	sourceConfigFile := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineConfigFile)
+	sourceConfigFile := filepath.Join(
+		languageRepo.Dir,
+		config.GeneratorInputDir,
+		pipelineConfigFile,
+	)
 	destConfigFile := filepath.Join(outputRoot, pipelineConfigFile)
 	if err := copyFile(sourceConfigFile, destConfigFile); err != nil {
 		return err
@@ -174,7 +182,13 @@ func copyFile(sourcePath, destPath string) error {
 	return createAndWriteBytesToFile(destPath, bytes)
 }
 
-func buildTestPackageRelease(ctx context.Context, state *commandState, cfg *config.Config, outputRoot string, release LibraryRelease) error {
+func buildTestPackageRelease(
+	ctx context.Context,
+	state *commandState,
+	cfg *config.Config,
+	outputRoot string,
+	release LibraryRelease,
+) error {
 	cc := state.containerConfig
 	languageRepo := state.languageRepo
 

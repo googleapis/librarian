@@ -104,7 +104,9 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (*commandState, error) {
+func createCommandStateForLanguage(
+	workRootOverride, repo, imageOverride, project, ci, uid, gid string,
+) (*commandState, error) {
 	startTime := time.Now()
 	workRoot, err := createWorkRoot(startTime, workRootOverride)
 	if err != nil {
@@ -159,7 +161,9 @@ func deriveImage(imageOverride string, state *statepb.PipelineState) (string, er
 	// TODO(https://github.com/googleapis/librarian/issues/326):
 	// use image from state.yaml when switch to this config file. see go/librarian:cli-reimagined
 	if state.ImageTag == "" {
-		return "", errors.New("pipeline state does not have image specified and no override was provided")
+		return "", errors.New(
+			"pipeline state does not have image specified and no override was provided",
+		)
 	}
 	return state.ImageTag, nil
 }
@@ -202,7 +206,11 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 	switch {
 	case os.IsNotExist(err):
 		if err := os.Mkdir(path, 0755); err != nil {
-			return "", fmt.Errorf("unable to create temporary working directory '%s': %w", path, err)
+			return "", fmt.Errorf(
+				"unable to create temporary working directory '%s': %w",
+				path,
+				err,
+			)
 		}
 	case err == nil:
 		return "", fmt.Errorf("temporary working directory already exists: %s", path)
@@ -236,7 +244,10 @@ func commitAll(repo *gitrepo.Repository, msg, pushConfig string) error {
 func parsePushConfig(pushConfig string) (string, string, error) {
 	parts := strings.Split(pushConfig, ",")
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
+		return "", "", fmt.Errorf(
+			"invalid pushConfig format: expected 'email,user', got %q",
+			pushConfig,
+		)
 	}
 	userEmail := parts[0]
 	userName := parts[1]

@@ -89,7 +89,10 @@ type Docker struct {
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
-func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
+func New(
+	workRoot, image, secretsProject, uid, gid string,
+	pipelineConfig *statepb.PipelineConfig,
+) (*Docker, error) {
 	envProvider := newEnvironmentProvider(workRoot, secretsProject, pipelineConfig)
 	docker := &Docker{
 		Image: image,
@@ -109,7 +112,11 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *state
 // the subdirectory apiPath of the API specification repo apiRoot, and whatever
 // is in the language-specific Docker container. The code is generated
 // in the output directory, which is initially empty.
-func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, output, apiPath string) error {
+func (c *Docker) GenerateRaw(
+	ctx context.Context,
+	cfg *config.Config,
+	apiRoot, output, apiPath string,
+) error {
 	commandArgs := []string{
 		"--source=/apis",
 		"--output=/output",
@@ -128,7 +135,11 @@ func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, o
 // output specifies the empty output directory into which the command should
 // generate code, and libraryID specifies the ID of the library to generate,
 // as configured in the Librarian state file for the repository.
-func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
+func (c *Docker) GenerateLibrary(
+	ctx context.Context,
+	cfg *config.Config,
+	apiRoot, output, generatorInput, libraryID string,
+) error {
 	commandArgs := []string{
 		"--source=/apis",
 		"--output=/output",
@@ -160,7 +171,11 @@ func (c *Docker) Clean(ctx context.Context, cfg *config.Config, repoRoot, librar
 
 // BuildRaw builds the result of GenerateRaw, which previously generated
 // code for apiPath in generatorOutput.
-func (c *Docker) BuildRaw(ctx context.Context, cfg *config.Config, generatorOutput, apiPath string) error {
+func (c *Docker) BuildRaw(
+	ctx context.Context,
+	cfg *config.Config,
+	generatorOutput, apiPath string,
+) error {
 	mounts := []string{
 		fmt.Sprintf("%s:/generator-output", generatorOutput),
 	}
@@ -174,7 +189,11 @@ func (c *Docker) BuildRaw(ctx context.Context, cfg *config.Config, generatorOutp
 
 // BuildLibrary builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
-func (c *Docker) BuildLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
+func (c *Docker) BuildLibrary(
+	ctx context.Context,
+	cfg *config.Config,
+	repoRoot, libraryID string,
+) error {
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
@@ -192,7 +211,11 @@ func (c *Docker) BuildLibrary(ctx context.Context, cfg *config.Config, repoRoot,
 // apiPath directory within apiRoot, and the container is provided with the
 // generatorInput directory to record the results of configuration. The
 // library code is not generated.
-func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error {
+func (c *Docker) Configure(
+	ctx context.Context,
+	cfg *config.Config,
+	apiRoot, apiPath, generatorInput string,
+) error {
 	commandArgs := []string{
 		"--source=/apis",
 		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
@@ -210,7 +233,11 @@ func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, api
 // ID libraryID within repoRoot, with version releaseVersion. Release notes
 // are expected to be present within inputsDirectory, in a file named
 // `{libraryID}-{releaseVersion}-release-notes.txt`.
-func (c *Docker) PrepareLibraryRelease(ctx context.Context, cfg *config.Config, repoRoot, inputsDirectory, libraryID, releaseVersion string) error {
+func (c *Docker) PrepareLibraryRelease(
+	ctx context.Context,
+	cfg *config.Config,
+	repoRoot, inputsDirectory, libraryID, releaseVersion string,
+) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -226,7 +253,11 @@ func (c *Docker) PrepareLibraryRelease(ctx context.Context, cfg *config.Config, 
 }
 
 // IntegrationTestLibrary runs the integration tests for a library with ID libraryID within repoRoot.
-func (c *Docker) IntegrationTestLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
+func (c *Docker) IntegrationTestLibrary(
+	ctx context.Context,
+	cfg *config.Config,
+	repoRoot, libraryID string,
+) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -240,7 +271,11 @@ func (c *Docker) IntegrationTestLibrary(ctx context.Context, cfg *config.Config,
 
 // PackageLibrary packages release artifacts for a library with ID libraryID within repoRoot,
 // creating the artifacts within output.
-func (c *Docker) PackageLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID, output string) error {
+func (c *Docker) PackageLibrary(
+	ctx context.Context,
+	cfg *config.Config,
+	repoRoot, libraryID, output string,
+) error {
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--output=/output",
@@ -257,7 +292,11 @@ func (c *Docker) PackageLibrary(ctx context.Context, cfg *config.Config, repoRoo
 // PublishLibrary publishes release artifacts for a library with ID libraryID and version releaseVersion
 // to package managers, documentation sites etc. The artifacts will previously have been
 // created by PackageLibrary.
-func (c *Docker) PublishLibrary(ctx context.Context, cfg *config.Config, output, libraryID, releaseVersion string) error {
+func (c *Docker) PublishLibrary(
+	ctx context.Context,
+	cfg *config.Config,
+	output, libraryID, releaseVersion string,
+) error {
 	commandArgs := []string{
 		"--package-output=/output",
 		fmt.Sprintf("--library-id=%s", libraryID),
@@ -270,7 +309,13 @@ func (c *Docker) PublishLibrary(ctx context.Context, cfg *config.Config, output,
 	return c.runDocker(ctx, cfg, CommandPublishLibrary, mounts, commandArgs)
 }
 
-func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
+func (c *Docker) runDocker(
+	ctx context.Context,
+	cfg *config.Config,
+	command Command,
+	mounts []string,
+	commandArgs []string,
+) (err error) {
 	mounts = maybeRelocateMounts(cfg, mounts)
 
 	args := []string{

@@ -67,7 +67,14 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 //
 // If the pull request would contain an excessive number of commits (as
 // configured in pipeline-config.json).
-func createPullRequest(ctx context.Context, state *commandState, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool) (*github.PullRequestMetadata, error) {
+func createPullRequest(
+	ctx context.Context,
+	state *commandState,
+	content *PullRequestContent,
+	titlePrefix, descriptionSuffix, branchType string,
+	gitHubToken string,
+	push bool,
+) (*github.PullRequestMetadata, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
@@ -83,7 +90,11 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 			// We've got too many commits. Roll some back locally, and we'll add them to the description.
 			excessSuccesses = content.Successes[maxCommits:]
 			content.Successes = content.Successes[:maxCommits]
-			slog.Info("Excess commits created; winding back language repo", "excess_commits", len(excessSuccesses))
+			slog.Info(
+				"Excess commits created; winding back language repo",
+				"excess_commits",
+				len(excessSuccesses),
+			)
 			if err := languageRepo.CleanAndRevertCommits(len(excessSuccesses)); err != nil {
 				return nil, err
 			}
@@ -106,12 +117,20 @@ func createPullRequest(ctx context.Context, state *commandState, content *PullRe
 	errorsText := formatListAsMarkdown("Errors", content.Errors)
 	excessText := formatListAsMarkdown("Excess changes not included", excessSuccesses)
 
-	description = strings.TrimSpace(successesText + errorsText + excessText + "\n" + descriptionSuffix)
+	description = strings.TrimSpace(
+		successesText + errorsText + excessText + "\n" + descriptionSuffix,
+	)
 
 	title := fmt.Sprintf("%s: %s", titlePrefix, formatTimestamp(state.startTime))
 
 	if !push {
-		slog.Info("Push not specified; would have created PR", "title", title, "description", description)
+		slog.Info(
+			"Push not specified; would have created PR",
+			"title",
+			title,
+			"description",
+			description,
+		)
 		return nil, nil
 	}
 
@@ -172,7 +191,10 @@ func getGitHubRepoFromRemote(repo *gitrepo.Repository) (*github.Repository, erro
 
 	if len(gitHubRemoteNames) > 1 {
 		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
-		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
+		return nil, fmt.Errorf(
+			"can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s",
+			joinedRemoteNames,
+		)
 	}
 	return github.ParseUrl(gitHubUrl)
 }

@@ -27,7 +27,11 @@ type mockClient struct {
 	result string
 }
 
-func (c *mockClient) AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error) {
+func (c *mockClient) AccessSecretVersion(
+	ctx context.Context,
+	req *secretmanagerpb.AccessSecretVersionRequest,
+	opts ...gax.CallOption,
+) (*secretmanagerpb.AccessSecretVersionResponse, error) {
 	resp := &secretmanagerpb.AccessSecretVersionResponse{
 		Payload: &secretmanagerpb.SecretPayload{
 			Data: []byte(c.result),

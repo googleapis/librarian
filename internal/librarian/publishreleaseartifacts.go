@@ -81,7 +81,9 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	pipelineConfig, err := loadPipelineConfigFile(filepath.Join(cfg.ArtifactRoot, pipelineConfigFile))
+	pipelineConfig, err := loadPipelineConfigFile(
+		filepath.Join(cfg.ArtifactRoot, pipelineConfigFile),
+	)
 	if err != nil {
 		return err
 	}
@@ -97,14 +99,25 @@ func runPublishReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	containerConfig, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, pipelineConfig)
+	containerConfig, err := docker.New(
+		workRoot,
+		image,
+		cfg.Project,
+		cfg.UserUID,
+		cfg.UserGID,
+		pipelineConfig,
+	)
 	if err != nil {
 		return err
 	}
 	return publishReleaseArtifacts(ctx, containerConfig, cfg)
 }
 
-func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker, cfg *config.Config) error {
+func publishReleaseArtifacts(
+	ctx context.Context,
+	containerConfig *docker.Docker,
+	cfg *config.Config,
+) error {
 	if err := validateRequiredFlag("tag-repo-url", cfg.TagRepoURL); err != nil {
 		return err
 	}
@@ -141,7 +154,12 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 	return nil
 }
 
-func publishPackages(ctx context.Context, config *docker.Docker, cfg *config.Config, releases []LibraryRelease) error {
+func publishPackages(
+	ctx context.Context,
+	config *docker.Docker,
+	cfg *config.Config,
+	releases []LibraryRelease,
+) error {
 	for _, release := range releases {
 		outputDir := filepath.Join(cfg.ArtifactRoot, release.LibraryID)
 		if err := config.PublishLibrary(ctx, cfg, outputDir, release.LibraryID, release.Version); err != nil {
@@ -152,7 +170,12 @@ func publishPackages(ctx context.Context, config *docker.Docker, cfg *config.Con
 	return nil
 }
 
-func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *github.Repository, gitHubToken string) error {
+func createRepoReleases(
+	ctx context.Context,
+	releases []LibraryRelease,
+	gitHubRepo *github.Repository,
+	gitHubToken string,
+) error {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return err
@@ -160,8 +183,17 @@ func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRe
 	for _, release := range releases {
 		tag := formatReleaseTag(release.LibraryID, release.Version)
 		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
-		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := ghClient.CreateRelease(ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
+		prerelease := strings.HasPrefix(release.Version, "0.") ||
+			strings.Contains(release.Version, "-")
+		repoRelease, err := ghClient.CreateRelease(
+			ctx,
+			gitHubRepo,
+			tag,
+			release.CommitHash,
+			title,
+			release.ReleaseNotes,
+			prerelease,
+		)
 		if err != nil {
 			return err
 		}

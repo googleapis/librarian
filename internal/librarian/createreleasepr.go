@@ -162,12 +162,27 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 		return err
 	}
 
-	prContent, err := generateReleaseCommitForEachLibrary(ctx, state, cfg, inputDirectory, releaseID)
+	prContent, err := generateReleaseCommitForEachLibrary(
+		ctx,
+		state,
+		cfg,
+		inputDirectory,
+		releaseID,
+	)
 	if err != nil {
 		return err
 	}
 
-	prMetadata, err := createPullRequest(ctx, state, prContent, "chore: Library release", fmt.Sprintf("Librarian-Release-ID: %s", releaseID), "release", cfg.GitHubToken, cfg.Push)
+	prMetadata, err := createPullRequest(
+		ctx,
+		state,
+		prContent,
+		"chore: Library release",
+		fmt.Sprintf("Librarian-Release-ID: %s", releaseID),
+		"release",
+		cfg.GitHubToken,
+		cfg.Push,
+	)
 	if err != nil {
 		return err
 	}
@@ -203,7 +218,12 @@ func createReleasePR(ctx context.Context, state *commandState, cfg *config.Confi
 //   - Library-level errors do not halt the process, but are reported in the resulting PR (if any).
 //     This can include tags being missing, release preparation failing, or the build failing.
 //   - More fundamental errors (e.g. a failure to commit, or to save pipeline state) abort the whole process immediately.
-func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandState, cfg *config.Config, inputDirectory, releaseID string) (*PullRequestContent, error) {
+func generateReleaseCommitForEachLibrary(
+	ctx context.Context,
+	state *commandState,
+	cfg *config.Config,
+	inputDirectory, releaseID string,
+) (*PullRequestContent, error) {
 	cc := state.containerConfig
 	libraries := state.pipelineState.Libraries
 	languageRepo := state.languageRepo
@@ -226,7 +246,9 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 		} else {
 			previousReleaseTag = formatReleaseTag(library.Id, library.CurrentVersion)
 		}
-		allSourcePaths := append(state.pipelineState.CommonLibrarySourcePaths, library.SourcePaths...)
+		allSourcePaths := append(
+			state.pipelineState.CommonLibrarySourcePaths,
+			library.SourcePaths...)
 		commits, err := languageRepo.GetCommitsForPathsSinceTag(allSourcePaths, previousReleaseTag)
 		if err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "retrieving commits since last release")
@@ -239,7 +261,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 
 		// If nothing release-worthy has happened, just continue to the next library.
 		// (But if we've been asked to release a specific library, we force-release it anyway.)
-		if cfg.LibraryID == "" && (len(commitMessages) == 0 || !isReleaseWorthy(commitMessages, library.Id)) {
+		if cfg.LibraryID == "" &&
+			(len(commitMessages) == 0 || !isReleaseWorthy(commitMessages, library.Id)) {
 			continue
 		}
 
@@ -290,13 +313,25 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 			continue
 		}
 
-		releaseDescription := fmt.Sprintf("chore: Release library %s version %s", library.Id, releaseVersion)
+		releaseDescription := fmt.Sprintf(
+			"chore: Release library %s version %s",
+			library.Id,
+			releaseVersion,
+		)
 		addSuccessToPullRequest(pr, releaseDescription)
 		// Metadata for easy extraction later.
-		metadata := fmt.Sprintf("Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s", library.Id, releaseVersion, releaseID)
+		metadata := fmt.Sprintf(
+			"Librarian-Release-Library: %s\nLibrarian-Release-Version: %s\nLibrarian-Release-ID: %s",
+			library.Id,
+			releaseVersion,
+			releaseID,
+		)
 		// Note that releaseDescription will already end with two line breaks, so we don't need any more before the metadata.
-		err = commitAll(languageRepo, fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata),
-			cfg.PushConfig)
+		err = commitAll(
+			languageRepo,
+			fmt.Sprintf("%s\n\n%s%s", releaseDescription, releaseNotes, metadata),
+			cfg.PushConfig,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -343,13 +378,18 @@ func formatReleaseNotes(commitMessages []*CommitMessage) string {
 	maybeAppendReleaseNotesSection(&builder, "Documentation improvements", docs)
 
 	if builder.Len() == 0 {
-		builder.WriteString("FIXME: Forced release with no commit messages; please write release notes.\n\n")
+		builder.WriteString(
+			"FIXME: Forced release with no commit messages; please write release notes.\n\n",
+		)
 	}
 	return builder.String()
 }
 
 func createReleaseNotesFile(inputDirectory, libraryId, releaseVersion, releaseNotes string) error {
-	path := filepath.Join(inputDirectory, fmt.Sprintf("%s-%s-release-notes.txt", libraryId, releaseVersion))
+	path := filepath.Join(
+		inputDirectory,
+		fmt.Sprintf("%s-%s-release-notes.txt", libraryId, releaseVersion),
+	)
 	return createAndWriteToFile(path, releaseNotes)
 }
 
