@@ -127,7 +127,7 @@ func deriveImage(imageOverride string, state *statepb.PipelineState) (string, er
 	return state.ImageTag, nil
 }
 
-// Finds a library which includes code generated from the given API path.
+// findLibraryIDByApiPath finds a library which includes code generated from the given API path.
 // If there are no such libraries, an empty string is returned.
 // If there are multiple such libraries, the first match is returned.
 func findLibraryIDByApiPath(state *statepb.PipelineState, apiPath string) string {
@@ -168,6 +168,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 	return path, nil
 }
 
+// commitAll commits all changes to the repository.
 // No commit is made if there are no file modifications.
 func commitAll(repo *gitrepo.Repository, msg, pushConfig string) error {
 	userEmail, userName, err := parsePushConfig(pushConfig)
