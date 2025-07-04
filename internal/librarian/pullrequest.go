@@ -69,10 +69,10 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 //
 // If the pull request would contain an excessive number of commits (as
 // configured in pipeline-config.json).
-func createPullRequest(ctx context.Context, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool, startTime time.Time, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig) (*github.PullRequestMetadata, error) {
+func createPullRequest(ctx context.Context, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool, startTime time.Time, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig) error {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	anySuccesses := len(content.Successes) > 0
 	anyErrors := len(content.Errors) > 0
@@ -86,7 +86,7 @@ func createPullRequest(ctx context.Context, content *PullRequestContent, titlePr
 			content.Successes = content.Successes[:maxCommits]
 			slog.Info("Excess commits created; winding back language repo", "excess_commits", len(excessSuccesses))
 			if err := languageRepo.CleanAndRevertCommits(len(excessSuccesses)); err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -94,13 +94,13 @@ func createPullRequest(ctx context.Context, content *PullRequestContent, titlePr
 	var description string
 	if !anySuccesses && !anyErrors {
 		slog.Info("No PR to create, and no errors.")
-		return nil, nil
+		return err
 	} else if !anySuccesses && anyErrors {
 		slog.Error("No PR to create, but errors were logged (and restated below). Aborting.")
 		for _, error := range content.Errors {
 			slog.Error(error)
 		}
-		return nil, errors.New("errors encountered but no PR to create")
+		return errors.New("errors encountered but no PR to create")
 	}
 
 	successesText := formatListAsMarkdown("Changes in this PR", content.Successes)
@@ -113,21 +113,22 @@ func createPullRequest(ctx context.Context, content *PullRequestContent, titlePr
 
 	if !push {
 		slog.Info("Push not specified; would have created PR", "title", title, "description", description)
-		return nil, nil
+		return nil
 	}
 
 	gitHubRepo, err := getGitHubRepoFromRemote(languageRepo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(startTime))
 	err = languageRepo.PushBranch(branch, ghClient.Token())
 	if err != nil {
 		slog.Info("Received error pushing branch", "err", err)
-		return nil, err
+		return err
 	}
-	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
+	_, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
+	return err
 }
 
 // Formats the given list as a single Markdown string, with a title preceding the list,

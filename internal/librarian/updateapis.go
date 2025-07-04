@@ -166,8 +166,7 @@ func updateAPIs(ctx context.Context, cfg *config.Config, startTime time.Time, wo
 			return err
 		}
 	}
-	_, err := createPullRequest(ctx, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push, startTime, languageRepo, pipelineConfig)
-	return err
+	return createPullRequest(ctx, prContent, "feat: API regeneration", "", "regen", cfg.GitHubToken, cfg.Push, startTime, languageRepo, pipelineConfig)
 }
 
 func updateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, outputRoot string, library *statepb.LibraryState,

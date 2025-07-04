@@ -181,8 +181,7 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 	// can massage it into a similar state.
 	prContent := new(PullRequestContent)
 	addSuccessToPullRequest(prContent, "Regenerated all libraries with new image tag.")
-	_, err = createPullRequest(ctx, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push, startTime, languageRepo, pipelineConfig)
-	return err
+	return createPullRequest(ctx, prContent, "chore: update generation image tag", "", "update-image-tag", cfg.GitHubToken, cfg.Push, startTime, languageRepo, pipelineConfig)
 }
 
 func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
