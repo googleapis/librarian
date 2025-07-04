@@ -30,8 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-const releaseIDEnvVarName = "_RELEASE_ID"
-
 func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
@@ -114,15 +112,6 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 	return startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig, nil
 }
 
-func appendResultEnvironmentVariable(workRoot, name, value, envFileOverride string) error {
-	envFile := envFileOverride
-	if envFile == "" {
-		envFile = filepath.Join(workRoot, "env-vars.txt")
-	}
-
-	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
-}
-
 func deriveImage(imageOverride string, state *statepb.PipelineState) (string, error) {
 	if imageOverride != "" {
 		return imageOverride, nil
@@ -148,15 +137,6 @@ func findLibraryIDByApiPath(state *statepb.PipelineState, apiPath string) string
 		}
 	}
 	return ""
-}
-
-func findLibraryByID(state *statepb.PipelineState, libraryID string) *statepb.LibraryState {
-	for _, library := range state.Libraries {
-		if library.Id == libraryID {
-			return library
-		}
-	}
-	return nil
 }
 
 func formatTimestamp(t time.Time) string {
@@ -215,8 +195,4 @@ func parsePushConfig(pushConfig string) (string, string, error) {
 	userEmail := parts[0]
 	userName := parts[1]
 	return userEmail, userName, nil
-}
-
-func formatReleaseTag(libraryID, version string) string {
-	return libraryID + "-" + version
 }

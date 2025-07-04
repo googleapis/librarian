@@ -30,7 +30,6 @@ import (
 )
 
 const pipelineStateFile = "pipeline-state.json"
-const pipelineConfigFile = "pipeline-config.json"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
