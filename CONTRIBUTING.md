@@ -23,6 +23,15 @@ two reviewers. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+### For Submissions by External Contributors
+
+Due to a [known limitation](https://github.com/abcxyz/actions/issues/83),
+the automated multi-approvers check that verifies multiple approvals may
+not re-run automatically after two approvals are added to a pull request
+from an external contributor. If you are a project member reviewing an
+external contribution, you may need to manually re-trigger the check for
+the pull request to be mergeable.
+
 ## Community Guidelines
 
 This project follows
