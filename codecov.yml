@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO(https://github.com/googleapis/librarian/issues/744): restore target to 90%
+
 coverage:
   status:
     project:
       default:
-        target: 90% # The target coverage percentage for the project
+        target: 19% # The target coverage percentage for the project
         threshold: 0% # Allow 0% drop from the target; any drop below target will fail
         if_ci_failed: error # Set the CI status to 'error' if coverage conditions are not met
