@@ -142,7 +142,7 @@ func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoo
 	}
 
 	if cfg.HostMount != "" {
-		mounts = append(mounts, fmt.Sprintf("%s", cfg.HostMount))
+		mounts = append(mounts, cfg.HostMount)
 	}
 
 	return c.runDocker(ctx, cfg, CommandGenerateLibrary, mounts, commandArgs)
