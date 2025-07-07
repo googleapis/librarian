@@ -141,6 +141,10 @@ func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoo
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
 
+	if cfg.HostMount != "" {
+		mounts = append(mounts, fmt.Sprintf("%s", cfg.HostMount))
+	}
+
 	return c.runDocker(ctx, cfg, CommandGenerateLibrary, mounts, commandArgs)
 }
 
