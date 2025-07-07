@@ -37,20 +37,16 @@ func TestNew(t *testing.T) {
 				"LIBRARIAN_SYNC_AUTH_TOKEN": "sync_token",
 			},
 			want: Config{
-				DockerHostRootDir:  "/host/root",
-				DockerMountRootDir: "/mount/root",
-				GitHubToken:        "gh_token",
-				SyncAuthToken:      "sync_token",
+				GitHubToken:   "gh_token",
+				SyncAuthToken: "sync_token",
 			},
 		},
 		{
 			name:    "No environment variables set",
 			envVars: map[string]string{},
 			want: Config{
-				DockerHostRootDir:  "",
-				DockerMountRootDir: "",
-				GitHubToken:        "",
-				SyncAuthToken:      "",
+				GitHubToken:   "",
+				SyncAuthToken: "",
 			},
 		},
 		{
@@ -60,10 +56,8 @@ func TestNew(t *testing.T) {
 				"LIBRARIAN_GITHUB_TOKEN":  "gh_token",
 			},
 			want: Config{
-				DockerHostRootDir:  "/host/root",
-				DockerMountRootDir: "",
-				GitHubToken:        "gh_token",
-				SyncAuthToken:      "",
+				GitHubToken:   "gh_token",
+				SyncAuthToken: "",
 			},
 		},
 	} {

@@ -81,38 +81,6 @@ type Config struct {
 	// the tool is executing.
 	CI string
 
-	// DockerHostRootDir specifies the host view of a mount point that is
-	// mounted as DockerMountRootDir from the Librarian view, when Librarian
-	// is running in Docker. For example, if Librarian has been run via a command
-	// such as "docker run -v /home/user/librarian:/app" then DockerHostRootDir
-	// would be "/home/user/librarian" and DockerMountRootDir would be "/app".
-	//
-	// This information is required to enable Docker-in-Docker scenarios. When
-	// creating a Docker container for language-specific operations, the methods
-	// accepting directory names are all expected to be from the perspective of
-	// the Librarian code - but the mount point specified when running Docker
-	// from within Librarian needs to be specified from the host perspective,
-	// as the new Docker container is created as a sibling of the one running
-	// Librarian.
-	//
-	// For example, if we're in the scenario above, with
-	// DockerHostRootDir=/home/user/librarian and DockerMountRootDir=/app,
-	// executing a command which tries to mount the /app/work/googleapis directory
-	// as /apis in the container, the eventual Docker command would need to include
-	// "-v /home/user/librarian/work/googleapis:/apis"
-	//
-	// DockerHostRootDir and DockerMountDir are currently populated from
-	// LIBRARIAN_HOST_ROOT_DIR and LIBRARIAN_ROOT_DIR environment variables respectively.
-	// These are automatically supplied by Kokoro. Other Docker-in-Docker scenarios
-	// are not currently supported, but could be implemented by populating these
-	// configuration values in a similar way.
-	DockerHostRootDir string
-
-	// DockerMountRootDir specifies the Librarian view of a mount point that is
-	// mounted as DockerHostRootDir from the host view, when Librarian is running in
-	// Docker. See the documentation for DockerHostRootDir for more information.
-	DockerMountRootDir string
-
 	// EnvFile is the path to the file used to store environment variables, to
 	// propagate information from one step to another in a CI flow. The file
 	// is a list of key=value lines, where the key becomes an environment variable
@@ -344,10 +312,8 @@ type Config struct {
 // New returns a new Config populated with environment variables.
 func New() *Config {
 	return &Config{
-		DockerHostRootDir:  os.Getenv("LIBRARIAN_HOST_ROOT_DIR"),
-		DockerMountRootDir: os.Getenv("LIBRARIAN_ROOT_DIR"),
-		GitHubToken:        os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
-		SyncAuthToken:      os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
+		GitHubToken:   os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		SyncAuthToken: os.Getenv("LIBRARIAN_SYNC_AUTH_TOKEN"),
 	}
 }
 
