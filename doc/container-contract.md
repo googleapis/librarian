@@ -1,5 +1,9 @@
 # The Librarian Container Contract
 
+Note: this documents the state of the container contract for Librarian in v0.1.0. It is
+not a forward-looking document; proposed changes such as
+go/sdk-librarian-state-config and go/librarian:cli-reimagined are not included.
+
 When the Librarian CLI needs to perform a language-specific operation
 (such as generating or building a library) it uses Docker to start a container
 from an image. This document describes the contract between the Librarian CLI
@@ -121,7 +125,7 @@ which are ignored via `.gitignore`, or to perform file system operations outside
 for an API without any of the context of the repo in which a fully-configured library would
 normally live.
 
-Called from CLI comamnds: `generate`
+Called from CLI commands: `generate`
 
 Flags:
 
@@ -298,7 +302,7 @@ Flags:
 - `--library-id`: the library whose artifacts should be created; required.
 - `--output`: the empty directory in which to create artifacts; required.
 
-If a language does not public packages as part of its intended release process, the container should simply create
+If a language does not publish packages as part of its intended release process, the container should simply create
 any documentation bundles (if any). If nothing at all needs to be published for the given library, the container
 should simply exit successfully without creating any files.
 
@@ -341,6 +345,6 @@ but the 10th fails). The implementation must ensure if it is run multiple times 
 not create redundant copies which would cause user confusion. If the operation cannot be made safely retriable, it
 must detect retries and fail with a clear error message.
 
-If a language does not public packages as part of its intended release process, so `package-library` creates
-no artifacts, the `publish-library` container command is still invoked, and will be provided with the empty directory.
+If a language does not publish packages as part of its intended release process, so `package-library` creates
+no artifacts, then the `publish-library` container command is still invoked, and will be provided with the empty directory.
 An implementation should just exit successfully in that case.
