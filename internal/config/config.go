@@ -44,16 +44,6 @@ type Config struct {
 	// API Path is specified with the -api flag.
 	API string
 
-	// Source is the path to the root of the googleapis repository.
-	// When this is not specified, the googleapis repository is cloned
-	// automatically.
-	//
-	// Source is used by generate, update-apis, update-image-tag and configure
-	// commands.
-	//
-	// Source is specified with the -source flag.
-	Source string
-
 	// ArtifactRoot is the path to previously-created release artifacts to be published.
 	// It is only used by the publish-release-artifacts command, and is expected
 	// to be the output directory from a previous create-release-artifacts command.
@@ -147,25 +137,7 @@ type Config struct {
 	// LIBRARIAN_GITHUB_TOKEN environment variable.
 	GitHubToken string
 
-	// PushConfig specifies the email address and display name used in Git commits,
-	// in the format "email,name".
-	//
-	// PushConfig is used in all commands that create commits in a language repository:
-	// create-release-pr, configure, update-apis and update-image-tag.
-	//
-	// PushConfig is optional. If unspecified, commits will use a default name of
-	// "Google Cloud SDK" and a default email of noreply-cloudsdk@google.com.
-	//
-	// PushConfig is specified with the -push-config flag.
-	PushConfig string
-
-	// UserGID is the group ID of the current user. It is used to run Docker
-	// containers with the same user, so that created files have the correct
-	// ownership.
-	//
-	// This is populated automatically after flag parsing. No user setup is
-	// expected.
-	UserGID string
+	HostMount string
 
 	// Image is the language-specific container image to use for language-specific
 	// operations. It is primarily used for testing Librarian and/or new images.
@@ -178,6 +150,13 @@ type Config struct {
 	// Image is specified with the -image flag.
 	Image string
 
+	// LibrarianRepository specifies the repository where Librarian-related assets
+	// are stored.
+	//
+	// LibrarianRepository is fetched from the LIBRARIAN_REPOSITORY environment
+	// variable.
+	LibrarianRepository string
+
 	// LibraryID is the identifier of a specific library to release or update, for the
 	// create-release-pr and update-apis commands respectively. In both cases it is optional;
 	// when omitted, all libraries which are configured within the repository's Librarian
@@ -188,13 +167,6 @@ type Config struct {
 	//
 	// LibraryID is specified with the -library-id flag.
 	LibraryID string
-
-	// LibrarianRepository specifies the repository where Librarian-related assets
-	// are stored.
-	//
-	// LibrarianRepository is fetched from the LIBRARIAN_REPOSITORY environment
-	// variable.
-	LibrarianRepository string
 
 	// LibraryVersion is the version string used when creating a release for a specific library,
 	// overriding whatever new version would otherwise be suggested. It is only used in the
@@ -208,6 +180,19 @@ type Config struct {
 	//
 	// LibraryVersion is specified with the -library-version flag.
 	LibraryVersion string
+
+	// Project is the Google Cloud project containing Secret Manager secrets to
+	// provide to the language-specific container commands via environment variables.
+	//
+	// Project is used by all commands which perform language-specific operations.
+	// (This covers all commands other than merge-release-pr.)
+	// If no value is set, any language-specific operations which include an
+	// environment variable based on a secret will act as if the secret name
+	// wasn't set (so will just use a host environment variable or default value,
+	// if any).
+	//
+	// Project is specified with the -project flag.
+	Project string
 
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
@@ -224,6 +209,18 @@ type Config struct {
 	//
 	// Push is specified with the -push flag. No value is required.
 	Push bool
+
+	// PushConfig specifies the email address and display name used in Git commits,
+	// in the format "email,name".
+	//
+	// PushConfig is used in all commands that create commits in a language repository:
+	// create-release-pr, configure, update-apis and update-image-tag.
+	//
+	// PushConfig is optional. If unspecified, commits will use a default name of
+	// "Google Cloud SDK" and a default email of noreply-cloudsdk@google.com.
+	//
+	// PushConfig is specified with the -push-config flag.
+	PushConfig string
 
 	// ReleaseID is the identifier of a release PR. Each release PR created by
 	// Librarian has a release ID, which is included in both the PR description and
@@ -286,25 +283,22 @@ type Config struct {
 	// SyncURLPrefix is specified with the -sync-url-prefix flag.
 	SyncURLPrefix string
 
-	// Project is the Google Cloud project containing Secret Manager secrets to
-	// provide to the language-specific container commands via environment variables.
-	//
-	// Project is used by all commands which perform language-specific operations.
-	// (This covers all commands other than merge-release-pr.)
-	// If no value is set, any language-specific operations which include an
-	// environment variable based on a secret will act as if the secret name
-	// wasn't set (so will just use a host environment variable or default value,
-	// if any).
-	//
-	// Project is specified with the -project flag.
-	Project string
-
 	// SkipIntegrationTests is used by the create-release-pr and create-release-artifacts
 	// commands, and disables integration tests if it is set to a non-empty value.
 	// The value must reference a bug (e.g., b/12345).
 	//
 	// SkipIntegrationTests is specified with the -skip-integration-tests flag.
 	SkipIntegrationTests string
+
+	// Source is the path to the root of the googleapis repository.
+	// When this is not specified, the googleapis repository is cloned
+	// automatically.
+	//
+	// Source is used by generate, update-apis, update-image-tag and configure
+	// commands.
+	//
+	// Source is specified with the -source flag.
+	Source string
 
 	// Tag is the new tag for the language-specific Docker image, used only by the
 	// update-image-tag command. All operations within update-image-tag are performed
@@ -321,6 +315,14 @@ type Config struct {
 	//
 	// TagRepoURL is specified with the -tag-repo-url flag.
 	TagRepoURL string
+
+	// UserGID is the group ID of the current user. It is used to run Docker
+	// containers with the same user, so that created files have the correct
+	// ownership.
+	//
+	// This is populated automatically after flag parsing. No user setup is
+	// expected.
+	UserGID string
 
 	// UserUID is the user ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
