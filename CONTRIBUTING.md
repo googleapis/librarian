@@ -23,14 +23,18 @@ two reviewers. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
-### For Submissions by External Contributors
 
-Due to a [known limitation](https://github.com/abcxyz/actions/issues/83),
-the automated multi-approvers check that verifies multiple approvals may
-not re-run automatically after two approvals are added to a pull request
-from an external contributor. If you are a project member reviewing an
-external contribution, you may need to manually re-trigger the check for
-the pull request to be mergeable.
+### Multi-Approvers Check
+
+Each pull request must be approved by two Googlers. This is enforced by an
+automated multi-approvers check. This check may not automatically re-run
+after the second approval is added. If it remains in a failed state, you
+can manually re-trigger it by:
+
+1. Clicking "View details" on the failed workflow to bring you to the "Actions" page.
+2. Clicking "Re-run failed jobs".
+
+For more information, see [Re-running failed jobs in a workflow](https://docs.github.com/en/actions/how-tos/managing-workflow-runs-and-deployments/managing-workflow-runs/re-running-workflows-and-jobs#re-running-failed-jobs-in-a-workflow).
 
 ## Community Guidelines
 
