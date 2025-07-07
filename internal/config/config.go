@@ -178,36 +178,12 @@ type Config struct {
 	// Image is specified with the -image flag.
 	Image string
 
-	// LibraryID is the identifier of a specific library to release or update, for the
-	// create-release-pr and update-apis commands respectively. In both cases it is optional;
-	// when omitted, all libraries which are configured within the repository's Librarian
-	// state file will be considered for update/release.
-	//
-	// When LibraryID is specified for create-release-pr, a release is created even if there
-	// are no commits for the library which would normally trigger a release.
-	//
-	// LibraryID is specified with the -library-id flag.
-	LibraryID string
-
 	// LibrarianRepository specifies the repository where Librarian-related assets
 	// are stored.
 	//
 	// LibrarianRepository is fetched from the LIBRARIAN_REPOSITORY environment
 	// variable.
 	LibrarianRepository string
-
-	// LibraryVersion is the version string used when creating a release for a specific library,
-	// overriding whatever new version would otherwise be suggested. It is only used in the
-	// create-release-pr command, where it is optional and can only be specified when LibraryID
-	// is also specified.
-	//
-	// Use cases for specifying LibraryVersion include:
-	// - Releasing a library for the first time
-	// - Promoting a library to GA
-	// - Creating a major version bump
-	//
-	// LibraryVersion is specified with the -library-version flag.
-	LibraryVersion string
 
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
