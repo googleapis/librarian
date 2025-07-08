@@ -14,7 +14,7 @@
 
 // Package librarian contains the business logic for the Librarian CLI.
 // Implementation details for interacting with other systems (Git, GitHub,
-// Docker etc) are abstracted into other packages.
+// Docker etc.) are abstracted into other packages.
 package librarian
 
 import (
@@ -67,6 +67,11 @@ func Run(ctx context.Context, arg ...string) error {
 	slog.Info("librarian", "arguments", arg)
 	if err := cmd.Config.SetupUser(); err != nil {
 		return fmt.Errorf("failed to setup user config: %w", err)
+	}
+	if _, err := cmd.Config.IsValid(); err != nil {
+		// TODO(https://github.com/googleapis/librarian/issues/202): convert this
+		// line to fmt.Errorf() when we add more tests to librarian_test.go.
+		slog.Warn(fmt.Sprintf("failed to validate config: %s", err))
 	}
 	return cmd.Run(ctx, cmd.Config)
 }
