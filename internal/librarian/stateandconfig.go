@@ -34,7 +34,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const stateFile = "state.yaml"
 const pipelineStateFile = "state.yaml"
 const pipelineConfigFile = "pipeline-config.json"
 
@@ -59,7 +58,7 @@ func loadLibrarianState(repo *gitrepo.Repository) (*LibrarianState, error) {
 	if repo == nil {
 		return nil, nil
 	}
-	path := filepath.Join(repo.Dir, config.GeneratorInputDir, stateFile)
+	path := filepath.Join(repo.Dir, config.GeneratorInputDir, pipelineStateFile)
 	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
@@ -99,7 +98,7 @@ func parsePipelineConfig(contentLoader func() ([]byte, error)) (*statepb.Pipelin
 }
 
 func saveLibrarianState(repo *gitrepo.Repository, s *LibrarianState) error {
-	path := filepath.Join(repo.Dir, config.GeneratorInputDir, stateFile)
+	path := filepath.Join(repo.Dir, config.GeneratorInputDir, pipelineStateFile)
 	data, err := yaml.Marshal(s)
 	if err != nil {
 		return fmt.Errorf("marshaling librarian state: %w", err)
