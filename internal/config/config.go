@@ -27,6 +27,7 @@ const (
 	// GeneratorInputDir is the default directory to store files that generator
 	// needs to regenerate libraries from an empty directory.
 	GeneratorInputDir string = "generator-input"
+	DefaultPushConfig string = "noreply-cloudsdk@google.com,Google Cloud SDK"
 )
 
 // Config holds all configuration values parsed from flags or environment
@@ -243,6 +244,7 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		GitHubToken: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		PushConfig:  DefaultPushConfig,
 	}
 }
 
@@ -267,9 +269,9 @@ func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
 		return false, errors.New("no GitHub token supplied for push")
 	}
-	parts := strings.Split(c.PushConfig, ",")
-	if len(parts) != 2 {
-		return false, errors.New("unable to parse push config")
+
+	if _, err := validatePushConfig(c.PushConfig, DefaultPushConfig); err != nil {
+		return false, err
 	}
 
 	if _, err := validateHostMount(c.HostMount, ""); err != nil {
@@ -287,6 +289,19 @@ func validateHostMount(hostMount, defaultValue string) (bool, error) {
 	parts := strings.Split(hostMount, ":")
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 		return false, errors.New("unable to parse host mount")
+	}
+
+	return true, nil
+}
+
+func validatePushConfig(pushConfig, defaultValue string) (bool, error) {
+	if pushConfig == defaultValue {
+		return true, nil
+	}
+
+	parts := strings.Split(pushConfig, ",")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false, errors.New("unable to parse push config")
 	}
 
 	return true, nil
