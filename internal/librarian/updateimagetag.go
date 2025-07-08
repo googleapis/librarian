@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/containers/image/v5/docker/reference"
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
@@ -95,7 +96,7 @@ func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
 	return updateImageTag(ctx, cfg, startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig)
 }
 
-func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time, workRoot string, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig, pipelineState *statepb.PipelineState, containerConfig *docker.Docker) error {
+func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time, workRoot string, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig, pipelineState *LibrarianState, containerConfig *docker.Docker) error {
 	if err := validateRequiredFlag("tag", cfg.Tag); err != nil {
 		return err
 	}
@@ -136,17 +137,18 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
-	if pipelineState.ImageTag == cfg.Tag {
+	ref, tag := pipelineState.ImageRefAndTag()
+	if tag == cfg.Tag {
 		return errors.New("specified tag is already in language repo state")
 	}
-	// Derive the new image to use, and save it in the context.
-	pipelineState.ImageTag = cfg.Tag
-	image, err := deriveImage(cfg.Image, pipelineState)
+	// Update the image tag in the state.
+	newImageRef, err := reference.WithTag(ref, cfg.Tag)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create new image reference with tag %q: %w", cfg.Tag, err)
 	}
-	containerConfig.Image = image
-	if err := savePipelineState(languageRepo, pipelineState); err != nil {
+	pipelineState.Image = newImageRef.String()
+	containerConfig.Image = pipelineState.Image
+	if err := saveLibrarianState(languageRepo, pipelineState); err != nil {
 		return err
 	}
 
@@ -157,8 +159,8 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 	}
 
 	// Perform "generate, clean" on each library.
-	for _, library := range pipelineState.Libraries {
-		err := regenerateLibrary(ctx, cfg, apiRepo, generatorInput, outputDir, library, languageRepo, containerConfig)
+	for i := range pipelineState.Libraries {
+		err := regenerateLibrary(ctx, cfg, apiRepo, generatorInput, outputDir, &pipelineState.Libraries[i], languageRepo, containerConfig)
 		if err != nil {
 			return err
 		}
@@ -185,8 +187,8 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 	return err
 }
 
-func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
-	if len(library.ApiPaths) == 0 {
+func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *Library, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
+	if len(library.APIs) == 0 {
 		slog.Info("Skipping non-generated library", "id", library.Id)
 		return nil
 	}

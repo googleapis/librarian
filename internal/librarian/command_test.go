@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 func TestCommandUsage(t *testing.T) {
@@ -47,9 +46,8 @@ func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		imageOverride string
-		state         *statepb.PipelineState
+		state         *LibrarianState
 		want          string
-		wantErr       bool
 	}{
 		{
 			name:          "with image override, nil state",
@@ -60,7 +58,7 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "with image override, non-nil state",
 			imageOverride: "my/custom-image:v1",
-			state:         &statepb.PipelineState{ImageTag: "v1.2.3"},
+			state:         &LibrarianState{Image: "gcr.io/foo/bar:v1.2.3"},
 			want:          "my/custom-image:v1",
 		},
 		{
@@ -72,29 +70,13 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "no override, with state",
 			imageOverride: "",
-			state:         &statepb.PipelineState{ImageTag: "v1.2.3"},
-			want:          "v1.2.3",
-		},
-		{
-			name:          "no override, with state, empty tag",
-			imageOverride: "",
-			state:         &statepb.PipelineState{ImageTag: ""},
-			wantErr:       true,
+			state:         &LibrarianState{Image: "gcr.io/foo/bar:v1.2.3"},
+			want:          "gcr.io/foo/bar:v1.2.3",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := deriveImage(test.imageOverride, test.state)
+			got := deriveImage(test.imageOverride, test.state)
 
-			if test.wantErr {
-				if err == nil {
-					t.Error("deriveImage() expected an error but got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Errorf("deriveImage() got unexpected error: %v", err)
-				return
-			}
 			if got != test.want {
 				t.Errorf("deriveImage() = %q, want %q", got, test.want)
 			}

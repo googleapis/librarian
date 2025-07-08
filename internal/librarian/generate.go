@@ -107,7 +107,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 
 	var (
 		repo   *gitrepo.Repository
-		ps     *statepb.PipelineState
+		ps     *LibrarianState
 		config *statepb.PipelineConfig
 	)
 	// We only clone/open the language repo and use the state within it
@@ -124,10 +124,8 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 		}
 	}
 
-	image, err := deriveImage(cfg.Image, ps)
-	if err != nil {
-		return err
-	}
+	image := deriveImage(cfg.Image, ps)
+
 	containerConfig, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, config)
 	if err != nil {
 		return err
@@ -136,7 +134,7 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	return executeGenerate(ctx, cfg, workRoot, repo, ps, containerConfig)
 }
 
-func executeGenerate(ctx context.Context, cfg *config.Config, workRoot string, languageRepo *gitrepo.Repository, pipelineState *statepb.PipelineState, containerConfig *docker.Docker) error {
+func executeGenerate(ctx context.Context, cfg *config.Config, workRoot string, languageRepo *gitrepo.Repository, pipelineState *LibrarianState, containerConfig *docker.Docker) error {
 	outputDir := filepath.Join(workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
@@ -172,7 +170,7 @@ func executeGenerate(ctx context.Context, cfg *config.Config, workRoot string, l
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(ctx context.Context, cfg *config.Config, outputDir string, languageRepo *gitrepo.Repository, pipelineState *statepb.PipelineState, containerConfig *docker.Docker) (string, error) {
+func runGenerateCommand(ctx context.Context, cfg *config.Config, outputDir string, languageRepo *gitrepo.Repository, pipelineState *LibrarianState, containerConfig *docker.Docker) (string, error) {
 	apiRoot, err := filepath.Abs(cfg.Source)
 	if err != nil {
 		return "", err
@@ -207,12 +205,12 @@ func detectIfLibraryConfigured(ctx context.Context, apiPath, repo, gitHubToken s
 
 	// Attempt to load the pipeline state either locally or from the repo URL
 	var (
-		pipelineState *statepb.PipelineState
+		pipelineState *LibrarianState
 		err           error
 	)
 	if !isUrl(repo) {
 		// repo is a directory
-		pipelineState, err = loadPipelineStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
+		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
 		if err != nil {
 			return false, err
 		}
@@ -223,7 +221,7 @@ func detectIfLibraryConfigured(ctx context.Context, apiPath, repo, gitHubToken s
 			slog.Warn("failed to parse", "repo url:", repo, "error", err)
 			return false, err
 		}
-		pipelineState, err = fetchRemotePipelineState(ctx, languageRepoMetadata, "HEAD", gitHubToken)
+		pipelineState, err = fetchRemoteLibrarianState(ctx, languageRepoMetadata, "HEAD", gitHubToken)
 		if err != nil {
 			return false, err
 		}

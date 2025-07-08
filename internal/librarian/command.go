@@ -21,7 +21,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
@@ -81,7 +80,7 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 	workRoot string,
 	languageRepo *gitrepo.Repository,
 	pipelineConfig *statepb.PipelineConfig,
-	pipelineState *statepb.PipelineState,
+	pipelineState *LibrarianState,
 	containerConfig *docker.Docker,
 	err error,
 ) {
@@ -100,10 +99,8 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 		return
 	}
 
-	image, err := deriveImage(imageOverride, pipelineState)
-	if err != nil {
-		return
-	}
+	image := deriveImage(imageOverride, pipelineState)
+
 	containerConfig, err = docker.New(workRoot, image, project, uid, gid, pipelineConfig)
 	if err != nil {
 		return
@@ -112,46 +109,34 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 	return startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig, nil
 }
 
-func appendResultEnvironmentVariable(workRoot, name, value, envFileOverride string) error {
-	envFile := envFileOverride
-	if envFile == "" {
-		envFile = filepath.Join(workRoot, "env-vars.txt")
-	}
-
-	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
-}
-
-func deriveImage(imageOverride string, state *statepb.PipelineState) (string, error) {
+func deriveImage(imageOverride string, state *LibrarianState) string {
 	if imageOverride != "" {
-		return imageOverride, nil
+		return imageOverride
 	}
 	if state == nil {
-		return "", nil
+		return ""
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/326):
-	// use image from state.yaml when switch to this config file. see go/librarian:cli-reimagined
-	if state.ImageTag == "" {
-		return "", errors.New("pipeline state does not have image specified and no override was provided")
-	}
-	return state.ImageTag, nil
+	return state.Image
 }
 
 // Finds a library which includes code generated from the given API path.
 // If there are no such libraries, an empty string is returned.
 // If there are multiple such libraries, the first match is returned.
-func findLibraryIDByApiPath(state *statepb.PipelineState, apiPath string) string {
+func findLibraryIDByApiPath(state *LibrarianState, apiPath string) string {
 	for _, library := range state.Libraries {
-		if slices.Contains(library.ApiPaths, apiPath) {
-			return library.Id
+		for _, api := range library.APIs {
+			if api.Path == apiPath {
+				return library.Id
+			}
 		}
 	}
 	return ""
 }
 
-func findLibraryByID(state *statepb.PipelineState, libraryID string) *statepb.LibraryState {
-	for _, library := range state.Libraries {
-		if library.Id == libraryID {
-			return library
+func findLibraryByID(state *LibrarianState, libraryID string) *Library {
+	for i := range state.Libraries {
+		if state.Libraries[i].Id == libraryID {
+			return &state.Libraries[i]
 		}
 	}
 	return nil
