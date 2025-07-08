@@ -27,10 +27,6 @@ func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
-func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
-}
-
 func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Branch, "branch", "main", "repository branch")
 }
@@ -75,10 +71,6 @@ func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Tag, "tag", "", "new tag for the language-specific container image.")
-}
-
-func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.TagRepoURL, "tag-repo-url", "", "Repository URL to tag and create releases in. Requires when push is true.")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {

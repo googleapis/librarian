@@ -38,7 +38,6 @@ func init() {
 		cmdGenerate,
 		cmdUpdateImageTag,
 		cmdCreateReleaseArtifacts,
-		cmdPublishReleaseArtifacts,
 		cmdVersion,
 	)
 }

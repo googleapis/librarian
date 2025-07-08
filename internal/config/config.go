@@ -52,6 +52,15 @@ type Config struct {
 	//
 	// ArtifactRoot is specified with the -artifact-root flag.
 	ArtifactRoot string
+	// Source is the path to the root of the googleapis repository.
+	// When this is not specified, the googleapis repository is cloned
+	// automatically.
+	//
+	// Source is used by generate, update-apis, update-image-tag and configure
+	// commands.
+	//
+	// Source is specified with the -source flag.
+	Source string
 
 	// Branch is the branch name to use when working with git repositories. It is
 	// currently unused.
@@ -205,15 +214,6 @@ type Config struct {
 	//
 	// Tag is specified with the -tag flag.
 	Tag string
-
-	// TagRepoURL is the GitHub repository to push the tag and create a release
-	// in. This is only used in the publish-release-artifacts command:
-	// when all artifacts have been published to package managers,
-	// documentation sites etc., tags/releases are created on GitHub, and
-	// TagRepoURL identifies this repository.
-	//
-	// TagRepoURL is specified with the -tag-repo-url flag.
-	TagRepoURL string
 
 	// UserGID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
