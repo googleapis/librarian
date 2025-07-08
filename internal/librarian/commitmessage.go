@@ -133,7 +133,7 @@ func ParseCommit(commit *gitrepo.Commit) *CommitMessage {
 	}
 }
 
-// Returns whether this commit should trigger a release for the given library.
+// IsReleaseWorthy returns whether this commit should trigger a release for the given library.
 func IsReleaseWorthy(message *CommitMessage, libraryId string) bool {
 	if slices.Contains(message.NoTriggerLibraries, libraryId) {
 		return false

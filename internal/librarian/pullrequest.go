@@ -32,7 +32,7 @@ type PullRequestContent struct {
 	Errors    []string
 }
 
-// Add details to a PullRequestContent of a partial error which prevents a
+// addErrorToPullRequest adds details to a PullRequestContent of a partial error which prevents a
 // single API or library from being configured/regenerated/released,
 // but without halting the overall process. A warning is logged locally with the error details,
 // but we don't include detailed errors in the PR, as this could reveal sensitive information.
@@ -42,7 +42,7 @@ func addErrorToPullRequest(pr *PullRequestContent, id string, err error, action 
 	pr.Errors = append(pr.Errors, fmt.Sprintf("Error while %s %s", action, id))
 }
 
-// Adds a success entry to a PullRequestContent.
+// addSuccessToPullRequest adds a success entry to a PullRequestContent.
 func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 	pr.Successes = append(pr.Successes, text)
 }
