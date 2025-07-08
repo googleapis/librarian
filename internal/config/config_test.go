@@ -40,7 +40,6 @@ func TestNew(t *testing.T) {
 				DockerHostRootDir:  "/host/root",
 				DockerMountRootDir: "/mount/root",
 				GitHubToken:        "gh_token",
-				SyncAuthToken:      "sync_token",
 			},
 		},
 		{
@@ -50,7 +49,6 @@ func TestNew(t *testing.T) {
 				DockerHostRootDir:  "",
 				DockerMountRootDir: "",
 				GitHubToken:        "",
-				SyncAuthToken:      "",
 			},
 		},
 		{
@@ -63,7 +61,6 @@ func TestNew(t *testing.T) {
 				DockerHostRootDir:  "/host/root",
 				DockerMountRootDir: "",
 				GitHubToken:        "gh_token",
-				SyncAuthToken:      "",
 			},
 		},
 	} {
