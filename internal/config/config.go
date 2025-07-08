@@ -105,6 +105,12 @@ type Config struct {
 	// LIBRARIAN_GITHUB_TOKEN environment variable.
 	GitHubToken string
 
+	// HostMount is used to remap Docker mount paths when running in environments
+	// where Docker containers are siblings (e.g., Kokoro).
+	// It specifies a mount point from the Docker host into the Docker container.
+	// The format is "{host-dir}:{local-dir}".
+	//
+	// HostMount is specified with the -host-mount flag.
 	HostMount string
 
 	// Image is the language-specific container image to use for language-specific
