@@ -312,13 +312,15 @@ func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Comm
 func maybeRelocateMounts(cfg *config.Config, mounts []string) []string {
 	// When running in Kokoro, we'll be running sibling containers.
 	// Make sure we specify the "from" part of the mount as the host directory.
-	if cfg.DockerMountRootDir == "" || cfg.DockerHostRootDir == "" {
+	if cfg.HostMount == "" {
 		return mounts
 	}
+
 	relocatedMounts := []string{}
+	hostMount := strings.Split(cfg.HostMount, ":")
 	for _, mount := range mounts {
-		if strings.HasPrefix(mount, cfg.DockerMountRootDir) {
-			mount = strings.Replace(mount, cfg.DockerMountRootDir, cfg.DockerHostRootDir, 1)
+		if strings.HasPrefix(mount, hostMount[0]) {
+			mount = strings.Replace(mount, hostMount[0], hostMount[1], 1)
 		}
 		relocatedMounts = append(relocatedMounts, mount)
 	}

@@ -73,7 +73,9 @@ func TestDockerRun(t *testing.T) {
 	)
 
 	cfg := &config.Config{}
-
+	cfgInDocker := &config.Config{
+		HostMount: "hostDir:localDir",
+	}
 	for _, test := range []struct {
 		name       string
 		docker     *Docker
@@ -135,6 +137,28 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
+				"--network=none",
+				testImage,
+				string(CommandGenerateLibrary),
+				"--source=/apis",
+				"--output=/output",
+				"--generator-input=/generator-input",
+				fmt.Sprintf("--library-id=%s", testLibraryID),
+			},
+		},
+		{
+			name: "GenerateLibrary runs in docker",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				return d.GenerateLibrary(ctx, cfgInDocker, testAPIRoot, "hostDir", testGeneratorInput, testLibraryID)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
+				"-v", "localDir:/output",
 				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
 				"--network=none",
 				testImage,
