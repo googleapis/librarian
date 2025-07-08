@@ -315,36 +315,4 @@ the output directory corresponding with the single library, so implementations s
 any need to create a nested structure within the output directory for disambiguation purposes. (If
 a folder structure is needed for any other reason, that's fine.)
 
-The `package-library` command must not perform any actual publication; that is performed by `publish-library`,
-using the output of `package-library` once all libraries have been successfully packaged.
-
-## publish-library
-
-`publish-library` publishes releaseable artifacts for a library (such as packages and documentation),
-as created by `package-library`.
-
-Called from CLI commands: `publish-release-artifacts`
-
-Flags:
-
-- `--package-output`: the output directory that was previously written to by `package-library`; required.
-- `--library-id`: the library whose artifacts should be published; required.
-- `--version`: the version of the library being published; required.
-
-Note that `publish-library` is provided with the library version, whereas `package-library` is not. This is
-because `package-library` operates in an environment where the full repository information is available,
-whereas `publish-library` only has the files created by `package-library`. As the version string is potentially
-useful information which the Librarian CLI has to hand, it is provided to `publish-library` to avoid implementations
-which need that information performing toil of creating a file just to record the version. If an implementation
-*doesn't* need the version, it can ignore the flag entirely.
-
-Where possible, `publish-library` should be retriable: if it's safe to *attempt* to publish a library that may
-already have been published, this allows the whole `publish-release-artifacts` command to be retried in the case
-of an error (e.g. if a package manager is flaky, and we manage to publish 9 out of 10 libraries in the first attempt,
-but the 10th fails). The implementation must ensure if it is run multiple times for the same artifacts, it does
-not create redundant copies which would cause user confusion. If the operation cannot be made safely retriable, it
-must detect retries and fail with a clear error message.
-
-If a language does not publish packages as part of its intended release process, so `package-library` creates
-no artifacts, then the `publish-library` container command is still invoked, and will be provided with the empty directory.
-An implementation should just exit successfully in that case.
+The `package-library` command must not perform any actual publication.
