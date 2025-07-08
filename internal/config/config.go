@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"os/user"
-	"strings"
 )
 
 const (
@@ -48,7 +47,7 @@ type Config struct {
 	// When this is not specified, the googleapis repository is cloned
 	// automatically.
 	//
-	// Source is used by generate, update-apis, update-image-tag and configure
+	// Source is used by generate, update-apis and configure
 	// commands.
 	//
 	// Source is specified with the -source flag.
@@ -61,12 +60,6 @@ type Config struct {
 	//
 	// ArtifactRoot is specified with the -artifact-root flag.
 	ArtifactRoot string
-
-	// Branch is the branch name to use when working with git repositories. It is
-	// currently unused.
-	//
-	// Branch is specified with the -branch flag.
-	Branch string
 
 	// Build determines whether to build the generated library, and is only
 	// used in the generate command.
@@ -113,25 +106,13 @@ type Config struct {
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
 	//
-	// GitHubToken is used by the configure, update-apis and update-image-tag commands,
+	// GitHubToken is used by the configure, update-apis commands,
 	// when Push is true. It is always used by publish-release-artifacts commands.
 	//
 	// GitHubToken is not specified by a flag, as flags are logged and the
 	// access token is sensitive information. Instead, it is fetched from the
 	// LIBRARIAN_GITHUB_TOKEN environment variable.
 	GitHubToken string
-
-	// PushConfig specifies the email address and display name used in Git commits,
-	// in the format "email,name".
-	//
-	// PushConfig is used in all commands that create commits in a language repository:
-	// configure, update-apis and update-image-tag.
-	//
-	// PushConfig is optional. If unspecified, commits will use a default name of
-	// "Google Cloud SDK" and a default email of noreply-cloudsdk@google.com.
-	//
-	// PushConfig is specified with the -push-config flag.
-	PushConfig string
 
 	// UserGID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
@@ -161,7 +142,7 @@ type Config struct {
 
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
-	// configure, update-apis and update-image-tag.
+	// configure, update-apis.
 	// These commands all create pull requests if they
 	//
 	// By default (when Push isn't explicitly specified), commits are created in
@@ -195,8 +176,7 @@ type Config struct {
 	// Librarian-created changes with other changes.
 	//
 	// Repo is used by all commands which operate on a language repository:
-	// configure, create-release-artifacts, generate, update-apis,
-	// update-image-tag.
+	// configure, create-release-artifacts, generate, update-apis.
 	//
 	// When a local directory is specified for the generate command, the repo is checked to
 	// determine whether the specified API path is configured as a library. See the generate
@@ -225,13 +205,6 @@ type Config struct {
 	//
 	// SkipIntegrationTests is specified with the -skip-integration-tests flag.
 	SkipIntegrationTests string
-
-	// Tag is the new tag for the language-specific Docker image, used only by the
-	// update-image-tag command. All operations within update-image-tag are performed
-	// using the new tag.
-	//
-	// Tag is specified with the -tag flag.
-	Tag string
 
 	// TagRepoURL is the GitHub repository to push the tag and create a release
 	// in. This is only used in the publish-release-artifacts command:
@@ -288,10 +261,6 @@ func (c *Config) SetupUser() error {
 func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
 		return false, errors.New("no GitHub token supplied for push")
-	}
-	parts := strings.Split(c.PushConfig, ",")
-	if len(parts) != 2 {
-		return false, errors.New("unable to parse push config")
 	}
 	return true, nil
 }
