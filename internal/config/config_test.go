@@ -31,8 +31,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "All environment variables set",
 			envVars: map[string]string{
-				"LIBRARIAN_HOST_ROOT_DIR":   "/host/root",
-				"LIBRARIAN_ROOT_DIR":        "/mount/root",
 				"LIBRARIAN_GITHUB_TOKEN":    "gh_token",
 				"LIBRARIAN_SYNC_AUTH_TOKEN": "sync_token",
 			},
@@ -52,8 +50,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "Some environment variables set",
 			envVars: map[string]string{
-				"LIBRARIAN_HOST_ROOT_DIR": "/host/root",
-				"LIBRARIAN_GITHUB_TOKEN":  "gh_token",
+				"LIBRARIAN_GITHUB_TOKEN": "gh_token",
 			},
 			want: Config{
 				GitHubToken:   "gh_token",
