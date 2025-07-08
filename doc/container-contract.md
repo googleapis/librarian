@@ -94,7 +94,7 @@ provided, but there is no absolute requirement to do so.
 configured within the repository.
 
 Called from CLI commands: `configure`, `generate`, `update-apis`, `update-image-tag`,
-`create-release-pr`, `create-release-artifacts`
+`create-release-artifacts`
 
 Flags:
 
@@ -268,7 +268,7 @@ a good reason to keep the two commands separate.
 `integration-test-library` runs integration tests for a single library. Currently this is only used as
 part of the release process.
 
-Called from CLI commands: `create-release-pr`, `create-release-artifacts`
+Called from CLI commands: `create-release-artifacts`
 
 Flags:
 

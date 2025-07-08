@@ -112,15 +112,6 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 	return startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig, nil
 }
 
-func appendResultEnvironmentVariable(workRoot, name, value, envFileOverride string) error {
-	envFile := envFileOverride
-	if envFile == "" {
-		envFile = filepath.Join(workRoot, "env-vars.txt")
-	}
-
-	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
-}
-
 func deriveImage(imageOverride string, state *statepb.PipelineState) (string, error) {
 	if imageOverride != "" {
 		return imageOverride, nil
@@ -146,15 +137,6 @@ func findLibraryIDByApiPath(state *statepb.PipelineState, apiPath string) string
 		}
 	}
 	return ""
-}
-
-func findLibraryByID(state *statepb.PipelineState, libraryID string) *statepb.LibraryState {
-	for _, library := range state.Libraries {
-		if library.Id == libraryID {
-			return library
-		}
-	}
-	return nil
 }
 
 func formatTimestamp(t time.Time) string {
