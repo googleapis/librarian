@@ -28,7 +28,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 // Command is the string representation of a command to be passed to the language-specific
@@ -89,7 +88,7 @@ type Docker struct {
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
-func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *statepb.PipelineConfig) (*Docker, error) {
+func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *config.PipelineConfig) (*Docker, error) {
 	envProvider := newEnvironmentProvider(workRoot, secretsProject, pipelineConfig)
 	docker := &Docker{
 		Image: image,

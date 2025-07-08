@@ -10,7 +10,6 @@ require (
 	github.com/google/go-github/v69 v69.2.0
 	github.com/googleapis/gax-go/v2 v2.14.2
 	google.golang.org/grpc v1.72.2
-	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -56,5 +55,6 @@ require (
 	google.golang.org/genproto v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250505200425-f936aa4a68b2 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

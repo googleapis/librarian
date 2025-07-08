@@ -15,7 +15,9 @@
 package librarian
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -23,8 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/github"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const pipelineStateFile = "pipeline-state.json"
@@ -32,7 +32,7 @@ const pipelineConfigFile = "pipeline-config.json"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
-func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*statepb.PipelineState, *statepb.PipelineConfig, error) {
+func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*config.PipelineState, *config.PipelineConfig, error) {
 	if languageRepo == nil {
 		return nil, nil, nil
 	}
@@ -47,25 +47,44 @@ func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*statepb.Pipeline
 	return state, config, nil
 }
 
-func loadRepoPipelineState(languageRepo *gitrepo.Repository) (*statepb.PipelineState, error) {
+func loadRepoPipelineState(languageRepo *gitrepo.Repository) (*config.PipelineState, error) {
 	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
 	return loadPipelineStateFile(path)
 }
 
-func loadPipelineStateFile(path string) (*statepb.PipelineState, error) {
+func loadPipelineStateFile(path string) (*config.PipelineState, error) {
 	return parsePipelineState(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*statepb.PipelineConfig, error) {
+func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
 	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, "pipeline-config.json")
 	return loadPipelineConfigFile(path)
 }
 
-func loadPipelineConfigFile(path string) (*statepb.PipelineConfig, error) {
+func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*statepb.PipelineState, error) {
+func savePipelineState(languageRepo *gitrepo.Repository, pipelineState *config.PipelineState) error {
+	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
+	// Marshal the protobuf message as JSON...
+	unformatted, err := json.Marshal(pipelineState)
+	if err != nil {
+		return err
+	}
+	// ... then reformat it
+	var formatted bytes.Buffer
+	err = json.Indent(&formatted, unformatted, "", "    ")
+	if err != nil {
+		return err
+	}
+	// The file mode is likely to be irrelevant, given that the permissions aren't changed
+	// if the file exists, which we expect it to anyway.
+	err = os.WriteFile(path, formatted.Bytes(), os.FileMode(0644))
+	return err
+}
+
+func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*config.PipelineState, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
@@ -75,25 +94,25 @@ func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref 
 	})
 }
 
-func parsePipelineState(contentLoader func() ([]byte, error)) (*statepb.PipelineState, error) {
+func parsePipelineState(contentLoader func() ([]byte, error)) (*config.PipelineState, error) {
 	bytes, err := contentLoader()
 	if err != nil {
 		return nil, err
 	}
-	state := &statepb.PipelineState{}
-	if err := protojson.Unmarshal(bytes, state); err != nil {
+	state := &config.PipelineState{}
+	if err := json.Unmarshal(bytes, state); err != nil {
 		return nil, err
 	}
 	return state, nil
 }
 
-func parsePipelineConfig(contentLoader func() ([]byte, error)) (*statepb.PipelineConfig, error) {
+func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.PipelineConfig, error) {
 	bytes, err := contentLoader()
 	if err != nil {
 		return nil, err
 	}
-	config := &statepb.PipelineConfig{}
-	if err := protojson.Unmarshal(bytes, config); err != nil {
+	config := &config.PipelineConfig{}
+	if err := json.Unmarshal(bytes, config); err != nil {
 		return nil, err
 	}
 	return config, nil

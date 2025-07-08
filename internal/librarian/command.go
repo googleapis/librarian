@@ -25,9 +25,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
@@ -80,8 +80,8 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 	startTime time.Time,
 	workRoot string,
 	languageRepo *gitrepo.Repository,
-	pipelineConfig *statepb.PipelineConfig,
-	pipelineState *statepb.PipelineState,
+	pipelineConfig *config.PipelineConfig,
+	pipelineState *config.PipelineState,
 	containerConfig *docker.Docker,
 	err error,
 ) {
@@ -112,7 +112,7 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 	return startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig, nil
 }
 
-func deriveImage(imageOverride string, state *statepb.PipelineState) (string, error) {
+func deriveImage(imageOverride string, state *config.PipelineState) (string, error) {
 	if imageOverride != "" {
 		return imageOverride, nil
 	}
@@ -130,10 +130,10 @@ func deriveImage(imageOverride string, state *statepb.PipelineState) (string, er
 // findLibraryIDByApiPath finds a library which includes code generated from the given API path.
 // If there are no such libraries, an empty string is returned.
 // If there are multiple such libraries, the first match is returned.
-func findLibraryIDByApiPath(state *statepb.PipelineState, apiPath string) string {
+func findLibraryIDByAPIPath(state *config.PipelineState, apiPath string) string {
 	for _, library := range state.Libraries {
-		if slices.Contains(library.ApiPaths, apiPath) {
-			return library.Id
+		if slices.Contains(library.APIPaths, apiPath) {
+			return library.ID
 		}
 	}
 	return ""

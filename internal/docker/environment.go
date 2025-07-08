@@ -24,8 +24,8 @@ import (
 	"strings"
 
 	"github.com/googleapis/gax-go/v2/apierror"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/secrets"
-	"github.com/googleapis/librarian/internal/statepb"
 	"google.golang.org/grpc/codes"
 )
 
@@ -40,10 +40,10 @@ type EnvironmentProvider struct {
 	secretCache map[string]string
 	// The pipeline configuration, specifying which environment variables to obtain
 	// for each command.
-	pipelineConfig *statepb.PipelineConfig
+	pipelineConfig *config.PipelineConfig
 }
 
-func newEnvironmentProvider(workRoot, secretsProject string, pipelineConfig *statepb.PipelineConfig) *EnvironmentProvider {
+func newEnvironmentProvider(workRoot, secretsProject string, pipelineConfig *config.PipelineConfig) *EnvironmentProvider {
 	if pipelineConfig == nil {
 		return nil
 	}
@@ -118,7 +118,8 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(ctx context.Contex
 	return builder.String(), nil
 }
 
-func getSecretManagerValue(ctx context.Context, dockerEnv *EnvironmentProvider, variable *statepb.CommandEnvironmentVariable) (string, bool, error) {
+func getSecretManagerValue(ctx context.Context, dockerEnv *EnvironmentProvider, variable *config.CommandEnvironmentVariable) (string, bool, error) {
+
 	if variable.SecretName == "" {
 		return "", false, nil
 	}
