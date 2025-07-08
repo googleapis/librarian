@@ -30,8 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/statepb"
 )
 
-const releaseIDEnvVarName = "_RELEASE_ID"
-
 func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")

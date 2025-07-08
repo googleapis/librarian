@@ -55,14 +55,6 @@ func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
 }
 
-func addFlagLibraryID(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.LibraryID, "library-id", "", "The ID of a single library to update")
-}
-
-func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.LibraryVersion, "library-version", "", "The version to release (only valid with library-id, only when creating a release PR)")
-}
-
 func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
 }
