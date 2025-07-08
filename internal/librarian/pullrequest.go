@@ -47,7 +47,7 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 	pr.Successes = append(pr.Successes, text)
 }
 
-// Formats the given list as a single Markdown string, with a title preceding the list,
+// formatListAsMarkdown formats the given list as a single Markdown string, with a title preceding the list,
 // a "- " at the start of each value and a line break at the end of each value.
 // If the list is empty, an empty string is returned instead.
 func formatListAsMarkdown(title string, list []string) string {
