@@ -77,13 +77,13 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
 func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (
-	startTime time.Time,
-	workRoot string,
-	languageRepo *gitrepo.Repository,
-	pipelineConfig *config.PipelineConfig,
-	pipelineState *config.PipelineState,
-	containerConfig *docker.Docker,
-	err error,
+		startTime time.Time,
+		workRoot string,
+		languageRepo *gitrepo.Repository,
+		pipelineConfig *config.PipelineConfig,
+		pipelineState *config.PipelineState,
+		containerConfig *docker.Docker,
+		err error,
 ) {
 	startTime = time.Now()
 	workRoot, err = createWorkRoot(startTime, workRootOverride)
