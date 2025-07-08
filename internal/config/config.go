@@ -16,6 +16,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
@@ -132,6 +133,22 @@ type Config struct {
 	// Image is specified with the -image flag.
 	Image string
 
+	// Push determines whether to push changes to GitHub. It is used in
+	// all commands that create commits in a language repository:
+	// configure, update-apis and update-image-tag.
+	// These commands all create pull requests if they
+	//
+	// By default (when Push isn't explicitly specified), commits are created in
+	// the language repo (whether a fresh clone or one specified with RepoRoot)
+	// but no pull request is created. In this situation, the description of the
+	// pull request that would have been created is displayed in the output of
+	// the command.
+	//
+	// When Push is true, GitHubToken must also be specified.
+	//
+	// Push is specified with the -push flag. No value is required.
+	Push bool
+
 	// ReleaseID is the identifier of a release PR. Each release PR created by
 	// Librarian has a release ID, which is included in both the PR description and
 	// the commit message of every commit within the release PR. This is effectively
@@ -231,4 +248,12 @@ func (c *Config) SetupUser() error {
 	c.UserUID = user.Uid
 	c.UserGID = user.Gid
 	return nil
+}
+
+// IsValid ensures the values contained in a Config are valid.
+func (c *Config) IsValid() (bool, error) {
+	if c.Push && c.GitHubToken == "" {
+		return false, errors.New("no GitHub token supplied for push")
+	}
+	return true, nil
 }
