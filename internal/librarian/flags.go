@@ -31,10 +31,6 @@ func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
 }
 
-func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Branch, "branch", "main", "repository branch")
-}
-
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
 }

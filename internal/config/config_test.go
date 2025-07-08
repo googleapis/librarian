@@ -137,41 +137,28 @@ func TestIsValid(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name: "Valid config - Push false, push config valid",
+			name: "Valid config - Push false",
 			cfg: Config{
 				Push:        false,
 				GitHubToken: "",
-				PushConfig:  "def@ghi.com,abc",
 			},
 			wantValid: true,
 			wantErr:   false,
 		},
 		{
-			name: "Valid config - Push true, token present, push config valid",
+			name: "Valid config - Push true, token present",
 			cfg: Config{
 				Push:        true,
 				GitHubToken: "some_token",
-				PushConfig:  "def@ghi.com,abc",
 			},
 			wantValid: true,
 			wantErr:   false,
 		},
 		{
-			name: "Invalid config - Push true, token missing, push config valid",
+			name: "Invalid config - Push true, token missing",
 			cfg: Config{
 				Push:        true,
 				GitHubToken: "",
-				PushConfig:  "def@ghi.com,abc",
-			},
-			wantValid: false,
-			wantErr:   true,
-		},
-		{
-			name: "Invalid config - Push true, token present, push config invalid",
-			cfg: Config{
-				Push:        true,
-				GitHubToken: "some_token",
-				PushConfig:  "abc:def@ghi.com",
 			},
 			wantValid: false,
 			wantErr:   true,
@@ -217,6 +204,7 @@ func TestIsValid(t *testing.T) {
 			if (err != nil) != test.wantErr {
 				t.Errorf("IsValid() got error = %v, want error = %t", err, test.wantErr)
 			}
+
 			if test.wantErr &&
 				err != nil &&
 				err.Error() != "no GitHub token supplied for push" &&
