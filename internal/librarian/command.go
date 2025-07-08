@@ -127,7 +127,7 @@ func deriveImage(imageOverride string, state *config.PipelineState) (string, err
 	return state.ImageTag, nil
 }
 
-// findLibraryIDByApiPath finds a library which includes code generated from the given API path.
+// findLibraryIDByAPIPath finds a library which includes code generated from the given API path.
 // If there are no such libraries, an empty string is returned.
 // If there are multiple such libraries, the first match is returned.
 func findLibraryIDByAPIPath(state *config.PipelineState, apiPath string) string {

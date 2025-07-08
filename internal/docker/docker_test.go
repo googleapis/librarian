@@ -24,6 +24,36 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestNew(t *testing.T) {
+	const (
+		testWorkRoot       = "testWorkRoot"
+		testImage          = "testImage"
+		testSecretsProject = "testSecretsProject"
+		testUID            = "1000"
+		testGID            = "1001"
+	)
+	pipelineConfig := &config.PipelineConfig{}
+	d, err := New(testWorkRoot, testImage, testSecretsProject, testUID, testGID, pipelineConfig)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if d.Image != testImage {
+		t.Errorf("d.Image = %q, want %q", d.Image, testImage)
+	}
+	if d.uid != testUID {
+		t.Errorf("d.uid = %q, want %q", d.uid, testUID)
+	}
+	if d.gid != testGID {
+		t.Errorf("d.gid = %q, want %q", d.gid, testGID)
+	}
+	if d.env == nil {
+		t.Error("d.env is nil")
+	}
+	if d.run == nil {
+		t.Error("d.run is nil")
+	}
+}
+
 func TestDockerRun(t *testing.T) {
 	const (
 		testUID             = "1000"

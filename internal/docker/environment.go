@@ -92,7 +92,7 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(ctx context.Contex
 		// Second source: Secret Manager
 		if !present {
 			source = "Secret Manager"
-			value, present, err = getSecretManagerValue(ctx, e, variable)
+			value, present, err = e.getSecretManagerValue(ctx, variable)
 			if err != nil {
 				return "", err
 			}
@@ -118,16 +118,15 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(ctx context.Contex
 	return builder.String(), nil
 }
 
-func getSecretManagerValue(ctx context.Context, dockerEnv *EnvironmentProvider, variable *config.CommandEnvironmentVariable) (string, bool, error) {
-
+func (e *EnvironmentProvider) getSecretManagerValue(ctx context.Context, variable *config.CommandEnvironmentVariable) (string, bool, error) {
 	if variable.SecretName == "" {
 		return "", false, nil
 	}
-	value, present := dockerEnv.secretCache[variable.SecretName]
+	value, present := e.secretCache[variable.SecretName]
 	if present {
 		return value, true, nil
 	}
-	value, err := secrets.Get(ctx, dockerEnv.secretsProject, variable.SecretName, nil)
+	value, err := secrets.Get(ctx, e.secretsProject, variable.SecretName, nil)
 	if err != nil {
 		// If the error is that the secret wasn't found, continue to the next source.
 		// Any other error causes a real error to be returned.
@@ -138,6 +137,6 @@ func getSecretManagerValue(ctx context.Context, dockerEnv *EnvironmentProvider, 
 			return "", false, err
 		}
 	}
-	dockerEnv.secretCache[variable.SecretName] = value
+	e.secretCache[variable.SecretName] = value
 	return value, true, nil
 }
