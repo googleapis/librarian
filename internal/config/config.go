@@ -178,25 +178,6 @@ type Config struct {
 	// Repo is specified with the -repo flag.
 	Repo string
 
-	// SyncAuthToken provides an auth token used when polling a synchronization
-	// URL at the end of the merge-release-pr command, if SyncURLPrefix has been
-	// specified.
-	//
-	// SyncAuthToken is not specified by a flag, as flags are logged and the
-	// access token is sensitive information. Instead, it is fetched from the
-	// LIBRARIAN_SYNC_AUTH_TOKEN environment variable.
-	SyncAuthToken string
-
-	// SyncURLPrefix is the prefix used to build commit synchronization URLs.
-	// It is only used by merge-release-pr, and is optional. When specified, a
-	// full URL is constructed by appending the commit hash of the merged pull
-	// request to the specified prefix, and polling until that URL can be fetched
-	// via a GET request which includes the SyncAuthToken. SyncAuthToken must
-	// be specified if SyncURLPrefix is specified.
-	//
-	// SyncURLPrefix is specified with the -sync-url-prefix flag.
-	SyncURLPrefix string
-
 	// SkipIntegrationTests is used by the create-release-pr and create-release-artifacts
 	// commands, and disables integration tests if it is set to a non-empty value.
 
