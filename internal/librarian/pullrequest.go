@@ -22,9 +22,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 // A PullRequestContent builds up the content of a pull request.
@@ -69,7 +69,7 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 //
 // If the pull request would contain an excessive number of commits (as
 // configured in pipeline-config.json).
-func createPullRequest(ctx context.Context, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool, startTime time.Time, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig) (*github.PullRequestMetadata, error) {
+func createPullRequest(ctx context.Context, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool, startTime time.Time, languageRepo *gitrepo.Repository, pipelineConfig *config.PipelineConfig) (*github.PullRequestMetadata, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
