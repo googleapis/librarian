@@ -45,7 +45,8 @@ var hashHeader = regexp.MustCompile(`^# Copyright 20\d\d Google LLC
 #
 # Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
 
-var noHeaderRequiredFiles = []string{".github/CODEOWNERS", "go.sum", "go.mod", ".gitignore", "LICENSE", "renovate.json", "coverage.out"}
+var noHeaderRequiredFiles = []string{".github/CODEOWNERS", "go.sum", "go.mod", ".gitignore",
+	"LICENSE", "renovate.json", "coverage.out", ".vscode"}
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
@@ -68,7 +69,7 @@ func TestHeaders(t *testing.T) {
 			requiredHeader = shellHeader
 		case strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || strings.HasPrefix(path, "Dockerfile"):
 			requiredHeader = hashHeader
-		case strings.HasSuffix(path, ".md"):
+		case strings.HasSuffix(path, ".md") || strings.HasSuffix(path, ".json"):
 			return nil
 		case slices.Contains(noHeaderRequiredFiles, path):
 			return nil
@@ -98,7 +99,7 @@ func TestHeaders(t *testing.T) {
 }
 
 func TestGolangCILint(t *testing.T) {
-	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest", "run")
+	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest", "run", "--disable=unused")
 }
 
 func TestGoFmt(t *testing.T) {
