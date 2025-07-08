@@ -324,5 +324,23 @@ func (c *Config) IsValid() (bool, error) {
 	if len(parts) != 2 {
 		return false, errors.New("unable to parse push config")
 	}
+
+	if _, err := validateHostMount(c.HostMount, ""); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func validateHostMount(hostMount, defaultValue string) (bool, error) {
+	if hostMount == defaultValue {
+		return true, nil
+	}
+
+	parts := strings.Split(hostMount, ":")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false, errors.New("unable to parse host mount")
+	}
+
 	return true, nil
 }
