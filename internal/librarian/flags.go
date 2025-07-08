@@ -50,7 +50,6 @@ func addFlagEnvFile(fs *flag.FlagSet, cfg *config.Config) {
 func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 	defaultValue := ""
 	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue, "a mount point from Docker host and within the Docker. The format is {host-dir}:{local-dir}.")
-	validateHostMount(cfg.HostMount, defaultValue)
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
@@ -107,17 +106,6 @@ func validateSkipIntegrationTests(skipIntegrationTests string) error {
 		return errors.New("skipping integration tests requires a bug to be specified, e.g. -skip-integration-tests=b/12345")
 	}
 	return nil
-}
-
-func validateHostMount(hostMount, defaultValue string) {
-	if hostMount == defaultValue {
-		return
-	}
-
-	strs := strings.Split(hostMount, ":")
-	if len(strs) != 2 {
-		panic(fmt.Sprintf("The value of flag host-mount should be {host-dir}:{local-dir}, got %s", hostMount))
-	}
 }
 
 // Validate that the flag with the given name has been provided.
