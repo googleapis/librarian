@@ -51,10 +51,6 @@ contains more detail:
   - [`update-apis`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/updateapis.go):
     regenerates libraries where the source APIs have been updated
   - Releasing (usually executed as a single automated flow):
-    - [`create-release-pr`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/createreleasepr.go):
-      creates a PR proposing new releases of libraries with changes
-    - [`merge-release-pr`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/mergereleasepr.go):
-      merges a release PR created by the create-release-pr command
     - [`create-release-artifacts`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/createreleaseartifacts.go):
       creates artifacts for library releases (e.g. package files, documentation)
     - [`publish-release-artifacts`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/publishreleaseartifacts.go):

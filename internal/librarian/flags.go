@@ -35,20 +35,12 @@ func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
 }
 
-func addFlagBaselineCommit(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.BaselineCommit, "baseline-commit", "", "the commit hash that was at HEAD for the language repo when create-release-pr was run")
-}
-
 func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Branch, "branch", "main", "repository branch")
 }
 
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
-}
-
-func addFlagEnvFile(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.EnvFile, "env-file", "", "full path to the file where the environment variables are stored. Defaults to env-vars.txt within the output")
 }
 
 func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
@@ -64,10 +56,6 @@ func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ReleaseID, "release-id", "", "The ID of a release PR")
 }
 
-func addFlagReleasePRUrl(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.ReleasePRURL, "release-pr-url", "", "The URL of a release PR")
-}
-
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
 }
@@ -78,10 +66,6 @@ func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.SkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
-}
-
-func addFlagSyncUrlPrefix(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.SyncURLPrefix, "sync-url-prefix", "", "the prefix of the URL to check for commit synchronization; the commit hash will be appended to this")
 }
 
 func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {

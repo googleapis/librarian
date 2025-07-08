@@ -62,19 +62,6 @@ type Config struct {
 	// ArtifactRoot is specified with the -artifact-root flag.
 	ArtifactRoot string
 
-	// BaselineCommit is the commit hash of the language repo used as a
-	// baseline when generating diffs as part of determining whether a release PR
-	// can be merged. It is only used by the merge-release-pr command, and the
-	// value is expected to be taken from the environment variable recorded in
-	// env-vars.txt by the create-release-pr command. The value is the HEAD commit at
-	// the start of the create-release-pr command, and it is used by merge-release-pr
-	// to determine whether any source files for a library have been modified in
-	// GitHub since the release PR was initiated (thereby invalidating the release of
-	// that library).
-	//
-	// BaselineCommit is specified with the -baseline-commit flag.
-	BaselineCommit string
-
 	// Branch is the branch name to use when working with git repositories. It is
 	// currently unused.
 	//
@@ -122,18 +109,6 @@ type Config struct {
 	// mounted as DockerHostRootDir from the host view, when Librarian is running in
 	// Docker. See the documentation for DockerHostRootDir for more information.
 	DockerMountRootDir string
-
-	// EnvFile is the path to the file used to store environment variables, to
-	// propagate information from one step to another in a CI flow. The file
-	// is a list of key=value lines, where the key becomes an environment variable
-	// in the next step of the CI flow. Every key must start with an underscore.
-	//
-	// EnvFile is only used in the create-release-pr and merge-release-pr commands.
-	// It is always optional; if it is unspecified, it defaults to env-file.txt
-	// within WorkRoot.
-	//
-	// EnvFile is specified with the -env-file flag.
-	EnvFile string
 
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
@@ -216,14 +191,6 @@ type Config struct {
 	// ReleaseID is specified with the -release-id flag.
 	ReleaseID string
 
-	// ReleasePRURL is the URL of the release PR to merge once all requirements
-	// have been satisfied. It is only used by merge-release-pr, where it is required.
-	// The format is the regular GitHub PR URL:
-	// https://github.com/googleapis/google-cloud-dotnet/pull/14910
-	//
-	// ReleasePRURL is specified with the -release-pr-url flag.
-	ReleasePRURL string
-
 	// Repo specifies the language repository to use, as either a local root directory
 	// or a URL to clone from. If a local directory is specified, it can
 	// be relative to the current working directory. The repository must
@@ -251,16 +218,6 @@ type Config struct {
 	// access token is sensitive information. Instead, it is fetched from the
 	// LIBRARIAN_SYNC_AUTH_TOKEN environment variable.
 	SyncAuthToken string
-
-	// SyncURLPrefix is the prefix used to build commit synchronization URLs.
-	// It is only used by merge-release-pr, and is optional. When specified, a
-	// full URL is constructed by appending the commit hash of the merged pull
-	// request to the specified prefix, and polling until that URL can be fetched
-	// via a GET request which includes the SyncAuthToken. SyncAuthToken must
-	// be specified if SyncURLPrefix is specified.
-	//
-	// SyncURLPrefix is specified with the -sync-url-prefix flag.
-	SyncURLPrefix string
 
 	// Project is the Google Cloud project containing Secret Manager secrets to
 	// provide to the language-specific container commands via environment variables.
