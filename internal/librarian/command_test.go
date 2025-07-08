@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 func TestCommandUsage(t *testing.T) {
@@ -47,7 +47,7 @@ func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		imageOverride string
-		state         *statepb.PipelineState
+		state         *config.PipelineState
 		want          string
 		wantErr       bool
 	}{
@@ -60,7 +60,7 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "with image override, non-nil state",
 			imageOverride: "my/custom-image:v1",
-			state:         &statepb.PipelineState{ImageTag: "v1.2.3"},
+			state:         &config.PipelineState{ImageTag: "v1.2.3"},
 			want:          "my/custom-image:v1",
 		},
 		{
@@ -72,13 +72,13 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "no override, with state",
 			imageOverride: "",
-			state:         &statepb.PipelineState{ImageTag: "v1.2.3"},
+			state:         &config.PipelineState{ImageTag: "v1.2.3"},
 			want:          "v1.2.3",
 		},
 		{
 			name:          "no override, with state, empty tag",
 			imageOverride: "",
-			state:         &statepb.PipelineState{ImageTag: ""},
+			state:         &config.PipelineState{ImageTag: ""},
 			wantErr:       true,
 		},
 	} {

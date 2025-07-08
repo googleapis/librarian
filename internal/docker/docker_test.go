@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/statepb"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -33,7 +32,7 @@ func TestNew(t *testing.T) {
 		testUID            = "1000"
 		testGID            = "1001"
 	)
-	pipelineConfig := &statepb.PipelineConfig{}
+	pipelineConfig := &config.PipelineConfig{}
 	d, err := New(testWorkRoot, testImage, testSecretsProject, testUID, testGID, pipelineConfig)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)

@@ -27,7 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 var cmdUpdateImageTag = &cli.Command{
@@ -95,7 +94,7 @@ func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
 	return updateImageTag(ctx, cfg, startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig)
 }
 
-func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time, workRoot string, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig, pipelineState *statepb.PipelineState, containerConfig *docker.Docker) error {
+func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time, workRoot string, languageRepo *gitrepo.Repository, pipelineConfig *config.PipelineConfig, pipelineState *config.PipelineState, containerConfig *docker.Docker) error {
 	if err := validateRequiredFlag("tag", cfg.Tag); err != nil {
 		return err
 	}
@@ -185,9 +184,9 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 	return err
 }
 
-func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *statepb.LibraryState, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
-	if len(library.ApiPaths) == 0 {
-		slog.Info("Skipping non-generated library", "id", library.Id)
+func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *config.LibraryState, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
+	if len(library.APIPaths) == 0 {
+		slog.Info("Skipping non-generated library", "id", library.ID)
 		return nil
 	}
 
@@ -196,18 +195,18 @@ func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo
 		return err
 	}
 
-	slog.Info("Generating library", "id", library.Id)
+	slog.Info("Generating library", "id", library.ID)
 
 	// We create an output directory separately for each API.
-	outputDir := filepath.Join(outputRoot, library.Id)
+	outputDir := filepath.Join(outputRoot, library.ID)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return err
 	}
 
-	if err := containerConfig.GenerateLibrary(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
+	if err := containerConfig.GenerateLibrary(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.ID); err != nil {
 		return err
 	}
-	if err := containerConfig.Clean(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
+	if err := containerConfig.Clean(ctx, cfg, languageRepo.Dir, library.ID); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

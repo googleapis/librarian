@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/statepb"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestNewEnvironmentProvider(t *testing.T) {
@@ -29,7 +29,7 @@ func TestNewEnvironmentProvider(t *testing.T) {
 		testWorkRoot       = "testWorkRoot"
 		testSecretsProject = "testSecretsProject"
 	)
-	pipelineConfig := &statepb.PipelineConfig{}
+	pipelineConfig := &config.PipelineConfig{}
 	ep := newEnvironmentProvider(testWorkRoot, testSecretsProject, pipelineConfig)
 	if ep == nil {
 		t.Fatal("newEnvironmentProvider() returned nil")
@@ -53,10 +53,10 @@ func TestWriteEnvironmentFile(t *testing.T) {
 	ctx := context.Background()
 	testContent := "foo=bar\n"
 	tmpDir := t.TempDir()
-	e := newEnvironmentProvider(tmpDir, "", &statepb.PipelineConfig{
-		Commands: map[string]*statepb.CommandConfig{
+	e := newEnvironmentProvider(tmpDir, "", &config.PipelineConfig{
+		Commands: map[string]*config.CommandConfig{
 			"test-command": {
-				EnvironmentVariables: []*statepb.CommandEnvironmentVariable{
+				EnvironmentVariables: []*config.CommandEnvironmentVariable{
 					{Name: "foo", DefaultValue: "bar"},
 				},
 			},
@@ -83,10 +83,10 @@ func TestConstructEnvironmentFileContent(t *testing.T) {
 		testSecretName  = "secret-name"
 		testSecretValue = "secret_value"
 	)
-	pipelineConfig := &statepb.PipelineConfig{
-		Commands: map[string]*statepb.CommandConfig{
+	pipelineConfig := &config.PipelineConfig{
+		Commands: map[string]*config.CommandConfig{
 			testCommand: {
-				EnvironmentVariables: []*statepb.CommandEnvironmentVariable{
+				EnvironmentVariables: []*config.CommandEnvironmentVariable{
 					{Name: testHostVar},
 					{Name: testSecretVar, SecretName: testSecretName},
 					{Name: "DEFAULT_VAR", DefaultValue: "default_value"},
