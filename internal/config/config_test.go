@@ -128,7 +128,6 @@ func TestSetupUser(t *testing.T) {
 		})
 	}
 }
-
 func TestIsValid(t *testing.T) {
 	for _, test := range []struct {
 		name      string
