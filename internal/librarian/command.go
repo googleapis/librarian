@@ -77,13 +77,13 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
 func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (
-		startTime time.Time,
-		workRoot string,
-		languageRepo *gitrepo.Repository,
-		pipelineConfig *config.PipelineConfig,
-		pipelineState *config.PipelineState,
-		containerConfig *docker.Docker,
-		err error,
+	startTime time.Time,
+	workRoot string,
+	languageRepo *gitrepo.Repository,
+	pipelineConfig *config.PipelineConfig,
+	pipelineState *config.PipelineState,
+	containerConfig *docker.Docker,
+	err error,
 ) {
 	startTime = time.Now()
 	workRoot, err = createWorkRoot(startTime, workRootOverride)
@@ -127,7 +127,7 @@ func deriveImage(imageOverride string, state *config.PipelineState) (string, err
 	return state.ImageTag, nil
 }
 
-// findLibraryIDByApiPath finds a library which includes code generated from the given API path.
+// findLibraryIDByAPIPath finds a library which includes code generated from the given API path.
 // If there are no such libraries, an empty string is returned.
 // If there are multiple such libraries, the first match is returned.
 func findLibraryIDByAPIPath(state *config.PipelineState, apiPath string) string {
