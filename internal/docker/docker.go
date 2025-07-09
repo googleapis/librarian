@@ -39,7 +39,7 @@ const (
 	// CommandGenerateRaw performs raw (unconfigured) generation.
 	CommandGenerateRaw Command = "generate-raw"
 	// CommandGenerateLibrary performs generation for a configured library.
-	CommandGenerateLibrary Command = "generate-library"
+	CommandGenerateLibrary Command = "generate"
 	// CommandClean cleans files generated for a library.
 	CommandClean Command = "clean"
 	// CommandBuildRaw builds the results of generate-raw.
