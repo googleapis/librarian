@@ -28,10 +28,7 @@ import (
 
 func TestGetRawContent(t *testing.T) {
 	t.Parallel()
-	path := "path/to/file"
-	ref := "main"
-
-	testCases := []struct {
+	for _, test := range []struct {
 		name           string
 		handler        http.HandlerFunc
 		wantContent    []byte
@@ -77,13 +74,11 @@ func TestGetRawContent(t *testing.T) {
 			wantHTTPMethod: http.MethodGet,
 			wantURLPath:    "/repos/owner/repo/contents/path/to/file",
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				tc.handler(w, r)
+				test.handler(w, r)
 			}))
 			defer server.Close()
 
@@ -94,19 +89,19 @@ func TestGetRawContent(t *testing.T) {
 			}
 
 			client.BaseURL, _ = url.Parse(server.URL + "/")
-			content, err := client.GetRawContent(context.Background(), path, ref)
+			content, err := client.GetRawContent(context.Background(), "path/to/file", "main")
 
-			if tc.wantErr {
+			if test.wantErr {
 				if err == nil {
-					t.Errorf("GetRawContent() err = nil, want error containing %q", tc.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), tc.wantErrSubstr) {
-					t.Errorf("GetRawContent() err = %v, want error containing %q", err, tc.wantErrSubstr)
+					t.Errorf("GetRawContent() err = nil, want error containing %q", test.wantErrSubstr)
+				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("GetRawContent() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
 				if err != nil {
 					t.Errorf("GetRawContent() err = %v, want nil", err)
 				}
-				if diff := cmp.Diff(tc.wantContent, content); diff != "" {
+				if diff := cmp.Diff(test.wantContent, content); diff != "" {
 					t.Errorf("GetRawContent() content mismatch (-want +got):\n%s", diff)
 				}
 			}
@@ -116,7 +111,7 @@ func TestGetRawContent(t *testing.T) {
 
 func TestParseUrl(t *testing.T) {
 	t.Parallel()
-	testCases := []struct {
+	for _, test := range []struct {
 		name          string
 		remoteUrl     string
 		wantRepo      *Repository
@@ -147,24 +142,22 @@ func TestParseUrl(t *testing.T) {
 			wantRepo:  &Repository{Owner: "owner", Name: "repo"},
 			wantErr:   false,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := ParseUrl(tc.remoteUrl)
+			repo, err := ParseUrl(test.remoteUrl)
 
-			if tc.wantErr {
+			if test.wantErr {
 				if err == nil {
-					t.Errorf("ParseUrl() err = nil, want error containing %q", tc.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), tc.wantErrSubstr) {
-					t.Errorf("ParseUrl() err = %v, want error containing %q", err, tc.wantErrSubstr)
+					t.Errorf("ParseUrl() err = nil, want error containing %q", test.wantErrSubstr)
+				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("ParseUrl() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
 				if err != nil {
 					t.Errorf("ParseUrl() err = %v, want nil", err)
 				}
-				if diff := cmp.Diff(tc.wantRepo, repo); diff != "" {
+				if diff := cmp.Diff(test.wantRepo, repo); diff != "" {
 					t.Errorf("ParseUrl() repo mismatch (-want +got): %s", diff)
 				}
 			}
