@@ -72,7 +72,7 @@ type Config struct {
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
 	//
-	// GitHubToken is used by to configure, update-apis and update-image-tag commands,
+	// GitHubToken is used by to configure, update-apis commands,
 	// when Push is true. It is always used by publish-release-artifacts commands.
 	//
 	// GitHubToken is not specified by a flag, as flags are logged and the
@@ -121,7 +121,7 @@ type Config struct {
 
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
-	// configure, update-apis and update-image-tag.
+	// configure and update-apis.
 	// These commands all create pull requests if they
 	//
 	// By default (when Push isn't explicitly specified), commits are created in
@@ -139,7 +139,7 @@ type Config struct {
 	// in the format "email,name".
 	//
 	// PushConfig is used in all commands that create commits in a language repository:
-	// create-release-pr, configure, update-apis and update-image-tag.
+	// create-release-pr, configure and update-apis.
 	//
 	// PushConfig is optional. If unspecified, commits will use a default name of
 	// "Google Cloud SDK" and a default email of noreply-cloudsdk@google.com.
@@ -167,8 +167,7 @@ type Config struct {
 	// Librarian-created changes with other changes.
 	//
 	// Repo is used by all commands which operate on a language repository:
-	// configure, create-release-artifacts, generate, update-apis,
-	// update-image-tag.
+	// configure, create-release-artifacts, generate, update-apis.
 	//
 	// When a local directory is specified for the generate command, the repo is checked to
 	// determine whether the specified API path is configured as a library. See the generate
@@ -193,18 +192,11 @@ type Config struct {
 	// When this is not specified, the googleapis repository is cloned
 	// automatically.
 	//
-	// Source is used by generate, update-apis, update-image-tag and configure
+	// Source is used by generate, update-apis and configure
 	// commands.
 	//
 	// Source is specified with the -source flag.
 	Source string
-
-	// Tag is the new tag for the language-specific Docker image, used only by the
-	// update-image-tag command. All operations within update-image-tag are performed
-	// using the new tag.
-	//
-	// Tag is specified with the -tag flag.
-	Tag string
 
 	// TagRepoURL is the GitHub repository to push the tag and create a release
 	// in. This is only used in the publish-release-artifacts command:

@@ -48,11 +48,6 @@ func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
 }
 
-func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
-	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
-	fs.StringVar(&cfg.PushConfig, "push-config", "noreply-cloudsdk@google.com,Google Cloud SDK", "The user and email for Git commits, in the format \"user:email\"")
-}
-
 func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ReleaseID, "release-id", "", "The ID of a release PR")
 }
@@ -67,10 +62,6 @@ func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
-}
-
-func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Tag, "tag", "", "new tag for the language-specific container image.")
 }
 
 func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
