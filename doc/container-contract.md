@@ -93,8 +93,7 @@ provided, but there is no absolute requirement to do so.
 `build-library` builds and optionally runs unit tests for either a single library or all libraries
 configured within the repository.
 
-Called from CLI commands: `configure`, `generate`, `update-apis`, `update-image-tag`,
-`create-release-artifacts`
+Called from CLI commands: `configure`, `generate`, `update-apis`, `create-release-artifacts`
 
 Flags:
 
@@ -109,10 +108,7 @@ should only be used for pulling dependencies - in the long term, we may restrict
 access to only known hosts.
 
 In most cases, the `--library-id` flag is specified, as the CLI performs most operations
-on a library-by-library basis. However, the `update-image-tag` CLI command needs to build
-all libraries as a validation step, and the current implementation calls the `build-library`
-container command once without specifying `--library-id` as this is significantly more
-efficient than calling it separately for each library.
+on a library-by-library basis.
 
 This command must not modify, add or delete any files within the repo root which are
 considered relevant to the repo. In other words, running `git status` on the repo after
@@ -151,7 +147,7 @@ a good reason to keep the two commands separate.
 
 `clean` removes all generated files related to a given configured library from within a repository.
 
-Called from CLI commands: `configure`, `generate`, `update-apis`, `update-image-tag`
+Called from CLI commands: `configure`, `generate`, `update-apis`
 
 Flags:
 
@@ -202,7 +198,7 @@ The changes in `generator-input` after `configure` has completed are expected to
 `generate-library` generates code for a single library, when provided with the full API specifications and the
 language repository's `generator-input` directory.
 
-Called from CLI commands: `configure`, `generate`, `update-apis`, `update-image-tag`
+Called from CLI commands: `configure`, `generate`, `update-apis`
 
 Flags:
 
@@ -315,36 +311,4 @@ the output directory corresponding with the single library, so implementations s
 any need to create a nested structure within the output directory for disambiguation purposes. (If
 a folder structure is needed for any other reason, that's fine.)
 
-The `package-library` command must not perform any actual publication; that is performed by `publish-library`,
-using the output of `package-library` once all libraries have been successfully packaged.
-
-## publish-library
-
-`publish-library` publishes releaseable artifacts for a library (such as packages and documentation),
-as created by `package-library`.
-
-Called from CLI commands: `publish-release-artifacts`
-
-Flags:
-
-- `--package-output`: the output directory that was previously written to by `package-library`; required.
-- `--library-id`: the library whose artifacts should be published; required.
-- `--version`: the version of the library being published; required.
-
-Note that `publish-library` is provided with the library version, whereas `package-library` is not. This is
-because `package-library` operates in an environment where the full repository information is available,
-whereas `publish-library` only has the files created by `package-library`. As the version string is potentially
-useful information which the Librarian CLI has to hand, it is provided to `publish-library` to avoid implementations
-which need that information performing toil of creating a file just to record the version. If an implementation
-*doesn't* need the version, it can ignore the flag entirely.
-
-Where possible, `publish-library` should be retriable: if it's safe to *attempt* to publish a library that may
-already have been published, this allows the whole `publish-release-artifacts` command to be retried in the case
-of an error (e.g. if a package manager is flaky, and we manage to publish 9 out of 10 libraries in the first attempt,
-but the 10th fails). The implementation must ensure if it is run multiple times for the same artifacts, it does
-not create redundant copies which would cause user confusion. If the operation cannot be made safely retriable, it
-must detect retries and fail with a clear error message.
-
-If a language does not publish packages as part of its intended release process, so `package-library` creates
-no artifacts, then the `publish-library` container command is still invoked, and will be provided with the empty directory.
-An implementation should just exit successfully in that case.
+The `package-library` command must not perform any actual publication.

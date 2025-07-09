@@ -27,14 +27,6 @@ func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
-func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
-}
-
-func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Branch, "branch", "main", "repository branch")
-}
-
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
 }
@@ -52,11 +44,6 @@ func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
 }
 
-func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
-	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
-	fs.StringVar(&cfg.PushConfig, "push-config", "noreply-cloudsdk@google.com,Google Cloud SDK", "The user and email for Git commits, in the format \"user:email\"")
-}
-
 func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ReleaseID, "release-id", "", "The ID of a release PR")
 }
@@ -71,14 +58,6 @@ func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
-}
-
-func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Tag, "tag", "", "new tag for the language-specific container image.")
-}
-
-func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.TagRepoURL, "tag-repo-url", "", "Repository URL to tag and create releases in. Requires when push is true.")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
