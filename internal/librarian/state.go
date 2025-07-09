@@ -20,7 +20,9 @@ import (
 
 // LibrarianState defines the contract for the state.yaml file.
 type LibrarianState struct {
-	Image     string    `yaml:"image" validate:"required,is-image"`
+	// The name and tag of the generator image to use.
+	Image string `yaml:"image" validate:"required,is-image"`
+	// A list of library configurations.
 	Libraries []Library `yaml:"libraries" validate:"required,gt=0,dive"`
 }
 
@@ -46,17 +48,32 @@ func (s *LibrarianState) ImageRefAndTag() (ref reference.Named, tag string) {
 
 // Library represents the state of a single library within state.yaml.
 type Library struct {
-	Id                  string   `yaml:"id" validate:"required,is-library-id"`
-	Version             string   `yaml:"version" validate:"omitempty,semver"`
-	LastGeneratedCommit string   `yaml:"last_generated_commit" validate:"omitempty,hexadecimal,len=40"`
-	APIs                []API    `yaml:"apis" validate:"required,gt=0,dive"`
-	SourcePaths         []string `yaml:"source_paths" validate:"required,gt=0,dive,is-dirpath"`
-	PreserveRegex       []string `yaml:"preserve_regex" validate:"omitempty,dive,is-regexp"`
-	RemoveRegex         []string `yaml:"remove_regex" validate:"omitempty,dive,is-regexp"`
+	// A unique identifier for the library, in a language-specific format.
+	// The `is-library-id` validator ensures the ID:
+	// - is not empty
+	// - is not `.` or `..`
+	// - only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
+	Id string `yaml:"id" validate:"required,is-library-id"`
+	// The last released version of the library.
+	Version string `yaml:"version" validate:"omitempty,semver"`
+	// The commit hash from the API definition repository at which the library was last generated.
+	LastGeneratedCommit string `yaml:"last_generated_commit" validate:"omitempty,hexadecimal,len=40"`
+	// A list of APIs that are part of this library.
+	APIs []API `yaml:"apis" validate:"required,gt=0,dive"`
+	// A list of directories in the language repository where Librarian contributes code.
+	SourcePaths []string `yaml:"source_paths" validate:"required,gt=0,dive,is-dirpath"`
+	// A list of regular expressions for files and directories to preserve during the copy and remove process.
+	PreserveRegex []string `yaml:"preserve_regex" validate:"omitempty,dive,is-regexp"`
+	// A list of regular expressions for files and directories to remove before copying generated code.
+	// If not set, this defaults to the `source_paths`.
+	// A more specific `preserve_regex` takes precedence.
+	RemoveRegex []string `yaml:"remove_regex" validate:"omitempty,dive,is-regexp"`
 }
 
 // API represents an API that is part of a library.
 type API struct {
-	Path          string `yaml:"path" validate:"required,is-dirpath"`
-	ServiceConfig string `yaml:"service_config" validate:"required"`
+	// The path to the API, relative to the root of the API definition repository (e.g., "google/storage/v1").
+	Path string `yaml:"path" validate:"required,is-dirpath"`
+	// The name of the service config file, relative to the API `path`.
+	ServiceConfig string `yaml:"service_config" validate:"omitempty"`
 }
