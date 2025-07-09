@@ -36,9 +36,7 @@ func init() {
 	CmdLibrarian.Init()
 	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
 		cmdGenerate,
-		cmdUpdateImageTag,
 		cmdCreateReleaseArtifacts,
-		cmdPublishReleaseArtifacts,
 		cmdVersion,
 	)
 }
