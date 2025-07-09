@@ -129,15 +129,15 @@ func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, o
 // as configured in the Librarian state file for the repository.
 func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
 	commandArgs := []string{
-		"--source=/apis",
-		"--output=/output",
 		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
+		"--output=/output",
+		"--source=/source",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/apis", apiRoot),
-		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
+		fmt.Sprintf("%s:/output", output),
+		fmt.Sprintf("%s:/source:ro", apiRoot), // readonly volume.
 	}
 
 	return c.runDocker(ctx, cfg, CommandGenerateLibrary, mounts, commandArgs)

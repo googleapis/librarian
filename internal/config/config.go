@@ -26,7 +26,7 @@ import (
 const (
 	// GeneratorInputDir is the default directory to store files that generator
 	// needs to regenerate libraries from an empty directory.
-	GeneratorInputDir string = "generator-input"
+	GeneratorInputDir string = "input"
 	DefaultPushConfig string = "noreply-cloudsdk@google.com,Google Cloud SDK"
 )
 
