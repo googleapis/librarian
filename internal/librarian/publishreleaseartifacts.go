@@ -18,10 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
@@ -153,20 +151,6 @@ func publishPackages(ctx context.Context, config *docker.Docker, cfg *config.Con
 }
 
 func createRepoReleases(ctx context.Context, releases []LibraryRelease, gitHubRepo *github.Repository, gitHubToken string) error {
-	ghClient, err := github.NewClient(gitHubToken)
-	if err != nil {
-		return err
-	}
-	for _, release := range releases {
-		tag := formatReleaseTag(release.LibraryID, release.Version)
-		title := fmt.Sprintf("%s version %s", release.LibraryID, release.Version)
-		prerelease := strings.HasPrefix(release.Version, "0.") || strings.Contains(release.Version, "-")
-		repoRelease, err := ghClient.CreateRelease(ctx, gitHubRepo, tag, release.CommitHash, title, release.ReleaseNotes, prerelease)
-		if err != nil {
-			return err
-		}
-		slog.Info("Created repo release", "name", *repoRelease.Name, "tag", *repoRelease.TagName)
-	}
 	slog.Info("All repo releases created.")
 	return nil
 }

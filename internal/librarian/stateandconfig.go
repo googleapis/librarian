@@ -85,12 +85,12 @@ func savePipelineState(languageRepo *gitrepo.Repository, pipelineState *config.P
 }
 
 func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*config.PipelineState, error) {
-	ghClient, err := github.NewClient(gitHubToken)
+	ghClient, err := github.NewClient(gitHubToken, repo)
 	if err != nil {
 		return nil, err
 	}
 	return parsePipelineState(func() ([]byte, error) {
-		return ghClient.GetRawContent(ctx, repo, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
+		return ghClient.GetRawContent(ctx, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
 	})
 }
 

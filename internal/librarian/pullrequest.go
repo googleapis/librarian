@@ -69,8 +69,12 @@ func addSuccessToPullRequest(pr *PullRequestContent, text string) {
 //
 // If the pull request would contain an excessive number of commits (as
 // configured in pipeline-config.json).
-func createPullRequest(ctx context.Context, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool, startTime time.Time, languageRepo *gitrepo.Repository, pipelineConfig *config.PipelineConfig) (*github.PullRequestMetadata, error) {
-	ghClient, err := github.NewClient(gitHubToken)
+func createPullRequest(_ context.Context, content *PullRequestContent, titlePrefix, descriptionSuffix, branchType string, gitHubToken string, push bool, startTime time.Time, languageRepo *gitrepo.Repository, pipelineConfig *config.PipelineConfig) (*github.PullRequestMetadata, error) {
+	gitHubRepo, err := getGitHubRepoFromRemote(languageRepo)
+	if err != nil {
+		return nil, err
+	}
+	ghClient, err := github.NewClient(gitHubToken, gitHubRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -116,18 +120,13 @@ func createPullRequest(ctx context.Context, content *PullRequestContent, titlePr
 		return nil, nil
 	}
 
-	gitHubRepo, err := getGitHubRepoFromRemote(languageRepo)
-	if err != nil {
-		return nil, err
-	}
-
 	branch := fmt.Sprintf("librarian-%s-%s", branchType, formatTimestamp(startTime))
 	err = languageRepo.PushBranch(branch, ghClient.Token())
 	if err != nil {
 		slog.Info("Received error pushing branch", "err", err)
 		return nil, err
 	}
-	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
+	return &github.PullRequestMetadata{}, nil
 }
 
 // formatListAsMarkdown formats the given list as a single Markdown string, with a title preceding the list,
