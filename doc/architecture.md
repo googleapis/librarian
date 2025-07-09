@@ -53,8 +53,6 @@ contains more detail:
   - Releasing (usually executed as a single automated flow):
     - [`create-release-artifacts`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/createreleaseartifacts.go):
       creates artifacts for library releases (e.g. package files, documentation)
-    - [`publish-release-artifacts`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/publishreleaseartifacts.go):
-      publishes artifacts for library releases to package managers, documentation sites etc
 
 ## Repositories used by Librarian
 
