@@ -154,10 +154,10 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, config.LibrarianDir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
-
+	generatorRequest := filepath.Join(workRoot, config.LibrarianDir, config.GenerateRequest)
 	// Perform "generate, clean" on each library.
 	for _, library := range pipelineState.Libraries {
-		err := regenerateLibrary(ctx, cfg, apiRepo, generatorInput, outputDir, library, languageRepo, containerConfig)
+		err := regenerateLibrary(ctx, cfg, apiRepo, outputDir, generatorRequest, generatorInput, library, languageRepo, containerConfig)
 		if err != nil {
 			return err
 		}
@@ -184,7 +184,7 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 	return err
 }
 
-func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, generatorInput string, outputRoot string, library *config.LibraryState, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
+func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo.Repository, outputRoot, generateRequest, generatorInput string, library *config.LibraryState, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
 	if len(library.APIPaths) == 0 {
 		slog.Info("Skipping non-generated library", "id", library.ID)
 		return nil
@@ -203,7 +203,7 @@ func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo
 		return err
 	}
 
-	if err := containerConfig.Generate(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.ID); err != nil {
+	if err := containerConfig.Generate(ctx, cfg, apiRepo.Dir, outputDir, generateRequest, generatorInput, library.ID); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

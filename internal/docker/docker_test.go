@@ -56,19 +56,13 @@ func TestNew(t *testing.T) {
 
 func TestDockerRun(t *testing.T) {
 	const (
-		testUID             = "1000"
-		testGID             = "1001"
 		testAPIPath         = "testAPIPath"
 		testAPIRoot         = "testAPIRoot"
+		testGenerateRequest = "testGenerateRequest"
 		testGeneratorInput  = "testGeneratorInput"
-		testGeneratorOutput = "testGeneratorOutput"
 		testImage           = "testImage"
-		testInputsDirectory = "testInputsDirectory"
-		testLanguageRepo    = "testLanguageRepo"
 		testLibraryID       = "testLibraryID"
-		testLibraryVersion  = "testLibraryVersion"
 		testOutput          = "testOutput"
-		testReleaseVersion  = "testReleaseVersion"
 		testRepoRoot        = "testRepoRoot"
 	)
 
@@ -88,15 +82,17 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Generate(ctx, cfg, testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
+				return d.Generate(ctx, cfg, testAPIRoot, testOutput, testGenerateRequest, testGeneratorInput, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
+				"-v", fmt.Sprintf("%s:/request:ro", testGenerateRequest),
 				"-v", fmt.Sprintf("%s:/input", testGeneratorInput),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandGenerate),
+				"--request=/request",
 				"--input=/input",
 				"--output=/output",
 				"--source=/source",
@@ -109,15 +105,17 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Generate(ctx, cfgInDocker, testAPIRoot, "hostDir", testGeneratorInput, testLibraryID)
+				return d.Generate(ctx, cfgInDocker, testAPIRoot, "hostDir", testGenerateRequest, testGeneratorInput, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
+				"-v", fmt.Sprintf("%s:/request:ro", testGenerateRequest),
 				"-v", fmt.Sprintf("%s:/input", testGeneratorInput),
 				"-v", "localDir:/output",
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandGenerate),
+				"--request=/request",
 				"--input=/input",
 				"--output=/output",
 				"--source=/source",

@@ -84,14 +84,16 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 // output specifies the empty output directory into which the command should
 // generate code, and libraryID specifies the ID of the library to generate,
 // as configured in the Librarian state file for the repository.
-func (c *Docker) Generate(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
+func (c *Docker) Generate(ctx context.Context, cfg *config.Config, apiRoot, output, generateRequest, generatorInput, libraryID string) error {
 	commandArgs := []string{
+		"--request=/request",
 		"--input=/input",
 		"--output=/output",
 		"--source=/source",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
+		fmt.Sprintf("%s:/request:ro", generateRequest), // readonly volume.
 		fmt.Sprintf("%s:/input", generatorInput),
 		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/source:ro", apiRoot), // readonly volume.

@@ -28,6 +28,7 @@ const (
 	// GeneratorInputDir is the default directory to store files that generator
 	// needs to regenerate libraries from an empty directory.
 	GeneratorInputDir string = "generator-input"
+	GenerateRequest   string = "generate-request.json"
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
 	LibrarianDir string = ".librarian"
