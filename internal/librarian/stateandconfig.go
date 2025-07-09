@@ -48,7 +48,7 @@ func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*config.PipelineS
 }
 
 func loadRepoPipelineState(languageRepo *gitrepo.Repository) (*config.PipelineState, error) {
-	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
+	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
 	return loadPipelineStateFile(path)
 }
 
@@ -57,7 +57,7 @@ func loadPipelineStateFile(path string) (*config.PipelineState, error) {
 }
 
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
-	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, "pipeline-config.json")
+	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, "pipeline-config.json")
 	return loadPipelineConfigFile(path)
 }
 
@@ -66,7 +66,7 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 }
 
 func savePipelineState(languageRepo *gitrepo.Repository, pipelineState *config.PipelineState) error {
-	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
+	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
 	// Marshal the protobuf message as JSON...
 	unformatted, err := json.Marshal(pipelineState)
 	if err != nil {
@@ -90,7 +90,7 @@ func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref 
 		return nil, err
 	}
 	return parsePipelineState(func() ([]byte, error) {
-		return ghClient.GetRawContent(ctx, repo, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
+		return ghClient.GetRawContent(ctx, repo, config.LibrarianDir+"/"+pipelineStateFile, ref)
 	})
 }
 

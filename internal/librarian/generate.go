@@ -183,7 +183,7 @@ func runGenerateCommand(ctx context.Context, cfg *config.Config, outputDir strin
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
-		generatorInput := filepath.Join(languageRepo.Dir, config.GeneratorInputDir)
+		generatorInput := filepath.Join(languageRepo.Dir, config.LibrarianDir, config.GeneratorInputDir)
 		slog.Info("Performing refined generation for library", "id", libraryID)
 		return libraryID, containerConfig.Generate(ctx, cfg, apiRoot, outputDir, generatorInput, libraryID)
 	}
@@ -209,7 +209,7 @@ func detectIfLibraryConfigured(ctx context.Context, apiPath, repo, gitHubToken s
 	)
 	if !isUrl(repo) {
 		// repo is a directory
-		pipelineState, err = loadPipelineStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
+		pipelineState, err = loadPipelineStateFile(filepath.Join(repo, config.LibrarianDir, pipelineStateFile))
 		if err != nil {
 			return false, err
 		}

@@ -153,13 +153,13 @@ func copyMetadataFiles(outputRoot string, releases []LibraryRelease, languageRep
 	if err := languageRepo.Checkout(finalRelease.CommitHash); err != nil {
 		return err
 	}
-	sourceStateFile := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
+	sourceStateFile := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
 	destStateFile := filepath.Join(outputRoot, pipelineStateFile)
 	if err := copyFile(sourceStateFile, destStateFile); err != nil {
 		return err
 	}
 
-	sourceConfigFile := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineConfigFile)
+	sourceConfigFile := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineConfigFile)
 	destConfigFile := filepath.Join(outputRoot, pipelineConfigFile)
 	if err := copyFile(sourceConfigFile, destConfigFile); err != nil {
 		return err

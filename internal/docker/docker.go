@@ -86,13 +86,13 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 // as configured in the Librarian state file for the repository.
 func (c *Docker) Generate(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
 	commandArgs := []string{
-		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
+		"--input=/input",
 		"--output=/output",
 		"--source=/source",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
+		fmt.Sprintf("%s:/input", generatorInput),
 		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/source:ro", apiRoot), // readonly volume.
 	}

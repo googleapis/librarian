@@ -150,8 +150,8 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 	}
 
 	// Take a defensive copy of the generator input directory from the language repo.
-	generatorInput := filepath.Join(workRoot, config.GeneratorInputDir)
-	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, config.GeneratorInputDir))); err != nil {
+	generatorInput := filepath.Join(workRoot, config.LibrarianDir, config.GeneratorInputDir)
+	if err := os.CopyFS(generatorInput, os.DirFS(filepath.Join(languageRepo.Dir, config.LibrarianDir, config.GeneratorInputDir))); err != nil {
 		return err
 	}
 
