@@ -197,7 +197,3 @@ func parsePushConfig(pushConfig string) (string, string, error) {
 	userName := parts[1]
 	return userEmail, userName, nil
 }
-
-func formatReleaseTag(libraryID, version string) string {
-	return libraryID + "-" + version
-}
