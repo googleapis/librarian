@@ -28,7 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 var cmdUpdateImageTag = &cli.Command{
@@ -96,7 +95,7 @@ func runUpdateImageTag(ctx context.Context, cfg *config.Config) error {
 	return updateImageTag(ctx, cfg, startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig)
 }
 
-func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time, workRoot string, languageRepo *gitrepo.Repository, pipelineConfig *statepb.PipelineConfig, pipelineState *LibrarianState, containerConfig *docker.Docker) error {
+func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time, workRoot string, languageRepo *gitrepo.Repository, pipelineConfig *config.PipelineConfig, pipelineState *LibrarianState, containerConfig *docker.Docker) error {
 	if err := validateRequiredFlag("tag", cfg.Tag); err != nil {
 		return err
 	}
@@ -175,7 +174,7 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 
 	// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
 	slog.Info("Building all libraries.")
-	if err := containerConfig.BuildLibrary(ctx, cfg, languageRepo.Dir, ""); err != nil {
+	if err := containerConfig.Build(ctx, cfg, languageRepo.Dir, ""); err != nil {
 		return err
 	}
 
@@ -206,10 +205,7 @@ func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo
 		return err
 	}
 
-	if err := containerConfig.GenerateLibrary(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
-		return err
-	}
-	if err := containerConfig.Clean(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
+	if err := containerConfig.Generate(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.Id); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

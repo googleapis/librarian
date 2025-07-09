@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
@@ -79,7 +79,7 @@ func createCommandStateForLanguage(workRootOverride, repo, imageOverride, projec
 	startTime time.Time,
 	workRoot string,
 	languageRepo *gitrepo.Repository,
-	pipelineConfig *statepb.PipelineConfig,
+	pipelineConfig *config.PipelineConfig,
 	pipelineState *LibrarianState,
 	containerConfig *docker.Docker,
 	err error,
@@ -119,7 +119,7 @@ func deriveImage(imageOverride string, state *LibrarianState) string {
 	return state.Image
 }
 
-// Finds a library which includes code generated from the given API path.
+// findLibraryIDByApiPath finds a library which includes code generated from the given API path.
 // If there are no such libraries, an empty string is returned.
 // If there are multiple such libraries, the first match is returned.
 func findLibraryIDByApiPath(state *LibrarianState, apiPath string) string {
@@ -171,6 +171,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 	return path, nil
 }
 
+// commitAll commits all changes to the repository.
 // No commit is made if there are no file modifications.
 func commitAll(repo *gitrepo.Repository, msg, pushConfig string) error {
 	userEmail, userName, err := parsePushConfig(pushConfig)
