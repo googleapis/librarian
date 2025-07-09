@@ -179,19 +179,14 @@ func buildTestPackageRelease(ctx context.Context, cfg *config.Config, outputRoot
 	if err := languageRepo.Checkout(release.CommitHash); err != nil {
 		return err
 	}
-	if err := containerConfig.BuildLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID); err != nil {
+	if err := containerConfig.Build(ctx, cfg, languageRepo.Dir, release.LibraryID); err != nil {
 		return err
 	}
 	if cfg.SkipIntegrationTests != "" {
 		slog.Info("Skipping integration tests", "bug", cfg.SkipIntegrationTests)
-	} else if err := containerConfig.IntegrationTestLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID); err != nil {
-		return err
 	}
 	outputDir := filepath.Join(outputRoot, release.LibraryID)
 	if err := os.Mkdir(outputDir, 0755); err != nil {
-		return err
-	}
-	if err := containerConfig.PackageLibrary(ctx, cfg, languageRepo.Dir, release.LibraryID, outputDir); err != nil {
 		return err
 	}
 	return nil
