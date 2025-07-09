@@ -45,23 +45,6 @@ type Config struct {
 	// API Path is specified with the -api flag.
 	API string
 
-	// ArtifactRoot is the path to previously-created release artifacts to be published.
-	// It is only used by the publish-release-artifacts command, and is expected
-	// to be the output directory from a previous create-release-artifacts command.
-	// It is required for publish-release-artifacts.
-	//
-	// ArtifactRoot is specified with the -artifact-root flag.
-	ArtifactRoot string
-	// Source is the path to the root of the googleapis repository.
-	// When this is not specified, the googleapis repository is cloned
-	// automatically.
-	//
-	// Source is used by generate, update-apis, update-image-tag and configure
-	// commands.
-	//
-	// Source is specified with the -source flag.
-	Source string
-
 	// Branch is the branch name to use when working with git repositories. It is
 	// currently unused.
 	//
@@ -82,7 +65,7 @@ type Config struct {
 	// GitHub.
 	//
 	// GitHubToken is used by to configure, update-apis and update-image-tag commands,
-	// when Push is true. It is always used by publish-release-artifacts commands.
+	// when Push is true.
 	//
 	// GitHubToken is not specified by a flag, as flags are logged and the
 	// access token is sensitive information. Instead, it is fetched from the
