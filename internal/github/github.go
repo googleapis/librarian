@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 
 	"github.com/google/go-github/v69/github"
@@ -47,8 +48,12 @@ type Client struct {
 
 // NewClient creates a new Client to interact with GitHub.
 func NewClient(accessToken string, repo *Repository) (*Client, error) {
+	return newClientWithHTTP(accessToken, repo, nil)
+}
+
+func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) (*Client, error) {
 	return &Client{
-		Client:      github.NewClient(nil).WithAuthToken(accessToken),
+		Client:      github.NewClient(httpClient).WithAuthToken(accessToken),
 		accessToken: accessToken,
 		repo:        repo,
 	}, nil
@@ -92,19 +97,14 @@ func ParseUrl(remoteUrl string) (*Repository, error) {
 
 // GetRawContent fetches the raw content of a file within a repository repo,
 // identifying the file by path, at a specific commit/tag/branch of ref.
-func (c *Client) GetRawContent(ctx context.Context, path, ref string) (_ []byte, err error) {
+func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, error) {
 	options := &github.RepositoryContentGetOptions{
 		Ref: ref,
 	}
-	closer, _, err := c.Repositories.DownloadContents(ctx, c.repo.Owner, c.repo.Name, path, options)
+	body, _, err := c.Repositories.DownloadContents(ctx, c.repo.Owner, c.repo.Name, path, options)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		cerr := closer.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-	return io.ReadAll(closer)
+	defer body.Close()
+	return io.ReadAll(body)
 }
