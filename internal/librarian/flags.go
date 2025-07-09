@@ -35,17 +35,8 @@ func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
 }
 
-func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Branch, "branch", "main", "repository branch")
-}
-
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
-}
-
-func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
-	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
-	fs.StringVar(&cfg.PushConfig, "push-config", "noreply-cloudsdk@google.com,Google Cloud SDK", "The user and email for Git commits, in the format \"user:email\"")
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
@@ -66,10 +57,6 @@ func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.SkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
-}
-
-func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Tag, "tag", "", "new tag for the language-specific container image.")
 }
 
 func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {

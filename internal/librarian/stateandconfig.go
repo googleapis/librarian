@@ -15,9 +15,7 @@
 package librarian
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -65,25 +63,6 @@ func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*statepb.Pipeline
 
 func loadPipelineConfigFile(path string) (*statepb.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
-}
-
-func savePipelineState(languageRepo *gitrepo.Repository, pipelineState *statepb.PipelineState) error {
-	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
-	// Marshal the protobuf message as JSON...
-	unformatted, err := protojson.Marshal(pipelineState)
-	if err != nil {
-		return err
-	}
-	// ... then reformat it
-	var formatted bytes.Buffer
-	err = json.Indent(&formatted, unformatted, "", "    ")
-	if err != nil {
-		return err
-	}
-	// The file mode is likely to be irrelevant, given that the permissions aren't changed
-	// if the file exists, which we expect it to anyway.
-	err = os.WriteFile(path, formatted.Bytes(), os.FileMode(0644))
-	return err
 }
 
 func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*statepb.PipelineState, error) {

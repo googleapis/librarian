@@ -93,8 +93,7 @@ provided, but there is no absolute requirement to do so.
 `build-library` builds and optionally runs unit tests for either a single library or all libraries
 configured within the repository.
 
-Called from CLI commands: `configure`, `generate`, `update-apis`, `update-image-tag`,
-`create-release-artifacts`
+Called from CLI commands: `configure`, `generate`, `update-apis`, `create-release-artifacts`
 
 Flags:
 
@@ -109,10 +108,7 @@ should only be used for pulling dependencies - in the long term, we may restrict
 access to only known hosts.
 
 In most cases, the `--library-id` flag is specified, as the CLI performs most operations
-on a library-by-library basis. However, the `update-image-tag` CLI command needs to build
-all libraries as a validation step, and the current implementation calls the `build-library`
-container command once without specifying `--library-id` as this is significantly more
-efficient than calling it separately for each library.
+on a library-by-library basis.
 
 This command must not modify, add or delete any files within the repo root which are
 considered relevant to the repo. In other words, running `git status` on the repo after
@@ -151,7 +147,7 @@ a good reason to keep the two commands separate.
 
 `clean` removes all generated files related to a given configured library from within a repository.
 
-Called from CLI commands: `configure`, `generate`, `update-apis`, `update-image-tag`
+Called from CLI commands: `configure`, `generate`, `update-apis`
 
 Flags:
 
@@ -202,7 +198,7 @@ The changes in `generator-input` after `configure` has completed are expected to
 `generate-library` generates code for a single library, when provided with the full API specifications and the
 language repository's `generator-input` directory.
 
-Called from CLI commands: `configure`, `generate`, `update-apis`, `update-image-tag`
+Called from CLI commands: `configure`, `generate`, `update-apis`
 
 Flags:
 
