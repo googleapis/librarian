@@ -27,6 +27,7 @@ const (
 	// GeneratorInputDir is the default directory to store files that generator
 	// needs to regenerate libraries from an empty directory.
 	GeneratorInputDir string = "generator-input"
+	DefaultPushConfig string = "noreply-cloudsdk@google.com,Google Cloud SDK"
 )
 
 // Config holds all configuration values parsed from flags or environment
@@ -43,16 +44,6 @@ type Config struct {
 	//
 	// API Path is specified with the -api flag.
 	API string
-
-	// Source is the path to the root of the googleapis repository.
-	// When this is not specified, the googleapis repository is cloned
-	// automatically.
-	//
-	// Source is used by generate, update-apis and configure
-	// commands.
-	//
-	// Source is specified with the -source flag.
-	Source string
 
 	// ArtifactRoot is the path to previously-created release artifacts to be published.
 	// It is only used by the publish-release-artifacts command, and is expected
@@ -78,42 +69,10 @@ type Config struct {
 	// the tool is executing.
 	CI string
 
-	// DockerHostRootDir specifies the host view of a mount point that is
-	// mounted as DockerMountRootDir from the Librarian view, when Librarian
-	// is running in Docker. For example, if Librarian has been run via a command
-	// such as "docker run -v /home/user/librarian:/app" then DockerHostRootDir
-	// would be "/home/user/librarian" and DockerMountRootDir would be "/app".
-	//
-	// This information is required to enable Docker-in-Docker scenarios. When
-	// creating a Docker container for language-specific operations, the methods
-	// accepting directory names are all expected to be from the perspective of
-	// the Librarian code - but the mount point specified when running Docker
-	// from within Librarian needs to be specified from the host perspective,
-	// as the new Docker container is created as a sibling of the one running
-	// Librarian.
-	//
-	// For example, if we're in the scenario above, with
-	// DockerHostRootDir=/home/user/librarian and DockerMountRootDir=/app,
-	// executing a command which tries to mount the /app/work/googleapis directory
-	// as /apis in the container, the eventual Docker command would need to include
-	// "-v /home/user/librarian/work/googleapis:/apis"
-	//
-	// DockerHostRootDir and DockerMountDir are currently populated from
-	// LIBRARIAN_HOST_ROOT_DIR and LIBRARIAN_ROOT_DIR environment variables respectively.
-	// These are automatically supplied by Kokoro. Other Docker-in-Docker scenarios
-	// are not currently supported, but could be implemented by populating these
-	// configuration values in a similar way.
-	DockerHostRootDir string
-
-	// DockerMountRootDir specifies the Librarian view of a mount point that is
-	// mounted as DockerHostRootDir from the host view, when Librarian is running in
-	// Docker. See the documentation for DockerHostRootDir for more information.
-	DockerMountRootDir string
-
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
 	//
-	// GitHubToken is used by the configure, update-apis commands,
+	// GitHubToken is used by to configure, update-apis and update-image-tag commands,
 	// when Push is true. It is always used by publish-release-artifacts commands.
 	//
 	// GitHubToken is not specified by a flag, as flags are logged and the
@@ -121,25 +80,13 @@ type Config struct {
 	// LIBRARIAN_GITHUB_TOKEN environment variable.
 	GitHubToken string
 
-	// PushConfig specifies the email address and display name used in Git commits,
-	// in the format "email,name".
+	// HostMount is used to remap Docker mount paths when running in environments
+	// where Docker containers are siblings (e.g., Kokoro).
+	// It specifies a mount point from the Docker host into the Docker container.
+	// The format is "{host-dir}:{local-dir}".
 	//
-	// PushConfig is used in all commands that create commits in a language repository:
-	// configure and update-apis.
-	//
-	// PushConfig is optional. If unspecified, commits will use a default name of
-	// "Google Cloud SDK" and a default email of noreply-cloudsdk@google.com.
-	//
-	// PushConfig is specified with the -push-config flag.
-	PushConfig string
-
-	// UserGID is the group ID of the current user. It is used to run Docker
-	// containers with the same user, so that created files have the correct
-	// ownership.
-	//
-	// This is populated automatically after flag parsing. No user setup is
-	// expected.
-	UserGID string
+	// HostMount is specified with the -host-mount flag.
+	HostMount string
 
 	// Image is the language-specific container image to use for language-specific
 	// operations. It is primarily used for testing Librarian and/or new images.
@@ -159,9 +106,22 @@ type Config struct {
 	// variable.
 	LibrarianRepository string
 
+	// Project is the Google Cloud project containing Secret Manager secrets to
+	// provide to the language-specific container commands via environment variables.
+	//
+	// Project is used by all commands which perform language-specific operations.
+	// (This covers all commands other than merge-release-pr.)
+	// If no value is set, any language-specific operations which include an
+	// environment variable based on a secret will act as if the secret name
+	// wasn't set (so will just use a host environment variable or default value,
+	// if any).
+	//
+	// Project is specified with the -project flag.
+	Project string
+
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
-	// configure and update-apis.
+	// configure, update-apis and update-image-tag.
 	// These commands all create pull requests if they
 	//
 	// By default (when Push isn't explicitly specified), commits are created in
@@ -174,6 +134,18 @@ type Config struct {
 	//
 	// Push is specified with the -push flag. No value is required.
 	Push bool
+
+	// PushConfig specifies the email address and display name used in Git commits,
+	// in the format "email,name".
+	//
+	// PushConfig is used in all commands that create commits in a language repository:
+	// create-release-pr, configure, update-apis and update-image-tag.
+	//
+	// PushConfig is optional. If unspecified, commits will use a default name of
+	// "Google Cloud SDK" and a default email of noreply-cloudsdk@google.com.
+	//
+	// PushConfig is specified with the -push-config flag.
+	PushConfig string
 
 	// ReleaseID is the identifier of a release PR. Each release PR created by
 	// Librarian has a release ID, which is included in both the PR description and
@@ -195,7 +167,8 @@ type Config struct {
 	// Librarian-created changes with other changes.
 	//
 	// Repo is used by all commands which operate on a language repository:
-	// configure, create-release-artifacts, generate, update-apis.
+	// configure, create-release-artifacts, generate, update-apis,
+	// update-image-tag.
 	//
 	// When a local directory is specified for the generate command, the repo is checked to
 	// determine whether the specified API path is configured as a library. See the generate
@@ -206,17 +179,8 @@ type Config struct {
 	// Repo is specified with the -repo flag.
 	Repo string
 
-	// Project is the Google Cloud project containing Secret Manager secrets to
-	// provide to the language-specific container commands via environment variables.
-	//
-	// Project is used by all commands which perform language-specific operations.
-	// If no value is set, any language-specific operations which include an
-	// environment variable based on a secret will act as if the secret name
-	// wasn't set (so will just use a host environment variable or default value,
-	// if any).
-	//
-	// Project is specified with the -project flag.
-	Project string
+	// SkipIntegrationTests is used by the create-release-pr and create-release-artifacts
+	// commands, and disables integration tests if it is set to a non-empty value.
 
 	// SkipIntegrationTests is used by the create-release-artifacts
 	// command, and disables integration tests if it is set to a non-empty value.
@@ -224,6 +188,23 @@ type Config struct {
 	//
 	// SkipIntegrationTests is specified with the -skip-integration-tests flag.
 	SkipIntegrationTests string
+
+	// Source is the path to the root of the googleapis repository.
+	// When this is not specified, the googleapis repository is cloned
+	// automatically.
+	//
+	// Source is used by generate, update-apis, update-image-tag and configure
+	// commands.
+	//
+	// Source is specified with the -source flag.
+	Source string
+
+	// Tag is the new tag for the language-specific Docker image, used only by the
+	// update-image-tag command. All operations within update-image-tag are performed
+	// using the new tag.
+	//
+	// Tag is specified with the -tag flag.
+	Tag string
 
 	// TagRepoURL is the GitHub repository to push the tag and create a release
 	// in. This is only used in the publish-release-artifacts command:
@@ -233,6 +214,14 @@ type Config struct {
 	//
 	// TagRepoURL is specified with the -tag-repo-url flag.
 	TagRepoURL string
+
+	// UserGID is the group ID of the current user. It is used to run Docker
+	// containers with the same user, so that created files have the correct
+	// ownership.
+	//
+	// This is populated automatically after flag parsing. No user setup is
+	// expected.
+	UserGID string
 
 	// UserUID is the user ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
@@ -254,9 +243,8 @@ type Config struct {
 // New returns a new Config populated with environment variables.
 func New() *Config {
 	return &Config{
-		DockerHostRootDir:  os.Getenv("LIBRARIAN_HOST_ROOT_DIR"),
-		DockerMountRootDir: os.Getenv("LIBRARIAN_ROOT_DIR"),
-		GitHubToken:        os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		GitHubToken: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		PushConfig:  DefaultPushConfig,
 	}
 }
 
@@ -281,9 +269,40 @@ func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
 		return false, errors.New("no GitHub token supplied for push")
 	}
-	parts := strings.Split(c.PushConfig, ",")
-	if len(parts) != 2 {
+
+	if _, err := validatePushConfig(c.PushConfig, DefaultPushConfig); err != nil {
+		return false, err
+	}
+
+	if _, err := validateHostMount(c.HostMount, ""); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func validateHostMount(hostMount, defaultValue string) (bool, error) {
+	if hostMount == defaultValue {
+		return true, nil
+	}
+
+	parts := strings.Split(hostMount, ":")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false, errors.New("unable to parse host mount")
+	}
+
+	return true, nil
+}
+
+func validatePushConfig(pushConfig, defaultValue string) (bool, error) {
+	if pushConfig == defaultValue {
+		return true, nil
+	}
+
+	parts := strings.Split(pushConfig, ",")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 		return false, errors.New("unable to parse push config")
 	}
+
 	return true, nil
 }

@@ -31,36 +31,30 @@ func TestNew(t *testing.T) {
 		{
 			name: "All environment variables set",
 			envVars: map[string]string{
-				"LIBRARIAN_HOST_ROOT_DIR":   "/host/root",
-				"LIBRARIAN_ROOT_DIR":        "/mount/root",
 				"LIBRARIAN_GITHUB_TOKEN":    "gh_token",
 				"LIBRARIAN_SYNC_AUTH_TOKEN": "sync_token",
 			},
 			want: Config{
-				DockerHostRootDir:  "/host/root",
-				DockerMountRootDir: "/mount/root",
-				GitHubToken:        "gh_token",
+				GitHubToken: "gh_token",
+				PushConfig:  DefaultPushConfig,
 			},
 		},
 		{
 			name:    "No environment variables set",
 			envVars: map[string]string{},
 			want: Config{
-				DockerHostRootDir:  "",
-				DockerMountRootDir: "",
-				GitHubToken:        "",
+				GitHubToken: "",
+				PushConfig:  DefaultPushConfig,
 			},
 		},
 		{
 			name: "Some environment variables set",
 			envVars: map[string]string{
-				"LIBRARIAN_HOST_ROOT_DIR": "/host/root",
-				"LIBRARIAN_GITHUB_TOKEN":  "gh_token",
+				"LIBRARIAN_GITHUB_TOKEN": "gh_token",
 			},
 			want: Config{
-				DockerHostRootDir:  "/host/root",
-				DockerMountRootDir: "",
-				GitHubToken:        "gh_token",
+				GitHubToken: "gh_token",
+				PushConfig:  DefaultPushConfig,
 			},
 		},
 	} {
@@ -182,6 +176,36 @@ func TestIsValid(t *testing.T) {
 			wantValid: false,
 			wantErr:   true,
 		},
+		{
+			name: "Invalid config - host mount invalid, missing local-dir",
+			cfg: Config{
+				Push:       false,
+				PushConfig: "def@ghi.com,abc",
+				HostMount:  "host-dir:",
+			},
+			wantValid: false,
+			wantErr:   true,
+		},
+		{
+			name: "Invalid config - host mount invalid, missing host-dir",
+			cfg: Config{
+				Push:       false,
+				PushConfig: "def@ghi.com,abc",
+				HostMount:  ":local-dir",
+			},
+			wantValid: false,
+			wantErr:   true,
+		},
+		{
+			name: "Invalid config - host mount invalid, missing separator",
+			cfg: Config{
+				Push:       false,
+				PushConfig: "def@ghi.com,abc",
+				HostMount:  "host-dir/local-dir",
+			},
+			wantValid: false,
+			wantErr:   true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotValid, err := test.cfg.IsValid()
@@ -193,7 +217,11 @@ func TestIsValid(t *testing.T) {
 			if (err != nil) != test.wantErr {
 				t.Errorf("IsValid() got error = %v, want error = %t", err, test.wantErr)
 			}
-			if test.wantErr && err != nil && err.Error() != "no GitHub token supplied for push" && err.Error() != "unable to parse push config" {
+			if test.wantErr &&
+				err != nil &&
+				err.Error() != "no GitHub token supplied for push" &&
+				err.Error() != "unable to parse push config" &&
+				err.Error() != "unable to parse host mount" {
 				t.Errorf("IsValid() got unexpected error message: %q", err.Error())
 			}
 		})

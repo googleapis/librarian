@@ -27,20 +27,34 @@ func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
-func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
-}
-
 func addFlagArtifactRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.ArtifactRoot, "artifact-root", "", "Path to root of release artifacts to publish (as created by create-release-artifacts)")
+}
+
+func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Branch, "branch", "main", "repository branch")
 }
 
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
 }
 
+func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
+	defaultValue := ""
+	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue, "a mount point from Docker host and within the Docker. The format is {host-dir}:{local-dir}.")
+}
+
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
+}
+
+func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
+}
+
+func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
+	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
+	fs.StringVar(&cfg.PushConfig, "push-config", "noreply-cloudsdk@google.com,Google Cloud SDK", "The user and email for Git commits, in the format \"user:email\"")
 }
 
 func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
@@ -51,12 +65,16 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
 }
 
-func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
-}
-
 func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.SkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
+}
+
+func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+}
+
+func addFlagTag(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Tag, "tag", "", "new tag for the language-specific container image.")
 }
 
 func addFlagTagRepoUrl(fs *flag.FlagSet, cfg *config.Config) {
@@ -74,7 +92,7 @@ func validateSkipIntegrationTests(skipIntegrationTests string) error {
 	return nil
 }
 
-// Validate that the flag with the given name has been provided.
+// validateRequiredFlag validates that the flag with the given name has been provided.
 // TODO(https://github.com/googleapis/librarian/issues/488): add support for required string flags
 // We should rework how we add flags so that these can be validated before we even
 // start executing the command. (At least for simple cases where a flag is required;
