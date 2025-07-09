@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -150,18 +151,15 @@ func executeGenerate(ctx context.Context, cfg *config.Config, workRoot string, l
 	if cfg.Build {
 		if libraryID != "" {
 			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-			if err := containerConfig.Clean(ctx, cfg, languageRepo.Dir, libraryID); err != nil {
-				return err
-			}
+			// TODO(https://github.com/googleapis/librarian/issues/775)
 			if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 				return err
 			}
-			if err := containerConfig.BuildLibrary(ctx, cfg, languageRepo.Dir, libraryID); err != nil {
+			if err := containerConfig.Build(ctx, cfg, languageRepo.Dir, libraryID); err != nil {
 				return err
 			}
-		} else if err := containerConfig.BuildRaw(ctx, cfg, outputDir, cfg.API); err != nil {
-			return err
 		}
+		slog.Warn("Cannot perform build, missing library ID")
 	}
 	return nil
 }
@@ -187,11 +185,10 @@ func runGenerateCommand(ctx context.Context, cfg *config.Config, outputDir strin
 		}
 		generatorInput := filepath.Join(languageRepo.Dir, config.GeneratorInputDir)
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		return libraryID, containerConfig.GenerateLibrary(ctx, cfg, apiRoot, outputDir, generatorInput, libraryID)
-	} else {
-		slog.Info("No matching library found (or no repo specified); performing raw generation", "path", cfg.API)
-		return "", containerConfig.GenerateRaw(ctx, cfg, apiRoot, outputDir, cfg.API)
+		return libraryID, containerConfig.Generate(ctx, cfg, apiRoot, outputDir, generatorInput, libraryID)
 	}
+	slog.Info("No matching library found (or no repo specified)", "path", cfg.API)
+	return "", fmt.Errorf("library not found")
 }
 
 // detectIfLibraryConfigured returns whether a library has been configured for

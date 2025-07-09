@@ -172,7 +172,7 @@ func updateImageTag(ctx context.Context, cfg *config.Config, startTime time.Time
 
 	// Build everything at the end. (This is more efficient than building each library with a separate container invocation.)
 	slog.Info("Building all libraries.")
-	if err := containerConfig.BuildLibrary(ctx, cfg, languageRepo.Dir, ""); err != nil {
+	if err := containerConfig.Build(ctx, cfg, languageRepo.Dir, ""); err != nil {
 		return err
 	}
 
@@ -203,10 +203,7 @@ func regenerateLibrary(ctx context.Context, cfg *config.Config, apiRepo *gitrepo
 		return err
 	}
 
-	if err := containerConfig.GenerateLibrary(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.ID); err != nil {
-		return err
-	}
-	if err := containerConfig.Clean(ctx, cfg, languageRepo.Dir, library.ID); err != nil {
+	if err := containerConfig.Generate(ctx, cfg, apiRepo.Dir, outputDir, generatorInput, library.ID); err != nil {
 		return err
 	}
 	if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {

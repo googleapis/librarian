@@ -142,13 +142,6 @@ func publishReleaseArtifacts(ctx context.Context, containerConfig *docker.Docker
 }
 
 func publishPackages(ctx context.Context, config *docker.Docker, cfg *config.Config, releases []LibraryRelease) error {
-	for _, release := range releases {
-		outputDir := filepath.Join(cfg.ArtifactRoot, release.LibraryID)
-		if err := config.PublishLibrary(ctx, cfg, outputDir, release.LibraryID, release.Version); err != nil {
-			return err
-		}
-	}
-	slog.Info("All packages published.")
 	return nil
 }
 

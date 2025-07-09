@@ -24,7 +24,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -36,35 +35,13 @@ type Command string
 
 // The set of commands passed to the language container, in a single place to avoid typos.
 const (
-	// CommandGenerateRaw performs raw (unconfigured) generation.
-	CommandGenerateRaw Command = "generate-raw"
-	// CommandGenerateLibrary performs generation for a configured library.
-	CommandGenerateLibrary Command = "generate-library"
-	// CommandClean cleans files generated for a library.
-	CommandClean Command = "clean"
-	// CommandBuildRaw builds the results of generate-raw.
-	CommandBuildRaw Command = "build-raw"
-	// CommandBuildLibrary builds a library.
-	CommandBuildLibrary Command = "build-library"
+	// CommandGenerate performs generation for a configured library.
+	CommandGenerate Command = "generate"
+	// CommandBuild builds a library.
+	CommandBuild Command = "build"
 	// CommandConfigure configures a new API as a library.
 	CommandConfigure Command = "configure"
-	// CommandPrepareLibraryRelease prepares a repository for the release of a library.
-	CommandPrepareLibraryRelease Command = "prepare-library-release"
-	// CommandIntegrationTestLibrary runs integration tests on a library.
-	CommandIntegrationTestLibrary Command = "integration-test-library"
-	// CommandPackageLibrary packages a library's artifacts for publication.
-	CommandPackageLibrary Command = "package-library"
-	// CommandPublishLibrary publishes a library's artifacts.
-	CommandPublishLibrary Command = "publish-library"
 )
-
-var networkEnabledCommands = []Command{
-	CommandBuildRaw,
-	CommandBuildLibrary,
-	CommandIntegrationTestLibrary,
-	CommandPackageLibrary,
-	CommandPublishLibrary,
-}
 
 // Docker contains all the information required to run language-specific
 // Docker containers.
@@ -102,32 +79,12 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 	return docker, nil
 }
 
-// GenerateRaw performs generation for an API not configured in a library.
-// This does not have any context from a language repo: it requires
-// generation purely on the basis of the API specification, which is in
-// the subdirectory apiPath of the API specification repo apiRoot, and whatever
-// is in the language-specific Docker container. The code is generated
-// in the output directory, which is initially empty.
-func (c *Docker) GenerateRaw(ctx context.Context, cfg *config.Config, apiRoot, output, apiPath string) error {
-	commandArgs := []string{
-		"--source=/apis",
-		"--output=/output",
-		fmt.Sprintf("--api=%s", apiPath),
-	}
-	mounts := []string{
-		fmt.Sprintf("%s:/apis", apiRoot),
-		fmt.Sprintf("%s:/output", output),
-	}
-
-	return c.runDocker(ctx, cfg, CommandGenerateRaw, mounts, commandArgs)
-}
-
-// GenerateLibrary performs generation for an API which is configured as part of a library.
+// Generate performs generation for an API which is configured as part of a library.
 // apiRoot specifies the root directory of the API specification repo,
 // output specifies the empty output directory into which the command should
 // generate code, and libraryID specifies the ID of the library to generate,
 // as configured in the Librarian state file for the repository.
-func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
+func (c *Docker) Generate(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
 	commandArgs := []string{
 		"--source=/apis",
 		"--output=/output",
@@ -140,40 +97,12 @@ func (c *Docker) GenerateLibrary(ctx context.Context, cfg *config.Config, apiRoo
 		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
 	}
 
-	return c.runDocker(ctx, cfg, CommandGenerateLibrary, mounts, commandArgs)
+	return c.runDocker(ctx, cfg, CommandGenerate, mounts, commandArgs)
 }
 
-// Clean deletes files within repoRoot which are generated for library
-// libraryID, as configured in the Librarian state file for the repository.
-func (c *Docker) Clean(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
-	mounts := []string{
-		fmt.Sprintf("%s:/repo", repoRoot),
-	}
-	commandArgs := []string{
-		"--repo-root=/repo",
-		fmt.Sprintf("--library-id=%s", libraryID),
-	}
-
-	return c.runDocker(ctx, cfg, CommandClean, mounts, commandArgs)
-}
-
-// BuildRaw builds the result of GenerateRaw, which previously generated
-// code for apiPath in generatorOutput.
-func (c *Docker) BuildRaw(ctx context.Context, cfg *config.Config, generatorOutput, apiPath string) error {
-	mounts := []string{
-		fmt.Sprintf("%s:/generator-output", generatorOutput),
-	}
-	commandArgs := []string{
-		"--generator-output=/generator-output",
-		fmt.Sprintf("--api=%s", apiPath),
-	}
-
-	return c.runDocker(ctx, cfg, CommandBuildRaw, mounts, commandArgs)
-}
-
-// BuildLibrary builds the library with an ID of libraryID, as configured in
+// Build builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
-func (c *Docker) BuildLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
+func (c *Docker) Build(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
 	mounts := []string{
 		fmt.Sprintf("%s:/repo", repoRoot),
 	}
@@ -183,7 +112,7 @@ func (c *Docker) BuildLibrary(ctx context.Context, cfg *config.Config, repoRoot,
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 
-	return c.runDocker(ctx, cfg, CommandBuildLibrary, mounts, commandArgs)
+	return c.runDocker(ctx, cfg, CommandBuild, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -203,70 +132,6 @@ func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, api
 	}
 
 	return c.runDocker(ctx, cfg, CommandConfigure, mounts, commandArgs)
-}
-
-// PrepareLibraryRelease prepares the repository languageRepo for the release of a library with
-// ID libraryID within repoRoot, with version releaseVersion. Release notes
-// are expected to be present within inputsDirectory, in a file named
-// `{libraryID}-{releaseVersion}-release-notes.txt`.
-func (c *Docker) PrepareLibraryRelease(ctx context.Context, cfg *config.Config, repoRoot, inputsDirectory, libraryID, releaseVersion string) error {
-	commandArgs := []string{
-		"--repo-root=/repo",
-		fmt.Sprintf("--library-id=%s", libraryID),
-		fmt.Sprintf("--release-notes=/inputs/%s-%s-release-notes.txt", libraryID, releaseVersion),
-		fmt.Sprintf("--version=%s", releaseVersion),
-	}
-	mounts := []string{
-		fmt.Sprintf("%s:/repo", repoRoot),
-		fmt.Sprintf("%s:/inputs", inputsDirectory),
-	}
-
-	return c.runDocker(ctx, cfg, CommandPrepareLibraryRelease, mounts, commandArgs)
-}
-
-// IntegrationTestLibrary runs the integration tests for a library with ID libraryID within repoRoot.
-func (c *Docker) IntegrationTestLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
-	commandArgs := []string{
-		"--repo-root=/repo",
-		fmt.Sprintf("--library-id=%s", libraryID),
-	}
-	mounts := []string{
-		fmt.Sprintf("%s:/repo", repoRoot),
-	}
-
-	return c.runDocker(ctx, cfg, CommandIntegrationTestLibrary, mounts, commandArgs)
-}
-
-// PackageLibrary packages release artifacts for a library with ID libraryID within repoRoot,
-// creating the artifacts within output.
-func (c *Docker) PackageLibrary(ctx context.Context, cfg *config.Config, repoRoot, libraryID, output string) error {
-	commandArgs := []string{
-		"--repo-root=/repo",
-		"--output=/output",
-		fmt.Sprintf("--library-id=%s", libraryID),
-	}
-	mounts := []string{
-		fmt.Sprintf("%s:/repo", repoRoot),
-		fmt.Sprintf("%s:/output", output),
-	}
-
-	return c.runDocker(ctx, cfg, CommandPackageLibrary, mounts, commandArgs)
-}
-
-// PublishLibrary publishes release artifacts for a library with ID libraryID and version releaseVersion
-// to package managers, documentation sites etc. The artifacts will previously have been
-// created by PackageLibrary.
-func (c *Docker) PublishLibrary(ctx context.Context, cfg *config.Config, output, libraryID, releaseVersion string) error {
-	commandArgs := []string{
-		"--package-output=/output",
-		fmt.Sprintf("--library-id=%s", libraryID),
-		fmt.Sprintf("--version=%s", releaseVersion),
-	}
-	mounts := []string{
-		fmt.Sprintf("%s:/output", output),
-	}
-
-	return c.runDocker(ctx, cfg, CommandPublishLibrary, mounts, commandArgs)
 }
 
 func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
@@ -299,9 +164,6 @@ func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Comm
 				err = cerr
 			}
 		}()
-	}
-	if !slices.Contains(networkEnabledCommands, command) {
-		args = append(args, "--network=none")
 	}
 	args = append(args, c.Image)
 	args = append(args, string(command))
