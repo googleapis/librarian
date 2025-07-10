@@ -202,6 +202,9 @@ func ParseUrl(remoteUrl string) (*Repository, error) {
 	}
 	remotePath := remoteUrl[len("https://github.com/"):]
 	pathParts := strings.Split(remotePath, "/")
+	if len(pathParts) < 2 {
+		return nil, fmt.Errorf("invalid URL format: %s", remoteUrl)
+	}
 	organization := pathParts[0]
 	repoName := pathParts[1]
 	repoName = strings.TrimSuffix(repoName, ".git")
