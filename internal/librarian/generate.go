@@ -184,7 +184,7 @@ func runGenerateCommand(ctx context.Context, cfg *config.Config, outputDir strin
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
 		generateRequest := filepath.Join(languageRepo.Dir, config.LibrarianDir, config.GenerateRequest)
-		generatorInput := filepath.Join(languageRepo.Dir, config.LibrarianDir, config.GeneratorInputDir)
+		generatorInput := filepath.Join(languageRepo.Dir, config.GeneratorInputDir)
 		slog.Info("Performing refined generation for library", "id", libraryID)
 		return libraryID, containerConfig.Generate(ctx, cfg, apiRoot, outputDir, generateRequest, generatorInput, libraryID)
 	}

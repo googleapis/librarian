@@ -125,12 +125,12 @@ func (c *Docker) Build(ctx context.Context, cfg *config.Config, repoRoot, librar
 func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error {
 	commandArgs := []string{
 		"--source=/apis",
-		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
+		"--generator-input=/generator-input",
 		fmt.Sprintf("--api=%s", apiPath),
 	}
 	mounts := []string{
 		fmt.Sprintf("%s:/apis", apiRoot),
-		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
+		fmt.Sprintf("%s:/generator-input", generatorInput),
 	}
 
 	return c.runDocker(ctx, cfg, CommandConfigure, mounts, commandArgs)

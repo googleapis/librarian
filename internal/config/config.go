@@ -27,7 +27,7 @@ const (
 	DefaultPushConfig string = "noreply-cloudsdk@google.com,Google Cloud SDK"
 	// GeneratorInputDir is the default directory to store files that generator
 	// needs to regenerate libraries from an empty directory.
-	GeneratorInputDir string = "generator-input"
+	GeneratorInputDir string = ".librarian/generator-input"
 	// GenerateRequest is a JSON file that describes which library to generate.
 	GenerateRequest string = "generate-request.json"
 	// LibrarianDir is the default directory to store librarian state/config files,
