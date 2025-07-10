@@ -56,7 +56,7 @@ func loadPipelineStateFile(path string) (*config.PipelineState, error) {
 }
 
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
-	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, "pipeline-config.json")
+	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineConfigFile)
 	return loadPipelineConfigFile(path)
 }
 
