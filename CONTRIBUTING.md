@@ -23,6 +23,19 @@ two reviewers. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+
+### Multi-Approvers Check
+
+Each pull request must be approved by two Googlers. This is enforced by an
+automated multi-approvers check. This check may not automatically re-run
+after the second approval is added. If it remains in a failed state, you
+can manually re-trigger it by:
+
+1. Clicking "View details" on the failed workflow to bring you to the "Actions" page.
+2. Clicking "Re-run failed jobs".
+
+For more information, see [Re-running failed jobs in a workflow](https://docs.github.com/en/actions/how-tos/managing-workflow-runs-and-deployments/managing-workflow-runs/re-running-workflows-and-jobs#re-running-failed-jobs-in-a-workflow).
+
 ## Community Guidelines
 
 This project follows

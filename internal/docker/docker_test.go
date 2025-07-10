@@ -24,6 +24,36 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestNew(t *testing.T) {
+	const (
+		testWorkRoot       = "testWorkRoot"
+		testImage          = "testImage"
+		testSecretsProject = "testSecretsProject"
+		testUID            = "1000"
+		testGID            = "1001"
+	)
+	pipelineConfig := &config.PipelineConfig{}
+	d, err := New(testWorkRoot, testImage, testSecretsProject, testUID, testGID, pipelineConfig)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if d.Image != testImage {
+		t.Errorf("d.Image = %q, want %q", d.Image, testImage)
+	}
+	if d.uid != testUID {
+		t.Errorf("d.uid = %q, want %q", d.uid, testUID)
+	}
+	if d.gid != testGID {
+		t.Errorf("d.gid = %q, want %q", d.gid, testGID)
+	}
+	if d.env == nil {
+		t.Error("d.env is nil")
+	}
+	if d.run == nil {
+		t.Error("d.run is nil")
+	}
+}
+
 func TestDockerRun(t *testing.T) {
 	const (
 		testUID             = "1000"
@@ -43,7 +73,9 @@ func TestDockerRun(t *testing.T) {
 	)
 
 	cfg := &config.Config{}
-
+	cfgInDocker := &config.Config{
+		HostMount: "hostDir:localDir",
+	}
 	for _, test := range []struct {
 		name       string
 		docker     *Docker
@@ -51,64 +83,20 @@ func TestDockerRun(t *testing.T) {
 		want       []string
 	}{
 		{
-			name: "GenerateRaw",
+			name: "Generate",
 			docker: &Docker{
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.GenerateRaw(ctx, cfg, testAPIRoot, testOutput, testAPIPath)
-			},
-			want: []string{
-				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
-				"-v", fmt.Sprintf("%s:/output", testOutput),
-				"--network=none",
-				testImage,
-				string(CommandGenerateRaw),
-				"--source=/apis",
-				"--output=/output",
-				fmt.Sprintf("--api=%s", testAPIPath),
-			},
-		},
-		{
-			name: "GenerateRaw with user",
-			docker: &Docker{
-				Image: testImage,
-				uid:   testUID,
-				gid:   testGID,
-			},
-			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.GenerateRaw(ctx, cfg, testAPIRoot, testOutput, testAPIPath)
-			},
-			want: []string{
-				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
-				"-v", fmt.Sprintf("%s:/output", testOutput),
-				"--user", fmt.Sprintf("%s:%s", testUID, testGID),
-				"--network=none",
-				testImage,
-				string(CommandGenerateRaw),
-				"--source=/apis",
-				"--output=/output",
-				fmt.Sprintf("--api=%s", testAPIPath),
-			},
-		},
-		{
-			name: "GenerateLibrary",
-			docker: &Docker{
-				Image: testImage,
-			},
-			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.GenerateLibrary(ctx, cfg, testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
+				return d.Generate(ctx, cfg, testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
-				"--network=none",
 				testImage,
-				string(CommandGenerateLibrary),
+				string(CommandGenerate),
 				"--source=/apis",
 				"--output=/output",
 				"--generator-input=/generator-input",
@@ -116,53 +104,39 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: "Clean",
+			name: "Generate runs in docker",
 			docker: &Docker{
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Clean(ctx, cfg, testRepoRoot, testLibraryID)
+				return d.Generate(ctx, cfgInDocker, testAPIRoot, "hostDir", testGeneratorInput, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/repo", testRepoRoot),
-				"--network=none",
+				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
+				"-v", "localDir:/output",
+				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
 				testImage,
-				string(CommandClean),
-				"--repo-root=/repo",
+				string(CommandGenerate),
+				"--source=/apis",
+				"--output=/output",
+				"--generator-input=/generator-input",
 				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 		},
 		{
-			name: "BuildRaw",
+			name: "Build",
 			docker: &Docker{
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.BuildRaw(ctx, cfg, testGeneratorOutput, testAPIPath)
-			},
-			want: []string{
-				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/generator-output", testGeneratorOutput),
-				testImage,
-				string(CommandBuildRaw),
-				"--generator-output=/generator-output",
-				fmt.Sprintf("--api=%s", testAPIPath),
-			},
-		},
-		{
-			name: "BuildLibrary",
-			docker: &Docker{
-				Image: testImage,
-			},
-			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.BuildLibrary(ctx, cfg, testRepoRoot, testLibraryID)
+				return d.Build(ctx, cfg, testRepoRoot, testLibraryID)
 			},
 			want: []string{
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s:/repo", testRepoRoot),
 				testImage,
-				string(CommandBuildLibrary),
+				string(CommandBuild),
 				"--repo-root=/repo",
 				"--test=true",
 				fmt.Sprintf("--library-id=%s", testLibraryID),
@@ -180,87 +154,11 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
 				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
-				"--network=none",
 				testImage,
 				string(CommandConfigure),
 				"--source=/apis",
 				"--generator-input=/generator-input",
 				fmt.Sprintf("--api=%s", testAPIPath),
-			},
-		},
-		{
-			name: "PrepareLibraryRelease",
-			docker: &Docker{
-				Image: testImage,
-			},
-			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.PrepareLibraryRelease(ctx, cfg, testLanguageRepo, testInputsDirectory, testLibraryID, testReleaseVersion)
-			},
-			want: []string{
-				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/repo", testLanguageRepo),
-				"-v", fmt.Sprintf("%s:/inputs", testInputsDirectory),
-				"--network=none",
-				testImage,
-				string(CommandPrepareLibraryRelease),
-				"--repo-root=/repo",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
-				fmt.Sprintf("--release-notes=/inputs/%s-%s-release-notes.txt", testLibraryID, testReleaseVersion),
-				fmt.Sprintf("--version=%s", testReleaseVersion),
-			},
-		},
-		{
-			name: "IntegrationTestLibrary",
-			docker: &Docker{
-				Image: testImage,
-			},
-			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.IntegrationTestLibrary(ctx, cfg, testLanguageRepo, testLibraryID)
-			},
-			want: []string{
-				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/repo", testLanguageRepo),
-				testImage,
-				string(CommandIntegrationTestLibrary),
-				"--repo-root=/repo",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
-			},
-		},
-		{
-			name: "PackageLibrary",
-			docker: &Docker{
-				Image: testImage,
-			},
-			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.PackageLibrary(ctx, cfg, testLanguageRepo, testLibraryID, testOutput)
-			},
-			want: []string{
-				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/repo", testLanguageRepo),
-				"-v", fmt.Sprintf("%s:/output", testOutput),
-				testImage,
-				string(CommandPackageLibrary),
-				"--repo-root=/repo",
-				"--output=/output",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
-			},
-		},
-		{
-			name: "PublishLibrary",
-			docker: &Docker{
-				Image: testImage,
-			},
-			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.PublishLibrary(ctx, cfg, testOutput, testLibraryID, testLibraryVersion)
-			},
-			want: []string{
-				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/output", testOutput),
-				testImage,
-				string(CommandPublishLibrary),
-				"--package-output=/output",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
-				fmt.Sprintf("--version=%s", testLibraryVersion),
 			},
 		},
 	} {

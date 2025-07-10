@@ -14,7 +14,7 @@
 
 // Package librarian contains the business logic for the Librarian CLI.
 // Implementation details for interacting with other systems (Git, GitHub,
-// Docker etc) are abstracted into other packages.
+// Docker etc.) are abstracted into other packages.
 package librarian
 
 import (
@@ -36,11 +36,7 @@ func init() {
 	CmdLibrarian.Init()
 	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
 		cmdGenerate,
-		cmdCreateReleasePR,
-		cmdUpdateImageTag,
-		cmdMergeReleasePR,
 		cmdCreateReleaseArtifacts,
-		cmdPublishReleaseArtifacts,
 		cmdVersion,
 	)
 }
@@ -69,6 +65,9 @@ func Run(ctx context.Context, arg ...string) error {
 	slog.Info("librarian", "arguments", arg)
 	if err := cmd.Config.SetupUser(); err != nil {
 		return fmt.Errorf("failed to setup user config: %w", err)
+	}
+	if _, err := cmd.Config.IsValid(); err != nil {
+		return fmt.Errorf("failed to validate config: %s", err)
 	}
 	return cmd.Run(ctx, cmd.Config)
 }

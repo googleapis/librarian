@@ -1,5 +1,3 @@
-#!/bin/sh
-
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Regenerates the code in internal/statepb from the protos in the proto/
-# directory. (See proto/README.md for why we have those protos.)
-# Requirements: protoc and the protoc-gen-go plugin are in the path.
-# Install protoc-gen-go with:
-#   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-# (and make sure your go/bin directory is in your path)
+# TODO(https://github.com/googleapis/librarian/issues/744): restore target to 90%
 
-protoc -I=proto --go_out=internal/statepb --go_opt=paths=source_relative proto/*.proto
+coverage:
+  status:
+    project:
+      default:
+        target: 19% # The target coverage percentage for the project
+        threshold: 0% # Allow 0% drop from the target; any drop below target will fail
+        if_ci_failed: error # Set the CI status to 'error' if coverage conditions are not met

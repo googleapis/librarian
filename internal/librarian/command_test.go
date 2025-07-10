@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
 
 func TestCommandUsage(t *testing.T) {
@@ -47,7 +47,7 @@ func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		imageOverride string
-		state         *statepb.PipelineState
+		state         *config.PipelineState
 		want          string
 		wantErr       bool
 	}{
@@ -60,7 +60,7 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "with image override, non-nil state",
 			imageOverride: "my/custom-image:v1",
-			state:         &statepb.PipelineState{ImageTag: "v1.2.3"},
+			state:         &config.PipelineState{ImageTag: "v1.2.3"},
 			want:          "my/custom-image:v1",
 		},
 		{
@@ -72,13 +72,13 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "no override, with state",
 			imageOverride: "",
-			state:         &statepb.PipelineState{ImageTag: "v1.2.3"},
+			state:         &config.PipelineState{ImageTag: "v1.2.3"},
 			want:          "v1.2.3",
 		},
 		{
 			name:          "no override, with state, empty tag",
 			imageOverride: "",
-			state:         &statepb.PipelineState{ImageTag: ""},
+			state:         &config.PipelineState{ImageTag: ""},
 			wantErr:       true,
 		},
 	} {
@@ -346,7 +346,7 @@ func TestCommitAll(t *testing.T) {
 
 			test.setup(t, repoDir)
 
-			if err := commitAll(repo, "test commit", "tester", "tester@example.com"); err != nil {
+			if err := commitAll(repo, "test commit", "tester@example.com,tester"); err != nil {
 				t.Errorf("commitAll() error = %v, wantErr nil", err)
 			}
 
@@ -358,6 +358,59 @@ func TestCommitAll(t *testing.T) {
 			hasCommitted := initialHead != finalHead
 			if hasCommitted != test.wantCommit {
 				t.Errorf("commitAll() commit status = %v, want %v", hasCommitted, test.wantCommit)
+			}
+		})
+	}
+}
+
+func TestParsePushConfig(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		pushConfig string
+		wantEmail  string
+		wantName   string
+		wantErr    bool
+	}{
+		{
+			name:       "valid input",
+			pushConfig: "tester@example.com,tester",
+			wantEmail:  "tester@example.com",
+			wantName:   "tester",
+		},
+		{
+			name:       "invalid input, too few parts",
+			pushConfig: "tester@example.com",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid input, too many parts",
+			pushConfig: "tester@example.com,tester,extra",
+			wantErr:    true,
+		},
+		{
+			name:       "empty input",
+			pushConfig: "",
+			wantErr:    true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotEmail, gotName, err := parsePushConfig(test.pushConfig)
+
+			if test.wantErr {
+				if err == nil {
+					t.Error("parsePushConfig() expected an error but got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("parsePushConfig() got unexpected error: %v", err)
+				return
+			}
+			if gotEmail != test.wantEmail {
+				t.Errorf("parsePushConfig() email = %q, want %q", gotEmail, test.wantEmail)
+			}
+			if gotName != test.wantName {
+				t.Errorf("parsePushConfig() name = %q, want %q", gotName, test.wantName)
 			}
 		})
 	}

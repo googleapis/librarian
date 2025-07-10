@@ -25,38 +25,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"github.com/googleapis/librarian/internal/statepb"
 )
-
-const releaseIDEnvVarName = "_RELEASE_ID"
-
-// commandState holds all necessary information for a command execution.
-type commandState struct {
-	// startTime records when the command began execution. This is used as a
-	// consistent timestamp for commands when necessary.
-	startTime time.Time
-
-	// workRoot is the base directory for all command operations. The default
-	// location is /tmp.
-	workRoot string
-
-	// languageRepo is the relevant language-specific Git repository, if
-	// applicable.
-	languageRepo *gitrepo.Repository
-
-	// pipelineConfig holds the pipeline configuration, loaded from the
-	// language repo if present.
-	pipelineConfig *statepb.PipelineConfig
-
-	// pipelineState holds the pipeline's current state, loaded from the
-	// language repo if present.
-	pipelineState *statepb.PipelineState
-
-	// containerConfig provides settings for running containerized commands.
-	containerConfig *docker.Docker
-}
 
 func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
 	if repo == "" {
@@ -104,53 +76,43 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 // ContainerState based on all of the above. This should be used by all commands
 // which always have a language repo. Commands which only conditionally use
 // language repos should construct the command state themselves.
-func createCommandStateForLanguage(workRootOverride, repo, imageOverride,
-	project, ci, uid, gid string) (*commandState, error) {
-	startTime := time.Now()
-	workRoot, err := createWorkRoot(startTime, workRootOverride)
+func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (
+	startTime time.Time,
+	workRoot string,
+	languageRepo *gitrepo.Repository,
+	pipelineConfig *config.PipelineConfig,
+	pipelineState *config.PipelineState,
+	containerConfig *docker.Docker,
+	err error,
+) {
+	startTime = time.Now()
+	workRoot, err = createWorkRoot(startTime, workRootOverride)
 	if err != nil {
-		return nil, err
+		return
 	}
-	languageRepo, err := cloneOrOpenLanguageRepo(workRoot, repo, ci)
+	languageRepo, err = cloneOrOpenLanguageRepo(workRoot, repo, ci)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	ps, config, err := loadRepoStateAndConfig(languageRepo)
+	pipelineState, pipelineConfig, err = loadRepoStateAndConfig(languageRepo)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	image, err := deriveImage(imageOverride, ps)
+	image, err := deriveImage(imageOverride, pipelineState)
 	if err != nil {
-		return nil, err
+		return
 	}
-	containerConfig, err := docker.New(workRoot, image, project, uid, gid, config)
+	containerConfig, err = docker.New(workRoot, image, project, uid, gid, pipelineConfig)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	state := &commandState{
-		startTime:       startTime,
-		workRoot:        workRoot,
-		languageRepo:    languageRepo,
-		pipelineConfig:  config,
-		pipelineState:   ps,
-		containerConfig: containerConfig,
-	}
-	return state, nil
+	return startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig, nil
 }
 
-func appendResultEnvironmentVariable(workRoot, name, value, envFileOverride string) error {
-	envFile := envFileOverride
-	if envFile == "" {
-		envFile = filepath.Join(workRoot, "env-vars.txt")
-	}
-
-	return appendToFile(envFile, fmt.Sprintf("%s=%s\n", name, value))
-}
-
-func deriveImage(imageOverride string, state *statepb.PipelineState) (string, error) {
+func deriveImage(imageOverride string, state *config.PipelineState) (string, error) {
 	if imageOverride != "" {
 		return imageOverride, nil
 	}
@@ -165,25 +127,16 @@ func deriveImage(imageOverride string, state *statepb.PipelineState) (string, er
 	return state.ImageTag, nil
 }
 
-// Finds a library which includes code generated from the given API path.
+// findLibraryIDByAPIPath finds a library which includes code generated from the given API path.
 // If there are no such libraries, an empty string is returned.
 // If there are multiple such libraries, the first match is returned.
-func findLibraryIDByApiPath(state *statepb.PipelineState, apiPath string) string {
+func findLibraryIDByAPIPath(state *config.PipelineState, apiPath string) string {
 	for _, library := range state.Libraries {
-		if slices.Contains(library.ApiPaths, apiPath) {
-			return library.Id
+		if slices.Contains(library.APIPaths, apiPath) {
+			return library.ID
 		}
 	}
 	return ""
-}
-
-func findLibraryByID(state *statepb.PipelineState, libraryID string) *statepb.LibraryState {
-	for _, library := range state.Libraries {
-		if library.Id == libraryID {
-			return library
-		}
-	}
-	return nil
 }
 
 func formatTimestamp(t time.Time) string {
@@ -215,8 +168,14 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 	return path, nil
 }
 
+// commitAll commits all changes to the repository.
 // No commit is made if there are no file modifications.
-func commitAll(repo *gitrepo.Repository, msg, userName, userEmail string) error {
+func commitAll(repo *gitrepo.Repository, msg, pushConfig string) error {
+	userEmail, userName, err := parsePushConfig(pushConfig)
+	if err != nil {
+		return err
+	}
+
 	status, err := repo.AddAll()
 	if err != nil {
 		return err
@@ -229,6 +188,12 @@ func commitAll(repo *gitrepo.Repository, msg, userName, userEmail string) error 
 	return repo.Commit(msg, userName, userEmail)
 }
 
-func formatReleaseTag(libraryID, version string) string {
-	return libraryID + "-" + version
+func parsePushConfig(pushConfig string) (string, string, error) {
+	parts := strings.Split(pushConfig, ",")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
+	}
+	userEmail := parts[0]
+	userName := parts[1]
+	return userEmail, userName, nil
 }
