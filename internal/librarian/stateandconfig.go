@@ -27,6 +27,7 @@ import (
 )
 
 const pipelineStateFile = "pipeline-state.json"
+const pipelineConfigFile = "pipeline-config.json"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
@@ -55,7 +56,7 @@ func loadPipelineStateFile(path string) (*config.PipelineState, error) {
 }
 
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
-	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, "pipeline-config.json")
+	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineConfigFile)
 	return loadPipelineConfigFile(path)
 }
 
