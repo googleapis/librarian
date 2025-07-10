@@ -33,7 +33,8 @@ func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 	defaultValue := ""
-	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue, "a mount point from Docker host and within the Docker. The format is {host-dir}:{local-dir}.")
+	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue,
+		"a mount point from Docker host and within the Docker. The format is {host-dir}:{local-dir}.")
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
@@ -50,7 +51,8 @@ func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
+	fs.StringVar(&cfg.Repo, "repo", "",
+		"Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
 }
 
 func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
@@ -59,7 +61,8 @@ func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+	fs.StringVar(&cfg.Source, "source", "",
+		"location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {

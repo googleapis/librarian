@@ -103,7 +103,8 @@ func runCreateReleaseArtifacts(ctx context.Context, cfg *config.Config) error {
 	return createReleaseArtifactsImpl(ctx, cfg, workRoot, languageRepo, containerConfig)
 }
 
-func createReleaseArtifactsImpl(ctx context.Context, cfg *config.Config, workRoot string, languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
+func createReleaseArtifactsImpl(ctx context.Context, cfg *config.Config, workRoot string,
+	languageRepo *gitrepo.Repository, containerConfig *docker.Docker) error {
 	if err := validateSkipIntegrationTests(cfg.SkipIntegrationTests); err != nil {
 		return err
 	}

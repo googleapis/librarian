@@ -15,7 +15,6 @@
 package docker
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -50,7 +49,7 @@ func TestNewEnvironmentProvider(t *testing.T) {
 }
 
 func TestWriteEnvironmentFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	testContent := "foo=bar\n"
 	tmpDir := t.TempDir()
 	e := newEnvironmentProvider(tmpDir, "", &config.PipelineConfig{
@@ -101,7 +100,7 @@ func TestConstructEnvironmentFileContent(t *testing.T) {
 	t.Setenv(testHostVar, testHostValue)
 
 	want := "HOST_VAR=host_value\nSECRET_VAR=secret_value\nDEFAULT_VAR=default_value\n# No value for UNRESOLVED_VAR\n"
-	got, err := e.constructEnvironmentFileContent(context.Background(), testCommand)
+	got, err := e.constructEnvironmentFileContent(t.Context(), testCommand)
 	if err != nil {
 		t.Fatalf("constructEnvironmentFileContent() error = %v", err)
 	}

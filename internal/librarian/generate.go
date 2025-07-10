@@ -137,7 +137,8 @@ func runGenerate(ctx context.Context, cfg *config.Config) error {
 	return executeGenerate(ctx, cfg, workRoot, repo, ps, containerConfig)
 }
 
-func executeGenerate(ctx context.Context, cfg *config.Config, workRoot string, languageRepo *gitrepo.Repository, pipelineState *config.PipelineState, containerConfig *docker.Docker) error {
+func executeGenerate(ctx context.Context, cfg *config.Config, workRoot string, languageRepo *gitrepo.Repository,
+	pipelineState *config.PipelineState, containerConfig *docker.Docker) error {
 	outputDir := filepath.Join(workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return err
@@ -150,7 +151,10 @@ func executeGenerate(ctx context.Context, cfg *config.Config, workRoot string, l
 	}
 	if cfg.Build {
 		if libraryID != "" {
-			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
+			slog.Info(
+				"Build requested in the context of refined generation; " +
+					"cleaning and copying code to the local language repo before building.",
+			)
 			// TODO(https://github.com/googleapis/librarian/issues/775)
 			if err := os.CopyFS(languageRepo.Dir, os.DirFS(outputDir)); err != nil {
 				return err
@@ -170,7 +174,8 @@ func executeGenerate(ctx context.Context, cfg *config.Config, workRoot string, l
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func runGenerateCommand(ctx context.Context, cfg *config.Config, outputDir string, languageRepo *gitrepo.Repository, pipelineState *config.PipelineState, containerConfig *docker.Docker) (string, error) {
+func runGenerateCommand(ctx context.Context, cfg *config.Config, outputDir string, languageRepo *gitrepo.Repository,
+	pipelineState *config.PipelineState, containerConfig *docker.Docker) (string, error) {
 	apiRoot, err := filepath.Abs(cfg.Source)
 	if err != nil {
 		return "", err

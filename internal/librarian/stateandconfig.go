@@ -64,7 +64,8 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*config.PipelineState, error) {
+func fetchRemotePipelineState(ctx context.Context, repo *github.Repository,
+	ref string, gitHubToken string) (*config.PipelineState, error) {
 	ghClient, err := github.NewClient(gitHubToken)
 	if err != nil {
 		return nil, err
