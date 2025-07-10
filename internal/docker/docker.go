@@ -91,14 +91,14 @@ func (c *Docker) Generate(ctx context.Context, cfg *config.Config, state *config
 		return err
 	}
 	commandArgs := []string{
-		"--request=/request",
+		"--librarian=/librarian",
 		"--input=/input",
 		"--output=/output",
 		"--source=/source",
 		fmt.Sprintf("--library-id=%s", libraryID),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/request:ro", generateRequest), // readonly volume.
+		fmt.Sprintf("%s:/librarian:ro", generateRequest), // readonly volume.
 		fmt.Sprintf("%s:/input", generatorInput),
 		fmt.Sprintf("%s:/output", output),
 		fmt.Sprintf("%s:/source:ro", apiRoot), // readonly volume.

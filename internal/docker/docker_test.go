@@ -89,13 +89,13 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/request:ro", testGenerateRequest),
+				"-v", fmt.Sprintf("%s:/librarian:ro", testGenerateRequest),
 				"-v", fmt.Sprintf("%s:/input", testGeneratorInput),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandGenerate),
-				"--request=/request",
+				"--librarian=/librarian",
 				"--input=/input",
 				"--output=/output",
 				"--source=/source",
@@ -112,13 +112,13 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/request:ro", testGenerateRequest),
+				"-v", fmt.Sprintf("%s:/librarian:ro", testGenerateRequest),
 				"-v", fmt.Sprintf("%s:/input", testGeneratorInput),
 				"-v", "localDir:/output",
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandGenerate),
-				"--request=/request",
+				"--librarian=/librarian",
 				"--input=/input",
 				"--output=/output",
 				"--source=/source",
@@ -174,6 +174,7 @@ func TestDockerRun(t *testing.T) {
 			if err := test.runCommand(ctx, test.docker); err != nil {
 				t.Fatal(err)
 			}
+			os.Remove(testGenerateRequest)
 		})
 	}
 }
