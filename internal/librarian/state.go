@@ -49,10 +49,7 @@ func (s *LibrarianState) ImageRefAndTag() (ref reference.Named, tag string) {
 // Library represents the state of a single library within state.yaml.
 type Library struct {
 	// A unique identifier for the library, in a language-specific format.
-	// The `is-library-id` validator ensures the ID:
-	// - is not empty
-	// - is not `.` or `..`
-	// - only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
+	// A valid Id should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
 	Id string `yaml:"id" validate:"required,is-library-id"`
 	// The last released version of the library.
 	Version string `yaml:"version" validate:"omitempty,semver"`

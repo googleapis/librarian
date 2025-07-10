@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
+
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -149,11 +149,11 @@ func validateDirPath(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	// The paths are expected to be relative and use forward slashes.
+	// The paths are expected to be relative and use the OS-specific path separator.
 	// We clean the path to resolve ".." and check that it doesn't try to
 	// escape the root.
-	cleaned := path.Clean(pathString)
-	if path.IsAbs(pathString) || strings.HasPrefix(cleaned, "..") || cleaned == ".." {
+	cleaned := filepath.Clean(pathString)
+	if filepath.IsAbs(pathString) || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
 		return false
 	}
 
@@ -163,7 +163,7 @@ func validateDirPath(fl validator.FieldLevel) bool {
 	}
 
 	// Each path component must not contain invalid characters.
-	for _, component := range strings.Split(cleaned, "/") {
+	for _, component := range strings.Split(cleaned, string(filepath.Separator)) {
 		if strings.ContainsAny(component, invalidPathChars) {
 			return false
 		}
@@ -185,7 +185,6 @@ func validateLibraryID(fl validator.FieldLevel) bool {
 		// This is caught by 'required' tag, but good to be defensive.
 		return false
 	}
-	// The ID should not be "." or "..".
 	if id == "." || id == ".." {
 		return false
 	}
