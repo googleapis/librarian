@@ -15,10 +15,8 @@
 package librarian
 
 import (
-	"errors"
 	"flag"
 	"fmt"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -44,16 +42,8 @@ func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
 }
 
-func addFlagReleaseID(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.ReleaseID, "release-id", "", "The ID of a release PR")
-}
-
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
-}
-
-func addFlagSkipIntegrationTests(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.SkipIntegrationTests, "skip-integration-tests", "", "set to a value of b/{explanatory-bug} to skip integration tests")
 }
 
 func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
@@ -62,13 +52,6 @@ func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.WorkRoot, "output", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
-}
-
-func validateSkipIntegrationTests(skipIntegrationTests string) error {
-	if skipIntegrationTests != "" && !strings.HasPrefix(skipIntegrationTests, "b/") {
-		return errors.New("skipping integration tests requires a bug to be specified, e.g. -skip-integration-tests=b/12345")
-	}
-	return nil
 }
 
 // validateRequiredFlag validates that the flag with the given name has been provided.

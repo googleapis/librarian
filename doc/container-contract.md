@@ -93,7 +93,7 @@ provided, but there is no absolute requirement to do so.
 `build-library` builds and optionally runs unit tests for either a single library or all libraries
 configured within the repository.
 
-Called from CLI commands: `configure`, `generate`, `update-apis`, `create-release-artifacts`
+Called from CLI commands: `configure`, `generate`, `update-apis`
 
 Flags:
 
@@ -258,57 +258,3 @@ build them when provided with the populated output directory and the same API pa
 
 Note: this command may be combined with `build-raw` in the future, as there isn't really
 a good reason to keep the two commands separate.
-
-## integration-test-library
-
-`integration-test-library` runs integration tests for a single library. Currently this is only used as
-part of the release process.
-
-Called from CLI commands: `create-release-artifacts`
-
-Flags:
-
-- `--repo-root`: the root of the language repo; required.
-- `--library-id`: the library to test; required.
-
-If the specified library has no integration tests, the container must exit successfully.
-(In other words, the absence of integration tests for a library does not constitute an error.)
-
-The `integration-test-library` command is only ever run after `build-library` has completed successfully,
-so containers may assume that the code has already been built, and any output from `build-library` within the
-repo root (but ignored by `.gitignore`, as `build-library` mustn't leave the repository dirty) can be reused.
-
-The Librarian CLI does not implement any retry strategy; containers may wish to implement a retry strategy
-themselves to avoid unnecessary failures when integrating with external dependencies which aren't 100% reliable.
-
-Like `build-library`, `integration-test-library` must not modify, add or delete any files within the repo root which are
-considered relevant to the repo. In other words, running `git status` on the repo after
-the command has executed successfully must not show any changes.
-
-## package-library
-
-`package-library` creates any releasable artifacts - typically package binaries ready to publish to a package manager,
-and bundles of documentation files ready to publish to documentation sites.
-
-Called from CLI commands: `create-release-artifacts`
-
-Flags:
-
-- `--repo-root`: the root of the language repo; required.
-- `--library-id`: the library whose artifacts should be created; required.
-- `--output`: the empty directory in which to create artifacts; required.
-
-If a language does not publish packages as part of its intended release process, the container should simply create
-any documentation bundles (if any). If nothing at all needs to be published for the given library, the container
-should simply exit successfully without creating any files.
-
-The `package-library` command is only ever run after `build-library` has completed successfully,
-so containers may assume that the code has already been built, and any output from `build-library` within the
-repo root (but ignored by `.gitignore`, as `build-library` mustn't leave the repository dirty) can be reused.
-
-The Librarian CLI creates a folder structure for all releasable artifacts and provides
-the output directory corresponding with the single library, so implementations should not feel
-any need to create a nested structure within the output directory for disambiguation purposes. (If
-a folder structure is needed for any other reason, that's fine.)
-
-The `package-library` command must not perform any actual publication.
