@@ -96,8 +96,15 @@ func TestValidators(t *testing.T) {
 		{"dirpath invalid chars", "is-dirpath", "a/b<c", false},
 
 		// is-image
-		{"image valid", "is-image", "gcr.io/google/go-container", true},
-		{"image invalid", "is-image", "gcr.io/google/go-container with spaces", false},
+		{"image valid with tag", "is-image", "gcr.io/google/go-container:v1", true},
+		{"image valid with latest tag", "is-image", "ubuntu:latest", true},
+		{"image valid with port and tag", "is-image", "my-registry:5000/my/image:v1", true},
+		{"image invalid no tag", "is-image", "gcr.io/google/go-container", false},
+		{"image invalid with port no tag", "is-image", "my-registry:5000/my/image", false},
+		{"image invalid with spaces", "is-image", "gcr.io/google/go-container with spaces", false},
+		{"image invalid no repo", "is-image", ":v1", false},
+		{"image invalid empty tag", "is-image", "my-image:", false},
+		{"image invalid empty", "is-image", "", false},
 
 		// is-library-id
 		{"library-id valid", "is-library-id", "a/b-c.d_e", true},
@@ -122,7 +129,7 @@ func TestValidators(t *testing.T) {
 			}
 			err := validate.Var(test.value, test.validation)
 			if (err == nil) != test.valid {
-				t.Errorf("validation %q on value %q valid = %v, want %v", test.validation, test.value, err == nil, test.valid)
+				t.Errorf("%q: validation %q on value %q valid = %v, want %v", test.name, test.validation, test.value, err == nil, test.valid)
 			}
 		})
 	}

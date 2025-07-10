@@ -24,7 +24,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/containers/image/v5/docker/reference"
 	"github.com/go-playground/validator/v10"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
@@ -171,10 +170,19 @@ func validateDirPath(fl validator.FieldLevel) bool {
 	return true
 }
 
-// validateImage checks if a string is a valid, normalized container image name.
+// validateImage checks if a string is a valid container image name with a required tag.
+// It validates that the image string contains a tag, separated by a colon, and has no whitespace.
+// It correctly distinguishes between a tag and a port number in the registry host.
 func validateImage(fl validator.FieldLevel) bool {
-	_, err := reference.ParseNormalizedNamed(fl.Field().String())
-	return err == nil
+	image := fl.Field().String()
+	// Basic validation: no whitespace.
+	if strings.ContainsAny(image, " \t\n\r") {
+		return false
+	}
+
+	ref, tag := parseImage(image)
+
+	return ref != "" && tag != ""
 }
 
 var libraryIDRegexp = regexp.MustCompile(`^[a-zA-Z0-9/._-]+$`)

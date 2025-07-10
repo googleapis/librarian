@@ -46,7 +46,7 @@ func TestLibrarianState_ImageRefAndTag(t *testing.T) {
 		{
 			name:     "explicit latest tag",
 			state:    &LibrarianState{Image: "ubuntu:latest"},
-			wantName: "docker.io/library/ubuntu",
+			wantName: "ubuntu",
 			wantTag:  "latest",
 		},
 		{
@@ -67,11 +67,7 @@ func TestLibrarianState_ImageRefAndTag(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotRef, gotTag := test.state.ImageRefAndTag()
-			var gotName string
-			if gotRef != nil {
-				gotName = gotRef.Name()
-			}
+			gotName, gotTag := test.state.ImageRefAndTag()
 			if diff := cmp.Diff(test.wantName, gotName); diff != "" {
 				t.Errorf("LibrarianState.ImageRefAndTag() name mismatch (-want +got):\n%s", diff)
 			}

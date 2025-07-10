@@ -7,8 +7,8 @@ For more details, see the Go implementation in [state.go](../internal/librarian/
 ## Top-Level Fields
 
 | Field       | Type   | Description                                         | Required | Validation Constraints |
-|-------------|--------|-----------------------------------------------------|----------|------------------------|
-| `image`     | string | The name and tag of the generator image to use.     | Yes      | Must be a valid container image name. |
+|-------------|--------|-----------------------------------------------------|----------|------------------------------------------------------------------------------------|
+| `image`     | string | The name and tag of the generator image to use.     | Yes      | Must be a container image reference that includes a tag and contains no whitespace. |
 | `libraries` | list   | A list of [library configurations](#libraries-object). | Yes      | Must not be empty.     |
 
 ## `libraries` Object

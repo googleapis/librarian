@@ -14,13 +14,11 @@
 
 package librarian
 
-import (
-	"github.com/containers/image/v5/docker/reference"
-)
+import "strings"
 
 // LibrarianState defines the contract for the state.yaml file.
 type LibrarianState struct {
-	// The name and tag of the generator image to use.
+	// The name and tag of the generator image to use. tag is required.
 	Image string `yaml:"image" validate:"required,is-image"`
 	// A list of library configurations.
 	Libraries []Library `yaml:"libraries" validate:"required,gt=0,dive"`
@@ -29,21 +27,30 @@ type LibrarianState struct {
 // ImageRefAndTag extracts the image reference and tag from the full image string.
 // For example, for "gcr.io/my-image:v1.2.3", it returns a reference to
 // "gcr.io/my-image" and the tag "v1.2.3".
-// It correctly handles complex image references. If no tag is present, the
-// returned tag is an empty string.
-func (s *LibrarianState) ImageRefAndTag() (ref reference.Named, tag string) {
-	if s == nil || s.Image == "" {
-		return nil, ""
+// If no tag is present, the returned tag is an empty string.
+func (s *LibrarianState) ImageRefAndTag() (ref string, tag string) {
+	if s == nil {
+		return "", ""
 	}
-	named, err := reference.ParseNormalizedNamed(s.Image)
-	if err != nil {
-		// The validator should prevent invalid image strings, but as a safeguard:
-		return nil, ""
+	return parseImage(s.Image)
+}
+
+// parseImage splits an image string into its reference and tag.
+// It correctly handles port numbers in the reference.
+// If no tag is found, the tag part is an empty string.
+func parseImage(image string) (ref string, tag string) {
+	if image == "" {
+		return "", ""
 	}
-	if tagged, ok := named.(reference.Tagged); ok {
-		tag = tagged.Tag()
+	lastColon := strings.LastIndex(image, ":")
+	if lastColon < 0 {
+		return image, ""
 	}
-	return named, tag
+	// if there is a slash after the last colon, it's a port number, not a tag.
+	if strings.Contains(image[lastColon:], "/") {
+		return image, ""
+	}
+	return image[:lastColon], image[lastColon+1:]
 }
 
 // Library represents the state of a single library within state.yaml.
