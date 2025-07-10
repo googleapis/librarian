@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -37,6 +38,56 @@ func TestCommandUsage(t *testing.T) {
 			// The second word should always be the command name.
 			if parts[1] != c.Name() {
 				t.Errorf("invalid usage text: %q (second word should be command name %q)", c.UsageLine, c.Name())
+			}
+		})
+	}
+}
+
+func TestFindLibraryByID(t *testing.T) {
+	lib1 := Library{Id: "lib1"}
+	lib2 := Library{Id: "lib2"}
+	stateWithLibs := &LibrarianState{
+		Libraries: []Library{lib1, lib2},
+	}
+	stateNoLibs := &LibrarianState{
+		Libraries: []Library{},
+	}
+
+	for _, test := range []struct {
+		name      string
+		state     *LibrarianState
+		libraryID string
+		want      *Library
+	}{
+		{
+			name:      "found first library",
+			state:     stateWithLibs,
+			libraryID: "lib1",
+			want:      &lib1,
+		},
+		{
+			name:      "found second library",
+			state:     stateWithLibs,
+			libraryID: "lib2",
+			want:      &lib2,
+		},
+		{
+			name:      "not found",
+			state:     stateWithLibs,
+			libraryID: "lib3",
+			want:      nil,
+		},
+		{
+			name:      "empty libraries slice",
+			state:     stateNoLibs,
+			libraryID: "lib1",
+			want:      nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := findLibraryByID(test.state, test.libraryID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findLibraryByID() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
