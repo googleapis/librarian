@@ -154,11 +154,11 @@ func TestDockerRun(t *testing.T) {
 			want: []string{
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
-				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
+				"-v", fmt.Sprintf("%s:/.librarian/generator-input", testGeneratorInput),
 				testImage,
 				string(CommandConfigure),
 				"--source=/apis",
-				"--generator-input=/generator-input",
+				"--.librarian/generator-input=/.librarian/generator-input",
 				fmt.Sprintf("--api=%s", testAPIPath),
 			},
 		},
