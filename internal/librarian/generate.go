@@ -252,7 +252,7 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 }
 
 func toGenerateRequestJSON(state *config.PipelineState, filepath string) error {
-	data, err := json.Marshal(state)
+	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		slog.Warn("failed to marshal state to JSON", "state", state, "error", err)
 		return err
