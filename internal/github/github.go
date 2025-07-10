@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 
 	"github.com/google/go-github/v69/github"
@@ -223,9 +224,13 @@ func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref 
 	options := &github.RepositoryContentGetOptions{
 		Ref: ref,
 	}
-	closer, _, err := c.Repositories.DownloadContents(ctx, repo.Owner, repo.Name, path, options)
+	closer, resp, err := c.Repositories.DownloadContents(ctx, repo.Owner, repo.Name, path, options)
 	if err != nil {
 		return nil, err
+	}
+	// As per go-github docs, we need to check the response status code.
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status: %s", resp.Status)
 	}
 	defer func() {
 		cerr := closer.Close()
@@ -242,6 +247,9 @@ func (c *Client) GetDiffCommits(ctx context.Context, repo *Repository, source, t
 	// TODO(https://github.com/googleapis/librarian/issues/540): implement pagination or use go-github-paginate
 	listOptions := &github.ListOptions{PerPage: 100}
 	commitsComparison, _, err := c.Repositories.CompareCommits(ctx, repo.Owner, repo.Name, source, target, listOptions)
+	if err != nil {
+		return nil, err
+	}
 	return commitsComparison.Commits, err
 }
 

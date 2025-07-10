@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -122,30 +123,29 @@ func TestCreatePullRequest(t *testing.T) {
 	}
 }
 
-func TestGetRawContent(t *testing.T) {
+func TestGetCommit(t *testing.T) {
 	cases := []struct {
 		name         string
 		repo         *Repository
-		path         string
-		ref          string
-		mockResponse string
+		sha          string
+		mockResponse *github.RepositoryCommit
 		statusCode   int
 		wantErr      bool
 	}{
 		{
-			name:         "Successful get",
-			repo:         &Repository{Owner: "test-owner", Name: "test-repo"},
-			path:         "test-path",
-			ref:          "test-ref",
-			mockResponse: "test content",
-			statusCode:   http.StatusOK,
-			wantErr:      false,
+			name: "Successful get",
+			repo: &Repository{Owner: "test-owner", Name: "test-repo"},
+			sha:  "abcdef123",
+			mockResponse: &github.RepositoryCommit{
+				SHA: github.Ptr("abcdef123"),
+			},
+			statusCode: http.StatusOK,
+			wantErr:    false,
 		},
 		{
 			name:       "GitHub API error",
 			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			path:       "test-path",
-			ref:        "test-ref",
+			sha:        "abcdef123",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -157,15 +157,14 @@ func TestGetRawContent(t *testing.T) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/contents/%s", tc.repo.Owner, tc.repo.Name, tc.path)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/commits/%s", tc.repo.Owner, tc.repo.Name, tc.sha)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
 
 				w.WriteHeader(tc.statusCode)
-				if tc.mockResponse != "" {
-					_, err := w.Write([]byte(tc.mockResponse))
-					if err != nil {
+				if tc.mockResponse != nil {
+					if err := json.NewEncoder(w).Encode(tc.mockResponse); err != nil {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
@@ -181,7 +180,94 @@ func TestGetRawContent(t *testing.T) {
 			c.BaseURL, _ = url.Parse(server.URL + "/")
 			client.Client = c
 
-			content, err := client.GetRawContent(context.Background(), tc.repo, tc.path, tc.ref)
+			commit, err := client.GetCommit(context.Background(), tc.repo, tc.sha)
+
+			if (err != nil) != tc.wantErr {
+				t.Errorf("GetCommit() error = %v, wantErr %v", err, tc.wantErr)
+				return
+			}
+
+			if !tc.wantErr {
+				if diff := cmp.Diff(tc.mockResponse, commit); diff != "" {
+					t.Errorf("GetCommit() mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestGetRawContent(t *testing.T) {
+	cases := []struct {
+		name         string
+		repo         *Repository
+		filePath     string
+		ref          string
+		mockResponse string
+		statusCode   int
+		wantErr      bool
+	}{
+		{
+			name:         "Successful get",
+			repo:         &Repository{Owner: "test-owner", Name: "test-repo"},
+			filePath:     "test-path",
+			ref:          "test-ref",
+			mockResponse: "test content",
+			statusCode:   http.StatusOK,
+			wantErr:      false,
+		},
+		{
+			name:       "GitHub API error on GetContents",
+			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
+			filePath:   "test-path",
+			ref:        "test-ref",
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var server *httptest.Server
+			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "download") {
+					// This is the download request
+					w.WriteHeader(tc.statusCode)
+					if tc.mockResponse != "" {
+						_, err := w.Write([]byte(tc.mockResponse))
+						if err != nil {
+							t.Fatalf("failed to write mock response: %v", err)
+						}
+					}
+					return
+				}
+
+				// This is the GetContents request
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.statusCode)
+				if tc.statusCode == http.StatusOK {
+					response := []*github.RepositoryContent{
+						{
+							Name:        github.Ptr("test-path"),
+							DownloadURL: github.Ptr(server.URL + "/download"),
+						},
+					}
+					if err := json.NewEncoder(w).Encode(response); err != nil {
+						t.Fatalf("failed to write mock response: %v", err)
+					}
+				}
+			}))
+			defer server.Close()
+
+			client, err := NewClient("test-token")
+			if err != nil {
+				t.Fatalf("NewClient() error = %v", err)
+			}
+
+			c := github.NewClient(server.Client())
+			c.BaseURL, _ = url.Parse(server.URL + "/")
+			client.Client = c
+
+			content, err := client.GetRawContent(context.Background(), tc.repo, tc.filePath, tc.ref)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetRawContent() error = %v, wantErr %v", err, tc.wantErr)
