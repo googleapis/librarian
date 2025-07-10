@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -68,48 +67,6 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 		return nil, errors.New("language repo must be clean")
 	}
 	return languageRepo, nil
-}
-
-// createCommandStateForLanguage performs common (but not universal)
-// steps for initializing a language repo, obtaining the pipeline state/config
-// from it, deriving the container image to use, and creating an appropriate
-// ContainerState based on all of the above. This should be used by all commands
-// which always have a language repo. Commands which only conditionally use
-// language repos should construct the command state themselves.
-func createCommandStateForLanguage(workRootOverride, repo, imageOverride, project, ci, uid, gid string) (
-	startTime time.Time,
-	workRoot string,
-	languageRepo *gitrepo.Repository,
-	pipelineConfig *config.PipelineConfig,
-	pipelineState *config.PipelineState,
-	containerConfig *docker.Docker,
-	err error,
-) {
-	startTime = time.Now()
-	workRoot, err = createWorkRoot(startTime, workRootOverride)
-	if err != nil {
-		return
-	}
-	languageRepo, err = cloneOrOpenLanguageRepo(workRoot, repo, ci)
-	if err != nil {
-		return
-	}
-
-	pipelineState, pipelineConfig, err = loadRepoStateAndConfig(languageRepo)
-	if err != nil {
-		return
-	}
-
-	image, err := deriveImage(imageOverride, pipelineState)
-	if err != nil {
-		return
-	}
-	containerConfig, err = docker.New(workRoot, image, project, uid, gid, pipelineConfig)
-	if err != nil {
-		return
-	}
-
-	return startTime, workRoot, languageRepo, pipelineConfig, pipelineState, containerConfig, nil
 }
 
 func deriveImage(imageOverride string, state *config.PipelineState) (string, error) {

@@ -50,9 +50,6 @@ contains more detail:
     configures libraries for new APIs
   - [`update-apis`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/updateapis.go):
     regenerates libraries where the source APIs have been updated
-  - Releasing (usually executed as a single automated flow):
-    - [`create-release-artifacts`](https://github.com/googleapis/librarian/blob/v0.1.0/internal/librarian/createreleaseartifacts.go):
-      creates artifacts for library releases (e.g. package files, documentation)
 
 ## Repositories used by Librarian
 

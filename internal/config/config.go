@@ -133,19 +133,6 @@ type Config struct {
 	// PushConfig is specified with the -push-config flag.
 	PushConfig string
 
-	// ReleaseID is the identifier of a release PR. Each release PR created by
-	// Librarian has a release ID, which is included in both the PR description and
-	// the commit message of every commit within the release PR. This is effectively
-	// used for internal bookkeeping, to collate all library releases within a single
-	// release flow. The format of ReleaseID is effectively opaque; it is currently
-	// timestamp-based but could change to a UUID or similar in the future.
-	//
-	// ReleaseID is required for the create-release-artifacts command, and is only
-	// used by this command.
-	//
-	// ReleaseID is specified with the -release-id flag.
-	ReleaseID string
-
 	// Repo specifies the language repository to use, as either a local root directory
 	// or a URL to clone from. If a local directory is specified, it can
 	// be relative to the current working directory. The repository must
@@ -153,7 +140,7 @@ type Config struct {
 	// Librarian-created changes with other changes.
 	//
 	// Repo is used by all commands which operate on a language repository:
-	// configure, create-release-artifacts, generate, update-apis.
+	// configure, generate, update-apis.
 	//
 	// When a local directory is specified for the generate command, the repo is checked to
 	// determine whether the specified API path is configured as a library. See the generate
@@ -163,16 +150,6 @@ type Config struct {
 	//
 	// Repo is specified with the -repo flag.
 	Repo string
-
-	// SkipIntegrationTests is used by the create-release-pr and create-release-artifacts
-	// commands, and disables integration tests if it is set to a non-empty value.
-
-	// SkipIntegrationTests is used by the create-release-artifacts
-	// command, and disables integration tests if it is set to a non-empty value.
-	// The value must reference a bug (e.g., b/12345).
-	//
-	// SkipIntegrationTests is specified with the -skip-integration-tests flag.
-	SkipIntegrationTests string
 
 	// Source is the path to the root of the googleapis repository.
 	// When this is not specified, the googleapis repository is cloned
