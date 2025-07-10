@@ -54,7 +54,7 @@ func TestHeaders(t *testing.T) {
 			return err
 		}
 		if d.IsDir() {
-			if d.Name() == "testdata" || d.Name() == ".git" {
+			if d.Name() == "testdata" || d.Name() == ".git" || d.Name() == ".vscode" {
 				return fs.SkipDir
 			}
 			return nil
