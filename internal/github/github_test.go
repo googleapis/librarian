@@ -27,6 +27,19 @@ import (
 	"github.com/google/go-github/v69/github"
 )
 
+func newTestServerAndClient(t *testing.T, handler http.HandlerFunc) (*Client, *httptest.Server) {
+	t.Helper()
+	server := httptest.NewServer(handler)
+	client, err := NewClient("test-token")
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+	c := github.NewClient(server.Client())
+	c.BaseURL, _ = url.Parse(server.URL + "/")
+	client.Client = c
+	return client, server
+}
+
 func TestCreatePullRequest(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -77,7 +90,7 @@ func TestCreatePullRequest(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
@@ -91,17 +104,9 @@ func TestCreatePullRequest(t *testing.T) {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
-
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
 
 			pr, err := client.CreatePullRequest(context.Background(), tc.repo, tc.remoteBranch, tc.title, tc.body)
 
@@ -153,7 +158,7 @@ func TestGetCommit(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
@@ -168,17 +173,9 @@ func TestGetCommit(t *testing.T) {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
-
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
 
 			commit, err := client.GetCommit(context.Background(), tc.repo, tc.sha)
 
@@ -227,8 +224,8 @@ func TestGetRawContent(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var server *httptest.Server
-			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var serverURL string
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if strings.Contains(r.URL.Path, "download") {
 					// This is the download request
 					w.WriteHeader(tc.statusCode)
@@ -248,24 +245,17 @@ func TestGetRawContent(t *testing.T) {
 					response := []*github.RepositoryContent{
 						{
 							Name:        github.Ptr("test-path"),
-							DownloadURL: github.Ptr(server.URL + "/download"),
+							DownloadURL: github.Ptr(serverURL + "/download"),
 						},
 					}
 					if err := json.NewEncoder(w).Encode(response); err != nil {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
+			serverURL = server.URL
 			defer server.Close()
-
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
 
 			content, err := client.GetRawContent(context.Background(), tc.repo, tc.filePath, tc.ref)
 
@@ -384,7 +374,7 @@ func TestGetPullRequestReviews(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
@@ -399,17 +389,9 @@ func TestGetPullRequestReviews(t *testing.T) {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
-
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
 
 			reviews, err := client.GetPullRequestReviews(context.Background(), tc.prMetadata)
 
@@ -486,7 +468,7 @@ func TestGetPullRequestCheckRuns(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
@@ -501,17 +483,9 @@ func TestGetPullRequestCheckRuns(t *testing.T) {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
-
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
 
 			checkRuns, err := client.GetPullRequestCheckRuns(context.Background(), tc.pullRequest)
 
@@ -560,7 +534,7 @@ func TestGetPullRequest(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
@@ -575,17 +549,9 @@ func TestGetPullRequest(t *testing.T) {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
-
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
 
 			pr, err := client.GetPullRequest(context.Background(), tc.repo, tc.prNumber)
 
@@ -638,7 +604,7 @@ func TestMergePullRequest(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodPut {
 					t.Errorf("expected PUT request, got %s", r.Method)
 				}
@@ -653,17 +619,9 @@ func TestMergePullRequest(t *testing.T) {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
-
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
 
 			result, err := client.MergePullRequest(context.Background(), tc.repo, tc.prNumber, tc.method)
 
@@ -710,7 +668,7 @@ func TestAddCommentToPullRequest(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
@@ -720,19 +678,11 @@ func TestAddCommentToPullRequest(t *testing.T) {
 				}
 
 				w.WriteHeader(tc.statusCode)
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
-
-			err = client.AddCommentToPullRequest(context.Background(), tc.repo, tc.prNumber, tc.comment)
+			err := client.AddCommentToPullRequest(context.Background(), tc.repo, tc.prNumber, tc.comment)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("AddCommentToPullRequest() error = %v, wantErr %v", err, tc.wantErr)
@@ -770,7 +720,7 @@ func TestRemoveLabelFromPullRequest(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodDelete {
 					t.Errorf("expected DELETE request, got %s", r.Method)
 				}
@@ -780,19 +730,11 @@ func TestRemoveLabelFromPullRequest(t *testing.T) {
 				}
 
 				w.WriteHeader(tc.statusCode)
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
-
-			err = client.RemoveLabelFromPullRequest(context.Background(), tc.repo, tc.prNumber, tc.label)
+			err := client.RemoveLabelFromPullRequest(context.Background(), tc.repo, tc.prNumber, tc.label)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("RemoveLabelFromPullRequest() error = %v, wantErr %v", err, tc.wantErr)
@@ -833,7 +775,7 @@ func TestAddLabelToPullRequest(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
@@ -843,22 +785,86 @@ func TestAddLabelToPullRequest(t *testing.T) {
 				}
 
 				w.WriteHeader(tc.statusCode)
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
-
-			err = client.AddLabelToPullRequest(context.Background(), tc.prMetadata, tc.label)
+			err := client.AddLabelToPullRequest(context.Background(), tc.prMetadata, tc.label)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("AddLabelToPullRequest() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestGetDiffCommits(t *testing.T) {
+	cases := []struct {
+		name         string
+		repo         *Repository
+		source       string
+		target       string
+		mockResponse *github.CommitsComparison
+		statusCode   int
+		wantErr      bool
+	}{
+		{
+			name:   "Successful get",
+			repo:   &Repository{Owner: "test-owner", Name: "test-repo"},
+			source: "main",
+			target: "test-branch",
+			mockResponse: &github.CommitsComparison{
+				Commits: []*github.RepositoryCommit{
+					{
+						SHA: github.Ptr("abcdef123"),
+					},
+				},
+			},
+			statusCode: http.StatusOK,
+			wantErr:    false,
+		},
+		{
+			name:       "GitHub API error",
+			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
+			source:     "main",
+			target:     "test-branch",
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodGet {
+					t.Errorf("expected GET request, got %s", r.Method)
+				}
+				expectedPath := fmt.Sprintf("/repos/%s/%s/compare/%s...%s", tc.repo.Owner, tc.repo.Name, tc.source, tc.target)
+				if r.URL.Path != expectedPath {
+					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
+				}
+
+				w.WriteHeader(tc.statusCode)
+				if tc.mockResponse != nil {
+					if err := json.NewEncoder(w).Encode(tc.mockResponse); err != nil {
+						t.Fatalf("failed to write mock response: %v", err)
+					}
+				}
+			})
+			client, server := newTestServerAndClient(t, handler)
+			defer server.Close()
+
+			commits, err := client.GetDiffCommits(context.Background(), tc.repo, tc.source, tc.target)
+
+			if (err != nil) != tc.wantErr {
+				t.Errorf("GetDiffCommits() error = %v, wantErr %v", err, tc.wantErr)
+				return
+			}
+
+			if !tc.wantErr {
+				if diff := cmp.Diff(tc.mockResponse.Commits, commits); diff != "" {
+					t.Errorf("GetDiffCommits() mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
@@ -907,7 +913,7 @@ func TestCreateRelease(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
@@ -921,17 +927,9 @@ func TestCreateRelease(t *testing.T) {
 						t.Fatalf("failed to write mock response: %v", err)
 					}
 				}
-			}))
+			})
+			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
-
-			client, err := NewClient("test-token")
-			if err != nil {
-				t.Fatalf("NewClient() error = %v", err)
-			}
-
-			c := github.NewClient(server.Client())
-			c.BaseURL, _ = url.Parse(server.URL + "/")
-			client.Client = c
 
 			release, err := client.CreateRelease(context.Background(), tc.repo, tc.tag, tc.commit, tc.title, tc.description, tc.prerelease)
 
