@@ -181,8 +181,7 @@ func TestDockerRun(t *testing.T) {
 
 func TestToGenerateRequestJSON(t *testing.T) {
 	t.Parallel()
-
-	testCases := []struct {
+	for _, test := range []struct {
 		name      string
 		state     *config.PipelineState
 		expectErr bool
@@ -214,23 +213,25 @@ func TestToGenerateRequestJSON(t *testing.T) {
 			state:     &config.PipelineState{},
 			expectErr: false,
 		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			tempDir := t.TempDir()
-			filePath := filepath.Join(tempDir, "generate-request.json")
-
-			err := toGenerateRequestJSON(tc.state, filePath)
-
-			if tc.expectErr {
+		{
+			name:      "nonexistent_dir_for_test",
+			state:     &config.PipelineState{},
+			expectErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.expectErr {
+				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
+				err := toGenerateRequestJSON(test.state, filePath)
 				if err == nil {
 					t.Errorf("toGenerateRequestJSON() expected an error but got nil")
 				}
-				return // Test case expects error, so no further checks
+				return
 			}
+
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "generate-request.json")
+			err := toGenerateRequestJSON(test.state, filePath)
 
 			if err != nil {
 				t.Fatalf("toGenerateRequestJSON() unexpected error: %v", err)
@@ -242,7 +243,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 				t.Fatalf("Failed to read generated file: %v", err)
 			}
 
-			fileName := fmt.Sprintf("%s.json", tc.name)
+			fileName := fmt.Sprintf("%s.json", test.name)
 			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
@@ -253,15 +254,4 @@ func TestToGenerateRequestJSON(t *testing.T) {
 			}
 		})
 	}
-
-	t.Run("Error creating file (invalid path)", func(t *testing.T) {
-		t.Parallel()
-		// Attempt to write to a path where we don't have permissions or a non-existent dir
-		invalidPath := filepath.Join("/nonexistent_dir_for_test", "generate-request.json")
-		state := &config.PipelineState{ImageTag: "test"}
-		err := toGenerateRequestJSON(state, invalidPath)
-		if err == nil {
-			t.Error("toGenerateRequestJSON() expected an error for invalid path, got nil")
-		}
-	})
 }
