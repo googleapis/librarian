@@ -20,6 +20,8 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -84,7 +86,10 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 // output specifies the empty output directory into which the command should
 // generate code, and libraryID specifies the ID of the library to generate,
 // as configured in the Librarian state file for the repository.
-func (c *Docker) Generate(ctx context.Context, cfg *config.Config, apiRoot, output, generateRequest, generatorInput, libraryID string) error {
+func (c *Docker) Generate(ctx context.Context, cfg *config.Config, state *config.PipelineState, apiRoot, output, generateRequest, generatorInput, libraryID string) error {
+	if err := toGenerateRequestJSON(state, generateRequest); err != nil {
+		return err
+	}
 	commandArgs := []string{
 		"--request=/request",
 		"--input=/input",
@@ -201,4 +206,24 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	err := cmd.Run()
 	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
 	return err
+}
+
+func toGenerateRequestJSON(state *config.PipelineState, filepath string) error {
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return errors.New("failed to marshal state to JSON")
+	}
+
+	jsonFile, err := os.Create(filepath)
+	if err != nil {
+		return errors.New("failed to create generate request JSON file")
+	}
+	defer jsonFile.Close()
+
+	_, err = jsonFile.Write(data)
+	if err != nil {
+		return errors.New("failed to write generate request JSON file")
+	}
+
+	return nil
 }

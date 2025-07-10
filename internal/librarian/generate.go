@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -194,12 +193,9 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
 		generateRequest := filepath.Join(r.repo.Dir, config.LibrarianDir, config.GenerateRequest)
-		if err := toGenerateRequestJSON(state, generateRequest); err != nil {
-			return "", errors.New("creating " + generateRequest + " failed")
-		}
 		generatorInput := filepath.Join(r.repo.Dir, config.GeneratorInputDir)
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		return libraryID, containerConfig.Generate(ctx, r.cfg, apiRoot, outputDir, generateRequest, generatorInput, libraryID)
+		return libraryID, containerConfig.Generate(ctx, r.cfg, state, apiRoot, outputDir, generateRequest, generatorInput, libraryID)
 	}
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
 	return "", fmt.Errorf("library not found")
@@ -249,32 +245,4 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 
 	slog.Info("API configured", "path", apiPath, "library", libraryID)
 	return true, nil
-}
-
-func toGenerateRequestJSON(state *config.PipelineState, filepath string) error {
-	data, err := json.MarshalIndent(state, "", "  ")
-	if err != nil {
-		slog.Warn("failed to marshal state to JSON", "state", state, "error", err)
-		return err
-	}
-
-	jsonFile, err := os.Create(filepath)
-	if err != nil {
-		slog.Warn("Error creating file:", "filepath", filepath, "error", err)
-		return err
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			slog.Warn("Error closing file:", "filepath", file, "error", err)
-		}
-	}(jsonFile)
-
-	_, err = jsonFile.Write(data)
-	if err != nil {
-		slog.Warn("Error writing to file:", "error", err)
-		return err
-	}
-
-	return nil
 }
