@@ -75,12 +75,12 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 }
 
 func fetchRemoteLibrarianState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*LibrarianState, error) {
-	ghClient, err := github.NewClient(gitHubToken)
+	ghClient, err := github.NewClient(gitHubToken, repo)
 	if err != nil {
 		return nil, err
 	}
 	return parseLibrarianState(func() ([]byte, error) {
-		return ghClient.GetRawContent(ctx, repo, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
+		return ghClient.GetRawContent(ctx, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
 	})
 }
 
