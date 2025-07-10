@@ -29,6 +29,6 @@ linters:
     - misspell
     - staticcheck
     - unparam
-    # - unused
+    - unused
     - usetesting
     

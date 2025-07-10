@@ -95,15 +95,6 @@ func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.Pipeline
 	return config, nil
 }
 
-func saveLibrarianState(repo *gitrepo.Repository, s *LibrarianState) error {
-	path := filepath.Join(repo.Dir, config.GeneratorInputDir, pipelineStateFile)
-	data, err := yaml.Marshal(s)
-	if err != nil {
-		return fmt.Errorf("marshaling librarian state: %w", err)
-	}
-	return os.WriteFile(path, data, 0644)
-}
-
 func parseLibrarianState(contentLoader func() ([]byte, error)) (*LibrarianState, error) {
 	bytes, err := contentLoader()
 	if err != nil {
