@@ -41,22 +41,19 @@ func newTestServerAndClient(t *testing.T, handler http.HandlerFunc) (*Client, *h
 }
 
 func TestCreatePullRequest(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	remoteBranch := "test-branch"
+	title := "Test PR"
 	cases := []struct {
 		name         string
-		repo         *Repository
-		remoteBranch string
-		title        string
 		body         string
 		mockResponse *github.PullRequest
 		statusCode   int
 		wantErr      bool
 	}{
 		{
-			name:         "Successful PR creation",
-			repo:         &Repository{Owner: "test-owner", Name: "test-repo"},
-			remoteBranch: "test-branch",
-			title:        "Test PR",
-			body:         "This is a test PR.",
+			name: "Successful PR creation",
+			body: "This is a test PR.",
 			mockResponse: &github.PullRequest{
 				Number:  github.Ptr(1),
 				HTMLURL: github.Ptr("https://github.com/test-owner/test-repo/pull/1"),
@@ -65,11 +62,8 @@ func TestCreatePullRequest(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:         "Successful PR creation with empty body",
-			repo:         &Repository{Owner: "test-owner", Name: "test-repo"},
-			remoteBranch: "test-branch",
-			title:        "Test PR",
-			body:         "",
+			name: "Successful PR creation with empty body",
+			body: "",
 			mockResponse: &github.PullRequest{
 				Number:  github.Ptr(1),
 				HTMLURL: github.Ptr("https://github.com/test-owner/test-repo/pull/1"),
@@ -78,13 +72,10 @@ func TestCreatePullRequest(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:         "GitHub API error",
-			repo:         &Repository{Owner: "test-owner", Name: "test-repo"},
-			remoteBranch: "test-branch",
-			title:        "Test PR",
-			body:         "This is a test PR.",
-			statusCode:   http.StatusInternalServerError,
-			wantErr:      true,
+			name:       "GitHub API error",
+			body:       "This is a test PR.",
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
 		},
 	}
 
@@ -94,8 +85,8 @@ func TestCreatePullRequest(t *testing.T) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
-				if r.URL.Path != fmt.Sprintf("/repos/%s/%s/pulls", tc.repo.Owner, tc.repo.Name) {
-					t.Errorf("expected request to /repos/%s/%s/pulls, got %s", tc.repo.Owner, tc.repo.Name, r.URL.Path)
+				if r.URL.Path != fmt.Sprintf("/repos/%s/%s/pulls", repo.Owner, repo.Name) {
+					t.Errorf("expected request to /repos/%s/%s/pulls, got %s", repo.Owner, repo.Name, r.URL.Path)
 				}
 
 				w.WriteHeader(tc.statusCode)
@@ -108,7 +99,7 @@ func TestCreatePullRequest(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			pr, err := client.CreatePullRequest(context.Background(), tc.repo, tc.remoteBranch, tc.title, tc.body)
+			pr, err := client.CreatePullRequest(context.Background(), repo, remoteBranch, title, tc.body)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("CreatePullRequest() error = %v, wantErr %v", err, tc.wantErr)
@@ -117,7 +108,7 @@ func TestCreatePullRequest(t *testing.T) {
 
 			if !tc.wantErr {
 				expectedPR := &PullRequestMetadata{
-					Repo:   tc.repo,
+					Repo:   repo,
 					Number: tc.mockResponse.GetNumber(),
 				}
 				if diff := cmp.Diff(expectedPR, pr); diff != "" {
@@ -129,18 +120,16 @@ func TestCreatePullRequest(t *testing.T) {
 }
 
 func TestGetCommit(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	sha := "abcdef123"
 	cases := []struct {
 		name         string
-		repo         *Repository
-		sha          string
 		mockResponse *github.RepositoryCommit
 		statusCode   int
 		wantErr      bool
 	}{
 		{
 			name: "Successful get",
-			repo: &Repository{Owner: "test-owner", Name: "test-repo"},
-			sha:  "abcdef123",
 			mockResponse: &github.RepositoryCommit{
 				SHA: github.Ptr("abcdef123"),
 			},
@@ -149,8 +138,6 @@ func TestGetCommit(t *testing.T) {
 		},
 		{
 			name:       "GitHub API error",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			sha:        "abcdef123",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -162,7 +149,7 @@ func TestGetCommit(t *testing.T) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/commits/%s", tc.repo.Owner, tc.repo.Name, tc.sha)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/commits/%s", repo.Owner, repo.Name, sha)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -177,7 +164,7 @@ func TestGetCommit(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			commit, err := client.GetCommit(context.Background(), tc.repo, tc.sha)
+			commit, err := client.GetCommit(context.Background(), repo, sha)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetCommit() error = %v, wantErr %v", err, tc.wantErr)
@@ -194,42 +181,48 @@ func TestGetCommit(t *testing.T) {
 }
 
 func TestGetRawContent(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	filePath := "test-path"
+	ref := "test-ref"
 	cases := []struct {
-		name         string
-		repo         *Repository
-		filePath     string
-		ref          string
-		mockResponse string
-		statusCode   int
-		wantErr      bool
+		name               string
+		mockResponse       string
+		statusCode         int
+		downloadStatusCode int
+		wantErr            bool
 	}{
 		{
 			name:         "Successful get",
-			repo:         &Repository{Owner: "test-owner", Name: "test-repo"},
-			filePath:     "test-path",
-			ref:          "test-ref",
 			mockResponse: "test content",
 			statusCode:   http.StatusOK,
 			wantErr:      false,
 		},
 		{
 			name:       "GitHub API error on GetContents",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			filePath:   "test-path",
-			ref:        "test-ref",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
+		},
+		{
+			name:               "Download returns non-OK status",
+			statusCode:         http.StatusOK,
+			downloadStatusCode: http.StatusNoContent,
+			wantErr:            true,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var serverURL string
+			downloadStatusCode := tc.statusCode
+			if tc.downloadStatusCode != 0 {
+				downloadStatusCode = tc.downloadStatusCode
+			}
+
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if strings.Contains(r.URL.Path, "download") {
 					// This is the download request
-					w.WriteHeader(tc.statusCode)
-					if tc.mockResponse != "" {
+					w.WriteHeader(downloadStatusCode)
+					if tc.mockResponse != "" && downloadStatusCode == http.StatusOK {
 						_, err := w.Write([]byte(tc.mockResponse))
 						if err != nil {
 							t.Fatalf("failed to write mock response: %v", err)
@@ -257,7 +250,7 @@ func TestGetRawContent(t *testing.T) {
 			serverURL = server.URL
 			defer server.Close()
 
-			content, err := client.GetRawContent(context.Background(), tc.repo, tc.filePath, tc.ref)
+			content, err := client.GetRawContent(context.Background(), repo, filePath, ref)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetRawContent() error = %v, wantErr %v", err, tc.wantErr)
@@ -339,19 +332,18 @@ func TestParseUrl(t *testing.T) {
 }
 
 func TestGetPullRequestReviews(t *testing.T) {
+	prMetadata := &PullRequestMetadata{
+		Repo:   &Repository{Owner: "test-owner", Name: "test-repo"},
+		Number: 1,
+	}
 	cases := []struct {
 		name         string
-		prMetadata   *PullRequestMetadata
 		mockResponse []*github.PullRequestReview
 		statusCode   int
 		wantErr      bool
 	}{
 		{
 			name: "Successful get",
-			prMetadata: &PullRequestMetadata{
-				Repo:   &Repository{Owner: "test-owner", Name: "test-repo"},
-				Number: 1,
-			},
 			mockResponse: []*github.PullRequestReview{
 				{
 					ID:   github.Ptr(int64(1)),
@@ -362,11 +354,7 @@ func TestGetPullRequestReviews(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "GitHub API error",
-			prMetadata: &PullRequestMetadata{
-				Repo:   &Repository{Owner: "test-owner", Name: "test-repo"},
-				Number: 1,
-			},
+			name:       "GitHub API error",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -378,7 +366,7 @@ func TestGetPullRequestReviews(t *testing.T) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/pulls/%d/reviews", tc.prMetadata.Repo.Owner, tc.prMetadata.Repo.Name, tc.prMetadata.Number)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/pulls/%d/reviews", prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -393,7 +381,7 @@ func TestGetPullRequestReviews(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			reviews, err := client.GetPullRequestReviews(context.Background(), tc.prMetadata)
+			reviews, err := client.GetPullRequestReviews(context.Background(), prMetadata)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetPullRequestReviews() error = %v, wantErr %v", err, tc.wantErr)
@@ -410,29 +398,28 @@ func TestGetPullRequestReviews(t *testing.T) {
 }
 
 func TestGetPullRequestCheckRuns(t *testing.T) {
+	pullRequest := &github.PullRequest{
+		Head: &github.PullRequestBranch{
+			Ref: github.Ptr("test-branch"),
+			Repo: &github.Repository{
+				Owner: &github.User{
+					Login: github.Ptr("test-owner"),
+				},
+				Name: github.Ptr("test-repo"),
+			},
+			User: &github.User{
+				Login: github.Ptr("test-owner"),
+			},
+		},
+	}
 	cases := []struct {
 		name         string
-		pullRequest  *github.PullRequest
 		mockResponse *github.ListCheckRunsResults
 		statusCode   int
 		wantErr      bool
 	}{
 		{
 			name: "Successful get",
-			pullRequest: &github.PullRequest{
-				Head: &github.PullRequestBranch{
-					Ref: github.Ptr("test-branch"),
-					Repo: &github.Repository{
-						Owner: &github.User{
-							Login: github.Ptr("test-owner"),
-						},
-						Name: github.Ptr("test-repo"),
-					},
-					User: &github.User{
-						Login: github.Ptr("test-owner"),
-					},
-				},
-			},
 			mockResponse: &github.ListCheckRunsResults{
 				Total: github.Ptr(1),
 				CheckRuns: []*github.CheckRun{
@@ -446,21 +433,7 @@ func TestGetPullRequestCheckRuns(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "GitHub API error",
-			pullRequest: &github.PullRequest{
-				Head: &github.PullRequestBranch{
-					Ref: github.Ptr("test-branch"),
-					Repo: &github.Repository{
-						Owner: &github.User{
-							Login: github.Ptr("test-owner"),
-						},
-						Name: github.Ptr("test-repo"),
-					},
-					User: &github.User{
-						Login: github.Ptr("test-owner"),
-					},
-				},
-			},
+			name:       "GitHub API error",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -472,7 +445,7 @@ func TestGetPullRequestCheckRuns(t *testing.T) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/commits/%s/check-runs", *tc.pullRequest.Head.Repo.Owner.Login, *tc.pullRequest.Head.Repo.Name, *tc.pullRequest.Head.Ref)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/commits/%s/check-runs", *pullRequest.Head.Repo.Owner.Login, *pullRequest.Head.Repo.Name, *pullRequest.Head.Ref)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -487,7 +460,7 @@ func TestGetPullRequestCheckRuns(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			checkRuns, err := client.GetPullRequestCheckRuns(context.Background(), tc.pullRequest)
+			checkRuns, err := client.GetPullRequestCheckRuns(context.Background(), pullRequest)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetPullRequestCheckRuns() error = %v, wantErr %v", err, tc.wantErr)
@@ -504,18 +477,16 @@ func TestGetPullRequestCheckRuns(t *testing.T) {
 }
 
 func TestGetPullRequest(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	prNumber := 1
 	cases := []struct {
 		name         string
-		repo         *Repository
-		prNumber     int
 		mockResponse *github.PullRequest
 		statusCode   int
 		wantErr      bool
 	}{
 		{
-			name:     "Successful get",
-			repo:     &Repository{Owner: "test-owner", Name: "test-repo"},
-			prNumber: 1,
+			name: "Successful get",
 			mockResponse: &github.PullRequest{
 				Number: github.Ptr(1),
 				Title:  github.Ptr("Test PR"),
@@ -525,8 +496,6 @@ func TestGetPullRequest(t *testing.T) {
 		},
 		{
 			name:       "GitHub API error",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			prNumber:   1,
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -538,7 +507,7 @@ func TestGetPullRequest(t *testing.T) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/pulls/%d", tc.repo.Owner, tc.repo.Name, tc.prNumber)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/pulls/%d", repo.Owner, repo.Name, prNumber)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -553,7 +522,7 @@ func TestGetPullRequest(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			pr, err := client.GetPullRequest(context.Background(), tc.repo, tc.prNumber)
+			pr, err := client.GetPullRequest(context.Background(), repo, prNumber)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetPullRequest() error = %v, wantErr %v", err, tc.wantErr)
@@ -570,20 +539,17 @@ func TestGetPullRequest(t *testing.T) {
 }
 
 func TestMergePullRequest(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	prNumber := 1
+	method := MergeMethodRebase
 	cases := []struct {
 		name         string
-		repo         *Repository
-		prNumber     int
-		method       github.MergeMethod
 		mockResponse *github.PullRequestMergeResult
 		statusCode   int
 		wantErr      bool
 	}{
 		{
-			name:     "Successful merge",
-			repo:     &Repository{Owner: "test-owner", Name: "test-repo"},
-			prNumber: 1,
-			method:   MergeMethodRebase,
+			name: "Successful merge",
 			mockResponse: &github.PullRequestMergeResult{
 				SHA:     github.Ptr("abcdef123"),
 				Merged:  github.Ptr(true),
@@ -594,9 +560,6 @@ func TestMergePullRequest(t *testing.T) {
 		},
 		{
 			name:       "GitHub API error",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			prNumber:   1,
-			method:     MergeMethodRebase,
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -608,7 +571,7 @@ func TestMergePullRequest(t *testing.T) {
 				if r.Method != http.MethodPut {
 					t.Errorf("expected PUT request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/pulls/%d/merge", tc.repo.Owner, tc.repo.Name, tc.prNumber)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/pulls/%d/merge", repo.Owner, repo.Name, prNumber)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -623,7 +586,7 @@ func TestMergePullRequest(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			result, err := client.MergePullRequest(context.Background(), tc.repo, tc.prNumber, tc.method)
+			result, err := client.MergePullRequest(context.Background(), repo, prNumber, method)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("MergePullRequest() error = %v, wantErr %v", err, tc.wantErr)
@@ -640,27 +603,21 @@ func TestMergePullRequest(t *testing.T) {
 }
 
 func TestAddCommentToPullRequest(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	prNumber := 1
+	comment := "test comment"
 	cases := []struct {
 		name       string
-		repo       *Repository
-		prNumber   int
-		comment    string
 		statusCode int
 		wantErr    bool
 	}{
 		{
 			name:       "Successful comment addition",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			prNumber:   1,
-			comment:    "test comment",
 			statusCode: http.StatusCreated,
 			wantErr:    false,
 		},
 		{
 			name:       "GitHub API error",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			prNumber:   1,
-			comment:    "test comment",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -672,7 +629,7 @@ func TestAddCommentToPullRequest(t *testing.T) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/issues/%d/comments", tc.repo.Owner, tc.repo.Name, tc.prNumber)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/issues/%d/comments", repo.Owner, repo.Name, prNumber)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -682,7 +639,7 @@ func TestAddCommentToPullRequest(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			err := client.AddCommentToPullRequest(context.Background(), tc.repo, tc.prNumber, tc.comment)
+			err := client.AddCommentToPullRequest(context.Background(), repo, prNumber, comment)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("AddCommentToPullRequest() error = %v, wantErr %v", err, tc.wantErr)
@@ -692,27 +649,21 @@ func TestAddCommentToPullRequest(t *testing.T) {
 }
 
 func TestRemoveLabelFromPullRequest(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	prNumber := 1
+	label := "test-label"
 	cases := []struct {
 		name       string
-		repo       *Repository
-		prNumber   int
-		label      string
 		statusCode int
 		wantErr    bool
 	}{
 		{
 			name:       "Successful label removal",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			prNumber:   1,
-			label:      "test-label",
 			statusCode: http.StatusOK,
 			wantErr:    false,
 		},
 		{
 			name:       "GitHub API error",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			prNumber:   1,
-			label:      "test-label",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -724,7 +675,7 @@ func TestRemoveLabelFromPullRequest(t *testing.T) {
 				if r.Method != http.MethodDelete {
 					t.Errorf("expected DELETE request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/issues/%d/labels/%s", tc.repo.Owner, tc.repo.Name, tc.prNumber, tc.label)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/issues/%d/labels/%s", repo.Owner, repo.Name, prNumber, label)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -734,7 +685,7 @@ func TestRemoveLabelFromPullRequest(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			err := client.RemoveLabelFromPullRequest(context.Background(), tc.repo, tc.prNumber, tc.label)
+			err := client.RemoveLabelFromPullRequest(context.Background(), repo, prNumber, label)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("RemoveLabelFromPullRequest() error = %v, wantErr %v", err, tc.wantErr)
@@ -744,30 +695,23 @@ func TestRemoveLabelFromPullRequest(t *testing.T) {
 }
 
 func TestAddLabelToPullRequest(t *testing.T) {
+	prMetadata := &PullRequestMetadata{
+		Repo:   &Repository{Owner: "test-owner", Name: "test-repo"},
+		Number: 1,
+	}
+	label := "test-label"
 	cases := []struct {
 		name       string
-		prMetadata *PullRequestMetadata
-		label      string
 		statusCode int
 		wantErr    bool
 	}{
 		{
-			name: "Successful label addition",
-			prMetadata: &PullRequestMetadata{
-				Repo:   &Repository{Owner: "test-owner", Name: "test-repo"},
-				Number: 1,
-			},
-			label:      "test-label",
+			name:       "Successful label addition",
 			statusCode: http.StatusOK,
 			wantErr:    false,
 		},
 		{
-			name: "GitHub API error",
-			prMetadata: &PullRequestMetadata{
-				Repo:   &Repository{Owner: "test-owner", Name: "test-repo"},
-				Number: 1,
-			},
-			label:      "test-label",
+			name:       "GitHub API error",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -779,7 +723,7 @@ func TestAddLabelToPullRequest(t *testing.T) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/issues/%d/labels", tc.prMetadata.Repo.Owner, tc.prMetadata.Repo.Name, tc.prMetadata.Number)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/issues/%d/labels", prMetadata.Repo.Owner, prMetadata.Repo.Name, prMetadata.Number)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -789,7 +733,7 @@ func TestAddLabelToPullRequest(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			err := client.AddLabelToPullRequest(context.Background(), tc.prMetadata, tc.label)
+			err := client.AddLabelToPullRequest(context.Background(), prMetadata, label)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("AddLabelToPullRequest() error = %v, wantErr %v", err, tc.wantErr)
@@ -799,20 +743,17 @@ func TestAddLabelToPullRequest(t *testing.T) {
 }
 
 func TestGetDiffCommits(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	source := "main"
+	target := "test-branch"
 	cases := []struct {
 		name         string
-		repo         *Repository
-		source       string
-		target       string
 		mockResponse *github.CommitsComparison
 		statusCode   int
 		wantErr      bool
 	}{
 		{
-			name:   "Successful get",
-			repo:   &Repository{Owner: "test-owner", Name: "test-repo"},
-			source: "main",
-			target: "test-branch",
+			name: "Successful get",
 			mockResponse: &github.CommitsComparison{
 				Commits: []*github.RepositoryCommit{
 					{
@@ -825,9 +766,6 @@ func TestGetDiffCommits(t *testing.T) {
 		},
 		{
 			name:       "GitHub API error",
-			repo:       &Repository{Owner: "test-owner", Name: "test-repo"},
-			source:     "main",
-			target:     "test-branch",
 			statusCode: http.StatusInternalServerError,
 			wantErr:    true,
 		},
@@ -839,7 +777,7 @@ func TestGetDiffCommits(t *testing.T) {
 				if r.Method != http.MethodGet {
 					t.Errorf("expected GET request, got %s", r.Method)
 				}
-				expectedPath := fmt.Sprintf("/repos/%s/%s/compare/%s...%s", tc.repo.Owner, tc.repo.Name, tc.source, tc.target)
+				expectedPath := fmt.Sprintf("/repos/%s/%s/compare/%s...%s", repo.Owner, repo.Name, source, target)
 				if r.URL.Path != expectedPath {
 					t.Errorf("expected request to %s, got %s", expectedPath, r.URL.Path)
 				}
@@ -854,7 +792,7 @@ func TestGetDiffCommits(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			commits, err := client.GetDiffCommits(context.Background(), tc.repo, tc.source, tc.target)
+			commits, err := client.GetDiffCommits(context.Background(), repo, source, target)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("GetDiffCommits() error = %v, wantErr %v", err, tc.wantErr)
@@ -871,26 +809,20 @@ func TestGetDiffCommits(t *testing.T) {
 }
 
 func TestCreateRelease(t *testing.T) {
+	repo := &Repository{Owner: "test-owner", Name: "test-repo"}
+	tag := "v1.0.0"
+	commit := "abcdef123"
+	title := "Release v1.0.0"
+	description := "This is a test release."
+	prerelease := false
 	cases := []struct {
 		name         string
-		repo         *Repository
-		tag          string
-		commit       string
-		title        string
-		description  string
-		prerelease   bool
 		mockResponse *github.RepositoryRelease
 		statusCode   int
 		wantErr      bool
 	}{
 		{
-			name:        "Successful release creation",
-			repo:        &Repository{Owner: "test-owner", Name: "test-repo"},
-			tag:         "v1.0.0",
-			commit:      "abcdef123",
-			title:       "Release v1.0.0",
-			description: "This is a test release.",
-			prerelease:  false,
+			name: "Successful release creation",
 			mockResponse: &github.RepositoryRelease{
 				ID:      github.Ptr(int64(1)),
 				TagName: github.Ptr("v1.0.0"),
@@ -899,15 +831,9 @@ func TestCreateRelease(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:        "GitHub API error",
-			repo:        &Repository{Owner: "test-owner", Name: "test-repo"},
-			tag:         "v1.0.0",
-			commit:      "abcdef123",
-			title:       "Release v1.0.0",
-			description: "This is a test release.",
-			prerelease:  false,
-			statusCode:  http.StatusInternalServerError,
-			wantErr:     true,
+			name:       "GitHub API error",
+			statusCode: http.StatusInternalServerError,
+			wantErr:    true,
 		},
 	}
 
@@ -917,8 +843,8 @@ func TestCreateRelease(t *testing.T) {
 				if r.Method != http.MethodPost {
 					t.Errorf("expected POST request, got %s", r.Method)
 				}
-				if r.URL.Path != fmt.Sprintf("/repos/%s/%s/releases", tc.repo.Owner, tc.repo.Name) {
-					t.Errorf("expected request to /repos/%s/%s/releases, got %s", tc.repo.Owner, tc.repo.Name, r.URL.Path)
+				if r.URL.Path != fmt.Sprintf("/repos/%s/%s/releases", repo.Owner, repo.Name) {
+					t.Errorf("expected request to /repos/%s/%s/releases, got %s", repo.Owner, repo.Name, r.URL.Path)
 				}
 
 				w.WriteHeader(tc.statusCode)
@@ -931,7 +857,7 @@ func TestCreateRelease(t *testing.T) {
 			client, server := newTestServerAndClient(t, handler)
 			defer server.Close()
 
-			release, err := client.CreateRelease(context.Background(), tc.repo, tc.tag, tc.commit, tc.title, tc.description, tc.prerelease)
+			release, err := client.CreateRelease(context.Background(), repo, tag, commit, title, description, prerelease)
 
 			if (err != nil) != tc.wantErr {
 				t.Errorf("CreateRelease() error = %v, wantErr %v", err, tc.wantErr)

@@ -228,7 +228,6 @@ func (c *Client) GetRawContent(ctx context.Context, repo *Repository, path, ref 
 	if err != nil {
 		return nil, err
 	}
-	// As per go-github docs, we need to check the response status code.
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status: %s", resp.Status)
 	}
