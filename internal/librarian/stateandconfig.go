@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -47,7 +46,7 @@ func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*config.PipelineS
 }
 
 func loadRepoPipelineState(languageRepo *gitrepo.Repository) (*config.PipelineState, error) {
-	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineStateFile)
+	path := filepath.Join(languageRepo.Dir, pipelineStateFile)
 	return loadPipelineStateFile(path)
 }
 
@@ -56,7 +55,7 @@ func loadPipelineStateFile(path string) (*config.PipelineState, error) {
 }
 
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
-	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, "pipeline-config.json")
+	path := filepath.Join(languageRepo.Dir, pipelineConfigFile)
 	return loadPipelineConfigFile(path)
 }
 
@@ -64,13 +63,9 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*config.PipelineState, error) {
-	ghClient, err := github.NewClient(gitHubToken, repo)
-	if err != nil {
-		return nil, err
-	}
+func fetchRemotePipelineState(ctx context.Context, client GitHubClient, ref string) (*config.PipelineState, error) {
 	return parsePipelineState(func() ([]byte, error) {
-		return ghClient.GetRawContent(ctx, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
+		return client.GetRawContent(ctx, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
 	})
 }
 
