@@ -93,7 +93,7 @@ provided, but there is no absolute requirement to do so.
 `build-library` builds and optionally runs unit tests for either a single library or all libraries
 configured within the repository.
 
-Called from CLI commands: `configure`, `generate`, `update-apis`, `create-release-artifacts`
+Called from CLI commands: `configure`, `generate`, `update-apis`
 
 Flags:
 
@@ -264,8 +264,6 @@ a good reason to keep the two commands separate.
 `integration-test-library` runs integration tests for a single library. Currently this is only used as
 part of the release process.
 
-Called from CLI commands: `create-release-artifacts`
-
 Flags:
 
 - `--repo-root`: the root of the language repo; required.
@@ -289,8 +287,6 @@ the command has executed successfully must not show any changes.
 
 `package-library` creates any releasable artifacts - typically package binaries ready to publish to a package manager,
 and bundles of documentation files ready to publish to documentation sites.
-
-Called from CLI commands: `create-release-artifacts`
 
 Flags:
 
