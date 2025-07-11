@@ -45,32 +45,32 @@ func TestCommandUsage(t *testing.T) {
 }
 
 func TestFindLibraryByID(t *testing.T) {
-	lib1 := config.Library{ID: "lib1"}
-	lib2 := config.Library{ID: "lib2"}
+	lib1 := &config.LibraryState{ID: "lib1"}
+	lib2 := &config.LibraryState{ID: "lib2"}
 	stateWithLibs := &config.LibrarianState{
-		Libraries: []config.Library{lib1, lib2},
+		Libraries: []*config.LibraryState{lib1, lib2},
 	}
 	stateNoLibs := &config.LibrarianState{
-		Libraries: []config.Library{},
+		Libraries: []*config.LibraryState{},
 	}
 
 	for _, test := range []struct {
 		name      string
 		state     *config.LibrarianState
 		libraryID string
-		want      *config.Library
+		want      *config.LibraryState
 	}{
 		{
 			name:      "found first library",
 			state:     stateWithLibs,
 			libraryID: "lib1",
-			want:      &lib1,
+			want:      lib1,
 		},
 		{
 			name:      "found second library",
 			state:     stateWithLibs,
 			libraryID: "lib2",
-			want:      &lib2,
+			want:      lib2,
 		},
 		{
 			name:      "not found",

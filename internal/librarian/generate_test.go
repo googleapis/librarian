@@ -65,7 +65,7 @@ func TestDetectIfLibraryConfigured(t *testing.T) {
 			repo: "some/repo",
 			state: &config.LibrarianState{
 				Image: "some/image:v1.2.3",
-				Libraries: []config.Library{
+				Libraries: []*config.LibraryState{
 					{
 						ID:          "some-library",
 						APIs:        []config.API{{Path: "some/api"}},
@@ -80,7 +80,7 @@ func TestDetectIfLibraryConfigured(t *testing.T) {
 			repo: "some/repo",
 			state: &config.LibrarianState{
 				Image: "some/image:v1.2.3",
-				Libraries: []config.Library{
+				Libraries: []*config.LibraryState{
 					{
 						ID:          "some-library",
 						APIs:        []config.API{{Path: "some/api"}},
@@ -157,7 +157,7 @@ func TestRunGenerateCommand(t *testing.T) {
 			api:  "some/api",
 			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
-				Libraries: []config.Library{
+				Libraries: []*config.LibraryState{
 					{
 						ID:   "some-library",
 						APIs: []config.API{{Path: "some/api"}},
@@ -179,7 +179,7 @@ func TestRunGenerateCommand(t *testing.T) {
 			api:  "other/api",
 			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
-				Libraries: []config.Library{
+				Libraries: []*config.LibraryState{
 					{
 						ID:   "some-library",
 						APIs: []config.API{{Path: "some/api"}},
@@ -315,7 +315,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				stateFile := filepath.Join(test.cfg.Repo, pipelineStateFile)
 				state := &config.LibrarianState{
 					Image: "some/image:v1.2.3",
-					Libraries: []config.Library{
+					Libraries: []*config.LibraryState{
 						{
 							ID:          "some-library",
 							APIs:        []config.API{{Path: "some/api"}},

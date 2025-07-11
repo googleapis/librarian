@@ -32,7 +32,7 @@ func TestParseLibrarianState(t *testing.T) {
 		content: "image: gcr.io/test/image:v1.2.3\nlibraries:\n  - id: a/b\n    source_paths:\n      - src/a\n      - src/b\n    apis:\n      - path: a/b/v1\n        service_config: a/b/v1/service.yaml\n",
 		want: &config.LibrarianState{
 			Image: "gcr.io/test/image:v1.2.3",
-			Libraries: []config.Library{
+			Libraries: []*config.LibraryState{
 				{
 					ID:          "a/b",
 					SourcePaths: []string{"src/a", "src/b"},

@@ -28,7 +28,7 @@ func TestLibrarianState_Validate(t *testing.T) {
 			name: "valid state",
 			state: &LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []Library{
+				Libraries: []*LibraryState{
 					{
 						ID:          "a/b",
 						SourcePaths: []string{"src/a", "src/b"},
@@ -44,7 +44,7 @@ func TestLibrarianState_Validate(t *testing.T) {
 		{
 			name: "missing image",
 			state: &LibrarianState{
-				Libraries: []Library{
+				Libraries: []*LibraryState{
 					{
 						ID:          "a/b",
 						SourcePaths: []string{"src/a", "src/b"},
@@ -77,12 +77,12 @@ func TestLibrarianState_Validate(t *testing.T) {
 func TestLibrary_Validate(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		library *Library
+		library *LibraryState
 		wantErr bool
 	}{
 		{
 			name: "valid library",
-			library: &Library{
+			library: &LibraryState{
 				ID:          "a/b",
 				SourcePaths: []string{"src/a", "src/b"},
 				APIs: []API{
@@ -94,7 +94,7 @@ func TestLibrary_Validate(t *testing.T) {
 		},
 		{
 			name: "missing id",
-			library: &Library{
+			library: &LibraryState{
 				SourcePaths: []string{"src/a", "src/b"},
 				APIs: []API{
 					{
@@ -106,7 +106,7 @@ func TestLibrary_Validate(t *testing.T) {
 		},
 		{
 			name: "id is dot",
-			library: &Library{
+			library: &LibraryState{
 				ID:          ".",
 				SourcePaths: []string{"src/a", "src/b"},
 				APIs: []API{
@@ -119,7 +119,7 @@ func TestLibrary_Validate(t *testing.T) {
 		},
 		{
 			name: "id is double dot",
-			library: &Library{
+			library: &LibraryState{
 				ID:          "..",
 				SourcePaths: []string{"src/a", "src/b"},
 				APIs: []API{
@@ -132,7 +132,7 @@ func TestLibrary_Validate(t *testing.T) {
 		},
 		{
 			name: "missing source paths",
-			library: &Library{
+			library: &LibraryState{
 				ID: "a/b",
 				APIs: []API{
 					{
@@ -144,7 +144,7 @@ func TestLibrary_Validate(t *testing.T) {
 		},
 		{
 			name: "missing apis",
-			library: &Library{
+			library: &LibraryState{
 				ID:          "a/b",
 				SourcePaths: []string{"src/a", "src/b"},
 			},

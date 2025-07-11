@@ -26,7 +26,7 @@ type LibrarianState struct {
 	// The name and tag of the generator image to use. tag is required.
 	Image string `yaml:"image"`
 	// A list of library configurations.
-	Libraries []Library `yaml:"libraries"`
+	Libraries []*LibraryState `yaml:"libraries"`
 }
 
 // Validate checks that the LibrarianState is valid.
@@ -41,6 +41,9 @@ func (s *LibrarianState) Validate() error {
 		return fmt.Errorf("libraries cannot be empty")
 	}
 	for i, l := range s.Libraries {
+		if l == nil {
+			return fmt.Errorf("library at index %d cannot be nil", i)
+		}
 		if err := l.Validate(); err != nil {
 			return fmt.Errorf("invalid library at index %d: %w", i, err)
 		}
@@ -77,8 +80,8 @@ func parseImage(image string) (ref string, tag string) {
 	return image[:lastColon], image[lastColon+1:]
 }
 
-// Library represents the state of a single library within state.yaml.
-type Library struct {
+// LibraryState represents the state of a single library within state.yaml.
+type LibraryState struct {
 	// A unique identifier for the library, in a language-specific format.
 	// A valid ID should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
 	ID string `yaml:"id"`
@@ -105,7 +108,7 @@ var (
 )
 
 // Validate checks that the Library is valid.
-func (l *Library) Validate() error {
+func (l *LibraryState) Validate() error {
 	if l.ID == "" {
 		return fmt.Errorf("id is required")
 	}
