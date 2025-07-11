@@ -28,7 +28,6 @@ import (
 )
 
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
-
 type mockContainerClient struct {
 	ContainerClient
 	generateCalls int

@@ -85,7 +85,7 @@ type LibraryState struct {
 	// A unique identifier for the library, in a language-specific format.
 	// A valid ID should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
 	ID string `yaml:"id"`
-	// The last released version of the library.
+	// The last released version of the library, following SemVer.
 	Version string `yaml:"version"`
 	// The commit hash from the API definition repository at which the library was last generated.
 	LastGeneratedCommit string `yaml:"last_generated_commit"`
@@ -103,7 +103,7 @@ type LibraryState struct {
 
 var (
 	libraryIDRegex = regexp.MustCompile(`^[a-zA-Z0-9/._-]+$`)
-	semverRegex    = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+	semverRegex    = regexp.MustCompile(`^v?\d+\.\d+\.\d+$`)
 	hexRegex       = regexp.MustCompile("^[a-fA-F0-9]+$")
 )
 

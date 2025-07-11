@@ -15,11 +15,24 @@
 package librarian
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
+
+// mockGitHubClient is a mock implementation of the GitHubClient interface for testing.
+type mockGitHubClient struct {
+	GitHubClient
+	rawContent []byte
+	rawErr     error
+}
+
+func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) ([]byte, error) {
+	return m.rawContent, m.rawErr
+}
 
 func TestParseLibrarianState(t *testing.T) {
 	for _, test := range []struct {
@@ -28,8 +41,17 @@ func TestParseLibrarianState(t *testing.T) {
 		want    *config.LibrarianState
 		wantErr bool
 	}{{
-		name:    "valid state",
-		content: "image: gcr.io/test/image:v1.2.3\nlibraries:\n  - id: a/b\n    source_paths:\n      - src/a\n      - src/b\n    apis:\n      - path: a/b/v1\n        service_config: a/b/v1/service.yaml\n",
+		name: "valid state",
+		content: `image: gcr.io/test/image:v1.2.3
+libraries:
+  - id: a/b
+    source_paths:
+      - src/a
+      - src/b
+    apis:
+      - path: a/b/v1
+        service_config: a/b/v1/service.yaml
+`,
 		want: &config.LibrarianState{
 			Image: "gcr.io/test/image:v1.2.3",
 			Libraries: []*config.LibraryState{
@@ -68,6 +90,71 @@ func TestParseLibrarianState(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("parseLibrarianState() mismatch (-want +got): %s", diff)
+			}
+		})
+	}
+}
+
+func TestFetchRemoteLibrarianState(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		client  GitHubClient
+		want    *config.LibrarianState
+		wantErr bool
+	}{
+		{
+			name: "success",
+			client: &mockGitHubClient{
+				rawContent: []byte(`image: gcr.io/test/image:v1.2.3
+libraries:
+  - id: a/b
+    source_paths:
+      - src/a
+      - src/b
+    apis:
+      - path: a/b/v1
+        service_config: a/b/v1/service.yaml
+`),
+			},
+			want: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "a/b",
+						SourcePaths: []string{"src/a", "src/b"},
+						APIs: []config.API{
+							{
+								Path:          "a/b/v1",
+								ServiceConfig: "a/b/v1/service.yaml",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "GetRawContent error",
+			client: &mockGitHubClient{
+				rawErr: errors.New("GetRawContent error"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid yaml",
+			client: &mockGitHubClient{
+				rawContent: []byte("invalid yaml"),
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := fetchRemoteLibrarianState(context.Background(), test.client, "main")
+			if (err != nil) != test.wantErr {
+				t.Errorf("fetchRemoteLibrarianState() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("fetchRemoteLibrarianState() mismatch (-want +got): %s", diff)
 			}
 		})
 	}

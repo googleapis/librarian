@@ -150,6 +150,60 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "valid version without v prefix",
+			library: &LibraryState{
+				ID:          "a/b",
+				Version:     "1.2.3",
+				SourcePaths: []string{"src/a", "src/b"},
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "invalid id characters",
+			library: &LibraryState{
+				ID:          "a/b!",
+				SourcePaths: []string{"src/a", "src/b"},
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid last generated commit non-hex",
+			library: &LibraryState{
+				ID:                  "a/b",
+				LastGeneratedCommit: "not-a-hex-string",
+				SourcePaths:         []string{"src/a", "src/b"},
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid last generated commit wrong length",
+			library: &LibraryState{
+				ID:                  "a/b",
+				LastGeneratedCommit: "deadbeef",
+				SourcePaths:         []string{"src/a", "src/b"},
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := test.library.Validate(); (err != nil) != test.wantErr {
