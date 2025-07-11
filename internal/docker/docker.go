@@ -66,16 +66,23 @@ type Docker struct {
 // GenerateRequest contains all the information required for a language
 // container to run the generate command.
 type GenerateRequest struct {
-	cfg   *config.Config
+	// cfg is a pointer to the [config.Config] struct, holding general configuration
+	// values parsed from flags or environment variables.
+	cfg *config.Config
+	// state is a pointer to the [config.PipelineState] struct, representing
+	// the overall state of the generation and release pipeline.
 	state *config.PipelineState
-
 	// apiRoot specifies the root directory of the API specification repo
 	apiRoot string
-
 	// output specifies the empty output directory into which the command should
 	// generate code
-	output         string
-	requestJson    string
+	output string
+	// requestJson is the path to a JSON file that describes which library to
+	// generate.
+	requestJson string
+	// generatorInput is the path to the .librarian/generator-input directory
+	// within the language repository, used for additional configuration required
+	// by the generator.
 	generatorInput string
 
 	// libraryID specifies the ID of the library to generate
@@ -83,6 +90,9 @@ type GenerateRequest struct {
 }
 
 // NewGenerateRequest constructs a NewGenerateRequest instance.
+// This function creates a request object containing all the necessary
+// configuration and state information for a language container to perform a
+// generation operation for a specific library.
 func NewGenerateRequest(cfg *config.Config, state *config.PipelineState, apiRoot, output, requestJson, generatorInput, libraryID string) *GenerateRequest {
 	return &GenerateRequest{
 		cfg:            cfg,
