@@ -193,7 +193,14 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
 
-		generateRequest := docker.NewGenerateRequest(r.repo, r.cfg, state, apiRoot, outputDir, libraryID)
+		generateRequest := &docker.GenerateRequest{
+			Cfg:       r.cfg,
+			State:     state,
+			RepoDir:   r.repo.Dir,
+			ApiRoot:   apiRoot,
+			Output:    outputDir,
+			LibraryID: libraryID,
+		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
 		return libraryID, containerConfig.Generate(ctx, generateRequest)
 	}
