@@ -240,7 +240,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if test.expectErr {
 				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
-				err := writeGenerateRequest(test.state, filePath)
+				err := writeGenerateRequest(test.state, "google-cloud-go", filePath)
 				if err == nil {
 					t.Errorf("writeGenerateRequest() expected an error but got nil")
 				}
@@ -249,7 +249,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "generate-request.json")
-			err := writeGenerateRequest(test.state, filePath)
+			err := writeGenerateRequest(test.state, "google-cloud-go", filePath)
 
 			if err != nil {
 				t.Fatalf("writeGenerateRequest() unexpected error: %v", err)

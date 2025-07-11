@@ -1,24 +1,8 @@
 {
-  "image_tag": "v1.0.0",
-  "libraries": [
-    {
-      "id": "google-cloud-go",
-      "current_version": "1.0.0",
-      "generation_automation_level": 3,
-      "api_paths": [
-        "google/cloud/compute/v1"
-      ]
-    },
-    {
-      "id": "google-cloud-storage",
-      "current_version": "1.2.3",
-      "generation_automation_level": 2,
-      "api_paths": [
-        "google/storage/v1"
-      ]
-    }
-  ],
-  "ignored_api_paths": [
-    "google/cloud/ignored/v1"
+  "id": "google-cloud-go",
+  "current_version": "1.0.0",
+  "generation_automation_level": 3,
+  "api_paths": [
+    "google/cloud/compute/v1"
   ]
 }

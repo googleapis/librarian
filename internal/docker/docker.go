@@ -105,7 +105,7 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 // library.
 func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
-	if err := writeGenerateRequest(request.State, jsonFilePath); err != nil {
+	if err := writeGenerateRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
 	commandArgs := []string{
@@ -228,12 +228,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-func writeGenerateRequest(state *config.PipelineState, jsonFilePath string) error {
-	data, err := json.MarshalIndent(state, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal state to JSON: %w", err)
-	}
-
+func writeGenerateRequest(state *config.PipelineState, libraryID, jsonFilePath string) error {
 	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
@@ -243,9 +238,19 @@ func writeGenerateRequest(state *config.PipelineState, jsonFilePath string) erro
 	}
 	defer jsonFile.Close()
 
-	_, err = jsonFile.Write(data)
-	if err != nil {
-		return fmt.Errorf("failed to write generate request JSON file: %w", err)
+	for _, library := range state.Libraries {
+		if library.ID != libraryID {
+			continue
+		}
+
+		data, err := json.MarshalIndent(library, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal state to JSON: %w", err)
+		}
+		_, err = jsonFile.Write(data)
+		if err != nil {
+			return fmt.Errorf("failed to write generate request JSON file: %w", err)
+		}
 	}
 
 	return nil
