@@ -63,6 +63,38 @@ type Docker struct {
 	run func(args ...string) error
 }
 
+// GenerateRequest contains all the information required for a language
+// container to run the generate command.
+type GenerateRequest struct {
+	cfg   *config.Config
+	state *config.PipelineState
+
+	// apiRoot specifies the root directory of the API specification repo
+	apiRoot string
+
+	// output specifies the empty output directory into which the command should
+	// generate code
+	output         string
+	requestJson    string
+	generatorInput string
+
+	// libraryID specifies the ID of the library to generate
+	libraryID string
+}
+
+// NewGenerateRequest constructs a NewGenerateRequest instance.
+func NewGenerateRequest(cfg *config.Config, state *config.PipelineState, apiRoot, output, requestJson, generatorInput, libraryID string) *GenerateRequest {
+	return &GenerateRequest{
+		cfg:            cfg,
+		state:          state,
+		apiRoot:        apiRoot,
+		output:         output,
+		requestJson:    requestJson,
+		generatorInput: generatorInput,
+		libraryID:      libraryID,
+	}
+}
+
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
@@ -80,13 +112,10 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 	return docker, nil
 }
 
-// Generate performs generation for an API which is configured as part of a library.
-// apiRoot specifies the root directory of the API specification repo,
-// output specifies the empty output directory into which the command should
-// generate code, and libraryID specifies the ID of the library to generate,
-// as configured in the Librarian state file for the repository.
-func (c *Docker) Generate(ctx context.Context, cfg *config.Config, state *config.PipelineState, apiRoot, output, generateRequest, generatorInput, libraryID string) error {
-	if err := toGenerateRequestJSON(state, generateRequest); err != nil {
+// Generate performs generation for an API which is configured as part of a
+// library.
+func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
+	if err := toGenerateRequestJSON(request.state, request.requestJson); err != nil {
 		return err
 	}
 	commandArgs := []string{
@@ -94,16 +123,16 @@ func (c *Docker) Generate(ctx context.Context, cfg *config.Config, state *config
 		"--input=/input",
 		"--output=/output",
 		"--source=/source",
-		fmt.Sprintf("--library-id=%s", libraryID),
+		fmt.Sprintf("--library-id=%s", request.libraryID),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", generateRequest), // readonly volume.
-		fmt.Sprintf("%s:/input", generatorInput),
-		fmt.Sprintf("%s:/output", output),
-		fmt.Sprintf("%s:/source:ro", apiRoot), // readonly volume.
+		fmt.Sprintf("%s:/librarian:ro", request.requestJson), // readonly volume.
+		fmt.Sprintf("%s:/input", request.generatorInput),
+		fmt.Sprintf("%s:/output", request.output),
+		fmt.Sprintf("%s:/source:ro", request.apiRoot), // readonly volume.
 	}
 
-	return c.runDocker(ctx, cfg, CommandGenerate, mounts, commandArgs)
+	return c.runDocker(ctx, request.cfg, CommandGenerate, mounts, commandArgs)
 }
 
 // Build builds the library with an ID of libraryID, as configured in

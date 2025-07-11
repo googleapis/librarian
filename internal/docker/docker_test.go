@@ -86,7 +86,8 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Generate(ctx, cfg, state, testAPIRoot, testOutput, testGenerateRequest, testGeneratorInput, testLibraryID)
+				generateRequest := NewGenerateRequest(cfgInDocker, state, testAPIRoot, testOutput, testGenerateRequest, testGeneratorInput, testLibraryID)
+				return d.Generate(ctx, generateRequest)
 			},
 			want: []string{
 				"run", "--rm",
@@ -109,7 +110,8 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Generate(ctx, cfgInDocker, state, testAPIRoot, "hostDir", testGenerateRequest, testGeneratorInput, testLibraryID)
+				generateRequest := NewGenerateRequest(cfgInDocker, state, testAPIRoot, "hostDir", testGenerateRequest, testGeneratorInput, testLibraryID)
+				return d.Generate(ctx, generateRequest)
 			},
 			want: []string{
 				"run", "--rm",
