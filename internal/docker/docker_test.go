@@ -17,7 +17,6 @@ package docker
 import (
 	"context"
 	"fmt"
-	"github.com/googleapis/librarian/internal/gitrepo"
 	"os"
 	"path/filepath"
 	"strings"
@@ -75,7 +74,6 @@ func TestDockerRun(t *testing.T) {
 	cfgInDocker := &config.Config{
 		HostMount: "hostDir:localDir",
 	}
-	repo := &gitrepo.Repository{}
 	for _, test := range []struct {
 		name       string
 		docker     *Docker
@@ -89,7 +87,7 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfgInDocker,
+					Cfg:       cfg,
 					State:     state,
 					RepoDir:   ".",
 					ApiRoot:   testAPIRoot,
@@ -124,7 +122,7 @@ func TestDockerRun(t *testing.T) {
 					State:     state,
 					RepoDir:   ".",
 					ApiRoot:   testAPIRoot,
-					Output:    testOutput,
+					Output:    "hostDir",
 					LibraryID: testLibraryID,
 				}
 				return d.Generate(ctx, generateRequest)
