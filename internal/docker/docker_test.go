@@ -240,19 +240,19 @@ func TestToGenerateRequestJSON(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if test.expectErr {
 				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
-				err := toGenerateRequestJSON(test.state, filePath)
+				err := writeGenerateRequest(test.state, filePath)
 				if err == nil {
-					t.Errorf("toGenerateRequestJSON() expected an error but got nil")
+					t.Errorf("writeGenerateRequest() expected an error but got nil")
 				}
 				return
 			}
 
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "generate-request.json")
-			err := toGenerateRequestJSON(test.state, filePath)
+			err := writeGenerateRequest(test.state, filePath)
 
 			if err != nil {
-				t.Fatalf("toGenerateRequestJSON() unexpected error: %v", err)
+				t.Fatalf("writeGenerateRequest() unexpected error: %v", err)
 			}
 
 			// Verify the file content

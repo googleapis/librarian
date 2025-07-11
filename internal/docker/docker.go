@@ -105,7 +105,7 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 // library.
 func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
-	if err := toGenerateRequestJSON(request.State, jsonFilePath); err != nil {
+	if err := writeGenerateRequest(request.State, jsonFilePath); err != nil {
 		return err
 	}
 	commandArgs := []string{
@@ -228,7 +228,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-func toGenerateRequestJSON(state *config.PipelineState, jsonFilePath string) error {
+func writeGenerateRequest(state *config.PipelineState, jsonFilePath string) error {
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal state to JSON: %w", err)
