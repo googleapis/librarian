@@ -45,8 +45,8 @@ func TestCommandUsage(t *testing.T) {
 }
 
 func TestFindLibraryByID(t *testing.T) {
-	lib1 := config.Library{Id: "lib1"}
-	lib2 := config.Library{Id: "lib2"}
+	lib1 := config.Library{ID: "lib1"}
+	lib2 := config.Library{ID: "lib2"}
 	stateWithLibs := &config.LibrarianState{
 		Libraries: []config.Library{lib1, lib2},
 	}

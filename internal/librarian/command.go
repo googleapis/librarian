@@ -85,7 +85,7 @@ func findLibraryIDByApiPath(state *config.LibrarianState, apiPath string) string
 	for _, lib := range state.Libraries {
 		for _, api := range lib.APIs {
 			if api.Path == apiPath {
-				return lib.Id
+				return lib.ID
 			}
 		}
 	}
@@ -97,7 +97,7 @@ func findLibraryByID(state *config.LibrarianState, libraryID string) *config.Lib
 		return nil
 	}
 	for i, lib := range state.Libraries {
-		if lib.Id == libraryID {
+		if lib.ID == libraryID {
 			return &state.Libraries[i]
 		}
 	}

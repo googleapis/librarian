@@ -34,7 +34,7 @@ func TestParseLibrarianState(t *testing.T) {
 			Image: "gcr.io/test/image:v1.2.3",
 			Libraries: []config.Library{
 				{
-					Id:          "a/b",
+					ID:          "a/b",
 					SourcePaths: []string{"src/a", "src/b"},
 					APIs: []config.API{
 						{

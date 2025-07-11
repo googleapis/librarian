@@ -30,7 +30,7 @@ func TestLibrarianState_Validate(t *testing.T) {
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []Library{
 					{
-						Id:          "a/b",
+						ID:          "a/b",
 						SourcePaths: []string{"src/a", "src/b"},
 						APIs: []API{
 							{
@@ -46,7 +46,7 @@ func TestLibrarianState_Validate(t *testing.T) {
 			state: &LibrarianState{
 				Libraries: []Library{
 					{
-						Id:          "a/b",
+						ID:          "a/b",
 						SourcePaths: []string{"src/a", "src/b"},
 						APIs: []API{
 							{
@@ -83,7 +83,7 @@ func TestLibrary_Validate(t *testing.T) {
 		{
 			name: "valid library",
 			library: &Library{
-				Id:          "a/b",
+				ID:          "a/b",
 				SourcePaths: []string{"src/a", "src/b"},
 				APIs: []API{
 					{
@@ -107,7 +107,7 @@ func TestLibrary_Validate(t *testing.T) {
 		{
 			name: "id is dot",
 			library: &Library{
-				Id:          ".",
+				ID:          ".",
 				SourcePaths: []string{"src/a", "src/b"},
 				APIs: []API{
 					{
@@ -120,7 +120,7 @@ func TestLibrary_Validate(t *testing.T) {
 		{
 			name: "id is double dot",
 			library: &Library{
-				Id:          "..",
+				ID:          "..",
 				SourcePaths: []string{"src/a", "src/b"},
 				APIs: []API{
 					{
@@ -133,7 +133,7 @@ func TestLibrary_Validate(t *testing.T) {
 		{
 			name: "missing source paths",
 			library: &Library{
-				Id: "a/b",
+				ID: "a/b",
 				APIs: []API{
 					{
 						Path: "a/b/v1",
@@ -145,7 +145,7 @@ func TestLibrary_Validate(t *testing.T) {
 		{
 			name: "missing apis",
 			library: &Library{
-				Id:          "a/b",
+				ID:          "a/b",
 				SourcePaths: []string{"src/a", "src/b"},
 			},
 			wantErr: true,

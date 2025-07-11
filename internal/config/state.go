@@ -80,8 +80,8 @@ func parseImage(image string) (ref string, tag string) {
 // Library represents the state of a single library within state.yaml.
 type Library struct {
 	// A unique identifier for the library, in a language-specific format.
-	// A valid Id should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
-	Id string `yaml:"id"`
+	// A valid ID should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
+	ID string `yaml:"id"`
 	// The last released version of the library.
 	Version string `yaml:"version"`
 	// The commit hash from the API definition repository at which the library was last generated.
@@ -106,14 +106,14 @@ var (
 
 // Validate checks that the Library is valid.
 func (l *Library) Validate() error {
-	if l.Id == "" {
+	if l.ID == "" {
 		return fmt.Errorf("id is required")
 	}
-	if l.Id == "." || l.Id == ".." {
+	if l.ID == "." || l.ID == ".." {
 		return fmt.Errorf(`id cannot be "." or ".." only`)
 	}
-	if !libraryIDRegex.MatchString(l.Id) {
-		return fmt.Errorf("invalid id: %q", l.Id)
+	if !libraryIDRegex.MatchString(l.ID) {
+		return fmt.Errorf("invalid id: %q", l.ID)
 	}
 	if l.Version != "" && !semverRegex.MatchString(l.Version) {
 		return fmt.Errorf("invalid version: %q", l.Version)
