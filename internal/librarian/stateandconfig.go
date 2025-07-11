@@ -21,10 +21,7 @@ import (
 	"os"
 
 	"path/filepath"
-	"regexp"
-	"strings"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 
@@ -104,88 +101,8 @@ func parseLibrarianState(contentLoader func() ([]byte, error)) (*LibrarianState,
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
-
-	validate := validator.New()
-	if err := validate.RegisterValidation("is-regexp", validateRegexp); err != nil {
-		return nil, fmt.Errorf("registering regexp validator: %w", err)
-	}
-	if err := validate.RegisterValidation("is-dirpath", validateDirPath); err != nil {
-		return nil, fmt.Errorf("registering dirpath validator: %w", err)
-	}
-	if err := validate.RegisterValidation("is-image", validateImage); err != nil {
-		return nil, fmt.Errorf("registering image validator: %w", err)
-	}
-	if err := validate.RegisterValidation("is-library-id", validateLibraryID); err != nil {
-		return nil, fmt.Errorf("registering library ID validator: %w", err)
-	}
-	if err := validate.Struct(&s); err != nil {
+	if err := s.Validate(); err != nil {
 		return nil, fmt.Errorf("validating librarian state: %w", err)
 	}
 	return &s, nil
-}
-
-func validateRegexp(fl validator.FieldLevel) bool {
-	_, err := regexp.Compile(fl.Field().String())
-	return err == nil
-}
-
-// invalidPathChars contains characters that are invalid in path components,
-// plus path separators and the null byte.
-const invalidPathChars = `<>:"|?*\/\\\x00`
-
-func validateDirPath(fl validator.FieldLevel) bool {
-	pathString := fl.Field().String()
-	if pathString == "" {
-		return false
-	}
-
-	// The paths are expected to be relative and use the OS-specific path separator.
-	// We clean the path to resolve ".." and check that it doesn't try to
-	// escape the root.
-	cleaned := filepath.Clean(pathString)
-	if filepath.IsAbs(pathString) || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
-		return false
-	}
-
-	// A single dot is a valid relative path, but likely not the intended input.
-	if cleaned == "." {
-		return false
-	}
-
-	// Each path component must not contain invalid characters.
-	for _, component := range strings.Split(cleaned, string(filepath.Separator)) {
-		if strings.ContainsAny(component, invalidPathChars) {
-			return false
-		}
-	}
-	return true
-}
-
-// validateImage checks if a string is a valid container image name with a required tag.
-// It validates that the image string contains a tag, separated by a colon, and has no whitespace.
-// It correctly distinguishes between a tag and a port number in the registry host.
-func validateImage(fl validator.FieldLevel) bool {
-	image := fl.Field().String()
-	// Basic validation: no whitespace.
-	if strings.ContainsAny(image, " \t\n\r") {
-		return false
-	}
-
-	ref, tag := parseImage(image)
-
-	return ref != "" && tag != ""
-}
-
-var libraryIDRegexp = regexp.MustCompile(`^[a-zA-Z0-9/._-]+$`)
-
-func validateLibraryID(fl validator.FieldLevel) bool {
-	id := fl.Field().String()
-	if id == "" {
-		// This is caught by 'required' tag, but good to be defensive.
-		return false
-	}
-	if id == "." || id == ".." {
-		return false
-	}
-	return libraryIDRegexp.MatchString(id)
 }

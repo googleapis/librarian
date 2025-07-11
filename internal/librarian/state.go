@@ -14,14 +14,38 @@
 
 package librarian
 
-import "strings"
+import (
+	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
+)
 
 // LibrarianState defines the contract for the state.yaml file.
 type LibrarianState struct {
 	// The name and tag of the generator image to use. tag is required.
-	Image string `yaml:"image" validate:"required,is-image"`
+	Image string `yaml:"image"`
 	// A list of library configurations.
-	Libraries []Library `yaml:"libraries" validate:"required,gt=0,dive"`
+	Libraries []Library `yaml:"libraries"`
+}
+
+// Validate checks that the LibrarianState is valid.
+func (s *LibrarianState) Validate() error {
+	if s.Image == "" {
+		return fmt.Errorf("image is required")
+	}
+	if !isValidImage(s.Image) {
+		return fmt.Errorf("invalid image: %q", s.Image)
+	}
+	if len(s.Libraries) == 0 {
+		return fmt.Errorf("libraries cannot be empty")
+	}
+	for i, l := range s.Libraries {
+		if err := l.Validate(); err != nil {
+			return fmt.Errorf("invalid library at index %d: %w", i, err)
+		}
+	}
+	return nil
 }
 
 // ImageRefAndTag extracts the image reference and tag from the full image string.
@@ -57,27 +81,137 @@ func parseImage(image string) (ref string, tag string) {
 type Library struct {
 	// A unique identifier for the library, in a language-specific format.
 	// A valid Id should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
-	Id string `yaml:"id" validate:"required,is-library-id"`
+	Id string `yaml:"id"`
 	// The last released version of the library.
-	Version string `yaml:"version" validate:"omitempty,semver"`
+	Version string `yaml:"version"`
 	// The commit hash from the API definition repository at which the library was last generated.
-	LastGeneratedCommit string `yaml:"last_generated_commit" validate:"omitempty,hexadecimal,len=40"`
+	LastGeneratedCommit string `yaml:"last_generated_commit"`
 	// A list of APIs that are part of this library.
-	APIs []API `yaml:"apis" validate:"required,gt=0,dive"`
+	APIs []API `yaml:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
-	SourcePaths []string `yaml:"source_paths" validate:"required,gt=0,dive,is-dirpath"`
+	SourcePaths []string `yaml:"source_paths"`
 	// A list of regular expressions for files and directories to preserve during the copy and remove process.
-	PreserveRegex []string `yaml:"preserve_regex" validate:"omitempty,dive,is-regexp"`
+	PreserveRegex []string `yaml:"preserve_regex"`
 	// A list of regular expressions for files and directories to remove before copying generated code.
 	// If not set, this defaults to the `source_paths`.
 	// A more specific `preserve_regex` takes precedence.
-	RemoveRegex []string `yaml:"remove_regex" validate:"omitempty,dive,is-regexp"`
+	RemoveRegex []string `yaml:"remove_regex"`
+}
+
+var (
+	libraryIDRegex = regexp.MustCompile(`^[a-zA-Z0-9/._-]+$`)
+	semverRegex    = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+	hexRegex       = regexp.MustCompile("^[a-fA-F0-9]+$")
+)
+
+// Validate checks that the Library is valid.
+func (l *Library) Validate() error {
+	if l.Id == "" {
+		return fmt.Errorf("id is required")
+	}
+	if l.Id == "." || l.Id == ".." {
+		return fmt.Errorf(`id cannot be "." or ".." only`)
+	}
+	if !libraryIDRegex.MatchString(l.Id) {
+		return fmt.Errorf("invalid id: %q", l.Id)
+	}
+	if l.Version != "" && !semverRegex.MatchString(l.Version) {
+		return fmt.Errorf("invalid version: %q", l.Version)
+	}
+	if l.LastGeneratedCommit != "" {
+		if !hexRegex.MatchString(l.LastGeneratedCommit) {
+			return fmt.Errorf("last_generated_commit must be a hex string")
+		}
+		if len(l.LastGeneratedCommit) != 40 {
+			return fmt.Errorf("last_generated_commit must be 40 characters")
+		}
+	}
+	if len(l.APIs) == 0 {
+		return fmt.Errorf("apis cannot be empty")
+	}
+	for i, a := range l.APIs {
+		if err := a.Validate(); err != nil {
+			return fmt.Errorf("invalid api at index %d: %w", i, err)
+		}
+	}
+	if len(l.SourcePaths) == 0 {
+		return fmt.Errorf("source_paths cannot be empty")
+	}
+	for i, p := range l.SourcePaths {
+		if !isValidDirPath(p) {
+			return fmt.Errorf("invalid source_path at index %d: %q", i, p)
+		}
+	}
+	for i, r := range l.PreserveRegex {
+		if _, err := regexp.Compile(r); err != nil {
+			return fmt.Errorf("invalid preserve_regex at index %d: %w", i, err)
+		}
+	}
+	for i, r := range l.RemoveRegex {
+		if _, err := regexp.Compile(r); err != nil {
+			return fmt.Errorf("invalid remove_regex at index %d: %w", i, err)
+		}
+	}
+	return nil
 }
 
 // API represents an API that is part of a library.
 type API struct {
 	// The path to the API, relative to the root of the API definition repository (e.g., "google/storage/v1").
-	Path string `yaml:"path" validate:"required,is-dirpath"`
+	Path string `yaml:"path"`
 	// The name of the service config file, relative to the API `path`.
-	ServiceConfig string `yaml:"service_config" validate:"omitempty"`
+	ServiceConfig string `yaml:"service_config"`
+}
+
+// Validate checks that the API is valid.
+func (a *API) Validate() error {
+	if !isValidDirPath(a.Path) {
+		return fmt.Errorf("invalid path: %q", a.Path)
+	}
+	return nil
+}
+
+// invalidPathChars contains characters that are invalid in path components,
+// plus path separators and the null byte.
+const invalidPathChars = `<>:"|?*\/\\x00`
+
+func isValidDirPath(pathString string) bool {
+	if pathString == "" {
+		return false
+	}
+
+	// The paths are expected to be relative and use the OS-specific path separator.
+	// We clean the path to resolve ".." and check that it doesn't try to
+	// escape the root.
+	cleaned := filepath.Clean(pathString)
+	if filepath.IsAbs(pathString) || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+		return false
+	}
+
+	// A single dot is a valid relative path, but likely not the intended input.
+	if cleaned == "." {
+		return false
+	}
+
+	// Each path component must not contain invalid characters.
+	for _, component := range strings.Split(cleaned, string(filepath.Separator)) {
+		if strings.ContainsAny(component, invalidPathChars) {
+			return false
+		}
+	}
+	return true
+}
+
+// isValidImage checks if a string is a valid container image name with a required tag.
+// It validates that the image string contains a tag, separated by a colon, and has no whitespace.
+// It correctly distinguishes between a tag and a port number in the registry host.
+func isValidImage(image string) bool {
+	// Basic validation: no whitespace.
+	if strings.ContainsAny(image, " \t\n\r") {
+		return false
+	}
+
+	ref, tag := parseImage(image)
+
+	return ref != "" && tag != ""
 }

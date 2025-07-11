@@ -16,63 +16,217 @@ package librarian
 
 import (
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 )
 
-func TestLibrarianState_ImageRefAndTag(t *testing.T) {
+func TestLibrarianState_Validate(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		state    *LibrarianState
-		wantName string
-		wantTag  string
+		name    string
+		state   *LibrarianState
+		wantErr bool
 	}{
 		{
-			name:  "nil state",
-			state: nil,
+			name: "valid state",
+			state: &LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []Library{
+					{
+						Id:          "a/b",
+						SourcePaths: []string{"src/a", "src/b"},
+						APIs: []API{
+							{
+								Path: "a/b/v1",
+							},
+						},
+					},
+				},
+			},
 		},
 		{
-			name:     "simple tag",
-			state:    &LibrarianState{Image: "gcr.io/my-project/my-image:v1.2.3"},
-			wantName: "gcr.io/my-project/my-image",
-			wantTag:  "v1.2.3",
+			name: "missing image",
+			state: &LibrarianState{
+				Libraries: []Library{
+					{
+						Id:          "a/b",
+						SourcePaths: []string{"src/a", "src/b"},
+						APIs: []API{
+							{
+								Path: "a/b/v1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name:     "no tag",
-			state:    &LibrarianState{Image: "gcr.io/my-project/my-image"},
-			wantName: "gcr.io/my-project/my-image",
-			wantTag:  "",
-		},
-		{
-			name:     "explicit latest tag",
-			state:    &LibrarianState{Image: "ubuntu:latest"},
-			wantName: "ubuntu",
-			wantTag:  "latest",
-		},
-		{
-			name:     "with port number",
-			state:    &LibrarianState{Image: "my-registry:5000/my/image:v1"},
-			wantName: "my-registry:5000/my/image",
-			wantTag:  "v1",
-		},
-		{
-			name:     "with port number, no tag",
-			state:    &LibrarianState{Image: "my-registry:5000/my/image"},
-			wantName: "my-registry:5000/my/image",
-			wantTag:  "",
-		},
-		{
-			name:  "empty image string",
-			state: &LibrarianState{Image: ""},
+			name: "missing libraries",
+			state: &LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+			},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotName, gotTag := test.state.ImageRefAndTag()
-			if diff := cmp.Diff(test.wantName, gotName); diff != "" {
-				t.Errorf("LibrarianState.ImageRefAndTag() name mismatch (-want +got):\n%s", diff)
+			if err := test.state.Validate(); (err != nil) != test.wantErr {
+				t.Errorf("LibrarianState.Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if diff := cmp.Diff(test.wantTag, gotTag); diff != "" {
-				t.Errorf("LibrarianState.ImageRefAndTag() tag mismatch (-want +got):\n%s", diff)
+		})
+	}
+}
+
+func TestLibrary_Validate(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *Library
+		wantErr bool
+	}{
+		{
+			name: "valid library",
+			library: &Library{
+				Id:          "a/b",
+				SourcePaths: []string{"src/a", "src/b"},
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "missing id",
+			library: &Library{
+				SourcePaths: []string{"src/a", "src/b"},
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "id is dot",
+			library: &Library{
+				Id:          ".",
+				SourcePaths: []string{"src/a", "src/b"},
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "id is double dot",
+			library: &Library{
+				Id:          "..",
+				SourcePaths: []string{"src/a", "src/b"},
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing source paths",
+			library: &Library{
+				Id: "a/b",
+				APIs: []API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing apis",
+			library: &Library{
+				Id:          "a/b",
+				SourcePaths: []string{"src/a", "src/b"},
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := test.library.Validate(); (err != nil) != test.wantErr {
+				t.Errorf("Library.Validate() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestAPI_Validate(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		api     *API
+		wantErr bool
+	}{
+		{
+			name: "valid api",
+			api: &API{
+				Path: "a/b/v1",
+			},
+		},
+		{
+			name:    "missing path",
+			api:     &API{},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := test.api.Validate(); (err != nil) != test.wantErr {
+				t.Errorf("API.Validate() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestIsValidDirPath(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want bool
+	}{
+		{"valid", "a/b/c", true},
+		{"valid with dots", "a/./b/../c", true},
+		{"empty", "", false},
+		{"absolute", "/a/b", false},
+		{"up traversal", "../a", false},
+		{"double dot", "..", false},
+		{"single dot", ".", false},
+		{"invalid chars", "a/b<c", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isValidDirPath(test.path); got != test.want {
+				t.Errorf("isValidDirPath(%q) = %v, want %v", test.path, got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsValidImage(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		image string
+		want  bool
+	}{
+		{"valid with tag", "gcr.io/google/go-container:v1", true},
+		{"valid with latest tag", "ubuntu:latest", true},
+		{"valid with port and tag", "my-registry:5000/my/image:v1", true},
+		{"invalid no tag", "gcr.io/google/go-container", false},
+		{"invalid with port no tag", "my-registry:5000/my/image", false},
+		{"invalid with spaces", "gcr.io/google/go-container with spaces", false},
+		{"invalid no repo", ":v1", false},
+		{"invalid empty tag", "my-image:", false},
+		{"invalid empty", "", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isValidImage(test.image); got != test.want {
+				t.Errorf("isValidImage(%q) = %v, want %v", test.image, got, test.want)
 			}
 		})
 	}
