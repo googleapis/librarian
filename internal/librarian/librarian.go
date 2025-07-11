@@ -20,9 +20,11 @@ package librarian
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/docker"
 	"log/slog"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
@@ -69,4 +71,16 @@ func Run(ctx context.Context, arg ...string) error {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
 	return cmd.Run(ctx, cmd.Config)
+}
+
+// GitHubClient is an abstraction over the GitHub client.
+type GitHubClient interface {
+	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
+}
+
+// ContainerClient is an abstraction over the Docker client.
+type ContainerClient interface {
+	Generate(ctx context.Context, request *docker.GenerateRequest) error
+	Build(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error
+	Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error
 }

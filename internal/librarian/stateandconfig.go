@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -64,13 +63,9 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func fetchRemotePipelineState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*config.PipelineState, error) {
-	ghClient, err := github.NewClient(gitHubToken, repo)
-	if err != nil {
-		return nil, err
-	}
+func fetchRemotePipelineState(ctx context.Context, client GitHubClient, ref string) (*config.PipelineState, error) {
 	return parsePipelineState(func() ([]byte, error) {
-		return ghClient.GetRawContent(ctx, config.LibrarianDir+"/"+pipelineStateFile, ref)
+		return client.GetRawContent(ctx, config.LibrarianDir+"/"+pipelineStateFile, ref)
 	})
 }
 
