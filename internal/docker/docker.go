@@ -22,9 +22,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/googleapis/librarian/internal/gitrepo"
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -66,6 +68,7 @@ type Docker struct {
 // GenerateRequest contains all the information required for a language
 // container to run the generate command.
 type GenerateRequest struct {
+	repo *gitrepo.Repository
 	// cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
 	cfg *config.Config
@@ -84,7 +87,6 @@ type GenerateRequest struct {
 	// within the language repository, used for additional configuration required
 	// by the generator.
 	generatorInput string
-
 	// libraryID specifies the ID of the library to generate
 	libraryID string
 }
@@ -93,14 +95,15 @@ type GenerateRequest struct {
 // This function creates a request object containing all the necessary
 // configuration and state information for a language container to perform a
 // generation operation for a specific library.
-func NewGenerateRequest(cfg *config.Config, state *config.PipelineState, apiRoot, output, requestJson, generatorInput, libraryID string) *GenerateRequest {
+func NewGenerateRequest(repo *gitrepo.Repository, cfg *config.Config, state *config.PipelineState, apiRoot, output, libraryID string) *GenerateRequest {
 	return &GenerateRequest{
+		repo:           repo,
 		cfg:            cfg,
 		state:          state,
 		apiRoot:        apiRoot,
 		output:         output,
-		requestJson:    requestJson,
-		generatorInput: generatorInput,
+		requestJson:    filepath.Join(repo.Dir, config.LibrarianDir, config.GenerateRequest),
+		generatorInput: filepath.Join(repo.Dir, config.GeneratorInputDir),
 		libraryID:      libraryID,
 	}
 }
@@ -246,13 +249,16 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-func toGenerateRequestJSON(state *config.PipelineState, filepath string) error {
+func toGenerateRequestJSON(state *config.PipelineState, jsonFilePath string) error {
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal state to JSON: %w", err)
 	}
 
-	jsonFile, err := os.Create(filepath)
+	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %w", err)
+	}
+	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create generate request JSON file: %w", err)
 	}

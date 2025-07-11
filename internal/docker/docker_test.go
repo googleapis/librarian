@@ -17,6 +17,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/gitrepo"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,6 +75,7 @@ func TestDockerRun(t *testing.T) {
 	cfgInDocker := &config.Config{
 		HostMount: "hostDir:localDir",
 	}
+	repo := &gitrepo.Repository{}
 	for _, test := range []struct {
 		name       string
 		docker     *Docker
@@ -86,13 +88,13 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				generateRequest := NewGenerateRequest(cfgInDocker, state, testAPIRoot, testOutput, testGenerateRequest, testGeneratorInput, testLibraryID)
+				generateRequest := NewGenerateRequest(repo, cfgInDocker, state, testAPIRoot, testOutput, testLibraryID)
 				return d.Generate(ctx, generateRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/librarian:ro", testGenerateRequest),
-				"-v", fmt.Sprintf("%s:/input", testGeneratorInput),
+				"-v", ".librarian/generate-request.json:/librarian:ro",
+				"-v", ".librarian/generator-input:/input",
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
@@ -110,13 +112,13 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				generateRequest := NewGenerateRequest(cfgInDocker, state, testAPIRoot, "hostDir", testGenerateRequest, testGeneratorInput, testLibraryID)
+				generateRequest := NewGenerateRequest(repo, cfgInDocker, state, testAPIRoot, "hostDir", testLibraryID)
 				return d.Generate(ctx, generateRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/librarian:ro", testGenerateRequest),
-				"-v", fmt.Sprintf("%s:/input", testGeneratorInput),
+				"-v", ".librarian/generate-request.json:/librarian:ro",
+				"-v", ".librarian/generator-input:/input",
 				"-v", "localDir:/output",
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
@@ -177,6 +179,7 @@ func TestDockerRun(t *testing.T) {
 			if err := test.runCommand(ctx, test.docker); err != nil {
 				t.Fatal(err)
 			}
+			os.RemoveAll(".librarian")
 			os.Remove(testGenerateRequest)
 		})
 	}
