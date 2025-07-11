@@ -73,15 +73,15 @@ type GenerateRequest struct {
 	// state is a pointer to the [config.PipelineState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.PipelineState
-	// RepoDir is the local root directory of the language repository.
-	RepoDir string
-	// apiRoot specifies the root directory of the API specification repo
+	// apiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
+	// libraryID specifies the ID of the library to generate
+	LibraryID string
 	// output specifies the empty output directory into which the command should
 	// generate code
 	Output string
-	// libraryID specifies the ID of the library to generate
-	LibraryID string
+	// RepoDir is the local root directory of the language repository.
+	RepoDir string
 }
 
 // New constructs a Docker instance which will invoke the specified

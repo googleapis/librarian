@@ -202,10 +202,10 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 		generateRequest := &docker.GenerateRequest{
 			Cfg:       r.cfg,
 			State:     r.state,
-			RepoDir:   r.repo.Dir,
 			ApiRoot:   apiRoot,
-			Output:    outputDir,
 			LibraryID: libraryID,
+			Output:    outputDir,
+			RepoDir:   r.repo.Dir,
 		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
 		return libraryID, r.containerClient.Generate(ctx, generateRequest)
