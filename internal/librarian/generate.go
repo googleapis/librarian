@@ -93,12 +93,14 @@ func init() {
 }
 
 type generateRunner struct {
-	cfg      *config.Config
-	workRoot string
-	repo     *gitrepo.Repository
-	state    *config.LibrarianState
-	config   *config.PipelineConfig
-	image    string
+	cfg             *config.Config
+	repo            *gitrepo.Repository
+	state           *config.LibrarianState
+	config          *config.PipelineConfig
+	ghClient        GitHubClient
+	containerClient ContainerClient
+	workRoot        string
+	image           string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -122,13 +124,31 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	}
 	image := deriveImage(cfg.Image, state)
 
+	var ghClient GitHubClient
+	if isUrl(cfg.Repo) {
+		// repo is a URL
+		languageRepo, err := github.ParseUrl(cfg.Repo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse repo url: %w", err)
+		}
+		ghClient, err = github.NewClient(cfg.GitHubToken, languageRepo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
+		}
+	}
+	container, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, config)
+	if err != nil {
+		return nil, err
+	}
 	return &generateRunner{
-		cfg:      cfg,
-		workRoot: workRoot,
-		repo:     repo,
-		state:    state,
-		config:   config,
-		image:    image,
+		cfg:             cfg,
+		workRoot:        workRoot,
+		repo:            repo,
+		state:           state,
+		config:          config,
+		image:           image,
+		ghClient:        ghClient,
+		containerClient: container,
 	}, nil
 }
 
@@ -143,30 +163,16 @@ func (r *generateRunner) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	containerConfig, err := docker.New(r.workRoot, r.image, r.cfg.Project, r.cfg.UserUID, r.cfg.UserGID, r.config)
-	if err != nil {
-		return err
-	}
 
 	// TODO(https://github.com/googleapis/librarian/issues/815)
 
-	libraryID, err := r.runGenerateCommand(ctx, outputDir, r.state, containerConfig)
+	libraryID, err := r.runGenerateCommand(ctx, outputDir)
 	if err != nil {
 		return err
 	}
 
-	if r.cfg.Build {
-		if libraryID != "" {
-			slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-			// TODO(https://github.com/googleapis/librarian/issues/775)
-			if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
-				return err
-			}
-			if err := containerConfig.Build(ctx, r.cfg, r.repo.Dir, libraryID); err != nil {
-				return err
-			}
-		}
-		slog.Warn("Cannot perform build, missing library ID")
+	if err := r.runBuildCommand(ctx, outputDir, libraryID); err != nil {
+		return err
 	}
 	return nil
 }
@@ -177,7 +183,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir string, state *config.LibrarianState, containerConfig *docker.Docker) (string, error) {
+func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir string) (string, error) {
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
 		return "", err
@@ -186,16 +192,35 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 	// If we've got a language repo, it's because we've already found a library for the
 	// specified API, configured in the repo.
 	if r.repo != nil {
-		libraryID := findLibraryIDByApiPath(state, r.cfg.API)
+		libraryID := findLibraryIDByApiPath(r.state, r.cfg.API)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
 		generatorInput := filepath.Join(r.repo.Dir, config.GeneratorInputDir)
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		return libraryID, containerConfig.Generate(ctx, r.cfg, apiRoot, outputDir, generatorInput, libraryID)
+		return libraryID, r.containerClient.Generate(ctx, r.cfg, apiRoot, outputDir, generatorInput, libraryID)
 	}
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
 	return "", fmt.Errorf("library not found")
+}
+
+func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, libraryID string) error {
+	if !r.cfg.Build {
+		slog.Info("Build flag not specified, skipping")
+		return nil
+	}
+	if libraryID != "" {
+		slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
+		// TODO(https://github.com/googleapis/librarian/issues/775)
+		if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
+			return err
+		}
+		if err := r.containerClient.Build(ctx, r.cfg, r.repo.Dir, libraryID); err != nil {
+			return err
+		}
+	}
+	slog.Warn("Cannot perform build, missing library ID")
+	return nil
 }
 
 // detectIfLibraryConfigured returns whether a library has been configured for
@@ -204,7 +229,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 // by fetching the single file) if flatRepoUrl has been specified. If neither the repo
 // root not the repo url has been specified, we always perform raw generation.
 func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, error) {
-	apiPath, repo, gitHubToken := r.cfg.API, r.cfg.Repo, r.cfg.GitHubToken
+	apiPath, repo := r.cfg.API, r.cfg.Repo
 	if repo == "" {
 		slog.Warn("repo is not specified, cannot check if library exists")
 		return false, nil
@@ -215,20 +240,14 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 		pipelineState *config.LibrarianState
 		err           error
 	)
-	if !isUrl(repo) {
-		// repo is a directory
-		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
+	if isUrl(repo) {
+		pipelineState, err = fetchRemoteLibrarianState(ctx, r.ghClient, "HEAD")
 		if err != nil {
 			return false, err
 		}
 	} else {
-		// repo is a URL
-		languageRepoMetadata, err := github.ParseUrl(repo)
-		if err != nil {
-			slog.Warn("failed to parse", "repo url:", repo, "error", err)
-			return false, err
-		}
-		pipelineState, err = fetchRemoteLibrarianState(ctx, languageRepoMetadata, "HEAD", gitHubToken)
+		// repo is a directory
+		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
 		if err != nil {
 			return false, err
 		}

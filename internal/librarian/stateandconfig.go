@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
@@ -49,11 +48,11 @@ func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*config.Librarian
 	return state, config, nil
 }
 
-func loadLibrarianState(repo *gitrepo.Repository) (*config.LibrarianState, error) {
-	if repo == nil {
+func loadLibrarianState(languageRepo *gitrepo.Repository) (*config.LibrarianState, error) {
+	if languageRepo == nil {
 		return nil, nil
 	}
-	path := filepath.Join(repo.Dir, config.GeneratorInputDir, pipelineStateFile)
+	path := filepath.Join(languageRepo.Dir, pipelineStateFile)
 	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
@@ -62,7 +61,7 @@ func loadLibrarianStateFile(path string) (*config.LibrarianState, error) {
 }
 
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
-	path := filepath.Join(languageRepo.Dir, config.GeneratorInputDir, pipelineConfigFile)
+	path := filepath.Join(languageRepo.Dir, pipelineConfigFile)
 	return loadPipelineConfigFile(path)
 }
 
@@ -70,13 +69,9 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func fetchRemoteLibrarianState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*config.LibrarianState, error) {
-	ghClient, err := github.NewClient(gitHubToken, repo)
-	if err != nil {
-		return nil, err
-	}
+func fetchRemoteLibrarianState(ctx context.Context, client GitHubClient, ref string) (*config.LibrarianState, error) {
 	return parseLibrarianState(func() ([]byte, error) {
-		return ghClient.GetRawContent(ctx, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
+		return client.GetRawContent(ctx, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
 	})
 }
 
