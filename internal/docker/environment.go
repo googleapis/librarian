@@ -130,6 +130,7 @@ func (e *EnvironmentProvider) getSecretManagerValue(ctx context.Context, variabl
 	if err != nil {
 		return "", false, err
 	}
+	defer client.Close()
 	value, err = client.Get(ctx, e.secretsProject, variable.SecretName)
 	if err != nil {
 		// If the error is that the secret wasn't found, continue to the next source.
