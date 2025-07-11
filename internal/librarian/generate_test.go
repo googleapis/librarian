@@ -378,9 +378,9 @@ func TestGenerateRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name              string
-		apiPath           string
+		api               string
 		repo              *gitrepo.Repository
-		state             *config.PipelineState
+		state             *config.LibrarianState
 		container         *mockContainerClient
 		build             bool
 		wantErr           bool
@@ -388,14 +388,15 @@ func TestGenerateRun(t *testing.T) {
 		wantBuildCalls    int
 	}{
 		{
-			name:    "regeneration of API",
-			apiPath: "some/api",
-			repo:    newTestGitRepo(t),
-			state: &config.PipelineState{
+			name: "regeneration of API",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
 					{
-						ID:       "some-library",
-						APIPaths: []string{"some/api"},
+						ID:   "some-library",
+						APIs: []config.API{{Path: "some/api"}},
 					},
 				},
 			},
@@ -409,7 +410,7 @@ func TestGenerateRun(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				cfg: &config.Config{
-					API:    test.apiPath,
+					API:    test.api,
 					Source: t.TempDir(),
 					Build:  test.build,
 				},
