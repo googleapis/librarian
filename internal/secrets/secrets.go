@@ -24,36 +24,50 @@ import (
 	"github.com/googleapis/gax-go/v2"
 )
 
-// SecretsClient is an interface for interacting with the Secret Manager
+// secretsClient is an interface for interacting with the Secret Manager
 // service. Provide a secretManager.Client to reuse an existing client
 // or a fake implementation for testing.
-type SecretsClient interface {
+type secretsClient interface {
 	AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
+	Close() error
+}
+
+// Client for retrieving secrets.
+type Client struct {
+	client secretsClient
+}
+
+// NewClient returns a [Client].
+func NewClient(ctx context.Context) (*Client, error) {
+	client, err := secretmanager.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return newClient(client), nil
+}
+
+func newClient(client secretsClient) *Client {
+	return &Client{
+		client: client,
+	}
 }
 
 // Get fetches the latest version of a secret as a string. This method assumes
 // the secret payload is a UTF-8 string.
-func Get(ctx context.Context, project string, secretName string, secretsClient SecretsClient) (_ string, err error) {
-	if secretsClient == nil {
-		secretsClient, err := secretmanager.NewClient(ctx)
-		if err != nil {
-			return "", err
-		}
-		defer func() {
-			cerr := secretsClient.Close()
-			if err == nil {
-				err = cerr
-			}
-		}()
-	}
+func (c *Client) Get(ctx context.Context, project string, secretName string) (string, error) {
 	request := &secretmanagerpb.AccessSecretVersionRequest{
 		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", project, secretName),
 	}
-	secret, err := secretsClient.AccessSecretVersion(ctx, request)
+	secret, err := c.client.AccessSecretVersion(ctx, request)
 	if err != nil {
 		return "", err
 	}
 	// We assume the payload is valid UTF-8.
 	value := string(secret.Payload.Data[:])
 	return value, nil
+}
+
+// Close turns down the client.
+func (c *Client) Close() error {
+	return c.client.Close()
 }

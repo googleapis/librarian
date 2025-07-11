@@ -36,6 +36,10 @@ func (c *mockClient) AccessSecretVersion(ctx context.Context, req *secretmanager
 	return resp, nil
 }
 
+func (c *mockClient) Close() error {
+	return nil
+}
+
 func TestFetchSecrets(t *testing.T) {
 	for _, test := range []struct {
 		name       string
@@ -48,10 +52,12 @@ func TestFetchSecrets(t *testing.T) {
 		{"Empty response", "some-project-id", "some-secret-name", "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			client := &mockClient{
+			mock := &mockClient{
 				result: test.mockResult,
 			}
-			got, err := Get(t.Context(), test.project, test.secretName, client)
+			client := newClient(mock)
+			defer client.Close()
+			got, err := client.Get(t.Context(), test.project, test.secretName)
 			if err != nil {
 				t.Errorf("unexpected error fetching secret: %s", err)
 			}
