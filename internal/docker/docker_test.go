@@ -93,7 +93,7 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", ".librarian/generate-request.json:/librarian:ro",
+				"-v", ".librarian:/librarian:ro",
 				"-v", ".librarian/generator-input:/input",
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
@@ -117,7 +117,7 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", ".librarian/generate-request.json:/librarian:ro",
+				"-v", ".librarian:/librarian:ro",
 				"-v", ".librarian/generator-input:/input",
 				"-v", "localDir:/output",
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),

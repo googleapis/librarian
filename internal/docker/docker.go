@@ -141,7 +141,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("--library-id=%s", request.libraryID),
 	}
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", request.requestJson), // readonly volume.
+		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir), // readonly volume.
 		fmt.Sprintf("%s:/input", request.generatorInput),
 		fmt.Sprintf("%s:/output", request.output),
 		fmt.Sprintf("%s:/source:ro", request.apiRoot), // readonly volume.
