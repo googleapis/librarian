@@ -21,7 +21,6 @@ package docker
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -211,18 +210,18 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 func toGenerateRequestJSON(state *config.PipelineState, filepath string) error {
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
-		return errors.New("failed to marshal state to JSON")
+		return fmt.Errorf("failed to marshal state to JSON: %w", err)
 	}
 
 	jsonFile, err := os.Create(filepath)
 	if err != nil {
-		return errors.New("failed to create generate request JSON file")
+		return fmt.Errorf("failed to create generate request JSON file: %w", err)
 	}
 	defer jsonFile.Close()
 
 	_, err = jsonFile.Write(data)
 	if err != nil {
-		return errors.New("failed to write generate request JSON file")
+		return fmt.Errorf("failed to write generate request JSON file: %w", err)
 	}
 
 	return nil
