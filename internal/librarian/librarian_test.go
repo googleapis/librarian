@@ -17,6 +17,8 @@ package librarian
 import (
 	"log"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // TODO(https://github.com/googleapis/librarian/issues/202): add better tests
@@ -24,5 +26,66 @@ import (
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func TestIsUrl(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{
+			name:  "Valid HTTPS URL",
+			input: "https://github.com/googleapis/librarian-go",
+			want:  true,
+		},
+		{
+			name:  "Valid HTTP URL",
+			input: "http://example.com/path?query=value",
+			want:  true,
+		},
+		{
+			name:  "Valid FTP URL",
+			input: "ftp://user:password@host/path",
+			want:  true,
+		},
+		{
+			name:  "URL without scheme",
+			input: "google.com",
+			want:  false,
+		},
+		{
+			name:  "URL with scheme only",
+			input: "https://",
+			want:  false,
+		},
+		{
+			name:  "Absolute Unix file path",
+			input: "/home/user/file",
+			want:  false,
+		},
+		{
+			name:  "Relative file path",
+			input: "home/user/file",
+			want:  false,
+		},
+		{
+			name:  "Empty string",
+			input: "",
+			want:  false,
+		},
+		{
+			name:  "Plain string",
+			input: "just-a-string",
+			want:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isUrl(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("isUrl() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
