@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -67,7 +68,7 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 	return languageRepo, nil
 }
 
-func deriveImage(imageOverride string, state *LibrarianState) string {
+func deriveImage(imageOverride string, state *config.LibrarianState) string {
 	if imageOverride != "" {
 		return imageOverride
 	}
@@ -77,23 +78,26 @@ func deriveImage(imageOverride string, state *LibrarianState) string {
 	return state.Image
 }
 
-// findLibraryIDByApiPath finds a library which includes code generated from the given API path.
-// If there are no such libraries, an empty string is returned.
-// If there are multiple such libraries, the first match is returned.
-func findLibraryIDByApiPath(state *LibrarianState, apiPath string) string {
-	for _, library := range state.Libraries {
-		for _, api := range library.APIs {
+func findLibraryIDByApiPath(state *config.LibrarianState, apiPath string) string {
+	if state == nil {
+		return ""
+	}
+	for _, lib := range state.Libraries {
+		for _, api := range lib.APIs {
 			if api.Path == apiPath {
-				return library.Id
+				return lib.Id
 			}
 		}
 	}
 	return ""
 }
 
-func findLibraryByID(state *LibrarianState, libraryID string) *Library {
-	for i := range state.Libraries {
-		if state.Libraries[i].Id == libraryID {
+func findLibraryByID(state *config.LibrarianState, libraryID string) *config.Library {
+	if state == nil {
+		return nil
+	}
+	for i, lib := range state.Libraries {
+		if lib.Id == libraryID {
 			return &state.Libraries[i]
 		}
 	}

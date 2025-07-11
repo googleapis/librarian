@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -44,20 +45,20 @@ func TestCommandUsage(t *testing.T) {
 }
 
 func TestFindLibraryByID(t *testing.T) {
-	lib1 := Library{Id: "lib1"}
-	lib2 := Library{Id: "lib2"}
-	stateWithLibs := &LibrarianState{
-		Libraries: []Library{lib1, lib2},
+	lib1 := config.Library{Id: "lib1"}
+	lib2 := config.Library{Id: "lib2"}
+	stateWithLibs := &config.LibrarianState{
+		Libraries: []config.Library{lib1, lib2},
 	}
-	stateNoLibs := &LibrarianState{
-		Libraries: []Library{},
+	stateNoLibs := &config.LibrarianState{
+		Libraries: []config.Library{},
 	}
 
 	for _, test := range []struct {
 		name      string
-		state     *LibrarianState
+		state     *config.LibrarianState
 		libraryID string
-		want      *Library
+		want      *config.Library
 	}{
 		{
 			name:      "found first library",
@@ -97,7 +98,7 @@ func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		imageOverride string
-		state         *LibrarianState
+		state         *config.LibrarianState
 		want          string
 	}{
 		{
@@ -109,7 +110,7 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "with image override, non-nil state",
 			imageOverride: "my/custom-image:v1",
-			state:         &LibrarianState{Image: "gcr.io/foo/bar:v1.2.3"},
+			state:         &config.LibrarianState{Image: "gcr.io/foo/bar:v1.2.3"},
 			want:          "my/custom-image:v1",
 		},
 		{
@@ -121,7 +122,7 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "no override, with state",
 			imageOverride: "",
-			state:         &LibrarianState{Image: "gcr.io/foo/bar:v1.2.3"},
+			state:         &config.LibrarianState{Image: "gcr.io/foo/bar:v1.2.3"},
 			want:          "gcr.io/foo/bar:v1.2.3",
 		},
 	} {

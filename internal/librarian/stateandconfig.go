@@ -34,7 +34,7 @@ const pipelineConfigFile = "pipeline-config.json"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
-func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*LibrarianState, *config.PipelineConfig, error) {
+func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*config.LibrarianState, *config.PipelineConfig, error) {
 	if languageRepo == nil {
 		return nil, nil, nil
 	}
@@ -49,7 +49,7 @@ func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*LibrarianState, 
 	return state, config, nil
 }
 
-func loadLibrarianState(repo *gitrepo.Repository) (*LibrarianState, error) {
+func loadLibrarianState(repo *gitrepo.Repository) (*config.LibrarianState, error) {
 	if repo == nil {
 		return nil, nil
 	}
@@ -57,7 +57,7 @@ func loadLibrarianState(repo *gitrepo.Repository) (*LibrarianState, error) {
 	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func loadLibrarianStateFile(path string) (*LibrarianState, error) {
+func loadLibrarianStateFile(path string) (*config.LibrarianState, error) {
 	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
@@ -70,7 +70,7 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func fetchRemoteLibrarianState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*LibrarianState, error) {
+func fetchRemoteLibrarianState(ctx context.Context, repo *github.Repository, ref string, gitHubToken string) (*config.LibrarianState, error) {
 	ghClient, err := github.NewClient(gitHubToken, repo)
 	if err != nil {
 		return nil, err
@@ -92,12 +92,12 @@ func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.Pipeline
 	return config, nil
 }
 
-func parseLibrarianState(contentLoader func() ([]byte, error)) (*LibrarianState, error) {
+func parseLibrarianState(contentLoader func() ([]byte, error)) (*config.LibrarianState, error) {
 	bytes, err := contentLoader()
 	if err != nil {
 		return nil, err
 	}
-	var s LibrarianState
+	var s config.LibrarianState
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}

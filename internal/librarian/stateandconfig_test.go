@@ -18,34 +18,34 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestParseLibrarianState(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		content string
-		want    *LibrarianState
+		want    *config.LibrarianState
 		wantErr bool
-	}{
-		{
-			name:    "valid state",
-			content: "image: gcr.io/test/image:v1.2.3\nlibraries:\n  - id: a/b\n    source_paths:\n      - src/a\n      - src/b\n    apis:\n      - path: a/b/v1\n        service_config: a/b/v1/service.yaml\n",
-			want: &LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []Library{
-					{
-						Id:          "a/b",
-						SourcePaths: []string{"src/a", "src/b"},
-						APIs: []API{
-							{
-								Path:          "a/b/v1",
-								ServiceConfig: "a/b/v1/service.yaml",
-							},
+	}{{
+		name:    "valid state",
+		content: "image: gcr.io/test/image:v1.2.3\nlibraries:\n  - id: a/b\n    source_paths:\n      - src/a\n      - src/b\n    apis:\n      - path: a/b/v1\n        service_config: a/b/v1/service.yaml\n",
+		want: &config.LibrarianState{
+			Image: "gcr.io/test/image:v1.2.3",
+			Libraries: []config.Library{
+				{
+					Id:          "a/b",
+					SourcePaths: []string{"src/a", "src/b"},
+					APIs: []config.API{
+						{
+							Path:          "a/b/v1",
+							ServiceConfig: "a/b/v1/service.yaml",
 						},
 					},
 				},
 			},
 		},
+	},
 		{
 			name:    "invalid yaml",
 			content: "image: gcr.io/test/image:v1.2.3\n  libraries: []\n",

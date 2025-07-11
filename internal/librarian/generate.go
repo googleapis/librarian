@@ -96,7 +96,7 @@ type generateRunner struct {
 	cfg      *config.Config
 	workRoot string
 	repo     *gitrepo.Repository
-	state    *LibrarianState
+	state    *config.LibrarianState
 	config   *config.PipelineConfig
 	image    string
 }
@@ -177,7 +177,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // and log the error.
 // If refined generation is used, the context's languageRepo field will be populated and the
 // library ID will be returned; otherwise, an empty string will be returned.
-func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir string, state *LibrarianState, containerConfig *docker.Docker) (string, error) {
+func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir string, state *config.LibrarianState, containerConfig *docker.Docker) (string, error) {
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
 		return "", err
@@ -212,7 +212,7 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 
 	// Attempt to load the pipeline state either locally or from the repo URL
 	var (
-		pipelineState *LibrarianState
+		pipelineState *config.LibrarianState
 		err           error
 	)
 	if !isUrl(repo) {
