@@ -68,6 +68,8 @@ type Docker struct {
 // GenerateRequest contains all the information required for a language
 // container to run the generate command.
 type GenerateRequest struct {
+	// repo is a pointer to the [gitrepo.Repository] struct, representing the
+	// language repository.
 	repo *gitrepo.Repository
 	// cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
