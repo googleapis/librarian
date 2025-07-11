@@ -355,3 +355,62 @@ func runGit(t *testing.T, dir string, args ...string) {
 		t.Fatalf("git %v: %v", args, err)
 	}
 }
+
+func TestGenerateRun(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name              string
+		apiPath           string
+		repo              *gitrepo.Repository
+		state             *config.PipelineState
+		container         *mockContainerClient
+		build             bool
+		wantErr           bool
+		wantGenerateCalls int
+		wantBuildCalls    int
+	}{
+		{
+			name:    "regeneration of API",
+			apiPath: "some/api",
+			repo:    newTestGitRepo(t),
+			state: &config.PipelineState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:       "some-library",
+						APIPaths: []string{"some/api"},
+					},
+				},
+			},
+			container:         &mockContainerClient{},
+			build:             true,
+			wantGenerateCalls: 1,
+			wantBuildCalls:    1,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			r := &generateRunner{
+				cfg: &config.Config{
+					API:    test.apiPath,
+					Source: t.TempDir(),
+					Build:  test.build,
+				},
+				repo:            test.repo,
+				state:           test.state,
+				containerClient: test.container,
+				workRoot:        t.TempDir(),
+			}
+
+			if err := r.run(context.Background()); (err != nil) != test.wantErr {
+				t.Errorf("run() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
+				t.Errorf("run() generateCalls mismatch (-want +got):%s", diff)
+			}
+			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
+				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
