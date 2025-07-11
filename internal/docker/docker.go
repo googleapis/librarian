@@ -72,7 +72,8 @@ type GenerateRequest struct {
 	Cfg *config.Config
 	// state is a pointer to the [config.PipelineState] struct, representing
 	// the overall state of the generation and release pipeline.
-	State   *config.PipelineState
+	State *config.PipelineState
+	// RepoDir is the local root directory of the language repository.
 	RepoDir string
 	// apiRoot specifies the root directory of the API specification repo
 	ApiRoot string
