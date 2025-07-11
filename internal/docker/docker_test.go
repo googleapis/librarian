@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -249,7 +250,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
 
-			if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
+			if diff := cmp.Diff(strings.TrimSpace(string(wantBytes)), string(gotBytes)); diff != "" {
 				t.Errorf("Generated JSON mismatch (-want +got):\n%s", diff)
 			}
 		})
