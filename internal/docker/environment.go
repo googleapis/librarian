@@ -126,7 +126,12 @@ func (e *EnvironmentProvider) getSecretManagerValue(ctx context.Context, variabl
 	if present {
 		return value, true, nil
 	}
-	value, err := secrets.Get(ctx, e.secretsProject, variable.SecretName, nil)
+	client, err := secrets.NewClient(ctx)
+	if err != nil {
+		return "", false, err
+	}
+	defer client.Close()
+	value, err = client.Get(ctx, e.secretsProject, variable.SecretName)
 	if err != nil {
 		// If the error is that the secret wasn't found, continue to the next source.
 		// Any other error causes a real error to be returned.

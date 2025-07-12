@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/googleapis/librarian/internal/docker"
 	"log/slog"
+	"net/url"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -83,4 +84,13 @@ type ContainerClient interface {
 	Generate(ctx context.Context, request *docker.GenerateRequest) error
 	Build(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error
 	Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error
+}
+
+func isUrl(s string) bool {
+	u, err := url.ParseRequestURI(s)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
 }

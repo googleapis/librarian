@@ -14,108 +14,207 @@
 
 package config
 
-// AutomationLevel is the degree of automation to use when generating/releasing.
-type AutomationLevel int32
-
-const (
-	// AutomationLevelNone is not used.
-	AutomationLevelNone AutomationLevel = 0
-	// AutomationLevelBlocked is for when automation is blocked: this API/library should be skipped.
-	AutomationLevelBlocked AutomationLevel = 1
-	// AutomationLevelManualReview is for when automation can generate changes/releases,
-	// but they need to be reviewed.
-	AutomationLevelManualReview AutomationLevel = 2
-	// AutomationLevelAutomatic is for when automation can generated changes/releases which can
-	// proceed without further review if all tests pass.
-	AutomationLevelAutomatic AutomationLevel = 3
+import (
+	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
-// PipelineState is the overall state of the generation and release pipeline. This is expected
-// to be stored in each language repo as generator-input/pipeline-state.json.
-type PipelineState struct {
-	// The image tag that the CLI should use when invoking the
-	// language-specific tooling. The image name is assumed by convention, or
-	// overridden in PipelineConfig.
-	ImageTag string `json:"image_tag,omitempty"`
-	// The state of each library which is released within this repository.
-	Libraries []*LibraryState `json:"libraries,omitempty"`
-	// Paths to files/directories which can trigger
-	// a release in all libraries.
-	CommonLibrarySourcePaths []string `json:"common_library_source_paths,omitempty"`
-	// API paths which are deliberately not configured. (Ideally this would
-	// be empty for all languages, but there may be temporary reasons not to configure
-	// an API.)
-	IgnoredAPIPaths []string `json:"ignored_api_paths,omitempty"`
+// LibrarianState defines the contract for the state.yaml file.
+type LibrarianState struct {
+	// The name and tag of the generator image to use. tag is required.
+	Image string `yaml:"image"`
+	// A list of library configurations.
+	Libraries []*LibraryState `yaml:"libraries"`
 }
 
-// LibraryState is the generation state of a single library.
+// Validate checks that the LibrarianState is valid.
+func (s *LibrarianState) Validate() error {
+	if s.Image == "" {
+		return fmt.Errorf("image is required")
+	}
+	if !isValidImage(s.Image) {
+		return fmt.Errorf("invalid image: %q", s.Image)
+	}
+	if len(s.Libraries) == 0 {
+		return fmt.Errorf("libraries cannot be empty")
+	}
+	for i, l := range s.Libraries {
+		if l == nil {
+			return fmt.Errorf("library at index %d cannot be nil", i)
+		}
+		if err := l.Validate(); err != nil {
+			return fmt.Errorf("invalid library at index %d: %w", i, err)
+		}
+	}
+	return nil
+}
+
+// ImageRefAndTag extracts the image reference and tag from the full image string.
+// For example, for "gcr.io/my-image:v1.2.3", it returns a reference to
+// "gcr.io/my-image" and the tag "v1.2.3".
+// If no tag is present, the returned tag is an empty string.
+func (s *LibrarianState) ImageRefAndTag() (ref string, tag string) {
+	if s == nil {
+		return "", ""
+	}
+	return parseImage(s.Image)
+}
+
+// parseImage splits an image string into its reference and tag.
+// It correctly handles port numbers in the reference.
+// If no tag is found, the tag part is an empty string.
+func parseImage(image string) (ref string, tag string) {
+	if image == "" {
+		return "", ""
+	}
+	lastColon := strings.LastIndex(image, ":")
+	if lastColon < 0 {
+		return image, ""
+	}
+	// if there is a slash after the last colon, it's a port number, not a tag.
+	if strings.Contains(image[lastColon:], "/") {
+		return image, ""
+	}
+	return image[:lastColon], image[lastColon+1:]
+}
+
+// LibraryState represents the state of a single library within state.yaml.
 type LibraryState struct {
-	// The library identifier (language-specific format)
-	ID string `json:"id,omitempty"`
-	// The last version that was released, if any.
-	CurrentVersion string `json:"current_version,omitempty"`
-	// The next version to release (to force a specific version number).
-	// This should usually be unset.
-	NextVersion string `json:"next_version,omitempty"`
-	// The automation level for generation for this library.
-	GenerationAutomationLevel AutomationLevel `json:"generation_automation_level,omitempty"`
-	// The automation level for releases for this library.
-	ReleaseAutomationLevel AutomationLevel `json:"release_automation_level,omitempty"`
-	// The timestamp of the latest release. (This is typically
-	// some timestamp within the process of generating the release
-	// PR for the library. Importantly, it's not just a date as
-	// there may be reasons to release a library multiple times
-	// within a day.) This is unset if the library has not yet been
-	// released.
-	ReleaseTimestamp string `json:"release_timestamp,omitempty"`
-	// The commit hash (within the API definition repo) at which
-	// the library was last generated. This is empty if the library
-	// has not yet been generated.
-	LastGeneratedCommit string `json:"last_generated_commit,omitempty"`
-	// The last-generated commit hash (within the API definition repo)
-	// at the point of the last/in-progress release. (This is taken
-	// from the generation state at the time of the release.) This
-	// is empty if the library has not yet been released.
-	LastReleasedCommit string `json:"last_released_commit,omitempty"`
-	// The API paths included in this library, relative to the root
-	// of the API definition repo, e.g. "google/cloud/functions/v2".
-	APIPaths []string `json:"api_paths,omitempty"`
-	// Paths to files or directories contributing to this library.
-	SourcePaths []string `json:"source_paths,omitempty"`
+	// A unique identifier for the library, in a language-specific format.
+	// A valid ID should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
+	ID string `yaml:"id"`
+	// The last released version of the library, following SemVer.
+	Version string `yaml:"version"`
+	// The commit hash from the API definition repository at which the library was last generated.
+	LastGeneratedCommit string `yaml:"last_generated_commit"`
+	// A list of APIs that are part of this library.
+	APIs []API `yaml:"apis"`
+	// A list of directories in the language repository where Librarian contributes code.
+	SourcePaths []string `yaml:"source_paths"`
+	// A list of regular expressions for files and directories to preserve during the copy and remove process.
+	PreserveRegex []string `yaml:"preserve_regex"`
+	// A list of regular expressions for files and directories to remove before copying generated code.
+	// If not set, this defaults to the `source_paths`.
+	// A more specific `preserve_regex` takes precedence.
+	RemoveRegex []string `yaml:"remove_regex"`
 }
 
-// PipelineConfig is the manually-maintained configuration for the pipeline.
-type PipelineConfig struct {
-	// The name of the image to use, where the convention is not
-	// appropriate. The tag is specified in PipelineState.
-	ImageName string `json:"image_name,omitempty"`
-	// Specific configuration for each individual command.
-	Commands map[string]*CommandConfig `json:"commands,omitempty"`
-	// The maximum number (inclusive) of commits to create
-	// in a single pull request. If this is non-positive, it is
-	// ignored. If a process generated a pull request with more
-	// commits than this, excess commits are trimmed and the commits
-	// which *would* have been present are described in the PR.
-	MaxPullRequestCommits int32 `json:"max_pull_request_commits,omitempty"`
+var (
+	libraryIDRegex = regexp.MustCompile(`^[a-zA-Z0-9/._-]+$`)
+	semverRegex    = regexp.MustCompile(`^v?\d+\.\d+\.\d+$`)
+	hexRegex       = regexp.MustCompile("^[a-fA-F0-9]+$")
+)
+
+// Validate checks that the Library is valid.
+func (l *LibraryState) Validate() error {
+	if l.ID == "" {
+		return fmt.Errorf("id is required")
+	}
+	if l.ID == "." || l.ID == ".." {
+		return fmt.Errorf(`id cannot be "." or ".." only`)
+	}
+	if !libraryIDRegex.MatchString(l.ID) {
+		return fmt.Errorf("invalid id: %q", l.ID)
+	}
+	if l.Version != "" && !semverRegex.MatchString(l.Version) {
+		return fmt.Errorf("invalid version: %q", l.Version)
+	}
+	if l.LastGeneratedCommit != "" {
+		if !hexRegex.MatchString(l.LastGeneratedCommit) {
+			return fmt.Errorf("last_generated_commit must be a hex string")
+		}
+		if len(l.LastGeneratedCommit) != 40 {
+			return fmt.Errorf("last_generated_commit must be 40 characters")
+		}
+	}
+	if len(l.APIs) == 0 {
+		return fmt.Errorf("apis cannot be empty")
+	}
+	for i, a := range l.APIs {
+		if err := a.Validate(); err != nil {
+			return fmt.Errorf("invalid api at index %d: %w", i, err)
+		}
+	}
+	if len(l.SourcePaths) == 0 {
+		return fmt.Errorf("source_paths cannot be empty")
+	}
+	for i, p := range l.SourcePaths {
+		if !isValidDirPath(p) {
+			return fmt.Errorf("invalid source_path at index %d: %q", i, p)
+		}
+	}
+	for i, r := range l.PreserveRegex {
+		if _, err := regexp.Compile(r); err != nil {
+			return fmt.Errorf("invalid preserve_regex at index %d: %w", i, err)
+		}
+	}
+	for i, r := range l.RemoveRegex {
+		if _, err := regexp.Compile(r); err != nil {
+			return fmt.Errorf("invalid remove_regex at index %d: %w", i, err)
+		}
+	}
+	return nil
 }
 
-// CommandConfig is the configuration for a specific container command.
-type CommandConfig struct {
-	// The environment variables to populate for this command.
-	EnvironmentVariables []*CommandEnvironmentVariable `json:"environment_variables,omitempty"`
+// API represents an API that is part of a library.
+type API struct {
+	// The path to the API, relative to the root of the API definition repository (e.g., "google/storage/v1").
+	Path string `yaml:"path"`
+	// The name of the service config file, relative to the API `path`.
+	ServiceConfig string `yaml:"service_config"`
 }
 
-// CommandEnvironmentVariable is an environment variable to be provided to a container command.
-type CommandEnvironmentVariable struct {
-	// The name of the environment variable (e.g. TEST_PROJECT).
-	Name string `json:"name,omitempty"`
-	// The name of the secret to be used to fetch the value of the environment
-	// variable when it's not present in the host system. If this is not specified,
-	// or if a Secret Manager project has not been provided to Librarian,
-	// Secret Manager will not be used as a source for the environment variable.
-	SecretName string `json:"secret_name,omitempty"`
-	// The default value to specify if no other source is found for the environment
-	// variable. If this is not provided and no other source is found, the environment
-	// variable will not be passed to the container at all.
-	DefaultValue string `json:"default_value,omitempty"`
+// Validate checks that the API is valid.
+func (a *API) Validate() error {
+	if !isValidDirPath(a.Path) {
+		return fmt.Errorf("invalid path: %q", a.Path)
+	}
+	return nil
+}
+
+// invalidPathChars contains characters that are invalid in path components,
+// plus path separators and the null byte.
+const invalidPathChars = `<>:"|?*\/\\x00`
+
+func isValidDirPath(pathString string) bool {
+	if pathString == "" {
+		return false
+	}
+
+	// The paths are expected to be relative and use the OS-specific path separator.
+	// We clean the path to resolve ".." and check that it doesn't try to
+	// escape the root.
+	cleaned := filepath.Clean(pathString)
+	if filepath.IsAbs(pathString) || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+		return false
+	}
+
+	// A single dot is a valid relative path, but likely not the intended input.
+	if cleaned == "." {
+		return false
+	}
+
+	// Each path component must not contain invalid characters.
+	for _, component := range strings.Split(cleaned, string(filepath.Separator)) {
+		if strings.ContainsAny(component, invalidPathChars) {
+			return false
+		}
+	}
+	return true
+}
+
+// isValidImage checks if a string is a valid container image name with a required tag.
+// It validates that the image string contains a tag, separated by a colon, and has no whitespace.
+// It correctly distinguishes between a tag and a port number in the registry host.
+func isValidImage(image string) bool {
+	// Basic validation: no whitespace.
+	if strings.ContainsAny(image, " \t\n\r") {
+		return false
+	}
+
+	ref, tag := parseImage(image)
+
+	return ref != "" && tag != ""
 }

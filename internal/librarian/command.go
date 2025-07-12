@@ -21,7 +21,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
@@ -69,31 +68,40 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 	return languageRepo, nil
 }
 
-func deriveImage(imageOverride string, state *config.PipelineState) (string, error) {
+func deriveImage(imageOverride string, state *config.LibrarianState) string {
 	if imageOverride != "" {
-		return imageOverride, nil
+		return imageOverride
 	}
 	if state == nil {
-		return "", nil
+		return ""
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/326):
-	// use image from state.yaml when switch to this config file. see go/librarian:cli-reimagined
-	if state.ImageTag == "" {
-		return "", errors.New("pipeline state does not have image specified and no override was provided")
-	}
-	return state.ImageTag, nil
+	return state.Image
 }
 
-// findLibraryIDByAPIPath finds a library which includes code generated from the given API path.
-// If there are no such libraries, an empty string is returned.
-// If there are multiple such libraries, the first match is returned.
-func findLibraryIDByAPIPath(state *config.PipelineState, apiPath string) string {
-	for _, library := range state.Libraries {
-		if slices.Contains(library.APIPaths, apiPath) {
-			return library.ID
+func findLibraryIDByApiPath(state *config.LibrarianState, apiPath string) string {
+	if state == nil {
+		return ""
+	}
+	for _, lib := range state.Libraries {
+		for _, api := range lib.APIs {
+			if api.Path == apiPath {
+				return lib.ID
+			}
 		}
 	}
 	return ""
+}
+
+func findLibraryByID(state *config.LibrarianState, libraryID string) *config.LibraryState {
+	if state == nil {
+		return nil
+	}
+	for _, lib := range state.Libraries {
+		if lib.ID == libraryID {
+			return lib
+		}
+	}
+	return nil
 }
 
 func formatTimestamp(t time.Time) string {
@@ -123,34 +131,4 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 
 	slog.Info("Temporary working directory", "dir", path)
 	return path, nil
-}
-
-// commitAll commits all changes to the repository.
-// No commit is made if there are no file modifications.
-func commitAll(repo *gitrepo.Repository, msg, pushConfig string) error {
-	userEmail, userName, err := parsePushConfig(pushConfig)
-	if err != nil {
-		return err
-	}
-
-	status, err := repo.AddAll()
-	if err != nil {
-		return err
-	}
-	if status.IsClean() {
-		slog.Info("No modifications to commit.")
-		return nil
-	}
-
-	return repo.Commit(msg, userName, userEmail)
-}
-
-func parsePushConfig(pushConfig string) (string, string, error) {
-	parts := strings.Split(pushConfig, ",")
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
-	}
-	userEmail := parts[0]
-	userName := parts[1]
-	return userEmail, userName, nil
 }

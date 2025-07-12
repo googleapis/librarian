@@ -95,7 +95,7 @@ func init() {
 type generateRunner struct {
 	cfg             *config.Config
 	repo            *gitrepo.Repository
-	state           *config.PipelineState
+	state           *config.LibrarianState
 	config          *config.PipelineConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
@@ -122,10 +122,8 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	image, err := deriveImage(cfg.Image, state)
-	if err != nil {
-		return nil, err
-	}
+	image := deriveImage(cfg.Image, state)
+
 	var ghClient GitHubClient
 	if isUrl(cfg.Repo) {
 		// repo is a URL
@@ -194,7 +192,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 	// If we've got a language repo, it's because we've already found a library for the
 	// specified API, configured in the repo.
 	if r.repo != nil {
-		libraryID := findLibraryIDByAPIPath(r.state, r.cfg.API)
+		libraryID := findLibraryIDByApiPath(r.state, r.cfg.API)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
@@ -247,23 +245,23 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 
 	// Attempt to load the pipeline state either locally or from the repo URL
 	var (
-		pipelineState *config.PipelineState
+		pipelineState *config.LibrarianState
 		err           error
 	)
 	if isUrl(repo) {
-		pipelineState, err = fetchRemotePipelineState(ctx, r.ghClient, "HEAD")
+		pipelineState, err = fetchRemoteLibrarianState(ctx, r.ghClient, "HEAD")
 		if err != nil {
 			return false, err
 		}
 	} else {
 		// repo is a directory
-		pipelineState, err = loadPipelineStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
+		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
 		if err != nil {
 			return false, err
 		}
 	}
 	// If the library doesn't exist, we don't use the repo at all.
-	libraryID := findLibraryIDByAPIPath(pipelineState, apiPath)
+	libraryID := findLibraryIDByApiPath(pipelineState, apiPath)
 	if libraryID == "" {
 		slog.Info("API path not configured in repo", "path", apiPath)
 		return false, nil

@@ -70,9 +70,9 @@ type GenerateRequest struct {
 	// cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
 	Cfg *config.Config
-	// state is a pointer to the [config.PipelineState] struct, representing
+	// state is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
-	State *config.PipelineState
+	State *config.LibrarianState
 	// apiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
 	// libraryID specifies the ID of the library to generate
@@ -228,7 +228,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-func writeGenerateRequest(state *config.PipelineState, libraryID, jsonFilePath string) error {
+func writeGenerateRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
 	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}

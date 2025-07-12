@@ -69,7 +69,7 @@ func TestDockerRun(t *testing.T) {
 		testRepoRoot        = "testRepoRoot"
 	)
 
-	state := &config.PipelineState{}
+	state := &config.LibrarianState{}
 	cfg := &config.Config{}
 	cfgInDocker := &config.Config{
 		HostMount: "hostDir:localDir",
@@ -201,44 +201,61 @@ func TestToGenerateRequestJSON(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name      string
-		state     *config.PipelineState
+		state     *config.LibrarianState
 		expectErr bool
 	}{
 		{
 			name: "successful-marshaling-and-writing",
-			state: &config.PipelineState{
-				ImageTag: "v1.0.0",
+			state: &config.LibrarianState{
+				Image: "v1.0.0",
 				Libraries: []*config.LibraryState{
 					{
-						ID:                        "google-cloud-go",
-						CurrentVersion:            "1.0.0",
-						GenerationAutomationLevel: config.AutomationLevelAutomatic,
-						APIPaths:                  []string{"google/cloud/compute/v1"},
+						ID:                  "google-cloud-go",
+						Version:             "1.0.0",
+						LastGeneratedCommit: "abcd123",
+						APIs: []config.API{
+							{
+								Path:          "google/cloud/compute/v1",
+								ServiceConfig: "example_service_config.yaml",
+							},
+						},
+						SourcePaths: []string{
+							"src/example/path",
+						},
+						PreserveRegex: []string{
+							"example-preserve-regex",
+						},
+						RemoveRegex: []string{
+							"example-remove-regex",
+						},
 					},
 					{
-						ID:                        "google-cloud-storage",
-						CurrentVersion:            "1.2.3",
-						GenerationAutomationLevel: config.AutomationLevelManualReview,
-						APIPaths:                  []string{"google/storage/v1"},
+						ID:      "google-cloud-storage",
+						Version: "1.2.3",
+						APIs: []config.API{
+							{
+								Path:          "google/storage/v1",
+								ServiceConfig: "storage_service_config.yaml",
+							},
+						},
 					},
 				},
-				IgnoredAPIPaths: []string{"google/cloud/ignored/v1"},
 			},
 			expectErr: false,
 		},
 		{
 			name:      "empty-pipelineState",
-			state:     &config.PipelineState{},
+			state:     &config.LibrarianState{},
 			expectErr: false,
 		},
 		{
 			name:      "nonexistent_dir_for_test",
-			state:     &config.PipelineState{},
+			state:     &config.LibrarianState{},
 			expectErr: true,
 		},
 		{
 			name:      "invalid_file_name",
-			state:     &config.PipelineState{},
+			state:     &config.LibrarianState{},
 			expectErr: true,
 		},
 	} {

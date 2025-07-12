@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -43,13 +44,62 @@ func TestCommandUsage(t *testing.T) {
 	}
 }
 
+func TestFindLibraryByID(t *testing.T) {
+	lib1 := &config.LibraryState{ID: "lib1"}
+	lib2 := &config.LibraryState{ID: "lib2"}
+	stateWithLibs := &config.LibrarianState{
+		Libraries: []*config.LibraryState{lib1, lib2},
+	}
+	stateNoLibs := &config.LibrarianState{
+		Libraries: []*config.LibraryState{},
+	}
+
+	for _, test := range []struct {
+		name      string
+		state     *config.LibrarianState
+		libraryID string
+		want      *config.LibraryState
+	}{
+		{
+			name:      "found first library",
+			state:     stateWithLibs,
+			libraryID: "lib1",
+			want:      lib1,
+		},
+		{
+			name:      "found second library",
+			state:     stateWithLibs,
+			libraryID: "lib2",
+			want:      lib2,
+		},
+		{
+			name:      "not found",
+			state:     stateWithLibs,
+			libraryID: "lib3",
+			want:      nil,
+		},
+		{
+			name:      "empty libraries slice",
+			state:     stateNoLibs,
+			libraryID: "lib1",
+			want:      nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := findLibraryByID(test.state, test.libraryID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findLibraryByID() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		imageOverride string
-		state         *config.PipelineState
+		state         *config.LibrarianState
 		want          string
-		wantErr       bool
 	}{
 		{
 			name:          "with image override, nil state",
@@ -60,7 +110,7 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "with image override, non-nil state",
 			imageOverride: "my/custom-image:v1",
-			state:         &config.PipelineState{ImageTag: "v1.2.3"},
+			state:         &config.LibrarianState{Image: "gcr.io/foo/bar:v1.2.3"},
 			want:          "my/custom-image:v1",
 		},
 		{
@@ -72,29 +122,13 @@ func TestDeriveImage(t *testing.T) {
 		{
 			name:          "no override, with state",
 			imageOverride: "",
-			state:         &config.PipelineState{ImageTag: "v1.2.3"},
-			want:          "v1.2.3",
-		},
-		{
-			name:          "no override, with state, empty tag",
-			imageOverride: "",
-			state:         &config.PipelineState{ImageTag: ""},
-			wantErr:       true,
+			state:         &config.LibrarianState{Image: "gcr.io/foo/bar:v1.2.3"},
+			want:          "gcr.io/foo/bar:v1.2.3",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := deriveImage(test.imageOverride, test.state)
+			got := deriveImage(test.imageOverride, test.state)
 
-			if test.wantErr {
-				if err == nil {
-					t.Error("deriveImage() expected an error but got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Errorf("deriveImage() got unexpected error: %v", err)
-				return
-			}
 			if got != test.want {
 				t.Errorf("deriveImage() = %q, want %q", got, test.want)
 			}
@@ -304,113 +338,6 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 					t.Fatal("cloneOrOpenLanguageRepo() returned nil repo but no error")
 				}
 				test.check(t, repo)
-			}
-		})
-	}
-}
-
-func TestCommitAll(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		setup      func(t *testing.T, repoDir string)
-		wantCommit bool
-	}{
-		{
-			name: "clean repo, no commit",
-			setup: func(t *testing.T, repoDir string) {
-			},
-			wantCommit: false,
-		},
-		{
-			name: "dirty repo, with commit",
-			setup: func(t *testing.T, repoDir string) {
-				filePath := filepath.Join(repoDir, "new-file.txt")
-				if err := os.WriteFile(filePath, []byte("some content"), 0644); err != nil {
-					t.Fatalf("WriteFile: %v", err)
-				}
-			},
-			wantCommit: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			repoDir := newTestGitRepoWithCommit(t, "")
-			repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
-			if err != nil {
-				t.Fatalf("NewRepository() error = %v", err)
-			}
-
-			initialHead, err := repo.HeadHash()
-			if err != nil {
-				t.Fatalf("repo.HeadHash() error = %v", err)
-			}
-
-			test.setup(t, repoDir)
-
-			if err := commitAll(repo, "test commit", "tester@example.com,tester"); err != nil {
-				t.Errorf("commitAll() error = %v, wantErr nil", err)
-			}
-
-			finalHead, err := repo.HeadHash()
-			if err != nil {
-				t.Fatalf("repo.HeadHash() error = %v", err)
-			}
-
-			hasCommitted := initialHead != finalHead
-			if hasCommitted != test.wantCommit {
-				t.Errorf("commitAll() commit status = %v, want %v", hasCommitted, test.wantCommit)
-			}
-		})
-	}
-}
-
-func TestParsePushConfig(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		pushConfig string
-		wantEmail  string
-		wantName   string
-		wantErr    bool
-	}{
-		{
-			name:       "valid input",
-			pushConfig: "tester@example.com,tester",
-			wantEmail:  "tester@example.com",
-			wantName:   "tester",
-		},
-		{
-			name:       "invalid input, too few parts",
-			pushConfig: "tester@example.com",
-			wantErr:    true,
-		},
-		{
-			name:       "invalid input, too many parts",
-			pushConfig: "tester@example.com,tester,extra",
-			wantErr:    true,
-		},
-		{
-			name:       "empty input",
-			pushConfig: "",
-			wantErr:    true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			gotEmail, gotName, err := parsePushConfig(test.pushConfig)
-
-			if test.wantErr {
-				if err == nil {
-					t.Error("parsePushConfig() expected an error but got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Errorf("parsePushConfig() got unexpected error: %v", err)
-				return
-			}
-			if gotEmail != test.wantEmail {
-				t.Errorf("parsePushConfig() email = %q, want %q", gotEmail, test.wantEmail)
-			}
-			if gotName != test.wantName {
-				t.Errorf("parsePushConfig() name = %q, want %q", gotName, test.wantName)
 			}
 		})
 	}
