@@ -17,6 +17,9 @@ package docker
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -56,22 +59,17 @@ func TestNew(t *testing.T) {
 
 func TestDockerRun(t *testing.T) {
 	const (
-		testUID             = "1000"
-		testGID             = "1001"
 		testAPIPath         = "testAPIPath"
 		testAPIRoot         = "testAPIRoot"
+		testGenerateRequest = "testGenerateRequest"
 		testGeneratorInput  = "testGeneratorInput"
-		testGeneratorOutput = "testGeneratorOutput"
 		testImage           = "testImage"
-		testInputsDirectory = "testInputsDirectory"
-		testLanguageRepo    = "testLanguageRepo"
 		testLibraryID       = "testLibraryID"
-		testLibraryVersion  = "testLibraryVersion"
 		testOutput          = "testOutput"
-		testReleaseVersion  = "testReleaseVersion"
 		testRepoRoot        = "testRepoRoot"
 	)
 
+	state := &config.LibrarianState{}
 	cfg := &config.Config{}
 	cfgInDocker := &config.Config{
 		HostMount: "hostDir:localDir",
@@ -88,18 +86,28 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Generate(ctx, cfg, testAPIRoot, testOutput, testGeneratorInput, testLibraryID)
+				generateRequest := &GenerateRequest{
+					Cfg:       cfg,
+					State:     state,
+					RepoDir:   ".",
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					LibraryID: testLibraryID,
+				}
+				return d.Generate(ctx, generateRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
+				"-v", ".librarian:/librarian:ro",
+				"-v", ".librarian/generator-input:/input",
 				"-v", fmt.Sprintf("%s:/output", testOutput),
-				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandGenerate),
-				"--source=/apis",
+				"--librarian=/librarian",
+				"--input=/input",
 				"--output=/output",
-				"--generator-input=/generator-input",
+				"--source=/source",
 				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 		},
@@ -109,18 +117,28 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Generate(ctx, cfgInDocker, testAPIRoot, "hostDir", testGeneratorInput, testLibraryID)
+				generateRequest := &GenerateRequest{
+					Cfg:       cfgInDocker,
+					State:     state,
+					RepoDir:   ".",
+					ApiRoot:   testAPIRoot,
+					Output:    "hostDir",
+					LibraryID: testLibraryID,
+				}
+				return d.Generate(ctx, generateRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
+				"-v", ".librarian:/librarian:ro",
+				"-v", ".librarian/generator-input:/input",
 				"-v", "localDir:/output",
-				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandGenerate),
-				"--source=/apis",
+				"--librarian=/librarian",
+				"--input=/input",
 				"--output=/output",
-				"--generator-input=/generator-input",
+				"--source=/source",
 				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 		},
@@ -153,11 +171,11 @@ func TestDockerRun(t *testing.T) {
 			want: []string{
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
-				"-v", fmt.Sprintf("%s:/generator-input", testGeneratorInput),
+				"-v", fmt.Sprintf("%s:/.librarian/generator-input", testGeneratorInput),
 				testImage,
 				string(CommandConfigure),
 				"--source=/apis",
-				"--generator-input=/generator-input",
+				"--.librarian/generator-input=/.librarian/generator-input",
 				fmt.Sprintf("--api=%s", testAPIPath),
 			},
 		},
@@ -172,6 +190,114 @@ func TestDockerRun(t *testing.T) {
 			ctx := t.Context()
 			if err := test.runCommand(ctx, test.docker); err != nil {
 				t.Fatal(err)
+			}
+			os.RemoveAll(".librarian")
+			os.Remove(testGenerateRequest)
+		})
+	}
+}
+
+func TestToGenerateRequestJSON(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		state     *config.LibrarianState
+		expectErr bool
+	}{
+		{
+			name: "successful-marshaling-and-writing",
+			state: &config.LibrarianState{
+				Image: "v1.0.0",
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "google-cloud-go",
+						Version:             "1.0.0",
+						LastGeneratedCommit: "abcd123",
+						APIs: []config.API{
+							{
+								Path:          "google/cloud/compute/v1",
+								ServiceConfig: "example_service_config.yaml",
+							},
+						},
+						SourcePaths: []string{
+							"src/example/path",
+						},
+						PreserveRegex: []string{
+							"example-preserve-regex",
+						},
+						RemoveRegex: []string{
+							"example-remove-regex",
+						},
+					},
+					{
+						ID:      "google-cloud-storage",
+						Version: "1.2.3",
+						APIs: []config.API{
+							{
+								Path:          "google/storage/v1",
+								ServiceConfig: "storage_service_config.yaml",
+							},
+						},
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:      "empty-pipelineState",
+			state:     &config.LibrarianState{},
+			expectErr: false,
+		},
+		{
+			name:      "nonexistent_dir_for_test",
+			state:     &config.LibrarianState{},
+			expectErr: true,
+		},
+		{
+			name:      "invalid_file_name",
+			state:     &config.LibrarianState{},
+			expectErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if test.name == "invalid_file_name" {
+				filePath := filepath.Join(tempDir, "my\x00file.json")
+				err := writeGenerateRequest(test.state, "google-cloud-go", filePath)
+				if err == nil {
+					t.Errorf("writeGenerateRequest() expected an error but got nil")
+				}
+				return
+			} else if test.expectErr {
+				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
+				err := writeGenerateRequest(test.state, "google-cloud-go", filePath)
+				if err == nil {
+					t.Errorf("writeGenerateRequest() expected an error but got nil")
+				}
+				return
+			}
+
+			filePath := filepath.Join(tempDir, "generate-request.json")
+			err := writeGenerateRequest(test.state, "google-cloud-go", filePath)
+
+			if err != nil {
+				t.Fatalf("writeGenerateRequest() unexpected error: %v", err)
+			}
+
+			// Verify the file content
+			gotBytes, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Fatalf("Failed to read generated file: %v", err)
+			}
+
+			fileName := fmt.Sprintf("%s.json", test.name)
+			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
+			if readErr != nil {
+				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
+			}
+
+			if diff := cmp.Diff(strings.TrimSpace(string(wantBytes)), string(gotBytes)); diff != "" {
+				t.Errorf("Generated JSON mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

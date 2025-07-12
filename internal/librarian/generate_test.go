@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"github.com/googleapis/librarian/internal/docker"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,7 +35,7 @@ type mockContainerClient struct {
 	buildCalls    int
 }
 
-func (m *mockContainerClient) Generate(ctx context.Context, cfg *config.Config, apiRoot, outputDir, generatorInput, libraryID string) error {
+func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
 	return nil
 }
@@ -311,7 +312,11 @@ func TestNewGenerateRunner(t *testing.T) {
 			t.Parallel()
 			// We need to create a fake state and config file for the test to pass.
 			if test.cfg.Repo != "" && !isUrl(test.cfg.Repo) {
-				stateFile := filepath.Join(test.cfg.Repo, pipelineStateFile)
+				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineStateFile)
+
+				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
 				state := &config.LibrarianState{
 					Image: "some/image:v1.2.3",
 					Libraries: []*config.LibraryState{
@@ -329,7 +334,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				if err := os.WriteFile(stateFile, b, 0644); err != nil {
 					t.Fatalf("os.WriteFile(%q, ...) = %v", stateFile, err)
 				}
-				configFile := filepath.Join(test.cfg.Repo, pipelineConfigFile)
+				configFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineConfigFile)
 				if err := os.WriteFile(configFile, []byte("{}"), 0644); err != nil {
 					t.Fatalf("os.WriteFile(%q, ...) = %v", configFile, err)
 				}

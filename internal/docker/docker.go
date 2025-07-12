@@ -20,10 +20,12 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -62,6 +64,26 @@ type Docker struct {
 	run func(args ...string) error
 }
 
+// GenerateRequest contains all the information required for a language
+// container to run the generate command.
+type GenerateRequest struct {
+	// cfg is a pointer to the [config.Config] struct, holding general configuration
+	// values parsed from flags or environment variables.
+	Cfg *config.Config
+	// state is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
+	// apiRoot specifies the root directory of the API specification repo.
+	ApiRoot string
+	// libraryID specifies the ID of the library to generate
+	LibraryID string
+	// output specifies the empty output directory into which the command should
+	// generate code
+	Output string
+	// RepoDir is the local root directory of the language repository.
+	RepoDir string
+}
+
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
@@ -79,25 +101,30 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 	return docker, nil
 }
 
-// Generate performs generation for an API which is configured as part of a library.
-// apiRoot specifies the root directory of the API specification repo,
-// output specifies the empty output directory into which the command should
-// generate code, and libraryID specifies the ID of the library to generate,
-// as configured in the Librarian state file for the repository.
-func (c *Docker) Generate(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error {
-	commandArgs := []string{
-		"--source=/apis",
-		"--output=/output",
-		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
-		fmt.Sprintf("--library-id=%s", libraryID),
+// Generate performs generation for an API which is configured as part of a
+// library.
+func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
+	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
+	if err := writeGenerateRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+		return err
 	}
-	mounts := []string{
-		fmt.Sprintf("%s:/apis", apiRoot),
-		fmt.Sprintf("%s:/output", output),
-		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
+	commandArgs := []string{
+		"--librarian=/librarian",
+		"--input=/input",
+		"--output=/output",
+		"--source=/source",
+		fmt.Sprintf("--library-id=%s", request.LibraryID),
 	}
 
-	return c.runDocker(ctx, cfg, CommandGenerate, mounts, commandArgs)
+	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
+	mounts := []string{
+		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir), // readonly volume.
+		fmt.Sprintf("%s:/input", generatorInput),
+		fmt.Sprintf("%s:/output", request.Output),
+		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume.
+	}
+
+	return c.runDocker(ctx, request.Cfg, CommandGenerate, mounts, commandArgs)
 }
 
 // Build builds the library with an ID of libraryID, as configured in
@@ -199,4 +226,32 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	err := cmd.Run()
 	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
 	return err
+}
+
+func writeGenerateRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
+	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %w", err)
+	}
+	jsonFile, err := os.Create(jsonFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create generate request JSON file: %w", err)
+	}
+	defer jsonFile.Close()
+
+	for _, library := range state.Libraries {
+		if library.ID != libraryID {
+			continue
+		}
+
+		data, err := json.MarshalIndent(library, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal state to JSON: %w", err)
+		}
+		_, err = jsonFile.Write(data)
+		if err != nil {
+			return fmt.Errorf("failed to write generate request JSON file: %w", err)
+		}
+	}
+
+	return nil
 }

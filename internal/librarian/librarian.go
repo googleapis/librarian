@@ -20,6 +20,7 @@ package librarian
 import (
 	"context"
 	"fmt"
+	"github.com/googleapis/librarian/internal/docker"
 	"log/slog"
 	"net/url"
 
@@ -80,7 +81,7 @@ type GitHubClient interface {
 
 // ContainerClient is an abstraction over the Docker client.
 type ContainerClient interface {
-	Generate(ctx context.Context, cfg *config.Config, apiRoot, output, generatorInput, libraryID string) error
+	Generate(ctx context.Context, request *docker.GenerateRequest) error
 	Build(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error
 	Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error
 }

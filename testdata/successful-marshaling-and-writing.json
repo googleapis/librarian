@@ -1,0 +1,20 @@
+{
+  "ID": "google-cloud-go",
+  "Version": "1.0.0",
+  "LastGeneratedCommit": "abcd123",
+  "APIs": [
+    {
+      "Path": "google/cloud/compute/v1",
+      "ServiceConfig": "example_service_config.yaml"
+    }
+  ],
+  "SourcePaths": [
+    "src/example/path"
+  ],
+  "PreserveRegex": [
+    "example-preserve-regex"
+  ],
+  "RemoveRegex": [
+    "example-remove-regex"
+  ]
+}

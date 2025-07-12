@@ -52,7 +52,7 @@ func loadLibrarianState(languageRepo *gitrepo.Repository) (*config.LibrarianStat
 	if languageRepo == nil {
 		return nil, nil
 	}
-	path := filepath.Join(languageRepo.Dir, pipelineStateFile)
+	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
 	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
@@ -61,7 +61,7 @@ func loadLibrarianStateFile(path string) (*config.LibrarianState, error) {
 }
 
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
-	path := filepath.Join(languageRepo.Dir, pipelineConfigFile)
+	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineConfigFile)
 	return loadPipelineConfigFile(path)
 }
 
