@@ -140,6 +140,10 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 // Build builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
 func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
+	//jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
+	//if err := writeBuildRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+	//	return err
+	//}
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir),
 		fmt.Sprintf("%s:/repo", request.RepoDir),
@@ -264,5 +268,9 @@ func writeGenerateRequest(state *config.LibrarianState, libraryID, jsonFilePath 
 		}
 	}
 
+	return nil
+}
+
+func writeBuildRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
 	return nil
 }
