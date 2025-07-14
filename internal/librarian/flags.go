@@ -34,6 +34,11 @@ func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue, "a mount point from Docker host and within the Docker. The format is {host-dir}:{local-dir}.")
 }
 
+func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
+	defaultValue := "noreply-cloudsdk@google.com,Google Cloud SDK"
+	fs.StringVar(&cfg.PushConfig, "push-config", defaultValue, "a config used in Git commits. The format is {git-email-address},{author-name}. If unspecified, will use a default name Google Cloud SDK and a default email noreply-cloudsdk@google.com.")
+}
+
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
 }
