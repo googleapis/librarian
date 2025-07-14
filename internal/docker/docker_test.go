@@ -66,7 +66,6 @@ func TestDockerRun(t *testing.T) {
 		testImage           = "testImage"
 		testLibraryID       = "testLibraryID"
 		testOutput          = "testOutput"
-		testRepoRoot        = "testRepoRoot"
 	)
 
 	state := &config.LibrarianState{}
@@ -79,6 +78,7 @@ func TestDockerRun(t *testing.T) {
 		docker     *Docker
 		runCommand func(ctx context.Context, d *Docker) error
 		want       []string
+		wantErr    bool
 	}{
 		{
 			name: "Generate",
@@ -110,6 +110,7 @@ func TestDockerRun(t *testing.T) {
 				"--source=/source",
 				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
+			wantErr: false,
 		},
 		{
 			name: "Generate runs in docker",
@@ -141,6 +142,7 @@ func TestDockerRun(t *testing.T) {
 				"--source=/source",
 				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
+			wantErr: false,
 		},
 		{
 			name: "Build",
@@ -166,6 +168,24 @@ func TestDockerRun(t *testing.T) {
 				"--test=true",
 				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
+			wantErr: false,
+		},
+		{
+			name: "Build with invalid repo dir",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				buildRequest := &BuildRequest{
+					Cfg:       cfg,
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   "/non-exist-dir",
+				}
+				return d.Build(ctx, buildRequest)
+			},
+			want:    []string{},
+			wantErr: true,
 		},
 		{
 			name: "Configure",
@@ -185,6 +205,7 @@ func TestDockerRun(t *testing.T) {
 				"--.librarian/generator-input=/.librarian/generator-input",
 				fmt.Sprintf("--api=%s", testAPIPath),
 			},
+			wantErr: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -195,9 +216,14 @@ func TestDockerRun(t *testing.T) {
 				return nil
 			}
 			ctx := t.Context()
-			if err := test.runCommand(ctx, test.docker); err != nil {
-				t.Fatal(err)
+			err := test.runCommand(ctx, test.docker)
+
+			if (err != nil) != test.wantErr {
+				t.Errorf("Build() error = %v, wantErr %v", err, test.wantErr)
+
+				return
 			}
+
 			os.RemoveAll(".librarian")
 			os.Remove(testGenerateRequest)
 		})
