@@ -148,11 +148,18 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Build(ctx, cfg, testRepoRoot, testLibraryID)
+				buildRequest := &BuildRequest{
+					Cfg:       cfg,
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   ".",
+				}
+				return d.Build(ctx, buildRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/repo", testRepoRoot),
+				"-v", ".librarian:/librarian:ro",
+				"-v", ".:/repo",
 				testImage,
 				string(CommandBuild),
 				"--repo-root=/repo",

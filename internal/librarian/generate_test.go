@@ -40,7 +40,7 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	return nil
 }
 
-func (m *mockContainerClient) Build(ctx context.Context, cfg *config.Config, buildDir, libraryID string) error {
+func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
 	m.buildCalls++
 	return nil
 }
