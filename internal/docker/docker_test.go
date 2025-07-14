@@ -218,10 +218,15 @@ func TestDockerRun(t *testing.T) {
 			ctx := t.Context()
 			err := test.runCommand(ctx, test.docker)
 
-			if (err != nil) != test.wantErr {
-				t.Errorf("Build() error = %v, wantErr %v", err, test.wantErr)
-
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
 				return
+			}
+
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			os.RemoveAll(".librarian")
