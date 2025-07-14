@@ -217,18 +217,18 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 		slog.Info("Build flag not specified, skipping")
 		return nil
 	}
-	if libraryID != "" {
-		slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-		// TODO(https://github.com/googleapis/librarian/issues/775)
-		if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
-			return err
-		}
-		if err := r.containerClient.Build(ctx, r.cfg, r.repo.Dir, libraryID); err != nil {
-			return err
-		}
+	if libraryID == "" {
+		slog.Warn("Cannot perform build, missing library ID")
+		return nil
 	}
-	slog.Warn("Cannot perform build, missing library ID")
-	return nil
+
+	slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
+	// TODO(https://github.com/googleapis/librarian/issues/775)
+	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
+		return err
+	}
+
+	return r.containerClient.Build(ctx, r.cfg, r.repo.Dir, libraryID)
 }
 
 // detectIfLibraryConfigured returns whether a library has been configured for
