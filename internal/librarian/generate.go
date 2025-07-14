@@ -224,6 +224,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 
 	buildRequest := &docker.BuildRequest{
 		Cfg:       r.cfg,
+		State:     r.state,
 		LibraryID: libraryID,
 		RepoDir:   r.repo.Dir,
 	}

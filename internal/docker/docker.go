@@ -84,11 +84,16 @@ type GenerateRequest struct {
 	RepoDir string
 }
 
+// BuildRequest contains all the information required for a language
+// container to run the build command.
 type BuildRequest struct {
 	// cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
 	Cfg *config.Config
-	// libraryID specifies the ID of the library to generate
+	// state is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
+	// libraryID specifies the ID of the library to build
 	LibraryID string
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
@@ -115,7 +120,7 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 // library.
 func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
-	if err := writeGenerateRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
 	commandArgs := []string{
@@ -140,10 +145,10 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 // Build builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
 func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
-	//jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
-	//if err := writeBuildRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
-	//	return err
-	//}
+	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
+	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+		return err
+	}
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir),
 		fmt.Sprintf("%s:/repo", request.RepoDir),
@@ -243,7 +248,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-func writeGenerateRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
+func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
 	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
@@ -268,9 +273,5 @@ func writeGenerateRequest(state *config.LibrarianState, libraryID, jsonFilePath 
 		}
 	}
 
-	return nil
-}
-
-func writeBuildRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
 	return nil
 }
