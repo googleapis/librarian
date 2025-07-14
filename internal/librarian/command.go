@@ -78,7 +78,7 @@ func deriveImage(imageOverride string, state *config.LibrarianState) string {
 	return state.Image
 }
 
-func findLibraryIDByApiPath(state *config.LibrarianState, apiPath string) string {
+func findLibraryIDByAPIPath(state *config.LibrarianState, apiPath string) string {
 	if state == nil {
 		return ""
 	}

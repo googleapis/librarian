@@ -192,7 +192,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 	// If we've got a language repo, it's because we've already found a library for the
 	// specified API, configured in the repo.
 	if r.repo != nil {
-		libraryID := findLibraryIDByApiPath(r.state, r.cfg.API)
+		libraryID := findLibraryIDByAPIPath(r.state, r.cfg.API)
 		if libraryID == "" {
 			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
 		}
@@ -253,7 +253,7 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 		}
 	}
 	// If the library doesn't exist, we don't use the repo at all.
-	libraryID := findLibraryIDByApiPath(pipelineState, apiPath)
+	libraryID := findLibraryIDByAPIPath(pipelineState, apiPath)
 	if libraryID == "" {
 		slog.Info("API path not configured in repo", "path", apiPath)
 		return false, nil
