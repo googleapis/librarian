@@ -46,21 +46,21 @@ The main entrypoint is `cmd/librarian/main.go`. The core commands are:
 
 - `.librarian/state.yaml`: The main state file for the pipeline, tracking the status of managed libraries. It is
   automatically managed and should not be edited manually. See the schema in `doc/state-schema.md`.
-- `go.mod` and `go.sum`: Go module files, defining project dependencies.
-- `Dockerfile`: Defines the Docker image for the Librarian CLI.
-- `.github/workflows/librarian.yaml`: The GitHub Actions workflow for CI.
-- `.golangci.yaml`: Configuration for the `golangci-lint` linter.
 
 ## Development & Testing Workflow
 
-- **Running tests:** Use `go test ./...` to run all tests.
+- **Running tests:** Use `go test -race ./...` to run all tests.
+- **Running tests and generate coverage**: Use `go test -race -coverprofile=coverage.out -covermode=atomic ./...`.
+- **Analyze coverage report**: Use `go tool cover -func=coverage.out` to check more details about coverage.
 - **Building code:** Use `go build ./...` to build the project and check for compilation errors.
 - **Formatting:** Use `gofmt` to format the code. The CI checks for unformatted files.
 
 ## Contribution Guidelines
 
 - **Commits:** Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/)
-  specification. The format is `<type>(<package>): <description>`.
+  specification. The format is `<type>(<package>): <description>`. The type should be one of the following: fix, feat,
+  build, chore, docs, test, or refactor. The package should refer to the relative path the Go package where the change
+  is being made.
 - **Issues:** All significant changes should start with a GitHub issue.
 - **Pull Requests:** All code changes must be submitted via a pull request and require review.
 - **Code Style:** Follow the guidelines in `doc/howwewritego.md`.
