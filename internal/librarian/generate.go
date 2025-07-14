@@ -177,12 +177,10 @@ func (r *generateRunner) run(ctx context.Context) error {
 	return nil
 }
 
-// runGenerateCommand checks if the library exists in the remote pipeline state, if so use GenerateLibrary command
-// otherwise use GenerateRaw command.
-// In case of non-fatal error when looking up library, we will fall back to GenerateRaw command
-// and log the error.
-// If refined generation is used, the context's languageRepo field will be populated and the
-// library ID will be returned; otherwise, an empty string will be returned.
+// runGenerateCommand attempts to perform generation for an API.
+//
+// If successful, it returns the ID of the generated library; otherwise, it
+// returns an empty string and an error.
 func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir string) (string, error) {
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
@@ -212,6 +210,11 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 	return "", fmt.Errorf("library not found")
 }
 
+// runBuildCommand orchestrates the building of an API library using a containerized
+// environment.
+//
+// The `outputDir` parameter specifies the target directory where the built artifacts
+// should be placed.
 func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, libraryID string) error {
 	if !r.cfg.Build {
 		slog.Info("Build flag not specified, skipping")
