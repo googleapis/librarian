@@ -222,13 +222,19 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 		return nil
 	}
 
+	buildRequest := &docker.BuildRequest{
+		Cfg:       r.cfg,
+		LibraryID: libraryID,
+		RepoDir:   r.repo.Dir,
+	}
+
 	slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
 	// TODO(https://github.com/googleapis/librarian/issues/775)
 	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
 
-	return r.containerClient.Build(ctx, r.cfg, r.repo.Dir, libraryID)
+	return r.containerClient.Build(ctx, buildRequest)
 }
 
 // detectIfLibraryConfigured returns whether a library has been configured for
