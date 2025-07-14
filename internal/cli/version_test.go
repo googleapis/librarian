@@ -45,6 +45,44 @@ func TestVersion(t *testing.T) {
 			},
 		},
 		{
+			name: "pseudoversion only revision",
+			want: "0.0.0-123456789000",
+			buildinfo: &debug.BuildInfo{
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.revision", Value: "1234567890001234"},
+				},
+			},
+		},
+		{
+			name: "pseudoversion only time",
+			want: "0.0.0-20230102150405",
+			buildinfo: &debug.BuildInfo{
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.time", Value: "2023-01-02T15:04:05Z"},
+				},
+			},
+		},
+		{
+			name: "pseudoversion invalid time",
+			want: "0.0.0-123456789000",
+			buildinfo: &debug.BuildInfo{
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.revision", Value: "123456789000"},
+					{Key: "vcs.time", Value: "invalid-time"},
+				},
+			},
+		},
+		{
+			name: "revision less than 12 chars",
+			want: "0.0.0-shortrev-20230125195754",
+			buildinfo: &debug.BuildInfo{
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.revision", Value: "shortrev"},
+					{Key: "vcs.time", Value: "2023-01-25T19:57:54Z"},
+				},
+			},
+		},
+		{
 			name:      "local development",
 			want:      "not available",
 			buildinfo: &debug.BuildInfo{},

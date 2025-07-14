@@ -204,6 +204,44 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "valid preserve_regex",
+			library: &LibraryState{
+				ID:            "a/b",
+				SourcePaths:   []string{"src/a"},
+				APIs:          []API{{Path: "a/b/v1"}},
+				PreserveRegex: []string{".*\\.txt"},
+			},
+		},
+		{
+			name: "invalid preserve_regex",
+			library: &LibraryState{
+				ID:            "a/b",
+				SourcePaths:   []string{"src/a"},
+				APIs:          []API{{Path: "a/b/v1"}},
+				PreserveRegex: []string{"["},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid remove_regex",
+			library: &LibraryState{
+				ID:          "a/b",
+				SourcePaths: []string{"src/a"},
+				APIs:        []API{{Path: "a/b/v1"}},
+				RemoveRegex: []string{".*\\.log"},
+			},
+		},
+		{
+			name: "invalid remove_regex",
+			library: &LibraryState{
+				ID:          "a/b",
+				SourcePaths: []string{"src/a"},
+				APIs:        []API{{Path: "a/b/v1"}},
+				RemoveRegex: []string{"("},
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := test.library.Validate(); (err != nil) != test.wantErr {

@@ -26,6 +26,19 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestToken(t *testing.T) {
+	t.Parallel()
+	want := "fake-token"
+	repo := &Repository{Owner: "owner", Name: "repo"}
+	client, err := NewClient(want, repo)
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+	if got := client.Token(); got != want {
+		t.Errorf("Token() = %q, want %q", got, want)
+	}
+}
+
 func TestGetRawContent(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

@@ -107,6 +107,38 @@ func TestRun(t *testing.T) {
 	}
 }
 
+func TestNamePanicsOnEmptyShort(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("The code did not panic")
+		}
+	}()
+	c := &Command{Short: ""}
+	c.Name()
+}
+
+func TestUsagePanicsOnMissingDoc(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cmd  *Command
+	}{
+		{"missing short", &Command{UsageLine: "l", Long: "l"}},
+		{"missing usage", &Command{Short: "s", Long: "l"}},
+		{"missing long", &Command{Short: "s", UsageLine: "l"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r == nil {
+					t.Error("The code did not panic")
+				}
+			}()
+			test.cmd.Init()
+			var buf bytes.Buffer
+			test.cmd.usage(&buf)
+		})
+	}
+}
+
 func TestUsage(t *testing.T) {
 	preamble := `Test prints test information.
 
@@ -116,9 +148,10 @@ Usage:
 `
 
 	for _, test := range []struct {
-		name  string
-		flags []func(fs *flag.FlagSet)
-		want  string
+		name        string
+		flags       []func(fs *flag.FlagSet)
+		subcommands []*Command
+		want        string
 	}{
 		{
 			name:  "no flags",
@@ -139,12 +172,24 @@ Usage:
 
 `, preamble),
 		},
+		{
+			name: "with subcommand",
+			subcommands: []*Command{
+				{Short: "sub runs a subcommand"},
+			},
+			want: fmt.Sprintf(`%sCommands:
+
+  sub                        runs a subcommand
+
+`, preamble),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			c := &Command{
 				Short:     "test prints test information",
 				UsageLine: "test [flags]",
 				Long:      "Test prints test information.",
+				Commands:  test.subcommands,
 			}
 			c.Init()
 			for _, fn := range test.flags {
