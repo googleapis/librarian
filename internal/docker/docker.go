@@ -141,6 +141,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 // the Librarian state file for the repository with a root of repoRoot.
 func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 	mounts := []string{
+		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir),
 		fmt.Sprintf("%s:/repo", request.RepoDir),
 	}
 	commandArgs := []string{
