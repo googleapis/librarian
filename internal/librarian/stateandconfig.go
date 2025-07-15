@@ -17,8 +17,10 @@ package librarian
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"path/filepath"
 
@@ -33,11 +35,11 @@ const pipelineConfigFile = "pipeline-config.json"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
-func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*config.LibrarianState, *config.PipelineConfig, error) {
+func loadRepoStateAndConfig(languageRepo *gitrepo.Repository, source string) (*config.LibrarianState, *config.PipelineConfig, error) {
 	if languageRepo == nil {
 		return nil, nil, nil
 	}
-	state, err := loadLibrarianState(languageRepo)
+	state, err := loadLibrarianState(languageRepo, source)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -48,16 +50,16 @@ func loadRepoStateAndConfig(languageRepo *gitrepo.Repository) (*config.Librarian
 	return state, config, nil
 }
 
-func loadLibrarianState(languageRepo *gitrepo.Repository) (*config.LibrarianState, error) {
+func loadLibrarianState(languageRepo *gitrepo.Repository, source string) (*config.LibrarianState, error) {
 	if languageRepo == nil {
 		return nil, nil
 	}
 	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
-	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) })
+	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) }, source)
 }
 
-func loadLibrarianStateFile(path string) (*config.LibrarianState, error) {
-	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) })
+func loadLibrarianStateFile(path, source string) (*config.LibrarianState, error) {
+	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) }, source)
 }
 
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
@@ -69,10 +71,10 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
 }
 
-func fetchRemoteLibrarianState(ctx context.Context, client GitHubClient, ref string) (*config.LibrarianState, error) {
+func fetchRemoteLibrarianState(ctx context.Context, client GitHubClient, ref, source string) (*config.LibrarianState, error) {
 	return parseLibrarianState(func() ([]byte, error) {
 		return client.GetRawContent(ctx, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
-	})
+	}, source)
 }
 
 func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.PipelineConfig, error) {
@@ -87,7 +89,7 @@ func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.Pipeline
 	return config, nil
 }
 
-func parseLibrarianState(contentLoader func() ([]byte, error)) (*config.LibrarianState, error) {
+func parseLibrarianState(contentLoader func() ([]byte, error), source string) (*config.LibrarianState, error) {
 	bytes, err := contentLoader()
 	if err != nil {
 		return nil, err
@@ -96,8 +98,44 @@ func parseLibrarianState(contentLoader func() ([]byte, error)) (*config.Libraria
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
+	if err := populateServiceConfig(&s, source); err != nil {
+		return nil, fmt.Errorf("populating service config: %w", err)
+	}
 	if err := s.Validate(); err != nil {
 		return nil, fmt.Errorf("validating librarian state: %w", err)
 	}
 	return &s, nil
+}
+
+func populateServiceConfig(state *config.LibrarianState, source string) error {
+	for _, library := range state.Libraries {
+		for _, api := range library.APIs {
+			if api.ServiceConfig != "" {
+				continue
+			}
+			apiPath := filepath.Join(source, api.Path)
+			serviceConfig, err := findServiceConfigIn(apiPath)
+			if err != nil {
+				return err
+			}
+			api.ServiceConfig = serviceConfig
+		}
+	}
+}
+
+func findServiceConfigIn(path string) (string, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return "", err
+	}
+
+	for _, entry := range entries {
+		fmt.Printf("- %s (Is Dir: %t)\n", entry.Name(), entry.IsDir())
+		if !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+	}
+
+	return "", errors.New("could not find service config in " + path)
 }

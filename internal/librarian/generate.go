@@ -118,7 +118,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	state, config, err := loadRepoStateAndConfig(repo)
+	state, pipelineConfig, err := loadRepoStateAndConfig(repo, cfg.Source)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 		}
 	}
-	container, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, config)
+	container, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, pipelineConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		workRoot:        workRoot,
 		repo:            repo,
 		state:           state,
-		config:          config,
+		config:          pipelineConfig,
 		image:           image,
 		ghClient:        ghClient,
 		containerClient: container,
@@ -247,7 +247,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 // by fetching the single file) if flatRepoUrl has been specified. If neither the repo
 // root not the repo url has been specified, we always perform raw generation.
 func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, error) {
-	apiPath, repo := r.cfg.API, r.cfg.Repo
+	apiPath, repo, source := r.cfg.API, r.cfg.Repo, r.cfg.Source
 	if repo == "" {
 		slog.Warn("repo is not specified, cannot check if library exists")
 		return false, nil
@@ -259,13 +259,13 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 		err           error
 	)
 	if isUrl(repo) {
-		pipelineState, err = fetchRemoteLibrarianState(ctx, r.ghClient, "HEAD")
+		pipelineState, err = fetchRemoteLibrarianState(ctx, r.ghClient, "HEAD", source)
 		if err != nil {
 			return false, err
 		}
 	} else {
 		// repo is a directory
-		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile))
+		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile), source)
 		if err != nil {
 			return false, err
 		}
