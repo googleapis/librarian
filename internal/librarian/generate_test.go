@@ -455,6 +455,7 @@ func TestClean(t *testing.T) {
 	for _, test := range []struct {
 		name             string
 		files            map[string]string
+		symlinks         map[string]string
 		removePatterns   []string
 		preservePatterns []string
 		wantRemaining    []string
@@ -506,6 +507,30 @@ func TestClean(t *testing.T) {
 			preservePatterns: []string{"["}, // Invalid regex
 			wantErr:          true,
 		},
+		{
+			name: "remove symlink",
+			files: map[string]string{
+				"file1.txt": "content",
+			},
+			symlinks: map[string]string{
+				"symlink_to_file1": "file1.txt",
+			},
+			removePatterns: []string{"symlink_to_file1"},
+			wantRemaining:  []string{".", "file1.txt"},
+		},
+		{
+			name: "remove file symlinked to",
+			files: map[string]string{
+				"file1.txt": "content",
+			},
+			symlinks: map[string]string{
+				"symlink_to_file1": "file1.txt",
+			},
+			removePatterns: []string{"file1.txt"},
+			// The symlink should remain, even though it's now broken, because
+			// it was not targeted for removal.
+			wantRemaining: []string{".", "symlink_to_file1"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -519,7 +544,12 @@ func TestClean(t *testing.T) {
 					t.Fatalf("os.WriteFile() = %v", err)
 				}
 			}
-
+			for link, target := range test.symlinks {
+				linkPath := filepath.Join(tmpDir, link)
+				if err := os.Symlink(target, linkPath); err != nil {
+					t.Fatalf("os.Symlink() = %v", err)
+				}
+			}
 			err := clean(tmpDir, test.removePatterns, test.preservePatterns)
 			if (err != nil) != test.wantErr {
 				t.Errorf("clean() error = %v, wantErr %v", err, test.wantErr)
