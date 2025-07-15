@@ -123,7 +123,12 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
-	defer os.Remove(jsonFilePath)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove", name, "err", err)
+		}
+	}(jsonFilePath)
 
 	commandArgs := []string{
 		"--librarian=/librarian",
@@ -151,7 +156,12 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
-	defer os.Remove(jsonFilePath)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove", name, "err", err)
+		}
+	}(jsonFilePath)
 
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir),
