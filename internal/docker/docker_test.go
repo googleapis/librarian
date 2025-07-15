@@ -59,13 +59,12 @@ func TestNew(t *testing.T) {
 
 func TestDockerRun(t *testing.T) {
 	const (
-		testAPIPath         = "testAPIPath"
-		testAPIRoot         = "testAPIRoot"
-		testGenerateRequest = "testGenerateRequest"
-		testGeneratorInput  = "testGeneratorInput"
-		testImage           = "testImage"
-		testLibraryID       = "testLibraryID"
-		testOutput          = "testOutput"
+		testAPIPath        = "testAPIPath"
+		testAPIRoot        = "testAPIRoot"
+		testGeneratorInput = "testGeneratorInput"
+		testImage          = "testImage"
+		testLibraryID      = "testLibraryID"
+		testOutput         = "testOutput"
 	)
 
 	state := &config.LibrarianState{}
@@ -111,6 +110,25 @@ func TestDockerRun(t *testing.T) {
 				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 			wantErr: false,
+		},
+		{
+			name: "Generate with invalid repo root",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				generateRequest := &GenerateRequest{
+					Cfg:       cfg,
+					State:     state,
+					RepoDir:   "/non-existed-dir",
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					LibraryID: testLibraryID,
+				}
+				return d.Generate(ctx, generateRequest)
+			},
+			want:    []string{},
+			wantErr: true,
 		},
 		{
 			name: "Generate runs in docker",
