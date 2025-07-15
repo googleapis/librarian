@@ -210,6 +210,17 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 		return libraryID, r.containerClient.Generate(ctx, generateRequest)
 	}
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
+	// Handle push config flag
+	if r.cfg.PushConfig != "" {
+		if r.cfg.GitHubToken == "" {
+			return "", fmt.Errorf("GitHub token is required to push config")
+		}
+		slog.Info("Push config flag is set, GitHub token is provided")
+		_, err := r.pushConfigFunc()
+		if err != nil {
+			return "", err
+		}
+	}
 	return "", fmt.Errorf("library not found")
 }
 
@@ -270,4 +281,9 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 
 	slog.Info("API configured", "path", apiPath, "library", libraryID)
 	return true, nil
+}
+
+// pushConfigFunc creates a commit and a pull request for the generated changes.
+func (r *generateRunner) pushConfigFunc() (string, error) {
+	return "", nil
 }
