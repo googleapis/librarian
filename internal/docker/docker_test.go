@@ -267,7 +267,7 @@ func TestDockerRun(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			test.docker.run = func(args ...string) error {
 				if test.docker.Image == mockImage {
-					return errors.New("mock docker")
+					return errors.New("simulate docker command failure for testing")
 				}
 				if diff := cmp.Diff(test.want, args); diff != "" {
 					t.Errorf("mismatch(-want +got):\n%s", diff)
