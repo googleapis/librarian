@@ -126,7 +126,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	defer func(name string) {
 		err := os.Remove(name)
 		if err != nil {
-			slog.Warn("fail to remove", name, "err", err)
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
 		}
 	}(jsonFilePath)
 
@@ -159,7 +159,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 	defer func(name string) {
 		err := os.Remove(name)
 		if err != nil {
-			slog.Warn("fail to remove", name, "err", err)
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
 		}
 	}(jsonFilePath)
 
