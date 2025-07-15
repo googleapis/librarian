@@ -139,7 +139,14 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume.
 	}
 
-	return c.runDocker(ctx, request.Cfg, CommandGenerate, mounts, commandArgs)
+	if err := c.runDocker(ctx, request.Cfg, CommandGenerate, mounts, commandArgs); err != nil {
+		return err
+	}
+
+	// It's OK to not handle this error since this file is ephemeral.
+	os.Remove(jsonFilePath)
+
+	return nil
 }
 
 // Build builds the library with an ID of libraryID, as configured in
@@ -159,7 +166,14 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		fmt.Sprintf("--library-id=%s", request.LibraryID),
 	}
 
-	return c.runDocker(ctx, request.Cfg, CommandBuild, mounts, commandArgs)
+	if err := c.runDocker(ctx, request.Cfg, CommandBuild, mounts, commandArgs); err != nil {
+		return err
+	}
+
+	// It's OK to not handle this error since this file is ephemeral.
+	os.Remove(jsonFilePath)
+
+	return nil
 }
 
 // Configure configures an API within a repository, either adding it to an

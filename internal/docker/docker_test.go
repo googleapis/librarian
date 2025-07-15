@@ -230,7 +230,6 @@ func TestDockerRun(t *testing.T) {
 			}
 
 			os.RemoveAll(".librarian")
-			os.Remove(testGenerateRequest)
 		})
 	}
 }
