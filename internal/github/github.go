@@ -108,3 +108,27 @@ func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, e
 	defer body.Close()
 	return io.ReadAll(body)
 }
+
+// CreatePullRequest creates a pull request in the remote repo.
+// At the moment this requires a single remote to be configured,
+// which must have a GitHub HTTPS URL. We assume a base branch of "main".
+func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, title, body string) (*PullRequestMetadata, error) {
+	if body == "" {
+		body = "Regenerated all changed APIs. See individual commits for details."
+	}
+	newPR := &github.NewPullRequest{
+		Title:               &title,
+		Head:                &remoteBranch,
+		Base:                github.Ptr("main"),
+		Body:                github.Ptr(body),
+		MaintainerCanModify: github.Ptr(true),
+	}
+	pr, _, err := c.PullRequests.Create(ctx, repo.Owner, repo.Name, newPR)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
+	pullRequestMetadata := &PullRequestMetadata{Repo: repo, Number: pr.GetNumber()}
+	return pullRequestMetadata, nil
+}
