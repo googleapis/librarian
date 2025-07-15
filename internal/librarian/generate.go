@@ -18,9 +18,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
@@ -233,12 +236,138 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 	}
 
 	slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-	// TODO(https://github.com/googleapis/librarian/issues/775)
+	library := findLibraryByID(r.state, libraryID)
+	if library == nil {
+		return fmt.Errorf("library %q not found", libraryID)
+	}
+	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
+		return err
+	}
 	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
 
 	return r.containerClient.Build(ctx, buildRequest)
+}
+
+func clean(rootDir string, removePatterns, preservePatterns []string) error {
+	removeRegexps, err := compileRegexps(removePatterns)
+	if err != nil {
+		return err
+	}
+	preserveRegexps, err := compileRegexps(preservePatterns)
+	if err != nil {
+		return err
+	}
+
+	allPaths, err := getAllPaths(rootDir)
+	if err != nil {
+		return err
+	}
+
+	pathsToRemove := filterPaths(allPaths, removeRegexps)
+	pathsToPreserve := filterPaths(pathsToRemove, preserveRegexps)
+
+	finalPathsToRemove := removePreservedPaths(pathsToRemove, pathsToPreserve)
+
+	files, dirs := separateFilesAndDirs(rootDir, finalPathsToRemove)
+
+	// Remove files first, then directories.
+	for _, file := range files {
+		slog.Info("Removing file", "path", file)
+		if err := os.Remove(filepath.Join(rootDir, file)); err != nil {
+			return err
+		}
+	}
+
+	// Sort directories by length (descending) to remove children first.
+	sort.Slice(dirs, func(i, j int) bool {
+		return len(dirs[i]) > len(dirs[j])
+	})
+
+	for _, dir := range dirs {
+		slog.Info("Removing directory", "path", dir)
+		if err := os.Remove(filepath.Join(rootDir, dir)); err != nil {
+			// It's possible the directory is not empty due to preserved files.
+			slog.Warn("failed to remove directory, it may not be empty", "dir", dir, "err", err)
+		}
+	}
+
+	return nil
+}
+
+func getAllPaths(rootDir string) ([]string, error) {
+	var paths []string
+	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return err
+		}
+		paths = append(paths, relPath)
+		return nil
+	})
+	return paths, err
+}
+
+func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
+	var filtered []string
+	for _, path := range paths {
+		for _, re := range regexps {
+			if re.MatchString(path) {
+				filtered = append(filtered, path)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+func removePreservedPaths(remove, preserve []string) []string {
+	preserveSet := make(map[string]struct{})
+	for _, p := range preserve {
+		preserveSet[p] = struct{}{}
+	}
+	var final []string
+	for _, r := range remove {
+		if _, ok := preserveSet[r]; !ok {
+			final = append(final, r)
+		}
+	}
+	return final
+}
+
+func separateFilesAndDirs(rootDir string, paths []string) (files, dirs []string) {
+	for _, path := range paths {
+		// Use Lstat to get information about the symlink itself, not what it
+		// points to. This correctly classifies symlinks as non-directories,
+		// ensuring they are removed as files.
+		info, err := os.Lstat(filepath.Join(rootDir, path))
+		if err != nil {
+			// The file or directory may have already been removed.
+			continue
+		}
+		if info.IsDir() {
+			dirs = append(dirs, path)
+		} else {
+			files = append(files, path)
+		}
+	}
+	return
+}
+
+func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
+	var regexps []*regexp.Regexp
+	for _, pattern := range patterns {
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex %q: %w", pattern, err)
+		}
+		regexps = append(regexps, re)
+	}
+	return regexps, nil
 }
 
 // detectIfLibraryConfigured returns whether a library has been configured for
