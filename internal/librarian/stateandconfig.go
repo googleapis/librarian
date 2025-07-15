@@ -121,6 +121,8 @@ func populateServiceConfig(state *config.LibrarianState, source string) error {
 			api.ServiceConfig = serviceConfig
 		}
 	}
+
+	return nil
 }
 
 func findServiceConfigIn(path string) (string, error) {
