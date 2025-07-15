@@ -130,3 +130,8 @@ func (r *Repository) IsClean() (bool, error) {
 
 	return status.IsClean(), nil
 }
+
+// Remotes returns the remotes within the repository.
+func (r *Repository) Remotes() ([]*git.Remote, error) {
+	return r.repo.Remotes()
+}
