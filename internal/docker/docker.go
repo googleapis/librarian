@@ -152,6 +152,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		return err
 	}
 	defer os.Remove(jsonFilePath)
+
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir),
 		fmt.Sprintf("%s:/repo", request.RepoDir),
