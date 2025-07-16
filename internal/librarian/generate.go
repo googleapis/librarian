@@ -209,13 +209,15 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
 		generateResponse := r.containerClient.Generate(ctx, generateRequest)
-		// Handle push config flag
+
+		// If the push-config flag is set and the GitHub token is provided,
+		// we push the config changes to GitHub.
 		if r.cfg.PushConfig != "" {
 			if r.cfg.GitHubToken == "" {
 				return libraryID, fmt.Errorf("GitHub token is required to push config")
 			}
 			slog.Info("Push config flag is set, GitHub token is provided")
-			_, err := r.pushConfigFunc(ctx, r.cfg.GitHubToken)
+			_, err := r.pushConfigToGithub(ctx, r.cfg.GitHubToken)
 			if err != nil {
 				return libraryID, err
 			}
@@ -286,21 +288,25 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 	return true, nil
 }
 
-// pushConfigFunc creates a commit and a pull request for the generated changes.
-func (r *generateRunner) pushConfigFunc(ctx context.Context, gitHubToken string) (*github.PullRequestMetadata, error) {
+// pushConfigToGithub creates a commit and push request to Github for the generated changes.
+func (r *generateRunner) pushConfigToGithub(ctx context.Context, gitHubToken string) (*github.PullRequestMetadata, error) {
+	// Ensure we have a GitHub repository
 	gitHubRepo, err := getGitHubRepoFromRemote(r.repo)
 	if err != nil {
 		return nil, err
 	}
+
 	ghClient, err := github.NewClient(gitHubToken, gitHubRepo)
 	if err != nil {
 		return nil, err
 	}
+	// Create a new branch, set title and description for the PR.
 	datetime_now := formatTimestamp(time.Now())
 	titlePrefix := "Librarian pull request"
 	branch := fmt.Sprintf("librarian-%s", datetime_now)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetime_now)
 	description := "Changes in this PR"
+
 	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
 }
 
