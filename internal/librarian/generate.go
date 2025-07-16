@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
@@ -243,6 +244,8 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
 		return err
 	}
+	// os.CopyFS in Go1.24 throws error when copying from a symbolic link
+	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
 	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
@@ -251,41 +254,24 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 }
 
 func clean(rootDir string, removePatterns, preservePatterns []string) error {
-	removeRegexps, err := compileRegexps(removePatterns)
-	if err != nil {
-		return err
-	}
-	preserveRegexps, err := compileRegexps(preservePatterns)
+	finalPathsToRemove, err := deriveFinalPathsToRemove(rootDir, removePatterns, preservePatterns)
 	if err != nil {
 		return err
 	}
 
-	allPaths, err := getAllPaths(rootDir)
-	if err != nil {
-		return err
-	}
-
-	pathsToRemove := filterPaths(allPaths, removeRegexps)
-	pathsToPreserve := filterPaths(pathsToRemove, preserveRegexps)
-
-	finalPathsToRemove := removePreservedPaths(pathsToRemove, pathsToPreserve)
-
-	files, dirs := separateFilesAndDirs(rootDir, finalPathsToRemove)
+	filesToRemove, dirsToRemove := separateFilesAndDirs(rootDir, finalPathsToRemove)
 
 	// Remove files first, then directories.
-	for _, file := range files {
+	for _, file := range filesToRemove {
 		slog.Info("Removing file", "path", file)
 		if err := os.Remove(filepath.Join(rootDir, file)); err != nil {
 			return err
 		}
 	}
 
-	// Sort directories by length (descending) to remove children first.
-	sort.Slice(dirs, func(i, j int) bool {
-		return len(dirs[i]) > len(dirs[j])
-	})
+	sortDirsByDepth(dirsToRemove)
 
-	for _, dir := range dirs {
+	for _, dir := range dirsToRemove {
 		slog.Info("Removing directory", "path", dir)
 		if err := os.Remove(filepath.Join(rootDir, dir)); err != nil {
 			// It's possible the directory is not empty due to preserved files.
@@ -294,6 +280,13 @@ func clean(rootDir string, removePatterns, preservePatterns []string) error {
 	}
 
 	return nil
+}
+
+// sortDirsByDepth sorts directories by depth (descending) to remove children first.
+func sortDirsByDepth(dirs []string) {
+	sort.Slice(dirs, func(i, j int) bool {
+		return strings.Count(dirs[i], string(filepath.Separator)) > strings.Count(dirs[j], string(filepath.Separator))
+	})
 }
 
 func getAllPaths(rootDir string) ([]string, error) {
@@ -337,6 +330,27 @@ func removePreservedPaths(remove, preserve []string) []string {
 		}
 	}
 	return final
+}
+
+func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns []string) ([]string, error) {
+	removeRegexps, err := compileRegexps(removePatterns)
+	if err != nil {
+		return nil, err
+	}
+	preserveRegexps, err := compileRegexps(preservePatterns)
+	if err != nil {
+		return nil, err
+	}
+
+	allPaths, err := getAllPaths(rootDir)
+	if err != nil {
+		return nil, err
+	}
+
+	pathsToRemove := filterPaths(allPaths, removeRegexps)
+	pathsToPreserve := filterPaths(pathsToRemove, preserveRegexps)
+
+	return removePreservedPaths(pathsToRemove, pathsToPreserve), nil
 }
 
 func separateFilesAndDirs(rootDir string, paths []string) (files, dirs []string) {

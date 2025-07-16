@@ -582,6 +582,26 @@ func TestClean(t *testing.T) {
 	}
 }
 
+func TestSortDirsByDepth(t *testing.T) {
+	t.Parallel()
+	dirs := []string{
+		"a/b",
+		"short-dir",
+		"a/b/c",
+		"a",
+	}
+	want := []string{
+		"a/b/c",
+		"a/b",
+		"short-dir",
+		"a",
+	}
+	sortDirsByDepth(dirs)
+	if diff := cmp.Diff(want, dirs); diff != "" {
+		t.Errorf("sortDirsByDepth() mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestGetAllPaths(t *testing.T) {
 	t.Parallel()
 	// Create a temporary directory with some files and subdirectories.
