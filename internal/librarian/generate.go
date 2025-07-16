@@ -217,7 +217,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 				return libraryID, fmt.Errorf("GitHub token is required to push config")
 			}
 			slog.Info("Push config flag is set, GitHub token is provided")
-			_, err := r.pushConfigToGithub(ctx, r.cfg.GitHubToken)
+			_, err := r.commitAndPushConfig(ctx, r.cfg.GitHubToken)
 			if err != nil {
 				return libraryID, err
 			}
@@ -288,8 +288,9 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 	return true, nil
 }
 
-// pushConfigToGithub creates a commit and push request to Github for the generated changes.
-func (r *generateRunner) pushConfigToGithub(ctx context.Context, gitHubToken string) (*github.PullRequestMetadata, error) {
+// commitAndPushConfig creates a commit and push request to Github for the generated changes.
+// It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
+func (r *generateRunner) commitAndPushConfig(ctx context.Context, gitHubToken string) (*github.PullRequestMetadata, error) {
 	// Ensure we have a GitHub repository
 	gitHubRepo, err := getGitHubRepoFromRemote(r.repo)
 	if err != nil {
@@ -300,14 +301,36 @@ func (r *generateRunner) pushConfigToGithub(ctx context.Context, gitHubToken str
 	if err != nil {
 		return nil, err
 	}
+
+	userEmail, userName, err := parsePushConfig(r.cfg.PushConfig)
+	if err != nil {
+		return nil, err
+	}
+	_, err = r.repo.AddAll()
+	if err != nil {
+		return nil, err
+	}
+
+	description := "Changes in this PR"
+	r.repo.Commit(description, userName, userEmail)
+
 	// Create a new branch, set title and description for the PR.
 	datetime_now := formatTimestamp(time.Now())
 	titlePrefix := "Librarian pull request"
 	branch := fmt.Sprintf("librarian-%s", datetime_now)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetime_now)
-	description := "Changes in this PR"
 
 	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
+}
+
+func parsePushConfig(pushConfig string) (string, string, error) {
+	parts := strings.Split(pushConfig, ",")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
+	}
+	userEmail := parts[0]
+	userName := parts[1]
+	return userEmail, userName, nil
 }
 
 // getGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
