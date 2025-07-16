@@ -218,11 +218,20 @@ func TestFindServiceConfigIn(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "load error",
+			name: "simulated load error",
 			contentLoader: func(file string) ([]byte, error) {
 				return nil, errors.New("simulate loading error for testing")
 			},
 			path:    filepath.Join("..", "..", "testdata", "no_service_config"),
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "invalid yaml",
+			contentLoader: func(file string) ([]byte, error) {
+				return os.ReadFile(file)
+			},
+			path:    filepath.Join("..", "..", "testdata", "invalid_yaml"),
 			want:    "",
 			wantErr: true,
 		},
