@@ -267,6 +267,24 @@ func TestPopulateServiceConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "non valid api path",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-id",
+						APIs: []config.API{
+							{
+								Path: "non-existed/example/api",
+							},
+						},
+					},
+				},
+			},
+			path:    "/non-existed-source-path",
+			want:    nil,
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			contentLoader := func(file string) ([]byte, error) {
