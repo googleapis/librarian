@@ -239,7 +239,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 	slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
 	library := findLibraryByID(r.state, libraryID)
 	if library == nil {
-		return fmt.Errorf("library %q not found", libraryID)
+		return fmt.Errorf("bug in Librarian: Library %q not found during build, despite being found in earlier steps", libraryID)
 	}
 	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
 		return err

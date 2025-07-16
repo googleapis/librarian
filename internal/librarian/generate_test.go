@@ -421,6 +421,24 @@ func TestGenerateRun(t *testing.T) {
 			wantGenerateCalls: 1,
 			wantBuildCalls:    1,
 		},
+		{
+			name: "symlink in output",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:         &mockContainerClient{},
+			build:             true,
+			wantGenerateCalls: 1,
+			wantErr:           true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -436,9 +454,26 @@ func TestGenerateRun(t *testing.T) {
 				workRoot:        t.TempDir(),
 			}
 
-			if err := r.run(context.Background()); (err != nil) != test.wantErr {
-				t.Errorf("run() error = %v, wantErr %v", err, test.wantErr)
+			// Create a symlink in the output directory to trigger an error.
+			if test.name == "symlink in output" {
+				outputDir := filepath.Join(r.workRoot, "output")
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
+					t.Fatalf("os.Symlink() = %v", err)
+				}
+			}
+
+			err := r.run(context.Background())
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
 				return
+			}
+			if err != nil {
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
 				t.Errorf("run() generateCalls mismatch (-want +got):%s", diff)
