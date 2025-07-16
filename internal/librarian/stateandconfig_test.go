@@ -320,7 +320,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 			contentLoader := func(file string) ([]byte, error) {
 				return os.ReadFile(file)
 			}
-			err := populateServiceConfig(test.state, contentLoader, test.path)
+			err := populateServiceConfigIfEmpty(test.state, contentLoader, test.path)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("findServiceConfigIn() should return error")

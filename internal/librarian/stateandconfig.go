@@ -100,7 +100,7 @@ func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, 
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
-	if err := populateServiceConfig(&s, contentLoader, source); err != nil {
+	if err := populateServiceConfigIfEmpty(&s, contentLoader, source); err != nil {
 		return nil, fmt.Errorf("populating service config: %w", err)
 	}
 	if err := s.Validate(); err != nil {
@@ -109,7 +109,7 @@ func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, 
 	return &s, nil
 }
 
-func populateServiceConfig(state *config.LibrarianState, contentLoader func(file string) ([]byte, error), source string) error {
+func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader func(file string) ([]byte, error), source string) error {
 	modifiedLibraries := []*config.LibraryState{}
 	for _, library := range state.Libraries {
 		modifiedLibraries = append(modifiedLibraries, library)
