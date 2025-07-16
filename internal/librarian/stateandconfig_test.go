@@ -235,9 +235,14 @@ func TestPopulateServiceConfig(t *testing.T) {
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
+						ID: "example-id",
 						APIs: []config.API{
 							{
 								Path: "example/api",
+							},
+							{
+								Path:          "another/example/api",
+								ServiceConfig: "another_config.yaml",
 							},
 						},
 					},
@@ -247,10 +252,15 @@ func TestPopulateServiceConfig(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
+						ID: "example-id",
 						APIs: []config.API{
 							{
 								Path:          "example/api",
 								ServiceConfig: "example_api_config.yaml",
+							},
+							{
+								Path:          "another/example/api",
+								ServiceConfig: "another_config.yaml",
 							},
 						},
 					},
