@@ -302,7 +302,7 @@ func (r *generateRunner) pushConfigFunc(ctx context.Context, gitHubToken string)
 	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
 }
 
-// Parses the GitHub repo name from the remote for this repository.
+// getGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
 // There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
 // unambiguous result.
 // Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
