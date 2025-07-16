@@ -40,11 +40,13 @@ func TestParseLibrarianState(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		content string
+		source  string
 		want    *config.LibrarianState
 		wantErr bool
-	}{{
-		name: "valid state",
-		content: `image: gcr.io/test/image:v1.2.3
+	}{
+		{
+			name: "valid state",
+			content: `image: gcr.io/test/image:v1.2.3
 libraries:
   - id: a/b
     source_paths:
@@ -54,30 +56,49 @@ libraries:
       - path: a/b/v1
         service_config: a/b/v1/service.yaml
 `,
-		want: &config.LibrarianState{
-			Image: "gcr.io/test/image:v1.2.3",
-			Libraries: []*config.LibraryState{
-				{
-					ID:          "a/b",
-					SourcePaths: []string{"src/a", "src/b"},
-					APIs: []config.API{
-						{
-							Path:          "a/b/v1",
-							ServiceConfig: "a/b/v1/service.yaml",
+			source: "",
+			want: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "a/b",
+						SourcePaths: []string{"src/a", "src/b"},
+						APIs: []config.API{
+							{
+								Path:          "a/b/v1",
+								ServiceConfig: "a/b/v1/service.yaml",
+							},
 						},
 					},
 				},
 			},
 		},
-	},
+		{
+			name: "invalid source",
+			content: `image: gcr.io/test/image:v1.2.3
+libraries:
+  - id: a/b
+    source_paths:
+      - src/a
+      - src/b
+    apis:
+      - path: a/b/v1
+        service_config: 
+`,
+			source:  "/non-existed-path",
+			want:    nil,
+			wantErr: true,
+		},
 		{
 			name:    "invalid yaml",
 			content: "image: gcr.io/test/image:v1.2.3\n  libraries: []\n",
+			source:  "",
 			wantErr: true,
 		},
 		{
 			name:    "validation error",
 			content: "image: gcr.io/test/image:v1.2.3\nlibraries: []\n",
+			source:  "",
 			wantErr: true,
 		},
 	} {
@@ -85,7 +106,7 @@ libraries:
 			contentLoader := func(path string) ([]byte, error) {
 				return []byte(path), nil
 			}
-			got, err := parseLibrarianState(contentLoader, test.content, "")
+			got, err := parseLibrarianState(contentLoader, test.content, test.source)
 			if (err != nil) != test.wantErr {
 				t.Errorf("parseLibrarianState() error = %v, wantErr %v", err, test.wantErr)
 				return
