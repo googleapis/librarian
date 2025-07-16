@@ -80,10 +80,10 @@ libraries:
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			contentLoader := func() ([]byte, error) {
-				return []byte(test.content), nil
+			contentLoader := func(path string) ([]byte, error) {
+				return []byte(path), nil
 			}
-			got, err := parseLibrarianState(contentLoader)
+			got, err := parseLibrarianState(contentLoader, test.content, "")
 			if (err != nil) != test.wantErr {
 				t.Errorf("parseLibrarianState() error = %v, wantErr %v", err, test.wantErr)
 				return
@@ -148,7 +148,7 @@ libraries:
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := fetchRemoteLibrarianState(context.Background(), test.client, "main")
+			got, err := fetchRemoteLibrarianState(context.Background(), test.client, "main", "")
 			if (err != nil) != test.wantErr {
 				t.Errorf("fetchRemoteLibrarianState() error = %v, wantErr %v", err, test.wantErr)
 				return

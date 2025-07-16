@@ -32,6 +32,8 @@ import (
 
 const pipelineStateFile = "state.yaml"
 const pipelineConfigFile = "pipeline-config.json"
+const serviceConfigType = "type"
+const serviceConfigValue = "google.api.Service"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
@@ -55,11 +57,11 @@ func loadLibrarianState(languageRepo *gitrepo.Repository, source string) (*confi
 		return nil, nil
 	}
 	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
-	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) }, source)
+	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
 }
 
 func loadLibrarianStateFile(path, source string) (*config.LibrarianState, error) {
-	return parseLibrarianState(func() ([]byte, error) { return os.ReadFile(path) }, source)
+	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
 }
 
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
@@ -72,9 +74,9 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 }
 
 func fetchRemoteLibrarianState(ctx context.Context, client GitHubClient, ref, source string) (*config.LibrarianState, error) {
-	return parseLibrarianState(func() ([]byte, error) {
-		return client.GetRawContent(ctx, config.GeneratorInputDir+"/"+pipelineStateFile, ref)
-	}, source)
+	return parseLibrarianState(func(file string) ([]byte, error) {
+		return client.GetRawContent(ctx, file, ref)
+	}, filepath.Join(config.GeneratorInputDir, pipelineStateFile), source)
 }
 
 func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.PipelineConfig, error) {
@@ -89,8 +91,8 @@ func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.Pipeline
 	return config, nil
 }
 
-func parseLibrarianState(contentLoader func() ([]byte, error), source string) (*config.LibrarianState, error) {
-	bytes, err := contentLoader()
+func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, source string) (*config.LibrarianState, error) {
+	bytes, err := contentLoader(path)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +100,7 @@ func parseLibrarianState(contentLoader func() ([]byte, error), source string) (*
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
-	if err := populateServiceConfig(&s, source); err != nil {
+	if err := populateServiceConfig(&s, contentLoader, source); err != nil {
 		return nil, fmt.Errorf("populating service config: %w", err)
 	}
 	if err := s.Validate(); err != nil {
@@ -107,14 +109,14 @@ func parseLibrarianState(contentLoader func() ([]byte, error), source string) (*
 	return &s, nil
 }
 
-func populateServiceConfig(state *config.LibrarianState, source string) error {
+func populateServiceConfig(state *config.LibrarianState, contentLoader func(file string) ([]byte, error), source string) error {
 	for _, library := range state.Libraries {
 		for _, api := range library.APIs {
 			if api.ServiceConfig != "" {
 				continue
 			}
 			apiPath := filepath.Join(source, api.Path)
-			serviceConfig, err := findServiceConfigIn(apiPath)
+			serviceConfig, err := findServiceConfigIn(contentLoader, apiPath)
 			if err != nil {
 				return err
 			}
@@ -125,7 +127,7 @@ func populateServiceConfig(state *config.LibrarianState, source string) error {
 	return nil
 }
 
-func findServiceConfigIn(path string) (string, error) {
+func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path string) (string, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return "", err
@@ -136,7 +138,17 @@ func findServiceConfigIn(path string) (string, error) {
 		if !strings.HasSuffix(entry.Name(), ".yaml") {
 			continue
 		}
-
+		bytes, err := contentLoader(path)
+		if err != nil {
+			return "", err
+		}
+		var configMap map[string]interface{}
+		if err := yaml.Unmarshal(bytes, &configMap); err != nil {
+			return "", err
+		}
+		if value, ok := configMap[serviceConfigType].(string); ok && value == serviceConfigValue {
+			return entry.Name(), nil
+		}
 	}
 
 	return "", errors.New("could not find service config in " + path)
