@@ -17,6 +17,8 @@ package librarian
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -151,6 +153,66 @@ libraries:
 			got, err := fetchRemoteLibrarianState(context.Background(), test.client, "main", "")
 			if (err != nil) != test.wantErr {
 				t.Errorf("fetchRemoteLibrarianState() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("fetchRemoteLibrarianState() mismatch (-want +got): %s", diff)
+			}
+		})
+	}
+}
+
+func TestFindServiceConfigIn(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		contentLoader func(file string) ([]byte, error)
+		path          string
+		want          string
+		wantErr       bool
+	}{
+		{
+			name: "find a service config",
+			contentLoader: func(file string) ([]byte, error) {
+				return os.ReadFile(file)
+			},
+			path: filepath.Join("..", "..", "testdata", "find_a_service_config"),
+			want: "service_config.yaml",
+		},
+		{
+			name: "non existed source path",
+			contentLoader: func(file string) ([]byte, error) {
+				return os.ReadFile(file)
+			},
+			path:    filepath.Join("..", "..", "testdata", "non-existed-path"),
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "non service config in a source path",
+			contentLoader: func(file string) ([]byte, error) {
+				return os.ReadFile(file)
+			},
+			path:    filepath.Join("..", "..", "testdata", "no_service_config"),
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "load error",
+			contentLoader: func(file string) ([]byte, error) {
+				return nil, errors.New("simulate loading error for testing")
+			},
+			path:    filepath.Join("..", "..", "testdata", "no_service_config"),
+			want:    "",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findServiceConfigIn(test.contentLoader, test.path)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("findServiceConfigIn() should return error")
+				}
+
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {

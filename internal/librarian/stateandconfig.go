@@ -134,11 +134,10 @@ func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path s
 	}
 
 	for _, entry := range entries {
-		fmt.Printf("- %s (Is Dir: %t)\n", entry.Name(), entry.IsDir())
 		if !strings.HasSuffix(entry.Name(), ".yaml") {
 			continue
 		}
-		bytes, err := contentLoader(path)
+		bytes, err := contentLoader(filepath.Join(path, entry.Name()))
 		if err != nil {
 			return "", err
 		}
