@@ -221,3 +221,58 @@ func TestFindServiceConfigIn(t *testing.T) {
 		})
 	}
 }
+
+func TestPopulateServiceConfig(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		state   *config.LibrarianState
+		path    string
+		want    *config.LibrarianState
+		wantErr bool
+	}{
+		{
+			name: "populate service config",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						APIs: []config.API{
+							{
+								Path: "example/api",
+							},
+						},
+					},
+				},
+			},
+			path: filepath.Join("..", "..", "testdata", "populate_service_config"),
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						APIs: []config.API{
+							{
+								Path:          "example/api",
+								ServiceConfig: "example_api_config.yaml",
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			contentLoader := func(file string) ([]byte, error) {
+				return os.ReadFile(file)
+			}
+			err := populateServiceConfig(test.state, contentLoader, test.path)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("findServiceConfigIn() should return error")
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.want, test.state); diff != "" {
+				t.Errorf("fetchRemoteLibrarianState() mismatch (-want +got): %s", diff)
+			}
+		})
+	}
+}
