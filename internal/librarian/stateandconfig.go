@@ -134,6 +134,14 @@ func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader fu
 	return nil
 }
 
+// findServiceConfigIn detects the service config in a given path.
+//
+// Returns the file name (relative to the given path) if the following criteria
+// are met:
+//
+// 1. the file ends with `.yaml` and it is a valid yaml file.
+//
+// 2. the file contains `type: google.api.Service`.
 func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path string) (string, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
