@@ -110,9 +110,7 @@ func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, 
 }
 
 func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader func(file string) ([]byte, error), source string) error {
-	modifiedLibraries := []*config.LibraryState{}
-	for _, library := range state.Libraries {
-		modifiedLibraries = append(modifiedLibraries, library)
+	for i, library := range state.Libraries {
 		modifiedAPIs := []config.API{}
 		for _, api := range library.APIs {
 			if api.ServiceConfig != "" {
@@ -130,9 +128,8 @@ func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader fu
 				ServiceConfig: serviceConfig,
 			})
 		}
-		modifiedLibraries[len(modifiedLibraries)-1].APIs = modifiedAPIs
+		state.Libraries[i].APIs = modifiedAPIs
 	}
-	state.Libraries = modifiedLibraries
 
 	return nil
 }
