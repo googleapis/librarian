@@ -12,16 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.22-alpine
+# Start with a Go base image
+FROM golang:1.22 AS builder
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Optional: Copy your application code into the container
+COPY go.mod .
+COPY go.sum .
+
+RUN go mod download
+
 COPY ./testdata/e2e_func.go .
 
 RUN go build -o e2e_func .
 
-CMD ["go", "version"]
+FROM alpine:latest
+
+WORKDIR /app
+
+# Copy the built executable from the builder stage
+COPY --from=builder /app/e2e_func .
 
 ENTRYPOINT ["e2e_func"]
