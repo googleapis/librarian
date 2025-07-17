@@ -18,12 +18,10 @@ FROM golang:1.22-alpine
 WORKDIR /app
 
 # Optional: Copy your application code into the container
-# COPY . .
+COPY ./testdata/e2e_func.go .
 
-# Optional: Build your Go application (if you have one)
-# RUN go build -o myapp .
-
-# Optional: Run your Go application when the container starts
-# CMD ["./myapp"]
+RUN go build -o e2e_func .
 
 CMD ["go", "version"]
+
+ENTRYPOINT ["e2e_func"]
