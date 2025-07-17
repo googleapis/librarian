@@ -429,7 +429,7 @@ func TestGenerateRun(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID:   "some-library",
-						APIs: []config.API{{Path: "some/api"}},
+						APIs: []*config.API{{Path: "some/api"}},
 					},
 				},
 			},
