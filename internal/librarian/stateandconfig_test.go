@@ -63,7 +63,7 @@ libraries:
 					{
 						ID:          "a/b",
 						SourcePaths: []string{"src/a", "src/b"},
-						APIs: []config.API{
+						APIs: []*config.API{
 							{
 								Path:          "a/b/v1",
 								ServiceConfig: "a/b/v1/service.yaml",
@@ -145,7 +145,7 @@ libraries:
 					{
 						ID:          "a/b",
 						SourcePaths: []string{"src/a", "src/b"},
-						APIs: []config.API{
+						APIs: []*config.API{
 							{
 								Path:          "a/b/v1",
 								ServiceConfig: "a/b/v1/service.yaml",
@@ -266,7 +266,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID: "example-id",
-						APIs: []config.API{
+						APIs: []*config.API{
 							{
 								Path: "example/api",
 							},
@@ -283,7 +283,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID: "example-id",
-						APIs: []config.API{
+						APIs: []*config.API{
 							{
 								Path:          "example/api",
 								ServiceConfig: "example_api_config.yaml",
@@ -303,7 +303,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID: "example-id",
-						APIs: []config.API{
+						APIs: []*config.API{
 							{
 								Path: "non-existed/example/api",
 							},
