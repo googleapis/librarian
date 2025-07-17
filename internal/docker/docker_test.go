@@ -309,7 +309,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 						ID:                  "google-cloud-go",
 						Version:             "1.0.0",
 						LastGeneratedCommit: "abcd123",
-						APIs: []config.API{
+						APIs: []*config.API{
 							{
 								Path:          "google/cloud/compute/v1",
 								ServiceConfig: "example_service_config.yaml",
@@ -328,7 +328,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 					{
 						ID:      "google-cloud-storage",
 						Version: "1.2.3",
-						APIs: []config.API{
+						APIs: []*config.API{
 							{
 								Path:          "google/storage/v1",
 								ServiceConfig: "storage_service_config.yaml",
