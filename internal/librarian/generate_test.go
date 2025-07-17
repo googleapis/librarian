@@ -296,7 +296,7 @@ func TestRunConfigureCommand(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID:   "some-library",
-						APIs: []config.API{{Path: "some/api"}},
+						APIs: []*config.API{{Path: "some/api"}},
 					},
 				},
 			},
@@ -317,7 +317,7 @@ func TestRunConfigureCommand(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID:   "some-library",
-						APIs: []config.API{{Path: "some/api"}},
+						APIs: []*config.API{{Path: "some/api"}},
 					},
 				},
 			},
