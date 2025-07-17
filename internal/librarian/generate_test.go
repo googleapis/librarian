@@ -43,7 +43,7 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	return nil
 }
 
-func (m *mockContainerClient) Build(ctx context.Context, cfg *config.Config, buildDir, libraryID string) error {
+func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
 	m.buildCalls++
 	return nil
 }
@@ -71,7 +71,7 @@ func TestDetectIfLibraryConfigured(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID:          "some-library",
-						APIs:        []config.API{{Path: "some/api"}},
+						APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
 						SourcePaths: []string{"src/a"},
 					},
 				},
@@ -86,7 +86,7 @@ func TestDetectIfLibraryConfigured(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID:          "some-library",
-						APIs:        []config.API{{Path: "some/api"}},
+						APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
 						SourcePaths: []string{"src/a"},
 					},
 				},
@@ -163,7 +163,7 @@ func TestRunGenerateCommand(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID:   "some-library",
-						APIs: []config.API{{Path: "some/api"}},
+						APIs: []*config.API{{Path: "some/api"}},
 					},
 				},
 			},
@@ -185,7 +185,7 @@ func TestRunGenerateCommand(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID:   "some-library",
-						APIs: []config.API{{Path: "some/api"}},
+						APIs: []*config.API{{Path: "some/api"}},
 					},
 				},
 			},
@@ -325,7 +325,7 @@ func TestNewGenerateRunner(t *testing.T) {
 					Libraries: []*config.LibraryState{
 						{
 							ID:          "some-library",
-							APIs:        []config.API{{Path: "some/api"}},
+							APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
 							SourcePaths: []string{"src/a"},
 						},
 					},
@@ -403,7 +403,7 @@ func TestGenerateRun(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID:   "some-library",
-						APIs: []config.API{{Path: "some/api"}},
+						APIs: []*config.API{{Path: "some/api"}},
 					},
 				},
 			},

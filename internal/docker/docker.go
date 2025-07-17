@@ -84,6 +84,21 @@ type GenerateRequest struct {
 	RepoDir string
 }
 
+// BuildRequest contains all the information required for a language
+// container to run the build command.
+type BuildRequest struct {
+	// cfg is a pointer to the [config.Config] struct, holding general configuration
+	// values parsed from flags or environment variables.
+	Cfg *config.Config
+	// state is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
+	// libraryID specifies the ID of the library to build
+	LibraryID string
+	// RepoDir is the local root directory of the language repository.
+	RepoDir string
+}
+
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
@@ -105,9 +120,16 @@ func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *confi
 // library.
 func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
-	if err := writeGenerateRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+		}
+	}(jsonFilePath)
+
 	commandArgs := []string{
 		"--librarian=/librarian",
 		"--input=/input",
@@ -129,17 +151,29 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 
 // Build builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
-func (c *Docker) Build(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error {
+func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
+	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
+	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+		return err
+	}
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+		}
+	}(jsonFilePath)
+
 	mounts := []string{
-		fmt.Sprintf("%s:/repo", repoRoot),
+		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir),
+		fmt.Sprintf("%s:/repo", request.RepoDir),
 	}
 	commandArgs := []string{
 		"--repo-root=/repo",
 		"--test=true",
-		fmt.Sprintf("--library-id=%s", libraryID),
+		fmt.Sprintf("--library-id=%s", request.LibraryID),
 	}
 
-	return c.runDocker(ctx, cfg, CommandBuild, mounts, commandArgs)
+	return c.runDocker(ctx, request.Cfg, CommandBuild, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -228,7 +262,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-func writeGenerateRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
+func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
 	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}

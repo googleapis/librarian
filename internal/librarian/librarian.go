@@ -82,7 +82,7 @@ type GitHubClient interface {
 // ContainerClient is an abstraction over the Docker client.
 type ContainerClient interface {
 	Generate(ctx context.Context, request *docker.GenerateRequest) error
-	Build(ctx context.Context, cfg *config.Config, repoRoot, libraryID string) error
+	Build(ctx context.Context, request *docker.BuildRequest) error
 	Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error
 }
 

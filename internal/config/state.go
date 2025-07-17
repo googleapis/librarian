@@ -90,7 +90,7 @@ type LibraryState struct {
 	// The commit hash from the API definition repository at which the library was last generated.
 	LastGeneratedCommit string `yaml:"last_generated_commit"`
 	// A list of APIs that are part of this library.
-	APIs []API `yaml:"apis"`
+	APIs []*API `yaml:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
 	SourcePaths []string `yaml:"source_paths"`
 	// A list of regular expressions for files and directories to preserve during the copy and remove process.

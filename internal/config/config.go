@@ -24,6 +24,8 @@ import (
 )
 
 const (
+	// BuildRequest is a JSON file that describes which library to build/test.
+	BuildRequest      string = "build-request.json"
 	DefaultPushConfig string = "noreply-cloudsdk@google.com,Google Cloud SDK"
 	// GeneratorInputDir is the default directory to store files that generator
 	// needs to regenerate libraries from an empty directory.
