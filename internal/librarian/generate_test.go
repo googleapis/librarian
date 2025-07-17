@@ -16,11 +16,12 @@ package librarian
 
 import (
 	"context"
-	"github.com/googleapis/librarian/internal/docker"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
@@ -31,8 +32,9 @@ import (
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
-	generateCalls int
-	buildCalls    int
+	generateCalls  int
+	buildCalls     int
+	configureCalls int
 }
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
@@ -42,6 +44,11 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
 	m.buildCalls++
+	return nil
+}
+
+func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) error {
+	m.configureCalls++
 	return nil
 }
 
@@ -381,15 +388,16 @@ func runGit(t *testing.T, dir string, args ...string) {
 func TestGenerateRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name              string
-		api               string
-		repo              *gitrepo.Repository
-		state             *config.LibrarianState
-		container         *mockContainerClient
-		build             bool
-		wantErr           bool
-		wantGenerateCalls int
-		wantBuildCalls    int
+		name               string
+		api                string
+		repo               *gitrepo.Repository
+		state              *config.LibrarianState
+		container          *mockContainerClient
+		build              bool
+		wantErr            bool
+		wantGenerateCalls  int
+		wantBuildCalls     int
+		wantConfigureCalls int
 	}{
 		{
 			name: "regeneration of API",
@@ -404,10 +412,11 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:         &mockContainerClient{},
-			build:             true,
-			wantGenerateCalls: 1,
-			wantBuildCalls:    1,
+			container:          &mockContainerClient{},
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 1,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -433,6 +442,9 @@ func TestGenerateRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
 				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
+			}
+			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
+				t.Errorf("run() configureCalls mismatch (-want +got):%s", diff)
 			}
 		})
 	}
