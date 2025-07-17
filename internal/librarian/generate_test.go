@@ -565,6 +565,24 @@ func TestClean(t *testing.T) {
 			// it was not targeted for removal.
 			wantRemaining: []string{".", "symlink_to_file1"},
 		},
+		{
+			name: "remove directory",
+			files: map[string]string{
+				"dir/file1.txt": "",
+				"dir/file2.txt": "",
+			},
+			removePatterns: []string{"dir"},
+			wantRemaining:  []string{"."},
+		},
+		{
+			name: "preserve file not matching remove pattern",
+			files: map[string]string{
+				"file1.txt": "",
+				"file2.log": "",
+			},
+			removePatterns: []string{".*\\.txt"},
+			wantRemaining:  []string{".", "file2.log"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -687,7 +705,7 @@ func TestFilterPaths(t *testing.T) {
 		"bar/file4.log",
 	}
 	regexps := []*regexp.Regexp{
-		regexp.MustCompile(`^foo/.*.txt$`),
+		regexp.MustCompile(`^foo/.*\.txt$`),
 		regexp.MustCompile(`^bar/.*`),
 	}
 
@@ -813,6 +831,83 @@ func TestCompileRegexps(t *testing.T) {
 				if len(regexps) != len(tc.patterns) {
 					t.Errorf("compileRegexps() len = %d, want %d", len(regexps), len(tc.patterns))
 				}
+			}
+		})
+	}
+}
+
+func TestCleanAndCopyLibrary(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		libraryID   string
+		state       *config.LibrarianState
+		repo        *gitrepo.Repository
+		outputDir   string
+		setup       func(t *testing.T, r *generateRunner, outputDir string)
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:      "library not found",
+			libraryID: "non-existent-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
+			},
+			repo:    newTestGitRepo(t),
+			wantErr: true,
+		},
+		{
+			name:      "clean fails",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "some-library",
+						RemoveRegex: []string{"["}, // Invalid regex
+					},
+				},
+			},
+			repo:    newTestGitRepo(t),
+			wantErr: true,
+		},
+		{
+			name:      "copy fails on symlink",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
+			},
+			repo: newTestGitRepo(t),
+			setup: func(t *testing.T, r *generateRunner, outputDir string) {
+				// Create a symlink in the output directory to trigger an error.
+				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
+					t.Fatalf("os.Symlink() = %v", err)
+				}
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			r := &generateRunner{
+				state: test.state,
+				repo:  test.repo,
+			}
+			outputDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, r, outputDir)
+			}
+			err := r.cleanAndCopyLibrary(test.libraryID, outputDir)
+			if (err != nil) != test.wantErr {
+				t.Errorf("cleanAndCopyLibrary() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
