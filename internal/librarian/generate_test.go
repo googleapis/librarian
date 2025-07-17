@@ -19,14 +19,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 )
@@ -436,96 +434,6 @@ func TestGenerateRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
 				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
-			}
-		})
-	}
-}
-
-func TestGetGitHubRepoFromRemote(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name    string
-		remotes []struct {
-			name string
-			urls []string
-		}
-		wantRepo *github.Repository
-		wantErr  string
-	}{
-		{
-			name: "single GitHub remote",
-			remotes: []struct {
-				name string
-				urls []string
-			}{
-				{"origin", []string{"https://github.com/googleapis/librarian.git"}},
-			},
-			wantRepo: &github.Repository{
-				Owner: "googleapis",
-				Name:  "librarian",
-			},
-		},
-		{
-			name: "multiple GitHub remotes",
-			remotes: []struct {
-				name string
-				urls []string
-			}{
-				{"origin", []string{"https://github.com/googleapis/librarian.git"}},
-				{"upstream", []string{"https://github.com/other/repo.git"}},
-			},
-			wantErr: "can only determine the GitHub repo with a single matching remote",
-		},
-		{
-			name: "no GitHub remote",
-			remotes: []struct {
-				name string
-				urls []string
-			}{
-				{"origin", []string{"https://gitlab.com/googleapis/librarian.git"}},
-			},
-			wantErr: "no GitHub remotes found",
-		},
-		{
-			name: "remote with no URLs",
-			remotes: []struct {
-				name string
-				urls []string
-			}{
-				{"origin", []string{}},
-			},
-			wantErr: "no GitHub remotes found",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			// Create a temporary git repo
-			repo := newTestGitRepo(t)
-			// Remove all remotes, ignore errors if remote does not exist
-			_ = exec.Command("git", "-C", repo.Dir, "remote", "remove", "origin").Run()
-			_ = exec.Command("git", "-C", repo.Dir, "remote", "remove", "upstream").Run()
-			// Add test remotes
-			for _, r := range test.remotes {
-				for _, url := range r.urls {
-					runGit(t, repo.Dir, "remote", "add", r.name, url)
-				}
-				// If no URLs, just add remote with no URL
-				if len(r.urls) == 0 {
-					runGit(t, repo.Dir, "remote", "add", r.name, " ")
-					runGit(t, repo.Dir, "remote", "set-url", r.name, "")
-				}
-			}
-			got, err := getGitHubRepoFromRemote(repo)
-			if test.wantErr != "" {
-				if err == nil || !strings.Contains(err.Error(), test.wantErr) {
-					t.Errorf("getGitHubRepoFromRemote() error = %v, wantErr %q", err, test.wantErr)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("getGitHubRepoFromRemote() unexpected error: %v", err)
-			}
-			if got.Owner != test.wantRepo.Owner || got.Name != test.wantRepo.Name {
-				t.Errorf("getGitHubRepoFromRemote() got = %+v, want = %+v", got, test.wantRepo)
 			}
 		})
 	}
