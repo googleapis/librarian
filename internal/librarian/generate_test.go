@@ -603,33 +603,26 @@ func TestClean(t *testing.T) {
 				}
 			}
 			err := clean(tmpDir, test.removePatterns, test.preservePatterns)
-			if (err != nil) != test.wantErr {
-				t.Errorf("clean() error = %v, wantErr %v", err, test.wantErr)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
 				return
 			}
-
-			if !test.wantErr {
-				var remainingPaths []string
-				err := filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
-					if err != nil {
-						return err
-					}
-					relPath, err := filepath.Rel(tmpDir, path)
-					if err != nil {
-						return err
-					}
-					remainingPaths = append(remainingPaths, relPath)
-					return nil
-				})
-				if err != nil {
-					t.Fatalf("filepath.Walk() = %v", err)
-				}
-				sort.Strings(test.wantRemaining)
-				sort.Strings(remainingPaths)
-				if diff := cmp.Diff(test.wantRemaining, remainingPaths); diff != "" {
-					t.Errorf("clean() remaining files mismatch (-want +got):%s", diff)
-				}
+			if err != nil {
+				t.Fatal(err)
 			}
+
+			remainingPaths, err := getAllPaths(tmpDir)
+			if err != nil {
+				t.Fatalf("getAllPaths() = %v", err)
+			}
+			sort.Strings(test.wantRemaining)
+			sort.Strings(remainingPaths)
+			if diff := cmp.Diff(test.wantRemaining, remainingPaths); diff != "" {
+				t.Errorf("clean() remaining files mismatch (-want +got):%s", diff)
+			}
+
 		})
 	}
 }
@@ -906,8 +899,14 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				test.setup(t, r, outputDir)
 			}
 			err := r.cleanAndCopyLibrary(test.libraryID, outputDir)
-			if (err != nil) != test.wantErr {
-				t.Errorf("cleanAndCopyLibrary() error = %v, wantErr %v", err, test.wantErr)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
 			}
 		})
 	}
