@@ -342,3 +342,67 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 		})
 	}
 }
+
+func TestParsePushConfig(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		pushConfig string
+		wantEmail  string
+		wantName   string
+		wantErr    bool
+	}{
+		{
+			name:       "valid config",
+			pushConfig: "test@example.com,Test User",
+			wantEmail:  "test@example.com",
+			wantName:   "Test User",
+		},
+		{
+			name:       "invalid format - one part",
+			pushConfig: "test@example.com",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid format - three parts",
+			pushConfig: "test@example.com,Test,User",
+			wantErr:    true,
+		},
+		{
+			name:       "empty config",
+			pushConfig: "",
+			wantErr:    true,
+		},
+		// Note: `validatePushConfig` would prevent these, but we test `parsePushConfig` in isolation.
+		{
+			name:       "empty email",
+			pushConfig: ",Test User",
+			wantEmail:  "",
+			wantName:   "Test User",
+		},
+		{
+			name:       "empty name",
+			pushConfig: "test@example.com,",
+			wantEmail:  "test@example.com",
+			wantName:   "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			gotEmail, gotName, err := parsePushConfig(test.pushConfig)
+			if (err != nil) != test.wantErr {
+				t.Errorf("parsePushConfig() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if err != nil {
+				return
+			}
+			if gotEmail != test.wantEmail {
+				t.Errorf("parsePushConfig() gotEmail = %q, want %q", gotEmail, test.wantEmail)
+			}
+			if gotName != test.wantName {
+				t.Errorf("parsePushConfig() gotName = %q, want %q", gotName, test.wantName)
+			}
+		})
+	}
+}

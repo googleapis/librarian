@@ -70,3 +70,11 @@ func validateRequiredFlag(name, value string) error {
 	}
 	return nil
 }
+
+// validatePushConfigAndGithubTokenCoexist validates that the github token should exist if pushConfig flag is set.
+func validatePushConfigAndGithubTokenCoexist(pushConfig, gitHubToken string) error {
+	if pushConfig != "" && gitHubToken == "" {
+		return fmt.Errorf("GitHub token is required if push config exists")
+	}
+	return nil
+}

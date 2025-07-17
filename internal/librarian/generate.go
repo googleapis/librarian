@@ -112,6 +112,9 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err := validateRequiredFlag("source", cfg.Source); err != nil {
 		return nil, err
 	}
+	if err := validatePushConfigAndGithubTokenCoexist(cfg.PushConfig, cfg.GitHubToken); err != nil {
+		return nil, err
+	}
 	workRoot, err := createWorkRoot(time.Now(), cfg.WorkRoot)
 	if err != nil {
 		return nil, err
@@ -213,18 +216,8 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			return libraryID, err
 		}
 
-		// If the push-config flag is set and the GitHub token is provided,
-		// we push the config changes to GitHub.
-		if r.cfg.PushConfig != "" {
-			if r.cfg.GitHubToken == "" {
-				return libraryID, fmt.Errorf("GitHub token is required to push config")
-			}
-			slog.Info("Push config flag is set, GitHub token is provided")
-			_, err := commitAndPush(ctx, r, r.cfg.PushConfig, r.cfg.GitHubToken)
-			if err != nil {
-				return libraryID, err
-			}
-		}
+		// Push the config changes to GitHub.
+		_, err := commitAndPush(ctx, r, r.cfg.PushConfig, r.cfg.GitHubToken)
 		return libraryID, err
 	}
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
@@ -289,55 +282,6 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 
 	slog.Info("API configured", "path", apiPath, "library", libraryID)
 	return true, nil
-}
-
-// commitAndPush creates a commit and push request to Github for the generated changes.
-// It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string, gitHubToken string) (*github.PullRequestMetadata, error) {
-	// Ensure we have a GitHub repository
-	gitHubRepo, err := getGitHubRepoFromRemote(r.repo)
-	if err != nil {
-		return nil, err
-	}
-
-	ghClient, err := github.NewClient(gitHubToken, gitHubRepo)
-	if err != nil {
-		return nil, err
-	}
-
-	userEmail, userName, err := parsePushConfig(pushConfig)
-	if err != nil {
-		return nil, err
-	}
-	_, err = r.repo.AddAll()
-	if err != nil {
-		return nil, err
-	}
-
-	description := "Changes in this PR"
-	r.repo.Commit(description, userName, userEmail)
-
-	// Create a new branch, set title and description for the PR.
-	datetime_now := formatTimestamp(time.Now())
-	titlePrefix := "Librarian pull request"
-	branch := fmt.Sprintf("librarian-%s", datetime_now)
-	title := fmt.Sprintf("%s: %s", titlePrefix, datetime_now)
-
-	pullRequestMetadata, err := ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create pull request: %w", err)
-	}
-	return pullRequestMetadata, nil
-}
-
-func parsePushConfig(pushConfig string) (string, string, error) {
-	parts := strings.Split(pushConfig, ",")
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
-	}
-	userEmail := parts[0]
-	userName := parts[1]
-	return userEmail, userName, nil
 }
 
 // getGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
