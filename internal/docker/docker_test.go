@@ -260,7 +260,7 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", ".librarian:/librarian:ro",
+				"-v", ".librarian:/librarian",
 				"-v", ".librarian/generator-input:/input",
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
