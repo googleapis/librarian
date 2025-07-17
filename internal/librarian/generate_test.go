@@ -269,8 +269,7 @@ func TestRunBuildCommand(t *testing.T) {
 				state:           test.state,
 				containerClient: test.container,
 			}
-			outputDir := t.TempDir()
-			if err := r.runBuildCommand(context.Background(), outputDir, test.libraryID); (err != nil) != test.wantErr {
+			if err := r.runBuildCommand(context.Background(), test.libraryID); (err != nil) != test.wantErr {
 				t.Errorf("runBuildCommand() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}

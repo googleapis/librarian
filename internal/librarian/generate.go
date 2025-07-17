@@ -175,7 +175,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return err
 	}
 
-	if err := r.runBuildCommand(ctx, outputDir, libraryID); err != nil {
+	if err := r.runBuildCommand(ctx, libraryID); err != nil {
 		return err
 	}
 	return nil
@@ -208,10 +208,36 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			RepoDir:   r.repo.Dir,
 		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		return libraryID, r.containerClient.Generate(ctx, generateRequest)
+		err = r.containerClient.Generate(ctx, generateRequest)
+		if err != nil {
+			return libraryID, err
+		}
+
+		if err := r.cleanAndCopyLibrary(libraryID, outputDir); err != nil {
+			return libraryID, err
+		}
+		return libraryID, nil
 	}
+
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
 	return "", fmt.Errorf("library not found")
+}
+
+func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error {
+	library := findLibraryByID(r.state, libraryID)
+	if library == nil {
+		return fmt.Errorf("library %q not found during generation, despite being found in earlier steps", libraryID)
+	}
+	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
+		return err
+	}
+	// os.CopyFS in Go1.24 returns error when copying from a symbolic link
+	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
+	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
+		return err
+	}
+	slog.Info("Library updated", "id", libraryID)
+	return nil
 }
 
 // runBuildCommand orchestrates the building of an API library using a containerized
@@ -219,7 +245,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 //
 // The `outputDir` parameter specifies the target directory where the built artifacts
 // should be placed.
-func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, libraryID string) error {
+func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) error {
 	if !r.cfg.Build {
 		slog.Info("Build flag not specified, skipping")
 		return nil
@@ -235,24 +261,17 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 		LibraryID: libraryID,
 		RepoDir:   r.repo.Dir,
 	}
-
 	slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-	library := findLibraryByID(r.state, libraryID)
-	if library == nil {
-		return fmt.Errorf("bug in Librarian: Library %q not found during build, despite being found in earlier steps", libraryID)
-	}
-	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
-		return err
-	}
-	// os.CopyFS in Go1.24 throws error when copying from a symbolic link
-	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
-	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
-		return err
-	}
-
 	return r.containerClient.Build(ctx, buildRequest)
 }
 
+// clean removes files and directories from a root directory based on remove and preserve patterns.
+//
+// It first determines the paths to remove by applying the removePatterns and then excluding any paths
+// that match the preservePatterns. It then separates the remaining paths into files and directories and
+// removes them, ensuring that directories are removed last.
+//
+// This logic is ported from owlbot logic: https://github.com/googleapis/repo-automation-bots/blob/12dad68640960290910b660e4325630c9ace494b/packages/owl-bot/src/copy-code.ts#L1027
 func clean(rootDir string, removePatterns, preservePatterns []string) error {
 	finalPathsToRemove, err := deriveFinalPathsToRemove(rootDir, removePatterns, preservePatterns)
 	if err != nil {
