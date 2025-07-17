@@ -217,7 +217,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 				return libraryID, fmt.Errorf("GitHub token is required to push config")
 			}
 			slog.Info("Push config flag is set, GitHub token is provided")
-			_, err := r.commitAndPushConfig(ctx, r.cfg.GitHubToken)
+			_, err := commitAndPush(ctx, r, r.cfg.PushConfig, r.cfg.GitHubToken)
 			if err != nil {
 				return libraryID, err
 			}
@@ -288,27 +288,27 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 	return true, nil
 }
 
-// commitAndPushConfig creates a commit and push request to Github for the generated changes.
+// commitAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func (r *generateRunner) commitAndPushConfig(ctx context.Context, gitHubToken string) (*github.PullRequestMetadata, error) {
+func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string, gitHubToken string) (string, error) {
 	// Ensure we have a GitHub repository
 	gitHubRepo, err := getGitHubRepoFromRemote(r.repo)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	ghClient, err := github.NewClient(gitHubToken, gitHubRepo)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	userEmail, userName, err := parsePushConfig(r.cfg.PushConfig)
+	userEmail, userName, err := parsePushConfig(pushConfig)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	_, err = r.repo.AddAll()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	description := "Changes in this PR"
@@ -320,7 +320,11 @@ func (r *generateRunner) commitAndPushConfig(ctx context.Context, gitHubToken st
 	branch := fmt.Sprintf("librarian-%s", datetime_now)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetime_now)
 
-	return ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
+	_, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
+	if err != nil {
+		return "", fmt.Errorf("failed to create pull request: %w", err)
+	}
+	return pushConfig, nil
 }
 
 func parsePushConfig(pushConfig string) (string, string, error) {
