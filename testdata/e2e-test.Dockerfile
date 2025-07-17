@@ -33,4 +33,4 @@ WORKDIR /app
 # Copy the built executable from the builder stage
 COPY --from=builder /app/e2e_func .
 
-ENTRYPOINT ["e2e_func"]
+ENTRYPOINT ["/app/e2e_func"]
