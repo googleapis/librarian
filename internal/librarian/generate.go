@@ -208,7 +208,10 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			RepoDir:   r.repo.Dir,
 		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		generateResponse := r.containerClient.Generate(ctx, generateRequest)
+		err = r.containerClient.Generate(ctx, generateRequest)
+		if err != nil {
+			return libraryID, err
+		}
 
 		// If the push-config flag is set and the GitHub token is provided,
 		// we push the config changes to GitHub.
@@ -222,7 +225,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 				return libraryID, err
 			}
 		}
-		return libraryID, generateResponse
+		return libraryID, err
 	}
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
 
