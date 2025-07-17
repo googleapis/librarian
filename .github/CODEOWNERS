@@ -3,4 +3,4 @@
 # is the same as .gitignore.
 
 # The owners for all files in the repo.
-* @googleapis/cloud-sdk-generator
+* @googleapis/cloud-sdk-librarian-team

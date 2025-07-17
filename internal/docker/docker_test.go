@@ -16,6 +16,7 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -59,13 +60,13 @@ func TestNew(t *testing.T) {
 
 func TestDockerRun(t *testing.T) {
 	const (
-		testAPIPath         = "testAPIPath"
-		testAPIRoot         = "testAPIRoot"
-		testGenerateRequest = "testGenerateRequest"
-		testGeneratorInput  = "testGeneratorInput"
-		testImage           = "testImage"
-		testLibraryID       = "testLibraryID"
-		testOutput          = "testOutput"
+		mockImage          = "mockImage"
+		testAPIPath        = "testAPIPath"
+		testAPIRoot        = "testAPIRoot"
+		testGeneratorInput = "testGeneratorInput"
+		testImage          = "testImage"
+		testLibraryID      = "testLibraryID"
+		testOutput         = "testOutput"
 	)
 
 	state := &config.LibrarianState{}
@@ -111,6 +112,44 @@ func TestDockerRun(t *testing.T) {
 				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 			wantErr: false,
+		},
+		{
+			name: "Generate with invalid repo root",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				generateRequest := &GenerateRequest{
+					Cfg:       cfg,
+					State:     state,
+					RepoDir:   "/non-existed-dir",
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					LibraryID: testLibraryID,
+				}
+				return d.Generate(ctx, generateRequest)
+			},
+			want:    []string{},
+			wantErr: true,
+		},
+		{
+			name: "Generate with mock image",
+			docker: &Docker{
+				Image: mockImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				generateRequest := &GenerateRequest{
+					Cfg:       cfg,
+					State:     state,
+					RepoDir:   ".",
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					LibraryID: testLibraryID,
+				}
+				return d.Generate(ctx, generateRequest)
+			},
+			want:    []string{},
+			wantErr: true,
 		},
 		{
 			name: "Generate runs in docker",
@@ -188,6 +227,23 @@ func TestDockerRun(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "Build with mock image",
+			docker: &Docker{
+				Image: mockImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				buildRequest := &BuildRequest{
+					Cfg:       cfg,
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   ".",
+				}
+				return d.Build(ctx, buildRequest)
+			},
+			want:    []string{},
+			wantErr: true,
+		},
+		{
 			name: "Configure",
 			docker: &Docker{
 				Image: testImage,
@@ -210,6 +266,9 @@ func TestDockerRun(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			test.docker.run = func(args ...string) error {
+				if test.docker.Image == mockImage {
+					return errors.New("simulate docker command failure for testing")
+				}
 				if diff := cmp.Diff(test.want, args); diff != "" {
 					t.Errorf("mismatch(-want +got):\n%s", diff)
 				}
@@ -230,7 +289,6 @@ func TestDockerRun(t *testing.T) {
 			}
 
 			os.RemoveAll(".librarian")
-			os.Remove(testGenerateRequest)
 		})
 	}
 }
