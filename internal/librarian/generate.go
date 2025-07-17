@@ -290,25 +290,25 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 
 // commitAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string, gitHubToken string) (string, error) {
+func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string, gitHubToken string) (*github.PullRequestMetadata, error) {
 	// Ensure we have a GitHub repository
 	gitHubRepo, err := getGitHubRepoFromRemote(r.repo)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ghClient, err := github.NewClient(gitHubToken, gitHubRepo)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	userEmail, userName, err := parsePushConfig(pushConfig)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	_, err = r.repo.AddAll()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	description := "Changes in this PR"
@@ -320,11 +320,11 @@ func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string, gi
 	branch := fmt.Sprintf("librarian-%s", datetime_now)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetime_now)
 
-	_, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
+	pullRequestMetadata, err := ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
 	if err != nil {
-		return "", fmt.Errorf("failed to create pull request: %w", err)
+		return nil, fmt.Errorf("failed to create pull request: %w", err)
 	}
-	return pushConfig, nil
+	return pullRequestMetadata, nil
 }
 
 func parsePushConfig(pushConfig string) (string, string, error) {
