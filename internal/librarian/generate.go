@@ -265,7 +265,7 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 		}
 	} else {
 		// repo is a directory
-		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.GeneratorInputDir, pipelineStateFile), source)
+		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.LibrarianDir, pipelineStateFile), source)
 		if err != nil {
 			return false, err
 		}

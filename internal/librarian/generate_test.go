@@ -16,11 +16,12 @@ package librarian
 
 import (
 	"context"
-	"github.com/googleapis/librarian/internal/docker"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
@@ -103,11 +104,11 @@ func TestDetectIfLibraryConfigured(t *testing.T) {
 			if test.repo != "" {
 				repo = newTestGitRepo(t)
 				if test.state != nil {
-					generatorInputDir := filepath.Join(repo.Dir, config.GeneratorInputDir)
-					if err := os.MkdirAll(generatorInputDir, 0755); err != nil {
-						t.Fatalf("os.MkdirAll(%q, 0755) = %v", generatorInputDir, err)
+					librarianDir := filepath.Join(repo.Dir, config.LibrarianDir)
+					if err := os.MkdirAll(librarianDir, 0755); err != nil {
+						t.Fatalf("os.MkdirAll(%q, 0755) = %v", librarianDir, err)
 					}
-					stateFile := filepath.Join(generatorInputDir, pipelineStateFile)
+					stateFile := filepath.Join(librarianDir, pipelineStateFile)
 					b, err := yaml.Marshal(test.state)
 					if err != nil {
 						t.Fatalf("yaml.Marshal = %v", err)
