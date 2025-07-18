@@ -181,7 +181,8 @@ func (r *generateRunner) run(ctx context.Context) error {
 	return nil
 }
 
-// runGenerateCommand attempts to perform generation for an API.
+// runGenerateCommand attempts to perform generation for an API. It then cleans the
+// destination directory and copies the newly generated files into it.
 //
 // If successful, it returns the ID of the generated library; otherwise, it
 // returns an empty string and an error.
@@ -208,13 +209,12 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			RepoDir:   r.repo.Dir,
 		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		err = r.containerClient.Generate(ctx, generateRequest)
-		if err != nil {
-			return libraryID, err
+		if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
+			return "", err
 		}
 
 		if err := r.cleanAndCopyLibrary(libraryID, outputDir); err != nil {
-			return libraryID, err
+			return "", err
 		}
 		return libraryID, nil
 	}
