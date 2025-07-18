@@ -249,19 +249,64 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				return d.Configure(ctx, cfg, testAPIRoot, testAPIPath, testGeneratorInput)
+				configureRequest := &ConfigureRequest{
+					Cfg:       cfg,
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   ".",
+					ApiRoot:   testAPIRoot,
+				}
+				return d.Configure(ctx, configureRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s:/apis", testAPIRoot),
-				"-v", fmt.Sprintf("%s:/.librarian/generator-input", testGeneratorInput),
+				"-v", ".librarian:/librarian",
+				"-v", ".librarian/generator-input:/input",
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandConfigure),
-				"--source=/apis",
-				"--.librarian/generator-input=/.librarian/generator-input",
-				fmt.Sprintf("--api=%s", testAPIPath),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--source=/source",
+				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 			wantErr: false,
+		},
+		{
+			name: "Configure with invalid repo dir",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					Cfg:       cfg,
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   "/non-exist-dir",
+					ApiRoot:   testAPIRoot,
+				}
+				return d.Configure(ctx, configureRequest)
+			},
+			want:    []string{},
+			wantErr: true,
+		},
+		{
+			name: "Configure with mock image",
+			docker: &Docker{
+				Image: mockImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					Cfg:       cfg,
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   ".",
+					ApiRoot:   testAPIRoot,
+				}
+				return d.Configure(ctx, configureRequest)
+			},
+			want:    []string{},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
