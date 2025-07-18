@@ -36,7 +36,8 @@ func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
 	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
-	fs.StringVar(&cfg.PushConfig, "push-config", config.DefaultPushConfig, "The user and email for Git commits, in the format \"user:email\"")
+	defaultValue := "noreply-cloudsdk@google.com,Google Cloud SDK"
+	fs.StringVar(&cfg.PushConfig, "push-config", defaultValue, "The user and email for Git commits, in the format \"user:email\"")
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {

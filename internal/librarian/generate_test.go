@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 )
@@ -44,6 +45,17 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
 	m.buildCalls++
 	return nil
+}
+
+// mockingClient is a mock implementation of the GitHubClient interface for testing.
+// type mockingClient struct {
+// 	GitHubClient
+// 	createPullRequestCalls int
+// }
+
+func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
+	// Return an empty metadata struct and no error to satisfy the interface.
+	return &github.PullRequestMetadata{}, nil
 }
 
 func TestDetectIfLibraryConfigured(t *testing.T) {
@@ -146,18 +158,21 @@ func TestRunGenerateCommand(t *testing.T) {
 	for _, test := range []struct {
 		name              string
 		api               string
+		pushConfig        string
 		repo              *gitrepo.Repository
 		state             *config.LibrarianState
 		container         *mockContainerClient
-		pushConfig        string
+		ghClient          GitHubClient
 		wantLibraryID     string
 		wantErr           bool
 		wantGenerateCalls int
 	}{
 		{
-			name: "works",
-			api:  "some/api",
-			repo: newTestGitRepo(t),
+			name:       "works",
+			api:        "some/api",
+			pushConfig: "xxx@email.com,author",
+			repo:       newTestGitRepo(t),
+			ghClient:   &mockGitHubClient{},
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -167,20 +182,21 @@ func TestRunGenerateCommand(t *testing.T) {
 				},
 			},
 			container:         &mockContainerClient{},
-			pushConfig:        "xxx@email.com,author",
 			wantLibraryID:     "some-library",
 			wantGenerateCalls: 1,
 		},
 		{
 			name:      "missing repo",
 			api:       "some/api",
+			ghClient:  &mockGitHubClient{},
 			container: &mockContainerClient{},
 			wantErr:   true,
 		},
 		{
-			name: "library not found in state",
-			api:  "other/api",
-			repo: newTestGitRepo(t),
+			name:       "library not found in state",
+			api:        "other/api",
+			pushConfig: "xxx@email.com,author",
+			repo:       newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -189,6 +205,7 @@ func TestRunGenerateCommand(t *testing.T) {
 					},
 				},
 			},
+			ghClient:  &mockGitHubClient{},
 			container: &mockContainerClient{},
 			wantErr:   true,
 		},
@@ -202,6 +219,7 @@ func TestRunGenerateCommand(t *testing.T) {
 					PushConfig: test.pushConfig,
 				},
 				repo:            test.repo,
+				ghClient:        test.ghClient,
 				state:           test.state,
 				containerClient: test.container,
 			}
@@ -392,6 +410,7 @@ func TestGenerateRun(t *testing.T) {
 		repo              *gitrepo.Repository
 		state             *config.LibrarianState
 		container         *mockContainerClient
+		ghClient          GitHubClient
 		pushConfig        string
 		build             bool
 		wantErr           bool
@@ -412,6 +431,7 @@ func TestGenerateRun(t *testing.T) {
 				},
 			},
 			container:         &mockContainerClient{},
+			ghClient:          &mockGitHubClient{},
 			pushConfig:        "xxx@email.com,author",
 			build:             true,
 			wantGenerateCalls: 1,
@@ -430,6 +450,7 @@ func TestGenerateRun(t *testing.T) {
 				repo:            test.repo,
 				state:           test.state,
 				containerClient: test.container,
+				ghClient:        test.ghClient,
 				workRoot:        t.TempDir(),
 			}
 
