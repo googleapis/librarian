@@ -35,3 +35,20 @@ jobs:
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: docker/setup-docker-action@v4
+    - name: Build the test image
+      run: |
+        DOCKER_BUILDKIT=1 docker build \
+          -f ./testdata/e2e-test.Dockerfile \
+          -t test-image:latest \
+          .
+    - name: Run the test image
+      run: |
+        docker run \
+          --rm \
+          test-image:latest \
+          hello world
