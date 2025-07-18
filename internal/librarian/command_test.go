@@ -498,7 +498,8 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			}
 
-			_, err := commitAndPush(context.Background(), &generateRunner{repo: mockRunner.repo}, tt.pushConfig)
+			err := commitAndPush(context.Background(), &generateRunner{repo: mockRunner.repo}, tt.pushConfig)
+
 			if err == nil && tt.expectedPR == nil {
 				t.Error("commitAndPush() expected an error, but got nil")
 			}

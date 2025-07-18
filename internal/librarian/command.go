@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -137,20 +136,20 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 
 // commitAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) (*github.PullRequestMetadata, error) {
+func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) error {
 	// Ensure we have a GitHub repository
 	gitHubRepo, err := getGitHubRepoFromRemote(r.repo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	userEmail, userName, err := parsePushConfig(pushConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	_, err = r.repo.AddAll()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// TODO: get correct language for description (https://github.com/googleapis/librarian/issues/885)
@@ -163,11 +162,11 @@ func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) (*
 	branch := fmt.Sprintf("librarian-%s", datetime_now)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetime_now)
 
-	pullRequestMetadata, err := r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
+	_, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, description)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pull request: %w", err)
+		return fmt.Errorf("failed to create pull request: %w", err)
 	}
-	return pullRequestMetadata, nil
+	return nil
 }
 
 func parsePushConfig(pushConfig string) (string, string, error) {

@@ -215,7 +215,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 		}
 
 		// Push the config changes to GitHub.
-		_, err := commitAndPush(ctx, r, r.cfg.PushConfig)
+		err := commitAndPush(ctx, r, r.cfg.PushConfig)
 		return libraryID, err
 	}
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
