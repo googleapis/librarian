@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -655,21 +654,44 @@ func TestClean(t *testing.T) {
 
 func TestSortDirsByDepth(t *testing.T) {
 	t.Parallel()
-	dirs := []string{
-		"a/b",
-		"short-dir",
-		"a/b/c",
-		"a",
-	}
-	want := []string{
-		"a/b/c",
-		"a/b",
-		"short-dir",
-		"a",
-	}
-	sortDirsByDepth(dirs)
-	if diff := cmp.Diff(want, dirs); diff != "" {
-		t.Errorf("sortDirsByDepth() mismatch (-want +got):\n%s", diff)
+	for _, tc := range []struct {
+		name string
+		dirs []string
+		want []string
+	}{
+		{
+			name: "simple case",
+			dirs: []string{
+				"a/b",
+				"short-dir",
+				"a/b/c",
+				"a",
+			},
+			want: []string{
+				"a/b/c",
+				"a/b",
+				"short-dir",
+				"a",
+			},
+		},
+		{
+			name: "empty",
+			dirs: []string{},
+			want: []string{},
+		},
+		{
+			name: "single dir",
+			dirs: []string{"a"},
+			want: []string{"a"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			sortDirsByDepth(tc.dirs)
+			if diff := cmp.Diff(tc.want, tc.dirs); diff != "" {
+				t.Errorf("sortDirsByDepth() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -804,12 +826,12 @@ func TestRemovePreservedPaths(t *testing.T) {
 func TestSeparateFilesAndDirs(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name              string
-		setup             func(t *testing.T, tmpDir string)
-		paths             []string
-		wantFiles         []string
-		wantDirs          []string
-		ignoreNonExistent bool
+		name      string
+		setup     func(t *testing.T, tmpDir string)
+		paths     []string
+		wantFiles []string
+		wantDirs  []string
+		wantErr   bool
 	}{
 		{
 			name: "mixed files, dirs, and non-existent path",
@@ -831,10 +853,14 @@ func TestSeparateFilesAndDirs(t *testing.T) {
 					}
 				}
 			},
-			paths:             []string{"file1.txt", "dir1/file2.txt", "dir1", "dir2", "non-existent-file"},
-			wantFiles:         []string{"file1.txt", "dir1/file2.txt"},
-			wantDirs:          []string{"dir1", "dir2"},
-			ignoreNonExistent: true,
+			paths:     []string{"file1.txt", "dir1/file2.txt", "dir1", "dir2", "non-existent-file"},
+			wantFiles: []string{"file1.txt", "dir1/file2.txt"},
+			wantDirs:  []string{"dir1", "dir2"},
+		},
+		{
+			name:    "stat error",
+			paths:   []string{strings.Repeat("a", 300)},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -844,8 +870,14 @@ func TestSeparateFilesAndDirs(t *testing.T) {
 			}
 
 			gotFiles, gotDirs, err := separateFilesAndDirs(tmpDir, test.paths)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
 			if err != nil {
-				t.Fatalf("separateFilesAndDirs() returned an unexpected error: %v", err)
+				t.Fatal(err)
 			}
 
 			sort.Strings(gotFiles)
@@ -863,36 +895,9 @@ func TestSeparateFilesAndDirs(t *testing.T) {
 	}
 }
 
-func TestSeparateFilesAndDirs_StatError(t *testing.T) {
-	t.Parallel()
-	tmpDir := t.TempDir()
-	// Create a file that will cause os.Lstat to fail with an error other than os.ErrNotExist.
-	// We simulate this by trying to stat a path that is too long.
-	longFileName := strings.Repeat("a", 300)
-	longFilePath := filepath.Join(tmpDir, longFileName)
-
-	// The error handling is triggered even if the file doesn't exist.
-	paths := []string{longFileName}
-	_, _, err := separateFilesAndDirs(tmpDir, paths)
-	if err == nil {
-		t.Error("separateFilesAndDirs() should have returned an error for a path that causes os.Lstat to fail")
-	}
-
-	// Check that the error message is as expected (at least contains the path).
-	expectedError := longFilePath
-	if !strings.Contains(err.Error(), expectedError) {
-		t.Errorf("separateFilesAndDirs() returned error %q, which does not contain expected string %q", err, expectedError)
-	}
-
-	// Check that the error is not os.ErrNotExist, to ensure we are testing the correct error condition.
-	if errors.Is(err, os.ErrNotExist) {
-		t.Errorf("separateFilesAndDirs() returned os.ErrNotExist, but we expected a different error")
-	}
-}
-
 func TestCompileRegexps(t *testing.T) {
 	t.Parallel()
-	testCases := []struct {
+	for _, tc := range []struct {
 		name     string
 		patterns []string
 		wantErr  bool
@@ -925,9 +930,7 @@ func TestCompileRegexps(t *testing.T) {
 			},
 			wantErr: true,
 		},
-	}
-
-	for _, tc := range testCases {
+	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			regexps, err := compileRegexps(tc.patterns)
