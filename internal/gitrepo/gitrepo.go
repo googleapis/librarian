@@ -26,6 +26,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/googleapis/librarian/internal/github"
 )
 
 // Repository represents a git repository.
@@ -183,4 +184,34 @@ func (r *Repository) IsClean() (bool, error) {
 // Remotes returns the remotes within the repository.
 func (r *Repository) Remotes() ([]*git.Remote, error) {
 	return r.repo.Remotes()
+}
+
+// GetGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
+// There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
+// unambiguous result.
+// Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
+func (r *Repository) GetGitHubRepoFromRemote(repo *Repository) (*github.Repository, error) {
+	remotes, err := repo.Remotes()
+	if err != nil {
+		return nil, err
+	}
+	gitHubRemoteNames := []string{}
+	gitHubUrl := ""
+	for _, remote := range remotes {
+		urls := remote.Config().URLs
+		if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
+			gitHubRemoteNames = append(gitHubRemoteNames, remote.Config().Name)
+			gitHubUrl = urls[0]
+		}
+	}
+
+	if len(gitHubRemoteNames) == 0 {
+		return nil, fmt.Errorf("no GitHub remotes found")
+	}
+
+	if len(gitHubRemoteNames) > 1 {
+		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
+		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
+	}
+	return github.ParseUrl(gitHubUrl)
 }

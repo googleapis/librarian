@@ -149,6 +149,7 @@ func TestRunGenerateCommand(t *testing.T) {
 		repo              *gitrepo.Repository
 		state             *config.LibrarianState
 		container         *mockContainerClient
+		pushConfig        string
 		wantLibraryID     string
 		wantErr           bool
 		wantGenerateCalls int
@@ -166,6 +167,7 @@ func TestRunGenerateCommand(t *testing.T) {
 				},
 			},
 			container:         &mockContainerClient{},
+			pushConfig:        "xxx@email.com,author",
 			wantLibraryID:     "some-library",
 			wantGenerateCalls: 1,
 		},
@@ -195,8 +197,9 @@ func TestRunGenerateCommand(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				cfg: &config.Config{
-					API:    test.api,
-					Source: t.TempDir(),
+					API:        test.api,
+					Source:     t.TempDir(),
+					PushConfig: test.pushConfig,
 				},
 				repo:            test.repo,
 				state:           test.state,
@@ -355,6 +358,7 @@ func TestNewGenerateRunner(t *testing.T) {
 func newTestGitRepo(t *testing.T) *gitrepo.Repository {
 	t.Helper()
 	dir := t.TempDir()
+	remoteUrl := "https://github.com/googleapis/librarian.git"
 	runGit(t, dir, "init")
 	runGit(t, dir, "config", "user.email", "test@example.com")
 	runGit(t, dir, "config", "user.name", "Test User")
@@ -363,6 +367,7 @@ func newTestGitRepo(t *testing.T) *gitrepo.Repository {
 	}
 	runGit(t, dir, "add", "README.md")
 	runGit(t, dir, "commit", "-m", "initial commit")
+	runGit(t, dir, "remote", "add", "origin", remoteUrl)
 	repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
 	if err != nil {
 		t.Fatalf("gitrepo.Open(%q) = %v", dir, err)
@@ -387,6 +392,7 @@ func TestGenerateRun(t *testing.T) {
 		repo              *gitrepo.Repository
 		state             *config.LibrarianState
 		container         *mockContainerClient
+		pushConfig        string
 		build             bool
 		wantErr           bool
 		wantGenerateCalls int
@@ -406,6 +412,7 @@ func TestGenerateRun(t *testing.T) {
 				},
 			},
 			container:         &mockContainerClient{},
+			pushConfig:        "xxx@email.com,author",
 			build:             true,
 			wantGenerateCalls: 1,
 			wantBuildCalls:    1,
@@ -415,9 +422,10 @@ func TestGenerateRun(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				cfg: &config.Config{
-					API:    test.api,
-					Source: t.TempDir(),
-					Build:  test.build,
+					API:        test.api,
+					PushConfig: test.pushConfig,
+					Source:     t.TempDir(),
+					Build:      test.build,
 				},
 				repo:            test.repo,
 				state:           test.state,
