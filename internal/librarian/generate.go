@@ -159,14 +159,15 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
-	_, err := r.detectIfLibraryConfigured(ctx)
+	configured, err := r.detectIfLibraryConfigured(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = r.runConfigureCommand(ctx)
-	if err != nil {
-		return err
+	if !configured {
+		if err := r.runConfigureCommand(ctx); err != nil {
+			return err
+		}
 	}
 
 	libraryID, err := r.runGenerateCommand(ctx, outputDir)
