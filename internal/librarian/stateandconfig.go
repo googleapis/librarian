@@ -76,7 +76,7 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 func fetchRemoteLibrarianState(ctx context.Context, client GitHubClient, ref, source string) (*config.LibrarianState, error) {
 	return parseLibrarianState(func(file string) ([]byte, error) {
 		return client.GetRawContent(ctx, file, ref)
-	}, filepath.Join(config.GeneratorInputDir, pipelineStateFile), source)
+	}, filepath.Join(config.LibrarianDir, pipelineStateFile), source)
 }
 
 func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.PipelineConfig, error) {
