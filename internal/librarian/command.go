@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -138,7 +139,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
 func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) error {
 	// Ensure we have a GitHub repository
-	gitHubRepo, err := r.repo.GetGitHubRepoFromRemote(r.repo)
+	gitHubRepo, err := github.GetGitHubRepoFromRemote(r.repo)
 	if err != nil {
 		return err
 	}

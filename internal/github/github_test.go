@@ -24,8 +24,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-git/go-git/v5"
+	gogitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v69/github"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestToken(t *testing.T) {
@@ -118,6 +121,120 @@ func TestGetRawContent(t *testing.T) {
 				}
 				if diff := cmp.Diff(test.wantContent, content); diff != "" {
 					t.Errorf("GetRawContent() content mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+// newTestGitRepo creates a new git repository in a temporary directory with the given remotes.
+func newTestGitRepo(t *testing.T, remotes map[string][]string) *gitrepo.Repository {
+	t.Helper()
+	dir := t.TempDir()
+
+	r, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("git.PlainInit failed: %v", err)
+	}
+
+	for name, urls := range remotes {
+		_, err := r.CreateRemote(&gogitConfig.RemoteConfig{
+			Name: name,
+			URLs: urls,
+		})
+		if err != nil {
+			t.Fatalf("CreateRemote failed: %v", err)
+		}
+	}
+
+	repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
+	if err != nil {
+		t.Fatalf("gitrepo.NewRepository failed: %v", err)
+	}
+	return repo
+}
+
+func TestGetGitHubRepoFromRemote(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name          string
+		remotes       map[string][]string
+		wantRepo      *Repository
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{
+			name: "Single GitHub remote",
+			remotes: map[string][]string{
+				"origin": {"https://github.com/owner/repo.git"},
+			},
+			wantRepo: &Repository{Owner: "owner", Name: "repo"},
+		},
+		{
+			name:          "No remotes",
+			remotes:       map[string][]string{},
+			wantErr:       true,
+			wantErrSubstr: "no GitHub remotes found",
+		},
+		{
+			name: "No GitHub remotes",
+			remotes: map[string][]string{
+				"origin": {"https://gitlab.com/owner/repo.git"},
+			},
+			wantErr:       true,
+			wantErrSubstr: "no GitHub remotes found",
+		},
+		{
+			name: "Multiple remotes, one is GitHub",
+			remotes: map[string][]string{
+				"gitlab":   {"https://gitlab.com/owner/repo.git"},
+				"upstream": {"https://github.com/gh-owner/gh-repo.git"},
+			},
+			wantRepo: &Repository{Owner: "gh-owner", Name: "gh-repo"},
+		},
+		{
+			name: "Multiple GitHub remotes",
+			remotes: map[string][]string{
+				"origin":   {"https://github.com/owner/repo.git"},
+				"upstream": {"https://github.com/owner2/repo2.git"},
+			},
+			wantErr:       true,
+			wantErrSubstr: "can only determine the GitHub repo with a single matching remote",
+		},
+		{
+			name: "Remote with multiple URLs, first is not GitHub",
+			remotes: map[string][]string{
+				"origin": {"https://gitlab.com/owner/repo.git", "https://github.com/owner/repo.git"},
+			},
+			wantErr:       true,
+			wantErrSubstr: "no GitHub remotes found",
+		},
+		{
+			name: "Remote with multiple URLs, first is GitHub",
+			remotes: map[string][]string{
+				"origin": {"https://github.com/owner/repo.git", "https://gitlab.com/owner/repo.git"},
+			},
+			wantRepo: &Repository{Owner: "owner", Name: "repo"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo := newTestGitRepo(t, test.remotes)
+
+			got, err := GetGitHubRepoFromRemote(repo)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("GetGitHubRepoFromRemote() err = nil, want error containing %q", test.wantErrSubstr)
+				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("GetGitHubRepoFromRemote() err = %v, want error containing %q", err, test.wantErrSubstr)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("GetGitHubRepoFromRemote() err = %v, want nil", err)
+				}
+				if diff := cmp.Diff(test.wantRepo, got); diff != "" {
+					t.Errorf("GetGitHubRepoFromRemote() repo mismatch (-want +got): %s", diff)
 				}
 			}
 		})

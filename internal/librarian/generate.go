@@ -208,9 +208,8 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			RepoDir:   r.repo.Dir,
 		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		err = r.containerClient.Generate(ctx, generateRequest)
-		if err != nil {
-			return libraryID, err
+		if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
+			return "", err
 		}
 
 		// Push the config changes to GitHub.

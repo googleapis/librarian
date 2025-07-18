@@ -37,7 +37,7 @@ func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
 	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
 	defaultValue := "noreply-cloudsdk@google.com,Google Cloud SDK"
-	fs.StringVar(&cfg.PushConfig, "push-config", defaultValue, "The user and email for Git commits, in the format \"user:email\"")
+	fs.StringVar(&cfg.PushConfig, "push-config", defaultValue, "If specified, will try to create a commit and pull request for the generated changes. The format should be \"{git-email-address},{author-name}\". Also, when this field is specified it is expected a Github token will be provided with push access via the environment variable LIBRARIAN_GITHUB_TOKEN")
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
