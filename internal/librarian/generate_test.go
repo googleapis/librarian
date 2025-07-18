@@ -270,9 +270,15 @@ func TestRunBuildCommand(t *testing.T) {
 				state:           test.state,
 				containerClient: test.container,
 			}
-			if err := r.runBuildCommand(context.Background(), test.libraryID); (err != nil) != test.wantErr {
-				t.Errorf("runBuildCommand() error = %v, wantErr %v", err, test.wantErr)
+			err := r.runBuildCommand(context.Background(), test.libraryID)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
 				return
+			}
+			if err != nil {
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
 				t.Errorf("runBuildCommand() buildCalls mismatch (-want +got):%s", diff)
