@@ -368,6 +368,13 @@ func TestCommit(t *testing.T) {
 		if commit.Message != commitMsg {
 			t.Errorf("Commit() message = %q, want %q", commit.Message, commitMsg)
 		}
+		author := commit.Author
+		if author.Name != "tester" {
+			t.Errorf("Commit() author name = %q, want %q", author.Name, "tester")
+		}
+		if author.Email != "tester@example.com" {
+			t.Errorf("Commit() author email = %q, want %q", author.Email, "tester@example.com")
+		}
 	})
 
 	t.Run("clean repository", func(t *testing.T) {

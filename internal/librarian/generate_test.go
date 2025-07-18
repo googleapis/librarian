@@ -329,6 +329,27 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "push config without github token",
+			cfg: &config.Config{
+				API:        "some/api",
+				Source:     "some/source",
+				PushConfig: "test@example.com,Test User",
+			},
+			wantErr: true,
+		},
+		{
+			name: "push config with github token is valid",
+			cfg: &config.Config{
+				API:         "some/api",
+				Source:      t.TempDir(),
+				Repo:        newTestGitRepo(t).Dir,
+				WorkRoot:    t.TempDir(),
+				Image:       "gcr.io/test/test-image",
+				PushConfig:  "test@example.com,Test User",
+				GitHubToken: "gh-token",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
