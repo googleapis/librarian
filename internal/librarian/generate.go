@@ -226,7 +226,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error {
 	library := findLibraryByID(r.state, libraryID)
 	if library == nil {
-		return fmt.Errorf("library %q not found during generation, despite being found in earlier steps", libraryID)
+		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
 	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
 		return err
