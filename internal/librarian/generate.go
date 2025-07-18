@@ -85,6 +85,7 @@ func init() {
 	addFlagAPI(fs, cfg)
 	addFlagBuild(fs, cfg)
 	addFlagHostMount(fs, cfg)
+	addFlagPushConfig(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagProject(fs, cfg)
 	addFlagRepo(fs, cfg)
@@ -108,6 +109,9 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		return nil, err
 	}
 	if err := validateRequiredFlag("source", cfg.Source); err != nil {
+		return nil, err
+	}
+	if err := validatePushConfigAndGithubTokenCoexist(cfg.PushConfig, cfg.GitHubToken); err != nil {
 		return nil, err
 	}
 	workRoot, err := createWorkRoot(time.Now(), cfg.WorkRoot)
@@ -204,9 +208,16 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			RepoDir:   r.repo.Dir,
 		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		return libraryID, r.containerClient.Generate(ctx, generateRequest)
+		if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
+			return "", err
+		}
+
+		// Push the config changes to GitHub.
+		err := commitAndPush(ctx, r, r.cfg.PushConfig)
+		return libraryID, err
 	}
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
+
 	return "", fmt.Errorf("library not found")
 }
 

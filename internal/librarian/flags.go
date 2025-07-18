@@ -34,6 +34,12 @@ func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue, "a mount point from Docker host and within the Docker. The format is {host-dir}:{local-dir}.")
 }
 
+func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
+	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
+	defaultValue := "noreply-cloudsdk@google.com,Google Cloud SDK"
+	fs.StringVar(&cfg.PushConfig, "push-config", defaultValue, "If specified, will try to create a commit and pull request for the generated changes. The format should be \"{git-email-address},{author-name}\". Also, when this field is specified it is expected a Github token will be provided with push access via the environment variable LIBRARIAN_GITHUB_TOKEN")
+}
+
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
 }
@@ -62,6 +68,14 @@ func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 func validateRequiredFlag(name, value string) error {
 	if value == "" {
 		return fmt.Errorf("required flag -%s not specified", name)
+	}
+	return nil
+}
+
+// validatePushConfigAndGithubTokenCoexist validates that the github token should exist if pushConfig flag is set.
+func validatePushConfigAndGithubTokenCoexist(pushConfig, gitHubToken string) error {
+	if pushConfig != "" && gitHubToken == "" {
+		return fmt.Errorf("GitHub token is required if push config exists")
 	}
 	return nil
 }

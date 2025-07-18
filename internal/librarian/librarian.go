@@ -20,12 +20,14 @@ package librarian
 import (
 	"context"
 	"fmt"
-	"github.com/googleapis/librarian/internal/docker"
 	"log/slog"
 	"net/url"
 
+	"github.com/googleapis/librarian/internal/docker"
+
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 )
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
@@ -77,6 +79,7 @@ func Run(ctx context.Context, arg ...string) error {
 // GitHubClient is an abstraction over the GitHub client.
 type GitHubClient interface {
 	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
+	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error)
 }
 
 // ContainerClient is an abstraction over the Docker client.
