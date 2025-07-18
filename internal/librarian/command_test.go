@@ -497,9 +497,11 @@ func TestCommitAndPush(t *testing.T) {
 					return &mockClient{}
 				}
 			}
-			_ = tt.setupMockClient(t)
 
-			_, err := commitAndPush(context.Background(), &generateRunner{repo: mockRunner.repo}, tt.pushConfig, tt.gitHubToken)
+			_, err := commitAndPush(context.Background(), &generateRunner{repo: mockRunner.repo}, tt.pushConfig)
+			if err == nil && tt.expectedPR == nil {
+				t.Error("commitAndPush() expected an error, but got nil")
+			}
 
 			if err != nil && !strings.Contains(err.Error(), tt.expectedErrMsg) {
 				t.Errorf("commitAndPush() error = %v, expected to contain: %q", err, tt.expectedErrMsg)

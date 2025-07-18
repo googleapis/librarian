@@ -16,6 +16,7 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -24,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-github/v69/github"
 )
 
 func TestToken(t *testing.T) {
@@ -173,6 +175,109 @@ func TestParseUrl(t *testing.T) {
 				if diff := cmp.Diff(test.wantRepo, repo); diff != "" {
 					t.Errorf("ParseUrl() repo mismatch (-want +got): %s", diff)
 				}
+			}
+		})
+	}
+}
+
+func TestCreatePullRequest(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name          string
+		remoteBranch  string
+		title         string
+		body          string
+		handler       http.HandlerFunc
+		wantMetadata  *PullRequestMetadata
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{
+			name:         "Success with provided body",
+			remoteBranch: "feature-branch",
+			title:        "New Feature",
+			body:         "This is a new feature.",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("unexpected method: got %s, want %s", r.Method, http.MethodPost)
+				}
+				if r.URL.Path != "/repos/owner/repo/pulls" {
+					t.Errorf("unexpected path: got %s, want %s", r.URL.Path, "/repos/owner/repo/pulls")
+				}
+				var newPR github.NewPullRequest
+				if err := json.NewDecoder(r.Body).Decode(&newPR); err != nil {
+					t.Fatalf("failed to decode request body: %v", err)
+				}
+				if *newPR.Title != "New Feature" {
+					t.Errorf("unexpected title: got %q, want %q", *newPR.Title, "New Feature")
+				}
+				if *newPR.Body != "This is a new feature." {
+					t.Errorf("unexpected body: got %q, want %q", *newPR.Body, "This is a new feature.")
+				}
+				if *newPR.Head != "feature-branch" {
+					t.Errorf("unexpected head: got %q, want %q", *newPR.Head, "feature-branch")
+				}
+				if *newPR.Base != "main" {
+					t.Errorf("unexpected base: got %q, want %q", *newPR.Base, "main")
+				}
+				fmt.Fprint(w, `{"number": 1, "html_url": "https://github.com/owner/repo/pull/1"}`)
+			},
+			wantMetadata: &PullRequestMetadata{Repo: &Repository{Owner: "owner", Name: "repo"}, Number: 1},
+		},
+		{
+			name:         "Success with empty body",
+			remoteBranch: "another-branch",
+			title:        "Another PR",
+			body:         "",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				var newPR github.NewPullRequest
+				if err := json.NewDecoder(r.Body).Decode(&newPR); err != nil {
+					t.Fatalf("failed to decode request body: %v", err)
+				}
+				expectedBody := "Regenerated all changed APIs. See individual commits for details."
+				if *newPR.Body != expectedBody {
+					t.Errorf("unexpected body: got %q, want %q", *newPR.Body, expectedBody)
+				}
+				fmt.Fprint(w, `{"number": 1, "html_url": "https://github.com/owner/repo/pull/1"}`)
+			},
+			wantMetadata: &PullRequestMetadata{Repo: &Repository{Owner: "owner", Name: "repo"}, Number: 1},
+		},
+		{
+			name:          "GitHub API error",
+			remoteBranch:  "error-branch",
+			title:         "Error PR",
+			body:          "This will fail.",
+			handler:       func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) },
+			wantErr:       true,
+			wantErrSubstr: "500",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(test.handler)
+			defer server.Close()
+
+			repo := &Repository{Owner: "owner", Name: "repo"}
+			client, err := newClientWithHTTP("fake-token", repo, server.Client())
+			if err != nil {
+				t.Fatalf("newClientWithHTTP() error = %v", err)
+			}
+			client.BaseURL, _ = url.Parse(server.URL + "/")
+
+			metadata, err := client.CreatePullRequest(context.Background(), repo, test.remoteBranch, test.title, test.body)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("CreatePullRequest() err = nil, want error containing %q", test.wantErrSubstr)
+				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("CreatePullRequest() err = %v, want error containing %q", err, test.wantErrSubstr)
+				}
+			} else if err != nil {
+				t.Errorf("CreatePullRequest() err = %v, want nil", err)
+			}
+
+			if diff := cmp.Diff(test.wantMetadata, metadata); diff != "" {
+				t.Errorf("CreatePullRequest() metadata mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
