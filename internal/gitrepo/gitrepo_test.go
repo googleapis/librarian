@@ -269,6 +269,19 @@ func TestAddAll(t *testing.T) {
 			expectedNum: 1,
 		},
 		{
+			name: "add all files with error",
+			setup: func(t *testing.T, dir string) string {
+				// Create a file that cannot be read to simulate an error
+				filePath := filepath.Join(dir, "unreadable_file.txt")
+				if err := os.WriteFile(filePath, []byte("test content"), 0200); err != nil { // Write-only permissions
+					t.Fatalf("failed to write file: %v", err)
+				}
+				return filePath
+			},
+			expectedNum: 0,
+			wantErr:     true,
+		},
+		{
 			name: "no files to add",
 			setup: func(t *testing.T, dir string) string {
 				return ""
