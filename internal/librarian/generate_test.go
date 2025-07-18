@@ -675,43 +675,86 @@ func TestSortDirsByDepth(t *testing.T) {
 
 func TestGetAllPaths(t *testing.T) {
 	t.Parallel()
-	// Create a temporary directory with some files and subdirectories.
-	tmpDir := t.TempDir()
-	files := []string{
-		"file1.txt",
-		"dir1/file2.txt",
-		"dir1/dir2/file3.txt",
-	}
-	for _, file := range files {
-		path := filepath.Join(tmpDir, file)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			t.Fatalf("os.MkdirAll() = %v", err)
-		}
-		if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
-			t.Fatalf("os.WriteFile() = %v", err)
-		}
-	}
+	for _, test := range []struct {
+		name        string
+		setup       func(t *testing.T, tmpDir string)
+		wantPaths   []string
+		wantErr     bool
+		errorString string
+	}{
+		{
+			name: "success",
+			setup: func(t *testing.T, tmpDir string) {
+				files := []string{
+					"file1.txt",
+					"dir1/file2.txt",
+					"dir1/dir2/file3.txt",
+				}
+				for _, file := range files {
+					path := filepath.Join(tmpDir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+			},
+			wantPaths: []string{
+				".",
+				"dir1",
+				"dir1/dir2",
+				"dir1/dir2/file3.txt",
+				"dir1/file2.txt",
+				"file1.txt",
+			},
+		},
+		{
+			name: "unreadable directory",
+			setup: func(t *testing.T, tmpDir string) {
+				unreadableDir := filepath.Join(tmpDir, "unreadable")
+				if err := os.Mkdir(unreadableDir, 0755); err != nil {
+					t.Fatalf("os.Mkdir() = %v", err)
+				}
 
-	paths, err := getAllPaths(tmpDir)
-	if err != nil {
-		t.Fatalf("getAllPaths() = %v", err)
-	}
+				// Make the directory unreadable to trigger an error in filepath.WalkDir.
+				if err := os.Chmod(unreadableDir, 0000); err != nil {
+					t.Fatalf("os.Chmod() = %v", err)
+				}
+				// Schedule cleanup to restore permissions so TempDir can be removed.
+				t.Cleanup(func() {
+					_ = os.Chmod(unreadableDir, 0755)
+				})
+			},
+			wantErr:     true,
+			errorString: "unreadable",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
 
-	wantPaths := []string{
-		".",
-		"dir1",
-		"dir1/dir2",
-		"dir1/dir2/file3.txt",
-		"dir1/file2.txt",
-		"file1.txt",
-	}
+			paths, err := getAllPaths(tmpDir)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	// Sort both slices to ensure consistent comparison.
-	sort.Strings(paths)
-	sort.Strings(wantPaths)
+			// Sort both slices to ensure consistent comparison.
+			sort.Strings(paths)
+			sort.Strings(test.wantPaths)
 
-	if diff := cmp.Diff(wantPaths, paths); diff != "" {
-		t.Errorf("getAllPaths() mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.wantPaths, paths); diff != "" {
+				t.Errorf("getAllPaths() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
