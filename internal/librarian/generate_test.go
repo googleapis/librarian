@@ -16,11 +16,13 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -734,45 +736,90 @@ func TestRemovePreservedPaths(t *testing.T) {
 
 func TestSeparateFilesAndDirs(t *testing.T) {
 	t.Parallel()
+	for _, test := range []struct {
+		name              string
+		setup             func(t *testing.T, tmpDir string)
+		paths             []string
+		wantFiles         []string
+		wantDirs          []string
+		ignoreNonExistent bool
+	}{
+		{
+			name: "mixed files, dirs, and non-existent path",
+			setup: func(t *testing.T, tmpDir string) {
+				files := []string{"file1.txt", "dir1/file2.txt"}
+				dirs := []string{"dir1", "dir2"}
+				for _, file := range files {
+					path := filepath.Join(tmpDir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+				for _, dir := range dirs {
+					if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+				}
+			},
+			paths:             []string{"file1.txt", "dir1/file2.txt", "dir1", "dir2", "non-existent-file"},
+			wantFiles:         []string{"file1.txt", "dir1/file2.txt"},
+			wantDirs:          []string{"dir1", "dir2"},
+			ignoreNonExistent: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+
+			gotFiles, gotDirs, err := separateFilesAndDirs(tmpDir, test.paths)
+			if err != nil {
+				t.Fatalf("separateFilesAndDirs() returned an unexpected error: %v", err)
+			}
+
+			sort.Strings(gotFiles)
+			sort.Strings(gotDirs)
+			sort.Strings(test.wantFiles)
+			sort.Strings(test.wantDirs)
+
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("separateFilesAndDirs() files mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantDirs, gotDirs); diff != "" {
+				t.Errorf("separateFilesAndDirs() dirs mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSeparateFilesAndDirs_StatError(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
-	files := []string{
-		"file1.txt",
-		"dir1/file2.txt",
-	}
-	dirs := []string{
-		"dir1",
-		"dir2",
+	// Create a file that will cause os.Lstat to fail with an error other than os.ErrNotExist.
+	// We simulate this by trying to stat a path that is too long.
+	longFileName := strings.Repeat("a", 300)
+	longFilePath := filepath.Join(tmpDir, longFileName)
+
+	// The error handling is triggered even if the file doesn't exist.
+	paths := []string{longFileName}
+	_, _, err := separateFilesAndDirs(tmpDir, paths)
+	if err == nil {
+		t.Error("separateFilesAndDirs() should have returned an error for a path that causes os.Lstat to fail")
 	}
 
-	for _, file := range files {
-		path := filepath.Join(tmpDir, file)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			t.Fatalf("os.MkdirAll() = %v", err)
-		}
-		if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
-			t.Fatalf("os.WriteFile() = %v", err)
-		}
-	}
-	for _, dir := range dirs {
-		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0755); err != nil {
-			t.Fatalf("os.MkdirAll() = %v", err)
-		}
+	// Check that the error message is as expected (at least contains the path).
+	expectedError := longFilePath
+	if !strings.Contains(err.Error(), expectedError) {
+		t.Errorf("separateFilesAndDirs() returned error %q, which does not contain expected string %q", err, expectedError)
 	}
 
-	paths := append(files, dirs...)
-	gotFiles, gotDirs := separateFilesAndDirs(tmpDir, paths)
-
-	// Sort for consistent comparison.
-	sort.Strings(gotFiles)
-	sort.Strings(gotDirs)
-	sort.Strings(files)
-	sort.Strings(dirs)
-
-	if diff := cmp.Diff(files, gotFiles); diff != "" {
-		t.Errorf("separateFilesAndDirs() files mismatch (-want +got):\n%s", diff)
-	}
-	if diff := cmp.Diff(dirs, gotDirs); diff != "" {
-		t.Errorf("separateFilesAndDirs() dirs mismatch (-want +got):\n%s", diff)
+	// Check that the error is not os.ErrNotExist, to ensure we are testing the correct error condition.
+	if errors.Is(err, os.ErrNotExist) {
+		t.Errorf("separateFilesAndDirs() returned os.ErrNotExist, but we expected a different error")
 	}
 }
 

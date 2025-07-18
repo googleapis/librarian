@@ -278,7 +278,10 @@ func clean(rootDir string, removePatterns, preservePatterns []string) error {
 		return err
 	}
 
-	filesToRemove, dirsToRemove := separateFilesAndDirs(rootDir, finalPathsToRemove)
+	filesToRemove, dirsToRemove, err := separateFilesAndDirs(rootDir, finalPathsToRemove)
+	if err != nil {
+		return err
+	}
 
 	// Remove files first, then directories.
 	for _, file := range filesToRemove {
@@ -372,15 +375,21 @@ func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns [
 	return removePreservedPaths(pathsToRemove, pathsToPreserve), nil
 }
 
-func separateFilesAndDirs(rootDir string, paths []string) (files, dirs []string) {
+func separateFilesAndDirs(rootDir string, paths []string) ([]string, []string, error) {
+	var files, dirs []string
 	for _, path := range paths {
 		// Use Lstat to get information about the symlink itself, not what it
 		// points to. This correctly classifies symlinks as non-directories,
 		// ensuring they are removed as files.
 		info, err := os.Lstat(filepath.Join(rootDir, path))
 		if err != nil {
-			// The file or directory may have already been removed.
-			continue
+			if errors.Is(err, os.ErrNotExist) {
+				// The file or directory may have already been removed.
+				continue
+			}
+			// For any other error (permissions, I/O, etc.)
+			return nil, nil, fmt.Errorf("failed to stat path %q: %w", path, err)
+
 		}
 		if info.IsDir() {
 			dirs = append(dirs, path)
@@ -388,7 +397,7 @@ func separateFilesAndDirs(rootDir string, paths []string) (files, dirs []string)
 			files = append(files, path)
 		}
 	}
-	return
+	return files, dirs, nil
 }
 
 func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {

@@ -20,12 +20,12 @@ package librarian
 import (
 	"context"
 	"fmt"
-	"github.com/googleapis/librarian/internal/docker"
 	"log/slog"
 	"net/url"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/docker"
 )
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
