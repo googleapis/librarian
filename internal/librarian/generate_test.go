@@ -491,6 +491,7 @@ func TestClean(t *testing.T) {
 	for _, test := range []struct {
 		name             string
 		files            map[string]string
+		setup            func(t *testing.T, tmpDir string)
 		symlinks         map[string]string
 		removePatterns   []string
 		preservePatterns []string
@@ -585,6 +586,26 @@ func TestClean(t *testing.T) {
 			removePatterns: []string{".*\\.txt"},
 			wantRemaining:  []string{".", "file2.log"},
 		},
+		{
+			name: "remove file fails on permission error",
+			files: map[string]string{
+				"readonlydir/file.txt": "content",
+			},
+			setup: func(t *testing.T, tmpDir string) {
+				// Make the directory read-only to cause os.Remove to fail.
+				readOnlyDir := filepath.Join(tmpDir, "readonlydir")
+				if err := os.Chmod(readOnlyDir, 0555); err != nil {
+					t.Fatalf("os.Chmod() = %v", err)
+				}
+				// Register a cleanup function to restore permissions so TempDir can be removed.
+				t.Cleanup(func() {
+					_ = os.Chmod(readOnlyDir, 0755)
+				})
+			},
+			removePatterns: []string{"readonlydir/file.txt"},
+			wantRemaining:  []string{".", "readonlydir", "readonlydir/file.txt"},
+			wantErr:        true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -603,6 +624,9 @@ func TestClean(t *testing.T) {
 				if err := os.Symlink(target, linkPath); err != nil {
 					t.Fatalf("os.Symlink() = %v", err)
 				}
+			}
+			if test.setup != nil {
+				test.setup(t, tmpDir)
 			}
 			err := clean(tmpDir, test.removePatterns, test.preservePatterns)
 			if test.wantErr {
