@@ -24,8 +24,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/docker"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
