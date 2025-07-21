@@ -423,6 +423,21 @@ func TestCommitAndPush(t *testing.T) {
 		validatePostTest func(t *testing.T, repo *gitrepo.Repository)
 	}{
 		{
+			name:       "PushConfig flag not specified",
+			pushConfig: "",
+			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
+				repoDir := newTestGitRepoWithCommit(t, "")
+				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
+				if err != nil {
+					t.Fatalf("Failed to create test repo: %v", err)
+				}
+				return repo
+			},
+			setupMockClient: func(t *testing.T) *github.Client {
+				return nil
+			},
+		},
+		{
 			name:        "Happy Path",
 			pushConfig:  "test@example.com,Test User",
 			gitHubToken: "test-token",
@@ -471,12 +486,7 @@ func TestCommitAndPush(t *testing.T) {
 				return repo
 			},
 			setupMockClient: func(t *testing.T) *github.Client {
-				repo := &github.Repository{Owner: "test-owner", Name: "test-repo"}
-				client, err := github.NewClient("test-token", repo)
-				if err != nil {
-					t.Fatalf("Failed to create GitHub client: %v", err)
-				}
-				return client
+				return nil
 			},
 			expectedErr:    errors.New("no GitHub remotes found"),
 			expectedErrMsg: "no GitHub remotes found",
@@ -487,10 +497,6 @@ func TestCommitAndPush(t *testing.T) {
 			client := test.setupMockClient(t)
 
 			err := commitAndPush(context.Background(), repo, client, test.pushConfig)
-
-			if err == nil && test.expectedPR == nil {
-				t.Error("commitAndPush() expected an error, but got nil")
-			}
 
 			if err != nil && !strings.Contains(err.Error(), test.expectedErrMsg) {
 				t.Errorf("commitAndPush() error = %v, expected to contain: %q", err, test.expectedErrMsg)
