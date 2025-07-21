@@ -277,7 +277,7 @@ func TestParseUrl(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := ParseUrl(test.remoteUrl)
+			repo, err := ParseURL(test.remoteUrl)
 
 			if test.wantErr {
 				if err == nil {

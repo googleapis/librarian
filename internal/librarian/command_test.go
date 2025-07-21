@@ -410,28 +410,13 @@ func TestParsePushConfig(t *testing.T) {
 	}
 }
 
-type mockGenerateRunner struct {
-	repo *gitrepo.Repository
-}
-
-type mockClient struct {
-	createPullRequestFunc func(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error)
-}
-
-func (m *mockClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
-	if m.createPullRequestFunc != nil {
-		return m.createPullRequestFunc(ctx, repo, remoteBranch, title, body)
-	}
-	return nil, nil
-}
-
 func TestCommitAndPush(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name             string
 		pushConfig       string
 		gitHubToken      string
 		setupMockRepo    func(t *testing.T) *gitrepo.Repository
-		setupMockClient  func(t *testing.T) *mockClient
+		setupMockClient  func(t *testing.T) *github.Client
 		expectedPR       *github.PullRequestMetadata
 		expectedErr      error
 		expectedErrMsg   string
@@ -453,13 +438,15 @@ func TestCommitAndPush(t *testing.T) {
 				}
 				return repo
 			},
-			setupMockClient: func(t *testing.T) *mockClient {
-				return &mockClient{
-					createPullRequestFunc: func(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
-						return &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}}, nil
-					},
+			setupMockClient: func(t *testing.T) *github.Client {
+				repo := &github.Repository{Owner: "test-owner", Name: "test-repo"}
+				client, err := github.NewClient("test-token", repo)
+				if err != nil {
+					t.Fatalf("Failed to create GitHub client: %v", err)
 				}
+				return client
 			},
+
 			expectedPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 			validatePostTest: func(t *testing.T, repo *gitrepo.Repository) {
 				isClean, err := repo.IsClean()
@@ -483,32 +470,33 @@ func TestCommitAndPush(t *testing.T) {
 				}
 				return repo
 			},
+			setupMockClient: func(t *testing.T) *github.Client {
+				repo := &github.Repository{Owner: "test-owner", Name: "test-repo"}
+				client, err := github.NewClient("test-token", repo)
+				if err != nil {
+					t.Fatalf("Failed to create GitHub client: %v", err)
+				}
+				return client
+			},
 			expectedErr:    errors.New("no GitHub remotes found"),
 			expectedErrMsg: "no GitHub remotes found",
 		},
-	}
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := test.setupMockRepo(t)
+			client := test.setupMockClient(t)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repo := tt.setupMockRepo(t)
-			mockRunner := &mockGenerateRunner{repo: repo}
-			if tt.setupMockClient == nil {
-				tt.setupMockClient = func(t *testing.T) *mockClient {
-					return &mockClient{}
-				}
-			}
+			err := commitAndPush(context.Background(), repo, client, test.pushConfig)
 
-			err := commitAndPush(context.Background(), &generateRunner{repo: mockRunner.repo}, tt.pushConfig)
-
-			if err == nil && tt.expectedPR == nil {
+			if err == nil && test.expectedPR == nil {
 				t.Error("commitAndPush() expected an error, but got nil")
 			}
 
-			if err != nil && !strings.Contains(err.Error(), tt.expectedErrMsg) {
-				t.Errorf("commitAndPush() error = %v, expected to contain: %q", err, tt.expectedErrMsg)
+			if err != nil && !strings.Contains(err.Error(), test.expectedErrMsg) {
+				t.Errorf("commitAndPush() error = %v, expected to contain: %q", err, test.expectedErrMsg)
 			}
-			if tt.validatePostTest != nil {
-				tt.validatePostTest(t, mockRunner.repo)
+			if test.validatePostTest != nil {
+				test.validatePostTest(t, repo)
 			}
 		})
 	}

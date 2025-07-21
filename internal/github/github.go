@@ -83,9 +83,9 @@ type PullRequestMetadata struct {
 	Number int
 }
 
-// ParseUrl parses a GitHub URL (anything to do with a repository) to determine
+// ParseURL parses a GitHub URL (anything to do with a repository) to determine
 // the GitHub repo details (owner and name).
-func ParseUrl(remoteUrl string) (*Repository, error) {
+func ParseURL(remoteUrl string) (*Repository, error) {
 	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
 		return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)
 	}
@@ -162,5 +162,5 @@ func FetchGitHubRepoFromRemote(repo *gitrepo.Repository) (*Repository, error) {
 		n := strings.Join(gitHubRemoteNames, ", ")
 		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", n)
 	}
-	return ParseUrl(gitHubURL)
+	return ParseURL(gitHubURL)
 }

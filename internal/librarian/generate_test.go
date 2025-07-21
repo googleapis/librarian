@@ -47,12 +47,6 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	return nil
 }
 
-// mockingClient is a mock implementation of the GitHubClient interface for testing.
-// type mockingClient struct {
-// 	GitHubClient
-// 	createPullRequestCalls int
-// }
-
 func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
 	// Return an empty metadata struct and no error to satisfy the interface.
 	return &github.PullRequestMetadata{}, nil

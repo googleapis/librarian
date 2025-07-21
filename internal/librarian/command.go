@@ -137,9 +137,9 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 
 // commitAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) error {
+func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHubClient, pushConfig string) error {
 	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(r.repo)
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
 		return err
 	}
@@ -148,13 +148,13 @@ func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) er
 	if err != nil {
 		return err
 	}
-	if _, err = r.repo.AddAll(); err != nil {
+	if _, err = repo.AddAll(); err != nil {
 		return err
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	message := "Changes in this PR"
-	r.repo.Commit(message, userName, userEmail)
+	repo.Commit(message, userName, userEmail)
 
 	// Create a new branch, set title and message for the PR.
 	datetimeNow := formatTimestamp(time.Now())
@@ -162,7 +162,7 @@ func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) er
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 
-	_, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, message)
+	_, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, message)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}

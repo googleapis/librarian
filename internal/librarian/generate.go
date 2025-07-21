@@ -131,7 +131,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	var ghClient GitHubClient
 	if isUrl(cfg.Repo) {
 		// repo is a URL
-		languageRepo, err := github.ParseUrl(cfg.Repo)
+		languageRepo, err := github.ParseURL(cfg.Repo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repo url: %w", err)
 		}
@@ -213,7 +213,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 		}
 
 		// Push the config changes to GitHub.
-		if err := commitAndPush(ctx, r, r.cfg.PushConfig); err != nil {
+		if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
 			return "", err
 		}
 		return libraryID, err

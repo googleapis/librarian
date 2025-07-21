@@ -393,7 +393,7 @@ func TestCommit(t *testing.T) {
 
 func TestRemotes(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
+	for _, tt := range []struct {
 		name         string
 		setupRemotes map[string][]string
 		wantErr      bool
@@ -415,9 +415,7 @@ func TestRemotes(t *testing.T) {
 				"upstream": {"https://github.com/test/upstream.git", "git@github.com:test/upstream.git"},
 			},
 		},
-	}
-
-	for _, tt := range tests {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
