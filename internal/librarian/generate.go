@@ -222,8 +222,10 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 		}
 
 		// Push the config changes to GitHub.
-		if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
-			return "", err
+		if r.cfg.PushConfig != "" {
+			if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
+				return "", err
+			}
 		}
 		return libraryID, nil
 	}
