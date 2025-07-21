@@ -154,7 +154,7 @@ func newTestGitRepo(t *testing.T, remotes map[string][]string) *gitrepo.Reposito
 	return repo
 }
 
-func TestGetGitHubRepoFromRemote(t *testing.T) {
+func TestFetchGitHubRepoFromRemote(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name          string
@@ -221,20 +221,20 @@ func TestGetGitHubRepoFromRemote(t *testing.T) {
 			t.Parallel()
 			repo := newTestGitRepo(t, test.remotes)
 
-			got, err := GetGitHubRepoFromRemote(repo)
+			got, err := FetchGitHubRepoFromRemote(repo)
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("GetGitHubRepoFromRemote() err = nil, want error containing %q", test.wantErrSubstr)
+					t.Errorf("FetchGitHubRepoFromRemote() err = nil, want error containing %q", test.wantErrSubstr)
 				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
-					t.Errorf("GetGitHubRepoFromRemote() err = %v, want error containing %q", err, test.wantErrSubstr)
+					t.Errorf("FetchGitHubRepoFromRemote() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
 				if err != nil {
-					t.Errorf("GetGitHubRepoFromRemote() err = %v, want nil", err)
+					t.Errorf("FetchGitHubRepoFromRemote() err = %v, want nil", err)
 				}
 				if diff := cmp.Diff(test.wantRepo, got); diff != "" {
-					t.Errorf("GetGitHubRepoFromRemote() repo mismatch (-want +got): %s", diff)
+					t.Errorf("FetchGitHubRepoFromRemote() repo mismatch (-want +got): %s", diff)
 				}
 			}
 		})

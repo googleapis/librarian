@@ -139,7 +139,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
 func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) error {
 	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.GetGitHubRepoFromRemote(r.repo)
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(r.repo)
 	if err != nil {
 		return err
 	}
@@ -148,8 +148,7 @@ func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) er
 	if err != nil {
 		return err
 	}
-	_, err = r.repo.AddAll()
-	if err != nil {
+	if _, err = r.repo.AddAll(); err != nil {
 		return err
 	}
 
@@ -158,10 +157,10 @@ func commitAndPush(ctx context.Context, r *generateRunner, pushConfig string) er
 	r.repo.Commit(message, userName, userEmail)
 
 	// Create a new branch, set title and message for the PR.
-	datetime_now := formatTimestamp(time.Now())
+	datetimeNow := formatTimestamp(time.Now())
 	titlePrefix := "Librarian pull request"
-	branch := fmt.Sprintf("librarian-%s", datetime_now)
-	title := fmt.Sprintf("%s: %s", titlePrefix, datetime_now)
+	branch := fmt.Sprintf("librarian-%s", datetimeNow)
+	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 
 	_, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, message)
 	if err != nil {

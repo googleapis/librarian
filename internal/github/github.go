@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -129,27 +130,27 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 		return nil, err
 	}
 
-	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
+	slog.Info("PR created", "url", pr.GetHTMLURL())
 	pullRequestMetadata := &PullRequestMetadata{Repo: repo, Number: pr.GetNumber()}
 	return pullRequestMetadata, nil
 }
 
-// GetGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
+// FetchGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
 // There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
 // unambiguous result.
 // Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
-func GetGitHubRepoFromRemote(repo *gitrepo.Repository) (*Repository, error) {
+func FetchGitHubRepoFromRemote(repo *gitrepo.Repository) (*Repository, error) {
 	remotes, err := repo.Remotes()
 	if err != nil {
 		return nil, err
 	}
-	gitHubRemoteNames := []string{}
-	gitHubUrl := ""
+	var gitHubRemoteNames = []string{}
+	gitHubURL := ""
 	for _, remote := range remotes {
 		urls := remote.Config().URLs
 		if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
 			gitHubRemoteNames = append(gitHubRemoteNames, remote.Config().Name)
-			gitHubUrl = urls[0]
+			gitHubURL = urls[0]
 		}
 	}
 
@@ -158,8 +159,8 @@ func GetGitHubRepoFromRemote(repo *gitrepo.Repository) (*Repository, error) {
 	}
 
 	if len(gitHubRemoteNames) > 1 {
-		joinedRemoteNames := strings.Join(gitHubRemoteNames, ", ")
-		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", joinedRemoteNames)
+		n := strings.Join(gitHubRemoteNames, ", ")
+		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", n)
 	}
-	return ParseUrl(gitHubUrl)
+	return ParseUrl(gitHubURL)
 }
