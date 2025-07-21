@@ -21,9 +21,14 @@ import (
 	"context"
 	"github.com/googleapis/librarian/internal/config"
 	"testing"
+
+	"github.com/go-git/go-git/v5"
 )
 
 func TestRunGenerate(t *testing.T) {
+	const (
+		localRepoDir = "../../testdata/e2e/generate/repo"
+	)
 	for _, test := range []struct {
 		name string
 		cfg  *config.Config
@@ -32,12 +37,15 @@ func TestRunGenerate(t *testing.T) {
 			name: "testRun",
 			cfg: &config.Config{
 				API:    "google/cloud/pubsub/v1",
-				Repo:   "../../testdata/e2e/generate/repo",
+				Repo:   localRepoDir,
 				Source: "../../testdata/e2e/generate/api_root",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if err := initTestRepo(localRepoDir); err != nil {
+				t.Errorf("init test repo error = %v", err)
+			}
 			runner, err := newGenerateRunner(test.cfg)
 			if err != nil {
 				t.Errorf("newGenerateRunner() error = %v", err)
@@ -47,4 +55,24 @@ func TestRunGenerate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func initTestRepo(dir string) error {
+	localRepo, err := git.PlainInit(dir, false)
+	if err != nil {
+		return err
+	}
+	workTree, err := localRepo.Worktree()
+	if err != nil {
+		return err
+	}
+	if _, err := workTree.Add("."); err != nil {
+		return err
+	}
+
+	if _, err := workTree.Commit("init test repo", &git.CommitOptions{}); err != nil {
+		return err
+	}
+
+	return nil
 }
