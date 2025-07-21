@@ -311,6 +311,8 @@ func sortDirsByDepth(dirs []string) {
 	})
 }
 
+// allPaths walks the directory tree rooted at rootDir and returns a slice of all
+// file and directory paths, relative to rootDir.
 func allPaths(rootDir string) ([]string, error) {
 	var paths []string
 	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
@@ -327,6 +329,8 @@ func allPaths(rootDir string) ([]string, error) {
 	return paths, err
 }
 
+// filterPaths returns a new slice containing only the paths from the input slice
+// that match at least one of the provided regular expressions.
 func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
 	var filtered []string
 	for _, path := range paths {
@@ -340,7 +344,9 @@ func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
 	return filtered
 }
 
-func removePreservedPaths(remove, preserve []string) []string {
+// deletePreservedPaths modifies the `remove` slice in-place by deleting any paths
+// that are also present in the `preserve` slice. It returns the modified slice.
+func deletePreservedPaths(remove, preserve []string) []string {
 	preserveSet := make(map[string]bool)
 	for _, p := range preserve {
 		preserveSet[p] = true
@@ -350,6 +356,9 @@ func removePreservedPaths(remove, preserve []string) []string {
 	})
 }
 
+// deriveFinalPathsToRemove determines the final set of paths to be removed. It
+// starts with all paths under rootDir, filters them based on removePatterns,
+// and then excludes any paths that match preservePatterns.
 func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns []string) ([]string, error) {
 	removeRegexps, err := compileRegexps(removePatterns)
 	if err != nil {
@@ -368,15 +377,15 @@ func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns [
 	pathsToRemove := filterPaths(allPaths, removeRegexps)
 	pathsToPreserve := filterPaths(pathsToRemove, preserveRegexps)
 
-	return removePreservedPaths(pathsToRemove, pathsToPreserve), nil
+	return deletePreservedPaths(pathsToRemove, pathsToPreserve), nil
 }
 
+// separateFilesAndDirs takes a list of paths and categorizes them into files
+// and directories. It uses os.Lstat to avoid following symlinks, treating them
+// as files. Paths that do not exist are silently ignored.
 func separateFilesAndDirs(rootDir string, paths []string) ([]string, []string, error) {
 	var files, dirs []string
 	for _, path := range paths {
-		// Use Lstat to get information about the symlink itself, not what it
-		// points to. This correctly classifies symlinks as non-directories,
-		// ensuring they are removed as files.
 		info, err := os.Lstat(filepath.Join(rootDir, path))
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
@@ -396,6 +405,9 @@ func separateFilesAndDirs(rootDir string, paths []string) ([]string, []string, e
 	return files, dirs, nil
 }
 
+// compileRegexps takes a slice of string patterns and compiles each one into a
+// regular expression. It returns a slice of compiled regexps or an error if any
+// pattern is invalid.
 func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 	var regexps []*regexp.Regexp
 	for _, pattern := range patterns {

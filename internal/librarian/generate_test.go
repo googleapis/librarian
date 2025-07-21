@@ -820,7 +820,7 @@ func TestRemovePreservedPaths(t *testing.T) {
 	remove := []string{"a", "b", "c"}
 	preserve := []string{"b", "d"}
 
-	final := removePreservedPaths(remove, preserve)
+	final := deletePreservedPaths(remove, preserve)
 
 	wantFinal := []string{"a", "c"}
 
