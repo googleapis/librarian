@@ -18,9 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
@@ -171,13 +175,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return err
 	}
 
-	if err := r.runBuildCommand(ctx, outputDir, libraryID); err != nil {
+	if err := r.runBuildCommand(ctx, libraryID); err != nil {
 		return err
 	}
 	return nil
 }
 
-// runGenerateCommand attempts to perform generation for an API.
+// runGenerateCommand attempts to perform generation for an API. It then cleans the
+// destination directory and copies the newly generated files into it.
 //
 // If successful, it returns the ID of the generated library; otherwise, it
 // returns an empty string and an error.
@@ -204,10 +209,35 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			RepoDir:   r.repo.Dir,
 		}
 		slog.Info("Performing refined generation for library", "id", libraryID)
-		return libraryID, r.containerClient.Generate(ctx, generateRequest)
+		if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
+			return "", err
+		}
+
+		if err := r.cleanAndCopyLibrary(libraryID, outputDir); err != nil {
+			return "", err
+		}
+		return libraryID, nil
 	}
+
 	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
 	return "", fmt.Errorf("library not found")
+}
+
+func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error {
+	library := findLibraryByID(r.state, libraryID)
+	if library == nil {
+		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
+	}
+	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
+		return err
+	}
+	// os.CopyFS in Go1.24 returns error when copying from a symbolic link
+	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
+	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
+		return err
+	}
+	slog.Info("Library updated", "id", libraryID)
+	return nil
 }
 
 // runBuildCommand orchestrates the building of an API library using a containerized
@@ -215,7 +245,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 //
 // The `outputDir` parameter specifies the target directory where the built artifacts
 // should be placed.
-func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, libraryID string) error {
+func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) error {
 	if !r.cfg.Build {
 		slog.Info("Build flag not specified, skipping")
 		return nil
@@ -231,14 +261,159 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 		LibraryID: libraryID,
 		RepoDir:   r.repo.Dir,
 	}
-
 	slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
-	// TODO(https://github.com/googleapis/librarian/issues/775)
-	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
+	return r.containerClient.Build(ctx, buildRequest)
+}
+
+// clean removes files and directories from a root directory based on remove and preserve patterns.
+//
+// It first determines the paths to remove by applying the removePatterns and then excluding any paths
+// that match the preservePatterns. It then separates the remaining paths into files and directories and
+// removes them, ensuring that directories are removed last.
+//
+// This logic is ported from owlbot logic: https://github.com/googleapis/repo-automation-bots/blob/12dad68640960290910b660e4325630c9ace494b/packages/owl-bot/src/copy-code.ts#L1027
+func clean(rootDir string, removePatterns, preservePatterns []string) error {
+	finalPathsToRemove, err := deriveFinalPathsToRemove(rootDir, removePatterns, preservePatterns)
+	if err != nil {
 		return err
 	}
 
-	return r.containerClient.Build(ctx, buildRequest)
+	filesToRemove, dirsToRemove, err := separateFilesAndDirs(rootDir, finalPathsToRemove)
+	if err != nil {
+		return err
+	}
+
+	// Remove files first, then directories.
+	for _, file := range filesToRemove {
+		slog.Info("Removing file", "path", file)
+		if err := os.Remove(filepath.Join(rootDir, file)); err != nil {
+			return err
+		}
+	}
+
+	sortDirsByDepth(dirsToRemove)
+
+	for _, dir := range dirsToRemove {
+		slog.Info("Removing directory", "path", dir)
+		if err := os.Remove(filepath.Join(rootDir, dir)); err != nil {
+			// It's possible the directory is not empty due to preserved files.
+			slog.Warn("failed to remove directory, it may not be empty", "dir", dir, "err", err)
+		}
+	}
+
+	return nil
+}
+
+// sortDirsByDepth sorts directories by depth (descending) to remove children first.
+func sortDirsByDepth(dirs []string) {
+	slices.SortFunc(dirs, func(a, b string) int {
+		return strings.Count(b, string(filepath.Separator)) - strings.Count(a, string(filepath.Separator))
+	})
+}
+
+// allPaths walks the directory tree rooted at rootDir and returns a slice of all
+// file and directory paths, relative to rootDir.
+func allPaths(rootDir string) ([]string, error) {
+	var paths []string
+	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return err
+		}
+		paths = append(paths, relPath)
+		return nil
+	})
+	return paths, err
+}
+
+// filterPaths returns a new slice containing only the paths from the input slice
+// that match at least one of the provided regular expressions.
+func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
+	var filtered []string
+	for _, path := range paths {
+		for _, re := range regexps {
+			if re.MatchString(path) {
+				filtered = append(filtered, path)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+// deriveFinalPathsToRemove determines the final set of paths to be removed. It
+// starts with all paths under rootDir, filters them based on removePatterns,
+// and then excludes any paths that match preservePatterns.
+func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns []string) ([]string, error) {
+	removeRegexps, err := compileRegexps(removePatterns)
+	if err != nil {
+		return nil, err
+	}
+	preserveRegexps, err := compileRegexps(preservePatterns)
+	if err != nil {
+		return nil, err
+	}
+
+	allPaths, err := allPaths(rootDir)
+	if err != nil {
+		return nil, err
+	}
+
+	pathsToRemove := filterPaths(allPaths, removeRegexps)
+	pathsToPreserve := filterPaths(pathsToRemove, preserveRegexps)
+
+	// delete pathsToPreserve from pathsToRemove.
+	pathsToDelete := make(map[string]bool)
+	for _, p := range pathsToPreserve {
+		pathsToDelete[p] = true
+	}
+	finalPathsToRemove := slices.DeleteFunc(pathsToRemove, func(path string) bool {
+		return pathsToDelete[path]
+	})
+	return finalPathsToRemove, nil
+}
+
+// separateFilesAndDirs takes a list of paths and categorizes them into files
+// and directories. It uses os.Lstat to avoid following symlinks, treating them
+// as files. Paths that do not exist are silently ignored.
+func separateFilesAndDirs(rootDir string, paths []string) ([]string, []string, error) {
+	var files, dirs []string
+	for _, path := range paths {
+		info, err := os.Lstat(filepath.Join(rootDir, path))
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				// The file or directory may have already been removed.
+				continue
+			}
+			// For any other error (permissions, I/O, etc.)
+			return nil, nil, fmt.Errorf("failed to stat path %q: %w", path, err)
+
+		}
+		if info.IsDir() {
+			dirs = append(dirs, path)
+		} else {
+			files = append(files, path)
+		}
+	}
+	return files, dirs, nil
+}
+
+// compileRegexps takes a slice of string patterns and compiles each one into a
+// regular expression. It returns a slice of compiled regexps or an error if any
+// pattern is invalid.
+func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
+	var regexps []*regexp.Regexp
+	for _, pattern := range patterns {
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex %q: %w", pattern, err)
+		}
+		regexps = append(regexps, re)
+	}
+	return regexps, nil
 }
 
 // detectIfLibraryConfigured returns whether a library has been configured for
