@@ -21,7 +21,9 @@ import (
 	"testing"
 
 	"github.com/go-git/go-git/v5"
+	gogitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewRepository(t *testing.T) {
@@ -387,4 +389,65 @@ func TestCommit(t *testing.T) {
 			t.Errorf("Commit() error = %q, want to contain %q", err.Error(), wantErrMsg)
 		}
 	})
+}
+
+func TestRemotes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name         string
+		setupRemotes map[string][]string
+		wantErr      bool
+	}{
+		{
+			name:         "no remotes",
+			setupRemotes: map[string][]string{},
+		},
+		{
+			name: "single remote",
+			setupRemotes: map[string][]string{
+				"origin": {"https://github.com/test/repo.git"},
+			},
+		},
+		{
+			name: "multiple remotes with multiple URLs",
+			setupRemotes: map[string][]string{
+				"origin":   {"https://github.com/test/origin.git"},
+				"upstream": {"https://github.com/test/upstream.git", "git@github.com:test/upstream.git"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			gogitRepo, err := git.PlainInit(dir, false)
+			if err != nil {
+				t.Fatalf("git.PlainInit failed: %v", err)
+			}
+
+			for name, urls := range tt.setupRemotes {
+				if _, err := gogitRepo.CreateRemote(&gogitConfig.RemoteConfig{
+					Name: name,
+					URLs: urls,
+				}); err != nil {
+					t.Fatalf("CreateRemote failed: %v", err)
+				}
+			}
+
+			repo := &Repository{Dir: dir, repo: gogitRepo}
+			got, err := repo.Remotes()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Remotes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			gotRemotes := make(map[string][]string)
+			for _, r := range got {
+				gotRemotes[r.Config().Name] = r.Config().URLs
+			}
+			if diff := cmp.Diff(tt.setupRemotes, gotRemotes); diff != "" {
+				t.Errorf("Remotes() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }
