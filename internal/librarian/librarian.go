@@ -26,6 +26,8 @@ import (
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/cli"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/docker"
 )
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
