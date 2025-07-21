@@ -52,3 +52,6 @@ jobs:
           --rm \
           test-image:latest \
           hello world
+    - name: Run end-to-end test
+      run: |
+        go test -tags e2e ./...
