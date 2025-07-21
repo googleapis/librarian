@@ -19,8 +19,10 @@ package librarian
 
 import (
 	"context"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/googleapis/librarian/internal/config"
 	"testing"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 )
@@ -70,7 +72,13 @@ func initTestRepo(dir string) error {
 		return err
 	}
 
-	if _, err := workTree.Commit("init test repo", &git.CommitOptions{}); err != nil {
+	if _, err := workTree.Commit("init test repo", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "test user",
+			Email: "test@github.com",
+			When:  time.Now(),
+		},
+	}); err != nil {
 		return err
 	}
 
