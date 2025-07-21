@@ -30,7 +30,7 @@ func TestRunGenerate(t *testing.T) {
 		{
 			name: "testRun",
 			cfg: &config.Config{
-				API:    "google/cloud/example/v1",
+				API:    "google/cloud/pubsub/v1",
 				Repo:   "../../testdata/e2e/generate/repo",
 				Source: "../../testdata/e2e/generate/api_root",
 			},

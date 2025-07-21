@@ -4,4 +4,4 @@ libraries:
   version:
   last_generated_commit:
   apis:
-  - path: google/cloud/example/v1
+  - path: google/cloud/pubsub/v1
