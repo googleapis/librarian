@@ -644,9 +644,9 @@ func TestClean(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			remainingPaths, err := getAllPaths(tmpDir)
+			remainingPaths, err := allPaths(tmpDir)
 			if err != nil {
-				t.Fatalf("getAllPaths() = %v", err)
+				t.Fatalf("allPaths() = %v", err)
 			}
 			sort.Strings(test.wantRemaining)
 			sort.Strings(remainingPaths)
@@ -701,7 +701,7 @@ func TestSortDirsByDepth(t *testing.T) {
 	}
 }
 
-func TestGetAllPaths(t *testing.T) {
+func TestAllPaths(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name        string
@@ -764,7 +764,7 @@ func TestGetAllPaths(t *testing.T) {
 				test.setup(t, tmpDir)
 			}
 
-			paths, err := getAllPaths(tmpDir)
+			paths, err := allPaths(tmpDir)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -780,7 +780,7 @@ func TestGetAllPaths(t *testing.T) {
 			sort.Strings(test.wantPaths)
 
 			if diff := cmp.Diff(test.wantPaths, paths); diff != "" {
-				t.Errorf("getAllPaths() mismatch (-want +got):\n%s", diff)
+				t.Errorf("allPaths() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

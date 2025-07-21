@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -306,12 +306,12 @@ func clean(rootDir string, removePatterns, preservePatterns []string) error {
 
 // sortDirsByDepth sorts directories by depth (descending) to remove children first.
 func sortDirsByDepth(dirs []string) {
-	sort.Slice(dirs, func(i, j int) bool {
-		return strings.Count(dirs[i], string(filepath.Separator)) > strings.Count(dirs[j], string(filepath.Separator))
+	slices.SortFunc(dirs, func(a, b string) int {
+		return strings.Count(b, string(filepath.Separator)) - strings.Count(a, string(filepath.Separator))
 	})
 }
 
-func getAllPaths(rootDir string) ([]string, error) {
+func allPaths(rootDir string) ([]string, error) {
 	var paths []string
 	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -341,17 +341,13 @@ func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
 }
 
 func removePreservedPaths(remove, preserve []string) []string {
-	preserveSet := make(map[string]struct{})
+	preserveSet := make(map[string]bool)
 	for _, p := range preserve {
-		preserveSet[p] = struct{}{}
+		preserveSet[p] = true
 	}
-	var final []string
-	for _, r := range remove {
-		if _, ok := preserveSet[r]; !ok {
-			final = append(final, r)
-		}
-	}
-	return final
+	return slices.DeleteFunc(remove, func(path string) bool {
+		return preserveSet[path]
+	})
 }
 
 func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns []string) ([]string, error) {
@@ -364,7 +360,7 @@ func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns [
 		return nil, err
 	}
 
-	allPaths, err := getAllPaths(rootDir)
+	allPaths, err := allPaths(rootDir)
 	if err != nil {
 		return nil, err
 	}
