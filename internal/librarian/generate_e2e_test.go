@@ -19,17 +19,18 @@ package librarian
 
 import (
 	"context"
+	"io"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/googleapis/librarian/internal/config"
-	"io"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 const (
@@ -45,9 +46,10 @@ func TestRunGenerate(t *testing.T) {
 		{
 			name: "testRun",
 			cfg: &config.Config{
-				API:    "google/cloud/pubsub/v1",
-				Repo:   localRepoDir,
-				Source: "../../testdata/e2e/generate/api_root",
+				API:      "google/cloud/pubsub/v1",
+				Repo:     localRepoDir,
+				Source:   "../../testdata/e2e/generate/api_root",
+				WorkRoot: filepath.Join(os.TempDir()),
 			},
 		},
 	} {
@@ -61,6 +63,10 @@ func TestRunGenerate(t *testing.T) {
 			}
 			if err := runner.run(context.Background()); err != nil {
 				t.Fatalf("run() error = %v", err)
+			}
+
+			if _, err := os.Stat(filepath.Join(test.cfg.WorkRoot, "output", "generate-response.json")); err != nil {
+				t.Fatalf("can not find generate response, error = %v", err)
 			}
 
 			// test repo cleanup

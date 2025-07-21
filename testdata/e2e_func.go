@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"os"
@@ -34,21 +35,25 @@ func main() {
 
 func validateGenerate(args []string) error {
 	for _, arg := range args {
-		arg, _ := strings.CutPrefix(arg, "--")
-		strs := strings.Split(arg, "=")
+		option, _ := strings.CutPrefix(arg, "--")
+		strs := strings.Split(option, "=")
 		switch strs[0] {
 		case librarian:
 			if err := validateLibrarianDir(strs[1]); err != nil {
 				return err
 			}
 		case inputDir:
-			return nil
+			continue
 		case outputDir:
-			return nil
+			if err := writeToOutput(strs[1]); err != nil {
+				return err
+			}
 		case source:
-			return nil
+			continue
+		case libraryID:
+			continue
 		default:
-			return errors.New("unrecognized option")
+			return errors.New("unrecognized option: " + option)
 		}
 	}
 
@@ -60,5 +65,28 @@ func validateLibrarianDir(dir string) error {
 		return err
 	}
 
+	return nil
+}
+
+func writeToOutput(dir string) error {
+	jsonFilePath := filepath.Join(dir, "generate-response.json")
+	jsonFile, err := os.Create(jsonFilePath)
+	if err != nil {
+		return err
+	}
+	defer jsonFile.Close()
+
+	dataMap := map[string]int{
+		"a": 1,
+		"b": 2,
+	}
+	data, err := json.MarshalIndent(dataMap, "", "  ")
+	if err != nil {
+		return err
+	}
+	if _, err := jsonFile.Write(data); err != nil {
+		return err
+	}
+	log.Print("write generate response to " + jsonFilePath)
 	return nil
 }
