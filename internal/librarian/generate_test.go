@@ -471,7 +471,7 @@ func TestGenerateRun(t *testing.T) {
 		wantConfigureCalls int
 	}{
 		{
-			name: "regeneration of API",
+			name: "generation of API",
 			api:  "some/api",
 			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
