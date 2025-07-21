@@ -1,0 +1,7 @@
+image: test-image:latest
+libraries:
+- id: example-library
+  version:
+  last_generated_commit:
+  apis:
+  - path: google/cloud/example/v1

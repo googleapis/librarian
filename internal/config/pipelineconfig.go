@@ -23,7 +23,7 @@ type PipelineConfig struct {
 	Commands map[string]*CommandConfig `json:"commands,omitempty"`
 	// The maximum number (inclusive) of commits to create
 	// in a single pull request. If this is non-positive, it is
-	// ignored. If a process would generate a pull request with more
+	// ignored. If a process generated a pull request with more
 	// commits than this, excess commits are trimmed and the commits
 	// which *would* have been present are described in the PR.
 	MaxPullRequestCommits int32 `json:"max_pull_request_commits,omitempty"`

@@ -17,18 +17,30 @@
 
 package librarian
 
-import "testing"
+import (
+	"github.com/googleapis/librarian/internal/config"
+	"testing"
+)
 
 func TestRunGenerate(t *testing.T) {
 	for _, test := range []struct {
 		name string
+		cfg  *config.Config
 	}{
 		{
-			name: "test",
+			name: "testRun",
+			cfg: &config.Config{
+				API:    "google/cloud/example/v1",
+				Repo:   "../../testdata/e2e/generate/repo",
+				Source: "../../testdata/e2e/generate/api_root",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Errorf("should not run this test")
+			_, err := newGenerateRunner(test.cfg)
+			if err != nil {
+				t.Errorf("newGenerateRunner() error = %v", err)
+			}
 		})
 	}
 }
