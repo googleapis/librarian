@@ -286,6 +286,7 @@ func TestAddAll(t *testing.T) {
 				return ""
 			},
 			expectedNum: 0,
+			wantErr:     true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

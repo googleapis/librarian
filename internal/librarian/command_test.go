@@ -481,29 +481,6 @@ func TestCommitAndPush(t *testing.T) {
 			expectedErr:    errors.New("no GitHub remotes found"),
 			expectedErrMsg: "no GitHub remotes found",
 		},
-		{
-			name:        "Invalid Push Config",
-			pushConfig:  "",
-			gitHubToken: "test-token",
-			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
-				repoDir := newTestGitRepoWithCommit(t, "")
-				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
-				if err != nil {
-					t.Fatalf("Failed to create test repo: %v", err)
-				}
-				return repo
-			},
-			setupMockClient: func(t *testing.T) *github.Client {
-				repo := &github.Repository{Owner: "test-owner", Name: "test-repo"}
-				client, err := github.NewClient("test-token", repo)
-				if err != nil {
-					t.Fatalf("Failed to create GitHub client: %v", err)
-				}
-				return client
-			},
-			expectedErr:    errors.New("push config flag is not set"),
-			expectedErrMsg: "push config flag is not set",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)

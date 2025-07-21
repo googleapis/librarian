@@ -139,7 +139,8 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
 func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHubClient, pushConfig string) error {
 	if pushConfig == "" {
-		return fmt.Errorf("push config flag is not set")
+		slog.Info("PushConfig flag not specified, skipping")
+		return nil
 	}
 	// Ensure we have a GitHub repository
 	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
