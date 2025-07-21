@@ -10,11 +10,13 @@ import (
 )
 
 const (
-	inputDir  = "input"
-	librarian = "librarian"
-	libraryID = "library-id"
-	outputDir = "output"
-	source    = "source"
+	inputDir         = "input"
+	librarian        = "librarian"
+	libraryID        = "library-id"
+	outputDir        = "output"
+	source           = "source"
+	generateRequest  = "generate-request.json"
+	generateResponse = "generate-response.json"
 )
 
 func main() {
@@ -61,7 +63,7 @@ func validateGenerate(args []string) error {
 }
 
 func validateLibrarianDir(dir string) error {
-	if _, err := os.Stat(filepath.Join(dir, "generate-request.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, generateRequest)); err != nil {
 		return err
 	}
 
@@ -69,7 +71,7 @@ func validateLibrarianDir(dir string) error {
 }
 
 func writeToOutput(dir string) error {
-	jsonFilePath := filepath.Join(dir, "generate-response.json")
+	jsonFilePath := filepath.Join(dir, generateResponse)
 	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
 		return err
