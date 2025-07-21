@@ -18,6 +18,7 @@
 package librarian
 
 import (
+	"context"
 	"github.com/googleapis/librarian/internal/config"
 	"testing"
 )
@@ -37,9 +38,12 @@ func TestRunGenerate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := newGenerateRunner(test.cfg)
+			runner, err := newGenerateRunner(test.cfg)
 			if err != nil {
 				t.Errorf("newGenerateRunner() error = %v", err)
+			}
+			if err := runner.run(context.Background()); err != nil {
+				t.Errorf("run() error = %v", err)
 			}
 		})
 	}
