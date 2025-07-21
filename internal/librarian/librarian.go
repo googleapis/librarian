@@ -23,10 +23,9 @@ import (
 	"log/slog"
 	"net/url"
 
-	"github.com/googleapis/librarian/internal/docker"
-
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 )
 
