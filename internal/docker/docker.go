@@ -138,9 +138,10 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("--library-id=%s", request.LibraryID),
 	}
 
+	librarian := filepath.Join(request.RepoDir, config.LibrarianDir)
 	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir), // readonly volume.
+		fmt.Sprintf("%s:/librarian:ro", librarian), // readonly volume.
 		fmt.Sprintf("%s:/input", generatorInput),
 		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume.
