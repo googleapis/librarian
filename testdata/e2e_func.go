@@ -47,6 +47,8 @@ func validateGenerate(args []string) error {
 			return nil
 		case source:
 			return nil
+		default:
+			log.Fatal("unrecognized option: ", arg)
 		}
 	}
 
