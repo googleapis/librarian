@@ -435,7 +435,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 	// Configuration requires a language repository to modify. If one isn't specified or
 	// found, we cannot proceed.
 	if r.repo == nil {
-		slog.Info("No language repository specified; cannot run configure.", "api", r.cfg.API)
+		slog.Error("No language repository specified; cannot run configure.", "api", r.cfg.API)
 		return errors.New("a language repository must be specified to run configure")
 	}
 

@@ -196,7 +196,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 // Configure configures an API within a repository, either adding it to an
 // existing library or creating a new library.
 func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error {
-	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfugureRequest)
+	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
 	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}

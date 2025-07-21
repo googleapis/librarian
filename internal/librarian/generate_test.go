@@ -28,7 +28,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 )
