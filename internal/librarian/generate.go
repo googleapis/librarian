@@ -183,11 +183,9 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return err
 	}
 
-	// Push the config changes to GitHub.
-	if r.cfg.PushConfig != "" {
-		if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
-			return err
-		}
+	// Commit and Push to GitHub.
+	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
+		return err
 	}
 	return nil
 }

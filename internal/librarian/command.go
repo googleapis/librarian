@@ -138,6 +138,9 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 // commitAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
 func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHubClient, pushConfig string) error {
+	if pushConfig == "" {
+		return fmt.Errorf("push config flag is not set")
+	}
 	// Ensure we have a GitHub repository
 	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
