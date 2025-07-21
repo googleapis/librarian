@@ -1,0 +1,47 @@
+name: 'multi-approvers'
+
+on:
+  pull_request_target:
+    types:
+      - 'opened'
+      - 'edited'
+      - 'reopened'
+      - 'synchronize'
+      - 'ready_for_review'
+      - 'review_requested'
+      - 'review_request_removed'
+  pull_request_review:
+    types:
+      - 'submitted'
+      - 'dismissed'
+
+permissions:
+  actions: 'write'
+  contents: 'read'
+  id-token: 'write'
+  pull-requests: 'read'
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  multi-approvers:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'Multi-approvers'
+        uses: 'abcxyz/actions/.github/actions/multi-approvers@893209ed79a3d2508eeec375ffaf3d21012f5cd0'
+        with:
+          team: 'googlers'
+          token: '${{ secrets.MULTI_APPROVERS_TOKEN }}'
+          user-id-allowlist: '25180681,55107282,122572305,78513119,49699333,70984784,44816363,205009765,56741989'
+          # username to ID mapping (https://api.github.com/users/{username}):
+          #   renovate-bot: 25180681
+          #   release-please[bot]: 55107282
+          #   cloud-java-bot: 122572305
+          #   gcf-owl-bot[bot]: 78513119
+          #   dependabot[bot]: 49699333
+          #   yoshi-code-bot: 70984784
+          #   yoshi-automation: 44816363
+          #   google-cloud-sdk-librarian-dotnet-robot: 205009765
+          #   copybara-service[bot]: 56741989
