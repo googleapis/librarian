@@ -49,7 +49,7 @@ func TestRunGenerate(t *testing.T) {
 				API:      "google/cloud/pubsub/v1",
 				Repo:     localRepoDir,
 				Source:   "../../testdata/e2e/generate/api_root",
-				WorkRoot: filepath.Join(os.TempDir()),
+				WorkRoot: os.TempDir(),
 			},
 		},
 	} {
