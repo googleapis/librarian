@@ -344,18 +344,6 @@ func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
 	return filtered
 }
 
-// deletePreservedPaths modifies the `remove` slice in-place by deleting any paths
-// that are also present in the `preserve` slice. It returns the modified slice.
-func deletePreservedPaths(remove, preserve []string) []string {
-	preserveSet := make(map[string]bool)
-	for _, p := range preserve {
-		preserveSet[p] = true
-	}
-	return slices.DeleteFunc(remove, func(path string) bool {
-		return preserveSet[path]
-	})
-}
-
 // deriveFinalPathsToRemove determines the final set of paths to be removed. It
 // starts with all paths under rootDir, filters them based on removePatterns,
 // and then excludes any paths that match preservePatterns.
@@ -377,7 +365,15 @@ func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns [
 	pathsToRemove := filterPaths(allPaths, removeRegexps)
 	pathsToPreserve := filterPaths(pathsToRemove, preserveRegexps)
 
-	return deletePreservedPaths(pathsToRemove, pathsToPreserve), nil
+	// delete pathsToPreserve from pathsToRemove.
+	pathsToDelete := make(map[string]bool)
+	for _, p := range pathsToPreserve {
+		pathsToDelete[p] = true
+	}
+	finalPathsToRemove := slices.DeleteFunc(pathsToRemove, func(path string) bool {
+		return pathsToDelete[path]
+	})
+	return finalPathsToRemove, nil
 }
 
 // separateFilesAndDirs takes a list of paths and categorizes them into files

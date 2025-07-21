@@ -815,17 +815,99 @@ func TestFilterPaths(t *testing.T) {
 	}
 }
 
-func TestRemovePreservedPaths(t *testing.T) {
+func TestDeriveFinalPathsToRemove(t *testing.T) {
 	t.Parallel()
-	remove := []string{"a", "b", "c"}
-	preserve := []string{"b", "d"}
+	for _, test := range []struct {
+		name             string
+		files            map[string]string
+		removePatterns   []string
+		preservePatterns []string
+		wantToRemove     []string
+		wantErr          bool
+	}{
+		{
+			name: "remove all txt files, preserve nothing",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.log": "",
+			},
+			removePatterns:   []string{`.*\.txt`},
+			preservePatterns: []string{},
+			wantToRemove:     []string{"file1.txt", "dir1/file2.txt"},
+		},
+		{
+			name: "remove all files, preserve log files",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.log": "",
+			},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{`.*\.log`},
+			wantToRemove:     []string{".", "dir1", "dir2", "file1.txt", "dir1/file2.txt"},
+		},
+		{
+			name: "remove files in dir1, preserve nothing",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir1/file3.log": "",
+				"dir2/file4.txt": "",
+			},
+			removePatterns:   []string{`dir1/.*`},
+			preservePatterns: []string{},
+			wantToRemove:     []string{"dir1/file2.txt", "dir1/file3.log"},
+		},
+		{
+			name: "remove all, preserve files in dir2",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.txt": "",
+			},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{`dir2/.*`},
+			wantToRemove:     []string{".", "dir1", "dir2", "file1.txt", "dir1/file2.txt"},
+		},
+		{
+			name:             "no files",
+			files:            map[string]string{},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{},
+			wantToRemove:     []string{"."},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			for path, content := range test.files {
+				fullPath := filepath.Join(tmpDir, path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+					t.Fatalf("os.WriteFile() = %v", err)
+				}
+			}
 
-	final := deletePreservedPaths(remove, preserve)
+			gotToRemove, err := deriveFinalPathsToRemove(tmpDir, test.removePatterns, test.preservePatterns)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	wantFinal := []string{"a", "c"}
+			sort.Strings(gotToRemove)
+			sort.Strings(test.wantToRemove)
 
-	if diff := cmp.Diff(wantFinal, final); diff != "" {
-		t.Errorf("removePreservedPaths() mismatch (-want +got):%s", diff)
+			if diff := cmp.Diff(test.wantToRemove, gotToRemove); diff != "" {
+				t.Errorf("deriveFinalPathsToRemove() toRemove mismatch in %s (-want +got):\n%s", test.name, diff)
+			}
+		})
 	}
 }
 
