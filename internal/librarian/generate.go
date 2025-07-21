@@ -182,6 +182,13 @@ func (r *generateRunner) run(ctx context.Context) error {
 	if err := r.runBuildCommand(ctx, libraryID); err != nil {
 		return err
 	}
+
+	// Push the config changes to GitHub.
+	if r.cfg.PushConfig != "" {
+		if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -221,12 +228,6 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir strin
 			return "", err
 		}
 
-		// Push the config changes to GitHub.
-		if r.cfg.PushConfig != "" {
-			if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
-				return "", err
-			}
-		}
 		return libraryID, nil
 	}
 
