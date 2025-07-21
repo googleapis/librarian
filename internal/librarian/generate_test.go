@@ -282,6 +282,7 @@ func TestRunConfigureCommand(t *testing.T) {
 	for _, test := range []struct {
 		name               string
 		api                string
+		source             string
 		repo               *gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
@@ -324,13 +325,26 @@ func TestRunConfigureCommand(t *testing.T) {
 			container: &mockContainerClient{},
 			wantErr:   true,
 		},
+		{
+			name:               "error on invalid source path",
+			source:             "invalid path",
+			repo:               newTestGitRepo(t),
+			state:              &config.LibrarianState{},
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 0,
+			wantErr:            true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			sourcePath := test.source
+			if sourcePath == "" {
+				sourcePath = t.TempDir()
+			}
 			r := &generateRunner{
 				cfg: &config.Config{
 					API:    test.api,
-					Source: t.TempDir(),
+					Source: sourcePath,
 				},
 				repo:            test.repo,
 				state:           test.state,

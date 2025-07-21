@@ -245,7 +245,12 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, outputDir, library
 	return r.containerClient.Build(ctx, buildRequest)
 }
 
-// runConfigureCommand.
+// runConfigureCommand executes the container's "configure" command for an API.
+//
+// This step prepares a language repository for a new library by adding
+// necessary metadata or build configurations. It finds the library's ID
+// from the runner's state, gathers all paths and settings, and then delegates
+// the execution to the container client.
 func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
