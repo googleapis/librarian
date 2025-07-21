@@ -54,7 +54,7 @@ func TestRunGenerate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := initTestRepo(localRepoDir); err != nil {
+			if err := initTestRepo(localRepoDir, localRepoBackupDir); err != nil {
 				t.Fatalf("init test repo error = %v", err)
 			}
 			runner, err := newGenerateRunner(test.cfg)
@@ -69,13 +69,16 @@ func TestRunGenerate(t *testing.T) {
 				t.Fatalf("can not find generate response, error = %v", err)
 			}
 
-			// test repo cleanup
+			// test cleanup
 			os.RemoveAll(localRepoDir)
+			os.RemoveAll(test.cfg.WorkRoot)
 		})
 	}
 }
 
-func initTestRepo(dir string) error {
+// initTestRepo initiates an empty git repo in the given directory, copy
+// files from source directory and create a commit.
+func initTestRepo(dir, source string) error {
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
@@ -91,7 +94,7 @@ func initTestRepo(dir string) error {
 	if err != nil {
 		return err
 	}
-	if err := copyDir(localRepoBackupDir, localRepoDir); err != nil {
+	if err := copyDir(source, dir); err != nil {
 		return err
 	}
 	if _, err := workTree.Add("."); err != nil {
