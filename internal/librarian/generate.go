@@ -164,7 +164,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
-	configured, err := r.detectIfLibraryConfigured(ctx)
+	configured, err := r.detectIfLibraryConfigured()
 	if err != nil {
 		return err
 	}
@@ -471,30 +471,16 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 // pipeline state if repoRoot has been specified, or the remote pipeline state (just
 // by fetching the single file) if flatRepoUrl has been specified. If neither the repo
 // root not the repo url has been specified, we always perform raw generation.
-func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, error) {
-	apiPath, repo, source := r.cfg.API, r.cfg.Repo, r.cfg.Source
+func (r *generateRunner) detectIfLibraryConfigured() (bool, error) {
+	apiPath, repo := r.cfg.API, r.cfg.Repo
 	if repo == "" {
 		slog.Warn("repo is not specified, cannot check if library exists")
 		return false, nil
 	}
 
 	// Attempt to load the pipeline state either locally or from the repo URL
-	var (
-		pipelineState *config.LibrarianState
-		err           error
-	)
-	if isUrl(repo) {
-		pipelineState, err = fetchRemoteLibrarianState(ctx, r.ghClient, "HEAD", source)
-		if err != nil {
-			return false, err
-		}
-	} else {
-		// repo is a directory
-		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.LibrarianDir, pipelineStateFile), source)
-		if err != nil {
-			return false, err
-		}
-	}
+	pipelineState := r.state
+
 	// If the library doesn't exist, we don't use the repo at all.
 	libraryID := findLibraryIDByAPIPath(pipelineState, apiPath)
 	if libraryID == "" {
