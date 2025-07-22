@@ -69,6 +69,7 @@ func TestRunGenerate(t *testing.T) {
 			}
 			defer os.RemoveAll(repo)
 			defer os.RemoveAll(workRoot)
+
 			cmd := exec.Command(
 				"../../librarian",
 				"generate",
@@ -77,8 +78,8 @@ func TestRunGenerate(t *testing.T) {
 				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--source=%s", test.source),
 			)
-
 			_, err := cmd.CombinedOutput()
+
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should fail", test.name)
