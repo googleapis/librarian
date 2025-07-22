@@ -440,7 +440,8 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 	}
 
 	if r.cfg.API == "" {
-		return errors.New("API path specified must be specified to run configure")
+		slog.Error("No API path specified; cannot run configure.", "api", r.cfg.API)
+		return errors.New("API path must be specified to run configure")
 	}
 
 	libraryID := strings.ReplaceAll(r.cfg.API, "/", "-")
