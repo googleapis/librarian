@@ -606,6 +606,7 @@ func TestGenerateRun(t *testing.T) {
 				if err := os.MkdirAll(outputDir, 0755); err != nil {
 					t.Fatalf("os.MkdirAll() = %v", err)
 				}
+
 				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
 					t.Fatalf("os.Symlink() = %v", err)
 				}
