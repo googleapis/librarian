@@ -23,9 +23,9 @@ import (
 	"log/slog"
 	"net/url"
 
-	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
+
+	"github.com/googleapis/librarian/internal/cli"
 )
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
@@ -83,7 +83,7 @@ type GitHubClient interface {
 type ContainerClient interface {
 	Generate(ctx context.Context, request *docker.GenerateRequest) error
 	Build(ctx context.Context, request *docker.BuildRequest) error
-	Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error
+	Configure(ctx context.Context, request *docker.ConfigureRequest) error
 }
 
 func isUrl(s string) bool {

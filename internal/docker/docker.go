@@ -99,6 +99,23 @@ type BuildRequest struct {
 	RepoDir string
 }
 
+// ConfigureRequest contains all the information required for a language
+// container to run the configure command.
+type ConfigureRequest struct {
+	// cfg is a pointer to the [config.Config] struct, holding general configuration
+	// values parsed from flags or environment variables.
+	Cfg *config.Config
+	// state is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
+	// apiRoot specifies the root directory of the API specification repo.
+	ApiRoot string
+	// libraryID specifies the ID of the library to generate
+	LibraryID string
+	// RepoDir is the local root directory of the language repository.
+	RepoDir string
+}
+
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
@@ -177,22 +194,32 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 }
 
 // Configure configures an API within a repository, either adding it to an
-// existing library or creating a new library. The API is indicated by the
-// apiPath directory within apiRoot, and the container is provided with the
-// generatorInput directory to record the results of configuration. The
-// library code is not generated.
-func (c *Docker) Configure(ctx context.Context, cfg *config.Config, apiRoot, apiPath, generatorInput string) error {
-	commandArgs := []string{
-		"--source=/apis",
-		fmt.Sprintf("--%s=/%s", config.GeneratorInputDir, config.GeneratorInputDir),
-		fmt.Sprintf("--api=%s", apiPath),
+// existing library or creating a new library.
+func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error {
+	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
+	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+		return err
 	}
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+		}
+	}(jsonFilePath)
+	commandArgs := []string{
+		"--librarian=/librarian",
+		"--input=/input",
+		"--source=/source",
+		fmt.Sprintf("--library-id=%s", request.LibraryID),
+	}
+	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
 	mounts := []string{
-		fmt.Sprintf("%s:/apis", apiRoot),
-		fmt.Sprintf("%s:/%s", generatorInput, config.GeneratorInputDir),
+		fmt.Sprintf("%s:/librarian", config.LibrarianDir),
+		fmt.Sprintf("%s:/input", generatorInput),
+		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume.
 	}
 
-	return c.runDocker(ctx, cfg, CommandConfigure, mounts, commandArgs)
+	return c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs)
 }
 
 func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
