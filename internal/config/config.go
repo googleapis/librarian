@@ -94,12 +94,11 @@ type Config struct {
 	// Image is specified with the -image flag.
 	Image string
 
-	// LibrarianRepository specifies the repository where Librarian-related assets
-	// are stored.
-	//
-	// LibrarianRepository is fetched from the LIBRARIAN_REPOSITORY environment
-	// variable.
-	LibrarianRepository string
+	// Library is the library ID to generate (e.g. google-cloud-secretmanager-v1 ).
+	//  This usually corresponds to a releasable language unit -- for Go this would
+	// be a Go module or for dotnet the name of a NuGet package. If neither this nor
+	// api is specified all currently managed libraries will be regenerated.
+	Library string
 
 	// Project is the Google Cloud project containing Secret Manager secrets to
 	// provide to the language-specific container commands via environment variables.
