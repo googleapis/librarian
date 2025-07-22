@@ -69,11 +69,8 @@ func TestRunGenerate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := initTestRepo(test.cfg.Repo, localRepoBackupDir); err != nil {
-				t.Fatalf("init test repo error = %v", err)
-			}
-			if err := os.MkdirAll(test.cfg.WorkRoot, 0755); err != nil {
-				t.Fatalf("create output dir error = %v", err)
+			if err := prepareTest(test.cfg.Repo, test.cfg.WorkRoot, localRepoBackupDir); err != nil {
+				t.Fatalf("prepare test error = %v", err)
 			}
 
 			runner, err := newGenerateRunner(test.cfg)
@@ -100,6 +97,17 @@ func TestRunGenerate(t *testing.T) {
 			os.RemoveAll(test.cfg.WorkRoot)
 		})
 	}
+}
+
+func prepareTest(repoDir, workRoot, backupDir string) error {
+	if err := initTestRepo(repoDir, backupDir); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(workRoot, 0755); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // initTestRepo initiates an empty git repo in the given directory, copy
