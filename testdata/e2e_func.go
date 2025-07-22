@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	inputDir         = "input"
-	librarian        = "librarian"
-	libraryID        = "library-id"
-	outputDir        = "output"
-	source           = "source"
-	generateRequest  = "generate-request.json"
-	generateResponse = "generate-response.json"
+	inputDir          = "input"
+	librarian         = "librarian"
+	libraryID         = "library-id"
+	outputDir         = "output"
+	source            = "source"
+	generateRequest   = "generate-request.json"
+	generateResponse  = "generate-response.json"
+	nonExistedLibrary = "non-existed-library"
 )
 
 func main() {
@@ -43,34 +44,34 @@ func doGenerate(args []string) error {
 	if err := validateLibrarianDir(request.librarianDir); err != nil {
 		return err
 	}
-	if err := writeToOutput(request.outputDir); err != nil {
+	if err := writeToOutput(request); err != nil {
 		return err
 	}
 	return nil
 }
 
 func parseRequest(args []string) (*generateOption, error) {
-	request := &generateOption{}
+	generateOption := &generateOption{}
 	for _, arg := range args {
 		option, _ := strings.CutPrefix(arg, "--")
 		strs := strings.Split(option, "=")
 		switch strs[0] {
 		case inputDir:
-			request.intputDir = strs[1]
+			generateOption.intputDir = strs[1]
 		case librarian:
-			request.librarianDir = strs[1]
+			generateOption.librarianDir = strs[1]
 		case libraryID:
-			request.libraryID = strs[1]
+			generateOption.libraryID = strs[1]
 		case outputDir:
-			request.outputDir = strs[1]
+			generateOption.outputDir = strs[1]
 		case source:
-			request.sourceDir = strs[1]
+			generateOption.sourceDir = strs[1]
 		default:
 			return nil, errors.New("unrecognized option: " + option)
 		}
 	}
 
-	return request, nil
+	return generateOption, nil
 }
 
 func validateLibrarianDir(dir string) error {
@@ -81,17 +82,17 @@ func validateLibrarianDir(dir string) error {
 	return nil
 }
 
-func writeToOutput(dir string) error {
-	jsonFilePath := filepath.Join(dir, generateResponse)
+func writeToOutput(option *generateOption) error {
+	jsonFilePath := filepath.Join(option.outputDir, generateResponse)
 	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
 		return err
 	}
 	defer jsonFile.Close()
 
-	dataMap := map[string]int{
-		"a": 1,
-		"b": 2,
+	dataMap := map[string]string{}
+	if option.libraryID == nonExistedLibrary {
+		dataMap["error"] = "simulated generation error"
 	}
 	data, err := json.MarshalIndent(dataMap, "", "  ")
 	if err != nil {
@@ -101,6 +102,9 @@ func writeToOutput(dir string) error {
 		return err
 	}
 	log.Print("write generate response to " + jsonFilePath)
+	if option.libraryID == nonExistedLibrary {
+		return errors.New("generation failed due to invalid library id")
+	}
 	return nil
 }
 

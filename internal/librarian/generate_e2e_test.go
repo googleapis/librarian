@@ -19,7 +19,9 @@ package librarian
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,30 +41,54 @@ const (
 )
 
 func TestRunGenerate(t *testing.T) {
+	t.Parallel()
+	rand.Seed(time.Now().UnixNano())
 	for _, test := range []struct {
-		name string
-		cfg  *config.Config
+		name    string
+		cfg     *config.Config
+		wantErr bool
 	}{
 		{
-			name: "testRun",
+			name: "testRunSuccess",
 			cfg: &config.Config{
 				API:      "google/cloud/pubsub/v1",
-				Repo:     localRepoDir,
+				Repo:     fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000)),
 				Source:   "../../testdata/e2e/generate/api_root",
-				WorkRoot: os.TempDir(),
+				WorkRoot: filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000))),
 			},
+		},
+		{
+			name: "testRunFailed",
+			cfg: &config.Config{
+				API:      "google/invalid/path",
+				Repo:     fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000)),
+				Source:   "../../testdata/e2e/generate/api_root",
+				WorkRoot: filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000))),
+			},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := initTestRepo(localRepoDir, localRepoBackupDir); err != nil {
+			if err := initTestRepo(test.cfg.Repo, localRepoBackupDir); err != nil {
 				t.Fatalf("init test repo error = %v", err)
 			}
+			if err := os.MkdirAll(test.cfg.WorkRoot, 0755); err != nil {
+				t.Fatalf("create output dir error = %v", err)
+			}
+
 			runner, err := newGenerateRunner(test.cfg)
 			if err != nil {
 				t.Fatalf("newGenerateRunner() error = %v", err)
 			}
-			if err := runner.run(context.Background()); err != nil {
-				t.Fatalf("run() error = %v", err)
+			err = runner.run(context.Background())
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("%s should fail", test.name)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("run() error = %v", err)
+				}
 			}
 
 			if _, err := os.Stat(filepath.Join(test.cfg.WorkRoot, "output", "generate-response.json")); err != nil {
@@ -70,7 +96,7 @@ func TestRunGenerate(t *testing.T) {
 			}
 
 			// test cleanup
-			os.RemoveAll(localRepoDir)
+			os.RemoveAll(test.cfg.Repo)
 			os.RemoveAll(test.cfg.WorkRoot)
 		})
 	}
