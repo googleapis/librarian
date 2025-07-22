@@ -103,8 +103,8 @@ func TestRunGenerate(t *testing.T) {
 				if err := json.Unmarshal(data, content); err != nil {
 					t.Fatalf("Unmarshal() error = %v", err)
 				}
-				if content.errorMessage == "" {
-					t.Fatalf("can not find error in generate response")
+				if content.ErrorMessage == "" {
+					t.Fatalf("can not find error message in generate response")
 				}
 			}
 
@@ -235,5 +235,5 @@ func copyFile(src, dest string) error {
 }
 
 type genResponse struct {
-	errorMessage string `json:"error,omitempty"`
+	ErrorMessage string `json:"error,omitempty"`
 }
