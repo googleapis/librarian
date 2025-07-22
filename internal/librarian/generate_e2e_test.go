@@ -73,6 +73,8 @@ func TestRunGenerate(t *testing.T) {
 			if err := prepareTest(test.cfg.Repo, test.cfg.WorkRoot, localRepoBackupDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
+			defer os.RemoveAll(test.cfg.Repo)
+			defer os.RemoveAll(test.cfg.WorkRoot)
 
 			runner, err := newGenerateRunner(test.cfg)
 			if err != nil {
@@ -107,10 +109,6 @@ func TestRunGenerate(t *testing.T) {
 					t.Fatalf("can not find error message in generate response")
 				}
 			}
-
-			// test cleanup
-			os.RemoveAll(test.cfg.Repo)
-			os.RemoveAll(test.cfg.WorkRoot)
 		})
 	}
 }
