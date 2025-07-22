@@ -19,6 +19,7 @@ package librarian
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -88,8 +89,21 @@ func TestRunGenerate(t *testing.T) {
 				}
 			}
 
-			if _, err := os.Stat(filepath.Join(test.cfg.WorkRoot, "output", "generate-response.json")); err != nil {
+			responseFile := filepath.Join(test.cfg.WorkRoot, "output", "generate-response.json")
+			if _, err := os.Stat(responseFile); err != nil {
 				t.Fatalf("can not find generate response, error = %v", err)
+			}
+
+			if test.wantErr {
+				data, err := os.ReadFile(responseFile)
+				if err != nil {
+					t.Fatalf("ReadFile() error = %v", err)
+				}
+				content := map[string]string{}
+				json.Unmarshal(data, content)
+				if _, found := content["error"]; !found {
+					t.Fatalf("can not find error in generate response")
+				}
 			}
 
 			// test cleanup
