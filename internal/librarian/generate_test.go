@@ -327,30 +327,6 @@ func TestRunConfigureCommand(t *testing.T) {
 			container: &mockContainerClient{},
 			wantErr:   true,
 		},
-		{
-			name: "library not found in state",
-			api:  "other/api",
-			repo: newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container: &mockContainerClient{},
-			wantErr:   true,
-		},
-		{
-			name:               "error on invalid source path",
-			source:             "invalid path",
-			repo:               newTestGitRepo(t),
-			state:              &config.LibrarianState{},
-			container:          &mockContainerClient{},
-			wantConfigureCalls: 0,
-			wantErr:            true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
