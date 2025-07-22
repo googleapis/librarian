@@ -36,7 +36,7 @@ func TestNew(t *testing.T) {
 			},
 			want: Config{
 				GitHubToken: "gh_token",
-				PushConfig:  DefaultPushConfig,
+				PushConfig:  "",
 			},
 		},
 		{
@@ -44,7 +44,7 @@ func TestNew(t *testing.T) {
 			envVars: map[string]string{},
 			want: Config{
 				GitHubToken: "",
-				PushConfig:  DefaultPushConfig,
+				PushConfig:  "",
 			},
 		},
 		{
@@ -54,7 +54,7 @@ func TestNew(t *testing.T) {
 			},
 			want: Config{
 				GitHubToken: "gh_token",
-				PushConfig:  DefaultPushConfig,
+				PushConfig:  "",
 			},
 		},
 	} {
