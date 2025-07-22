@@ -140,7 +140,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 
 	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir), // readonly volume.
+		fmt.Sprintf("%s:/librarian:ro", filepath.Join(request.RepoDir, config.LibrarianDir)), // readonly volume.
 		fmt.Sprintf("%s:/input", generatorInput),
 		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume.
@@ -164,7 +164,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 	}(jsonFilePath)
 
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", config.LibrarianDir),
+		fmt.Sprintf("%s:/librarian:ro", filepath.Join(request.RepoDir, config.LibrarianDir)),
 		fmt.Sprintf("%s:/repo", request.RepoDir),
 	}
 	commandArgs := []string{
