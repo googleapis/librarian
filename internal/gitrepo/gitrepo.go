@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 // Repository represents a git repository.
@@ -117,6 +120,52 @@ func clone(dir, url, ci string) (*Repository, error) {
 	}, nil
 }
 
+// AddAll adds all pending changes from the working tree to the index,
+// so that the changes can later be committed.
+func (r *Repository) AddAll() (git.Status, error) {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return git.Status{}, err
+	}
+	err = worktree.AddWithOptions(&git.AddOptions{All: true})
+	if err != nil {
+		return git.Status{}, err
+	}
+	return worktree.Status()
+}
+
+// Commit creates a new commit with the provided message and author
+// information.
+func (r *Repository) Commit(msg string, userName, userEmail string) error {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+	if status.IsClean() {
+		return fmt.Errorf("no modifications to commit")
+	}
+	hash, err := worktree.Commit(msg, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  userName,
+			Email: userEmail,
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Log commit hash (brief) and subject line (first line of commit)
+	subject := strings.Split(msg, "\n")[0]
+	slog.Info(fmt.Sprintf("Committed %s: '%s'", hash.String()[0:7], subject))
+	return nil
+}
+
 // IsClean reports whether the working tree has no uncommitted changes.
 func (r *Repository) IsClean() (bool, error) {
 	worktree, err := r.repo.Worktree()
@@ -129,4 +178,9 @@ func (r *Repository) IsClean() (bool, error) {
 	}
 
 	return status.IsClean(), nil
+}
+
+// Remotes returns the remotes within the repository.
+func (r *Repository) Remotes() ([]*git.Remote, error) {
+	return r.repo.Remotes()
 }

@@ -35,8 +35,9 @@ func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
+	// TODO(https://github.com/googleapis/librarian/issues/724):remove the default for push-config
 	defaultValue := "noreply-cloudsdk@google.com,Google Cloud SDK"
-	fs.StringVar(&cfg.PushConfig, "push-config", defaultValue, "a config used in Git commits. The format is {git-email-address},{author-name}. If unspecified, will use a default name Google Cloud SDK and a default email noreply-cloudsdk@google.com.")
+	fs.StringVar(&cfg.PushConfig, "push-config", defaultValue, "If specified, will try to create a commit and pull request for the generated changes. The format should be \"{git-email-address},{author-name}\". Also, when this field is specified it is expected a Github token will be provided with push access via the environment variable LIBRARIAN_GITHUB_TOKEN")
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
@@ -48,7 +49,11 @@ func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
+	fs.StringVar(&cfg.Repo, "repo", "",
+		"Code repository where the generated code will reside. "+
+			"Can be a remote in the format of a remote URL such as "+
+			"https://github.com/{owner}/{repo} or a local file path like "+
+			"/path/to/repo`. Both absolute and relative paths are supported.")
 }
 
 func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
@@ -67,6 +72,14 @@ func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 func validateRequiredFlag(name, value string) error {
 	if value == "" {
 		return fmt.Errorf("required flag -%s not specified", name)
+	}
+	return nil
+}
+
+// validatePushConfigAndGithubTokenCoexist validates that the github token should exist if pushConfig flag is set.
+func validatePushConfigAndGithubTokenCoexist(pushConfig, gitHubToken string) error {
+	if pushConfig != "" && gitHubToken == "" {
+		return fmt.Errorf("GitHub token is required if push config exists")
 	}
 	return nil
 }

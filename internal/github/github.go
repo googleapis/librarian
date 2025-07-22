@@ -20,10 +20,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/google/go-github/v69/github"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 // PullRequest is a type alias for the go-github type.
@@ -81,9 +83,9 @@ type PullRequestMetadata struct {
 	Number int
 }
 
-// ParseUrl parses a GitHub URL (anything to do with a repository) to determine
+// ParseURL parses a GitHub URL (anything to do with a repository) to determine
 // the GitHub repo details (owner and name).
-func ParseUrl(remoteUrl string) (*Repository, error) {
+func ParseURL(remoteUrl string) (*Repository, error) {
 	if !strings.HasPrefix(remoteUrl, "https://github.com/") {
 		return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remoteUrl)
 	}
@@ -107,4 +109,58 @@ func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, e
 	}
 	defer body.Close()
 	return io.ReadAll(body)
+}
+
+// CreatePullRequest creates a pull request in the remote repo.
+// At the moment this requires a single remote to be configured,
+// which must have a GitHub HTTPS URL. We assume a base branch of "main".
+func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, title, body string) (*PullRequestMetadata, error) {
+	if body == "" {
+		body = "Regenerated all changed APIs. See individual commits for details."
+	}
+	newPR := &github.NewPullRequest{
+		Title:               &title,
+		Head:                &remoteBranch,
+		Base:                github.Ptr("main"),
+		Body:                github.Ptr(body),
+		MaintainerCanModify: github.Ptr(true),
+	}
+	pr, _, err := c.PullRequests.Create(ctx, repo.Owner, repo.Name, newPR)
+	if err != nil {
+		return nil, err
+	}
+
+	slog.Info("PR created", "url", pr.GetHTMLURL())
+	pullRequestMetadata := &PullRequestMetadata{Repo: repo, Number: pr.GetNumber()}
+	return pullRequestMetadata, nil
+}
+
+// FetchGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
+// There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
+// unambiguous result.
+// Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
+func FetchGitHubRepoFromRemote(repo *gitrepo.Repository) (*Repository, error) {
+	remotes, err := repo.Remotes()
+	if err != nil {
+		return nil, err
+	}
+	var gitHubRemoteNames = []string{}
+	gitHubURL := ""
+	for _, remote := range remotes {
+		urls := remote.Config().URLs
+		if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
+			gitHubRemoteNames = append(gitHubRemoteNames, remote.Config().Name)
+			gitHubURL = urls[0]
+		}
+	}
+
+	if len(gitHubRemoteNames) == 0 {
+		return nil, fmt.Errorf("no GitHub remotes found")
+	}
+
+	if len(gitHubRemoteNames) > 1 {
+		n := strings.Join(gitHubRemoteNames, ", ")
+		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", n)
+	}
+	return ParseURL(gitHubURL)
 }
