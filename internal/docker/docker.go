@@ -214,7 +214,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error
 	}
 	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian", config.LibrarianDir),
+		fmt.Sprintf("%s:/librarian", filepath.Join(request.RepoDir, config.LibrarianDir)),
 		fmt.Sprintf("%s:/input", generatorInput),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume.
 	}

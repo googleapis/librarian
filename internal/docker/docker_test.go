@@ -253,15 +253,15 @@ func TestDockerRun(t *testing.T) {
 					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
-					RepoDir:   ".",
+					RepoDir:   "absolute/path/to/repo",
 					ApiRoot:   testAPIRoot,
 				}
 				return d.Configure(ctx, configureRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", ".librarian:/librarian",
-				"-v", ".librarian/generator-input:/input",
+				"-v", "absolute/path/to/repo/.librarian:/librarian",
+				"-v", "absolute/path/to/repo/.librarian/generator-input:/input",
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandConfigure),
