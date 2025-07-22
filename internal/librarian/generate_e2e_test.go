@@ -18,12 +18,12 @@
 package librarian
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -33,7 +33,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/filesystem"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 const (
@@ -46,50 +45,51 @@ func TestRunGenerate(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	for _, test := range []struct {
 		name    string
-		cfg     *config.Config
+		api     string
+		source  string
 		wantErr bool
 	}{
 		{
-			name: "testRunSuccess",
-			cfg: &config.Config{
-				API:    "google/cloud/pubsub/v1",
-				Source: "../../testdata/e2e/generate/api_root",
-			},
+			name:   "testRunSuccess",
+			api:    "google/cloud/pubsub/v1",
+			source: "../../testdata/e2e/generate/api_root",
 		},
 		{
-			name: "testRunFailed",
-			cfg: &config.Config{
-				API:    "google/invalid/path",
-				Source: "../../testdata/e2e/generate/api_root",
-			},
+			name:    "testRunFailed",
+			api:     "google/invalid/path",
+			source:  "../../testdata/e2e/generate/api_root",
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			test.cfg.Repo = fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000))
-			test.cfg.WorkRoot = filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000)))
-			if err := prepareTest(test.cfg.Repo, test.cfg.WorkRoot, localRepoBackupDir); err != nil {
+			repo := fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000))
+			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000)))
+			if err := prepareTest(repo, workRoot, localRepoBackupDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
-			defer os.RemoveAll(test.cfg.Repo)
-			defer os.RemoveAll(test.cfg.WorkRoot)
+			defer os.RemoveAll(repo)
+			defer os.RemoveAll(workRoot)
+			cmd := exec.Command(
+				"../../librarian",
+				"generate",
+				fmt.Sprintf("--api=%s", test.api),
+				fmt.Sprintf("--output=%s", workRoot),
+				fmt.Sprintf("--repo=%s", repo),
+				fmt.Sprintf("--source=%s", test.source),
+			)
 
-			runner, err := newGenerateRunner(test.cfg)
-			if err != nil {
-				t.Fatalf("newGenerateRunner() error = %v", err)
-			}
-			err = runner.run(context.Background())
+			_, err := cmd.CombinedOutput()
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should fail", test.name)
 				}
 			} else {
 				if err != nil {
-					t.Fatalf("run() error = %v", err)
+					t.Fatalf("librarian generate command error = %v", err)
 				}
 			}
 
-			responseFile := filepath.Join(test.cfg.WorkRoot, "output", "generate-response.json")
+			responseFile := filepath.Join(workRoot, "output", "generate-response.json")
 			if _, err := os.Stat(responseFile); err != nil {
 				t.Fatalf("can not find generate response, error = %v", err)
 			}
