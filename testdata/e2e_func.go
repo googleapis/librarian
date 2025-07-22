@@ -27,7 +27,7 @@ func main() {
 	log.Print("received command: ", os.Args[1:])
 	switch os.Args[1] {
 	case "generate":
-		if err := validateGenerate(os.Args[2:]); err != nil {
+		if err := doGenerate(os.Args[2:]); err != nil {
 			log.Fatal(err)
 		}
 	default:
@@ -35,31 +35,42 @@ func main() {
 	}
 }
 
-func validateGenerate(args []string) error {
+func doGenerate(args []string) error {
+	request, err := parseRequest(args)
+	if err != nil {
+		return err
+	}
+	if err := validateLibrarianDir(request.librarianDir); err != nil {
+		return err
+	}
+	if err := writeToOutput(request.outputDir); err != nil {
+		return err
+	}
+	return nil
+}
+
+func parseRequest(args []string) (*generateOption, error) {
+	request := &generateOption{}
 	for _, arg := range args {
 		option, _ := strings.CutPrefix(arg, "--")
 		strs := strings.Split(option, "=")
 		switch strs[0] {
-		case librarian:
-			if err := validateLibrarianDir(strs[1]); err != nil {
-				return err
-			}
 		case inputDir:
-			continue
-		case outputDir:
-			if err := writeToOutput(strs[1]); err != nil {
-				return err
-			}
-		case source:
-			continue
+			request.intputDir = strs[1]
+		case librarian:
+			request.librarianDir = strs[1]
 		case libraryID:
-			continue
+			request.libraryID = strs[1]
+		case outputDir:
+			request.outputDir = strs[1]
+		case source:
+			request.sourceDir = strs[1]
 		default:
-			return errors.New("unrecognized option: " + option)
+			return nil, errors.New("unrecognized option: " + option)
 		}
 	}
 
-	return nil
+	return request, nil
 }
 
 func validateLibrarianDir(dir string) error {
@@ -91,4 +102,12 @@ func writeToOutput(dir string) error {
 	}
 	log.Print("write generate response to " + jsonFilePath)
 	return nil
+}
+
+type generateOption struct {
+	intputDir    string
+	outputDir    string
+	librarianDir string
+	libraryID    string
+	sourceDir    string
 }
