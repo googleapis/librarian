@@ -163,12 +163,16 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
-	_, err := r.detectIfLibraryConfigured(ctx)
+	configured, err := r.detectIfLibraryConfigured(ctx)
 	if err != nil {
 		return err
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/815)
+	if !configured {
+		if err := r.runConfigureCommand(ctx); err != nil {
+			return err
+		}
+	}
 
 	libraryID, err := r.runGenerateCommand(ctx, outputDir)
 	if err != nil {
@@ -414,6 +418,41 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 		regexps = append(regexps, re)
 	}
 	return regexps, nil
+}
+
+// runConfigureCommand executes the container's "configure" command for an API.
+//
+// This step prepares a language repository for a new library by adding
+// necessary metadata or build configurations. It finds the library's ID
+// from the runner's state, gathers all paths and settings, and then delegates
+// the execution to the container client.
+func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
+	apiRoot, err := filepath.Abs(r.cfg.Source)
+	if err != nil {
+		return err
+	}
+
+	// Configuration requires a language repository to modify. If one isn't specified or
+	// found, we cannot proceed.
+	if r.repo == nil {
+		slog.Error("No language repository specified; cannot run configure.", "api", r.cfg.API)
+		return errors.New("a language repository must be specified to run configure")
+	}
+
+	libraryID := findLibraryIDByAPIPath(r.state, r.cfg.API)
+	if libraryID == "" {
+		return errors.New("bug in Librarian: Library not found during configuration, despite being found in earlier steps")
+	}
+
+	configureRequest := &docker.ConfigureRequest{
+		Cfg:       r.cfg,
+		State:     r.state,
+		ApiRoot:   apiRoot,
+		LibraryID: libraryID,
+		RepoDir:   r.repo.Dir,
+	}
+	slog.Info("Performing configuration for library", "id", libraryID)
+	return r.containerClient.Configure(ctx, configureRequest)
 }
 
 // detectIfLibraryConfigured returns whether a library has been configured for

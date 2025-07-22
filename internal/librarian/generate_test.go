@@ -24,9 +24,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/docker"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 )
@@ -34,8 +35,9 @@ import (
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
-	generateCalls int
-	buildCalls    int
+	generateCalls  int
+	buildCalls     int
+	configureCalls int
 }
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
@@ -45,6 +47,11 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
 	m.buildCalls++
+	return nil
+}
+
+func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) error {
+	m.configureCalls++
 	return nil
 }
 
@@ -287,6 +294,91 @@ func TestRunBuildCommand(t *testing.T) {
 	}
 }
 
+func TestRunConfigureCommand(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name               string
+		api                string
+		source             string
+		repo               *gitrepo.Repository
+		state              *config.LibrarianState
+		container          *mockContainerClient
+		wantConfigureCalls int
+		wantErr            bool
+	}{
+		{
+			name: "configures library",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 1,
+		},
+		{
+			name:      "missing repo",
+			api:       "some/api",
+			container: &mockContainerClient{},
+			wantErr:   true,
+		},
+		{
+			name: "library not found in state",
+			api:  "other/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container: &mockContainerClient{},
+			wantErr:   true,
+		},
+		{
+			name:               "error on invalid source path",
+			source:             "invalid path",
+			repo:               newTestGitRepo(t),
+			state:              &config.LibrarianState{},
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 0,
+			wantErr:            true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			sourcePath := test.source
+			if sourcePath == "" {
+				sourcePath = t.TempDir()
+			}
+			r := &generateRunner{
+				cfg: &config.Config{
+					API:    test.api,
+					Source: sourcePath,
+				},
+				repo:            test.repo,
+				state:           test.state,
+				containerClient: test.container,
+			}
+
+			if err := r.runConfigureCommand(context.Background()); (err != nil) != test.wantErr {
+				t.Errorf("runConfigureCommand() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
+				t.Errorf("runConfigureCommand() configureCalls mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
 func TestNewGenerateRunner(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -399,18 +491,19 @@ func runGit(t *testing.T, dir string, args ...string) {
 func TestGenerateRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name              string
-		api               string
-		repo              *gitrepo.Repository
-		state             *config.LibrarianState
-		container         *mockContainerClient
-		build             bool
-		wantErr           bool
-		wantGenerateCalls int
-		wantBuildCalls    int
+		name               string
+		api                string
+		repo               *gitrepo.Repository
+		state              *config.LibrarianState
+		container          *mockContainerClient
+		build              bool
+		wantErr            bool
+		wantGenerateCalls  int
+		wantBuildCalls     int
+		wantConfigureCalls int
 	}{
 		{
-			name: "regeneration of API",
+			name: "generation of API",
 			api:  "some/api",
 			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
@@ -422,10 +515,11 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:         &mockContainerClient{},
-			build:             true,
-			wantGenerateCalls: 1,
-			wantBuildCalls:    1,
+			container:          &mockContainerClient{},
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 1,
 		},
 		{
 			name: "symlink in output",
@@ -486,6 +580,9 @@ func TestGenerateRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
 				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
+			}
+			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
+				t.Errorf("run() configureCalls mismatch (-want +got):%s", diff)
 			}
 		})
 	}
