@@ -52,24 +52,22 @@ func TestRunGenerate(t *testing.T) {
 		{
 			name: "testRunSuccess",
 			cfg: &config.Config{
-				API:      "google/cloud/pubsub/v1",
-				Repo:     fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000)),
-				Source:   "../../testdata/e2e/generate/api_root",
-				WorkRoot: filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000))),
+				API:    "google/cloud/pubsub/v1",
+				Source: "../../testdata/e2e/generate/api_root",
 			},
 		},
 		{
 			name: "testRunFailed",
 			cfg: &config.Config{
-				API:      "google/invalid/path",
-				Repo:     fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000)),
-				Source:   "../../testdata/e2e/generate/api_root",
-				WorkRoot: filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000))),
+				API:    "google/invalid/path",
+				Source: "../../testdata/e2e/generate/api_root",
 			},
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			test.cfg.Repo = fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000))
+			test.cfg.WorkRoot = filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000)))
 			if err := prepareTest(test.cfg.Repo, test.cfg.WorkRoot, localRepoBackupDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
