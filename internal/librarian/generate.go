@@ -439,10 +439,11 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 		return errors.New("a language repository must be specified to run configure")
 	}
 
-	libraryID := findLibraryIDByAPIPath(r.state, r.cfg.API)
-	if libraryID == "" {
-		return errors.New("bug in Librarian: Library not found during configuration, despite being found in earlier steps")
+	if r.cfg.API == "" {
+		return errors.New("API path specified must be specified to run configure")
 	}
+
+	libraryID := strings.ReplaceAll(r.cfg.API, "/", "-")
 
 	configureRequest := &docker.ConfigureRequest{
 		Cfg:       r.cfg,
