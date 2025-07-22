@@ -43,7 +43,11 @@ func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Repo, "repo", "", "Repository root or URL to clone. If this is not specified, the default language repo will be cloned.")
+	fs.StringVar(&cfg.Repo, "repo", "",
+		"Code repository where the generated code will reside. "+
+			"Can be a remote in the format of a remote URL such as "+
+			"https://github.com/{owner}/{repo} or a local file path like "+
+			"/path/to/repo`. Both absolute and relative paths are supported.")
 }
 
 func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
