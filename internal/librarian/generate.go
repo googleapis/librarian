@@ -108,10 +108,7 @@ type generateRunner struct {
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
-	if err := validateRequiredFlag("api", cfg.API); err != nil {
-		return nil, err
-	}
-	if err := validateRequiredFlag("source", cfg.Source); err != nil {
+	if err := validateRequiredFlag("repo", cfg.Repo); err != nil {
 		return nil, err
 	}
 	workRoot, err := createWorkRoot(time.Now(), cfg.WorkRoot)
@@ -427,6 +424,9 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 // from the runner's state, gathers all paths and settings, and then delegates
 // the execution to the container client.
 func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
+	if r.cfg.API == "" {
+		return errors.New("API flag not specified for new library configuration")
+	}
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
 		return err

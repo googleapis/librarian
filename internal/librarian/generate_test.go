@@ -328,6 +328,13 @@ func TestRunConfigureCommand(t *testing.T) {
 			wantErr:   true,
 		},
 		{
+			name:      "missing api",
+			repo:      newTestGitRepo(t),
+			state:     &config.LibrarianState{},
+			container: &mockContainerClient{},
+			wantErr:   true,
+		},
+		{
 			name: "library not found in state",
 			api:  "other/api",
 			repo: newTestGitRepo(t),
@@ -387,12 +394,7 @@ func TestNewGenerateRunner(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "missing api flag",
-			cfg:     &config.Config{Source: "some/source"},
-			wantErr: true,
-		},
-		{
-			name:    "missing source flag",
+			name:    "missing repo flag",
 			cfg:     &config.Config{API: "some/api"},
 			wantErr: true,
 		},
