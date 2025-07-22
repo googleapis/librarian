@@ -64,12 +64,11 @@ func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.R
 func TestDetectIfLibraryConfigured(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name    string
-		api     string
-		repo    string
-		state   *config.LibrarianState
-		want    bool
-		wantErr bool
+		name  string
+		api   string
+		repo  string
+		state *config.LibrarianState
+		want  bool
 	}{
 		{
 			name: "no repo specified",
@@ -104,14 +103,7 @@ func TestDetectIfLibraryConfigured(t *testing.T) {
 					},
 				},
 			},
-			// want: true,
 		},
-		// {
-		// 	name:    "state file does not exist",
-		// 	api:     "some/api",
-		// 	repo:    "some/repo",
-		// 	wantErr: true,
-		// },
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -144,11 +136,7 @@ func TestDetectIfLibraryConfigured(t *testing.T) {
 				r.cfg.Repo = repo.Dir
 			}
 
-			got, err := r.detectIfLibraryConfigured()
-			if (err != nil) != test.wantErr {
-				t.Errorf("detectIfLibraryConfigured() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
+			got := r.detectIfLibraryConfigured()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("detectIfLibraryConfigured() mismatch (-want +got):\n%s", diff)
 			}

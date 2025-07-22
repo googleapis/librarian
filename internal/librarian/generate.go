@@ -164,10 +164,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
-	configured, err := r.detectIfLibraryConfigured()
-	if err != nil {
-		return err
-	}
+	configured := r.detectIfLibraryConfigured()
 
 	if !configured {
 		if err := r.runConfigureCommand(ctx); err != nil {
@@ -471,11 +468,11 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 // pipeline state if repoRoot has been specified, or the remote pipeline state (just
 // by fetching the single file) if flatRepoUrl has been specified. If neither the repo
 // root not the repo url has been specified, we always perform raw generation.
-func (r *generateRunner) detectIfLibraryConfigured() (bool, error) {
+func (r *generateRunner) detectIfLibraryConfigured() bool {
 	apiPath, repo := r.cfg.API, r.cfg.Repo
 	if repo == "" {
 		slog.Warn("repo is not specified, cannot check if library exists")
-		return false, nil
+		return false
 	}
 
 	// Attempt to load the pipeline state either locally or from the repo URL
@@ -485,9 +482,9 @@ func (r *generateRunner) detectIfLibraryConfigured() (bool, error) {
 	libraryID := findLibraryIDByAPIPath(pipelineState, apiPath)
 	if libraryID == "" {
 		slog.Info("API path not configured in repo", "path", apiPath)
-		return false, nil
+		return false
 	}
 
 	slog.Info("API configured", "path", apiPath, "library", libraryID)
-	return true, nil
+	return true
 }
