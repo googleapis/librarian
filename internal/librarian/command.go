@@ -158,7 +158,9 @@ func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHu
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	message := "Changes in this PR"
-	repo.Commit(message, userName, userEmail)
+	if err = repo.Commit(message, userName, userEmail); err != nil {
+		return err
+	}
 
 	// Create a new branch, set title and message for the PR.
 	datetimeNow := formatTimestamp(time.Now())
@@ -166,8 +168,7 @@ func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHu
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 
-	_, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, message)
-	if err != nil {
+	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, message); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil
