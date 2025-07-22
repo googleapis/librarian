@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -131,4 +133,52 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 
 	slog.Info("Temporary working directory", "dir", path)
 	return path, nil
+}
+
+// commitAndPush creates a commit and push request to Github for the generated changes.
+// It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
+func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHubClient, pushConfig string) error {
+	if pushConfig == "" {
+		slog.Info("PushConfig flag not specified, skipping")
+		return nil
+	}
+	// Ensure we have a GitHub repository
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
+	if err != nil {
+		return err
+	}
+
+	userEmail, userName, err := parsePushConfig(pushConfig)
+	if err != nil {
+		return err
+	}
+	if _, err = repo.AddAll(); err != nil {
+		return err
+	}
+
+	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
+	message := "Changes in this PR"
+	repo.Commit(message, userName, userEmail)
+
+	// Create a new branch, set title and message for the PR.
+	datetimeNow := formatTimestamp(time.Now())
+	titlePrefix := "Librarian pull request"
+	branch := fmt.Sprintf("librarian-%s", datetimeNow)
+	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
+
+	_, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, message)
+	if err != nil {
+		return fmt.Errorf("failed to create pull request: %w", err)
+	}
+	return nil
+}
+
+func parsePushConfig(pushConfig string) (string, string, error) {
+	parts := strings.Split(pushConfig, ",")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
+	}
+	userEmail := parts[0]
+	userName := parts[1]
+	return userEmail, userName, nil
 }

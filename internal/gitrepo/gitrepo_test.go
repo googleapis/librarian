@@ -17,10 +17,13 @@ package gitrepo
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
+	gogitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewRepository(t *testing.T) {
@@ -240,6 +243,209 @@ func TestIsClean(t *testing.T) {
 
 			if gotClean != test.wantClean {
 				t.Errorf("IsClean() = %v, want %v", gotClean, test.wantClean)
+			}
+		})
+	}
+}
+
+func TestAddAll(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		setup       func(t *testing.T, dir string) string
+		expectedNum int
+		wantErr     bool
+	}{
+		{
+			name: "add all files",
+			setup: func(t *testing.T, dir string) string {
+				filePath := filepath.Join(dir, "new_file.txt")
+				if err := os.WriteFile(filePath, []byte("test content"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				return filePath
+			},
+			expectedNum: 1,
+		},
+		{
+			name: "add all files with error",
+			setup: func(t *testing.T, dir string) string {
+				// Create a file that cannot be read to simulate an error
+				filePath := filepath.Join(dir, "unreadable_file.txt")
+				if err := os.WriteFile(filePath, []byte("test content"), 0200); err != nil { // Write-only permissions
+					t.Fatalf("failed to write file: %v", err)
+				}
+				return filePath
+			},
+			expectedNum: 0,
+			wantErr:     true,
+		},
+		{
+			name: "no files to add",
+			setup: func(t *testing.T, dir string) string {
+				return ""
+			},
+			expectedNum: 0,
+			wantErr:     true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			repo, err := git.PlainInit(dir, false)
+			if err != nil {
+				t.Fatalf("failed to init repo: %v", err)
+			}
+			r := &Repository{
+				Dir:  dir,
+				repo: repo,
+			}
+			if file := test.setup(t, dir); file != "" {
+				_, err = r.AddAll()
+				if (err != nil) != test.wantErr {
+					t.Errorf("AddAll() returned an error: %v", err)
+				}
+			}
+		})
+	}
+
+}
+
+func TestCommit(t *testing.T) {
+	t.Parallel()
+
+	// setupRepo is a helper to create a repository with an initial commit.
+	setupRepo := func(t *testing.T) *Repository {
+		t.Helper()
+		dir := t.TempDir()
+		gogitRepo, err := git.PlainInit(dir, false)
+		if err != nil {
+			t.Fatalf("git.PlainInit failed: %v", err)
+		}
+		w, err := gogitRepo.Worktree()
+		if err != nil {
+			t.Fatalf("Worktree() failed: %v", err)
+		}
+		if _, err := w.Commit("initial commit", &git.CommitOptions{
+			AllowEmptyCommits: true,
+			Author:            &object.Signature{Name: "Test", Email: "test@example.com"},
+		}); err != nil {
+			t.Fatalf("initial commit failed: %v", err)
+		}
+		return &Repository{Dir: dir, repo: gogitRepo}
+	}
+
+	t.Run("successful commit", func(t *testing.T) {
+		t.Parallel()
+		repo := setupRepo(t)
+
+		// Add a file to be committed.
+		filePath := filepath.Join(repo.Dir, "new.txt")
+		if err := os.WriteFile(filePath, []byte("content"), 0644); err != nil {
+			t.Fatalf("os.WriteFile failed: %v", err)
+		}
+		w, err := repo.repo.Worktree()
+		if err != nil {
+			t.Fatalf("Worktree() failed: %v", err)
+		}
+		if _, err := w.Add("new.txt"); err != nil {
+			t.Fatalf("w.Add failed: %v", err)
+		}
+
+		commitMsg := "feat: add new file"
+		if err := repo.Commit(commitMsg, "tester", "tester@example.com"); err != nil {
+			t.Fatalf("Commit() unexpected error = %v", err)
+		}
+
+		head, err := repo.repo.Head()
+		if err != nil {
+			t.Fatalf("repo.repo.Head() failed: %v", err)
+		}
+		commit, err := repo.repo.CommitObject(head.Hash())
+		if err != nil {
+			t.Fatalf("repo.repo.CommitObject() failed: %v", err)
+		}
+		if commit.Message != commitMsg {
+			t.Errorf("Commit() message = %q, want %q", commit.Message, commitMsg)
+		}
+		author := commit.Author
+		if author.Name != "tester" {
+			t.Errorf("Commit() author name = %q, want %q", author.Name, "tester")
+		}
+		if author.Email != "tester@example.com" {
+			t.Errorf("Commit() author email = %q, want %q", author.Email, "tester@example.com")
+		}
+	})
+
+	t.Run("clean repository", func(t *testing.T) {
+		t.Parallel()
+		repo := setupRepo(t)
+
+		err := repo.Commit("no-op", "tester", "tester@example.com")
+		if err == nil {
+			t.Fatal("Commit() expected error, got nil")
+		}
+		wantErrMsg := "no modifications to commit"
+		if !strings.Contains(err.Error(), wantErrMsg) {
+			t.Errorf("Commit() error = %q, want to contain %q", err.Error(), wantErrMsg)
+		}
+	})
+}
+
+func TestRemotes(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name         string
+		setupRemotes map[string][]string
+		wantErr      bool
+	}{
+		{
+			name:         "no remotes",
+			setupRemotes: map[string][]string{},
+		},
+		{
+			name: "single remote",
+			setupRemotes: map[string][]string{
+				"origin": {"https://github.com/test/repo.git"},
+			},
+		},
+		{
+			name: "multiple remotes with multiple URLs",
+			setupRemotes: map[string][]string{
+				"origin":   {"https://github.com/test/origin.git"},
+				"upstream": {"https://github.com/test/upstream.git", "git@github.com:test/upstream.git"},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			gogitRepo, err := git.PlainInit(dir, false)
+			if err != nil {
+				t.Fatalf("git.PlainInit failed: %v", err)
+			}
+
+			for name, urls := range tt.setupRemotes {
+				if _, err := gogitRepo.CreateRemote(&gogitConfig.RemoteConfig{
+					Name: name,
+					URLs: urls,
+				}); err != nil {
+					t.Fatalf("CreateRemote failed: %v", err)
+				}
+			}
+
+			repo := &Repository{Dir: dir, repo: gogitRepo}
+			got, err := repo.Remotes()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Remotes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			gotRemotes := make(map[string][]string)
+			for _, r := range got {
+				gotRemotes[r.Config().Name] = r.Config().URLs
+			}
+			if diff := cmp.Diff(tt.setupRemotes, gotRemotes); diff != "" {
+				t.Errorf("Remotes() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

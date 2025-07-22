@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 )
@@ -53,6 +54,11 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) error {
 	m.configureCalls++
 	return nil
+}
+
+func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
+	// Return an empty metadata struct and no error to satisfy the interface.
+	return &github.PullRequestMetadata{}, nil
 }
 
 func TestDetectIfLibraryConfigured(t *testing.T) {
@@ -155,17 +161,21 @@ func TestRunGenerateCommand(t *testing.T) {
 	for _, test := range []struct {
 		name              string
 		api               string
+		pushConfig        string
 		repo              *gitrepo.Repository
 		state             *config.LibrarianState
 		container         *mockContainerClient
+		ghClient          GitHubClient
 		wantLibraryID     string
 		wantErr           bool
 		wantGenerateCalls int
 	}{
 		{
-			name: "works",
-			api:  "some/api",
-			repo: newTestGitRepo(t),
+			name:       "works",
+			api:        "some/api",
+			pushConfig: "xxx@email.com,author",
+			repo:       newTestGitRepo(t),
+			ghClient:   &mockGitHubClient{},
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -181,13 +191,15 @@ func TestRunGenerateCommand(t *testing.T) {
 		{
 			name:      "missing repo",
 			api:       "some/api",
+			ghClient:  &mockGitHubClient{},
 			container: &mockContainerClient{},
 			wantErr:   true,
 		},
 		{
-			name: "library not found in state",
-			api:  "other/api",
-			repo: newTestGitRepo(t),
+			name:       "library not found in state",
+			api:        "other/api",
+			pushConfig: "xxx@email.com,author",
+			repo:       newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -196,6 +208,7 @@ func TestRunGenerateCommand(t *testing.T) {
 					},
 				},
 			},
+			ghClient:  &mockGitHubClient{},
 			container: &mockContainerClient{},
 			wantErr:   true,
 		},
@@ -204,10 +217,12 @@ func TestRunGenerateCommand(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				cfg: &config.Config{
-					API:    test.api,
-					Source: t.TempDir(),
+					API:        test.api,
+					Source:     t.TempDir(),
+					PushConfig: test.pushConfig,
 				},
 				repo:            test.repo,
+				ghClient:        test.ghClient,
 				state:           test.state,
 				containerClient: test.container,
 			}
@@ -328,6 +343,13 @@ func TestRunConfigureCommand(t *testing.T) {
 			wantErr:   true,
 		},
 		{
+			name:      "missing api",
+			repo:      newTestGitRepo(t),
+			state:     &config.LibrarianState{},
+			container: &mockContainerClient{},
+			wantErr:   true,
+		},
+		{
 			name: "library not found in state",
 			api:  "other/api",
 			repo: newTestGitRepo(t),
@@ -387,12 +409,7 @@ func TestNewGenerateRunner(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "missing api flag",
-			cfg:     &config.Config{Source: "some/source"},
-			wantErr: true,
-		},
-		{
-			name:    "missing source flag",
+			name:    "missing repo flag",
 			cfg:     &config.Config{API: "some/api"},
 			wantErr: true,
 		},
@@ -416,6 +433,27 @@ func TestNewGenerateRunner(t *testing.T) {
 				WorkRoot: t.TempDir(),
 			},
 			wantErr: true,
+		},
+		{
+			name: "push config without github token",
+			cfg: &config.Config{
+				API:        "some/api",
+				Source:     "some/source",
+				PushConfig: "test@example.com,Test User",
+			},
+			wantErr: true,
+		},
+		{
+			name: "push config with github token is valid",
+			cfg: &config.Config{
+				API:         "some/api",
+				Source:      t.TempDir(),
+				Repo:        newTestGitRepo(t).Dir,
+				WorkRoot:    t.TempDir(),
+				Image:       "gcr.io/test/test-image",
+				PushConfig:  "test@example.com,Test User",
+				GitHubToken: "gh-token",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -464,6 +502,7 @@ func TestNewGenerateRunner(t *testing.T) {
 func newTestGitRepo(t *testing.T) *gitrepo.Repository {
 	t.Helper()
 	dir := t.TempDir()
+	remoteUrl := "https://github.com/googleapis/librarian.git"
 	runGit(t, dir, "init")
 	runGit(t, dir, "config", "user.email", "test@example.com")
 	runGit(t, dir, "config", "user.name", "Test User")
@@ -472,6 +511,7 @@ func newTestGitRepo(t *testing.T) *gitrepo.Repository {
 	}
 	runGit(t, dir, "add", "README.md")
 	runGit(t, dir, "commit", "-m", "initial commit")
+	runGit(t, dir, "remote", "add", "origin", remoteUrl)
 	repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
 	if err != nil {
 		t.Fatalf("gitrepo.Open(%q) = %v", dir, err)
@@ -496,6 +536,8 @@ func TestGenerateRun(t *testing.T) {
 		repo               *gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
+		ghClient           GitHubClient
+		pushConfig         string
 		build              bool
 		wantErr            bool
 		wantGenerateCalls  int
@@ -516,6 +558,8 @@ func TestGenerateRun(t *testing.T) {
 				},
 			},
 			container:          &mockContainerClient{},
+			ghClient:           &mockGitHubClient{},
+			pushConfig:         "xxx@email.com,author",
 			build:              true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
@@ -544,13 +588,15 @@ func TestGenerateRun(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				cfg: &config.Config{
-					API:    test.api,
-					Source: t.TempDir(),
-					Build:  test.build,
+					API:        test.api,
+					PushConfig: test.pushConfig,
+					Source:     t.TempDir(),
+					Build:      test.build,
 				},
 				repo:            test.repo,
 				state:           test.state,
 				containerClient: test.container,
+				ghClient:        test.ghClient,
 				workRoot:        t.TempDir(),
 			}
 

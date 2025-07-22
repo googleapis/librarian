@@ -15,6 +15,8 @@
 package librarian
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,6 +27,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -338,6 +341,168 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 					t.Fatal("cloneOrOpenLanguageRepo() returned nil repo but no error")
 				}
 				test.check(t, repo)
+			}
+		})
+	}
+}
+
+func TestParsePushConfig(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		pushConfig string
+		wantEmail  string
+		wantName   string
+		wantErr    bool
+	}{
+		{
+			name:       "valid config",
+			pushConfig: "test@example.com,Test User",
+			wantEmail:  "test@example.com",
+			wantName:   "Test User",
+		},
+		{
+			name:       "invalid format - one part",
+			pushConfig: "test@example.com",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid format - three parts",
+			pushConfig: "test@example.com,Test,User",
+			wantErr:    true,
+		},
+		{
+			name:       "empty config",
+			pushConfig: "",
+			wantErr:    true,
+		},
+		// Note: `validatePushConfig` would prevent these, but we test `parsePushConfig` in isolation.
+		{
+			name:       "empty email",
+			pushConfig: ",Test User",
+			wantEmail:  "",
+			wantName:   "Test User",
+		},
+		{
+			name:       "empty name",
+			pushConfig: "test@example.com,",
+			wantEmail:  "test@example.com",
+			wantName:   "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			gotEmail, gotName, err := parsePushConfig(test.pushConfig)
+			if (err != nil) != test.wantErr {
+				t.Errorf("parsePushConfig() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if err != nil {
+				return
+			}
+			if gotEmail != test.wantEmail {
+				t.Errorf("parsePushConfig() gotEmail = %q, want %q", gotEmail, test.wantEmail)
+			}
+			if gotName != test.wantName {
+				t.Errorf("parsePushConfig() gotName = %q, want %q", gotName, test.wantName)
+			}
+		})
+	}
+}
+
+func TestCommitAndPush(t *testing.T) {
+	for _, test := range []struct {
+		name             string
+		pushConfig       string
+		gitHubToken      string
+		setupMockRepo    func(t *testing.T) *gitrepo.Repository
+		setupMockClient  func(t *testing.T) *github.Client
+		expectedPR       *github.PullRequestMetadata
+		expectedErr      error
+		expectedErrMsg   string
+		validatePostTest func(t *testing.T, repo *gitrepo.Repository)
+	}{
+		{
+			name:       "PushConfig flag not specified",
+			pushConfig: "",
+			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
+				repoDir := newTestGitRepoWithCommit(t, "")
+				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
+				if err != nil {
+					t.Fatalf("Failed to create test repo: %v", err)
+				}
+				return repo
+			},
+			setupMockClient: func(t *testing.T) *github.Client {
+				return nil
+			},
+		},
+		{
+			name:        "Happy Path",
+			pushConfig:  "test@example.com,Test User",
+			gitHubToken: "test-token",
+			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
+				repoDir := newTestGitRepoWithCommit(t, "")
+				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
+				if err != nil {
+					t.Fatalf("Failed to create test repo: %v", err)
+				}
+				_, err = repo.AddAll()
+				if err != nil {
+					t.Fatalf("Failed to add files to repo: %v", err)
+				}
+				return repo
+			},
+			setupMockClient: func(t *testing.T) *github.Client {
+				repo := &github.Repository{Owner: "test-owner", Name: "test-repo"}
+				client, err := github.NewClient("test-token", repo)
+				if err != nil {
+					t.Fatalf("Failed to create GitHub client: %v", err)
+				}
+				return client
+			},
+
+			expectedPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
+			validatePostTest: func(t *testing.T, repo *gitrepo.Repository) {
+				isClean, err := repo.IsClean()
+				if err != nil {
+					t.Fatalf("Failed to check repo status: %v", err)
+				}
+				if !isClean {
+					t.Errorf("Expected repository to be clean after commit, but it's dirty")
+				}
+			},
+		},
+		{
+			name:        "No GitHub Remote",
+			pushConfig:  "test@example.com,Test User",
+			gitHubToken: "test-token",
+			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
+				repoDir := newTestGitRepoWithCommit(t, "")
+				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
+				if err != nil {
+					t.Fatalf("Failed to create test repo: %v", err)
+				}
+				return repo
+			},
+			setupMockClient: func(t *testing.T) *github.Client {
+				return nil
+			},
+			expectedErr:    errors.New("no GitHub remotes found"),
+			expectedErrMsg: "no GitHub remotes found",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := test.setupMockRepo(t)
+			client := test.setupMockClient(t)
+
+			err := commitAndPush(context.Background(), repo, client, test.pushConfig)
+
+			if err != nil && !strings.Contains(err.Error(), test.expectedErrMsg) {
+				t.Errorf("commitAndPush() error = %v, expected to contain: %q", err, test.expectedErrMsg)
+			}
+			if test.validatePostTest != nil {
+				test.validatePostTest(t, repo)
 			}
 		})
 	}
