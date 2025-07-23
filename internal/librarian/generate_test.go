@@ -100,23 +100,6 @@ func TestRunGenerateCommand(t *testing.T) {
 			container: &mockContainerClient{},
 			wantErr:   true,
 		},
-		{
-			name:       "library not found in state",
-			api:        "other/api",
-			pushConfig: "xxx@email.com,author",
-			repo:       newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			ghClient:  &mockGitHubClient{},
-			container: &mockContainerClient{},
-			wantErr:   true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -133,7 +116,7 @@ func TestRunGenerateCommand(t *testing.T) {
 			}
 
 			outputDir := t.TempDir()
-			gotLibraryID, err := r.runGenerateCommand(context.Background(), outputDir)
+			gotLibraryID, err := r.runGenerateCommand(context.Background(), "some-library", outputDir)
 			if (err != nil) != test.wantErr {
 				t.Errorf("runGenerateCommand() error = %v, wantErr %v", err, test.wantErr)
 				return
@@ -247,37 +230,6 @@ func TestRunConfigureCommand(t *testing.T) {
 			container: &mockContainerClient{},
 			wantErr:   true,
 		},
-		{
-			name:      "missing api",
-			repo:      newTestGitRepo(t),
-			state:     &config.LibrarianState{},
-			container: &mockContainerClient{},
-			wantErr:   true,
-		},
-		{
-			name: "library not found in state",
-			api:  "other/api",
-			repo: newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container: &mockContainerClient{},
-			wantErr:   true,
-		},
-		{
-			name:               "error on invalid source path",
-			source:             "invalid path",
-			repo:               newTestGitRepo(t),
-			state:              &config.LibrarianState{},
-			container:          &mockContainerClient{},
-			wantConfigureCalls: 0,
-			wantErr:            true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -295,7 +247,8 @@ func TestRunConfigureCommand(t *testing.T) {
 				containerClient: test.container,
 			}
 
-			if err := r.runConfigureCommand(context.Background()); (err != nil) != test.wantErr {
+			_, err := r.runConfigureCommand(context.Background())
+			if (err != nil) != test.wantErr {
 				t.Errorf("runConfigureCommand() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
@@ -468,7 +421,7 @@ func TestGenerateRun(t *testing.T) {
 			build:              true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
-			wantConfigureCalls: 1,
+			wantConfigureCalls: 0,
 		},
 		{
 			name: "symlink in output",

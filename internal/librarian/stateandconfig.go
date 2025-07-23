@@ -60,10 +60,6 @@ func loadLibrarianState(languageRepo *gitrepo.Repository, source string) (*confi
 	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
 }
 
-func loadLibrarianStateFile(path, source string) (*config.LibrarianState, error) {
-	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
-}
-
 func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
 	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineConfigFile)
 	return loadPipelineConfigFile(path)

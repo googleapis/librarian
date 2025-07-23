@@ -203,8 +203,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 }
 
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) error {
-	if err := r.runConfigureCommand(ctx); err != nil {
-		return err
+	if r.cfg.API == "" || r.cfg.Library == "" {
+		slog.Info("library or api is not specified, skipping configuration")
+	} else {
+		configuredLibraryID, err := r.runConfigureCommand(ctx)
+		if err != nil {
+			return err
+		}
+		libraryID = configuredLibraryID
 	}
 
 	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, outputDir)
@@ -461,21 +467,18 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 // necessary metadata or build configurations. It finds the library's ID
 // from the runner's state, gathers all paths and settings, and then delegates
 // the execution to the container client.
-func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
-	if r.cfg.API == "" || r.cfg.Library == "" {
-		slog.Info("library or api is not specified, skipping configuration")
-		return nil
-	}
+func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
+
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Configuration requires a language repository to modify. If one isn't specified or
 	// found, we cannot proceed.
 	if r.repo == nil {
 		slog.Error("No language repository specified; cannot run configure.", "api", r.cfg.API)
-		return errors.New("a language repository must be specified to run configure")
+		return "", errors.New("a language repository must be specified to run configure")
 	}
 
 	// add record to state
@@ -492,5 +495,8 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 		RepoDir:   r.repo.Dir,
 	}
 	slog.Info("Performing configuration for library", "id", r.cfg.Library)
-	return r.containerClient.Configure(ctx, configureRequest)
+	if err := r.containerClient.Configure(ctx, configureRequest); err != nil {
+		return "", err
+	}
+	return r.cfg.Library, nil
 }
