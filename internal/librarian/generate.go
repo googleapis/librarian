@@ -174,6 +174,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		var libraryID string
 		if r.cfg.Library != "" {
 			libraryID = r.cfg.Library
+
 		} else {
 			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
 		}
@@ -205,6 +206,9 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 		libraryID = configuredLibraryID
 	} else {
 		slog.Info("library or api is not specified, skipping configuration")
+		if library := findLibraryByID(r.state, libraryID); library == nil {
+			return fmt.Errorf("library %q not configured, generation stopped", libraryID)
+		}
 	}
 
 	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, outputDir)

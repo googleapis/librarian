@@ -524,9 +524,29 @@ func TestGenerateScenarios(t *testing.T) {
 			wantConfigureCalls: 1,
 		},
 		{
-			name:    "generate single existing library",
+			name:    "generate single existing library by library id",
 			library: "some-library",
 			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:         &mockContainerClient{},
+			ghClient:          &mockGitHubClient{},
+			pushConfig:        "xxx@email.com,author",
+			build:             true,
+			wantGenerateCalls: 1,
+			wantBuildCalls:    1,
+		},
+		{
+			name: "generate single existing library by api",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -559,6 +579,44 @@ func TestGenerateScenarios(t *testing.T) {
 			build:             true,
 			wantGenerateCalls: 2,
 			wantBuildCalls:    2,
+		},
+		{
+			name:    "generate single library, corrupted library id",
+			library: "non-existent-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:  &mockContainerClient{},
+			ghClient:   &mockGitHubClient{},
+			pushConfig: "xxx@email.com,author",
+			build:      true,
+			wantErr:    true,
+		},
+		{
+			name: "generate single library, corrupted api",
+			api:  "corrupted/api/path",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:  &mockContainerClient{},
+			ghClient:   &mockGitHubClient{},
+			pushConfig: "xxx@email.com,author",
+			build:      true,
+			wantErr:    true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
