@@ -170,24 +170,19 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
-	// If an API or a library is specified, generate a single library.
 	if r.cfg.API != "" || r.cfg.Library != "" {
-		// If a library ID is provided, use it. Otherwise, derive it from the API path.
 		var libraryID string
-		if r.cfg.Library == "" {
-			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
-		} else {
+		if r.cfg.Library != "" {
 			libraryID = r.cfg.Library
+		} else {
+			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
 		}
-		// Attempt to generate the library, including initial configuration if necessary.
 		if err := r.generateSingleLibrary(ctx, libraryID, outputDir); err != nil {
 			return err
 		}
 	} else {
-		// Generate all libraries configured in the state.
 		for _, library := range r.state.Libraries {
-			err := r.generateSingleLibrary(ctx, library.ID, outputDir)
-			if err != nil {
+			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
 				// TODO: record failure and report in PR body when applicable
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
 				continue
@@ -195,7 +190,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 		}
 	}
 
-	// Commit and Push to GitHub.
 	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
 		return err
 	}
@@ -203,14 +197,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 }
 
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) error {
-	if r.cfg.API == "" || r.cfg.Library == "" {
-		slog.Info("library or api is not specified, skipping configuration")
-	} else {
+	if r.cfg.API != "" && r.cfg.Library != "" {
 		configuredLibraryID, err := r.runConfigureCommand(ctx)
 		if err != nil {
 			return err
 		}
 		libraryID = configuredLibraryID
+	} else {
+		slog.Info("library or api is not specified, skipping configuration")
 	}
 
 	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, outputDir)
@@ -235,37 +229,29 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		return "", err
 	}
 
-	// If we've got a language repo, it's because we've already found a library for the
-	// specified API, configured in the repo.
-	if r.repo != nil {
-		// libraryID := findLibraryIDByAPIPath(r.state, r.cfg.API)
-		if libraryID == "" {
-			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
-		}
-
-		generateRequest := &docker.GenerateRequest{
-			Cfg:       r.cfg,
-			State:     r.state,
-			ApiRoot:   apiRoot,
-			LibraryID: libraryID,
-			Output:    outputDir,
-			RepoDir:   r.repo.Dir,
-		}
-		slog.Info("Performing refined generation for library", "id", libraryID)
-		if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
-			return "", err
-		}
-
-		if err := r.cleanAndCopyLibrary(libraryID, outputDir); err != nil {
-			return "", err
-		}
-
-		return libraryID, nil
+	if r.repo == nil {
+		return "", errors.New("repository not found")
 	}
 
-	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
+	generateRequest := &docker.GenerateRequest{
+		Cfg:       r.cfg,
+		State:     r.state,
+		ApiRoot:   apiRoot,
+		LibraryID: libraryID,
+		Output:    outputDir,
+		RepoDir:   r.repo.Dir,
+	}
+	slog.Info("Performing refined generation for library", "id", libraryID)
+	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
+		return "", err
+	}
 
-	return "", fmt.Errorf("library not found")
+	if err := r.cleanAndCopyLibrary(libraryID, outputDir); err != nil {
+		return "", err
+	}
+
+	return libraryID, nil
+
 }
 
 func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error {

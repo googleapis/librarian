@@ -492,6 +492,115 @@ func TestGenerateRun(t *testing.T) {
 	}
 }
 
+func TestGenerateScenarios(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name               string
+		api                string
+		library            string
+		repo               *gitrepo.Repository
+		state              *config.LibrarianState
+		container          *mockContainerClient
+		ghClient           GitHubClient
+		pushConfig         string
+		build              bool
+		wantErr            bool
+		wantGenerateCalls  int
+		wantBuildCalls     int
+		wantConfigureCalls int
+	}{
+		{
+			name:               "generate single library including initial configuration",
+			api:                "some/api",
+			library:            "some-library",
+			repo:               newTestGitRepo(t),
+			state:              &config.LibrarianState{Image: "gcr.io/test/image:v1.2.3"},
+			container:          &mockContainerClient{},
+			ghClient:           &mockGitHubClient{},
+			pushConfig:         "xxx@email.com,author",
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 1,
+		},
+		{
+			name:    "generate single existing library",
+			library: "some-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:         &mockContainerClient{},
+			ghClient:          &mockGitHubClient{},
+			pushConfig:        "xxx@email.com,author",
+			build:             true,
+			wantGenerateCalls: 1,
+			wantBuildCalls:    1,
+		},
+		{
+			name: "generate all libraries configured in state",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{ID: "library1", APIs: []*config.API{{Path: "some/api1"}}},
+					{ID: "library2", APIs: []*config.API{{Path: "some/api2"}}},
+				},
+			},
+			container:         &mockContainerClient{},
+			ghClient:          &mockGitHubClient{},
+			pushConfig:        "xxx@email.com,author",
+			build:             true,
+			wantGenerateCalls: 2,
+			wantBuildCalls:    2,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			r := &generateRunner{
+				cfg: &config.Config{
+					API:        test.api,
+					Library:    test.library,
+					PushConfig: test.pushConfig,
+					Source:     t.TempDir(),
+					Build:      test.build,
+				},
+				repo:            test.repo,
+				state:           test.state,
+				containerClient: test.container,
+				ghClient:        test.ghClient,
+				workRoot:        t.TempDir(),
+			}
+
+			err := r.run(context.Background())
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
+				t.Errorf("run() generateCalls mismatch (-want +got):%s", diff)
+			}
+			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
+				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
+			}
+			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
+				t.Errorf("run() configureCalls mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
 func TestClean(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
