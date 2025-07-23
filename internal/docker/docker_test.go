@@ -30,14 +30,13 @@ import (
 
 func TestNew(t *testing.T) {
 	const (
-		testWorkRoot       = "testWorkRoot"
-		testImage          = "testImage"
-		testSecretsProject = "testSecretsProject"
-		testUID            = "1000"
-		testGID            = "1001"
+		testWorkRoot = "testWorkRoot"
+		testImage    = "testImage"
+		testUID      = "1000"
+		testGID      = "1001"
 	)
 	pipelineConfig := &config.PipelineConfig{}
-	d, err := New(testWorkRoot, testImage, testSecretsProject, testUID, testGID, pipelineConfig)
+	d, err := New(testWorkRoot, testImage, testUID, testGID, pipelineConfig)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}

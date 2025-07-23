@@ -43,13 +43,12 @@ func (c *mockClient) Close() error {
 func TestFetchSecrets(t *testing.T) {
 	for _, test := range []struct {
 		name       string
-		project    string
 		secretName string
 		mockResult string
 		want       string
 	}{
-		{"Basic", "some-project-id", "some-secret-name", "some-secret-value", "some-secret-value"},
-		{"Empty response", "some-project-id", "some-secret-name", "", ""},
+		{"Basic", "some-secret-name", "some-secret-value", "some-secret-value"},
+		{"Empty response", "some-secret-name", "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			mock := &mockClient{
@@ -57,7 +56,7 @@ func TestFetchSecrets(t *testing.T) {
 			}
 			client := newClient(mock)
 			defer client.Close()
-			got, err := client.Get(t.Context(), test.project, test.secretName)
+			got, err := client.Get(t.Context(), test.secretName)
 			if err != nil {
 				t.Errorf("unexpected error fetching secret: %s", err)
 			}

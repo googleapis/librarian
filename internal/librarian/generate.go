@@ -91,7 +91,6 @@ func init() {
 	addFlagHostMount(fs, cfg)
 	addFlagPushConfig(fs, cfg)
 	addFlagImage(fs, cfg)
-	addFlagProject(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagSource(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
@@ -141,7 +140,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 		}
 	}
-	container, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, pipelineConfig)
+	container, err := docker.New(workRoot, image, cfg.UserUID, cfg.UserGID, pipelineConfig)
 	if err != nil {
 		return nil, err
 	}

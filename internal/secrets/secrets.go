@@ -54,9 +54,9 @@ func newClient(client secretsClient) *Client {
 
 // Get fetches the latest version of a secret as a string. This method assumes
 // the secret payload is a UTF-8 string.
-func (c *Client) Get(ctx context.Context, project string, secretName string) (string, error) {
+func (c *Client) Get(ctx context.Context, secretName string) (string, error) {
 	request := &secretmanagerpb.AccessSecretVersionRequest{
-		Name: fmt.Sprintf("projects/%s/secrets/%s/versions/latest", project, secretName),
+		Name: fmt.Sprintf("projects/googleapis/secrets/%s/versions/latest", secretName),
 	}
 	secret, err := c.client.AccessSecretVersion(ctx, request)
 	if err != nil {

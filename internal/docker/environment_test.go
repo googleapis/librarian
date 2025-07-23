@@ -26,20 +26,16 @@ import (
 
 func TestNewEnvironmentProvider(t *testing.T) {
 	const (
-		testWorkRoot       = "testWorkRoot"
-		testSecretsProject = "testSecretsProject"
+		testWorkRoot = "testWorkRoot"
 	)
 	pipelineConfig := &config.PipelineConfig{}
-	ep := newEnvironmentProvider(testWorkRoot, testSecretsProject, pipelineConfig)
+	ep := newEnvironmentProvider(testWorkRoot, pipelineConfig)
 	if ep == nil {
 		t.Fatal("newEnvironmentProvider() returned nil")
 	}
 	wantTmpFile := filepath.Join(testWorkRoot, "docker-env.txt")
 	if ep.tmpFile != wantTmpFile {
 		t.Errorf("ep.tmpFile = %q, want %q", ep.tmpFile, wantTmpFile)
-	}
-	if ep.secretsProject != testSecretsProject {
-		t.Errorf("ep.secretsProject = %q, want %q", ep.secretsProject, testSecretsProject)
 	}
 	if ep.pipelineConfig != pipelineConfig {
 		t.Error("ep.pipelineConfig is not the same as the one passed in")
@@ -53,7 +49,7 @@ func TestWriteEnvironmentFile(t *testing.T) {
 	ctx := context.Background()
 	testContent := "foo=bar\n"
 	tmpDir := t.TempDir()
-	e := newEnvironmentProvider(tmpDir, "", &config.PipelineConfig{
+	e := newEnvironmentProvider(tmpDir, &config.PipelineConfig{
 		Commands: map[string]*config.CommandConfig{
 			"test-command": {
 				EnvironmentVariables: []*config.CommandEnvironmentVariable{
@@ -96,7 +92,7 @@ func TestConstructEnvironmentFileContent(t *testing.T) {
 		},
 	}
 
-	e := newEnvironmentProvider("", "", pipelineConfig)
+	e := newEnvironmentProvider("", pipelineConfig)
 	e.secretCache[testSecretName] = testSecretValue
 	t.Setenv(testHostVar, testHostValue)
 

@@ -34,8 +34,6 @@ import (
 type EnvironmentProvider struct {
 	// The file used to store the environment variables for the duration of a docker run.
 	tmpFile string
-	// The project in which to look up secrets
-	secretsProject string
 	// A cache of secrets we've already fetched.
 	secretCache map[string]string
 	// The pipeline configuration, specifying which environment variables to obtain
@@ -43,14 +41,13 @@ type EnvironmentProvider struct {
 	pipelineConfig *config.PipelineConfig
 }
 
-func newEnvironmentProvider(workRoot, secretsProject string, pipelineConfig *config.PipelineConfig) *EnvironmentProvider {
+func newEnvironmentProvider(workRoot string, pipelineConfig *config.PipelineConfig) *EnvironmentProvider {
 	if pipelineConfig == nil {
 		return nil
 	}
 	tmpFile := filepath.Join(workRoot, "docker-env.txt")
 	return &EnvironmentProvider{
 		tmpFile:        tmpFile,
-		secretsProject: secretsProject,
 		secretCache:    make(map[string]string),
 		pipelineConfig: pipelineConfig,
 	}
@@ -131,7 +128,7 @@ func (e *EnvironmentProvider) getSecretManagerValue(ctx context.Context, variabl
 		return "", false, err
 	}
 	defer client.Close()
-	value, err = client.Get(ctx, e.secretsProject, variable.SecretName)
+	value, err = client.Get(ctx, variable.SecretName)
 	if err != nil {
 		// If the error is that the secret wasn't found, continue to the next source.
 		// Any other error causes a real error to be returned.
