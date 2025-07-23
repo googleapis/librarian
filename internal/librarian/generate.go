@@ -175,7 +175,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	} else {
 		for _, library := range r.state.Libraries {
 			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
-				// TODO: record failure and report in PR body when applicable
+				// TODO(https://github.com/googleapis/librarian/issues/983): record failure and report in PR body when applicable
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
 				continue
 			}
