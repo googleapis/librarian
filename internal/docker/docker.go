@@ -119,8 +119,8 @@ type ConfigureRequest struct {
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
-func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *config.PipelineConfig) (*Docker, error) {
-	envProvider := newEnvironmentProvider(workRoot, secretsProject, pipelineConfig)
+func New(workRoot, image, uid, gid string, pipelineConfig *config.PipelineConfig) (*Docker, error) {
+	envProvider := newEnvironmentProvider(workRoot, pipelineConfig)
 	docker := &Docker{
 		Image: image,
 		env:   envProvider,
