@@ -162,11 +162,8 @@ func (r *generateRunner) run(ctx context.Context) error {
 	slog.Info("Code will be generated", "dir", outputDir)
 
 	if r.cfg.API != "" || r.cfg.Library != "" {
-		var libraryID string
-		if r.cfg.Library != "" {
-			libraryID = r.cfg.Library
-
-		} else {
+		libraryID := r.cfg.Library
+		if libraryID == "" {
 			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
 		}
 		if err := r.generateSingleLibrary(ctx, libraryID, outputDir); err != nil {
@@ -227,10 +224,6 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
 		return "", err
-	}
-
-	if r.repo == nil {
-		return "", errors.New("repository not found")
 	}
 
 	generateRequest := &docker.GenerateRequest{

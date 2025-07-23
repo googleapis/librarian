@@ -94,7 +94,7 @@ type Config struct {
 	Image string
 
 	// Library is the library ID to generate (e.g. google-cloud-secretmanager-v1 ).
-	//  This usually corresponds to a releasable language unit -- for Go this would
+	// This usually corresponds to a releasable language unit -- for Go this would
 	// be a Go module or for dotnet the name of a NuGet package. If neither this nor
 	// api is specified all currently managed libraries will be regenerated.
 	Library string
