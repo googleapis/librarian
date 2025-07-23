@@ -46,9 +46,9 @@ jobs:
           -f ./testdata/e2e-test.Dockerfile \
           -t test-image:latest \
           .
-    - name: Run the test image
+    - name: Build the librarian
       run: |
-        docker run \
-          --rm \
-          test-image:latest \
-          hello world
+        go build ./cmd/librarian
+    - name: Run end-to-end test
+      run: |
+        go test -tags e2e ./...
