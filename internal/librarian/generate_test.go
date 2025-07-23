@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,16 +40,18 @@ type mockContainerClient struct {
 	generateCalls  int
 	buildCalls     int
 	configureCalls int
+	generateErr    error
+	buildErr       error
 }
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
-	return nil
+	return m.generateErr
 }
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
 	m.buildCalls++
-	return nil
+	return m.buildErr
 }
 
 func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) error {
@@ -57,6 +60,9 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 }
 
 func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
+	if m.rawErr != nil {
+		return nil, m.rawErr
+	}
 	// Return an empty metadata struct and no error to satisfy the interface.
 	return &github.PullRequestMetadata{}, nil
 }
@@ -440,6 +446,63 @@ func TestGenerateRun(t *testing.T) {
 			build:             true,
 			wantGenerateCalls: 1,
 			wantErr:           true,
+		},
+		{
+			name: "generate error",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:  &mockContainerClient{generateErr: errors.New("generate error")},
+			ghClient:   &mockGitHubClient{},
+			pushConfig: "xxx@email.com,author",
+			build:      true,
+			wantErr:    true,
+		},
+		{
+			name: "build error",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:  &mockContainerClient{buildErr: errors.New("build error")},
+			ghClient:   &mockGitHubClient{},
+			pushConfig: "xxx@email.com,author",
+			build:      true,
+			wantErr:    true,
+		},
+		{
+			name: "commit and push error",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:  &mockContainerClient{},
+			ghClient:   &mockGitHubClient{rawErr: errors.New("commit and push error")},
+			pushConfig: "xxx@email.com,author",
+			build:      true,
+			wantErr:    true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
