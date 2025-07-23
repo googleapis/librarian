@@ -42,10 +42,6 @@ func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
 }
 
-func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Project, "project", "", "Project containing Secret Manager secrets.")
-}
-
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "",
 		"Code repository where the generated code will reside. "+

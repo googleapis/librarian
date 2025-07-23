@@ -91,7 +91,6 @@ func init() {
 	addFlagHostMount(fs, cfg)
 	addFlagPushConfig(fs, cfg)
 	addFlagImage(fs, cfg)
-	addFlagProject(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagSource(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
@@ -101,7 +100,6 @@ type generateRunner struct {
 	cfg             *config.Config
 	repo            *gitrepo.Repository
 	state           *config.LibrarianState
-	config          *config.PipelineConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
 	workRoot        string
@@ -123,7 +121,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	state, pipelineConfig, err := loadRepoStateAndConfig(repo, cfg.Source)
+	state, err := loadRepoState(repo, cfg.Source)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +139,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 		}
 	}
-	container, err := docker.New(workRoot, image, cfg.Project, cfg.UserUID, cfg.UserGID, pipelineConfig)
+	container, err := docker.New(workRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +148,6 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		workRoot:        workRoot,
 		repo:            repo,
 		state:           state,
-		config:          pipelineConfig,
 		image:           image,
 		ghClient:        ghClient,
 		containerClient: container,
