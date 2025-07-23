@@ -41,37 +41,28 @@ var cmdGenerate = &cli.Command{
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
 to build the generated library.
 
-First, the generation mode is determined by examining the language repository (remotely if
-a local clone has not been specified). The Librarian state for the repository is examined to see if the
-specified API path is already configured for a library in the repository. If it is, the refined generation
-mode is used. Otherwise the raw generation mode is used. These are described separately below.
+The generate command handles both onboarding new libraries and regenerating existing ones.
+The behavior is determined by the provided flags.
 
-*Refined generation* is intended to give an accurate result for how an existing library would change when
-generated with the new API specification. Generation for this library might include pregeneration or postgeneration
-fixes, and the library may include handwritten code, unit tests and integration tests.
+**Onboarding a new library:**
+To configure and generate a new library, specify both the "-api" and "-library" flags. This process involves:
+1. Running the "configure" command in the language container to set up the repository.
+2. Adding the new library's configuration to the ".librarian/state.yaml" file.
+3. Proceeding with the generation steps below.
 
-The process for refined generation requires the language repo to be cloned (if a local clone hasn't been
-specified). Generation then proceeds by executing the following language container commands:
-- "generate-library" to generate the source code for the library into an empty directory
-- "clean" to clean any previously-generated source code from the language repository
-- "build-library" (after copying the newly-generated code into place in the repository)
+**Regenerating existing libraries:**
+If only "-api" or "-library" is specified, the command regenerates that single, existing library.
+If neither flag is provided, it regenerates all libraries listed in ".librarian/state.yaml".
 
-(The "clean" and "build-library" commands are skipped if the -build flag is not specified.)
+The generation process for an existing library involves delegating to the language container's 
+'generate' command. After generation, the tool cleans the destination directory and copies the 
+new files into place, according to the configuration in '.librarian/state.yaml'. 
+If the '--build' flag is specified, the 'build' command is also executed.
 
-The result of the generation is not committed anywhere, but the language repository will be left with any
-working tree changes available to be checked. (Changes are not reverted.)
-
-
-*Raw generation* is intended to give an early indication of whether an API can successfully be generated
-as a library, and whether that library can then be built, without any additional information from the language
-repo. The language repo is not cloned, but instead the following language container commands are executed:
-- "generate-raw" to generate the source code for the library into an empty directory
-- "build-raw" (if the -build flag is specified)
-
-There is no "clean" operation or copying of the generated code in raw generation mode, because there is no
-other source code to be preserved/cleaned. Instead, the "build-raw" command is provided with the same
-output directory that was specified for the "generate-raw" command.
-`,
+**Output:**
+After generation, if a push configuration is provided (e.g., via the "-push-config" flag), the changes
+are committed to a new branch, and a pull request is created. Otherwise, the changes are left in the
+local working tree for inspection.`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
 		runner, err := newGenerateRunner(cfg)
 		if err != nil {
@@ -197,6 +188,11 @@ func (r *generateRunner) run(ctx context.Context) error {
 	return nil
 }
 
+// generateSingleLibrary manages the generation of a single client library.
+//
+// It can either configure a new library if the API and library names both are specified
+// in the configuration, or regenerate an existing library if a libraryID is provided.
+// After ensuring the library is configured, it runs the generation and build commands.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) error {
 	if r.cfg.API != "" && r.cfg.Library != "" {
 		configuredLibraryID, err := r.runConfigureCommand(ctx)
