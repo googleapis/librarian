@@ -54,8 +54,8 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 			"/path/to/repo`. Both absolute and relative paths are supported.")
 }
 
-func addFlagSource(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Source, "source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+func addFlagAPISource(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.APISource, "api-source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {

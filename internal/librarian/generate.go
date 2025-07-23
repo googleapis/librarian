@@ -93,7 +93,7 @@ func init() {
 	addFlagImage(fs, cfg)
 	addFlagProject(fs, cfg)
 	addFlagRepo(fs, cfg)
-	addFlagSource(fs, cfg)
+	addFlagAPISource(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 }
 
@@ -123,7 +123,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	state, pipelineConfig, err := loadRepoStateAndConfig(repo, cfg.Source)
+	state, pipelineConfig, err := loadRepoStateAndConfig(repo, cfg.APISource)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // If successful, it returns the ID of the generated library; otherwise, it
 // returns an empty string and an error.
 func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir string) (string, error) {
-	apiRoot, err := filepath.Abs(r.cfg.Source)
+	apiRoot, err := filepath.Abs(r.cfg.APISource)
 	if err != nil {
 		return "", err
 	}
@@ -438,7 +438,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 	if r.cfg.API == "" {
 		return errors.New("API flag not specified for new library configuration")
 	}
-	apiRoot, err := filepath.Abs(r.cfg.Source)
+	apiRoot, err := filepath.Abs(r.cfg.APISource)
 	if err != nil {
 		return err
 	}
@@ -472,7 +472,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
 // by fetching the single file) if flatRepoUrl has been specified. If neither the repo
 // root not the repo url has been specified, we always perform raw generation.
 func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, error) {
-	apiPath, repo, source := r.cfg.API, r.cfg.Repo, r.cfg.Source
+	apiPath, repo, apisource := r.cfg.API, r.cfg.Repo, r.cfg.APISource
 	if repo == "" {
 		slog.Warn("repo is not specified, cannot check if library exists")
 		return false, nil
@@ -484,13 +484,13 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 		err           error
 	)
 	if isUrl(repo) {
-		pipelineState, err = fetchRemoteLibrarianState(ctx, r.ghClient, "HEAD", source)
+		pipelineState, err = fetchRemoteLibrarianState(ctx, r.ghClient, "HEAD", apisource)
 		if err != nil {
 			return false, err
 		}
 	} else {
 		// repo is a directory
-		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.LibrarianDir, pipelineStateFile), source)
+		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.LibrarianDir, pipelineStateFile), apisource)
 		if err != nil {
 			return false, err
 		}

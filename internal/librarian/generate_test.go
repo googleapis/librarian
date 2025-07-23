@@ -218,7 +218,7 @@ func TestRunGenerateCommand(t *testing.T) {
 			r := &generateRunner{
 				cfg: &config.Config{
 					API:        test.api,
-					Source:     t.TempDir(),
+					APISource:  t.TempDir(),
 					PushConfig: test.pushConfig,
 				},
 				repo:            test.repo,
@@ -314,7 +314,7 @@ func TestRunConfigureCommand(t *testing.T) {
 	for _, test := range []struct {
 		name               string
 		api                string
-		source             string
+		apiSource          string
 		repo               *gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
@@ -365,8 +365,8 @@ func TestRunConfigureCommand(t *testing.T) {
 			wantErr:   true,
 		},
 		{
-			name:               "error on invalid source path",
-			source:             "invalid path",
+			name:               "error on invalid api source path",
+			apiSource:          "invalid path",
 			repo:               newTestGitRepo(t),
 			state:              &config.LibrarianState{},
 			container:          &mockContainerClient{},
@@ -376,14 +376,14 @@ func TestRunConfigureCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			sourcePath := test.source
+			sourcePath := test.apiSource
 			if sourcePath == "" {
 				sourcePath = t.TempDir()
 			}
 			r := &generateRunner{
 				cfg: &config.Config{
-					API:    test.api,
-					Source: sourcePath,
+					API:       test.api,
+					APISource: sourcePath,
 				},
 				repo:            test.repo,
 				state:           test.state,
@@ -416,21 +416,21 @@ func TestNewGenerateRunner(t *testing.T) {
 		{
 			name: "valid config",
 			cfg: &config.Config{
-				API:      "some/api",
-				Source:   t.TempDir(),
-				Repo:     newTestGitRepo(t).Dir,
-				WorkRoot: t.TempDir(),
-				Image:    "gcr.io/test/test-image",
+				API:       "some/api",
+				APISource: t.TempDir(),
+				Repo:      newTestGitRepo(t).Dir,
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
 			},
 		},
 		{
 			name: "missing image",
 			cfg: &config.Config{
 
-				API:      "some/api",
-				Source:   t.TempDir(),
-				Repo:     "https://github.com/googleapis/librarian.git",
-				WorkRoot: t.TempDir(),
+				API:       "some/api",
+				APISource: t.TempDir(),
+				Repo:      "https://github.com/googleapis/librarian.git",
+				WorkRoot:  t.TempDir(),
 			},
 			wantErr: true,
 		},
@@ -438,7 +438,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "push config without github token",
 			cfg: &config.Config{
 				API:        "some/api",
-				Source:     "some/source",
+				APISource:  "some/source",
 				PushConfig: "test@example.com,Test User",
 			},
 			wantErr: true,
@@ -447,7 +447,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "push config with github token is valid",
 			cfg: &config.Config{
 				API:         "some/api",
-				Source:      t.TempDir(),
+				APISource:   t.TempDir(),
 				Repo:        newTestGitRepo(t).Dir,
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -590,7 +590,7 @@ func TestGenerateRun(t *testing.T) {
 				cfg: &config.Config{
 					API:        test.api,
 					PushConfig: test.pushConfig,
-					Source:     t.TempDir(),
+					APISource:  t.TempDir(),
 					Build:      test.build,
 				},
 				repo:            test.repo,
