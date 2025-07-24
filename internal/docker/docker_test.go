@@ -31,14 +31,12 @@ import (
 
 func TestNew(t *testing.T) {
 	const (
-		testWorkRoot       = "testWorkRoot"
-		testImage          = "testImage"
-		testSecretsProject = "testSecretsProject"
-		testUID            = "1000"
-		testGID            = "1001"
+		testWorkRoot = "testWorkRoot"
+		testImage    = "testImage"
+		testUID      = "1000"
+		testGID      = "1001"
 	)
-	pipelineConfig := &config.PipelineConfig{}
-	d, err := New(testWorkRoot, testImage, testSecretsProject, testUID, testGID, pipelineConfig)
+	d, err := New(testWorkRoot, testImage, testUID, testGID)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -50,9 +48,6 @@ func TestNew(t *testing.T) {
 	}
 	if d.gid != testGID {
 		t.Errorf("d.gid = %q, want %q", d.gid, testGID)
-	}
-	if d.env == nil {
-		t.Error("d.env is nil")
 	}
 	if d.run == nil {
 		t.Error("d.run is nil")
