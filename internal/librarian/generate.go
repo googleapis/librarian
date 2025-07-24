@@ -161,12 +161,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
+	pr_message := ""
 	if r.cfg.API != "" || r.cfg.Library != "" {
 		libraryID := r.cfg.Library
 		if libraryID == "" {
 			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
 		}
 		if err := r.generateSingleLibrary(ctx, libraryID, outputDir); err != nil {
+			pr_message += fmt.Sprintf("%s failed to generate\n", libraryID)
 			return err
 		}
 	} else {
@@ -174,11 +176,12 @@ func (r *generateRunner) run(ctx context.Context) error {
 			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
 				// TODO(https://github.com/googleapis/librarian/issues/983): record failure and report in PR body when applicable
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
+				pr_message += fmt.Sprintf("%s failed to generate\n", library.ID)
 			}
 		}
 	}
 
-	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
+	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig, pr_message); err != nil {
 		return err
 	}
 	return nil
