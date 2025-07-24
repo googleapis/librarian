@@ -41,37 +41,28 @@ var cmdGenerate = &cli.Command{
 Optional flags can be specified to use a non-default language repository, and to indicate whether or not
 to build the generated library.
 
-First, the generation mode is determined by examining the language repository (remotely if
-a local clone has not been specified). The Librarian state for the repository is examined to see if the
-specified API path is already configured for a library in the repository. If it is, the refined generation
-mode is used. Otherwise the raw generation mode is used. These are described separately below.
+The generate command handles both onboarding new libraries and regenerating existing ones.
+The behavior is determined by the provided flags.
 
-*Refined generation* is intended to give an accurate result for how an existing library would change when
-generated with the new API specification. Generation for this library might include pregeneration or postgeneration
-fixes, and the library may include handwritten code, unit tests and integration tests.
+**Onboarding a new library:**
+To configure and generate a new library, specify both the "-api" and "-library" flags. This process involves:
+1. Running the "configure" command in the language container to set up the repository.
+2. Adding the new library's configuration to the ".librarian/state.yaml" file.
+3. Proceeding with the generation steps below.
 
-The process for refined generation requires the language repo to be cloned (if a local clone hasn't been
-specified). Generation then proceeds by executing the following language container commands:
-- "generate-library" to generate the source code for the library into an empty directory
-- "clean" to clean any previously-generated source code from the language repository
-- "build-library" (after copying the newly-generated code into place in the repository)
+**Regenerating existing libraries:**
+If only "-api" or "-library" is specified, the command regenerates that single, existing library.
+If neither flag is provided, it regenerates all libraries listed in ".librarian/state.yaml".
 
-(The "clean" and "build-library" commands are skipped if the -build flag is not specified.)
+The generation process for an existing library involves delegating to the language container's 
+'generate' command. After generation, the tool cleans the destination directory and copies the 
+new files into place, according to the configuration in '.librarian/state.yaml'. 
+If the '--build' flag is specified, the 'build' command is also executed.
 
-The result of the generation is not committed anywhere, but the language repository will be left with any
-working tree changes available to be checked. (Changes are not reverted.)
-
-
-*Raw generation* is intended to give an early indication of whether an API can successfully be generated
-as a library, and whether that library can then be built, without any additional information from the language
-repo. The language repo is not cloned, but instead the following language container commands are executed:
-- "generate-raw" to generate the source code for the library into an empty directory
-- "build-raw" (if the -build flag is specified)
-
-There is no "clean" operation or copying of the generated code in raw generation mode, because there is no
-other source code to be preserved/cleaned. Instead, the "build-raw" command is provided with the same
-output directory that was specified for the "generate-raw" command.
-`,
+**Output:**
+After generation, if a push configuration is provided (e.g., via the "-push-config" flag), the changes
+are committed to a new branch, and a pull request is created. Otherwise, the changes are left in the
+local working tree for inspection.`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
 		runner, err := newGenerateRunner(cfg)
 		if err != nil {
@@ -87,12 +78,13 @@ func init() {
 	cfg := cmdGenerate.Config
 
 	addFlagAPI(fs, cfg)
+	addFlagAPISource(fs, cfg)
 	addFlagBuild(fs, cfg)
 	addFlagHostMount(fs, cfg)
-	addFlagPushConfig(fs, cfg)
 	addFlagImage(fs, cfg)
+	addFlagLibrary(fs, cfg)
+	addFlagPushConfig(fs, cfg)
 	addFlagRepo(fs, cfg)
-	addFlagSource(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 }
 
@@ -121,7 +113,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	state, err := loadRepoState(repo, cfg.Source)
+	state, err := loadRepoState(repo, cfg.APISource)
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +146,11 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	}, nil
 }
 
+// run executes the library generation process.
+//
+// It determines whether to generate a single library or all configured libraries based on the
+// command-line flags. If an API or library is specified, it generates a single library. Otherwise,
+// it iterates through all libraries defined in the state and generates them.
 func (r *generateRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
@@ -161,31 +158,58 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
-	configured, err := r.detectIfLibraryConfigured(ctx)
-	if err != nil {
-		return err
-	}
-
-	if !configured {
-		if err := r.runConfigureCommand(ctx); err != nil {
+	if r.cfg.API != "" || r.cfg.Library != "" {
+		libraryID := r.cfg.Library
+		if libraryID == "" {
+			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
+		}
+		if err := r.generateSingleLibrary(ctx, libraryID, outputDir); err != nil {
 			return err
+		}
+	} else {
+		for _, library := range r.state.Libraries {
+			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
+				// TODO(https://github.com/googleapis/librarian/issues/983): record failure and report in PR body when applicable
+				slog.Error("failed to generate library", "id", library.ID, "err", err)
+			}
 		}
 	}
 
-	libraryID, err := r.runGenerateCommand(ctx, outputDir)
-	if err != nil {
-		return err
-	}
-
-	if err := r.runBuildCommand(ctx, libraryID); err != nil {
-		return err
-	}
-
-	// Commit and Push to GitHub.
 	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
 		return err
 	}
 	return nil
+}
+
+// generateSingleLibrary manages the generation of a single client library.
+//
+// It can either configure a new library if the API and library both are specified
+// and library not configured in state.yaml yet, or regenerate an existing library
+// if a libraryID is provided.
+// After ensuring the library is configured, it runs the generation and build commands.
+func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) error {
+	if r.needsConfiguration() {
+		slog.Info("library not configured, start initial configuration", "library", r.cfg.Library)
+		configuredLibraryID, err := r.runConfigureCommand(ctx)
+		if err != nil {
+			return err
+		}
+		libraryID = configuredLibraryID
+	}
+
+	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, outputDir)
+	if err != nil {
+		return err
+	}
+
+	if err := r.runBuildCommand(ctx, generatedLibraryID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *generateRunner) needsConfiguration() bool {
+	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
 }
 
 // runGenerateCommand attempts to perform generation for an API. It then cleans the
@@ -193,43 +217,34 @@ func (r *generateRunner) run(ctx context.Context) error {
 //
 // If successful, it returns the ID of the generated library; otherwise, it
 // returns an empty string and an error.
-func (r *generateRunner) runGenerateCommand(ctx context.Context, outputDir string) (string, error) {
-	apiRoot, err := filepath.Abs(r.cfg.Source)
+func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outputDir string) (string, error) {
+	if findLibraryByID(r.state, libraryID) == nil {
+		return "", fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
+	}
+	apiRoot, err := filepath.Abs(r.cfg.APISource)
 	if err != nil {
 		return "", err
 	}
 
-	// If we've got a language repo, it's because we've already found a library for the
-	// specified API, configured in the repo.
-	if r.repo != nil {
-		libraryID := findLibraryIDByAPIPath(r.state, r.cfg.API)
-		if libraryID == "" {
-			return "", errors.New("bug in Librarian: Library not found during generation, despite being found in earlier steps")
-		}
-
-		generateRequest := &docker.GenerateRequest{
-			Cfg:       r.cfg,
-			State:     r.state,
-			ApiRoot:   apiRoot,
-			LibraryID: libraryID,
-			Output:    outputDir,
-			RepoDir:   r.repo.Dir,
-		}
-		slog.Info("Performing refined generation for library", "id", libraryID)
-		if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
-			return "", err
-		}
-
-		if err := r.cleanAndCopyLibrary(libraryID, outputDir); err != nil {
-			return "", err
-		}
-
-		return libraryID, nil
+	generateRequest := &docker.GenerateRequest{
+		Cfg:       r.cfg,
+		State:     r.state,
+		ApiRoot:   apiRoot,
+		LibraryID: libraryID,
+		Output:    outputDir,
+		RepoDir:   r.repo.Dir,
+	}
+	slog.Info("Performing generation for library", "id", libraryID)
+	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
+		return "", err
 	}
 
-	slog.Info("No matching library found (or no repo specified)", "path", r.cfg.API)
+	if err := r.cleanAndCopyLibrary(libraryID, outputDir); err != nil {
+		return "", err
+	}
 
-	return "", fmt.Errorf("library not found")
+	return libraryID, nil
+
 }
 
 func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error {
@@ -237,6 +252,7 @@ func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error 
 	if library == nil {
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
+	slog.Info("Clean destinations and copy generated results for library", "id", libraryID)
 	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
 		return err
 	}
@@ -270,7 +286,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 		LibraryID: libraryID,
 		RepoDir:   r.repo.Dir,
 	}
-	slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
+	slog.Info("Build requested for library", "id", libraryID)
 	return r.containerClient.Build(ctx, buildRequest)
 }
 
@@ -431,74 +447,29 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 // necessary metadata or build configurations. It finds the library's ID
 // from the runner's state, gathers all paths and settings, and then delegates
 // the execution to the container client.
-func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
-	if r.cfg.API == "" {
-		return errors.New("API flag not specified for new library configuration")
-	}
-	apiRoot, err := filepath.Abs(r.cfg.Source)
+func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
+
+	apiRoot, err := filepath.Abs(r.cfg.APISource)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// Configuration requires a language repository to modify. If one isn't specified or
-	// found, we cannot proceed.
-	if r.repo == nil {
-		slog.Error("No language repository specified; cannot run configure.", "api", r.cfg.API)
-		return errors.New("a language repository must be specified to run configure")
-	}
-
-	libraryID := findLibraryIDByAPIPath(r.state, r.cfg.API)
-	if libraryID == "" {
-		return errors.New("bug in Librarian: Library not found during configuration, despite being found in earlier steps")
-	}
+	// record to state, not write to state.yaml
+	r.state.Libraries = append(r.state.Libraries, &config.LibraryState{
+		ID:   r.cfg.Library,
+		APIs: []*config.API{{Path: r.cfg.API}},
+	})
 
 	configureRequest := &docker.ConfigureRequest{
 		Cfg:       r.cfg,
 		State:     r.state,
 		ApiRoot:   apiRoot,
-		LibraryID: libraryID,
+		LibraryID: r.cfg.Library,
 		RepoDir:   r.repo.Dir,
 	}
-	slog.Info("Performing configuration for library", "id", libraryID)
-	return r.containerClient.Configure(ctx, configureRequest)
-}
-
-// detectIfLibraryConfigured returns whether a library has been configured for
-// the requested API (as specified in apiPath). This is done by checking the local
-// pipeline state if repoRoot has been specified, or the remote pipeline state (just
-// by fetching the single file) if flatRepoUrl has been specified. If neither the repo
-// root not the repo url has been specified, we always perform raw generation.
-func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, error) {
-	apiPath, repo, source := r.cfg.API, r.cfg.Repo, r.cfg.Source
-	if repo == "" {
-		slog.Warn("repo is not specified, cannot check if library exists")
-		return false, nil
+	slog.Info("Performing configuration for library", "id", r.cfg.Library)
+	if err := r.containerClient.Configure(ctx, configureRequest); err != nil {
+		return "", err
 	}
-
-	// Attempt to load the pipeline state either locally or from the repo URL
-	var (
-		pipelineState *config.LibrarianState
-		err           error
-	)
-	if isUrl(repo) {
-		pipelineState, err = fetchRemoteLibrarianState(ctx, r.ghClient, "HEAD", source)
-		if err != nil {
-			return false, err
-		}
-	} else {
-		// repo is a directory
-		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.LibrarianDir, pipelineStateFile), source)
-		if err != nil {
-			return false, err
-		}
-	}
-	// If the library doesn't exist, we don't use the repo at all.
-	libraryID := findLibraryIDByAPIPath(pipelineState, apiPath)
-	if libraryID == "" {
-		slog.Info("API path not configured in repo", "path", apiPath)
-		return false, nil
-	}
-
-	slog.Info("API configured", "path", apiPath, "library", libraryID)
-	return true, nil
+	return r.cfg.Library, nil
 }
