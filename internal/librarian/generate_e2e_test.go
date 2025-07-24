@@ -44,21 +44,21 @@ func TestRunGenerate(t *testing.T) {
 	t.Parallel()
 	rand.Seed(time.Now().UnixNano())
 	for _, test := range []struct {
-		name    string
-		api     string
-		source  string
-		wantErr bool
+		name      string
+		api       string
+		apiSource string
+		wantErr   bool
 	}{
 		{
-			name:   "testRunSuccess",
-			api:    "google/cloud/pubsub/v1",
-			source: "../../testdata/e2e/generate/api_root",
+			name:      "testRunSuccess",
+			api:       "google/cloud/pubsub/v1",
+			apiSource: "../../testdata/e2e/generate/api_root",
 		},
 		{
-			name:    "testRunFailed",
-			api:     "google/invalid/path",
-			source:  "../../testdata/e2e/generate/api_root",
-			wantErr: true,
+			name:      "testRunFailed",
+			api:       "google/invalid/path",
+			apiSource: "../../testdata/e2e/generate/api_root",
+			wantErr:   true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -76,7 +76,7 @@ func TestRunGenerate(t *testing.T) {
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--source=%s", test.source),
+				fmt.Sprintf("--api-source=%s", test.apiSource),
 			)
 			_, err := cmd.CombinedOutput()
 
