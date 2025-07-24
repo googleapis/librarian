@@ -1,0 +1,61 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: 'multi-approvers'
+
+on:
+  pull_request_target:
+    types:
+      - 'opened'
+      - 'edited'
+      - 'reopened'
+      - 'synchronize'
+      - 'ready_for_review'
+      - 'review_requested'
+      - 'review_request_removed'
+  pull_request_review:
+    types:
+      - 'submitted'
+      - 'dismissed'
+
+permissions:
+  actions: 'write'
+  contents: 'read'
+  id-token: 'write'
+  pull-requests: 'read'
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  multi-approvers:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 'Multi-approvers'
+        uses: 'abcxyz/actions/.github/actions/multi-approvers@893209ed79a3d2508eeec375ffaf3d21012f5cd0'
+        with:
+          team: 'googlers'
+          token: '${{ secrets.MULTI_APPROVERS_TOKEN }}'
+          user-id-allowlist: '25180681,55107282,122572305,78513119,49699333,70984784,44816363,205009765,56741989'
+          # username to ID mapping (https://api.github.com/users/{username}):
+          #   renovate-bot: 25180681
+          #   release-please[bot]: 55107282
+          #   cloud-java-bot: 122572305
+          #   gcf-owl-bot[bot]: 78513119
+          #   dependabot[bot]: 49699333
+          #   yoshi-code-bot: 70984784
+          #   yoshi-automation: 44816363
+          #   google-cloud-sdk-librarian-dotnet-robot: 205009765
+          #   copybara-service[bot]: 56741989
