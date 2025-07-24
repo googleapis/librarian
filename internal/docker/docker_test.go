@@ -450,3 +450,78 @@ func TestToGenerateRequestJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestReadResponseJson(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name         string
+		jsonFilePath string
+		wantState    *config.LibraryState
+		expectErr    bool
+	}{
+		{
+			name:         "successful-unmarshal",
+			jsonFilePath: "../../testdata/successful-unmarshal.json",
+			wantState: &config.LibraryState{
+				ID:                  "google-cloud-go",
+				Version:             "1.0.0",
+				LastGeneratedCommit: "abcd123",
+				APIs: []*config.API{
+					{
+						Path:          "google/cloud/compute/v1",
+						ServiceConfig: "example_service_config.yaml",
+					},
+				},
+				SourcePaths:   []string{"src/example/path"},
+				PreserveRegex: []string{"example-preserve-regex"},
+				RemoveRegex:   []string{"example-remove-regex"},
+			},
+			expectErr: false,
+		},
+		{
+			name:         "empty libraryState",
+			jsonFilePath: "../../testdata/empty-libraryState.json",
+			wantState:    &config.LibraryState{},
+			expectErr:    false,
+		},
+		{
+			name:      "nonexistent_dir_for_test",
+			wantState: nil,
+			expectErr: true,
+		},
+		{
+			name:      "invalid_file_name",
+			wantState: nil,
+			expectErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if test.name == "invalid_file_name" {
+				filePath := filepath.Join(tempDir, "my\x00file.json")
+				_, err := readResponse(filePath)
+				if err == nil {
+					t.Errorf("readResponse() expected an error but got nil")
+				}
+				return
+			} else if test.expectErr {
+				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
+				_, err := readResponse(filePath)
+				if err == nil {
+					t.Errorf("readResponse() expected an error but got nil")
+				}
+				return
+			}
+
+			gotState, err := readResponse(test.jsonFilePath)
+
+			if err != nil {
+				t.Fatalf("readResponse() unexpected error: %v", err)
+			}
+
+			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
+				t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
