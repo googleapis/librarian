@@ -273,7 +273,75 @@ func TestDockerRun(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Configure with no response",
+			name: "Configure with multiple libraries",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				curState := &config.LibrarianState{
+					Image: testImage,
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-library",
+							APIs: []*config.API{
+								{
+									Path: "example/path/v1",
+								},
+							},
+						},
+						{
+							ID: "another-example-library",
+							APIs: []*config.API{
+								{
+									Path:          "another/example/path/v1",
+									ServiceConfig: "another_v1.yaml",
+								},
+							},
+							SourcePaths: []string{
+								"another-example-source-path",
+							},
+						},
+					},
+				}
+				configureRequest := &ConfigureRequest{
+					Cfg:       cfg,
+					State:     curState,
+					LibraryID: testLibraryID,
+					RepoDir:   "absolute/path/to/repo",
+					ApiRoot:   testAPIRoot,
+				}
+				jsonData, _ := json.MarshalIndent(&config.LibraryState{
+					ID: "example-library",
+					APIs: []*config.API{
+						{
+							Path:          "example/path/v1",
+							ServiceConfig: "generated_example_v1.yaml",
+						},
+					},
+				}, "", "  ")
+				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
+				os.WriteFile(jsonFilePath, jsonData, 0644)
+				_, err := d.Configure(ctx, configureRequest)
+				defer os.RemoveAll(configureRequest.RepoDir)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", "absolute/path/to/repo/.librarian:/librarian",
+				"-v", "absolute/path/to/repo/.librarian/generator-input:/input",
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--source=/source",
+				fmt.Sprintf("--library-id=%s", testLibraryID),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Configure with no response returned from language container",
 			docker: &Docker{
 				Image: testImage,
 			},
