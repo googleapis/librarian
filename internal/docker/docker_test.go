@@ -456,7 +456,7 @@ func TestReadResponseJson(t *testing.T) {
 	}{
 		{
 			name:         "successful-unmarshal",
-			jsonFilePath: "../../testdata/successful-unmarshal.json",
+			jsonFilePath: "../../testdata/successful-unmarshal-libraryState.json",
 			wantState: &config.LibraryState{
 				ID:                  "google-cloud-go",
 				Version:             "1.0.0",
@@ -516,6 +516,112 @@ func TestReadResponseJson(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
 				t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestWriteLibrarianState(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		state     *config.LibrarianState
+		expectErr bool
+	}{
+		{
+			name: "successful-marshaling-librarianState-yaml",
+			state: &config.LibrarianState{
+				Image: "v1.0.0",
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "google-cloud-go",
+						Version:             "1.0.0",
+						LastGeneratedCommit: "abcd123",
+						APIs: []*config.API{
+							{
+								Path:          "google/cloud/compute/v1",
+								ServiceConfig: "example_service_config.yaml",
+							},
+						},
+						SourcePaths: []string{
+							"src/example/path",
+						},
+						PreserveRegex: []string{
+							"example-preserve-regex",
+						},
+						RemoveRegex: []string{
+							"example-remove-regex",
+						},
+					},
+					{
+						ID:      "google-cloud-storage",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{
+								Path:          "google/storage/v1",
+								ServiceConfig: "storage_service_config.yaml",
+							},
+						},
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:      "empty-librarianState-yaml",
+			state:     &config.LibrarianState{},
+			expectErr: false,
+		},
+		{
+			name:      "nonexistent_dir_for_test",
+			state:     &config.LibrarianState{},
+			expectErr: true,
+		},
+		{
+			name:      "invalid_file_name",
+			state:     &config.LibrarianState{},
+			expectErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if test.name == "invalid_file_name" {
+				filePath := filepath.Join(tempDir, "my\x00file.yaml")
+				err := writeLibrarianState(test.state, filePath)
+				if err == nil {
+					t.Errorf("writeLibrarianState() expected an error but got nil")
+				}
+				return
+			} else if test.expectErr {
+				filePath := filepath.Join("/non-exist-dir", "state.yaml")
+				err := writeLibrarianState(test.state, filePath)
+				if err == nil {
+					t.Errorf("writeLibrarianState() expected an error but got nil")
+				}
+				return
+			}
+
+			filePath := filepath.Join(tempDir, "state.yaml")
+			err := writeLibrarianState(test.state, filePath)
+
+			if err != nil {
+				t.Fatalf("writeLibrarianState() unexpected error: %v", err)
+			}
+
+			// Verify the file content
+			gotBytes, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Fatalf("Failed to read generated file: %v", err)
+			}
+
+			fileName := fmt.Sprintf("%s.yaml", test.name)
+			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
+			if readErr != nil {
+				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
+			}
+
+			if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
+				t.Errorf("Generated YAML mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
