@@ -25,6 +25,10 @@ func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
 }
 
+func addFlagAPISource(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.APISource, "api-source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+}
+
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
 }
@@ -52,10 +56,6 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 			"Can be a remote in the format of a remote URL such as "+
 			"https://github.com/{owner}/{repo} or a local file path like "+
 			"/path/to/repo`. Both absolute and relative paths are supported.")
-}
-
-func addFlagAPISource(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APISource, "api-source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {

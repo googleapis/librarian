@@ -87,13 +87,13 @@ func init() {
 	cfg := cmdGenerate.Config
 
 	addFlagAPI(fs, cfg)
+	addFlagAPISource(fs, cfg)
 	addFlagBuild(fs, cfg)
 	addFlagHostMount(fs, cfg)
 	addFlagPushConfig(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagProject(fs, cfg)
 	addFlagRepo(fs, cfg)
-	addFlagAPISource(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 }
 
