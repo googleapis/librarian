@@ -273,6 +273,37 @@ func TestDockerRun(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Configure with no response",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					Cfg:       cfg,
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   "absolute/path/to/repo",
+					ApiRoot:   testAPIRoot,
+				}
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", "absolute/path/to/repo/.librarian:/librarian",
+				"-v", "absolute/path/to/repo/.librarian/generator-input:/input",
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--source=/source",
+				fmt.Sprintf("--library-id=%s", testLibraryID),
+			},
+			wantErr: true,
+		},
+		{
 			name: "Configure with invalid repo dir",
 			docker: &Docker{
 				Image: testImage,
