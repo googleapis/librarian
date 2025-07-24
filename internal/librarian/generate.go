@@ -165,7 +165,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
 		}
 		if err := r.generateSingleLibrary(ctx, libraryID, outputDir); err != nil {
-			pr_message += fmt.Sprintf("%s failed to generate\n", libraryID)
 			return err
 		}
 	} else {
@@ -177,6 +176,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 			}
 		}
 	}
+	fmt.Println(pr_message)
 
 	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig, pr_message); err != nil {
 		return err
