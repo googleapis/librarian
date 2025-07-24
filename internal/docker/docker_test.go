@@ -282,7 +282,7 @@ func TestDockerRun(t *testing.T) {
 					Image: testImage,
 					Libraries: []*config.LibraryState{
 						{
-							ID: "example-library",
+							ID: testLibraryID,
 							APIs: []*config.API{
 								{
 									Path: "example/path/v1",
@@ -311,7 +311,7 @@ func TestDockerRun(t *testing.T) {
 					ApiRoot:   testAPIRoot,
 				}
 				jsonData, _ := json.MarshalIndent(&config.LibraryState{
-					ID: "example-library",
+					ID: testLibraryID,
 					APIs: []*config.API{
 						{
 							Path:          "example/path/v1",
@@ -319,10 +319,14 @@ func TestDockerRun(t *testing.T) {
 						},
 					},
 				}, "", "  ")
+				os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755)
 				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
 				os.WriteFile(jsonFilePath, jsonData, 0644)
-				_, err := d.Configure(ctx, configureRequest)
 				defer os.RemoveAll(configureRequest.RepoDir)
+				configuredLibrary, err := d.Configure(ctx, configureRequest)
+				if configuredLibrary != testLibraryID {
+					return errors.New("configured library, " + configuredLibrary + " is wrong")
+				}
 
 				return err
 			},
