@@ -56,7 +56,7 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 
 func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error) {
 	m.configureCalls++
-	return "", nil
+	return request.LibraryID, nil
 }
 
 func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
