@@ -170,9 +170,11 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 
 	if !configured {
-		if err := r.runConfigureCommand(ctx); err != nil {
+		changedLibrarianState, err := r.runConfigureCommand(ctx)
+		if err != nil {
 			return err
 		}
+		r.state = changedLibrarianState
 	}
 
 	libraryID, err := r.runGenerateCommand(ctx, outputDir)
@@ -434,25 +436,28 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 // necessary metadata or build configurations. It finds the library's ID
 // from the runner's state, gathers all paths and settings, and then delegates
 // the execution to the container client.
-func (r *generateRunner) runConfigureCommand(ctx context.Context) error {
+//
+// Note that this command may change the librarian state as the language container
+// may enrich the library state via the response.
+func (r *generateRunner) runConfigureCommand(ctx context.Context) (*config.LibrarianState, error) {
 	if r.cfg.API == "" {
-		return errors.New("API flag not specified for new library configuration")
+		return nil, errors.New("API flag not specified for new library configuration")
 	}
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Configuration requires a language repository to modify. If one isn't specified or
 	// found, we cannot proceed.
 	if r.repo == nil {
 		slog.Error("No language repository specified; cannot run configure.", "api", r.cfg.API)
-		return errors.New("a language repository must be specified to run configure")
+		return nil, errors.New("a language repository must be specified to run configure")
 	}
 
 	libraryID := findLibraryIDByAPIPath(r.state, r.cfg.API)
 	if libraryID == "" {
-		return errors.New("bug in Librarian: Library not found during configuration, despite being found in earlier steps")
+		return nil, errors.New("bug in Librarian: Library not found during configuration, despite being found in earlier steps")
 	}
 
 	configureRequest := &docker.ConfigureRequest{
@@ -490,7 +495,7 @@ func (r *generateRunner) detectIfLibraryConfigured(ctx context.Context) (bool, e
 		}
 	} else {
 		// repo is a directory
-		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.LibrarianDir, pipelineStateFile), source)
+		pipelineState, err = loadLibrarianStateFile(filepath.Join(repo, config.LibrarianDir, config.PipelineStateFile), source)
 		if err != nil {
 			return false, err
 		}

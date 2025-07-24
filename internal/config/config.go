@@ -28,6 +28,9 @@ const (
 	BuildRequest string = "build-request.json"
 	// ConfigureRequest is a JSON file that describes which library to configure.
 	ConfigureRequest string = "configure-request.json"
+	// ConfigureResponse is a JSON file that describes which library to change
+	// after initial configuration.
+	ConfigureResponse string = "configure-response.json"
 	// GeneratorInputDir is the default directory to store files that generator
 	// needs to regenerate libraries from an empty directory.
 	GeneratorInputDir string = ".librarian/generator-input"
@@ -35,7 +38,8 @@ const (
 	GenerateRequest string = "generate-request.json"
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
-	LibrarianDir string = ".librarian"
+	LibrarianDir      string = ".librarian"
+	PipelineStateFile        = "state.yaml"
 )
 
 // Config holds all configuration values parsed from flags or environment

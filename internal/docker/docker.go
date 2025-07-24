@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -197,17 +198,17 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 
 // Configure configures an API within a repository, either adding it to an
 // existing library or creating a new library.
-func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error {
-	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
-	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
-		return err
+func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (*config.LibrarianState, error) {
+	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
+	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
+		return nil, err
 	}
 	defer func(name string) {
 		err := os.Remove(name)
 		if err != nil {
 			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
 		}
-	}(jsonFilePath)
+	}(requestFilePath)
 	commandArgs := []string{
 		"--librarian=/librarian",
 		"--input=/input",
@@ -222,7 +223,37 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
 
-	return c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs)
+	if err := c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs); err != nil {
+		return nil, err
+	}
+	// read the new library state from the response and write it back to
+	// librarian state file.
+	responseFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+		}
+	}(responseFilePath)
+
+	libraryState, err := readResponse(responseFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, library := range request.State.Libraries {
+		if library.ID != libraryState.ID {
+			continue
+		}
+		request.State.Libraries[i] = libraryState
+	}
+
+	stateFile := filepath.Join(request.RepoDir, config.LibrarianDir, config.PipelineStateFile)
+	if err := writeLibrarianState(request.State, stateFile); err != nil {
+		return nil, err
+	}
+
+	return request.State, nil
 }
 
 func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
@@ -315,6 +346,40 @@ func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) 
 		if err != nil {
 			return fmt.Errorf("failed to write generate request JSON file: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func readResponse(jsonFilePath string) (*config.LibraryState, error) {
+	data, err := os.ReadFile(jsonFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response JSON file: %w", err)
+	}
+
+	libraryState := &config.LibraryState{}
+
+	if err := json.Unmarshal(data, libraryState); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON to state: %w", err)
+	}
+
+	return libraryState, nil
+}
+
+func writeLibrarianState(state *config.LibrarianState, yamlFilePath string) error {
+	yamlFile, err := os.Create(yamlFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create librarian state file: %w", err)
+	}
+	defer yamlFile.Close()
+
+	data, err := yaml.Marshal(state)
+	if err != nil {
+		return fmt.Errorf("failed to marshal state to YAML: %w", err)
+	}
+
+	if _, err := yamlFile.Write(data); err != nil {
+		return fmt.Errorf("failed to write librarian state file: %w", err)
 	}
 
 	return nil

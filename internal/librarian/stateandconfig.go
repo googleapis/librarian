@@ -30,7 +30,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const pipelineStateFile = "state.yaml"
 const pipelineConfigFile = "pipeline-config.json"
 const serviceConfigType = "type"
 const serviceConfigValue = "google.api.Service"
@@ -56,7 +55,7 @@ func loadLibrarianState(languageRepo *gitrepo.Repository, source string) (*confi
 	if languageRepo == nil {
 		return nil, nil
 	}
-	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
+	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, config.PipelineStateFile)
 	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
 }
 
@@ -76,7 +75,7 @@ func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
 func fetchRemoteLibrarianState(ctx context.Context, client GitHubClient, ref, source string) (*config.LibrarianState, error) {
 	return parseLibrarianState(func(file string) ([]byte, error) {
 		return client.GetRawContent(ctx, file, ref)
-	}, filepath.Join(config.LibrarianDir, pipelineStateFile), source)
+	}, filepath.Join(config.LibrarianDir, config.PipelineStateFile), source)
 }
 
 func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.PipelineConfig, error) {
