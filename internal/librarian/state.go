@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -37,19 +36,15 @@ const serviceConfigValue = "google.api.Service"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
-func loadRepoStateAndConfig(languageRepo *gitrepo.Repository, source string) (*config.LibrarianState, *config.PipelineConfig, error) {
+func loadRepoState(languageRepo *gitrepo.Repository, source string) (*config.LibrarianState, error) {
 	if languageRepo == nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 	state, err := loadLibrarianState(languageRepo, source)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	config, err := loadRepoPipelineConfig(languageRepo)
-	if err != nil {
-		return nil, nil, err
-	}
-	return state, config, nil
+	return state, nil
 }
 
 func loadLibrarianState(languageRepo *gitrepo.Repository, source string) (*config.LibrarianState, error) {
@@ -60,31 +55,10 @@ func loadLibrarianState(languageRepo *gitrepo.Repository, source string) (*confi
 	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
 }
 
-func loadRepoPipelineConfig(languageRepo *gitrepo.Repository) (*config.PipelineConfig, error) {
-	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineConfigFile)
-	return loadPipelineConfigFile(path)
-}
-
-func loadPipelineConfigFile(path string) (*config.PipelineConfig, error) {
-	return parsePipelineConfig(func() ([]byte, error) { return os.ReadFile(path) })
-}
-
 func fetchRemoteLibrarianState(ctx context.Context, client GitHubClient, ref, source string) (*config.LibrarianState, error) {
 	return parseLibrarianState(func(file string) ([]byte, error) {
 		return client.GetRawContent(ctx, file, ref)
 	}, filepath.Join(config.LibrarianDir, pipelineStateFile), source)
-}
-
-func parsePipelineConfig(contentLoader func() ([]byte, error)) (*config.PipelineConfig, error) {
-	bytes, err := contentLoader()
-	if err != nil {
-		return nil, err
-	}
-	config := &config.PipelineConfig{}
-	if err := json.Unmarshal(bytes, config); err != nil {
-		return nil, err
-	}
-	return config, nil
 }
 
 func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, source string) (*config.LibrarianState, error) {

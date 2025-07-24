@@ -51,9 +51,6 @@ type Docker struct {
 	// The Docker image to run.
 	Image string
 
-	// The provider for environment variables, if any.
-	env *EnvironmentProvider
-
 	// The user ID to run the container as.
 	uid string
 
@@ -119,11 +116,9 @@ type ConfigureRequest struct {
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
-func New(workRoot, image, secretsProject, uid, gid string, pipelineConfig *config.PipelineConfig) (*Docker, error) {
-	envProvider := newEnvironmentProvider(workRoot, secretsProject, pipelineConfig)
+func New(workRoot, image, uid, gid string) (*Docker, error) {
 	docker := &Docker{
 		Image: image,
-		env:   envProvider,
 		uid:   uid,
 		gid:   gid,
 	}
@@ -225,7 +220,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error
 	return c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs)
 }
 
-func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
+func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
 	mounts = maybeRelocateMounts(cfg, mounts)
 
 	args := []string{
@@ -243,19 +238,6 @@ func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Comm
 		args = append(args, "--user", fmt.Sprintf("%s:%s", c.uid, c.gid))
 	}
 
-	if c.env != nil {
-		if err := c.env.writeEnvironmentFile(ctx, string(command)); err != nil {
-			return err
-		}
-		args = append(args, "--env-file")
-		args = append(args, c.env.tmpFile)
-		defer func() {
-			cerr := os.Remove(c.env.tmpFile)
-			if err == nil {
-				err = cerr
-			}
-		}()
-	}
 	args = append(args, c.Image)
 	args = append(args, string(command))
 	args = append(args, commandArgs...)

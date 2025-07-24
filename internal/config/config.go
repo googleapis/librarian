@@ -109,19 +109,6 @@ type Config struct {
 	// api is specified all currently managed libraries will be regenerated.
 	Library string
 
-	// Project is the Google Cloud project containing Secret Manager secrets to
-	// provide to the language-specific container commands via environment variables.
-	//
-	// Project is used by all commands which perform language-specific operations.
-	// (This covers all commands other than merge-release-pr.)
-	// If no value is set, any language-specific operations which include an
-	// environment variable based on a secret will act as if the secret name
-	// wasn't set (so will just use a host environment variable or default value,
-	// if any).
-	//
-	// Project is specified with the -project flag.
-	Project string
-
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
 	// configure and update-apis.
