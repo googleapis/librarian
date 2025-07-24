@@ -60,13 +60,11 @@ func TestNew(t *testing.T) {
 
 func TestDockerRun(t *testing.T) {
 	const (
-		mockImage          = "mockImage"
-		testAPIPath        = "testAPIPath"
-		testAPIRoot        = "testAPIRoot"
-		testGeneratorInput = "testGeneratorInput"
-		testImage          = "testImage"
-		testLibraryID      = "testLibraryID"
-		testOutput         = "testOutput"
+		mockImage     = "mockImage"
+		testAPIRoot   = "testAPIRoot"
+		testImage     = "testImage"
+		testLibraryID = "testLibraryID"
+		testOutput    = "testOutput"
 	)
 
 	state := &config.LibrarianState{}
@@ -256,7 +254,8 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   "absolute/path/to/repo",
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+				_, err := d.Configure(ctx, configureRequest)
+				return err
 			},
 			want: []string{
 				"run", "--rm",
@@ -285,7 +284,8 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   "/non-exist-dir",
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+				_, err := d.Configure(ctx, configureRequest)
+				return err
 			},
 			want:    []string{},
 			wantErr: true,
@@ -303,7 +303,8 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   ".",
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+				_, err := d.Configure(ctx, configureRequest)
+				return err
 			},
 			want:    []string{},
 			wantErr: true,

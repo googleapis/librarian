@@ -51,9 +51,9 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	return nil
 }
 
-func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) error {
+func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) (*config.LibrarianState, error) {
 	m.configureCalls++
-	return nil
+	return nil, nil
 }
 
 func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
@@ -123,7 +123,7 @@ func TestDetectIfLibraryConfigured(t *testing.T) {
 					if err := os.MkdirAll(librarianDir, 0755); err != nil {
 						t.Fatalf("os.MkdirAll(%q, 0755) = %v", librarianDir, err)
 					}
-					stateFile := filepath.Join(librarianDir, pipelineStateFile)
+					stateFile := filepath.Join(librarianDir, config.PipelineStateFile)
 					b, err := yaml.Marshal(test.state)
 					if err != nil {
 						t.Fatalf("yaml.Marshal = %v", err)
@@ -390,7 +390,7 @@ func TestRunConfigureCommand(t *testing.T) {
 				containerClient: test.container,
 			}
 
-			if err := r.runConfigureCommand(context.Background()); (err != nil) != test.wantErr {
+			if _, err := r.runConfigureCommand(context.Background()); (err != nil) != test.wantErr {
 				t.Errorf("runConfigureCommand() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
@@ -460,7 +460,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			t.Parallel()
 			// We need to create a fake state and config file for the test to pass.
 			if test.cfg.Repo != "" && !isUrl(test.cfg.Repo) {
-				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineStateFile)
+				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, config.PipelineStateFile)
 
 				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
 					t.Fatalf("os.MkdirAll() = %v", err)
