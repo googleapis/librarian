@@ -78,6 +78,7 @@ func init() {
 	cfg := cmdGenerate.Config
 
 	addFlagAPI(fs, cfg)
+	addFlagAPISource(fs, cfg)
 	addFlagBuild(fs, cfg)
 	addFlagHostMount(fs, cfg)
 	addFlagImage(fs, cfg)
@@ -85,7 +86,6 @@ func init() {
 	addFlagProject(fs, cfg)
 	addFlagPushConfig(fs, cfg)
 	addFlagRepo(fs, cfg)
-	addFlagSource(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 }
 
@@ -115,7 +115,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	state, pipelineConfig, err := loadRepoStateAndConfig(repo, cfg.Source)
+	state, pipelineConfig, err := loadRepoStateAndConfig(repo, cfg.APISource)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 	if findLibraryByID(r.state, libraryID) == nil {
 		return "", fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
 	}
-	apiRoot, err := filepath.Abs(r.cfg.Source)
+	apiRoot, err := filepath.Abs(r.cfg.APISource)
 	if err != nil {
 		return "", err
 	}
@@ -452,7 +452,7 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 // the execution to the container client.
 func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
 
-	apiRoot, err := filepath.Abs(r.cfg.Source)
+	apiRoot, err := filepath.Abs(r.cfg.APISource)
 	if err != nil {
 		return "", err
 	}
