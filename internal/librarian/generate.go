@@ -174,7 +174,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
 				// TODO(https://github.com/googleapis/librarian/issues/983): record failure and report in PR body when applicable
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
-				continue
 			}
 		}
 	}
@@ -191,17 +190,13 @@ func (r *generateRunner) run(ctx context.Context) error {
 // in the configuration, or regenerate an existing library if a libraryID is provided.
 // After ensuring the library is configured, it runs the generation and build commands.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) error {
-	if r.cfg.API != "" && r.cfg.Library != "" {
+	if r.needsConfiguration() {
+		slog.Info("library not configured, start initial configuration", "library", r.cfg.Library)
 		configuredLibraryID, err := r.runConfigureCommand(ctx)
 		if err != nil {
 			return err
 		}
 		libraryID = configuredLibraryID
-	} else {
-		slog.Info("library or api is not specified, skipping configuration")
-		if library := findLibraryByID(r.state, libraryID); library == nil {
-			return fmt.Errorf("library %q not configured, generation stopped", libraryID)
-		}
 	}
 
 	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, outputDir)
@@ -215,12 +210,19 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	return nil
 }
 
+func (r *generateRunner) needsConfiguration() bool {
+	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
+}
+
 // runGenerateCommand attempts to perform generation for an API. It then cleans the
 // destination directory and copies the newly generated files into it.
 //
 // If successful, it returns the ID of the generated library; otherwise, it
 // returns an empty string and an error.
 func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outputDir string) (string, error) {
+	if findLibraryByID(r.state, libraryID) == nil {
+		return "", fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
+	}
 	apiRoot, err := filepath.Abs(r.cfg.Source)
 	if err != nil {
 		return "", err
@@ -234,7 +236,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		Output:    outputDir,
 		RepoDir:   r.repo.Dir,
 	}
-	slog.Info("Performing refined generation for library", "id", libraryID)
+	slog.Info("Performing generation for library", "id", libraryID)
 	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
 		return "", err
 	}
@@ -252,6 +254,7 @@ func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error 
 	if library == nil {
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
+	slog.Info("Clean destinations and copy generated results for library", "id", libraryID)
 	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
 		return err
 	}
@@ -285,7 +288,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 		LibraryID: libraryID,
 		RepoDir:   r.repo.Dir,
 	}
-	slog.Info("Build requested in the context of refined generation; cleaning and copying code to the local language repo before building.")
+	slog.Info("Build requested for library", "id", libraryID)
 	return r.containerClient.Build(ctx, buildRequest)
 }
 
@@ -453,14 +456,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		return "", err
 	}
 
-	// Configuration requires a language repository to modify. If one isn't specified or
-	// found, we cannot proceed.
-	if r.repo == nil {
-		slog.Error("No language repository specified; cannot run configure.", "api", r.cfg.API)
-		return "", errors.New("a language repository must be specified to run configure")
-	}
-
-	// add record to state
+	// record to state, not write to state.yaml
 	r.state.Libraries = append(r.state.Libraries, &config.LibraryState{
 		ID:   r.cfg.Library,
 		APIs: []*config.API{{Path: r.cfg.API}},
