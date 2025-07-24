@@ -57,6 +57,16 @@ type Config struct {
 	// API Path is specified with the -api flag.
 	API string
 
+	// APISource is the path to the root of the googleapis repository.
+	// When this is not specified, the googleapis repository is cloned
+	// automatically.
+	//
+	// APISource is used by generate, update-apis and configure
+	// commands.
+	//
+	// APISource is specified with the -api-source flag.
+	APISource string
+
 	// Build determines whether to build the generated library, and is only
 	// used in the generate command.
 	//
@@ -97,12 +107,11 @@ type Config struct {
 	// Image is specified with the -image flag.
 	Image string
 
-	// LibrarianRepository specifies the repository where Librarian-related assets
-	// are stored.
-	//
-	// LibrarianRepository is fetched from the LIBRARIAN_REPOSITORY environment
-	// variable.
-	LibrarianRepository string
+	// Library is the library ID to generate (e.g. google-cloud-secretmanager-v1 ).
+	// This usually corresponds to a releasable language unit -- for Go this would
+	// be a Go module or for dotnet the name of a NuGet package. If neither this nor
+	// api is specified all currently managed libraries will be regenerated.
+	Library string
 
 	// Project is the Google Cloud project containing Secret Manager secrets to
 	// provide to the language-specific container commands via environment variables.
@@ -162,16 +171,6 @@ type Config struct {
 	//
 	// Repo is specified with the -repo flag.
 	Repo string
-
-	// Source is the path to the root of the googleapis repository.
-	// When this is not specified, the googleapis repository is cloned
-	// automatically.
-	//
-	// Source is used by generate, update-apis and configure
-	// commands.
-	//
-	// Source is specified with the -source flag.
-	Source string
 
 	// UserGID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct

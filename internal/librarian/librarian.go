@@ -20,7 +20,6 @@ package librarian
 import (
 	"context"
 	"fmt"
-	"github.com/googleapis/librarian/internal/config"
 	"log/slog"
 	"net/url"
 
@@ -86,7 +85,7 @@ type GitHubClient interface {
 type ContainerClient interface {
 	Generate(ctx context.Context, request *docker.GenerateRequest) error
 	Build(ctx context.Context, request *docker.BuildRequest) error
-	Configure(ctx context.Context, request *docker.ConfigureRequest) (*config.LibrarianState, error)
+	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
 }
 
 func isUrl(s string) bool {

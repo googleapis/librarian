@@ -198,10 +198,10 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 
 // Configure configures an API within a repository, either adding it to an
 // existing library or creating a new library.
-func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (*config.LibrarianState, error) {
+func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (string, error) {
 	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
 	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
-		return nil, err
+		return "", err
 	}
 	defer func(name string) {
 		err := os.Remove(name)
@@ -224,7 +224,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (*con
 	}
 
 	if err := c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs); err != nil {
-		return nil, err
+		return "", err
 	}
 	// read the new library state from the response and write it back to
 	// librarian state file.
@@ -238,7 +238,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (*con
 
 	libraryState, err := readResponse(responseFilePath)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	for i, library := range request.State.Libraries {
@@ -250,10 +250,10 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (*con
 
 	stateFile := filepath.Join(request.RepoDir, config.LibrarianDir, config.PipelineStateFile)
 	if err := writeLibrarianState(request.State, stateFile); err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return request.State, nil
+	return libraryState.ID, nil
 }
 
 func (c *Docker) runDocker(ctx context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
