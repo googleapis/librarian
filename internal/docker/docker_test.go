@@ -16,6 +16,7 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -254,7 +255,12 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   "absolute/path/to/repo",
 					ApiRoot:   testAPIRoot,
 				}
+				jsonData, _ := json.MarshalIndent(&config.LibraryState{}, "", "  ")
+				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
+				os.WriteFile(jsonFilePath, jsonData, 0644)
 				_, err := d.Configure(ctx, configureRequest)
+				defer os.RemoveAll(configureRequest.RepoDir)
+
 				return err
 			},
 			want: []string{
