@@ -230,7 +230,7 @@ func TestIsClean(t *testing.T) {
 				t.Fatalf("failed to get worktree: %v", err)
 			}
 
-			r := &Repository{
+			r := &LocalRepository{
 				Dir:  dir,
 				repo: repo,
 			}
@@ -296,7 +296,7 @@ func TestAddAll(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to init repo: %v", err)
 			}
-			r := &Repository{
+			r := &LocalRepository{
 				Dir:  dir,
 				repo: repo,
 			}
@@ -315,7 +315,7 @@ func TestCommit(t *testing.T) {
 	t.Parallel()
 
 	// setupRepo is a helper to create a repository with an initial commit.
-	setupRepo := func(t *testing.T) *Repository {
+	setupRepo := func(t *testing.T) *LocalRepository {
 		t.Helper()
 		dir := t.TempDir()
 		gogitRepo, err := git.PlainInit(dir, false)
@@ -332,7 +332,7 @@ func TestCommit(t *testing.T) {
 		}); err != nil {
 			t.Fatalf("initial commit failed: %v", err)
 		}
-		return &Repository{Dir: dir, repo: gogitRepo}
+		return &LocalRepository{Dir: dir, repo: gogitRepo}
 	}
 
 	t.Run("successful commit", func(t *testing.T) {
@@ -434,7 +434,7 @@ func TestRemotes(t *testing.T) {
 				}
 			}
 
-			repo := &Repository{Dir: dir, repo: gogitRepo}
+			repo := &LocalRepository{Dir: dir, repo: gogitRepo}
 			got, err := repo.Remotes()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Remotes() error = %v, wantErr %v", err, tt.wantErr)
