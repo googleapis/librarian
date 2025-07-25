@@ -184,3 +184,12 @@ func (r *Repository) IsClean() (bool, error) {
 func (r *Repository) Remotes() ([]*git.Remote, error) {
 	return r.repo.Remotes()
 }
+
+// HeadHash returns hash of the commit for the repository's HEAD.
+func (r *Repository) HeadHash() (string, error) {
+	ref, err := r.repo.Head()
+	if err != nil {
+		return "", err
+	}
+	return ref.Hash().String(), nil
+}

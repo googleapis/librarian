@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"gopkg.in/yaml.v3"
 )
 
 // mockGitHubClient is a mock implementation of the GitHubClient interface for testing.
@@ -332,5 +333,50 @@ func TestPopulateServiceConfig(t *testing.T) {
 				t.Errorf("fetchRemoteLibrarianState() mismatch (-want +got): %s", diff)
 			}
 		})
+	}
+}
+
+func TestSaveLibrarianState(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmpDir, config.LibrarianDir), 0755); err != nil {
+		t.Fatal(err)
+	}
+	state := &config.LibrarianState{
+		Image: "gcr.io/test/image:v1.2.3",
+		Libraries: []*config.LibraryState{
+			{
+				ID: "a/b",
+				SourcePaths: []string{
+					"src/a",
+					"src/b",
+				},
+				APIs: []*config.API{
+					{
+						Path:          "a/b/v1",
+						ServiceConfig: "a/b/v1/service.yaml",
+					},
+				},
+				PreserveRegex: []string{},
+				RemoveRegex:   []string{},
+			},
+		},
+	}
+	if err := saveLibrarianState(tmpDir, state); err != nil {
+		t.Fatalf("saveLibrarianState() failed: %v", err)
+	}
+
+	path := filepath.Join(tmpDir, config.LibrarianDir, "state.yaml")
+	gotBytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("os.ReadFile() failed: %v", err)
+	}
+	gotState := &config.LibrarianState{}
+	if err := yaml.Unmarshal(gotBytes, gotState); err != nil {
+		t.Fatalf("yaml.Unmarshal() failed: %v", err)
+	}
+
+	if diff := cmp.Diff(state, gotState); diff != "" {
+		t.Errorf("saveLibrarianState() mismatch (-want +got): %s", diff)
 	}
 }

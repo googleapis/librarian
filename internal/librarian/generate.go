@@ -91,6 +91,7 @@ func init() {
 type generateRunner struct {
 	cfg             *config.Config
 	repo            *gitrepo.Repository
+	sourceRepo      *gitrepo.Repository
 	state           *config.LibrarianState
 	ghClient        GitHubClient
 	containerClient ContainerClient
@@ -110,6 +111,10 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		return nil, err
 	}
 	repo, err := cloneOrOpenLanguageRepo(workRoot, cfg.Repo, cfg.CI)
+	if err != nil {
+		return nil, err
+	}
+	sourceRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: cfg.APISource})
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +144,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		cfg:             cfg,
 		workRoot:        workRoot,
 		repo:            repo,
+		sourceRepo:      sourceRepo,
 		state:           state,
 		image:           image,
 		ghClient:        ghClient,
@@ -175,6 +181,10 @@ func (r *generateRunner) run(ctx context.Context) error {
 		}
 	}
 
+	if err := saveLibrarianState(r.repo.Dir, r.state); err != nil {
+		return err
+	}
+
 	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
 		return err
 	}
@@ -205,11 +215,28 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	if err := r.runBuildCommand(ctx, generatedLibraryID); err != nil {
 		return err
 	}
+	if err := r.updateState(generatedLibraryID); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (r *generateRunner) needsConfiguration() bool {
 	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
+}
+
+func (r *generateRunner) updateState(libraryID string) error {
+	hash, err := r.sourceRepo.HeadHash()
+	if err != nil {
+		return err
+	}
+	for _, l := range r.state.Libraries {
+		if l.ID == libraryID {
+			l.LastGeneratedCommit = hash
+			break
+		}
+	}
+	return nil
 }
 
 // runGenerateCommand attempts to perform generation for an API. It then cleans the

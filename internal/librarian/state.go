@@ -131,3 +131,12 @@ func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path s
 
 	return "", errors.New("could not find service config in " + path)
 }
+
+func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
+	path := filepath.Join(repoDir, config.LibrarianDir, pipelineStateFile)
+	bytes, err := yaml.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, bytes, 0644)
+}
