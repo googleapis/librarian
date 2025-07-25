@@ -601,6 +601,11 @@ func TestReadResponseJson(t *testing.T) {
 			wantState: nil,
 			expectErr: true,
 		},
+		{
+			name:      "invalid content loader",
+			wantState: nil,
+			expectErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -611,7 +616,21 @@ func TestReadResponseJson(t *testing.T) {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
 				return
-			} else if test.expectErr {
+			}
+
+			if test.name == "invalid content loader" {
+				filePath := filepath.Join(tempDir, "invalid-contentLoader.json")
+				invalidContentLoader := func(data []byte, state *config.LibraryState) error {
+					return errors.New("simulated Unmarshal error")
+				}
+				_, err := readResponse(invalidContentLoader, filePath)
+				if err == nil {
+					t.Errorf("readResponse() expected an error but got nil")
+				}
+				return
+			}
+
+			if test.expectErr {
 				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
 				_, err := readResponse(contentLoader, filePath)
 				if err == nil {
