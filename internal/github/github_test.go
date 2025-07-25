@@ -128,7 +128,7 @@ func TestGetRawContent(t *testing.T) {
 }
 
 // newTestGitRepo creates a new git repository in a temporary directory with the given remotes.
-func newTestGitRepo(t *testing.T, remotes map[string][]string) *gitrepo.Repository {
+func newTestGitRepo(t *testing.T, remotes map[string][]string) *gitrepo.LocalRepository {
 	t.Helper()
 	dir := t.TempDir()
 

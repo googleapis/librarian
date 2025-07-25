@@ -28,8 +28,17 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-// Repository represents a git repository.
-type Repository struct {
+// Repository defines the interface for git repository operations.
+type Repository interface {
+	AddAll() (git.Status, error)
+	Commit(msg string, userName, userEmail string) error
+	IsClean() (bool, error)
+	Remotes() ([]*git.Remote, error)
+	GetDir() string
+}
+
+// LocalRepository represents a git repository.
+type LocalRepository struct {
 	Dir  string
 	repo *git.Repository
 }
@@ -40,7 +49,7 @@ type Commit struct {
 	Message string
 }
 
-// RepositoryOptions are used to configure a [Repository].
+// RepositoryOptions are used to configure a [LocalRepository].
 type RepositoryOptions struct {
 	// Dir is the directory where the repository will reside locally. Required.
 	Dir string
@@ -60,7 +69,7 @@ type RepositoryOptions struct {
 // If opts.Clone is CloneOptionMaybe, it opens the repository if it exists,
 // otherwise it clones from opts.RemoteURL.
 // If opts.Clone is CloneOptionAlways, it always clones from opts.RemoteURL.
-func NewRepository(opts *RepositoryOptions) (*Repository, error) {
+func NewRepository(opts *RepositoryOptions) (*LocalRepository, error) {
 	if opts.Dir == "" {
 		return nil, errors.New("gitrepo: dir is required")
 	}
@@ -83,19 +92,19 @@ func NewRepository(opts *RepositoryOptions) (*Repository, error) {
 	return nil, fmt.Errorf("failed to check for repository at %q: %w", opts.Dir, err)
 }
 
-func open(dir string) (*Repository, error) {
+func open(dir string) (*LocalRepository, error) {
 	slog.Info("Opening repository", "dir", dir)
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
 		return nil, err
 	}
-	return &Repository{
+	return &LocalRepository{
 		Dir:  dir,
 		repo: repo,
 	}, nil
 }
 
-func clone(dir, url, ci string) (*Repository, error) {
+func clone(dir, url, ci string) (*LocalRepository, error) {
 	slog.Info("Cloning repository", "url", url, "dir", dir)
 	options := &git.CloneOptions{
 		URL:           url,
@@ -114,7 +123,7 @@ func clone(dir, url, ci string) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Repository{
+	return &LocalRepository{
 		Dir:  dir,
 		repo: repo,
 	}, nil
@@ -122,7 +131,7 @@ func clone(dir, url, ci string) (*Repository, error) {
 
 // AddAll adds all pending changes from the working tree to the index,
 // so that the changes can later be committed.
-func (r *Repository) AddAll() (git.Status, error) {
+func (r *LocalRepository) AddAll() (git.Status, error) {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return git.Status{}, err
@@ -136,7 +145,7 @@ func (r *Repository) AddAll() (git.Status, error) {
 
 // Commit creates a new commit with the provided message and author
 // information.
-func (r *Repository) Commit(msg string, userName, userEmail string) error {
+func (r *LocalRepository) Commit(msg string, userName, userEmail string) error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -167,7 +176,7 @@ func (r *Repository) Commit(msg string, userName, userEmail string) error {
 }
 
 // IsClean reports whether the working tree has no uncommitted changes.
-func (r *Repository) IsClean() (bool, error) {
+func (r *LocalRepository) IsClean() (bool, error) {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return false, err
@@ -181,6 +190,11 @@ func (r *Repository) IsClean() (bool, error) {
 }
 
 // Remotes returns the remotes within the repository.
-func (r *Repository) Remotes() ([]*git.Remote, error) {
+func (r *LocalRepository) Remotes() ([]*git.Remote, error) {
 	return r.repo.Remotes()
+}
+
+// GetDir returns the directory of the repository.
+func (r *LocalRepository) GetDir() string {
+	return r.Dir
 }

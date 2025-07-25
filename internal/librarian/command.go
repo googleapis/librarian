@@ -30,7 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
+func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
 	}
@@ -137,7 +137,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 
 // commitAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHubClient, pushConfig string) error {
+func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHubClient, pushConfig string) error {
 	if pushConfig == "" {
 		slog.Info("PushConfig flag not specified, skipping")
 		return nil
@@ -152,13 +152,20 @@ func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHu
 	if err != nil {
 		return err
 	}
-	if _, err = repo.AddAll(); err != nil {
+	status, err := repo.AddAll()
+	if err != nil {
 		return err
 	}
-
+	if status.IsClean() {
+		slog.Info("No changes to commit, skipping commit and push.")
+		return nil
+	}
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	message := "Changes in this PR"
-	repo.Commit(message, userName, userEmail)
+	err = repo.Commit(message, userName, userEmail)
+	if err != nil {
+		return err
+	}
 
 	// Create a new branch, set title and message for the PR.
 	datetimeNow := formatTimestamp(time.Now())
