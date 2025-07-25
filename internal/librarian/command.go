@@ -35,7 +35,7 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, er
 		return nil, errors.New("repo must be specified")
 	}
 
-	if isUrl(repo) {
+	if isURL(repo) {
 		// repo is a URL
 		// Take the last part of the URL as the directory name. It feels very
 		// unlikely that will clash with anything else (e.g. "output")

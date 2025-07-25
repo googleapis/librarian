@@ -241,56 +241,56 @@ func TestFetchGitHubRepoFromRemote(t *testing.T) {
 	}
 }
 
-func TestParseUrl(t *testing.T) {
+func TestParseURL(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name          string
-		remoteUrl     string
+		remoteURL     string
 		wantRepo      *Repository
 		wantErr       bool
 		wantErrSubstr string
 	}{
 		{
 			name:      "Valid HTTPS URL",
-			remoteUrl: "https://github.com/owner/repo.git",
+			remoteURL: "https://github.com/owner/repo.git",
 			wantRepo:  &Repository{Owner: "owner", Name: "repo"},
 			wantErr:   false,
 		},
 		{
 			name:      "Valid HTTPS URL without .git",
-			remoteUrl: "https://github.com/owner/repo",
+			remoteURL: "https://github.com/owner/repo",
 			wantRepo:  &Repository{Owner: "owner", Name: "repo"},
 			wantErr:   false,
 		},
 		{
 			name:          "Invalid URL scheme",
-			remoteUrl:     "http://github.com/owner/repo.git",
+			remoteURL:     "http://github.com/owner/repo.git",
 			wantErr:       true,
 			wantErrSubstr: "not a GitHub remote",
 		},
 		{
 			name:      "URL with extra path components",
-			remoteUrl: "https://github.com/owner/repo/pulls",
+			remoteURL: "https://github.com/owner/repo/pulls",
 			wantRepo:  &Repository{Owner: "owner", Name: "repo"},
 			wantErr:   false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := ParseURL(test.remoteUrl)
+			repo, err := ParseURL(test.remoteURL)
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("ParseUrl() err = nil, want error containing %q", test.wantErrSubstr)
+					t.Errorf("ParseURL() err = nil, want error containing %q", test.wantErrSubstr)
 				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
-					t.Errorf("ParseUrl() err = %v, want error containing %q", err, test.wantErrSubstr)
+					t.Errorf("ParseURL() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
 				if err != nil {
-					t.Errorf("ParseUrl() err = %v, want nil", err)
+					t.Errorf("ParseURL() err = %v, want nil", err)
 				}
 				if diff := cmp.Diff(test.wantRepo, repo); diff != "" {
-					t.Errorf("ParseUrl() repo mismatch (-want +got): %s", diff)
+					t.Errorf("ParseURL() repo mismatch (-want +got): %s", diff)
 				}
 			}
 		})

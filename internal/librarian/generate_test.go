@@ -310,7 +310,7 @@ func TestNewGenerateRunner(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			// We need to create a fake state and config file for the test to pass.
-			if test.cfg.Repo != "" && !isUrl(test.cfg.Repo) {
+			if test.cfg.Repo != "" && !isURL(test.cfg.Repo) {
 				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineStateFile)
 
 				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
@@ -353,7 +353,7 @@ func TestNewGenerateRunner(t *testing.T) {
 func newTestGitRepo(t *testing.T) *gitrepo.Repository {
 	t.Helper()
 	dir := t.TempDir()
-	remoteUrl := "https://github.com/googleapis/librarian.git"
+	remoteURL := "https://github.com/googleapis/librarian.git"
 	runGit(t, dir, "init")
 	runGit(t, dir, "config", "user.email", "test@example.com")
 	runGit(t, dir, "config", "user.name", "Test User")
@@ -362,7 +362,7 @@ func newTestGitRepo(t *testing.T) *gitrepo.Repository {
 	}
 	runGit(t, dir, "add", "README.md")
 	runGit(t, dir, "commit", "-m", "initial commit")
-	runGit(t, dir, "remote", "add", "origin", remoteUrl)
+	runGit(t, dir, "remote", "add", "origin", remoteURL)
 	repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
 	if err != nil {
 		t.Fatalf("gitrepo.Open(%q) = %v", dir, err)

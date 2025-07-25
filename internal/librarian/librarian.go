@@ -88,7 +88,7 @@ type ContainerClient interface {
 	Configure(ctx context.Context, request *docker.ConfigureRequest) error
 }
 
-func isUrl(s string) bool {
+func isURL(s string) bool {
 	u, err := url.ParseRequestURI(s)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return false
