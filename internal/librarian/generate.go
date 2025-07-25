@@ -120,7 +120,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	image := deriveImage(cfg.Image, state)
 
 	var ghClient GitHubClient
-	if isUrl(cfg.Repo) {
+	if isURL(cfg.Repo) {
 		// repo is a URL
 		languageRepo, err := github.ParseURL(cfg.Repo)
 		if err != nil {
