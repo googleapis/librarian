@@ -472,25 +472,6 @@ func TestGenerateRun(t *testing.T) {
 			build:      true,
 			wantErr:    true,
 		},
-		{
-			name: "commit and push error",
-			api:  "some/api",
-			repo: newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container:  &mockContainerClient{},
-			ghClient:   &mockGitHubClient{rawErr: errors.New("commit and push error")},
-			pushConfig: "xxx@email.com,author",
-			build:      true,
-			wantErr:    true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

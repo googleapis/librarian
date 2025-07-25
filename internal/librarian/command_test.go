@@ -491,6 +491,26 @@ func TestCommitAndPush(t *testing.T) {
 			expectedErr:    errors.New("no GitHub remotes found"),
 			expectedErrMsg: "no GitHub remotes found",
 		},
+		{
+			name:       "No changes to commit",
+			pushConfig: "test@example.com,Test User",
+			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
+				repoDir := newTestGitRepoWithCommit(t, "")
+				cmd := exec.Command("git", "remote", "add", "origin", "https://github.com/googleapis/librarian.git")
+				cmd.Dir = repoDir
+				if err := cmd.Run(); err != nil {
+					t.Fatalf("git remote add origin: %v", err)
+				}
+				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
+				if err != nil {
+					t.Fatalf("Failed to create test repo: %v", err)
+				}
+				return repo
+			},
+			setupMockClient: func(t *testing.T) *github.Client {
+				return nil
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
