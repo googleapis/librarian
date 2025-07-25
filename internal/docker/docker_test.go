@@ -693,6 +693,10 @@ func TestWriteLibrarianState(t *testing.T) {
 			name:  "invalid_file_name",
 			state: &config.LibrarianState{},
 		},
+		{
+			name:  "invalid content parser",
+			state: &config.LibrarianState{},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -707,6 +711,20 @@ func TestWriteLibrarianState(t *testing.T) {
 				}
 
 				assert.Contains(t, err.Error(), "failed to create librarian state file")
+				return
+			}
+
+			if test.name == "invalid content parser" {
+				filePath := filepath.Join(tempDir, "state.yaml")
+				invalidContentParser := func(state *config.LibrarianState) ([]byte, error) {
+					return nil, errors.New("simulated parsing error")
+				}
+				err := writeLibrarianState(invalidContentParser, test.state, filePath)
+				if err == nil {
+					t.Errorf("writeLibrarianState() expected an error but got nil")
+				}
+
+				assert.Contains(t, err.Error(), "failed to marshal state to YAML")
 				return
 			}
 
