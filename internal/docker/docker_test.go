@@ -583,6 +583,12 @@ func TestReadResponseJson(t *testing.T) {
 			expectErr:    false,
 		},
 		{
+			name:         "invalid_json",
+			jsonFilePath: "../../testdata/invalid-json.json",
+			wantState:    nil,
+			expectErr:    true,
+		},
+		{
 			name:      "nonexistent_dir_for_test",
 			wantState: nil,
 			expectErr: true,
