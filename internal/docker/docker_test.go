@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -562,7 +563,7 @@ func TestReadResponseJson(t *testing.T) {
 	}{
 		{
 			name:         "successful-unmarshal",
-			jsonFilePath: "../../testdata/successful-unmarshal-libraryState.json",
+			jsonFilePath: "../../testdata/successful-unmarshal-libraryState",
 			wantState: &config.LibraryState{
 				ID:                  "google-cloud-go",
 				Version:             "1.0.0",
@@ -581,7 +582,7 @@ func TestReadResponseJson(t *testing.T) {
 		},
 		{
 			name:         "empty libraryState",
-			jsonFilePath: "../../testdata/empty-libraryState.json",
+			jsonFilePath: "../../testdata/empty-libraryState",
 			wantState:    &config.LibraryState{},
 			expectErr:    false,
 		},
@@ -639,7 +640,17 @@ func TestReadResponseJson(t *testing.T) {
 				return
 			}
 
-			gotState, err := readResponse(contentLoader, test.jsonFilePath)
+			// The response file is removed by the readResponse() function,
+			// so we create a copy and read from it.
+			srcFilePath := fmt.Sprintf("%s.json", test.jsonFilePath)
+			dstFilePath := fmt.Sprintf("%s-cp.json", test.jsonFilePath)
+			sourceFile, _ := os.Open(srcFilePath)
+			defer sourceFile.Close()
+			destinationFile, _ := os.Create(dstFilePath)
+			defer destinationFile.Close()
+			io.Copy(destinationFile, sourceFile)
+
+			gotState, err := readResponse(contentLoader, dstFilePath)
 
 			if err != nil {
 				t.Fatalf("readResponse() unexpected error: %v", err)

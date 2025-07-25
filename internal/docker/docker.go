@@ -221,25 +221,18 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	if err := c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
-	// read the new library state from the response and write it back to
-	// librarian state file.
-	responseFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse)
-	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
-		}
-	}(responseFilePath)
 
+	// Read the new library state from the response.
 	libraryState, err := readResponse(
 		func(data []byte, libraryState *config.LibraryState) error {
 			return json.Unmarshal(data, libraryState)
 		},
-		responseFilePath)
+		filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse))
 	if err != nil {
 		return "", err
 	}
 
+	// Update the library state in the librarian state.
 	for i, library := range request.State.Libraries {
 		if library.ID != libraryState.ID {
 			continue
@@ -247,8 +240,10 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		request.State.Libraries[i] = libraryState
 	}
 
-	stateFile := filepath.Join(request.RepoDir, config.LibrarianDir, config.PipelineStateFile)
-	if err := writeLibrarianState(request.State, stateFile); err != nil {
+	// Write the updated librarian state to state.yaml.
+	if err := writeLibrarianState(
+		request.State,
+		filepath.Join(request.RepoDir, config.LibrarianDir, config.PipelineStateFile)); err != nil {
 		return "", err
 	}
 
@@ -339,6 +334,12 @@ func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) 
 
 func readResponse(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+		}
+	}(jsonFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response JSON file: %w", err)
 	}
