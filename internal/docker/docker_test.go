@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"path/filepath"
@@ -559,11 +560,10 @@ func TestReadResponseJson(t *testing.T) {
 		name         string
 		jsonFilePath string
 		wantState    *config.LibraryState
-		expectErr    bool
 	}{
 		{
 			name:         "successful-unmarshal",
-			jsonFilePath: "../../testdata/successful-unmarshal-libraryState",
+			jsonFilePath: "../../testdata/successful-unmarshal-libraryState.json",
 			wantState: &config.LibraryState{
 				ID:                  "google-cloud-go",
 				Version:             "1.0.0",
@@ -578,34 +578,20 @@ func TestReadResponseJson(t *testing.T) {
 				PreserveRegex: []string{"example-preserve-regex"},
 				RemoveRegex:   []string{"example-remove-regex"},
 			},
-			expectErr: false,
 		},
 		{
 			name:         "empty libraryState",
-			jsonFilePath: "../../testdata/empty-libraryState",
+			jsonFilePath: "../../testdata/empty-libraryState.json",
 			wantState:    &config.LibraryState{},
-			expectErr:    false,
-		},
-		{
-			name:         "invalid_json",
-			jsonFilePath: "../../testdata/invalid-json.json",
-			wantState:    nil,
-			expectErr:    true,
-		},
-		{
-			name:      "nonexistent_dir_for_test",
-			wantState: nil,
-			expectErr: true,
 		},
 		{
 			name:      "invalid_file_name",
 			wantState: nil,
-			expectErr: true,
 		},
 		{
-			name:      "invalid content loader",
-			wantState: nil,
-			expectErr: true,
+			name:         "invalid content loader",
+			jsonFilePath: "../../testdata/invalid-contentLoader.json",
+			wantState:    nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -616,39 +602,30 @@ func TestReadResponseJson(t *testing.T) {
 				if err == nil {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
+
+				assert.Contains(t, err.Error(), "failed to read response JSON file")
 				return
 			}
 
 			if test.name == "invalid content loader" {
-				filePath := filepath.Join(tempDir, "invalid-contentLoader.json")
 				invalidContentLoader := func(data []byte, state *config.LibraryState) error {
 					return errors.New("simulated Unmarshal error")
 				}
-				_, err := readResponse(invalidContentLoader, filePath)
+				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
+				copyFile(test.jsonFilePath, dst)
+				_, err := readResponse(invalidContentLoader, dst)
 				if err == nil {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
-				return
-			}
 
-			if test.expectErr {
-				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
-				_, err := readResponse(contentLoader, filePath)
-				if err == nil {
-					t.Errorf("readResponse() expected an error but got nil")
-				}
+				assert.Contains(t, err.Error(), "failed to unmarshal JSON to state")
 				return
 			}
 
 			// The response file is removed by the readResponse() function,
 			// so we create a copy and read from it.
-			srcFilePath := fmt.Sprintf("%s.json", test.jsonFilePath)
-			dstFilePath := fmt.Sprintf("%s-cp.json", test.jsonFilePath)
-			sourceFile, _ := os.Open(srcFilePath)
-			defer sourceFile.Close()
-			destinationFile, _ := os.Create(dstFilePath)
-			defer destinationFile.Close()
-			io.Copy(destinationFile, sourceFile)
+			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
+			copyFile(test.jsonFilePath, dstFilePath)
 
 			gotState, err := readResponse(contentLoader, dstFilePath)
 
@@ -768,4 +745,12 @@ func TestWriteLibrarianState(t *testing.T) {
 			}
 		})
 	}
+}
+
+func copyFile(src, dst string) {
+	sourceFile, _ := os.Open(src)
+	defer sourceFile.Close()
+	destinationFile, _ := os.Create(dst)
+	defer destinationFile.Close()
+	io.Copy(destinationFile, sourceFile)
 }
