@@ -242,6 +242,9 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 
 	// Write the updated librarian state to state.yaml.
 	if err := writeLibrarianState(
+		func(state *config.LibrarianState) ([]byte, error) {
+			return yaml.Marshal(state)
+		},
 		request.State,
 		filepath.Join(request.RepoDir, config.LibrarianDir, config.PipelineStateFile)); err != nil {
 		return "", err
@@ -357,14 +360,14 @@ func readResponse(contentLoader func(data []byte, state *config.LibraryState) er
 }
 
 // writeLibrarianState writes the given librarian state to a yaml file.
-func writeLibrarianState(state *config.LibrarianState, yamlFilePath string) error {
+func writeLibrarianState(contentParser func(state *config.LibrarianState) ([]byte, error), state *config.LibrarianState, yamlFilePath string) error {
 	yamlFile, err := os.Create(yamlFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create librarian state file: %w", err)
 	}
 	defer yamlFile.Close()
 
-	data, err := yaml.Marshal(state)
+	data, err := contentParser(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state to YAML: %w", err)
 	}

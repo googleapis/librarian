@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path/filepath"
@@ -695,9 +696,12 @@ func TestWriteLibrarianState(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
+			contentParser := func(state *config.LibrarianState) ([]byte, error) {
+				return yaml.Marshal(state)
+			}
 			if test.name == "invalid_file_name" {
 				filePath := filepath.Join(tempDir, "my\x00file.yaml")
-				err := writeLibrarianState(test.state, filePath)
+				err := writeLibrarianState(contentParser, test.state, filePath)
 				if err == nil {
 					t.Errorf("writeLibrarianState() expected an error but got nil")
 				}
@@ -707,7 +711,7 @@ func TestWriteLibrarianState(t *testing.T) {
 			}
 
 			filePath := filepath.Join(tempDir, "state.yaml")
-			err := writeLibrarianState(test.state, filePath)
+			err := writeLibrarianState(contentParser, test.state, filePath)
 
 			if err != nil {
 				t.Fatalf("writeLibrarianState() unexpected error: %v", err)
