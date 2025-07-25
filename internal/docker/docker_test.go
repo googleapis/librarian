@@ -276,7 +276,7 @@ func TestDockerRun(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Configure with multiple libraries",
+			name: "Configure with multiple libraries in librarian state",
 			docker: &Docker{
 				Image: testImage,
 			},
@@ -619,7 +619,7 @@ func TestReadResponseJson(t *testing.T) {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
 
-				assert.Contains(t, err.Error(), "failed to unmarshal JSON to state")
+				assert.Contains(t, err.Error(), "failed to unmarshal JSON")
 				return
 			}
 

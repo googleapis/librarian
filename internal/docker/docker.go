@@ -353,7 +353,7 @@ func readResponse(contentLoader func(data []byte, state *config.LibraryState) er
 	libraryState := &config.LibraryState{}
 
 	if err := contentLoader(data, libraryState); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON to state: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal JSON file, %s, to state: %w", jsonFilePath, err)
 	}
 
 	return libraryState, nil
