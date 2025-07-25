@@ -701,7 +701,8 @@ func TestWriteLibrarianState(t *testing.T) {
 					t.Errorf("writeLibrarianState() expected an error but got nil")
 				}
 				return
-			} else if test.expectErr {
+			}
+			if test.expectErr {
 				filePath := filepath.Join("/non-exist-dir", "state.yaml")
 				err := writeLibrarianState(test.state, filePath)
 				if err == nil {
