@@ -59,6 +59,7 @@ func TestNewRepository(t *testing.T) {
 		wantDir string
 		wantErr bool
 		initGit bool
+		setup   func(t *testing.T) (cleanup func())
 	}{
 		{
 			name:    "no dir",
@@ -90,9 +91,32 @@ func TestNewRepository(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "stat error",
+			opts: &RepositoryOptions{
+				Dir:        filepath.Join(tmpDir, "unreadable/repo"),
+				MaybeClone: true,
+			},
+			wantErr: true,
+			setup: func(t *testing.T) func() {
+				unreadableDir := filepath.Join(tmpDir, "unreadable")
+				if err := os.Mkdir(unreadableDir, 0000); err != nil {
+					t.Fatalf("os.Mkdir() failed: %v", err)
+				}
+				return func() {
+					if err := os.Chmod(unreadableDir, 0755); err != nil {
+						t.Logf("failed to restore permissions on %s: %v", unreadableDir, err)
+					}
+				}
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			if test.setup != nil {
+				cleanup := test.setup(t)
+				defer cleanup()
+			}
 			if test.initGit {
 				if _, err := git.PlainInit(test.opts.Dir, false); err != nil {
 					t.Fatal(err)
@@ -448,5 +472,18 @@ func TestRemotes(t *testing.T) {
 				t.Errorf("Remotes() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestGetDir(t *testing.T) {
+	t.Parallel()
+	want := "/test/dir"
+	repo := &LocalRepository{
+		Dir: want,
+	}
+
+	got := repo.GetDir()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("GetDir() mismatch (-want +got):\n%s", diff)
 	}
 }
