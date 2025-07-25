@@ -16,8 +16,12 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,13 +59,11 @@ func TestNew(t *testing.T) {
 
 func TestDockerRun(t *testing.T) {
 	const (
-		mockImage          = "mockImage"
-		testAPIPath        = "testAPIPath"
-		testAPIRoot        = "testAPIRoot"
-		testGeneratorInput = "testGeneratorInput"
-		testImage          = "testImage"
-		testLibraryID      = "testLibraryID"
-		testOutput         = "testOutput"
+		mockImage     = "mockImage"
+		testAPIRoot   = "testAPIRoot"
+		testImage     = "testImage"
+		testLibraryID = "testLibraryID"
+		testOutput    = "testOutput"
 	)
 
 	state := &config.LibrarianState{}
@@ -251,7 +253,13 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   "absolute/path/to/repo",
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+				jsonData, _ := json.MarshalIndent(&config.LibraryState{}, "", "  ")
+				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
+				os.WriteFile(jsonFilePath, jsonData, 0644)
+				_, err := d.Configure(ctx, configureRequest)
+				defer os.RemoveAll(configureRequest.RepoDir)
+
+				return err
 			},
 			want: []string{
 				"run", "--rm",
@@ -268,6 +276,109 @@ func TestDockerRun(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Configure with multiple libraries in librarian state",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				curState := &config.LibrarianState{
+					Image: testImage,
+					Libraries: []*config.LibraryState{
+						{
+							ID: testLibraryID,
+							APIs: []*config.API{
+								{
+									Path: "example/path/v1",
+								},
+							},
+						},
+						{
+							ID: "another-example-library",
+							APIs: []*config.API{
+								{
+									Path:          "another/example/path/v1",
+									ServiceConfig: "another_v1.yaml",
+								},
+							},
+							SourcePaths: []string{
+								"another-example-source-path",
+							},
+						},
+					},
+				}
+				configureRequest := &ConfigureRequest{
+					Cfg:       cfg,
+					State:     curState,
+					LibraryID: testLibraryID,
+					RepoDir:   "absolute/path/to/repo",
+					ApiRoot:   testAPIRoot,
+				}
+				jsonData, _ := json.MarshalIndent(&config.LibraryState{
+					ID: testLibraryID,
+					APIs: []*config.API{
+						{
+							Path:          "example/path/v1",
+							ServiceConfig: "generated_example_v1.yaml",
+						},
+					},
+				}, "", "  ")
+				os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755)
+				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
+				os.WriteFile(jsonFilePath, jsonData, 0644)
+				defer os.RemoveAll(configureRequest.RepoDir)
+				configuredLibrary, err := d.Configure(ctx, configureRequest)
+				if configuredLibrary != testLibraryID {
+					return errors.New("configured library, " + configuredLibrary + " is wrong")
+				}
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", "absolute/path/to/repo/.librarian:/librarian",
+				"-v", "absolute/path/to/repo/.librarian/generator-input:/input",
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--source=/source",
+				fmt.Sprintf("--library-id=%s", testLibraryID),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Configure with no response returned from language container",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					Cfg:       cfg,
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   "absolute/path/to/repo",
+					ApiRoot:   testAPIRoot,
+				}
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", "absolute/path/to/repo/.librarian:/librarian",
+				"-v", "absolute/path/to/repo/.librarian/generator-input:/input",
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--source=/source",
+				fmt.Sprintf("--library-id=%s", testLibraryID),
+			},
+			wantErr: true,
+		},
+		{
 			name: "Configure with invalid repo dir",
 			docker: &Docker{
 				Image: testImage,
@@ -280,7 +391,8 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   "/non-exist-dir",
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+				_, err := d.Configure(ctx, configureRequest)
+				return err
 			},
 			want:    []string{},
 			wantErr: true,
@@ -298,7 +410,8 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   ".",
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+				_, err := d.Configure(ctx, configureRequest)
+				return err
 			},
 			want:    []string{},
 			wantErr: true,
@@ -437,4 +550,214 @@ func TestToGenerateRequestJSON(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReadResponseJson(t *testing.T) {
+	t.Parallel()
+	contentLoader := func(data []byte, state *config.LibraryState) error {
+		return json.Unmarshal(data, state)
+	}
+	for _, test := range []struct {
+		name         string
+		jsonFilePath string
+		wantState    *config.LibraryState
+	}{
+		{
+			name:         "successful-unmarshal",
+			jsonFilePath: "../../testdata/successful-unmarshal-libraryState.json",
+			wantState: &config.LibraryState{
+				ID:                  "google-cloud-go",
+				Version:             "1.0.0",
+				LastGeneratedCommit: "abcd123",
+				APIs: []*config.API{
+					{
+						Path:          "google/cloud/compute/v1",
+						ServiceConfig: "example_service_config.yaml",
+					},
+				},
+				SourcePaths:   []string{"src/example/path"},
+				PreserveRegex: []string{"example-preserve-regex"},
+				RemoveRegex:   []string{"example-remove-regex"},
+			},
+		},
+		{
+			name:         "empty libraryState",
+			jsonFilePath: "../../testdata/empty-libraryState.json",
+			wantState:    &config.LibraryState{},
+		},
+		{
+			name:      "invalid_file_name",
+			wantState: nil,
+		},
+		{
+			name:         "invalid content loader",
+			jsonFilePath: "../../testdata/invalid-contentLoader.json",
+			wantState:    nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if test.name == "invalid_file_name" {
+				filePath := filepath.Join(tempDir, "my\x00file.json")
+				_, err := readResponse(contentLoader, filePath)
+				if err == nil {
+					t.Errorf("readResponse() expected an error but got nil")
+				}
+
+				assert.Contains(t, err.Error(), "failed to read response JSON file")
+				return
+			}
+
+			if test.name == "invalid content loader" {
+				invalidContentLoader := func(data []byte, state *config.LibraryState) error {
+					return errors.New("simulated Unmarshal error")
+				}
+				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
+				copyFile(test.jsonFilePath, dst)
+				_, err := readResponse(invalidContentLoader, dst)
+				if err == nil {
+					t.Errorf("readResponse() expected an error but got nil")
+				}
+
+				assert.Contains(t, err.Error(), "failed to unmarshal JSON")
+				return
+			}
+
+			// The response file is removed by the readResponse() function,
+			// so we create a copy and read from it.
+			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
+			copyFile(test.jsonFilePath, dstFilePath)
+
+			gotState, err := readResponse(contentLoader, dstFilePath)
+
+			if err != nil {
+				t.Fatalf("readResponse() unexpected error: %v", err)
+			}
+
+			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
+				t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestWriteLibrarianState(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		state *config.LibrarianState
+	}{
+		{
+			name: "successful-marshaling-librarianState-yaml",
+			state: &config.LibrarianState{
+				Image: "v1.0.0",
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "google-cloud-go",
+						Version:             "1.0.0",
+						LastGeneratedCommit: "abcd123",
+						APIs: []*config.API{
+							{
+								Path:          "google/cloud/compute/v1",
+								ServiceConfig: "example_service_config.yaml",
+							},
+						},
+						SourcePaths: []string{
+							"src/example/path",
+						},
+						PreserveRegex: []string{
+							"example-preserve-regex",
+						},
+						RemoveRegex: []string{
+							"example-remove-regex",
+						},
+					},
+					{
+						ID:      "google-cloud-storage",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{
+								Path:          "google/storage/v1",
+								ServiceConfig: "storage_service_config.yaml",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "empty-librarianState-yaml",
+			state: &config.LibrarianState{},
+		},
+		{
+			name:  "invalid_file_name",
+			state: &config.LibrarianState{},
+		},
+		{
+			name:  "invalid content parser",
+			state: &config.LibrarianState{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			contentParser := func(state *config.LibrarianState) ([]byte, error) {
+				return yaml.Marshal(state)
+			}
+			if test.name == "invalid_file_name" {
+				filePath := filepath.Join(tempDir, "my\x00file.yaml")
+				err := writeLibrarianState(contentParser, test.state, filePath)
+				if err == nil {
+					t.Errorf("writeLibrarianState() expected an error but got nil")
+				}
+
+				assert.Contains(t, err.Error(), "failed to create librarian state file")
+				return
+			}
+
+			if test.name == "invalid content parser" {
+				filePath := filepath.Join(tempDir, "state.yaml")
+				invalidContentParser := func(state *config.LibrarianState) ([]byte, error) {
+					return nil, errors.New("simulated parsing error")
+				}
+				err := writeLibrarianState(invalidContentParser, test.state, filePath)
+				if err == nil {
+					t.Errorf("writeLibrarianState() expected an error but got nil")
+				}
+
+				assert.Contains(t, err.Error(), "failed to marshal state to YAML")
+				return
+			}
+
+			filePath := filepath.Join(tempDir, "state.yaml")
+			err := writeLibrarianState(contentParser, test.state, filePath)
+
+			if err != nil {
+				t.Fatalf("writeLibrarianState() unexpected error: %v", err)
+			}
+
+			// Verify the file content
+			gotBytes, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Fatalf("Failed to read generated file: %v", err)
+			}
+
+			fileName := fmt.Sprintf("%s.yaml", test.name)
+			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
+			if readErr != nil {
+				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
+			}
+
+			if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
+				t.Errorf("Generated YAML mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func copyFile(src, dst string) {
+	sourceFile, _ := os.Open(src)
+	defer sourceFile.Close()
+	destinationFile, _ := os.Create(dst)
+	defer destinationFile.Close()
+	io.Copy(destinationFile, sourceFile)
 }

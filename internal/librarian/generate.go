@@ -188,7 +188,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // if a libraryID is provided.
 // After ensuring the library is configured, it runs the generation and build commands.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) error {
-	if r.needsConfiguration() {
+	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.cfg.Library)
 		configuredLibraryID, err := r.runConfigureCommand(ctx)
 		if err != nil {
@@ -208,7 +208,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	return nil
 }
 
-func (r *generateRunner) needsConfiguration() bool {
+func (r *generateRunner) needsConfigure() bool {
 	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
 }
 
@@ -244,7 +244,6 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 	}
 
 	return libraryID, nil
-
 }
 
 func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error {
@@ -468,8 +467,5 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		RepoDir:   r.repo.Dir,
 	}
 	slog.Info("Performing configuration for library", "id", r.cfg.Library)
-	if err := r.containerClient.Configure(ctx, configureRequest); err != nil {
-		return "", err
-	}
-	return r.cfg.Library, nil
+	return r.containerClient.Configure(ctx, configureRequest)
 }

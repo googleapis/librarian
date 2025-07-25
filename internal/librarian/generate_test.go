@@ -54,9 +54,9 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	return m.buildErr
 }
 
-func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) error {
+func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error) {
 	m.configureCalls++
-	return nil
+	return request.LibraryID, nil
 }
 
 func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
@@ -311,7 +311,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			t.Parallel()
 			// We need to create a fake state and config file for the test to pass.
 			if test.cfg.Repo != "" && !isUrl(test.cfg.Repo) {
-				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineStateFile)
+				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, config.PipelineStateFile)
 
 				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
 					t.Fatalf("os.MkdirAll() = %v", err)
