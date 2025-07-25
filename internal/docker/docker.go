@@ -332,6 +332,9 @@ func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) 
 	return nil
 }
 
+// readResponse reads the library state from configure-response.json.
+//
+// The response file is removed afterwards.
 func readResponse(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
 	defer func(name string) {
@@ -353,6 +356,7 @@ func readResponse(contentLoader func(data []byte, state *config.LibraryState) er
 	return libraryState, nil
 }
 
+// writeLibrarianState writes the given librarian state to a yaml file.
 func writeLibrarianState(state *config.LibrarianState, yamlFilePath string) error {
 	yamlFile, err := os.Create(yamlFilePath)
 	if err != nil {
