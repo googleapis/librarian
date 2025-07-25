@@ -551,6 +551,9 @@ func TestToGenerateRequestJSON(t *testing.T) {
 
 func TestReadResponseJson(t *testing.T) {
 	t.Parallel()
+	contentLoader := func(data []byte, state *config.LibraryState) error {
+		return json.Unmarshal(data, state)
+	}
 	for _, test := range []struct {
 		name         string
 		jsonFilePath string
@@ -603,21 +606,21 @@ func TestReadResponseJson(t *testing.T) {
 			tempDir := t.TempDir()
 			if test.name == "invalid_file_name" {
 				filePath := filepath.Join(tempDir, "my\x00file.json")
-				_, err := readResponse(filePath)
+				_, err := readResponse(contentLoader, filePath)
 				if err == nil {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
 				return
 			} else if test.expectErr {
 				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
-				_, err := readResponse(filePath)
+				_, err := readResponse(contentLoader, filePath)
 				if err == nil {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
 				return
 			}
 
-			gotState, err := readResponse(test.jsonFilePath)
+			gotState, err := readResponse(contentLoader, test.jsonFilePath)
 
 			if err != nil {
 				t.Fatalf("readResponse() unexpected error: %v", err)

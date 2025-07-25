@@ -231,7 +231,11 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		}
 	}(responseFilePath)
 
-	libraryState, err := readResponse(responseFilePath)
+	libraryState, err := readResponse(
+		func(data []byte, libraryState *config.LibraryState) error {
+			return json.Unmarshal(data, libraryState)
+		},
+		responseFilePath)
 	if err != nil {
 		return "", err
 	}
@@ -333,7 +337,7 @@ func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) 
 	return nil
 }
 
-func readResponse(jsonFilePath string) (*config.LibraryState, error) {
+func readResponse(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response JSON file: %w", err)
@@ -341,7 +345,7 @@ func readResponse(jsonFilePath string) (*config.LibraryState, error) {
 
 	libraryState := &config.LibraryState{}
 
-	if err := json.Unmarshal(data, libraryState); err != nil {
+	if err := contentLoader(data, libraryState); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON to state: %w", err)
 	}
 
