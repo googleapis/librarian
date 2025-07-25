@@ -643,9 +643,8 @@ func TestReadResponseJson(t *testing.T) {
 func TestWriteLibrarianState(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name      string
-		state     *config.LibrarianState
-		expectErr bool
+		name  string
+		state *config.LibrarianState
 	}{
 		{
 			name: "successful-marshaling-librarianState-yaml",
@@ -684,22 +683,14 @@ func TestWriteLibrarianState(t *testing.T) {
 					},
 				},
 			},
-			expectErr: false,
 		},
 		{
-			name:      "empty-librarianState-yaml",
-			state:     &config.LibrarianState{},
-			expectErr: false,
+			name:  "empty-librarianState-yaml",
+			state: &config.LibrarianState{},
 		},
 		{
-			name:      "nonexistent_dir_for_test",
-			state:     &config.LibrarianState{},
-			expectErr: true,
-		},
-		{
-			name:      "invalid_file_name",
-			state:     &config.LibrarianState{},
-			expectErr: true,
+			name:  "invalid_file_name",
+			state: &config.LibrarianState{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -710,14 +701,8 @@ func TestWriteLibrarianState(t *testing.T) {
 				if err == nil {
 					t.Errorf("writeLibrarianState() expected an error but got nil")
 				}
-				return
-			}
-			if test.expectErr {
-				filePath := filepath.Join("/non-exist-dir", "state.yaml")
-				err := writeLibrarianState(test.state, filePath)
-				if err == nil {
-					t.Errorf("writeLibrarianState() expected an error but got nil")
-				}
+
+				assert.Contains(t, err.Error(), "failed to create librarian state file")
 				return
 			}
 
