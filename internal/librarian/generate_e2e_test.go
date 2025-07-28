@@ -18,6 +18,7 @@
 package librarian
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/filesystem"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestRunGenerate(t *testing.T) {
@@ -128,7 +130,7 @@ func TestRunConfigure(t *testing.T) {
 	}{
 		{
 			name:      "testRunSuccess",
-			api:       "google/cloud/pubsub/v1",
+			api:       "google/cloud/new-library-path/v2",
 			library:   "new-library",
 			apiSource: "../../testdata/e2e/configure/api_root",
 		},
@@ -142,16 +144,25 @@ func TestRunConfigure(t *testing.T) {
 			defer os.RemoveAll(repo)
 			defer os.RemoveAll(workRoot)
 
-			cmd := exec.Command(
-				"../../librarian",
-				"generate",
-				fmt.Sprintf("--api=%s", test.api),
-				fmt.Sprintf("--output=%s", workRoot),
-				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--api-source=%s", test.apiSource),
-				fmt.Sprintf("--library=%s", test.library),
-			)
-			cmd.CombinedOutput()
+			//cmd := exec.Command(
+			//	"../../librarian",
+			//	"generate",
+			//	fmt.Sprintf("--api=%s", test.api),
+			//	fmt.Sprintf("--output=%s", workRoot),
+			//	fmt.Sprintf("--repo=%s", repo),
+			//	fmt.Sprintf("--api-source=%s", test.apiSource),
+			//	fmt.Sprintf("--library=%s", test.library),
+			//)
+			//cmd.CombinedOutput()
+			runner, _ := newGenerateRunner(
+				&config.Config{
+					API:       test.api,
+					Library:   test.library,
+					WorkRoot:  workRoot,
+					Repo:      repo,
+					APISource: test.apiSource,
+				})
+			runner.run(context.Background())
 		})
 	}
 }
