@@ -112,6 +112,50 @@ func TestRunGenerate(t *testing.T) {
 	}
 }
 
+func TestRunConfigure(t *testing.T) {
+	const (
+		localRepoDir       = "../../testdata/e2e/configure/repo"
+		localRepoBackupDir = "../../testdata/e2e/configure/repo_backup"
+	)
+	t.Parallel()
+	rand.Seed(time.Now().UnixNano())
+	for _, test := range []struct {
+		name      string
+		api       string
+		library   string
+		apiSource string
+		wantErr   bool
+	}{
+		{
+			name:      "testRunSuccess",
+			api:       "google/cloud/pubsub/v1",
+			library:   "new-library",
+			apiSource: "../../testdata/e2e/configure/api_root",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000))
+			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000)))
+			if err := prepareTest(repo, workRoot, localRepoBackupDir); err != nil {
+				t.Fatalf("prepare test error = %v", err)
+			}
+			defer os.RemoveAll(repo)
+			defer os.RemoveAll(workRoot)
+
+			cmd := exec.Command(
+				"../../librarian",
+				"generate",
+				fmt.Sprintf("--api=%s", test.api),
+				fmt.Sprintf("--output=%s", workRoot),
+				fmt.Sprintf("--repo=%s", repo),
+				fmt.Sprintf("--api-source=%s", test.apiSource),
+				fmt.Sprintf("--library=%s", test.library),
+			)
+			cmd.CombinedOutput()
+		})
+	}
+}
+
 func prepareTest(repoDir, workRoot, backupDir string) error {
 	if err := initTestRepo(repoDir, backupDir); err != nil {
 		return err
@@ -233,21 +277,4 @@ func copyFile(src, dest string) error {
 
 type genResponse struct {
 	ErrorMessage string `json:"error,omitempty"`
-}
-
-func TestRunConfigure(t *testing.T) {
-	t.Parallel()
-	rand.Seed(time.Now().UnixNano())
-	for _, test := range []struct {
-		name      string
-		api       string
-		apiSource string
-		wantErr   bool
-	}{
-		{},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-
-		})
-	}
 }
