@@ -347,13 +347,13 @@ func readResponse(contentLoader func(data []byte, state *config.LibraryState) er
 		}
 	}(jsonFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response JSON file, path: %s, error: %w", jsonFilePath, err)
+		return nil, fmt.Errorf("failed to read response file, path: %s, error: %w", jsonFilePath, err)
 	}
 
 	libraryState := &config.LibraryState{}
 
 	if err := contentLoader(data, libraryState); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON file, %s, to state: %w", jsonFilePath, err)
+		return nil, fmt.Errorf("failed to load file, %s, to state: %w", jsonFilePath, err)
 	}
 
 	return libraryState, nil
@@ -369,7 +369,7 @@ func writeLibrarianState(contentParser func(state *config.LibrarianState) ([]byt
 
 	data, err := contentParser(state)
 	if err != nil {
-		return fmt.Errorf("failed to marshal state to YAML: %w", err)
+		return fmt.Errorf("failed to convert state to bytes: %w", err)
 	}
 
 	if _, err := yamlFile.Write(data); err != nil {
