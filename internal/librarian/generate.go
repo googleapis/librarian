@@ -177,7 +177,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		}
 	}
 
-	if err := commitMessageAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig, prBody); err != nil {
+	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig, prBody); err != nil {
 		return err
 	}
 	return nil

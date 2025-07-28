@@ -410,7 +410,7 @@ func TestParsePushConfig(t *testing.T) {
 	}
 }
 
-func TestCommitMessageAndPush(t *testing.T) {
+func TestCommitAndPush(t *testing.T) {
 	for _, test := range []struct {
 		name             string
 		pushConfig       string
@@ -496,7 +496,7 @@ func TestCommitMessageAndPush(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
 
-			err := commitMessageAndPush(context.Background(), repo, client, test.pushConfig, "")
+			err := commitAndPush(context.Background(), repo, client, test.pushConfig, "")
 
 			if err != nil && !strings.Contains(err.Error(), test.expectedErrMsg) {
 				t.Errorf("commitAndPush() error = %v, expected to contain: %q", err, test.expectedErrMsg)
