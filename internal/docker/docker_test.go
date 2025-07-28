@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
@@ -658,7 +657,10 @@ func TestReadResponseJSON(t *testing.T) {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
 
-				assert.Contains(t, err.Error(), "failed to read response JSON file")
+				if g, w := err.Error(), "failed to read response JSON file"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
+
 				return
 			}
 
@@ -673,7 +675,9 @@ func TestReadResponseJSON(t *testing.T) {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
 
-				assert.Contains(t, err.Error(), "failed to unmarshal JSON")
+				if g, w := err.Error(), "failed to unmarshal JSON"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
 				return
 			}
 
@@ -764,7 +768,9 @@ func TestWriteLibrarianState(t *testing.T) {
 					t.Errorf("writeLibrarianState() expected an error but got nil")
 				}
 
-				assert.Contains(t, err.Error(), "failed to create librarian state file")
+				if g, w := err.Error(), "failed to create librarian state file"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
 				return
 			}
 
@@ -778,7 +784,9 @@ func TestWriteLibrarianState(t *testing.T) {
 					t.Errorf("writeLibrarianState() expected an error but got nil")
 				}
 
-				assert.Contains(t, err.Error(), "failed to marshal state to YAML")
+				if g, w := err.Error(), "failed to marshal state to YAML"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
 				return
 			}
 
