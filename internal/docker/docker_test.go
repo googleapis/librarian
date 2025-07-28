@@ -657,7 +657,7 @@ func TestReadResponseJSON(t *testing.T) {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
 
-				if g, w := err.Error(), "failed to read response JSON file"; !strings.Contains(g, w) {
+				if g, w := err.Error(), "failed to read response file"; !strings.Contains(g, w) {
 					t.Errorf("got %q, wanted it to contain %q", g, w)
 				}
 
@@ -677,7 +677,7 @@ func TestReadResponseJSON(t *testing.T) {
 					t.Errorf("readResponse() expected an error but got nil")
 				}
 
-				if g, w := err.Error(), "failed to unmarshal JSON"; !strings.Contains(g, w) {
+				if g, w := err.Error(), "failed to load file"; !strings.Contains(g, w) {
 					t.Errorf("got %q, wanted it to contain %q", g, w)
 				}
 				return
@@ -788,7 +788,7 @@ func TestWriteLibrarianState(t *testing.T) {
 					t.Errorf("writeLibrarianState() expected an error but got nil")
 				}
 
-				if g, w := err.Error(), "failed to marshal state to YAML"; !strings.Contains(g, w) {
+				if g, w := err.Error(), "failed to convert state to bytes"; !strings.Contains(g, w) {
 					t.Errorf("got %q, wanted it to contain %q", g, w)
 				}
 				return
