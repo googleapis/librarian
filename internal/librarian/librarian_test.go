@@ -29,7 +29,7 @@ func TestRun(t *testing.T) {
 	}
 }
 
-func TestIsURL(t *testing.T) {
+func TestIsUrl(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		input string
@@ -82,9 +82,9 @@ func TestIsURL(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := isURL(test.input)
+			got := isUrl(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("isURL() mismatch (-want +got):\n%s", diff)
+				t.Errorf("isUrl() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
