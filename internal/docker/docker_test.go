@@ -92,7 +92,13 @@ func TestDockerRun(t *testing.T) {
 					Output:    testOutput,
 					LibraryID: testLibraryID,
 				}
-				return d.Generate(ctx, generateRequest)
+
+				err := d.Generate(ctx, generateRequest)
+				if err := os.RemoveAll("absolute"); err != nil {
+					return err
+				}
+
+				return err
 			},
 			want: []string{
 				"run", "--rm",
@@ -162,7 +168,13 @@ func TestDockerRun(t *testing.T) {
 					Output:    "hostDir",
 					LibraryID: testLibraryID,
 				}
-				return d.Generate(ctx, generateRequest)
+
+				err := d.Generate(ctx, generateRequest)
+				if err := os.RemoveAll("absolute"); err != nil {
+					return err
+				}
+
+				return err
 			},
 			want: []string{
 				"run", "--rm",
@@ -192,7 +204,13 @@ func TestDockerRun(t *testing.T) {
 					LibraryID: testLibraryID,
 					RepoDir:   "absolute/path/to/repo",
 				}
-				return d.Build(ctx, buildRequest)
+
+				err := d.Build(ctx, buildRequest)
+				if err := os.RemoveAll("absolute"); err != nil {
+					return err
+				}
+
+				return err
 			},
 			want: []string{
 				"run", "--rm",
@@ -235,7 +253,12 @@ func TestDockerRun(t *testing.T) {
 					LibraryID: testLibraryID,
 					RepoDir:   "absolute/path/to/repo",
 				}
-				return d.Build(ctx, buildRequest)
+				err := d.Build(ctx, buildRequest)
+				if err := os.RemoveAll("absolute"); err != nil {
+					return err
+				}
+
+				return err
 			},
 			want:    []string{},
 			wantErr: true,
@@ -254,10 +277,19 @@ func TestDockerRun(t *testing.T) {
 					ApiRoot:   testAPIRoot,
 				}
 				jsonData, _ := json.MarshalIndent(&config.LibraryState{}, "", "  ")
+				if err := os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755); err != nil {
+					return err
+				}
 				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
-				os.WriteFile(jsonFilePath, jsonData, 0644)
+				if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
+					return err
+				}
+
 				_, err := d.Configure(ctx, configureRequest)
-				defer os.RemoveAll(configureRequest.RepoDir)
+
+				if err := os.RemoveAll("absolute"); err != nil {
+					return err
+				}
 
 				return err
 			},
@@ -322,13 +354,23 @@ func TestDockerRun(t *testing.T) {
 						},
 					},
 				}, "", "  ")
-				os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755)
+
+				if err := os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755); err != nil {
+					return err
+				}
+
 				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
-				os.WriteFile(jsonFilePath, jsonData, 0644)
-				defer os.RemoveAll(configureRequest.RepoDir)
+				if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
+					return err
+				}
+
 				configuredLibrary, err := d.Configure(ctx, configureRequest)
 				if configuredLibrary != testLibraryID {
 					return errors.New("configured library, " + configuredLibrary + " is wrong")
+				}
+
+				if err := os.RemoveAll("absolute"); err != nil {
+					return err
 				}
 
 				return err
@@ -360,7 +402,11 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   "absolute/path/to/repo",
 					ApiRoot:   testAPIRoot,
 				}
+
 				_, err := d.Configure(ctx, configureRequest)
+				if err := os.RemoveAll("absolute"); err != nil {
+					return err
+				}
 
 				return err
 			},
@@ -410,7 +456,12 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   ".",
 					ApiRoot:   testAPIRoot,
 				}
+
 				_, err := d.Configure(ctx, configureRequest)
+				if err := os.RemoveAll("."); err != nil {
+					return err
+				}
+
 				return err
 			},
 			want:    []string{},
@@ -440,8 +491,6 @@ func TestDockerRun(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			os.RemoveAll(".librarian")
 		})
 	}
 }
