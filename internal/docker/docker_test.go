@@ -669,7 +669,9 @@ func TestReadResponseJSON(t *testing.T) {
 					return errors.New("simulated Unmarshal error")
 				}
 				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
-				copyFile(test.jsonFilePath, dst)
+				if err := copyFile(test.jsonFilePath, dst); err != nil {
+					t.Errorf("copyFile() failed, error %q", err)
+				}
 				_, err := readResponse(invalidContentLoader, dst)
 				if err == nil {
 					t.Errorf("readResponse() expected an error but got nil")
@@ -684,7 +686,9 @@ func TestReadResponseJSON(t *testing.T) {
 			// The response file is removed by the readResponse() function,
 			// so we create a copy and read from it.
 			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
-			copyFile(test.jsonFilePath, dstFilePath)
+			if err := copyFile(test.jsonFilePath, dstFilePath); err != nil {
+				t.Errorf("copyFile() failed, error %q", err)
+			}
 
 			gotState, err := readResponse(contentLoader, dstFilePath)
 
@@ -816,10 +820,20 @@ func TestWriteLibrarianState(t *testing.T) {
 	}
 }
 
-func copyFile(src, dst string) {
-	sourceFile, _ := os.Open(src)
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
 	defer sourceFile.Close()
-	destinationFile, _ := os.Create(dst)
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
 	defer destinationFile.Close()
-	io.Copy(destinationFile, sourceFile)
+	if _, err := io.Copy(destinationFile, sourceFile); err != nil {
+		return err
+	}
+
+	return nil
 }
