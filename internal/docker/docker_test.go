@@ -606,7 +606,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 	}
 }
 
-func TestReadResponseJson(t *testing.T) {
+func TestReadResponseJSON(t *testing.T) {
 	t.Parallel()
 	contentLoader := func(data []byte, state *config.LibraryState) error {
 		return json.Unmarshal(data, state)
