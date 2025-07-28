@@ -480,7 +480,7 @@ func TestGenerateRun(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "generate all with one failure",
+			name: "generate all, partial failure does not halt execution",
 			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
