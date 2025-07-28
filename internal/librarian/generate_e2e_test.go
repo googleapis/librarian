@@ -35,12 +35,12 @@ import (
 	"github.com/go-git/go-git/v5/storage/filesystem"
 )
 
-const (
-	localRepoDir       = "../../testdata/e2e/generate/repo"
-	localRepoBackupDir = "../../testdata/e2e/generate/repo_backup"
-)
-
 func TestRunGenerate(t *testing.T) {
+	const (
+		localRepoDir       = "../../testdata/e2e/generate/repo"
+		localRepoBackupDir = "../../testdata/e2e/generate/repo_backup"
+	)
+
 	t.Parallel()
 	rand.Seed(time.Now().UnixNano())
 	for _, test := range []struct {
@@ -233,4 +233,21 @@ func copyFile(src, dest string) error {
 
 type genResponse struct {
 	ErrorMessage string `json:"error,omitempty"`
+}
+
+func TestRunConfigure(t *testing.T) {
+	t.Parallel()
+	rand.Seed(time.Now().UnixNano())
+	for _, test := range []struct {
+		name      string
+		api       string
+		apiSource string
+		wantErr   bool
+	}{
+		{},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+
+		})
+	}
 }
