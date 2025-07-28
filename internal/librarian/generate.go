@@ -176,7 +176,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 			}
 		}
 	}
-	fmt.Println(prBody)
 
 	if err := commitMessageAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig, prBody); err != nil {
 		return err
