@@ -135,9 +135,9 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 	return path, nil
 }
 
-// commitAndPush creates a commit and push request to Github for the generated changes.
+// commitMessageAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHubClient, pushConfig, message string) error {
+func commitMessageAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHubClient, pushConfig, message string) error {
 	if pushConfig == "" {
 		slog.Info("PushConfig flag not specified, skipping")
 		return nil
