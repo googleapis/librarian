@@ -347,7 +347,7 @@ func readResponse(contentLoader func(data []byte, state *config.LibraryState) er
 		}
 	}(jsonFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response JSON file: %w", err)
+		return nil, fmt.Errorf("failed to read response JSON file, path: %s, error: %w", jsonFilePath, err)
 	}
 
 	libraryState := &config.LibraryState{}
@@ -363,7 +363,7 @@ func readResponse(contentLoader func(data []byte, state *config.LibraryState) er
 func writeLibrarianState(contentParser func(state *config.LibrarianState) ([]byte, error), state *config.LibrarianState, yamlFilePath string) error {
 	yamlFile, err := os.Create(yamlFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to create librarian state file: %w", err)
+		return fmt.Errorf("failed to create librarian state file, path: %s, error: %w", yamlFilePath, err)
 	}
 	defer yamlFile.Close()
 
@@ -373,7 +373,7 @@ func writeLibrarianState(contentParser func(state *config.LibrarianState) ([]byt
 	}
 
 	if _, err := yamlFile.Write(data); err != nil {
-		return fmt.Errorf("failed to write librarian state file: %w", err)
+		return fmt.Errorf("failed to write librarian state file, path: %s, error: %w", yamlFilePath, err)
 	}
 
 	return nil
