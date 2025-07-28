@@ -126,17 +126,27 @@ func validateLibrarianDir(dir, requestFile string) error {
 }
 
 func readConfigureRequest(path string) (*map[string]string, error) {
+	res := &map[string]string{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(data, res); err != nil {
+		return nil, err
+	}
 
+	return res, nil
 }
 
 func writeConfigureResponse(option *configureOption, dataMap *map[string]string) error {
-	jsonFilePath := filepath.Join(option.librarianDir, configureResponse)
-	jsonFile, err := os.Create(jsonFilePath)
+	dataMap = populateAdditionalFields(dataMap)
+	data, err := json.MarshalIndent(dataMap, "", "  ")
 	if err != nil {
 		return err
 	}
-	dataMap = populateMap(dataMap)
-	data, err := json.MarshalIndent(dataMap, "", "  ")
+
+	jsonFilePath := filepath.Join(option.librarianDir, configureResponse)
+	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
 		return err
 	}
@@ -175,7 +185,7 @@ func writeToOutput(option *generateOption) error {
 	return nil
 }
 
-func populateMap(initialData *map[string]string) *map[string]string {
+func populateAdditionalFields(initialData *map[string]string) *map[string]string {
 	(*initialData)["version"] = "1.0.0"
 	(*initialData)["last_generated_commit"] = "abcd123"
 
