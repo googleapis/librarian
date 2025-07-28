@@ -149,7 +149,12 @@ func TestDockerRun(t *testing.T) {
 					Output:    testOutput,
 					LibraryID: testLibraryID,
 				}
-				return d.Generate(ctx, generateRequest)
+				err := d.Generate(ctx, generateRequest)
+				if err := os.RemoveAll(".librarian"); err != nil {
+					return err
+				}
+
+				return err
 			},
 			want:    []string{},
 			wantErr: true,
@@ -458,7 +463,7 @@ func TestDockerRun(t *testing.T) {
 				}
 
 				_, err := d.Configure(ctx, configureRequest)
-				if err := os.RemoveAll("."); err != nil {
+				if err := os.RemoveAll(".librarian"); err != nil {
 					return err
 				}
 
