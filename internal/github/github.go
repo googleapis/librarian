@@ -136,31 +136,25 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 }
 
 // FetchGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
-// There must only be a single remote with a GitHub URL (as the first URL), in order to provide an
-// unambiguous result.
+// There must be a remote named 'origin' with a Github URL (as the first URL), in order to
+// provide an unambiguous result.
 // Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
 func FetchGitHubRepoFromRemote(repo *gitrepo.Repository) (*Repository, error) {
 	remotes, err := repo.Remotes()
 	if err != nil {
 		return nil, err
 	}
-	var gitHubRemoteNames = []string{}
-	gitHubURL := ""
+
 	for _, remote := range remotes {
-		urls := remote.Config().URLs
-		if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
-			gitHubRemoteNames = append(gitHubRemoteNames, remote.Config().Name)
-			gitHubURL = urls[0]
+		if remote.Config().Name == "origin" {
+			urls := remote.Config().URLs
+			if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
+				return ParseURL(urls[0])
+			}
+			// If 'origin' exists but is not a GitHub remote, we stop.
+			break
 		}
 	}
 
-	if len(gitHubRemoteNames) == 0 {
-		return nil, fmt.Errorf("no GitHub remotes found")
-	}
-
-	if len(gitHubRemoteNames) > 1 {
-		n := strings.Join(gitHubRemoteNames, ", ")
-		return nil, fmt.Errorf("can only determine the GitHub repo with a single matching remote; GitHub remotes in repo: %s", n)
-	}
-	return ParseURL(gitHubURL)
+	return nil, fmt.Errorf("could not find an 'origin' remote pointing to a GitHub URL")
 }
