@@ -820,17 +820,22 @@ func TestWriteLibrarianState(t *testing.T) {
 	}
 }
 
-func copyFile(dst, src string) error {
+func copyFile(dst, src string) (err error) {
 	sourceFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer sourceFile.Close()
+
 	destinationFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer destinationFile.Close()
+
+	defer func() {
+		err = errors.Join(err, destinationFile.Close())
+	}()
+
 	if _, err := io.Copy(destinationFile, sourceFile); err != nil {
 		return err
 	}
