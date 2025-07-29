@@ -16,6 +16,13 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  yaml-lint:
+    image: ghcr.io/google/yamlfmt:latest
+    before_script:
+      - apk add git
+    script:
+      - yamlfmt .
+      - git diff --exit-code
   test:
     runs-on: ubuntu-latest
     steps:
