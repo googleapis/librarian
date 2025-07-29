@@ -1,0 +1,24 @@
+image: test-image:latest
+libraries:
+- id: example-library
+  version:
+  last_generated_commit:
+  apis:
+  - path: google/cloud/pubsub/v1
+  source_paths:
+  - google-cloud-pubsub/v1
+- id: new-library
+  version:
+  last_generated_commit:
+  apis:
+  - path: google/cloud/new-library-path
+    service_config: library_v2.yaml
+  source_paths:
+  - example-source-path
+  - example-source-path-2
+  reserve-regex:
+  - example-preserve-regex
+  - example-preserve-regex-2
+  remove-regex:
+  - example-remove-regex
+  - example-remove-regex-2

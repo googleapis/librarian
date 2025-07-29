@@ -23,7 +23,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestRunGenerate(t *testing.T) {
@@ -104,51 +107,63 @@ func TestRunConfigure(t *testing.T) {
 	const (
 		localRepoDir       = "testdata/e2e/configure/repo"
 		localRepoBackupDir = "testdata/e2e/configure/repo_backup"
+		repo               = "repo"
 	)
-	t.Parallel()
-	rand.Seed(time.Now().UnixNano())
 	for _, test := range []struct {
-		name      string
-		api       string
-		library   string
-		apiSource string
-		wantErr   bool
+		name         string
+		api          string
+		library      string
+		apiSource    string
+		updatedState string
+		wantErr      bool
 	}{
 		{
-			name:      "testRunSuccess",
-			api:       "google/cloud/new-library-path/v2",
-			library:   "new-library",
-			apiSource: "testdata/e2e/configure/api_root",
+			name:         "testRunSuccess",
+			api:          "google/cloud/new-library-path/v2",
+			library:      "new-library",
+			apiSource:    "testdata/e2e/configure/api_root",
+			updatedState: "testdata/e2e/configure/updated-state.yaml",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repo := fmt.Sprintf("%s-%d", localRepoDir, rand.Intn(10000))
-			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%d", rand.Intn(10000)))
-			if err := prepareTest(repo, workRoot, localRepoBackupDir); err != nil {
+			workRoot := "/tmp/librarian"
+			repo := filepath.Join(workRoot, repo)
+			if err := prepareTest(t, repo, workRoot, localRepoBackupDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
-			defer os.RemoveAll(repo)
-			defer os.RemoveAll(workRoot)
 
-			//cmd := exec.Command(
-			//	"../../librarian",
-			//	"generate",
-			//	fmt.Sprintf("--api=%s", test.api),
-			//	fmt.Sprintf("--output=%s", workRoot),
-			//	fmt.Sprintf("--repo=%s", repo),
-			//	fmt.Sprintf("--api-source=%s", test.apiSource),
-			//	fmt.Sprintf("--library=%s", test.library),
-			//)
-			//cmd.CombinedOutput()
-			runner, _ := newGenerateRunner(
-				&config.Config{
-					API:       test.api,
-					Library:   test.library,
-					WorkRoot:  workRoot,
-					Repo:      repo,
-					APISource: test.apiSource,
-				})
-			runner.run(context.Background())
+			cmd := exec.Command(
+				"go",
+				"run",
+				"github.com/googleapis/librarian/cmd/librarian",
+				"generate",
+				fmt.Sprintf("--api=%s", test.api),
+				fmt.Sprintf("--output=%s", workRoot),
+				fmt.Sprintf("--repo=%s", repo),
+				fmt.Sprintf("--api-source=%s", test.apiSource),
+				fmt.Sprintf("--library=%s", test.library),
+			)
+			cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+			err := cmd.Run()
+			if err != nil {
+				t.Fatalf("Failed to run configure: %v", err)
+			}
+
+			// Verify the file content
+			gotBytes, err := os.ReadFile(filepath.Join(repo, ".librarian", "state.yaml"))
+			if err != nil {
+				t.Fatalf("Failed to read configure response file: %v", err)
+			}
+
+			wantBytes, readErr := os.ReadFile(test.updatedState)
+			if readErr != nil {
+				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
+			}
+
+			if diff := cmp.Diff(strings.TrimSpace(string(wantBytes)), string(gotBytes)); diff != "" {
+				t.Errorf("Generated JSON mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
