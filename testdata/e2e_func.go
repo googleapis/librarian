@@ -51,12 +51,12 @@ func doConfigure(args []string) error {
 		return err
 	}
 
-	dataMap, err := readConfigureRequest(filepath.Join(request.librarianDir, configureRequest))
+	library, err := readConfigureRequest(filepath.Join(request.librarianDir, configureRequest))
 	if err != nil {
 		return err
 	}
 
-	return writeConfigureResponse(request, dataMap)
+	return writeConfigureResponse(request, library)
 }
 
 func doGenerate(args []string) error {
@@ -125,22 +125,22 @@ func validateLibrarianDir(dir, requestFile string) error {
 	return nil
 }
 
-func readConfigureRequest(path string) (*map[string]string, error) {
-	res := &map[string]string{}
+func readConfigureRequest(path string) (*libraryState, error) {
+	library := &libraryState{}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal(data, res); err != nil {
+	if err := json.Unmarshal(data, library); err != nil {
 		return nil, err
 	}
 
-	return res, nil
+	return library, nil
 }
 
-func writeConfigureResponse(option *configureOption, dataMap *map[string]string) error {
-	dataMap = populateAdditionalFields(dataMap)
-	data, err := json.MarshalIndent(dataMap, "", "  ")
+func writeConfigureResponse(option *configureOption, library *libraryState) error {
+	library = populateAdditionalFields(library)
+	data, err := json.MarshalIndent(library, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -178,18 +178,18 @@ func writeToOutput(option *generateOption) error {
 	if _, err := jsonFile.Write(data); err != nil {
 		return err
 	}
-	log.Print("write generate response to " + jsonFilePath)
 	if option.libraryID == nonExistedLibrary {
 		return errors.New("generation failed due to invalid library id")
 	}
 	return nil
 }
 
-func populateAdditionalFields(initialData *map[string]string) *map[string]string {
-	(*initialData)["version"] = "1.0.0"
-	(*initialData)["last_generated_commit"] = "abcd123"
+func populateAdditionalFields(library *libraryState) *libraryState {
+	library.SourcePaths = []string{"example-source-path", "example-source-path-2"}
+	library.PreserveRegex = []string{"example-preserve-regex", "example-preserve-regex-2"}
+	library.RemoveRegex = []string{"example-remove-regex", "example-remove-regex-2"}
 
-	return initialData
+	return library
 }
 
 type configureOption struct {
@@ -205,4 +205,18 @@ type generateOption struct {
 	librarianDir string
 	libraryID    string
 	sourceDir    string
+}
+
+type libraryState struct {
+	ID            string
+	Version       string
+	APIs          []*api
+	SourcePaths   []string
+	PreserveRegex []string
+	RemoveRegex   []string
+}
+
+type api struct {
+	Path          string
+	ServiceConfig string
 }
