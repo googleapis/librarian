@@ -156,5 +156,5 @@ func FetchGitHubRepoFromRemote(repo *gitrepo.Repository) (*Repository, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("could not find an 'origin' remote pointing to a GitHub URL")
+	return nil, fmt.Errorf("could not find an 'origin' remote pointing to a GitHub https URL")
 }
