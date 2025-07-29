@@ -669,7 +669,7 @@ func TestReadResponseJSON(t *testing.T) {
 					return errors.New("simulated Unmarshal error")
 				}
 				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
-				if err := copyFile(test.jsonFilePath, dst); err != nil {
+				if err := copyFile(dst, test.jsonFilePath); err != nil {
 					t.Errorf("copyFile() failed, error %q", err)
 				}
 				_, err := readResponse(invalidContentLoader, dst)
@@ -686,7 +686,7 @@ func TestReadResponseJSON(t *testing.T) {
 			// The response file is removed by the readResponse() function,
 			// so we create a copy and read from it.
 			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
-			if err := copyFile(test.jsonFilePath, dstFilePath); err != nil {
+			if err := copyFile(dstFilePath, test.jsonFilePath); err != nil {
 				t.Errorf("copyFile() failed, error %q", err)
 			}
 
@@ -820,7 +820,7 @@ func TestWriteLibrarianState(t *testing.T) {
 	}
 }
 
-func copyFile(src, dst string) error {
+func copyFile(dst, src string) error {
 	sourceFile, err := os.Open(src)
 	if err != nil {
 		return err
