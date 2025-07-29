@@ -159,13 +159,15 @@ func writeConfigureResponse(option *configureOption, library *libraryState) erro
 	return nil
 }
 
-func writeToOutput(option *generateOption) error {
+func writeToOutput(option *generateOption) (err error) {
 	jsonFilePath := filepath.Join(option.outputDir, generateResponse)
 	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
 		return err
 	}
-	defer jsonFile.Close()
+	defer func() {
+		err = errors.Join(err, jsonFile.Close())
+	}()
 
 	dataMap := map[string]string{}
 	if option.libraryID == nonExistedLibrary {
