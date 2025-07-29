@@ -115,6 +115,20 @@ func TestGoFmt(t *testing.T) {
 	}
 }
 
+func TestYAMLFmt(t *testing.T) {
+	cmd := exec.Command("yamlfmt", ".")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("yamlfmt failed to run: %v\nOutput:\n%s", err, out.String())
+	}
+	if out.Len() > 0 {
+		t.Errorf("yamlfmt found unformatted files:\n%s", out.String())
+	}
+}
+
 func TestGoModTidy(t *testing.T) {
 	rungo(t, "mod", "tidy", "-diff")
 }
