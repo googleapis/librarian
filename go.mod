@@ -9,6 +9,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v69 v69.2.0
 	github.com/googleapis/gax-go/v2 v2.14.2
+	github.com/google/yamlfmt v0.17.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 
