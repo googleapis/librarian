@@ -9,7 +9,6 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v69 v69.2.0
 	github.com/googleapis/gax-go/v2 v2.14.2
-	github.com/google/yamlfmt v0.17.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -33,6 +32,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
+	github.com/google/yamlfmt v0.17.2
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
