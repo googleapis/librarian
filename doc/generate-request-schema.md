@@ -6,8 +6,6 @@ For more details, see the Go implementation in [state.go](../internal/librarian/
 
 ## Top-Level Fields
 
-Each object in the `libraries` list represents a single library and has the following fields:
-
 | Field                   | Type   | Description                                                                                                                                                           | Required | Validation Constraints |
 |-------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|------------------------|
 | `id`                    | string | A unique identifier for the library, in a language-specific format. It should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.                                                                                                  | Yes      | Must be a valid library ID. |
