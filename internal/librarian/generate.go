@@ -462,6 +462,15 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		APIs: []*config.API{{Path: r.cfg.API}},
 	})
 
+	if err := populateServiceConfigIfEmpty(
+		r.state,
+		func(file string) ([]byte, error) {
+			return os.ReadFile(file)
+		},
+		r.cfg.APISource); err != nil {
+		return "", err
+	}
+
 	configureRequest := &docker.ConfigureRequest{
 		Cfg:       r.cfg,
 		State:     r.state,
