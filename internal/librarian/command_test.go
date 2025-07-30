@@ -488,8 +488,8 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) *github.Client {
 				return nil
 			},
-			expectedErr:    errors.New("no GitHub remotes found"),
-			expectedErrMsg: "no GitHub remotes found",
+			expectedErr:    errors.New("could not find an 'origin' remote"),
+			expectedErrMsg: "could not find an 'origin' remote",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
