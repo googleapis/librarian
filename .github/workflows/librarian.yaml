@@ -27,8 +27,13 @@ jobs:
         run: go version
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
-      - run: go fmt ./...
-      - name: Detect Changes
+      - name: Check Go formatting
+        run: go fmt ./...
+      - name: Check YAML formatting
+        run: |
+          go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2
+          yamlfmt .
+      - name: Detect formatting changes
         run: git diff --exit-code
       - name: Upload coverage report
         uses: codecov/codecov-action@v5
