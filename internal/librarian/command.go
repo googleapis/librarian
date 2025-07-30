@@ -35,7 +35,7 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.LocalRepositor
 		return nil, errors.New("repo must be specified")
 	}
 
-	if isUrl(repo) {
+	if isURL(repo) {
 		// repo is a URL
 		// Take the last part of the URL as the directory name. It feels very
 		// unlikely that will clash with anything else (e.g. "output")
@@ -137,7 +137,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 
 // commitAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHubClient, pushConfig string) error {
+func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHubClient, pushConfig, commitMessage string) error {
 	if pushConfig == "" {
 		slog.Info("PushConfig flag not specified, skipping")
 		return nil
@@ -157,8 +157,7 @@ func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHub
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
-	message := "Changes in this PR"
-	repo.Commit(message, userName, userEmail)
+	repo.Commit(commitMessage, userName, userEmail)
 
 	// Create a new branch, set title and message for the PR.
 	datetimeNow := formatTimestamp(time.Now())
@@ -166,7 +165,7 @@ func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHub
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 
-	_, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, message)
+	_, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}

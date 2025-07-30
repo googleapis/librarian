@@ -48,15 +48,22 @@ func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.R
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
-	generateCalls  int
-	buildCalls     int
-	configureCalls int
-	generateErr    error
-	buildErr       error
+	generateCalls     int
+	buildCalls        int
+	configureCalls    int
+	generateErr       error
+	buildErr          error
+	failGenerateForID string
 }
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
+	if m.failGenerateForID != "" {
+		if request.LibraryID == m.failGenerateForID {
+			return m.generateErr
+		}
+		return nil
+	}
 	return m.generateErr
 }
 

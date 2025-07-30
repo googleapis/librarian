@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main_test
+package librarian
 
 import (
 	"bufio"
@@ -69,6 +69,8 @@ func TestHeaders(t *testing.T) {
 		case strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || strings.HasPrefix(path, "Dockerfile"):
 			requiredHeader = hashHeader
 		case strings.HasSuffix(path, ".md"):
+			return nil
+		case strings.HasSuffix(path, ".excalidraw"):
 			return nil
 		case slices.Contains(noHeaderRequiredFiles, path):
 			return nil

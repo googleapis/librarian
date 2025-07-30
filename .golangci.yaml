@@ -11,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Defines the configuration version.
 # The only possible value is "2".
 version: "2"
-
 linters:
   # See https://golangci-lint.run/usage/linters for details.
   default: none
@@ -31,4 +29,3 @@ linters:
     - unparam
     - unused
     - usetesting
-    

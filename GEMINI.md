@@ -47,6 +47,9 @@ The main entrypoint is `cmd/librarian/main.go`. The core commands are:
 - `.librarian/state.yaml`: The main state file for the pipeline, tracking the status of managed libraries. It is
   automatically managed and should not be edited manually. See the schema in `doc/state-schema.md`.
 
+- `generate-request.json`: A JSON file provided to the language specific container that describes which library
+  to generate. See the schema in `doc/generate-request-schema.md`.
+
 ## Development & Testing Workflow
 
 - **Running tests:** Use `go test -race ./...` to run all tests.

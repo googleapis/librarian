@@ -120,7 +120,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	image := deriveImage(cfg.Image, state)
 
 	var ghClient GitHubClient
-	if isUrl(cfg.Repo) {
+	if isURL(cfg.Repo) {
 		// repo is a URL
 		languageRepo, err := github.ParseURL(cfg.Repo)
 		if err != nil {
@@ -158,6 +158,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
+	prBody := ""
 	if r.cfg.API != "" || r.cfg.Library != "" {
 		libraryID := r.cfg.Library
 		if libraryID == "" {
@@ -171,11 +172,12 @@ func (r *generateRunner) run(ctx context.Context) error {
 			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
 				// TODO(https://github.com/googleapis/librarian/issues/983): record failure and report in PR body when applicable
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
+				prBody += fmt.Sprintf("%s failed to generate\n", library.ID)
 			}
 		}
 	}
 
-	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
+	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig, prBody); err != nil {
 		return err
 	}
 	return nil
@@ -459,6 +461,15 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		ID:   r.cfg.Library,
 		APIs: []*config.API{{Path: r.cfg.API}},
 	})
+
+	if err := populateServiceConfigIfEmpty(
+		r.state,
+		func(file string) ([]byte, error) {
+			return os.ReadFile(file)
+		},
+		r.cfg.APISource); err != nil {
+		return "", err
+	}
 
 	configureRequest := &docker.ConfigureRequest{
 		Cfg:       r.cfg,

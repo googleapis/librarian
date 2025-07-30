@@ -164,7 +164,7 @@ func TestFetchGitHubRepoFromRemote(t *testing.T) {
 		wantErrSubstr string
 	}{
 		{
-			name: "Single GitHub remote",
+			name: "origin is a GitHub remote",
 			remotes: map[string][]string{
 				"origin": {"https://github.com/owner/repo.git"},
 			},
@@ -174,43 +174,44 @@ func TestFetchGitHubRepoFromRemote(t *testing.T) {
 			name:          "No remotes",
 			remotes:       map[string][]string{},
 			wantErr:       true,
-			wantErrSubstr: "no GitHub remotes found",
+			wantErrSubstr: "could not find an 'origin' remote",
 		},
 		{
-			name: "No GitHub remotes",
+			name: "origin is not a GitHub remote",
 			remotes: map[string][]string{
 				"origin": {"https://gitlab.com/owner/repo.git"},
 			},
 			wantErr:       true,
-			wantErrSubstr: "no GitHub remotes found",
+			wantErrSubstr: "could not find an 'origin' remote",
 		},
 		{
-			name: "Multiple remotes, one is GitHub",
+			name: "upstream is GitHub, but no origin",
 			remotes: map[string][]string{
 				"gitlab":   {"https://gitlab.com/owner/repo.git"},
 				"upstream": {"https://github.com/gh-owner/gh-repo.git"},
 			},
-			wantRepo: &Repository{Owner: "gh-owner", Name: "gh-repo"},
+			wantErr:       true,
+			wantErrSubstr: "could not find an 'origin' remote",
 		},
 		{
-			name: "Multiple GitHub remotes",
+			name: "origin and upstream are GitHub remotes, should use origin",
 			remotes: map[string][]string{
 				"origin":   {"https://github.com/owner/repo.git"},
 				"upstream": {"https://github.com/owner2/repo2.git"},
 			},
-			wantErr:       true,
-			wantErrSubstr: "can only determine the GitHub repo with a single matching remote",
+			wantRepo: &Repository{Owner: "owner", Name: "repo"},
 		},
 		{
-			name: "Remote with multiple URLs, first is not GitHub",
+			name: "origin is not GitHub, but upstream is",
 			remotes: map[string][]string{
-				"origin": {"https://gitlab.com/owner/repo.git", "https://github.com/owner/repo.git"},
+				"origin":   {"https://gitlab.com/owner/repo.git"},
+				"upstream": {"https://github.com/gh-owner/gh-repo.git"},
 			},
 			wantErr:       true,
-			wantErrSubstr: "no GitHub remotes found",
+			wantErrSubstr: "could not find an 'origin' remote",
 		},
 		{
-			name: "Remote with multiple URLs, first is GitHub",
+			name: "origin has multiple URLs, first is GitHub",
 			remotes: map[string][]string{
 				"origin": {"https://github.com/owner/repo.git", "https://gitlab.com/owner/repo.git"},
 			},
@@ -241,56 +242,56 @@ func TestFetchGitHubRepoFromRemote(t *testing.T) {
 	}
 }
 
-func TestParseUrl(t *testing.T) {
+func TestParseURL(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name          string
-		remoteUrl     string
+		remoteURL     string
 		wantRepo      *Repository
 		wantErr       bool
 		wantErrSubstr string
 	}{
 		{
 			name:      "Valid HTTPS URL",
-			remoteUrl: "https://github.com/owner/repo.git",
+			remoteURL: "https://github.com/owner/repo.git",
 			wantRepo:  &Repository{Owner: "owner", Name: "repo"},
 			wantErr:   false,
 		},
 		{
 			name:      "Valid HTTPS URL without .git",
-			remoteUrl: "https://github.com/owner/repo",
+			remoteURL: "https://github.com/owner/repo",
 			wantRepo:  &Repository{Owner: "owner", Name: "repo"},
 			wantErr:   false,
 		},
 		{
 			name:          "Invalid URL scheme",
-			remoteUrl:     "http://github.com/owner/repo.git",
+			remoteURL:     "http://github.com/owner/repo.git",
 			wantErr:       true,
 			wantErrSubstr: "not a GitHub remote",
 		},
 		{
 			name:      "URL with extra path components",
-			remoteUrl: "https://github.com/owner/repo/pulls",
+			remoteURL: "https://github.com/owner/repo/pulls",
 			wantRepo:  &Repository{Owner: "owner", Name: "repo"},
 			wantErr:   false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := ParseURL(test.remoteUrl)
+			repo, err := ParseURL(test.remoteURL)
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("ParseUrl() err = nil, want error containing %q", test.wantErrSubstr)
+					t.Errorf("ParseURL() err = nil, want error containing %q", test.wantErrSubstr)
 				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
-					t.Errorf("ParseUrl() err = %v, want error containing %q", err, test.wantErrSubstr)
+					t.Errorf("ParseURL() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
 				if err != nil {
-					t.Errorf("ParseUrl() err = %v, want nil", err)
+					t.Errorf("ParseURL() err = %v, want nil", err)
 				}
 				if diff := cmp.Diff(test.wantRepo, repo); diff != "" {
-					t.Errorf("ParseUrl() repo mismatch (-want +got): %s", diff)
+					t.Errorf("ParseURL() repo mismatch (-want +got): %s", diff)
 				}
 			}
 		})
