@@ -254,7 +254,7 @@ func WriteLibrarianState(contentParser func(state *LibrarianState) ([]byte, erro
 
 	defer func() {
 		if err = errors.Join(err, yamlFile.Close()); err != nil {
-			err = fmt.Errorf("WriteLibrarianState(contentParser, %q): %w", state, err)
+			err = fmt.Errorf("WriteLibrarianState(), file path: %s, error: %w", yamlFilePath, err)
 		}
 	}()
 
