@@ -30,7 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.Repository, error) {
+func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
 	}
@@ -137,7 +137,7 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 
 // commitAndPush creates a commit and push request to Github for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, repo *gitrepo.Repository, ghClient GitHubClient, pushConfig, commitMessage string) error {
+func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHubClient, pushConfig, commitMessage string) error {
 	if pushConfig == "" {
 		slog.Info("PushConfig flag not specified, skipping")
 		return nil

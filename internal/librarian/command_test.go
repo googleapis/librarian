@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
@@ -266,13 +267,13 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 		repo    string
 		ci      string
 		wantErr bool
-		check   func(t *testing.T, repo *gitrepo.Repository)
+		check   func(t *testing.T, repo *gitrepo.LocalRepository)
 		setup   func(t *testing.T, workRoot string) func()
 	}{
 		{
 			name: "with clean repoRoot",
 			repo: cleanRepoPath,
-			check: func(t *testing.T, repo *gitrepo.Repository) {
+			check: func(t *testing.T, repo *gitrepo.LocalRepository) {
 				absWantDir, _ := filepath.Abs(cleanRepoPath)
 				if repo.Dir != absWantDir {
 					t.Errorf("repo.Dir got %q, want %q", repo.Dir, absWantDir)
@@ -292,7 +293,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 					}
 				}
 			},
-			check: func(t *testing.T, repo *gitrepo.Repository) {
+			check: func(t *testing.T, repo *gitrepo.LocalRepository) {
 				wantDir := filepath.Join(workRoot, "google-cloud-go")
 				if repo.Dir != wantDir {
 					t.Errorf("repo.Dir got %q, want %q", repo.Dir, wantDir)
@@ -415,17 +416,17 @@ func TestCommitAndPush(t *testing.T) {
 		name             string
 		pushConfig       string
 		gitHubToken      string
-		setupMockRepo    func(t *testing.T) *gitrepo.Repository
-		setupMockClient  func(t *testing.T) *github.Client
+		setupMockRepo    func(t *testing.T) gitrepo.Repository
+		setupMockClient  func(t *testing.T) GitHubClient
 		expectedPR       *github.PullRequestMetadata
 		expectedErr      error
 		expectedErrMsg   string
-		validatePostTest func(t *testing.T, repo *gitrepo.Repository)
+		validatePostTest func(t *testing.T, repo gitrepo.Repository)
 	}{
 		{
 			name:       "PushConfig flag not specified",
 			pushConfig: "",
-			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				repoDir := newTestGitRepoWithCommit(t, "")
 				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
 				if err != nil {
@@ -433,7 +434,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 				return repo
 			},
-			setupMockClient: func(t *testing.T) *github.Client {
+			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
 		},
@@ -441,7 +442,7 @@ func TestCommitAndPush(t *testing.T) {
 			name:        "Happy Path",
 			pushConfig:  "test@example.com,Test User",
 			gitHubToken: "test-token",
-			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				repoDir := newTestGitRepoWithCommit(t, "")
 				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
 				if err != nil {
@@ -453,7 +454,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 				return repo
 			},
-			setupMockClient: func(t *testing.T) *github.Client {
+			setupMockClient: func(t *testing.T) GitHubClient {
 				repo := &github.Repository{Owner: "test-owner", Name: "test-repo"}
 				client, err := github.NewClient("test-token", repo)
 				if err != nil {
@@ -463,7 +464,7 @@ func TestCommitAndPush(t *testing.T) {
 			},
 
 			expectedPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
-			validatePostTest: func(t *testing.T, repo *gitrepo.Repository) {
+			validatePostTest: func(t *testing.T, repo gitrepo.Repository) {
 				isClean, err := repo.IsClean()
 				if err != nil {
 					t.Fatalf("Failed to check repo status: %v", err)
@@ -477,15 +478,13 @@ func TestCommitAndPush(t *testing.T) {
 			name:        "No GitHub Remote",
 			pushConfig:  "test@example.com,Test User",
 			gitHubToken: "test-token",
-			setupMockRepo: func(t *testing.T) *gitrepo.Repository {
-				repoDir := newTestGitRepoWithCommit(t, "")
-				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
-				if err != nil {
-					t.Fatalf("Failed to create test repo: %v", err)
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					RemotesValue: []*git.Remote{}, // No remotes
 				}
-				return repo
 			},
-			setupMockClient: func(t *testing.T) *github.Client {
+			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
 			expectedErr:    errors.New("could not find an 'origin' remote"),
