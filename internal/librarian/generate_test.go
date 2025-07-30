@@ -270,6 +270,19 @@ func TestRunConfigureCommand(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 					t.Fatal(err)
 				}
+
+				// Write a configure-response.json because it is required by configure
+				// command.
+				if err := os.MkdirAll(filepath.Join(r.repo.Dir, config.LibrarianDir), 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				libraryStr := fmt.Sprintf(`{
+	"ID": "%s"
+}`, test.state.Libraries[0].ID)
+				if err := os.WriteFile(filepath.Join(r.repo.Dir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryStr), 0755); err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			_, err := r.runConfigureCommand(context.Background())
