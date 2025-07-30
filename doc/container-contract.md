@@ -115,7 +115,7 @@ In order for the the container to have enough context on how and what to generat
 
 ### generate-request.json Schema
 
-This section describes the schema for the `generate-request.json` file, which is a JSON file that describes which library to generate. This file should not be edited manually.
+This section defines the schema for the `generate-request.json` file, which is a JSON file that describes which library to generate. This file should not be edited manually.
 
 For more details, see the Go implementation in [state.go](../internal/librarian/state.go).
 
