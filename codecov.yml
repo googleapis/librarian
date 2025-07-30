@@ -13,7 +13,6 @@
 # limitations under the License.
 
 # TODO(https://github.com/googleapis/librarian/issues/744): restore target to 90%
-
 coverage:
   status:
     project:

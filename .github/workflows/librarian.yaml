@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 name: Librarian
 on: [push, pull_request]
 permissions:
@@ -20,32 +19,32 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version-file: 'go.mod'
-    - name: Display Go version
-      run: go version
-    - name: Run tests
-      run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
-    - run: go fmt ./...
-    - name: Detect Changes
-      run: git diff --exit-code
-    - name: Upload coverage report
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Display Go version
+        run: go version
+      - name: Run tests
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      - run: go fmt ./...
+      - name: Detect Changes
+        run: git diff --exit-code
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
   e2e-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: docker/setup-docker-action@v4
-    - name: Build the test image
-      run: |
-        DOCKER_BUILDKIT=1 docker build \
-          -f ./testdata/e2e-test.Dockerfile \
-          -t test-image:latest \
-          .
-    - name: Run end-to-end test
-      run: |
-        go test -tags e2e ./...
+      - uses: actions/checkout@v4
+      - uses: docker/setup-docker-action@v4
+      - name: Build the test image
+        run: |
+          DOCKER_BUILDKIT=1 docker build \
+            -f ./testdata/e2e-test.Dockerfile \
+            -t test-image:latest \
+            .
+      - name: Run end-to-end test
+        run: |
+          go test -tags e2e ./...

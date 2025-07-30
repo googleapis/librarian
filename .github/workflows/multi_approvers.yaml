@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 name: 'multi-approvers'
-
 on:
   pull_request_target:
     types:
@@ -24,17 +22,14 @@ on:
       - 'ready_for_review'
       - 'review_requested'
       - 'review_request_removed'
-
 permissions:
   actions: 'write'
   contents: 'read'
   id-token: 'write'
   pull-requests: 'read'
-
 concurrency:
   group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
   cancel-in-progress: true
-
 jobs:
   multi-approvers:
     runs-on: 'ubuntu-latest'
