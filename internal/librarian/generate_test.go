@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -803,6 +804,19 @@ func TestGenerateScenarios(t *testing.T) {
 
 			data := []byte("type: google.api.Service")
 			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+				t.Fatal(err)
+			}
+
+			// Write a configure-response.json because it is required by configure
+			// command.
+			if err := os.MkdirAll(filepath.Join(r.repo.Dir, config.LibrarianDir), 0755); err != nil {
+				t.Fatal(err)
+			}
+
+			libraryStr := fmt.Sprintf(`{
+	"ID": "%s"
+}`, test.library)
+			if err := os.WriteFile(filepath.Join(r.repo.Dir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryStr), 0755); err != nil {
 				t.Fatal(err)
 			}
 
