@@ -514,11 +514,13 @@ func TestWriteLibrarianState(t *testing.T) {
 			}
 
 			if test.name == "invalid content parser" {
-				filePath := filepath.Join(tempDir, "state.yaml")
 				invalidContentParser := func(state *config.LibrarianState) ([]byte, error) {
 					return nil, errors.New("simulated parsing error")
 				}
-				err := writeLibrarianState(invalidContentParser, test.state, filePath)
+				if err := os.MkdirAll(filepath.Join(tempDir, ".librarian"), 0755); err != nil {
+					t.Errorf("MkdirAll() failed to make directory")
+				}
+				err := writeLibrarianState(invalidContentParser, test.state, tempDir)
 				if err == nil {
 					t.Errorf("writeLibrarianState() expected an error but got nil")
 				}
@@ -529,15 +531,18 @@ func TestWriteLibrarianState(t *testing.T) {
 				return
 			}
 
-			filePath := filepath.Join(tempDir, "state.yaml")
-			err := writeLibrarianState(contentParser, test.state, filePath)
+			if err := os.MkdirAll(filepath.Join(tempDir, ".librarian"), 0755); err != nil {
+				t.Errorf("MkdirAll() failed to make directory")
+			}
+
+			err := writeLibrarianState(contentParser, test.state, tempDir)
 
 			if err != nil {
 				t.Fatalf("writeLibrarianState() unexpected error: %v", err)
 			}
 
 			// Verify the file content
-			gotBytes, err := os.ReadFile(filePath)
+			gotBytes, err := os.ReadFile(filepath.Join(tempDir, ".librarian", pipelineStateFile))
 			if err != nil {
 				t.Fatalf("Failed to read generated file: %v", err)
 			}

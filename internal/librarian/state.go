@@ -30,9 +30,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const pipelineConfigFile = "pipeline-config.json"
-const serviceConfigType = "type"
-const serviceConfigValue = "google.api.Service"
+const (
+	pipelineStateFile  = "state.yaml"
+	pipelineConfigFile = "pipeline-config.json"
+	serviceConfigType  = "type"
+	serviceConfigValue = "google.api.Service"
+)
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
@@ -156,7 +159,8 @@ func readResponse(contentLoader func(data []byte, state *config.LibraryState) er
 }
 
 // writeLibrarianState writes the given librarian state to a yaml file.
-func writeLibrarianState(contentParser func(state *config.LibrarianState) ([]byte, error), state *config.LibrarianState, yamlFilePath string) (err error) {
+func writeLibrarianState(contentParser func(state *config.LibrarianState) ([]byte, error), state *config.LibrarianState, repoDir string) (err error) {
+	yamlFilePath := filepath.Join(repoDir, config.LibrarianDir, pipelineStateFile)
 	yamlFile, err := os.Create(yamlFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create librarian state file, path: %s, error: %w", yamlFilePath, err)

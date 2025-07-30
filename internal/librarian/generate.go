@@ -508,7 +508,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 			return yaml.Marshal(state)
 		},
 		r.state,
-		filepath.Join(r.repo.Dir, config.LibrarianDir, config.PipelineStateFile)); err != nil {
+		r.repo.Dir); err != nil {
 		return "", err
 	}
 
