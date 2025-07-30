@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -421,7 +422,17 @@ func TestWriteLibrarianState(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			contentParser := func(state *config.LibrarianState) ([]byte, error) {
-				return yaml.Marshal(state)
+				data := &bytes.Buffer{}
+				encoder := yaml.NewEncoder(data)
+				encoder.SetIndent(2)
+				if err := encoder.Encode(state); err != nil {
+					return nil, err
+				}
+
+				if err := encoder.Close(); err != nil {
+					return nil, err
+				}
+				return data.Bytes(), nil
 			}
 			if test.name == "invalid_file_name" {
 				filePath := filepath.Join(tempDir, "my\x00file.yaml")

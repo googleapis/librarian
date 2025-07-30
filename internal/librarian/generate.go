@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -505,7 +506,17 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	// Write the updated librarian state to state.yaml.
 	if err := writeLibrarianState(
 		func(state *config.LibrarianState) ([]byte, error) {
-			return yaml.Marshal(state)
+			data := &bytes.Buffer{}
+			encoder := yaml.NewEncoder(data)
+			encoder.SetIndent(2)
+			if err := encoder.Encode(state); err != nil {
+				return nil, err
+			}
+
+			if err := encoder.Close(); err != nil {
+				return nil, err
+			}
+			return data.Bytes(), nil
 		},
 		r.state,
 		r.repo.GetDir()); err != nil {
