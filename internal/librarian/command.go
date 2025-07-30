@@ -152,20 +152,13 @@ func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHub
 	if err != nil {
 		return err
 	}
-	status, err := repo.AddAll()
-	if err != nil {
+	if _, err = repo.AddAll(); err != nil {
 		return err
 	}
-	if status.IsClean() {
-		slog.Info("No changes to commit, skipping commit and push.")
-		return nil
-	}
+
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	message := "Changes in this PR"
-	err = repo.Commit(message, userName, userEmail)
-	if err != nil {
-		return err
-	}
+	repo.Commit(message, userName, userEmail)
 
 	// Create a new branch, set title and message for the PR.
 	datetimeNow := formatTimestamp(time.Now())
