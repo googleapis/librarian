@@ -198,12 +198,12 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
 		return "", err
 	}
-	defer func(name string) {
-		err := os.Remove(name)
+	defer func() {
+		err := os.Remove(requestFilePath)
 		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+			slog.Warn("fail to remove file", slog.String("name", requestFilePath), slog.Any("err", err))
 		}
-	}(requestFilePath)
+	}()
 	commandArgs := []string{
 		"--librarian=/librarian",
 		"--input=/input",
