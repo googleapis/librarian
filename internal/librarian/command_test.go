@@ -26,6 +26,8 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	gogitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
@@ -490,6 +492,44 @@ func TestCommitAndPush(t *testing.T) {
 			expectedErr:    errors.New("could not find an 'origin' remote"),
 			expectedErrMsg: "could not find an 'origin' remote",
 		},
+		{
+			name:        "Commit error",
+			pushConfig:  "test@example.com,Test User",
+			gitHubToken: "test-token",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+					CommitError:  errors.New("commit error"),
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			expectedErr:    errors.New("commit error"),
+			expectedErrMsg: "commit error",
+		},
+		{
+			name:       "No changes to commit",
+			pushConfig: "test@example.com,Test User",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: git.Status{}, // Clean status
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
@@ -498,11 +538,15 @@ func TestCommitAndPush(t *testing.T) {
 			err := commitAndPush(context.Background(), repo, client, test.pushConfig, "")
 
 			if err != nil && !strings.Contains(err.Error(), test.expectedErrMsg) {
-				t.Errorf("commitAndPush() error = %v, expected to contain: %q", err, test.expectedErrMsg)
+				t.Errorf("%s: commitAndPush() error = %v, expected to contain: %q", test.name, err, test.expectedErrMsg)
+			}
+			if err == nil && test.expectedErrMsg != "" {
+				t.Errorf("commitAndPush() expected error, got nil")
 			}
 			if test.validatePostTest != nil {
 				test.validatePostTest(t, repo)
 			}
 		})
 	}
+
 }
