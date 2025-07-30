@@ -262,9 +262,10 @@ func TestRunConfigureCommand(t *testing.T) {
 func TestNewGenerateRunner(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name    string
-		cfg     *config.Config
-		wantErr bool
+		name     string
+		cfg      *config.Config
+		initRepo bool
+		wantErr  bool
 	}{
 		{
 			name:    "missing repo flag",
@@ -313,6 +314,29 @@ func TestNewGenerateRunner(t *testing.T) {
 				GitHubToken: "gh-token",
 			},
 		},
+		{
+			name: "load repo state fails",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: t.TempDir(),
+				Repo:      t.TempDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+			initRepo: true,
+			wantErr:  true,
+		},
+		{
+			name: "new repository fails",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: "non-existent-dir",
+				Repo:      newTestGitRepo(t).Dir,
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -343,6 +367,9 @@ func TestNewGenerateRunner(t *testing.T) {
 				configFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineConfigFile)
 				if err := os.WriteFile(configFile, []byte("{}"), 0644); err != nil {
 					t.Fatalf("os.WriteFile(%q, ...) = %v", configFile, err)
+				}
+				if test.initRepo {
+					runGit(t, test.cfg.Repo, "init")
 				}
 				runGit(t, test.cfg.Repo, "add", ".")
 				runGit(t, test.cfg.Repo, "commit", "-m", "add config")
