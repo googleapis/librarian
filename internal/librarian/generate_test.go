@@ -208,7 +208,6 @@ func TestRunConfigureCommand(t *testing.T) {
 	for _, test := range []struct {
 		name               string
 		api                string
-		apiSource          string
 		repo               *gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
@@ -230,13 +229,26 @@ func TestRunConfigureCommand(t *testing.T) {
 			container:          &mockContainerClient{},
 			wantConfigureCalls: 1,
 		},
+		{
+			name: "configures library with non-existent api source",
+			api:  "non-existent-dir/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "non-existent-dir/api"}},
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 1,
+			wantErr:            true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			sourcePath := test.apiSource
-			if sourcePath == "" {
-				sourcePath = t.TempDir()
-			}
+			sourcePath := t.TempDir()
 			cfg := &config.Config{
 				API:       test.api,
 				APISource: sourcePath,
@@ -248,17 +260,28 @@ func TestRunConfigureCommand(t *testing.T) {
 				containerClient: test.container,
 			}
 
-			if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
-				t.Fatal(err)
-			}
+			if test.name == "configures library" {
+				if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
+					t.Fatal(err)
+				}
 
-			data := []byte("type: google.api.Service")
-			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
-				t.Fatal(err)
+				data := []byte("type: google.api.Service")
+				if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			_, err := r.runConfigureCommand(context.Background())
-			if (err != nil) != test.wantErr {
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("runConfigureCommand() should return error")
+				}
+
+				return
+			}
+
+			if err != nil {
 				t.Errorf("runConfigureCommand() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
