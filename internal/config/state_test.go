@@ -382,7 +382,7 @@ func TestReadResponseJSON(t *testing.T) {
 				filePath := filepath.Join(tempDir, "my\x00file.json")
 				_, err := ReadResponse(contentLoader, filePath)
 				if err == nil {
-					t.Errorf("readResponse() expected an error but got nil")
+					t.Error("readResponse() expected an error but got nil")
 				}
 
 				if g, w := err.Error(), "failed to read response file"; !strings.Contains(g, w) {
@@ -398,7 +398,7 @@ func TestReadResponseJSON(t *testing.T) {
 				}
 				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
 				if err := copyFile(dst, test.jsonFilePath); err != nil {
-					t.Errorf("copyFile() failed, error %q", err)
+					t.Error(err)
 				}
 				_, err := ReadResponse(invalidContentLoader, dst)
 				if err == nil {
@@ -415,7 +415,7 @@ func TestReadResponseJSON(t *testing.T) {
 			// so we create a copy and read from it.
 			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
 			if err := copyFile(dstFilePath, test.jsonFilePath); err != nil {
-				t.Errorf("copyFile() failed, error %q", err)
+				t.Error(err)
 			}
 
 			gotState, err := ReadResponse(contentLoader, dstFilePath)
@@ -561,12 +561,12 @@ func copyFile(dst, src string) (err error) {
 	}
 
 	defer func() {
-		err = errors.Join(err, destinationFile.Close())
+		if err = errors.Join(err, destinationFile.Close()); err != nil {
+			err = fmt.Errorf("copyFile(%q, %q): %w", dst, src, err)
+		}
 	}()
 
-	if _, err := io.Copy(destinationFile, sourceFile); err != nil {
-		return err
-	}
+	_, err = io.Copy(destinationFile, sourceFile)
 
-	return nil
+	return err
 }

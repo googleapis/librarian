@@ -15,6 +15,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -226,12 +227,11 @@ func isValidImage(image string) bool {
 // The response file is removed afterwards.
 func ReadResponse(contentLoader func(data []byte, state *LibraryState) error, jsonFilePath string) (*LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
-	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+	defer func() {
+		if err := os.Remove(jsonFilePath); err != nil {
+			slog.Warn("fail to remove file", slog.String("name", jsonFilePath), slog.Any("err", err))
 		}
-	}(jsonFilePath)
+	}()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response file, path: %s, error: %w", jsonFilePath, err)
 	}
@@ -246,12 +246,17 @@ func ReadResponse(contentLoader func(data []byte, state *LibraryState) error, js
 }
 
 // WriteLibrarianState writes the given librarian state to a yaml file.
-func WriteLibrarianState(contentParser func(state *LibrarianState) ([]byte, error), state *LibrarianState, yamlFilePath string) error {
+func WriteLibrarianState(contentParser func(state *LibrarianState) ([]byte, error), state *LibrarianState, yamlFilePath string) (err error) {
 	yamlFile, err := os.Create(yamlFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create librarian state file, path: %s, error: %w", yamlFilePath, err)
 	}
-	defer yamlFile.Close()
+
+	defer func() {
+		if err = errors.Join(err, yamlFile.Close()); err != nil {
+			err = fmt.Errorf("WriteLibrarianState(contentParser, %q): %w", state, err)
+		}
+	}()
 
 	data, err := contentParser(state)
 	if err != nil {
