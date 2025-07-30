@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -221,36 +220,8 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	if err := c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
-
-	// Read the new library state from the response.
-	libraryState, err := config.ReadResponse(
-		func(data []byte, libraryState *config.LibraryState) error {
-			return json.Unmarshal(data, libraryState)
-		},
-		filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse))
-	if err != nil {
-		return "", err
-	}
-
-	// Update the library state in the librarian state.
-	for i, library := range request.State.Libraries {
-		if library.ID != libraryState.ID {
-			continue
-		}
-		request.State.Libraries[i] = libraryState
-	}
-
-	// Write the updated librarian state to state.yaml.
-	if err := config.WriteLibrarianState(
-		func(state *config.LibrarianState) ([]byte, error) {
-			return yaml.Marshal(state)
-		},
-		request.State,
-		filepath.Join(request.RepoDir, config.LibrarianDir, config.PipelineStateFile)); err != nil {
-		return "", err
-	}
-
-	return libraryState.ID, nil
+	
+	return request.LibraryID, nil
 }
 
 func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {

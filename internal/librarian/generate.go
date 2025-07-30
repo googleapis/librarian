@@ -16,8 +16,10 @@ package librarian
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -478,5 +480,37 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		RepoDir:   r.repo.Dir,
 	}
 	slog.Info("Performing configuration for library", "id", r.cfg.Library)
-	return r.containerClient.Configure(ctx, configureRequest)
+	if _, err := r.containerClient.Configure(ctx, configureRequest); err != nil {
+		return "", err
+	}
+
+	// Read the new library state from the response.
+	libraryState, err := readResponse(
+		func(data []byte, libraryState *config.LibraryState) error {
+			return json.Unmarshal(data, libraryState)
+		},
+		filepath.Join(r.repo.Dir, config.LibrarianDir, config.ConfigureResponse))
+	if err != nil {
+		return "", err
+	}
+
+	// Update the library state in the librarian state.
+	for i, library := range r.state.Libraries {
+		if library.ID != libraryState.ID {
+			continue
+		}
+		r.state.Libraries[i] = libraryState
+	}
+
+	// Write the updated librarian state to state.yaml.
+	if err := writeLibrarianState(
+		func(state *config.LibrarianState) ([]byte, error) {
+			return yaml.Marshal(state)
+		},
+		r.state,
+		filepath.Join(r.repo.Dir, config.LibrarianDir, config.PipelineStateFile)); err != nil {
+		return "", err
+	}
+
+	return libraryState.ID, nil
 }
