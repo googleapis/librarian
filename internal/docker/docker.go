@@ -147,7 +147,6 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		"--input=/input",
 		"--output=/output",
 		"--source=/source",
-		fmt.Sprintf("--library-id=%s", request.LibraryID),
 	}
 
 	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
@@ -182,9 +181,8 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		fmt.Sprintf("%s:/repo", request.RepoDir),
 	}
 	commandArgs := []string{
-		"--repo-root=/repo",
-		"--test=true",
-		fmt.Sprintf("--library-id=%s", request.LibraryID),
+		"--librarian=/librarian",
+		"--repo=/repo",
 	}
 
 	return c.runDocker(ctx, request.Cfg, CommandBuild, mounts, commandArgs)
@@ -207,7 +205,6 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error
 		"--librarian=/librarian",
 		"--input=/input",
 		"--source=/source",
-		fmt.Sprintf("--library-id=%s", request.LibraryID),
 	}
 	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
 	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
