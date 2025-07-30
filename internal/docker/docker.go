@@ -220,7 +220,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	if err := c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
-	
+
 	return request.LibraryID, nil
 }
 
