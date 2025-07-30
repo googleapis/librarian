@@ -343,7 +343,7 @@ func TestReadResponseJSON(t *testing.T) {
 
 			// The response file is removed by the readResponse() function,
 			// so we create a copy and read from it.
-			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
+			dstFilePath := fmt.Sprintf("%scopy.json", os.TempDir())
 			if err := copyFile(dstFilePath, test.jsonFilePath); err != nil {
 				t.Error(err)
 			}
