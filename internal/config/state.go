@@ -84,21 +84,21 @@ func parseImage(image string) (ref string, tag string) {
 type LibraryState struct {
 	// A unique identifier for the library, in a language-specific format.
 	// A valid ID should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.
-	ID string `yaml:"id"`
+	ID string `yaml:"id" json:"id"`
 	// The last released version of the library, following SemVer.
-	Version string `yaml:"version"`
+	Version string `yaml:"version" json:"version"`
 	// The commit hash from the API definition repository at which the library was last generated.
-	LastGeneratedCommit string `yaml:"last_generated_commit"`
+	LastGeneratedCommit string `yaml:"last_generated_commit" json:"last_generated_commit"`
 	// A list of APIs that are part of this library.
-	APIs []*API `yaml:"apis"`
+	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
-	SourcePaths []string `yaml:"source_paths"`
+	SourcePaths []string `yaml:"source_paths" json:"source_paths"`
 	// A list of regular expressions for files and directories to preserve during the copy and remove process.
-	PreserveRegex []string `yaml:"preserve_regex"`
+	PreserveRegex []string `yaml:"preserve_regex" json:"preserve_regex"`
 	// A list of regular expressions for files and directories to remove before copying generated code.
 	// If not set, this defaults to the `source_paths`.
 	// A more specific `preserve_regex` takes precedence.
-	RemoveRegex []string `yaml:"remove_regex"`
+	RemoveRegex []string `yaml:"remove_regex" json:"remove_regex"`
 }
 
 var (
@@ -161,9 +161,9 @@ func (l *LibraryState) Validate() error {
 // API represents an API that is part of a library.
 type API struct {
 	// The path to the API, relative to the root of the API definition repository (e.g., "google/storage/v1").
-	Path string `yaml:"path"`
+	Path string `yaml:"path" json:"path"`
 	// The name of the service config file, relative to the API `path`.
-	ServiceConfig string `yaml:"service_config"`
+	ServiceConfig string `yaml:"service_config" json:"service_config"`
 }
 
 // Validate checks that the API is valid.
