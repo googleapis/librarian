@@ -31,7 +31,7 @@ jobs:
         run: go fmt ./...
       - name: Check YAML formatting
         run: |
-          go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+          go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2
           yamlfmt .
       - name: Detect formatting changes
         run: git diff --exit-code
