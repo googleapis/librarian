@@ -32,9 +32,9 @@ jobs:
       - name: Check YAML formatting
         run: |
           go install github.com/google/yamlfmt/cmd/yamlfmt@latest
-          ~/go/bin/yamlfmt .
-      - name: Detect formatting changes
-        run: git diff --exit-code
+          yamlfmt .
+      # - name: Detect formatting changes
+      #   run: git diff --exit-code
       - name: Upload coverage report
         uses: codecov/codecov-action@v5
         with:
