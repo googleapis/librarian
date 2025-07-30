@@ -219,6 +219,24 @@ func TestRunConfigureCommand(t *testing.T) {
 			wantConfigureCalls: 1,
 			wantErr:            true,
 		},
+		{
+			name: "configure command failed",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				configureErr: errors.New("simulated configure command error"),
+			},
+			wantConfigureCalls: 1,
+			wantErr:            true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -258,7 +276,8 @@ func TestRunConfigureCommand(t *testing.T) {
 				}
 			}
 
-			if test.name == "configures library with no response" {
+			if test.name == "configures library with no response" ||
+				test.name == "configure command failed" {
 				if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
 					t.Fatal(err)
 				}
