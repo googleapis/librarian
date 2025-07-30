@@ -15,6 +15,15 @@
 package config
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"gopkg.in/yaml.v3"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -322,4 +331,242 @@ func TestIsValidImage(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReadResponseJSON(t *testing.T) {
+	t.Parallel()
+	contentLoader := func(data []byte, state *LibraryState) error {
+		return json.Unmarshal(data, state)
+	}
+	for _, test := range []struct {
+		name         string
+		jsonFilePath string
+		wantState    *LibraryState
+	}{
+		{
+			name:         "successful-unmarshal",
+			jsonFilePath: "../../testdata/successful-unmarshal-libraryState.json",
+			wantState: &LibraryState{
+				ID:                  "google-cloud-go",
+				Version:             "1.0.0",
+				LastGeneratedCommit: "abcd123",
+				APIs: []*API{
+					{
+						Path:          "google/cloud/compute/v1",
+						ServiceConfig: "example_service_config.yaml",
+					},
+				},
+				SourcePaths:   []string{"src/example/path"},
+				PreserveRegex: []string{"example-preserve-regex"},
+				RemoveRegex:   []string{"example-remove-regex"},
+			},
+		},
+		{
+			name:         "empty libraryState",
+			jsonFilePath: "../../testdata/empty-libraryState.json",
+			wantState:    &LibraryState{},
+		},
+		{
+			name:      "invalid_file_name",
+			wantState: nil,
+		},
+		{
+			name:         "invalid content loader",
+			jsonFilePath: "../../testdata/invalid-contentLoader.json",
+			wantState:    nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if test.name == "invalid_file_name" {
+				filePath := filepath.Join(tempDir, "my\x00file.json")
+				_, err := ReadResponse(contentLoader, filePath)
+				if err == nil {
+					t.Errorf("readResponse() expected an error but got nil")
+				}
+
+				if g, w := err.Error(), "failed to read response file"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
+
+				return
+			}
+
+			if test.name == "invalid content loader" {
+				invalidContentLoader := func(data []byte, state *LibraryState) error {
+					return errors.New("simulated Unmarshal error")
+				}
+				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
+				if err := copyFile(dst, test.jsonFilePath); err != nil {
+					t.Errorf("copyFile() failed, error %q", err)
+				}
+				_, err := ReadResponse(invalidContentLoader, dst)
+				if err == nil {
+					t.Errorf("readResponse() expected an error but got nil")
+				}
+
+				if g, w := err.Error(), "failed to load file"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
+				return
+			}
+
+			// The response file is removed by the readResponse() function,
+			// so we create a copy and read from it.
+			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
+			if err := copyFile(dstFilePath, test.jsonFilePath); err != nil {
+				t.Errorf("copyFile() failed, error %q", err)
+			}
+
+			gotState, err := ReadResponse(contentLoader, dstFilePath)
+
+			if err != nil {
+				t.Fatalf("readResponse() unexpected error: %v", err)
+			}
+
+			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
+				t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestWriteLibrarianState(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		state *LibrarianState
+	}{
+		{
+			name: "successful-marshaling-librarianState-yaml",
+			state: &LibrarianState{
+				Image: "v1.0.0",
+				Libraries: []*LibraryState{
+					{
+						ID:                  "google-cloud-go",
+						Version:             "1.0.0",
+						LastGeneratedCommit: "abcd123",
+						APIs: []*API{
+							{
+								Path:          "google/cloud/compute/v1",
+								ServiceConfig: "example_service_config.yaml",
+							},
+						},
+						SourcePaths: []string{
+							"src/example/path",
+						},
+						PreserveRegex: []string{
+							"example-preserve-regex",
+						},
+						RemoveRegex: []string{
+							"example-remove-regex",
+						},
+					},
+					{
+						ID:      "google-cloud-storage",
+						Version: "1.2.3",
+						APIs: []*API{
+							{
+								Path:          "google/storage/v1",
+								ServiceConfig: "storage_service_config.yaml",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "empty-librarianState-yaml",
+			state: &LibrarianState{},
+		},
+		{
+			name:  "invalid_file_name",
+			state: &LibrarianState{},
+		},
+		{
+			name:  "invalid content parser",
+			state: &LibrarianState{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			contentParser := func(state *LibrarianState) ([]byte, error) {
+				return yaml.Marshal(state)
+			}
+			if test.name == "invalid_file_name" {
+				filePath := filepath.Join(tempDir, "my\x00file.yaml")
+				err := WriteLibrarianState(contentParser, test.state, filePath)
+				if err == nil {
+					t.Errorf("writeLibrarianState() expected an error but got nil")
+				}
+
+				if g, w := err.Error(), "failed to create librarian state file"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
+				return
+			}
+
+			if test.name == "invalid content parser" {
+				filePath := filepath.Join(tempDir, "state.yaml")
+				invalidContentParser := func(state *LibrarianState) ([]byte, error) {
+					return nil, errors.New("simulated parsing error")
+				}
+				err := WriteLibrarianState(invalidContentParser, test.state, filePath)
+				if err == nil {
+					t.Errorf("writeLibrarianState() expected an error but got nil")
+				}
+
+				if g, w := err.Error(), "failed to convert state to bytes"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
+				return
+			}
+
+			filePath := filepath.Join(tempDir, "state.yaml")
+			err := WriteLibrarianState(contentParser, test.state, filePath)
+
+			if err != nil {
+				t.Fatalf("writeLibrarianState() unexpected error: %v", err)
+			}
+
+			// Verify the file content
+			gotBytes, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Fatalf("Failed to read generated file: %v", err)
+			}
+
+			fileName := fmt.Sprintf("%s.yaml", test.name)
+			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
+			if readErr != nil {
+				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
+			}
+
+			if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
+				t.Errorf("Generated YAML mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func copyFile(dst, src string) (err error) {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		err = errors.Join(err, destinationFile.Close())
+	}()
+
+	if _, err := io.Copy(destinationFile, sourceFile); err != nil {
+		return err
+	}
+
+	return nil
 }

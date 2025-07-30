@@ -16,6 +16,8 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -217,4 +219,48 @@ func isValidImage(image string) bool {
 	ref, tag := parseImage(image)
 
 	return ref != "" && tag != ""
+}
+
+// ReadResponse reads the library state from configure-response.json.
+//
+// The response file is removed afterwards.
+func ReadResponse(contentLoader func(data []byte, state *LibraryState) error, jsonFilePath string) (*LibraryState, error) {
+	data, err := os.ReadFile(jsonFilePath)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+		}
+	}(jsonFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response file, path: %s, error: %w", jsonFilePath, err)
+	}
+
+	libraryState := &LibraryState{}
+
+	if err := contentLoader(data, libraryState); err != nil {
+		return nil, fmt.Errorf("failed to load file, %s, to state: %w", jsonFilePath, err)
+	}
+
+	return libraryState, nil
+}
+
+// WriteLibrarianState writes the given librarian state to a yaml file.
+func WriteLibrarianState(contentParser func(state *LibrarianState) ([]byte, error), state *LibrarianState, yamlFilePath string) error {
+	yamlFile, err := os.Create(yamlFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create librarian state file, path: %s, error: %w", yamlFilePath, err)
+	}
+	defer yamlFile.Close()
+
+	data, err := contentParser(state)
+	if err != nil {
+		return fmt.Errorf("failed to convert state to bytes: %w", err)
+	}
+
+	if _, err := yamlFile.Write(data); err != nil {
+		return fmt.Errorf("failed to write librarian state file, path: %s, error: %w", yamlFilePath, err)
+	}
+
+	return nil
 }
