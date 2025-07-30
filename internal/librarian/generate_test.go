@@ -237,14 +237,24 @@ func TestRunConfigureCommand(t *testing.T) {
 			if sourcePath == "" {
 				sourcePath = t.TempDir()
 			}
+			cfg := &config.Config{
+				API:       test.api,
+				APISource: sourcePath,
+			}
 			r := &generateRunner{
-				cfg: &config.Config{
-					API:       test.api,
-					APISource: sourcePath,
-				},
+				cfg:             cfg,
 				repo:            test.repo,
 				state:           test.state,
 				containerClient: test.container,
+			}
+
+			if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
+				t.Fatal(err)
+			}
+
+			data := []byte("type: google.api.Service")
+			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+				t.Fatal(err)
 			}
 
 			_, err := r.runConfigureCommand(context.Background())
@@ -746,19 +756,31 @@ func TestGenerateScenarios(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
+			cfg := &config.Config{
+				API:        test.api,
+				Library:    test.library,
+				PushConfig: test.pushConfig,
+				APISource:  t.TempDir(),
+				Build:      test.build,
+			}
+
 			r := &generateRunner{
-				cfg: &config.Config{
-					API:        test.api,
-					Library:    test.library,
-					PushConfig: test.pushConfig,
-					APISource:  t.TempDir(),
-					Build:      test.build,
-				},
+				cfg:             cfg,
 				repo:            test.repo,
 				state:           test.state,
 				containerClient: test.container,
 				ghClient:        test.ghClient,
 				workRoot:        t.TempDir(),
+			}
+
+			if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
+				t.Fatal(err)
+			}
+
+			data := []byte("type: google.api.Service")
+			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+				t.Fatal(err)
 			}
 
 			err := r.run(context.Background())
