@@ -494,6 +494,45 @@ func TestCommitAndPush(t *testing.T) {
 			expectedErrMsg: "could not find an 'origin' remote",
 		},
 		{
+			name:       "parsePushConfig error",
+			pushConfig: "invalid-config",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			wantErr:        true,
+			expectedErrMsg: "invalid pushConfig format",
+		},
+		{
+			name:       "AddAll error",
+			pushConfig: "test@example.com,Test User",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					RemotesValue: []*git.Remote{remote},
+					AddAllError:  errors.New("mock add all error"),
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			wantErr:        true,
+			expectedErrMsg: "mock add all error",
+		},
+		{
 			name:       "Commit error",
 			pushConfig: "test@example.com,Test User",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
