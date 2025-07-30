@@ -7,11 +7,3 @@ libraries:
       - path: google/cloud/pubsub/v1
     source_paths:
       - google-cloud-pubsub/v1
-  # this library is used to simulate generation error
-  - id: non-existed-library
-    version:
-    last_generated_commit:
-    apis:
-      - path: google/invalid/path
-    source_paths:
-      - google-cloud-future/v2
