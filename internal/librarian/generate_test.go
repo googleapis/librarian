@@ -246,6 +246,22 @@ func TestRunConfigureCommand(t *testing.T) {
 			wantConfigureCalls: 1,
 			wantErr:            true,
 		},
+		{
+			name: "configures library with no response",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 1,
+			wantErr:            true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -283,6 +299,19 @@ func TestRunConfigureCommand(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(r.repo.Dir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryStr), 0755); err != nil {
 					t.Fatal(err)
 				}
+			}
+
+			if test.name == "configures library with no response" {
+				if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				data := []byte("type: google.api.Service")
+				if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				// Do not create response file
 			}
 
 			_, err := r.runConfigureCommand(context.Background())
