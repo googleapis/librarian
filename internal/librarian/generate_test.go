@@ -262,10 +262,9 @@ func TestRunConfigureCommand(t *testing.T) {
 func TestNewGenerateRunner(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name     string
-		cfg      *config.Config
-		initRepo bool
-		wantErr  bool
+		name    string
+		cfg     *config.Config
+		wantErr bool
 	}{
 		{
 			name:    "missing repo flag",
@@ -319,12 +318,11 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:       "some/api",
 				APISource: t.TempDir(),
-				Repo:      t.TempDir(),
+				Repo:      newTestGitRepoWithState(t, false).Dir,
 				WorkRoot:  t.TempDir(),
 				Image:     "gcr.io/test/test-image",
 			},
-			initRepo: true,
-			wantErr:  true,
+			wantErr: true,
 		},
 		{
 			name: "new repository fails",
@@ -368,9 +366,6 @@ func TestNewGenerateRunner(t *testing.T) {
 				if err := os.WriteFile(configFile, []byte("{}"), 0644); err != nil {
 					t.Fatalf("os.WriteFile(%q, ...) = %v", configFile, err)
 				}
-				if test.initRepo {
-					runGit(t, test.cfg.Repo, "init")
-				}
 				runGit(t, test.cfg.Repo, "add", ".")
 				runGit(t, test.cfg.Repo, "commit", "-m", "add config")
 			}
@@ -385,6 +380,11 @@ func TestNewGenerateRunner(t *testing.T) {
 
 // newTestGitRepo creates a new git repository in a temporary directory.
 func newTestGitRepo(t *testing.T) *gitrepo.Repository {
+	return newTestGitRepoWithState(t, true)
+}
+
+// newTestGitRepo creates a new git repository in a temporary directory.
+func newTestGitRepoWithState(t *testing.T, writeState bool) *gitrepo.Repository {
 	t.Helper()
 	dir := t.TempDir()
 	remoteURL := "https://github.com/googleapis/librarian.git"
@@ -394,14 +394,16 @@ func newTestGitRepo(t *testing.T) *gitrepo.Repository {
 	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
 		t.Fatalf("os.WriteFile: %v", err)
 	}
-	// Create an empty state.yaml file
-	stateDir := filepath.Join(dir, config.LibrarianDir)
-	if err := os.MkdirAll(stateDir, 0755); err != nil {
-		t.Fatalf("os.MkdirAll: %v", err)
-	}
-	stateFile := filepath.Join(stateDir, "state.yaml")
-	if err := os.WriteFile(stateFile, []byte(""), 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
+	if writeState {
+		// Create an empty state.yaml file
+		stateDir := filepath.Join(dir, config.LibrarianDir)
+		if err := os.MkdirAll(stateDir, 0755); err != nil {
+			t.Fatalf("os.MkdirAll: %v", err)
+		}
+		stateFile := filepath.Join(stateDir, "state.yaml")
+		if err := os.WriteFile(stateFile, []byte(""), 0644); err != nil {
+			t.Fatalf("os.WriteFile: %v", err)
+		}
 	}
 	runGit(t, dir, "add", ".")
 	runGit(t, dir, "commit", "-m", "initial commit")
