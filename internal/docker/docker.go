@@ -190,17 +190,19 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 
 // Configure configures an API within a repository, either adding it to an
 // existing library or creating a new library.
-func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error {
-	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
-	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
-		return err
+//
+// Returns the configured library id if the command succeeds.
+func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (string, error) {
+	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
+	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
+		return "", err
 	}
-	defer func(name string) {
-		err := os.Remove(name)
+	defer func() {
+		err := os.Remove(requestFilePath)
 		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+			slog.Warn("fail to remove file", slog.String("name", requestFilePath), slog.Any("err", err))
 		}
-	}(jsonFilePath)
+	}()
 	commandArgs := []string{
 		"--librarian=/librarian",
 		"--input=/input",
@@ -214,7 +216,11 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) error
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
 
-	return c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs)
+	if err := c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs); err != nil {
+		return "", err
+	}
+
+	return request.LibraryID, nil
 }
 
 func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {

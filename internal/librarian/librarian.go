@@ -85,7 +85,7 @@ type GitHubClient interface {
 type ContainerClient interface {
 	Generate(ctx context.Context, request *docker.GenerateRequest) error
 	Build(ctx context.Context, request *docker.BuildRequest) error
-	Configure(ctx context.Context, request *docker.ConfigureRequest) error
+	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
 }
 
 func isURL(s string) bool {
