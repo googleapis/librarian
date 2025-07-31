@@ -45,8 +45,8 @@ func TestRunGenerate(t *testing.T) {
 			api:  "google/cloud/pubsub/v1",
 		},
 		{
-			name:    "non existant in api source",
-			api:     "google/invalid/path",
+			name:    "non existent in api source",
+			api:     "google/non-existent/path",
 			wantErr: true,
 		},
 	} {

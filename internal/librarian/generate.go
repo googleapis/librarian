@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -35,6 +34,7 @@ import (
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"gopkg.in/yaml.v3"
 )
 
 var cmdGenerate = &cli.Command{
