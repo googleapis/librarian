@@ -90,7 +90,7 @@ func init() {
 
 type generateRunner struct {
 	cfg             *config.Config
-	repo            *gitrepo.Repository
+	repo            gitrepo.Repository
 	state           *config.LibrarianState
 	ghClient        GitHubClient
 	containerClient ContainerClient
@@ -158,6 +158,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
+	prBody := ""
 	if r.cfg.API != "" || r.cfg.Library != "" {
 		libraryID := r.cfg.Library
 		if libraryID == "" {
@@ -171,11 +172,12 @@ func (r *generateRunner) run(ctx context.Context) error {
 			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
 				// TODO(https://github.com/googleapis/librarian/issues/983): record failure and report in PR body when applicable
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
+				prBody += fmt.Sprintf("%s failed to generate\n", library.ID)
 			}
 		}
 	}
 
-	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig); err != nil {
+	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig, prBody); err != nil {
 		return err
 	}
 	return nil
@@ -232,7 +234,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		ApiRoot:   apiRoot,
 		LibraryID: libraryID,
 		Output:    outputDir,
-		RepoDir:   r.repo.Dir,
+		RepoDir:   r.repo.GetDir(),
 	}
 	slog.Info("Performing generation for library", "id", libraryID)
 	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
@@ -253,12 +255,12 @@ func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error 
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
 	slog.Info("Clean destinations and copy generated results for library", "id", libraryID)
-	if err := clean(r.repo.Dir, library.RemoveRegex, library.PreserveRegex); err != nil {
+	if err := clean(r.repo.GetDir(), library.RemoveRegex, library.PreserveRegex); err != nil {
 		return err
 	}
 	// os.CopyFS in Go1.24 returns error when copying from a symbolic link
 	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
-	if err := os.CopyFS(r.repo.Dir, os.DirFS(outputDir)); err != nil {
+	if err := os.CopyFS(r.repo.GetDir(), os.DirFS(outputDir)); err != nil {
 		return err
 	}
 	slog.Info("Library updated", "id", libraryID)
@@ -284,7 +286,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 		Cfg:       r.cfg,
 		State:     r.state,
 		LibraryID: libraryID,
-		RepoDir:   r.repo.Dir,
+		RepoDir:   r.repo.GetDir(),
 	}
 	slog.Info("Build requested for library", "id", libraryID)
 	return r.containerClient.Build(ctx, buildRequest)
@@ -474,7 +476,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		State:     r.state,
 		ApiRoot:   apiRoot,
 		LibraryID: r.cfg.Library,
-		RepoDir:   r.repo.Dir,
+		RepoDir:   r.repo.GetDir(),
 	}
 	slog.Info("Performing configuration for library", "id", r.cfg.Library)
 	if err := r.containerClient.Configure(ctx, configureRequest); err != nil {

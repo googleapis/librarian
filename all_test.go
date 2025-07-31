@@ -70,6 +70,8 @@ func TestHeaders(t *testing.T) {
 			requiredHeader = hashHeader
 		case strings.HasSuffix(path, ".md"):
 			return nil
+		case strings.HasSuffix(path, ".excalidraw"):
+			return nil
 		case slices.Contains(noHeaderRequiredFiles, path):
 			return nil
 		default:
