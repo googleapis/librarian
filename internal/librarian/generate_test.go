@@ -370,7 +370,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			t.Parallel()
 			// We need to create a fake state and config file for the test to pass.
 			if test.cfg.Repo != "" && !isURL(test.cfg.Repo) {
-				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, config.PipelineStateFile)
+				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineStateFile)
 
 				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
 					t.Fatalf("os.MkdirAll() = %v", err)

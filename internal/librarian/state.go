@@ -17,16 +17,13 @@ package librarian
 import (
 	"errors"
 	"fmt"
-	"log/slog"
-	"os"
-	"strings"
-
-	"path/filepath"
-
 	"github.com/googleapis/librarian/internal/config"
-
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 const (
@@ -53,7 +50,7 @@ func loadLibrarianState(languageRepo *gitrepo.LocalRepository, source string) (*
 	if languageRepo == nil {
 		return nil, nil
 	}
-	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, config.PipelineStateFile)
+	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
 	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
 }
 

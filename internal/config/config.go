@@ -39,8 +39,6 @@ const (
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
 	LibrarianDir = ".librarian"
-	// PipelineStateFile is a YAML file to store the librarian state.
-	PipelineStateFile = "state.yaml"
 )
 
 // Config holds all configuration values parsed from flags or environment
