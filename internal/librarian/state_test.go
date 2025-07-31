@@ -275,7 +275,7 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 		wantState    *config.LibraryState
 	}{
 		{
-			name:         "successful-unmarshal",
+			name:         "successful load content",
 			jsonFilePath: "../../testdata/successful-unmarshal-libraryState.json",
 			wantState: &config.LibraryState{
 				ID:                  "google-cloud-go",
@@ -298,7 +298,7 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 			wantState:    &config.LibraryState{},
 		},
 		{
-			name:      "invalid_file_name",
+			name:      "invalid file name",
 			wantState: nil,
 		},
 		{
@@ -309,7 +309,7 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			if test.name == "invalid_file_name" {
+			if test.name == "invalid file name" {
 				filePath := filepath.Join(tempDir, "my\x00file.json")
 				_, err := readConfigureResponse(contentLoader, filePath)
 				if err == nil {
@@ -365,11 +365,13 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 func TestWriteLibrarianState(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name  string
-		state *config.LibrarianState
+		name     string
+		filename string
+		state    *config.LibrarianState
 	}{
 		{
-			name: "successful-marshaling-librarianState-yaml",
+			name:     "successful parsing librarianState to yaml",
+			filename: "successful-parsing-librarianState-yaml",
 			state: &config.LibrarianState{
 				Image: "v1.0.0",
 				Libraries: []*config.LibraryState{
@@ -407,11 +409,12 @@ func TestWriteLibrarianState(t *testing.T) {
 			},
 		},
 		{
-			name:  "empty-librarianState-yaml",
-			state: &config.LibrarianState{},
+			name:     "empty librarianState to yaml",
+			filename: "empty-librarianState-yaml",
+			state:    &config.LibrarianState{},
 		},
 		{
-			name:  "invalid_file_name",
+			name:  "invalid file name",
 			state: &config.LibrarianState{},
 		},
 		{
@@ -434,7 +437,7 @@ func TestWriteLibrarianState(t *testing.T) {
 				}
 				return data.Bytes(), nil
 			}
-			if test.name == "invalid_file_name" {
+			if test.name == "invalid file name" {
 				filePath := filepath.Join(tempDir, "my\x00file.yaml")
 				err := writeLibrarianState(contentParser, test.state, filePath)
 				if err == nil {
@@ -481,7 +484,7 @@ func TestWriteLibrarianState(t *testing.T) {
 				t.Fatalf("Failed to read generated file: %v", err)
 			}
 
-			fileName := fmt.Sprintf("%s.yaml", test.name)
+			fileName := fmt.Sprintf("%s.yaml", test.filename)
 			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
