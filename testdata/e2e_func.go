@@ -130,6 +130,11 @@ func readConfigureRequest(path string) (*libraryState, error) {
 		return nil, err
 	}
 
+	if library.ID == "non-existent-library" {
+		// Simulate an configure command error
+		return nil, errors.New("simulate configure command error")
+	}
+
 	return library, nil
 }
 

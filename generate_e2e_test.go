@@ -20,6 +20,7 @@ package librarian
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -117,15 +118,24 @@ func TestRunConfigure(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name:         "testRunSuccess",
+			name:         "runs successfully",
 			api:          "google/cloud/new-library-path/v2",
 			library:      "new-library",
 			apiSource:    "testdata/e2e/configure/api_root",
 			updatedState: "testdata/e2e/configure/updated-state.yaml",
 		},
+		{
+			name:         "failed due to missing configure request file",
+			api:          "google/cloud/non-existent-path/v3",
+			library:      "non-existent-library",
+			apiSource:    "testdata/e2e/configure/api_root",
+			updatedState: "testdata/e2e/configure/updated-state.yaml",
+			wantErr:      true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			workRoot := os.TempDir()
+			t.Parallel()
+			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("rand-%d", rand.Intn(1000)))
 			repo := filepath.Join(workRoot, repo)
 			if err := prepareTest(t, repo, workRoot, localRepoBackupDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
@@ -145,6 +155,12 @@ func TestRunConfigure(t *testing.T) {
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
 			err := cmd.Run()
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("Configure command should fail")
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("Failed to run configure: %v", err)
 			}
