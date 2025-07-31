@@ -501,7 +501,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	// Read the new library state from the response.
-	libraryState, err := readResponse(
+	libraryState, err := readConfigureResponse(
 		func(data []byte, libraryState *config.LibraryState) error {
 			return json.Unmarshal(data, libraryState)
 		},

@@ -264,7 +264,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 	}
 }
 
-func TestReadResponseJSON(t *testing.T) {
+func TestReadConfigureResponseJSON(t *testing.T) {
 	t.Parallel()
 	contentLoader := func(data []byte, state *config.LibraryState) error {
 		return json.Unmarshal(data, state)
@@ -311,9 +311,9 @@ func TestReadResponseJSON(t *testing.T) {
 			tempDir := t.TempDir()
 			if test.name == "invalid_file_name" {
 				filePath := filepath.Join(tempDir, "my\x00file.json")
-				_, err := readResponse(contentLoader, filePath)
+				_, err := readConfigureResponse(contentLoader, filePath)
 				if err == nil {
-					t.Error("readResponse() expected an error but got nil")
+					t.Error("readConfigureResponse() expected an error but got nil")
 				}
 
 				if g, w := err.Error(), "failed to read response file"; !strings.Contains(g, w) {
@@ -331,9 +331,9 @@ func TestReadResponseJSON(t *testing.T) {
 				if err := copyFile(dst, test.jsonFilePath); err != nil {
 					t.Error(err)
 				}
-				_, err := readResponse(invalidContentLoader, dst)
+				_, err := readConfigureResponse(invalidContentLoader, dst)
 				if err == nil {
-					t.Errorf("readResponse() expected an error but got nil")
+					t.Errorf("readConfigureResponse() expected an error but got nil")
 				}
 
 				if g, w := err.Error(), "failed to load file"; !strings.Contains(g, w) {
@@ -342,17 +342,17 @@ func TestReadResponseJSON(t *testing.T) {
 				return
 			}
 
-			// The response file is removed by the readResponse() function,
+			// The response file is removed by the readConfigureResponse() function,
 			// so we create a copy and read from it.
 			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
 			if err := copyFile(dstFilePath, test.jsonFilePath); err != nil {
 				t.Error(err)
 			}
 
-			gotState, err := readResponse(contentLoader, dstFilePath)
+			gotState, err := readConfigureResponse(contentLoader, dstFilePath)
 
 			if err != nil {
-				t.Fatalf("readResponse() unexpected error: %v", err)
+				t.Fatalf("readConfigureResponse() unexpected error: %v", err)
 			}
 
 			if diff := cmp.Diff(test.wantState, gotState); diff != "" {

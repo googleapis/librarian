@@ -128,10 +128,10 @@ func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path s
 	return "", errors.New("could not find service config in " + path)
 }
 
-// readResponse reads the library state from configure-response.json.
+// readConfigureResponse reads the library state from configure-response.json.
 //
 // The response file is removed afterwards.
-func readResponse(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
+func readConfigureResponse(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
 	defer func() {
 		if err := os.Remove(jsonFilePath); err != nil {
