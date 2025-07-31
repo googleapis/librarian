@@ -25,54 +25,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/docker"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 )
-
-// mockContainerClient is a mock implementation of the ContainerClient interface for testing.
-type mockContainerClient struct {
-	ContainerClient
-	generateCalls     int
-	buildCalls        int
-	configureCalls    int
-	generateErr       error
-	buildErr          error
-	failGenerateForID string
-}
-
-func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
-	m.generateCalls++
-	if m.failGenerateForID != "" {
-		if request.LibraryID == m.failGenerateForID {
-			return m.generateErr
-		}
-		return nil
-	}
-	return m.generateErr
-}
-
-func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
-	m.buildCalls++
-	return m.buildErr
-}
-
-func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) error {
-	m.configureCalls++
-	return nil
-}
-
-func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error) {
-	if m.rawErr != nil {
-		return nil, m.rawErr
-	}
-	// Return an empty metadata struct and no error to satisfy the interface.
-	return &github.PullRequestMetadata{}, nil
-}
 
 func TestRunGenerateCommand(t *testing.T) {
 	t.Parallel()
@@ -80,7 +37,7 @@ func TestRunGenerateCommand(t *testing.T) {
 		name              string
 		api               string
 		pushConfig        string
-		repo              *gitrepo.Repository
+		repo              gitrepo.Repository
 		state             *config.LibrarianState
 		container         *mockContainerClient
 		ghClient          GitHubClient
@@ -143,7 +100,7 @@ func TestRunBuildCommand(t *testing.T) {
 		name           string
 		build          bool
 		libraryID      string
-		repo           *gitrepo.Repository
+		repo           gitrepo.Repository
 		state          *config.LibrarianState
 		container      *mockContainerClient
 		wantBuildCalls int
@@ -208,8 +165,7 @@ func TestRunConfigureCommand(t *testing.T) {
 	for _, test := range []struct {
 		name               string
 		api                string
-		apiSource          string
-		repo               *gitrepo.Repository
+		repo               gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
 		wantConfigureCalls int
@@ -230,25 +186,59 @@ func TestRunConfigureCommand(t *testing.T) {
 			container:          &mockContainerClient{},
 			wantConfigureCalls: 1,
 		},
+		{
+			name: "configures library with non-existent api source",
+			api:  "non-existent-dir/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "non-existent-dir/api"}},
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 1,
+			wantErr:            true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			sourcePath := test.apiSource
-			if sourcePath == "" {
-				sourcePath = t.TempDir()
+			sourcePath := t.TempDir()
+			cfg := &config.Config{
+				API:       test.api,
+				APISource: sourcePath,
 			}
 			r := &generateRunner{
-				cfg: &config.Config{
-					API:       test.api,
-					APISource: sourcePath,
-				},
+				cfg:             cfg,
 				repo:            test.repo,
 				state:           test.state,
 				containerClient: test.container,
 			}
 
+			if test.name == "configures library" {
+				if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				data := []byte("type: google.api.Service")
+				if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
 			_, err := r.runConfigureCommand(context.Background())
-			if (err != nil) != test.wantErr {
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("runConfigureCommand() should return error")
+				}
+
+				return
+			}
+
+			if err != nil {
 				t.Errorf("runConfigureCommand() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
@@ -275,8 +265,8 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "valid config",
 			cfg: &config.Config{
 				API:       "some/api",
-				APISource: newTestGitRepo(t).Dir,
-				Repo:      newTestGitRepo(t).Dir,
+				APISource: newTestGitRepo(t).GetDir(),
+				Repo:      newTestGitRepo(t).GetDir(),
 				WorkRoot:  t.TempDir(),
 				Image:     "gcr.io/test/test-image",
 			},
@@ -305,8 +295,8 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "push config with github token is valid",
 			cfg: &config.Config{
 				API:         "some/api",
-				APISource:   newTestGitRepo(t).Dir,
-				Repo:        newTestGitRepo(t).Dir,
+				APISource:   newTestGitRepo(t).GetDir(),
+				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
 				PushConfig:  "test@example.com,Test User",
@@ -318,7 +308,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:       "some/api",
 				APISource: t.TempDir(),
-				Repo:      newTestGitRepoWithState(t, false).Dir,
+				Repo:      newTestGitRepoWithState(t, false).GetDir(),
 				WorkRoot:  t.TempDir(),
 				Image:     "gcr.io/test/test-image",
 			},
@@ -329,7 +319,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:       "some/api",
 				APISource: "non-existent-dir",
-				Repo:      newTestGitRepo(t).Dir,
+				Repo:      newTestGitRepo(t).GetDir(),
 				WorkRoot:  t.TempDir(),
 				Image:     "gcr.io/test/test-image",
 			},
@@ -379,12 +369,12 @@ func TestNewGenerateRunner(t *testing.T) {
 }
 
 // newTestGitRepo creates a new git repository in a temporary directory.
-func newTestGitRepo(t *testing.T) *gitrepo.Repository {
+func newTestGitRepo(t *testing.T) gitrepo.Repository {
 	return newTestGitRepoWithState(t, true)
 }
 
 // newTestGitRepo creates a new git repository in a temporary directory.
-func newTestGitRepoWithState(t *testing.T, writeState bool) *gitrepo.Repository {
+func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 	t.Helper()
 	dir := t.TempDir()
 	remoteURL := "https://github.com/googleapis/librarian.git"
@@ -429,7 +419,7 @@ func TestGenerateRun(t *testing.T) {
 	for _, test := range []struct {
 		name               string
 		api                string
-		repo               *gitrepo.Repository
+		repo               gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
 		ghClient           GitHubClient
@@ -542,25 +532,6 @@ func TestGenerateRun(t *testing.T) {
 			wantGenerateCalls: 2,
 			wantBuildCalls:    1,
 		},
-		{
-			name: "commit and push error",
-			api:  "some/api",
-			repo: newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container:  &mockContainerClient{},
-			ghClient:   &mockGitHubClient{rawErr: errors.New("commit and push error")},
-			pushConfig: "xxx@email.com,author",
-			build:      true,
-			wantErr:    true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -619,7 +590,7 @@ func TestGenerateScenarios(t *testing.T) {
 		name               string
 		api                string
 		library            string
-		repo               *gitrepo.Repository
+		repo               gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
 		ghClient           GitHubClient
@@ -785,20 +756,32 @@ func TestGenerateScenarios(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
+			cfg := &config.Config{
+				API:        test.api,
+				Library:    test.library,
+				PushConfig: test.pushConfig,
+				APISource:  t.TempDir(),
+				Build:      test.build,
+			}
+
 			r := &generateRunner{
-				cfg: &config.Config{
-					API:        test.api,
-					Library:    test.library,
-					PushConfig: test.pushConfig,
-					APISource:  t.TempDir(),
-					Build:      test.build,
-				},
+				cfg:             cfg,
 				repo:            test.repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
 				containerClient: test.container,
 				ghClient:        test.ghClient,
 				workRoot:        t.TempDir(),
+			}
+
+			if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
+				t.Fatal(err)
+			}
+
+			data := []byte("type: google.api.Service")
+			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+				t.Fatal(err)
 			}
 
 			err := r.run(context.Background())
@@ -1398,7 +1381,7 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 		name        string
 		libraryID   string
 		state       *config.LibrarianState
-		repo        *gitrepo.Repository
+		repo        gitrepo.Repository
 		outputDir   string
 		setup       func(t *testing.T, r *generateRunner, outputDir string)
 		wantErr     bool

@@ -139,7 +139,7 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 // There must be a remote named 'origin' with a Github URL (as the first URL), in order to
 // provide an unambiguous result.
 // Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
-func FetchGitHubRepoFromRemote(repo *gitrepo.Repository) (*Repository, error) {
+func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
 	remotes, err := repo.Remotes()
 	if err != nil {
 		return nil, err

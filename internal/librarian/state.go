@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -36,7 +35,7 @@ const serviceConfigValue = "google.api.Service"
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
-func loadRepoState(languageRepo *gitrepo.Repository, source string) (*config.LibrarianState, error) {
+func loadRepoState(languageRepo *gitrepo.LocalRepository, source string) (*config.LibrarianState, error) {
 	if languageRepo == nil {
 		return nil, nil
 	}
@@ -47,18 +46,12 @@ func loadRepoState(languageRepo *gitrepo.Repository, source string) (*config.Lib
 	return state, nil
 }
 
-func loadLibrarianState(languageRepo *gitrepo.Repository, source string) (*config.LibrarianState, error) {
+func loadLibrarianState(languageRepo *gitrepo.LocalRepository, source string) (*config.LibrarianState, error) {
 	if languageRepo == nil {
 		return nil, nil
 	}
 	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
 	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
-}
-
-func fetchRemoteLibrarianState(ctx context.Context, client GitHubClient, ref, source string) (*config.LibrarianState, error) {
-	return parseLibrarianState(func(file string) ([]byte, error) {
-		return client.GetRawContent(ctx, file, ref)
-	}, filepath.Join(config.LibrarianDir, pipelineStateFile), source)
 }
 
 func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, source string) (*config.LibrarianState, error) {
