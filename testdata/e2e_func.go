@@ -182,6 +182,7 @@ func writeToOutput(option *generateOption) (err error) {
 }
 
 func populateAdditionalFields(library *libraryState) *libraryState {
+	library.Version = "1.0.0"
 	library.SourcePaths = []string{"example-source-path", "example-source-path-2"}
 	library.PreserveRegex = []string{"example-preserve-regex", "example-preserve-regex-2"}
 	library.RemoveRegex = []string{"example-remove-regex", "example-remove-regex-2"}
@@ -205,15 +206,15 @@ type generateOption struct {
 }
 
 type libraryState struct {
-	ID            string
-	Version       string
-	APIs          []*api
-	SourcePaths   []string
-	PreserveRegex []string
-	RemoveRegex   []string
+	ID            string   `json:"id"`
+	Version       string   `json:"version"`
+	APIs          []*api   `json:"apis"`
+	SourcePaths   []string `json:"source_paths"`
+	PreserveRegex []string `json:"preserve_regex"`
+	RemoveRegex   []string `json:"remove_regex"`
 }
 
 type api struct {
-	Path          string
-	ServiceConfig string
+	Path          string `json:"path"`
+	ServiceConfig string `json:"service_config"`
 }

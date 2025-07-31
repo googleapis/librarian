@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -126,7 +125,7 @@ func TestRunConfigure(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			workRoot := "/tmp/librarian"
+			workRoot := os.TempDir()
 			repo := filepath.Join(workRoot, repo)
 			if err := prepareTest(t, repo, workRoot, localRepoBackupDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
@@ -161,8 +160,8 @@ func TestRunConfigure(t *testing.T) {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
 
-			if diff := cmp.Diff(strings.TrimSpace(string(wantBytes)), string(gotBytes)); diff != "" {
-				t.Errorf("Generated JSON mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
+				t.Errorf("Generated yaml mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
