@@ -136,7 +136,7 @@ func TestDockerRun(t *testing.T) {
 				generateRequest := &GenerateRequest{
 					Cfg:       cfg,
 					State:     state,
-					RepoDir:   ".",
+					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 					Output:    testOutput,
 					LibraryID: testLibraryID,
@@ -276,7 +276,6 @@ func TestDockerRun(t *testing.T) {
 				"--librarian=/librarian",
 				"--input=/input",
 				"--source=/source",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 			wantErr: false,
 		},
