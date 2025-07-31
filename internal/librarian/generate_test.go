@@ -32,6 +32,62 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func TestDeriveRepoPath(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		repoPath     string
+		setup        func(t *testing.T, dir string)
+		wantErr      bool
+		wantRepoPath string
+	}{
+		{
+			name:         "repo path provided",
+			repoPath:     "/some/path",
+			wantRepoPath: "/some/path",
+		},
+		{
+			name: "empty repo path, state file exists",
+			setup: func(t *testing.T, dir string) {
+				stateDir := filepath.Join(dir, config.LibrarianDir)
+				if err := os.MkdirAll(stateDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				stateFile := filepath.Join(stateDir, pipelineStateFile)
+				if err := os.WriteFile(stateFile, []byte("test"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name:    "empty repo path, no state file",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+			t.Chdir(tmpDir)
+
+			gotRepoPath, err := deriveRepoPath(test.repoPath)
+			if (err != nil) != test.wantErr {
+				t.Errorf("deriveRepoPath() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+
+			wantPath := test.wantRepoPath
+			if wantPath == "" && !test.wantErr {
+				wantPath = tmpDir
+			}
+
+			if diff := cmp.Diff(wantPath, gotRepoPath); diff != "" {
+				t.Errorf("deriveRepoPath() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestRunGenerateCommand(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
