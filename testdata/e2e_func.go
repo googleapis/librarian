@@ -80,8 +80,6 @@ func parseConfigureRequest(args []string) (*configureOption, error) {
 			configureOption.intputDir = strs[1]
 		case librarian:
 			configureOption.librarianDir = strs[1]
-		case libraryID:
-			configureOption.libraryID = strs[1]
 		case source:
 			configureOption.sourceDir = strs[1]
 		default:
