@@ -102,22 +102,6 @@ type generateRunner struct {
 	image           string
 }
 
-func deriveRepoPath(repoFlag string) (string, error) {
-	if repoFlag != "" {
-		return repoFlag, nil
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("getting working directory: %w", err)
-	}
-	stateFile := filepath.Join(wd, config.LibrarianDir, pipelineStateFile)
-	if _, err := os.Stat(stateFile); err != nil {
-		return "", fmt.Errorf("repo flag not specified and no state file found in current working directory: %w", err)
-	}
-	slog.Info("repo not specified, using current working directory as repo root", "path", wd)
-	return wd, nil
-}
-
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	repoPath, err := deriveRepoPath(cfg.Repo)
 	if err != nil {
