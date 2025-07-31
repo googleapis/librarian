@@ -25,17 +25,20 @@ import (
 
 const (
 	// BuildRequest is a JSON file that describes which library to build/test.
-	BuildRequest string = "build-request.json"
+	BuildRequest = "build-request.json"
 	// ConfigureRequest is a JSON file that describes which library to configure.
-	ConfigureRequest string = "configure-request.json"
+	ConfigureRequest = "configure-request.json"
+	// ConfigureResponse is a JSON file that describes which library to change
+	// after initial configuration.
+	ConfigureResponse = "configure-response.json"
 	// GeneratorInputDir is the default directory to store files that generator
 	// needs to regenerate libraries from an empty directory.
-	GeneratorInputDir string = ".librarian/generator-input"
+	GeneratorInputDir = ".librarian/generator-input"
 	// GenerateRequest is a JSON file that describes which library to generate.
-	GenerateRequest string = "generate-request.json"
+	GenerateRequest = "generate-request.json"
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
-	LibrarianDir string = ".librarian"
+	LibrarianDir = ".librarian"
 )
 
 // Config holds all configuration values parsed from flags or environment

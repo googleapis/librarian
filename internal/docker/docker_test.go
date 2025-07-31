@@ -16,6 +16,7 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -55,13 +56,11 @@ func TestNew(t *testing.T) {
 
 func TestDockerRun(t *testing.T) {
 	const (
-		mockImage          = "mockImage"
-		testAPIPath        = "testAPIPath"
-		testAPIRoot        = "testAPIRoot"
-		testGeneratorInput = "testGeneratorInput"
-		testImage          = "testImage"
-		testLibraryID      = "testLibraryID"
-		testOutput         = "testOutput"
+		mockImage     = "mockImage"
+		testAPIRoot   = "testAPIRoot"
+		testImage     = "testImage"
+		testLibraryID = "testLibraryID"
+		testOutput    = "testOutput"
 	)
 
 	state := &config.LibrarianState{}
@@ -69,6 +68,7 @@ func TestDockerRun(t *testing.T) {
 	cfgInDocker := &config.Config{
 		HostMount: "hostDir:localDir",
 	}
+	repoDir := filepath.Join(os.TempDir())
 	for _, test := range []struct {
 		name       string
 		docker     *Docker
@@ -85,17 +85,18 @@ func TestDockerRun(t *testing.T) {
 				generateRequest := &GenerateRequest{
 					Cfg:       cfg,
 					State:     state,
-					RepoDir:   "absolute/path/to/repo",
+					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 					Output:    testOutput,
 					LibraryID: testLibraryID,
 				}
+
 				return d.Generate(ctx, generateRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", "absolute/path/to/repo/.librarian:/librarian:ro",
-				"-v", "absolute/path/to/repo/.librarian/generator-input:/input",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
@@ -104,7 +105,6 @@ func TestDockerRun(t *testing.T) {
 				"--input=/input",
 				"--output=/output",
 				"--source=/source",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 			wantErr: false,
 		},
@@ -136,11 +136,12 @@ func TestDockerRun(t *testing.T) {
 				generateRequest := &GenerateRequest{
 					Cfg:       cfg,
 					State:     state,
-					RepoDir:   ".",
+					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 					Output:    testOutput,
 					LibraryID: testLibraryID,
 				}
+
 				return d.Generate(ctx, generateRequest)
 			},
 			want:    []string{},
@@ -155,17 +156,18 @@ func TestDockerRun(t *testing.T) {
 				generateRequest := &GenerateRequest{
 					Cfg:       cfgInDocker,
 					State:     state,
-					RepoDir:   "absolute/path/to/repo",
+					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 					Output:    "hostDir",
 					LibraryID: testLibraryID,
 				}
+
 				return d.Generate(ctx, generateRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", "absolute/path/to/repo/.librarian:/librarian:ro",
-				"-v", "absolute/path/to/repo/.librarian/generator-input:/input",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
 				"-v", "localDir:/output",
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
@@ -174,7 +176,6 @@ func TestDockerRun(t *testing.T) {
 				"--input=/input",
 				"--output=/output",
 				"--source=/source",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
 			},
 			wantErr: false,
 		},
@@ -188,19 +189,19 @@ func TestDockerRun(t *testing.T) {
 					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
-					RepoDir:   "absolute/path/to/repo",
+					RepoDir:   repoDir,
 				}
+
 				return d.Build(ctx, buildRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", "absolute/path/to/repo/.librarian:/librarian:ro",
-				"-v", "absolute/path/to/repo:/repo",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
+				"-v", fmt.Sprintf("%s:/repo", repoDir),
 				testImage,
 				string(CommandBuild),
-				"--repo-root=/repo",
-				"--test=true",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
+				"--librarian=/librarian",
+				"--repo=/repo",
 			},
 			wantErr: false,
 		},
@@ -231,8 +232,9 @@ func TestDockerRun(t *testing.T) {
 					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
-					RepoDir:   "absolute/path/to/repo",
+					RepoDir:   repoDir,
 				}
+
 				return d.Build(ctx, buildRequest)
 			},
 			want:    []string{},
@@ -248,22 +250,109 @@ func TestDockerRun(t *testing.T) {
 					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
-					RepoDir:   "absolute/path/to/repo",
+					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+				jsonData, _ := json.MarshalIndent(&config.LibraryState{}, "", "  ")
+				if err := os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755); err != nil {
+					return err
+				}
+				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
+				if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
+					return err
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", "absolute/path/to/repo/.librarian:/librarian",
-				"-v", "absolute/path/to/repo/.librarian/generator-input:/input",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
 				"--source=/source",
-				fmt.Sprintf("--library-id=%s", testLibraryID),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Configure with multiple libraries in librarian state",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				curState := &config.LibrarianState{
+					Image: testImage,
+					Libraries: []*config.LibraryState{
+						{
+							ID: testLibraryID,
+							APIs: []*config.API{
+								{
+									Path: "example/path/v1",
+								},
+							},
+						},
+						{
+							ID: "another-example-library",
+							APIs: []*config.API{
+								{
+									Path:          "another/example/path/v1",
+									ServiceConfig: "another_v1.yaml",
+								},
+							},
+							SourcePaths: []string{
+								"another-example-source-path",
+							},
+						},
+					},
+				}
+				configureRequest := &ConfigureRequest{
+					Cfg:       cfg,
+					State:     curState,
+					LibraryID: testLibraryID,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+				}
+				jsonData, _ := json.MarshalIndent(&config.LibraryState{
+					ID: testLibraryID,
+					APIs: []*config.API{
+						{
+							Path:          "example/path/v1",
+							ServiceConfig: "generated_example_v1.yaml",
+						},
+					},
+				}, "", "  ")
+
+				if err := os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755); err != nil {
+					return err
+				}
+
+				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
+				if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
+					return err
+				}
+
+				configuredLibrary, err := d.Configure(ctx, configureRequest)
+				if configuredLibrary != testLibraryID {
+					return errors.New("configured library, " + configuredLibrary + " is wrong")
+				}
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--source=/source",
 			},
 			wantErr: false,
 		},
@@ -280,7 +369,8 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   "/non-exist-dir",
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+				_, err := d.Configure(ctx, configureRequest)
+				return err
 			},
 			want:    []string{},
 			wantErr: true,
@@ -295,10 +385,13 @@ func TestDockerRun(t *testing.T) {
 					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
-					RepoDir:   ".",
+					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 				}
-				return d.Configure(ctx, configureRequest)
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
 			},
 			want:    []string{},
 			wantErr: true,
@@ -327,8 +420,6 @@ func TestDockerRun(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			os.RemoveAll(".librarian")
 		})
 	}
 }

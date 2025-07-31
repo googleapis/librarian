@@ -46,7 +46,7 @@ func TestRunGenerate(t *testing.T) {
 			api:  "google/cloud/pubsub/v1",
 		},
 		{
-			name:    "testRunFailed",
+			name:    "non existant in api source",
 			api:     "google/invalid/path",
 			wantErr: true,
 		},
@@ -75,10 +75,10 @@ func TestRunGenerate(t *testing.T) {
 				if err == nil {
 					t.Fatalf("%s should fail", test.name)
 				}
-			} else {
-				if err != nil {
-					t.Fatalf("librarian generate command error = %v", err)
-				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("librarian generate command error = %v", err)
 			}
 
 			responseFile := filepath.Join(workRoot, "output", "generate-response.json")

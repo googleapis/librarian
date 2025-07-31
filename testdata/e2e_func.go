@@ -12,7 +12,6 @@ import (
 const (
 	inputDir          = "input"
 	librarian         = "librarian"
-	libraryID         = "library-id"
 	outputDir         = "output"
 	source            = "source"
 	configureRequest  = "configure-request.json"
@@ -103,8 +102,6 @@ func parseGenerateRequest(args []string) (*generateOption, error) {
 			generateOption.intputDir = strs[1]
 		case librarian:
 			generateOption.librarianDir = strs[1]
-		case libraryID:
-			generateOption.libraryID = strs[1]
 		case outputDir:
 			generateOption.outputDir = strs[1]
 		case source:
