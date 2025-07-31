@@ -74,10 +74,9 @@ func TestRunGenerate(t *testing.T) {
 					t.Fatalf("%s should fail", test.name)
 				}
 				return
-			} else {
-				if err != nil {
-					t.Fatalf("librarian generate command error = %v", err)
-				}
+			}
+			if err != nil {
+				t.Fatalf("librarian generate command error = %v", err)
 			}
 
 			responseFile := filepath.Join(workRoot, "output", "generate-response.json")
