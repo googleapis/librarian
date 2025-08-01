@@ -52,26 +52,16 @@ func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "",
-		"Code repository where the generated code will reside. "+
-			"Can be a remote in the format of a remote URL such as "+
-			"https://github.com/{owner}/{repo} or a local file path like "+
-			"/path/to/repo`. Both absolute and relative paths are supported.")
+		`Code repository where the generated code will reside.
+			Can be a remote in the format of a remote URL such as 
+			https://github.com/{owner}/{repo} or a local file path like 
+			/path/to/repo. Both absolute and relative paths are supported.
+			If not specified, will try to detect if the current working 
+			directory is configured as a language repository.`)
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.WorkRoot, "output", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
-}
-
-// validateRequiredFlag validates that the flag with the given name has been provided.
-// TODO(https://github.com/googleapis/librarian/issues/488): add support for required string flags
-// We should rework how we add flags so that these can be validated before we even
-// start executing the command. (At least for simple cases where a flag is required;
-// note that this isn't always going to be the same for all commands for one flag.)
-func validateRequiredFlag(name, value string) error {
-	if value == "" {
-		return fmt.Errorf("required flag -%s not specified", name)
-	}
-	return nil
 }
 
 // validatePushConfigAndGithubTokenCoexist validates that the github token should exist if pushConfig flag is set.

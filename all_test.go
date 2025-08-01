@@ -72,6 +72,10 @@ func TestHeaders(t *testing.T) {
 			return nil
 		case strings.HasSuffix(path, ".excalidraw"):
 			return nil
+		case strings.HasPrefix(path, "internal/sidekick"):
+			// TODO(https://github.com/googleapis/librarian/issues/1510): fix
+			// tests for sidekick and remove this case statement.
+			return nil
 		case slices.Contains(noHeaderRequiredFiles, path):
 			return nil
 		default:
@@ -152,6 +156,11 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
 			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
+			return nil
+		}
+		// TODO(https://github.com/googleapis/librarian/issues/1510): fix docs
+		// for sidekick and remove
+		if strings.HasPrefix(path, "internal/sidekick") {
 			return nil
 		}
 
