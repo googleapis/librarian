@@ -127,7 +127,7 @@ func TestRunConfigure(t *testing.T) {
 		{
 			name:         "failed due to missing configure request file",
 			api:          "google/cloud/non-existent-path/v3",
-			library:      "non-existent-library",
+			library:      "simulate-configure-error-id",
 			apiSource:    "testdata/e2e/configure/api_root",
 			updatedState: "testdata/e2e/configure/updated-state.yaml",
 			wantErr:      true,

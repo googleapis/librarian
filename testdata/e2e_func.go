@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	inputDir          = "input"
-	librarian         = "librarian"
-	outputDir         = "output"
-	source            = "source"
-	configureRequest  = "configure-request.json"
-	configureResponse = "configure-response.json"
-	generateRequest   = "generate-request.json"
-	generateResponse  = "generate-response.json"
-	nonExistedLibrary = "non-existed-library"
+	inputDir                 = "input"
+	librarian                = "librarian"
+	outputDir                = "output"
+	source                   = "source"
+	configureRequest         = "configure-request.json"
+	configureResponse        = "configure-response.json"
+	generateRequest          = "generate-request.json"
+	generateResponse         = "generate-response.json"
+	simulateConfigureErrorID = "simulate-configure-error-id"
 )
 
 func main() {
@@ -170,7 +170,7 @@ func writeToOutput(option *generateOption) (err error) {
 	}()
 
 	dataMap := map[string]string{}
-	if option.libraryID == nonExistedLibrary {
+	if option.libraryID == simulateConfigureErrorID {
 		dataMap["error"] = "simulated generation error"
 	}
 	data, err := json.MarshalIndent(dataMap, "", "  ")
@@ -180,7 +180,7 @@ func writeToOutput(option *generateOption) (err error) {
 	if _, err := jsonFile.Write(data); err != nil {
 		return err
 	}
-	if option.libraryID == nonExistedLibrary {
+	if option.libraryID == simulateConfigureErrorID {
 		return errors.New("generation failed due to invalid library id")
 	}
 	return nil
