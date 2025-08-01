@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
@@ -54,6 +55,7 @@ type mockContainerClient struct {
 	buildErr          error
 	configureErr      error
 	failGenerateForID string
+	requestLibraryID  string
 }
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
@@ -62,8 +64,10 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 		if request.LibraryID == m.failGenerateForID {
 			return m.generateErr
 		}
+		m.requestLibraryID = request.LibraryID
 		return nil
 	}
+	m.requestLibraryID = request.LibraryID
 	return m.generateErr
 }
 
