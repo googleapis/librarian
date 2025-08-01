@@ -46,10 +46,6 @@ func addFlagLibrary(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Library, "library", "", "The ID of a single library to update")
 }
 
-func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.PushConfig, "push-config", "", "If specified, will try to create a commit and pull request for the generated changes. The format should be \"{git-email-address},{author-name}\". Also, when this field is specified it is expected a Github token will be provided with push access via the environment variable LIBRARIAN_GITHUB_TOKEN")
-}
-
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "",
 		"Code repository where the generated code will reside. "+
