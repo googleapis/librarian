@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -29,6 +28,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -101,10 +102,12 @@ type generateRunner struct {
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
-	if err := validateRequiredFlag("repo", cfg.Repo); err != nil {
+	repoPath, err := deriveRepoPath(cfg.Repo)
+	if err != nil {
 		return nil, err
 	}
 
+	cfg.Repo = repoPath
 	workRoot, err := createWorkRoot(time.Now(), cfg.WorkRoot)
 	if err != nil {
 		return nil, err
