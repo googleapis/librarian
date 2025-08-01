@@ -31,9 +31,9 @@ import (
 
 func TestRunGenerate(t *testing.T) {
 	const (
-		repo               = "repo"
-		localRepoBackupDir = "testdata/e2e/generate/repo_backup"
-		localAPISource     = "testdata/e2e/generate/api_root"
+		repo                = "repo"
+		initialRepoStateDir = "testdata/e2e/generate/repo_backup"
+		localAPISource      = "testdata/e2e/generate/api_root"
 	)
 	t.Parallel()
 	for _, test := range []struct {
@@ -54,7 +54,7 @@ func TestRunGenerate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := filepath.Join(t.TempDir())
 			repo := filepath.Join(workRoot, repo)
-			if err := prepareTest(t, repo, workRoot, localRepoBackupDir); err != nil {
+			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
 
@@ -105,9 +105,9 @@ func TestRunGenerate(t *testing.T) {
 
 func TestRunConfigure(t *testing.T) {
 	const (
-		localRepoDir       = "testdata/e2e/configure/repo"
-		localRepoBackupDir = "testdata/e2e/configure/repo_backup"
-		repo               = "repo"
+		localRepoDir        = "testdata/e2e/configure/repo"
+		initialRepoStateDir = "testdata/e2e/configure/repo_backup"
+		repo                = "repo"
 	)
 	for _, test := range []struct {
 		name         string
@@ -137,7 +137,7 @@ func TestRunConfigure(t *testing.T) {
 			t.Parallel()
 			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("rand-%d", rand.Intn(1000)))
 			repo := filepath.Join(workRoot, repo)
-			if err := prepareTest(t, repo, workRoot, localRepoBackupDir); err != nil {
+			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
 
