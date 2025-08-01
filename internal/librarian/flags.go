@@ -16,8 +16,6 @@ package librarian
 
 import (
 	"flag"
-	"fmt"
-
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -46,10 +44,6 @@ func addFlagLibrary(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Library, "library", "", "The ID of a single library to update")
 }
 
-func addFlagPushConfig(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.PushConfig, "push-config", "", "If specified, will try to create a commit and pull request for the generated changes. The format should be \"{git-email-address},{author-name}\". Also, when this field is specified it is expected a Github token will be provided with push access via the environment variable LIBRARIAN_GITHUB_TOKEN")
-}
-
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "",
 		`Code repository where the generated code will reside.
@@ -62,12 +56,4 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.WorkRoot, "output", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
-}
-
-// validatePushConfigAndGithubTokenCoexist validates that the github token should exist if pushConfig flag is set.
-func validatePushConfigAndGithubTokenCoexist(pushConfig, gitHubToken string) error {
-	if pushConfig != "" && gitHubToken == "" {
-		return fmt.Errorf("GitHub token is required if push config exists")
-	}
-	return nil
 }

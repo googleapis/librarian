@@ -108,7 +108,7 @@ func (m *MockRepository) AddAll() (git.Status, error) {
 	return m.AddAllStatus, nil
 }
 
-func (m *MockRepository) Commit(msg string, userName, userEmail string) error {
+func (m *MockRepository) Commit(msg string) error {
 	m.CommitCalls++
 	return m.CommitError
 }
