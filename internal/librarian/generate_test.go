@@ -413,6 +413,7 @@ func TestGenerateRun(t *testing.T) {
 	for _, test := range []struct {
 		name               string
 		api                string
+		library            string
 		repo               gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
@@ -425,9 +426,52 @@ func TestGenerateRun(t *testing.T) {
 		wantConfigureCalls int
 	}{
 		{
-			name: "generation of API",
+			name: "re-generation with API",
 			api:  "some/api",
 			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			ghClient:           &mockGitHubClient{},
+			pushConfig:         "xxx@email.com,author",
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 0,
+		},
+		{
+			name:    "re-generation with library",
+			library: "some-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			ghClient:           &mockGitHubClient{},
+			pushConfig:         "xxx@email.com,author",
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 0,
+		},
+		{
+			name:    "re-generation of library with both library and api",
+			library: "some-library",
+			api:     "some/api",
+			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -532,6 +576,7 @@ func TestGenerateRun(t *testing.T) {
 			r := &generateRunner{
 				cfg: &config.Config{
 					API:        test.api,
+					Library:    test.library,
 					PushConfig: test.pushConfig,
 					APISource:  t.TempDir(),
 					Build:      test.build,
