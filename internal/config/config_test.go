@@ -36,7 +36,6 @@ func TestNew(t *testing.T) {
 			},
 			want: Config{
 				GitHubToken: "gh_token",
-				PushConfig:  "",
 			},
 		},
 		{
@@ -44,7 +43,6 @@ func TestNew(t *testing.T) {
 			envVars: map[string]string{},
 			want: Config{
 				GitHubToken: "",
-				PushConfig:  "",
 			},
 		},
 		{
@@ -54,7 +52,6 @@ func TestNew(t *testing.T) {
 			},
 			want: Config{
 				GitHubToken: "gh_token",
-				PushConfig:  "",
 			},
 		},
 	} {
@@ -141,7 +138,6 @@ func TestIsValid(t *testing.T) {
 			cfg: Config{
 				Push:        false,
 				GitHubToken: "",
-				PushConfig:  "def@ghi.com,abc",
 			},
 			wantValid: true,
 			wantErr:   false,
@@ -151,7 +147,6 @@ func TestIsValid(t *testing.T) {
 			cfg: Config{
 				Push:        true,
 				GitHubToken: "some_token",
-				PushConfig:  "def@ghi.com,abc",
 			},
 			wantValid: true,
 			wantErr:   false,
@@ -161,7 +156,6 @@ func TestIsValid(t *testing.T) {
 			cfg: Config{
 				Push:        true,
 				GitHubToken: "",
-				PushConfig:  "def@ghi.com,abc",
 			},
 			wantValid: false,
 			wantErr:   true,
@@ -171,7 +165,6 @@ func TestIsValid(t *testing.T) {
 			cfg: Config{
 				Push:        true,
 				GitHubToken: "some_token",
-				PushConfig:  "abc:def@ghi.com",
 			},
 			wantValid: false,
 			wantErr:   true,
@@ -179,9 +172,8 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "Invalid config - host mount invalid, missing local-dir",
 			cfg: Config{
-				Push:       false,
-				PushConfig: "def@ghi.com,abc",
-				HostMount:  "host-dir:",
+				Push:      false,
+				HostMount: "host-dir:",
 			},
 			wantValid: false,
 			wantErr:   true,
@@ -189,9 +181,8 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "Invalid config - host mount invalid, missing host-dir",
 			cfg: Config{
-				Push:       false,
-				PushConfig: "def@ghi.com,abc",
-				HostMount:  ":local-dir",
+				Push:      false,
+				HostMount: ":local-dir",
 			},
 			wantValid: false,
 			wantErr:   true,
@@ -199,9 +190,8 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "Invalid config - host mount invalid, missing separator",
 			cfg: Config{
-				Push:       false,
-				PushConfig: "def@ghi.com,abc",
-				HostMount:  "host-dir/local-dir",
+				Push:      false,
+				HostMount: "host-dir/local-dir",
 			},
 			wantValid: false,
 			wantErr:   true,
