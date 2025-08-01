@@ -349,83 +349,18 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 	}
 }
 
-func TestParsePushConfig(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name       string
-		pushConfig string
-		wantEmail  string
-		wantName   string
-		wantErr    bool
-	}{
-		{
-			name:       "valid config",
-			pushConfig: "test@example.com,Test User",
-			wantEmail:  "test@example.com",
-			wantName:   "Test User",
-		},
-		{
-			name:       "invalid format - one part",
-			pushConfig: "test@example.com",
-			wantErr:    true,
-		},
-		{
-			name:       "invalid format - three parts",
-			pushConfig: "test@example.com,Test,User",
-			wantErr:    true,
-		},
-		{
-			name:       "empty config",
-			pushConfig: "",
-			wantErr:    true,
-		},
-		// Note: `validatePushConfig` would prevent these, but we test `parsePushConfig` in isolation.
-		{
-			name:       "empty email",
-			pushConfig: ",Test User",
-			wantEmail:  "",
-			wantName:   "Test User",
-		},
-		{
-			name:       "empty name",
-			pushConfig: "test@example.com,",
-			wantEmail:  "test@example.com",
-			wantName:   "",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			gotEmail, gotName, err := parsePushConfig(test.pushConfig)
-			if (err != nil) != test.wantErr {
-				t.Errorf("parsePushConfig() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
-			if err != nil {
-				return
-			}
-			if gotEmail != test.wantEmail {
-				t.Errorf("parsePushConfig() gotEmail = %q, want %q", gotEmail, test.wantEmail)
-			}
-			if gotName != test.wantName {
-				t.Errorf("parsePushConfig() gotName = %q, want %q", gotName, test.wantName)
-			}
-		})
-	}
-}
-
 func TestCommitAndPush(t *testing.T) {
 	for _, test := range []struct {
 		name             string
-		pushConfig       string
 		setupMockRepo    func(t *testing.T) gitrepo.Repository
 		setupMockClient  func(t *testing.T) GitHubClient
+		push             bool
 		wantErr          bool
 		expectedErrMsg   string
 		validatePostTest func(t *testing.T, repo gitrepo.Repository)
 	}{
 		{
-			name:       "PushConfig flag not specified",
-			pushConfig: "",
+			name: "Push flag not specified",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				repoDir := newTestGitRepoWithCommit(t, "")
 				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
@@ -439,8 +374,7 @@ func TestCommitAndPush(t *testing.T) {
 			},
 		},
 		{
-			name:       "Happy Path",
-			pushConfig: "test@example.com,Test User",
+			name: "Happy Path",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				repoDir := newTestGitRepoWithCommit(t, "")
 				// Add remote so FetchGitHubRepoFromRemote succeeds.
@@ -464,6 +398,7 @@ func TestCommitAndPush(t *testing.T) {
 					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 				}
 			},
+			push: true,
 			validatePostTest: func(t *testing.T, repo gitrepo.Repository) {
 				localRepo, ok := repo.(*gitrepo.LocalRepository)
 				if !ok {
@@ -479,8 +414,7 @@ func TestCommitAndPush(t *testing.T) {
 			},
 		},
 		{
-			name:       "No GitHub Remote",
-			pushConfig: "test@example.com,Test User",
+			name: "No GitHub Remote",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				return &MockRepository{
 					Dir:          t.TempDir(),
@@ -490,31 +424,12 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "could not find an 'origin' remote",
 		},
 		{
-			name:       "parsePushConfig error",
-			pushConfig: "invalid-config",
-			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-				return &MockRepository{
-					Dir:          t.TempDir(),
-					RemotesValue: []*git.Remote{remote},
-				}
-			},
-			setupMockClient: func(t *testing.T) GitHubClient {
-				return nil
-			},
-			wantErr:        true,
-			expectedErrMsg: "invalid pushConfig format",
-		},
-		{
-			name:       "AddAll error",
-			pushConfig: "test@example.com,Test User",
+			name: "AddAll error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
 					Name: "origin",
@@ -529,12 +444,12 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "mock add all error",
 		},
 		{
-			name:       "Commit error",
-			pushConfig: "test@example.com,Test User",
+			name: "Commit error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
 					Name: "origin",
@@ -553,12 +468,12 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
 		},
 		{
-			name:       "No changes to commit",
-			pushConfig: "test@example.com,Test User",
+			name: "No changes to commit",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
 					Name: "origin",
@@ -573,13 +488,21 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			push: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
+			r := &generateRunner{
+				cfg: &config.Config{
+					Push: test.push,
+				},
+				repo:     repo,
+				ghClient: client,
+			}
 
-			err := commitAndPush(context.Background(), repo, client, test.pushConfig, "")
+			err := commitAndPush(context.Background(), r, "")
 
 			if test.wantErr {
 				if err == nil {
