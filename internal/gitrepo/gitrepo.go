@@ -18,20 +18,17 @@ package gitrepo
 import (
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"log/slog"
 	"os"
 	"strings"
-	"time"
-
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 // Repository defines the interface for git repository operations.
 type Repository interface {
 	AddAll() (git.Status, error)
-	Commit(msg string, userName, userEmail string) error
+	Commit(msg string) error
 	IsClean() (bool, error)
 	Remotes() ([]*git.Remote, error)
 	GetDir() string
@@ -145,7 +142,7 @@ func (r *LocalRepository) AddAll() (git.Status, error) {
 
 // Commit creates a new commit with the provided message and author
 // information.
-func (r *LocalRepository) Commit(msg string, userName, userEmail string) error {
+func (r *LocalRepository) Commit(msg string) error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -158,13 +155,8 @@ func (r *LocalRepository) Commit(msg string, userName, userEmail string) error {
 	if status.IsClean() {
 		return fmt.Errorf("no modifications to commit")
 	}
-	hash, err := worktree.Commit(msg, &git.CommitOptions{
-		Author: &object.Signature{
-			Name:  userName,
-			Email: userEmail,
-			When:  time.Now(),
-		},
-	})
+	// The author of the commit will be read from git config.
+	hash, err := worktree.Commit(msg, &git.CommitOptions{})
 	if err != nil {
 		return err
 	}
