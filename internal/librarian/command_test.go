@@ -473,6 +473,31 @@ func TestCommitAndPush(t *testing.T) {
 			expectedErrMsg: "commit error",
 		},
 		{
+			name: "Create pull request error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{
+					createPullRequestErr: errors.New("create pull request error"),
+				}
+			},
+			push:           true,
+			wantErr:        true,
+			expectedErrMsg: "failed to create pull request",
+		},
+		{
 			name: "No changes to commit",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
