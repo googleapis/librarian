@@ -27,7 +27,6 @@ import (
 )
 
 const (
-	repo               = "repo"
 	localRepoBackupDir = "testdata/e2e/generate/repo_backup"
 	localAPISource     = "testdata/e2e/generate/api_root"
 )
@@ -51,8 +50,9 @@ func TestRunGenerate(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := filepath.Join(t.TempDir())
-			repo := filepath.Join(workRoot, repo)
-			if err := prepareTest(t, repo, workRoot, localRepoBackupDir); err != nil {
+			repo := filepath.Join(workRoot, "repo")
+			apiSource := filepath.Join(workRoot, "api_soure")
+			if err := prepareTest(t, repo, apiSource); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
 
@@ -64,7 +64,7 @@ func TestRunGenerate(t *testing.T) {
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--api-source=%s", localAPISource),
+				fmt.Sprintf("--api-source=%s", apiSource),
 			)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
@@ -101,23 +101,19 @@ func TestRunGenerate(t *testing.T) {
 	}
 }
 
-func prepareTest(t *testing.T, destRepoDir, workRoot, sourceRepoDir string) error {
-	if err := initTestRepo(t, destRepoDir, sourceRepoDir); err != nil {
+func prepareTest(t *testing.T, destRepoDir, destAPISourceDir string) error {
+	if err := initRepo(t, destRepoDir, localRepoBackupDir); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(workRoot, 0755); err != nil {
+	if err := initRepo(t, destAPISourceDir, localAPISource); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-// initTestRepo initiates an empty git repo in the given directory, copy
+// initRepo initiates a git repo in the given directory, copy
 // files from source directory and create a commit.
-func initTestRepo(t *testing.T, dir, source string) error {
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
+func initRepo(t *testing.T, dir, source string) error {
 	if err := os.CopyFS(dir, os.DirFS(source)); err != nil {
 		return err
 	}
