@@ -411,19 +411,20 @@ func TestNewGenerateRunner(t *testing.T) {
 func TestGenerateRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name               string
-		api                string
-		library            string
-		repo               gitrepo.Repository
-		state              *config.LibrarianState
-		container          *mockContainerClient
-		ghClient           GitHubClient
-		pushConfig         string
-		build              bool
-		wantErr            bool
-		wantGenerateCalls  int
-		wantBuildCalls     int
-		wantConfigureCalls int
+		name                  string
+		api                   string
+		library               string
+		repo                  gitrepo.Repository
+		state                 *config.LibrarianState
+		container             *mockContainerClient
+		ghClient              GitHubClient
+		pushConfig            string
+		build                 bool
+		wantErr               bool
+		wantGenerateCalls     int
+		wantGenerateLibraryID string
+		wantBuildCalls        int
+		wantConfigureCalls    int
 	}{
 		{
 			name: "re-generation with API",
@@ -438,13 +439,14 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:          &mockContainerClient{},
-			ghClient:           &mockGitHubClient{},
-			pushConfig:         "xxx@email.com,author",
-			build:              true,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-			wantConfigureCalls: 0,
+			container:             &mockContainerClient{},
+			ghClient:              &mockGitHubClient{},
+			pushConfig:            "xxx@email.com,author",
+			build:                 true,
+			wantGenerateCalls:     1,
+			wantGenerateLibraryID: "some-library",
+			wantBuildCalls:        1,
+			wantConfigureCalls:    0,
 		},
 		{
 			name:    "re-generation with library",
@@ -459,13 +461,14 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:          &mockContainerClient{},
-			ghClient:           &mockGitHubClient{},
-			pushConfig:         "xxx@email.com,author",
-			build:              true,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-			wantConfigureCalls: 0,
+			container:             &mockContainerClient{},
+			ghClient:              &mockGitHubClient{},
+			pushConfig:            "xxx@email.com,author",
+			build:                 true,
+			wantGenerateCalls:     1,
+			wantGenerateLibraryID: "some-library",
+			wantBuildCalls:        1,
+			wantConfigureCalls:    0,
 		},
 		{
 			name:    "re-generation of library with both library and api",
@@ -481,13 +484,14 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:          &mockContainerClient{},
-			ghClient:           &mockGitHubClient{},
-			pushConfig:         "xxx@email.com,author",
-			build:              true,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-			wantConfigureCalls: 0,
+			container:             &mockContainerClient{},
+			ghClient:              &mockGitHubClient{},
+			pushConfig:            "xxx@email.com,author",
+			build:                 true,
+			wantGenerateCalls:     1,
+			wantGenerateLibraryID: "some-library",
+			wantBuildCalls:        1,
+			wantConfigureCalls:    0,
 		},
 		{
 			name: "symlink in output",
@@ -611,6 +615,11 @@ func TestGenerateRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
 				t.Errorf("run() generateCalls mismatch (-want +got):%s", diff)
+			}
+			if test.wantGenerateLibraryID != "" {
+				if diff := cmp.Diff(test.wantGenerateLibraryID, test.container.requestLibraryID); diff != "" {
+					t.Errorf("run() generateLibraryID mismatch (-want +got):%s", diff)
+				}
 			}
 			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
 				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
