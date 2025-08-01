@@ -37,7 +37,6 @@ func TestRunGenerateCommand(t *testing.T) {
 	for _, test := range []struct {
 		name              string
 		api               string
-		pushConfig        string
 		repo              gitrepo.Repository
 		state             *config.LibrarianState
 		container         *mockContainerClient
@@ -47,11 +46,10 @@ func TestRunGenerateCommand(t *testing.T) {
 		wantGenerateCalls int
 	}{
 		{
-			name:       "works",
-			api:        "some/api",
-			pushConfig: "xxx@email.com,author",
-			repo:       newTestGitRepo(t),
-			ghClient:   &mockGitHubClient{},
+			name:     "works",
+			api:      "some/api",
+			repo:     newTestGitRepo(t),
+			ghClient: &mockGitHubClient{},
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -69,9 +67,8 @@ func TestRunGenerateCommand(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				cfg: &config.Config{
-					API:        test.api,
-					APISource:  t.TempDir(),
-					PushConfig: test.pushConfig,
+					API:       test.api,
+					APISource: t.TempDir(),
 				},
 				repo:            test.repo,
 				ghClient:        test.ghClient,
@@ -319,7 +316,7 @@ func TestNewGenerateRunner(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "missing repo flag",
+			name:    "invalid config without repo flag",
 			cfg:     &config.Config{API: "some/api"},
 			wantErr: true,
 		},
@@ -345,23 +342,13 @@ func TestNewGenerateRunner(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "push config without github token",
-			cfg: &config.Config{
-				API:        "some/api",
-				APISource:  "some/source",
-				PushConfig: "test@example.com,Test User",
-			},
-			wantErr: true,
-		},
-		{
-			name: "push config with github token is valid",
+			name: "valid config with github token",
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   t.TempDir(),
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
-				PushConfig:  "test@example.com,Test User",
 				GitHubToken: "gh-token",
 			},
 		},
@@ -417,7 +404,6 @@ func TestGenerateRun(t *testing.T) {
 		state              *config.LibrarianState
 		container          *mockContainerClient
 		ghClient           GitHubClient
-		pushConfig         string
 		build              bool
 		wantErr            bool
 		wantGenerateCalls  int
@@ -439,7 +425,6 @@ func TestGenerateRun(t *testing.T) {
 			},
 			container:          &mockContainerClient{},
 			ghClient:           &mockGitHubClient{},
-			pushConfig:         "xxx@email.com,author",
 			build:              true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
@@ -476,11 +461,10 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:  &mockContainerClient{generateErr: errors.New("generate error")},
-			ghClient:   &mockGitHubClient{},
-			pushConfig: "xxx@email.com,author",
-			build:      true,
-			wantErr:    true,
+			container: &mockContainerClient{generateErr: errors.New("generate error")},
+			ghClient:  &mockGitHubClient{},
+			build:     true,
+			wantErr:   true,
 		},
 		{
 			name: "build error",
@@ -495,11 +479,10 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:  &mockContainerClient{buildErr: errors.New("build error")},
-			ghClient:   &mockGitHubClient{},
-			pushConfig: "xxx@email.com,author",
-			build:      true,
-			wantErr:    true,
+			container: &mockContainerClient{buildErr: errors.New("build error")},
+			ghClient:  &mockGitHubClient{},
+			build:     true,
+			wantErr:   true,
 		},
 		{
 			name: "generate all, partial failure does not halt execution",
@@ -531,10 +514,9 @@ func TestGenerateRun(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				cfg: &config.Config{
-					API:        test.api,
-					PushConfig: test.pushConfig,
-					APISource:  t.TempDir(),
-					Build:      test.build,
+					API:       test.api,
+					APISource: t.TempDir(),
+					Build:     test.build,
 				},
 				repo:            test.repo,
 				state:           test.state,
@@ -587,7 +569,6 @@ func TestGenerateScenarios(t *testing.T) {
 		state              *config.LibrarianState
 		container          *mockContainerClient
 		ghClient           GitHubClient
-		pushConfig         string
 		build              bool
 		wantErr            bool
 		wantGenerateCalls  int
@@ -602,7 +583,6 @@ func TestGenerateScenarios(t *testing.T) {
 			state:              &config.LibrarianState{Image: "gcr.io/test/image:v1.2.3"},
 			container:          &mockContainerClient{},
 			ghClient:           &mockGitHubClient{},
-			pushConfig:         "xxx@email.com,author",
 			build:              true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
@@ -623,7 +603,6 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			container:          &mockContainerClient{},
 			ghClient:           &mockGitHubClient{},
-			pushConfig:         "xxx@email.com,author",
 			build:              true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
@@ -644,7 +623,6 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			container:          &mockContainerClient{},
 			ghClient:           &mockGitHubClient{},
-			pushConfig:         "xxx@email.com,author",
 			build:              true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
@@ -666,7 +644,6 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			container:          &mockContainerClient{},
 			ghClient:           &mockGitHubClient{},
-			pushConfig:         "xxx@email.com,author",
 			build:              true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
@@ -685,11 +662,10 @@ func TestGenerateScenarios(t *testing.T) {
 					},
 				},
 			},
-			container:  &mockContainerClient{},
-			ghClient:   &mockGitHubClient{},
-			pushConfig: "xxx@email.com,author",
-			build:      true,
-			wantErr:    true,
+			container: &mockContainerClient{},
+			ghClient:  &mockGitHubClient{},
+			build:     true,
+			wantErr:   true,
 		},
 		{
 			name: "generate all libraries configured in state",
@@ -703,7 +679,6 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			container:         &mockContainerClient{},
 			ghClient:          &mockGitHubClient{},
-			pushConfig:        "xxx@email.com,author",
 			build:             true,
 			wantGenerateCalls: 2,
 			wantBuildCalls:    2,
@@ -721,11 +696,10 @@ func TestGenerateScenarios(t *testing.T) {
 					},
 				},
 			},
-			container:  &mockContainerClient{},
-			ghClient:   &mockGitHubClient{},
-			pushConfig: "xxx@email.com,author",
-			build:      true,
-			wantErr:    true,
+			container: &mockContainerClient{},
+			ghClient:  &mockGitHubClient{},
+			build:     true,
+			wantErr:   true,
 		},
 		{
 			name: "generate single library, corrupted api",
@@ -740,22 +714,20 @@ func TestGenerateScenarios(t *testing.T) {
 					},
 				},
 			},
-			container:  &mockContainerClient{},
-			ghClient:   &mockGitHubClient{},
-			pushConfig: "xxx@email.com,author",
-			build:      true,
-			wantErr:    true,
+			container: &mockContainerClient{},
+			ghClient:  &mockGitHubClient{},
+			build:     true,
+			wantErr:   true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			cfg := &config.Config{
-				API:        test.api,
-				Library:    test.library,
-				PushConfig: test.pushConfig,
-				APISource:  t.TempDir(),
-				Build:      test.build,
+				API:       test.api,
+				Library:   test.library,
+				APISource: t.TempDir(),
+				Build:     test.build,
 			}
 
 			r := &generateRunner{

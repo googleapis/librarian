@@ -87,7 +87,6 @@ func init() {
 	addFlagHostMount(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLibrary(fs, cfg)
-	addFlagPushConfig(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 }
@@ -107,10 +106,8 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	cfg.Repo = repoPath
-	if err := validatePushConfigAndGithubTokenCoexist(cfg.PushConfig, cfg.GitHubToken); err != nil {
-		return nil, err
-	}
 	workRoot, err := createWorkRoot(time.Now(), cfg.WorkRoot)
 	if err != nil {
 		return nil, err
@@ -183,7 +180,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		}
 	}
 
-	if err := commitAndPush(ctx, r.repo, r.ghClient, r.cfg.PushConfig, prBody); err != nil {
+	if err := commitAndPush(ctx, r, prBody); err != nil {
 		return err
 	}
 	return nil

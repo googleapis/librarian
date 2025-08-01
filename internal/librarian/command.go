@@ -151,24 +151,22 @@ func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
 	return path, nil
 }
 
-// commitAndPush creates a commit and push request to Github for the generated changes.
-// It uses the GitHub client to create a PR with the specified branch, title, and description to the repository.
-func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHubClient, pushConfig, commitMessage string) error {
-	if pushConfig == "" {
-		slog.Info("PushConfig flag not specified, skipping")
+// commitAndPush creates a commit and push request to GitHub for the generated
+// changes.
+// It uses the GitHub client to create a PR with the specified branch, title, and
+// description to the repository.
+func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string) error {
+	if !r.cfg.Push {
+		slog.Info("Push flag is not specified, skipping")
 		return nil
 	}
 	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(r.repo)
 	if err != nil {
 		return err
 	}
 
-	userEmail, userName, err := parsePushConfig(pushConfig)
-	if err != nil {
-		return err
-	}
-	status, err := repo.AddAll()
+	status, err := r.repo.AddAll()
 	if err != nil {
 		return err
 	}
@@ -178,7 +176,7 @@ func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHub
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
-	if err := repo.Commit(commitMessage, userName, userEmail); err != nil {
+	if err := r.repo.Commit(commitMessage); err != nil {
 		return err
 	}
 
@@ -188,18 +186,8 @@ func commitAndPush(ctx context.Context, repo gitrepo.Repository, ghClient GitHub
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 
-	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
+	if _, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil
-}
-
-func parsePushConfig(pushConfig string) (string, string, error) {
-	parts := strings.Split(pushConfig, ",")
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
-	}
-	userEmail := parts[0]
-	userName := parts[1]
-	return userEmail, userName, nil
 }
