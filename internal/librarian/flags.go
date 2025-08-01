@@ -24,7 +24,7 @@ func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagAPISource(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APISource, "api-source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+	fs.StringVar(&cfg.APISource, "api-source", "https://github.com/googleapis/googleapis", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
 }
 
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {

@@ -46,7 +46,7 @@ func deriveRepoPath(repoFlag string) (string, error) {
 	return wd, nil
 }
 
-func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
 	}
@@ -69,21 +69,21 @@ func cloneOrOpenLanguageRepo(workRoot, repo, ci string) (*gitrepo.LocalRepositor
 	if err != nil {
 		return nil, err
 	}
-	languageRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+	githubRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 		Dir: absRepoRoot,
 		CI:  ci,
 	})
 	if err != nil {
 		return nil, err
 	}
-	clean, err := languageRepo.IsClean()
+	clean, err := githubRepo.IsClean()
 	if err != nil {
 		return nil, err
 	}
 	if !clean {
-		return nil, errors.New("language repo must be clean")
+		return nil, fmt.Errorf("%s repo must be clean", repo)
 	}
-	return languageRepo, nil
+	return githubRepo, nil
 }
 
 func deriveImage(imageOverride string, state *config.LibrarianState) string {

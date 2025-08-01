@@ -324,11 +324,22 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "valid config",
 			cfg: &config.Config{
 				API:       "some/api",
-				APISource: t.TempDir(),
+				APISource: newTestGitRepo(t).GetDir(),
 				Repo:      newTestGitRepo(t).GetDir(),
 				WorkRoot:  t.TempDir(),
 				Image:     "gcr.io/test/test-image",
 			},
+		},
+		{
+			name: "invalid api source",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: t.TempDir(), // Not a git repo
+				Repo:      newTestGitRepo(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+			wantErr: true,
 		},
 		{
 			name: "missing image",
@@ -345,7 +356,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "valid config with github token",
 			cfg: &config.Config{
 				API:         "some/api",
-				APISource:   t.TempDir(),
+				APISource:   newTestGitRepo(t).GetDir(),
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",

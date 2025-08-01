@@ -112,11 +112,14 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot, cfg.Repo, cfg.CI)
+	if _, err := cloneOrOpenRepo(workRoot, cfg.APISource, cfg.CI); err != nil {
+		return nil, err
+	}
+	languageRepo, err := cloneOrOpenRepo(workRoot, cfg.Repo, cfg.CI)
 	if err != nil {
 		return nil, err
 	}
-	state, err := loadRepoState(repo, cfg.APISource)
+	state, err := loadRepoState(languageRepo, cfg.APISource)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +144,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	return &generateRunner{
 		cfg:             cfg,
 		workRoot:        workRoot,
-		repo:            repo,
+		repo:            languageRepo,
 		state:           state,
 		image:           image,
 		ghClient:        ghClient,
