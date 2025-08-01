@@ -175,13 +175,3 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 	}
 	return nil
 }
-
-func parsePushConfig(pushConfig string) (string, string, error) {
-	parts := strings.Split(pushConfig, ",")
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid pushConfig format: expected 'email,user', got %q", pushConfig)
-	}
-	userEmail := parts[0]
-	userName := parts[1]
-	return userEmail, userName, nil
-}
