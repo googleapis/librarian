@@ -92,11 +92,11 @@ type LibraryState struct {
 	// A list of APIs that are part of this library.
 	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
-	SourcePaths []string `yaml:"source_paths" json:"source_paths"`
+	SourceRoots []string `yaml:"source_roots" json:"source_roots"`
 	// A list of regular expressions for files and directories to preserve during the copy and remove process.
 	PreserveRegex []string `yaml:"preserve_regex" json:"preserve_regex"`
 	// A list of regular expressions for files and directories to remove before copying generated code.
-	// If not set, this defaults to the `source_paths`.
+	// If not set, this defaults to the `source_roots`.
 	// A more specific `preserve_regex` takes precedence.
 	RemoveRegex []string `yaml:"remove_regex" json:"remove_regex"`
 }
@@ -137,10 +137,10 @@ func (l *LibraryState) Validate() error {
 			return fmt.Errorf("invalid api at index %d: %w", i, err)
 		}
 	}
-	if len(l.SourcePaths) == 0 {
-		return fmt.Errorf("source_paths cannot be empty")
+	if len(l.SourceRoots) == 0 {
+		return fmt.Errorf("source_roots cannot be empty")
 	}
-	for i, p := range l.SourcePaths {
+	for i, p := range l.SourceRoots {
 		if !isValidDirPath(p) {
 			return fmt.Errorf("invalid source_path at index %d: %q", i, p)
 		}
