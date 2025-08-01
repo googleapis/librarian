@@ -134,7 +134,7 @@ func TestIsValid(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name: "Valid config - Push false, push config valid",
+			name: "Valid config - Push false",
 			cfg: Config{
 				Push:        false,
 				GitHubToken: "",
@@ -143,7 +143,7 @@ func TestIsValid(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "Valid config - Push true, token present, push config valid",
+			name: "Valid config - Push true, token present",
 			cfg: Config{
 				Push:        true,
 				GitHubToken: "some_token",
@@ -152,19 +152,10 @@ func TestIsValid(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "Invalid config - Push true, token missing, push config valid",
+			name: "Invalid config - Push true, token missing",
 			cfg: Config{
 				Push:        true,
 				GitHubToken: "",
-			},
-			wantValid: false,
-			wantErr:   true,
-		},
-		{
-			name: "Invalid config - Push true, token present, push config invalid",
-			cfg: Config{
-				Push:        true,
-				GitHubToken: "some_token",
 			},
 			wantValid: false,
 			wantErr:   true,
