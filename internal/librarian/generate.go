@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -28,8 +27,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-
-	"gopkg.in/yaml.v3"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -219,7 +216,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	if err := r.runBuildCommand(ctx, generatedLibraryID); err != nil {
 		return err
 	}
-	if err := r.updateState(generatedLibraryID); err != nil {
+	if err := r.updateLastGeneratedCommitState(generatedLibraryID); err != nil {
 		return err
 	}
 	return nil
@@ -229,7 +226,7 @@ func (r *generateRunner) needsConfigure() bool {
 	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
 }
 
-func (r *generateRunner) updateState(libraryID string) error {
+func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error {
 	hash, err := r.sourceRepo.HeadHash()
 	if err != nil {
 		return err
@@ -542,26 +539,6 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 			continue
 		}
 		r.state.Libraries[i] = libraryState
-	}
-
-	// Write the updated librarian state to state.yaml.
-	if err := writeLibrarianState(
-		func(state *config.LibrarianState) ([]byte, error) {
-			data := &bytes.Buffer{}
-			encoder := yaml.NewEncoder(data)
-			encoder.SetIndent(2)
-			if err := encoder.Encode(state); err != nil {
-				return nil, err
-			}
-
-			if err := encoder.Close(); err != nil {
-				return nil, err
-			}
-			return data.Bytes(), nil
-		},
-		r.state,
-		r.repo.GetDir()); err != nil {
-		return "", err
 	}
 
 	return libraryState.ID, nil

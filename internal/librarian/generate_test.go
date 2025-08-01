@@ -854,7 +854,7 @@ func TestGenerateScenarios(t *testing.T) {
 	}
 }
 
-func TestUpdateState(t *testing.T) {
+func TestUpdateLastGeneratedCommitState(t *testing.T) {
 	t.Parallel()
 	sourceRepo := newTestGitRepo(t)
 	hash, err := sourceRepo.HeadHash()
@@ -871,7 +871,7 @@ func TestUpdateState(t *testing.T) {
 			},
 		},
 	}
-	if err := r.updateState("some-library"); err != nil {
+	if err := r.updateLastGeneratedCommitState("some-library"); err != nil {
 		t.Fatal(err)
 	}
 	if r.state.Libraries[0].LastGeneratedCommit != hash {
