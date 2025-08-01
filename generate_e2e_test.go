@@ -38,20 +38,10 @@ func TestRunGenerate(t *testing.T) {
 		name    string
 		api     string
 		wantErr bool
-		library string
 	}{
 		{
-			name:    "test run success with library",
-			library: "example-library",
-		},
-		{
-			name: "test run success with API",
+			name: "testRunSuccess",
 			api:  "google/cloud/pubsub/v1",
-		},
-		{
-			name:    "test run success with library and API",
-			api:     "google/cloud/pubsub/v1",
-			library: "example-library",
 		},
 		{
 			name:    "non existant in api source",
@@ -72,7 +62,6 @@ func TestRunGenerate(t *testing.T) {
 				"github.com/googleapis/librarian/cmd/librarian",
 				"generate",
 				fmt.Sprintf("--api=%s", test.api),
-				fmt.Sprintf("--library=%s", test.library),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--api-source=%s", localAPISource),
