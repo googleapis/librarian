@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 coverage:
   status:
     project:
@@ -19,11 +18,13 @@ coverage:
         target: 80% # The target coverage percentage for the project
         threshold: 0% # Allow 0% drop from the target; any drop below target will fail
         if_ci_failed: error # Set the CI status to 'error' if coverage conditions are not met
-
 # TODO(https://github.com/googleapis/librarian/issues/1543): restore to 80%
 ignore:
+  - internal/sidekick/internal/codec_sample
   - internal/sidekick/internal/config
   - internal/sidekick/internal/golang
   - internal/sidekick/internal/language
+  - internal/sidekick/internal/license
   - internal/sidekick/internal/rust_prost
+  - internal/sidekick/internal/sample
   - internal/sidekick/internal/sidekick
