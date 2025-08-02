@@ -17,13 +17,14 @@ package librarian
 import (
 	"errors"
 	"fmt"
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/gitrepo"
-	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/gitrepo"
+	"gopkg.in/yaml.v3"
 )
 
 const (
