@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/apipb"
 )
 
+// ServiceConfig returns a sample service config.
 func ServiceConfig() *serviceconfig.Service {
 	return &serviceconfig.Service{
 		Name:  "secretmanager.googleapis.com",

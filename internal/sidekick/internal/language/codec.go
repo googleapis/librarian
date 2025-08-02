@@ -35,6 +35,7 @@ type GeneratedFile struct {
 // then return the full contents of the template (or an error).
 type TemplateProvider func(templateName string) (string, error)
 
+// PathParams returns the path parameters for a method.
 func PathParams(m *api.Method, state *api.APIState) []*api.Field {
 	msg, ok := state.MessageByID[m.InputTypeID]
 	if !ok {
@@ -63,6 +64,7 @@ func PathParams(m *api.Method, state *api.APIState) []*api.Field {
 	return params
 }
 
+// QueryParams returns the query parameters for a method.
 func QueryParams(m *api.Method, b *api.PathBinding) []*api.Field {
 	var queryParams []*api.Field
 	for _, field := range m.InputType.Fields {
@@ -74,6 +76,7 @@ func QueryParams(m *api.Method, b *api.PathBinding) []*api.Field {
 	return queryParams
 }
 
+// FilterSlice filters a slice based on a predicate.
 func FilterSlice[T any](slice []T, predicate func(T) bool) []T {
 	result := make([]T, 0)
 	for _, v := range slice {
@@ -84,6 +87,7 @@ func FilterSlice[T any](slice []T, predicate func(T) bool) []T {
 	return result
 }
 
+// MapSlice maps a slice from one type to another.
 func MapSlice[T, R any](s []T, f func(T) R) []R {
 	r := make([]R, len(s))
 	for i, v := range s {
@@ -92,6 +96,7 @@ func MapSlice[T, R any](s []T, f func(T) R) []R {
 	return r
 }
 
+// HasNestedTypes returns true if the message has nested types.
 func HasNestedTypes(m *api.Message) bool {
 	if len(m.Enums) > 0 || len(m.OneOfs) > 0 {
 		return true
@@ -104,6 +109,7 @@ func HasNestedTypes(m *api.Message) bool {
 	return false
 }
 
+// FieldIsMap returns true if the field is a map.
 func FieldIsMap(f *api.Field, state *api.APIState) bool {
 	if f.Typez != api.MESSAGE_TYPE {
 		return false

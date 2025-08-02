@@ -26,6 +26,7 @@ import (
 //go:embed templates
 var dartTemplates embed.FS
 
+// Generate generates Dart code from the model.
 func Generate(model *api.API, outdir string, config *config.Config) error {
 	annotate := newAnnotateModel(model)
 	_, err := annotate.annotateModel(config.Codec)

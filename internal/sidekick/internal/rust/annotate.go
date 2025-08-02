@@ -101,6 +101,7 @@ type serviceAnnotations struct {
 	Incomplete bool
 }
 
+// HasBindingSubstitutions returns true if the method has binding substitutions.
 func (m *methodAnnotation) HasBindingSubstitutions() bool {
 	for _, b := range m.PathInfo.Bindings {
 		for _, s := range b.PathTemplate.Segments {
@@ -117,30 +118,37 @@ func (s *serviceAnnotations) HasLROs() bool {
 	return len(s.LROTypes) > 0
 }
 
+// FeatureName returns the feature name for the service.
 func (a *serviceAnnotations) FeatureName() string {
 	return strcase.ToKebab(a.ModuleName)
 }
 
+// MultiFeatureGates returns true if there are multiple feature gates.
 func (a *messageAnnotation) MultiFeatureGates() bool {
 	return len(a.FeatureGates) > 1
 }
 
+// MultiFeatureGates returns true if there are multiple feature gates.
 func (a *enumAnnotation) MultiFeatureGates() bool {
 	return len(a.FeatureGates) > 1
 }
 
+// MultiFeatureGates returns true if there are multiple feature gates.
 func (a *oneOfAnnotation) MultiFeatureGates() bool {
 	return len(a.FeatureGates) > 1
 }
 
+// SingleFeatureGate returns true if there is a single feature gate.
 func (a *messageAnnotation) SingleFeatureGate() bool {
 	return len(a.FeatureGates) == 1
 }
 
+// SingleFeatureGate returns true if there is a single feature gate.
 func (a *enumAnnotation) SingleFeatureGate() bool {
 	return len(a.FeatureGates) == 1
 }
 
+// SingleFeatureGate returns true if there is a single feature gate.
 func (a *oneOfAnnotation) SingleFeatureGate() bool {
 	return len(a.FeatureGates) == 1
 }
@@ -216,18 +224,22 @@ type operationInfo struct {
 	PackageNamespace string
 }
 
+// OnlyMetadataIsEmpty returns true if only the metadata is empty.
 func (info *operationInfo) OnlyMetadataIsEmpty() bool {
 	return info.MetadataType == "wkt::Empty" && info.ResponseType != "wkt::Empty"
 }
 
+// OnlyResponseIsEmpty returns true if only the response is empty.
 func (info *operationInfo) OnlyResponseIsEmpty() bool {
 	return info.MetadataType != "wkt::Empty" && info.ResponseType == "wkt::Empty"
 }
 
+// BothAreEmpty returns true if both the metadata and response are empty.
 func (info *operationInfo) BothAreEmpty() bool {
 	return info.MetadataType == "wkt::Empty" && info.ResponseType == "wkt::Empty"
 }
 
+// NoneAreEmpty returns true if neither the metadata nor the response are empty.
 func (info *operationInfo) NoneAreEmpty() bool {
 	return info.MetadataType != "wkt::Empty" && info.ResponseType != "wkt::Empty"
 }
@@ -308,6 +320,7 @@ func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
 	return false
 }
 
+// HasVariablePath returns true if the path has a variable.
 func (b *pathBindingAnnotation) HasVariablePath() bool {
 	return len(b.Substitutions) != 0
 }
@@ -373,10 +386,12 @@ type fieldAnnotations struct {
 	IsWktNullValue bool
 }
 
+// SkipIfIsEmpty returns true if the field should be skipped if it is empty.
 func (a *fieldAnnotations) SkipIfIsEmpty() bool {
 	return !a.SkipIfIsDefault
 }
 
+// RequiresSerdeAs returns true if the field requires a serde_as annotation.
 func (a *fieldAnnotations) RequiresSerdeAs() bool {
 	return a.SerdeAs != ""
 }

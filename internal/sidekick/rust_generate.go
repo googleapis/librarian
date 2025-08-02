@@ -139,10 +139,12 @@ func getPackageName(output string) (string, error) {
 	return cargo.Package.Name, nil
 }
 
+// CargoConfig is the configuration for a cargo package.
 type CargoConfig struct {
 	Package CargoPackage // `toml:"package"`
 }
 
+// CargoPackage is a cargo package.
 type CargoPackage struct {
 	Name string // `toml:"name"`
 }

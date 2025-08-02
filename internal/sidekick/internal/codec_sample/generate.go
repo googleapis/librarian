@@ -25,6 +25,7 @@ import (
 //go:embed all:templates
 var templates embed.FS
 
+// Generate generates code from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	// A template provide converts a template name into the contents.
 	provider := func(name string) (string, error) {

@@ -160,11 +160,6 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
 			return nil
 		}
-		// TODO(https://github.com/googleapis/librarian/issues/1510): fix docs
-		// for sidekick and remove
-		if strings.HasPrefix(path, "internal/sidekick") {
-			return nil
-		}
 
 		fset := token.NewFileSet()
 		node, err := parser.ParseFile(fset, path, nil, parser.ParseComments)

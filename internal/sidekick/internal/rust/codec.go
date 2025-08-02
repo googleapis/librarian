@@ -1396,6 +1396,7 @@ func externPackages(extraPackages []*packagez) []string {
 	return names
 }
 
+// PackageName returns the package name for the API.
 func PackageName(api *api.API, packageNameOverride string) string {
 	if len(packageNameOverride) > 0 {
 		return packageNameOverride
@@ -1409,6 +1410,7 @@ func PackageName(api *api.API, packageNameOverride string) string {
 	return "google-cloud-" + name
 }
 
+// ServiceName returns the service name.
 func (c *codec) ServiceName(service *api.Service) string {
 	if override, ok := c.nameOverrides[service.ID]; ok {
 		return override
@@ -1416,6 +1418,7 @@ func (c *codec) ServiceName(service *api.Service) string {
 	return service.Name
 }
 
+// OneOfEnumName returns the oneof enum name.
 func (c *codec) OneOfEnumName(oneof *api.OneOf) string {
 	if override, ok := c.nameOverrides[oneof.ID]; ok {
 		return override

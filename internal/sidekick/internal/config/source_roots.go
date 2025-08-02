@@ -19,6 +19,7 @@ import (
 	"strings"
 )
 
+// SourceRoots returns the source roots from the options.
 func SourceRoots(options map[string]string) []string {
 	if opt, ok := options["roots"]; ok {
 		var roots []string
@@ -30,6 +31,7 @@ func SourceRoots(options map[string]string) []string {
 	return AllSourceRoots(options)
 }
 
+// AllSourceRoots returns all the source roots from the options.
 func AllSourceRoots(options map[string]string) []string {
 	var roots []string
 	for name := range options {

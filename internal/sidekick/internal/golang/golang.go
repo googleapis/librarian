@@ -35,6 +35,7 @@ type goImport struct {
 	name string
 }
 
+// Generate generates Go code from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	_, err := annotateModel(model, cfg.Codec)
 	if err != nil {

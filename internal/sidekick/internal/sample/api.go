@@ -33,6 +33,7 @@ const (
 	Package     = "google.cloud.secretmanager.v1"
 )
 
+// API returns a sample API.
 func API() *api.API {
 	return &api.API{
 		Name:        APIName,
@@ -48,6 +49,7 @@ func API() *api.API {
 	}
 }
 
+// Service returns a sample service.
 func Service() *api.Service {
 	return &api.Service{
 		Name:          ServiceName,
@@ -62,6 +64,7 @@ func Service() *api.Service {
 	}
 }
 
+// MethodCreate returns a sample create method.
 func MethodCreate() *api.Method {
 	return &api.Method{
 		Name:          "CreateSecret",
@@ -86,6 +89,7 @@ func MethodCreate() *api.Method {
 	}
 }
 
+// MethodUpdate returns a sample update method.
 func MethodUpdate() *api.Method {
 	return &api.Method{
 		Name:          "UpdateSecret",
@@ -109,6 +113,7 @@ func MethodUpdate() *api.Method {
 	}
 }
 
+// MethodAddSecretVersion returns a sample add secret version method.
 func MethodAddSecretVersion() *api.Method {
 	return &api.Method{
 		Name:          "AddSecretVersion",
@@ -135,6 +140,7 @@ func MethodAddSecretVersion() *api.Method {
 	}
 }
 
+// MethodListSecretVersions returns a sample list secret versions method.
 func MethodListSecretVersions() *api.Method {
 	return &api.Method{
 		Name:          "ListSecretVersions",
@@ -163,6 +169,7 @@ func MethodListSecretVersions() *api.Method {
 	}
 }
 
+// CreateRequest returns a sample create request.
 func CreateRequest() *api.Message {
 	return &api.Message{
 		Name:          "CreateSecretRequest",
@@ -184,6 +191,7 @@ func CreateRequest() *api.Message {
 	}
 }
 
+// UpdateRequest returns a sample update request.
 func UpdateRequest() *api.Message {
 	return &api.Message{
 		Name:          "UpdateSecretRequest",
@@ -208,6 +216,7 @@ func UpdateRequest() *api.Message {
 	}
 }
 
+// ListSecretVersionsRequest returns a sample list secret versions request.
 func ListSecretVersionsRequest() *api.Message {
 	return &api.Message{
 		Name:          "ListSecretVersionRequest",
@@ -226,6 +235,7 @@ func ListSecretVersionsRequest() *api.Message {
 	}
 }
 
+// ListSecretVersionsResponse returns a sample list secret versions response.
 func ListSecretVersionsResponse() *api.Message {
 	return &api.Message{
 		Name:    "ListSecretVersionsResponse",
@@ -243,6 +253,7 @@ func ListSecretVersionsResponse() *api.Message {
 	}
 }
 
+// Secret returns a sample secret.
 func Secret() *api.Message {
 	return &api.Message{
 		Name:    "Secret",
@@ -264,6 +275,7 @@ func Secret() *api.Message {
 	}
 }
 
+// SecretVersion returns a sample secret version.
 func SecretVersion() *api.Message {
 	return &api.Message{
 		Name:    "SecretVersion",
@@ -286,6 +298,7 @@ func SecretVersion() *api.Message {
 	}
 }
 
+// EnumState returns a sample enum state.
 func EnumState() *api.Enum {
 	var (
 		stateEnabled = &api.EnumValue{
@@ -308,6 +321,7 @@ func EnumState() *api.Enum {
 	}
 }
 
+// Replication returns a sample replication.
 func Replication() *api.Message {
 	return &api.Message{
 		Name:    "Replication",
@@ -325,6 +339,7 @@ func Replication() *api.Message {
 	}
 }
 
+// Automatic returns a sample automatic.
 func Automatic() *api.Message {
 	return &api.Message{
 		Name:          "Automatic",
@@ -345,6 +360,7 @@ func Automatic() *api.Message {
 	}
 }
 
+// CustomerManagedEncryption returns a sample customer managed encryption.
 func CustomerManagedEncryption() *api.Message {
 	return &api.Message{
 		Name:    "CustomerManagedEncryption",
@@ -353,6 +369,7 @@ func CustomerManagedEncryption() *api.Message {
 	}
 }
 
+// SecretPayload returns a sample secret payload.
 func SecretPayload() *api.Message {
 	return &api.Message{
 		Name:          "SecretPayload",

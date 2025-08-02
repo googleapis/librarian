@@ -20,8 +20,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// RefString is a string that is a reference to another resource.
 type RefString string
 
+// MarshalYAML implements the yaml.Marshaler interface.
 func (r RefString) MarshalYAML() (interface{}, error) {
 	node := &yaml.Node{
 		Kind:  yaml.ScalarNode,
@@ -31,6 +33,7 @@ func (r RefString) MarshalYAML() (interface{}, error) {
 	return node, nil
 }
 
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (r *RefString) UnmarshalYAML(node *yaml.Node) error {
 	if node.Tag == "!REF" || node.Tag == "!" {
 		*r = RefString(node.Value)

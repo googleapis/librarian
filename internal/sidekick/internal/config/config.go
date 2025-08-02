@@ -50,6 +50,7 @@ type DocumentationOverride struct {
 	Replace string `toml:"replace"`
 }
 
+// Config is the main configuration struct.
 type Config struct {
 	General GeneralConfig `toml:"general"`
 
@@ -94,6 +95,7 @@ func LoadConfig(language string, source, codec map[string]string) (*Config, erro
 	return config, nil
 }
 
+// LoadRootConfig loads the root configuration file.
 func LoadRootConfig(filename string) (*Config, error) {
 	config := &Config{
 		Codec:  map[string]string{},
@@ -109,6 +111,7 @@ func LoadRootConfig(filename string) (*Config, error) {
 	return config, nil
 }
 
+// MergeConfigAndFile merges the root configuration with a local configuration file.
 func MergeConfigAndFile(rootConfig *Config, filename string) (*Config, error) {
 	contents, err := os.ReadFile(filename)
 	if err != nil {
@@ -159,6 +162,7 @@ func mergeConfigs(rootConfig, local *Config) (*Config, error) {
 	return &merged, nil
 }
 
+// UpdateRootConfig updates the root configuration file with the latest SHA from GitHub.
 func UpdateRootConfig(rootConfig *Config) error {
 	gitHubApi, ok := rootConfig.Source["github-api"]
 	if !ok {
@@ -264,6 +268,7 @@ func getLatestSha(query string) (string, error) {
 	return string(contents), nil
 }
 
+// WriteSidekickToml writes the configuration to a .sidekick.toml file.
 func WriteSidekickToml(outDir string, config *Config) error {
 	if err := os.MkdirAll(outDir, 0777); err != nil {
 		return err

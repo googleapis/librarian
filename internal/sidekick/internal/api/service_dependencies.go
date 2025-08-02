@@ -14,6 +14,7 @@
 
 package api
 
+// ServiceDependencies holds the message and enum dependencies for a service.
 type ServiceDependencies struct {
 	Messages []string
 	Enums    []string

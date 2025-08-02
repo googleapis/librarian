@@ -32,6 +32,7 @@ import (
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
+// ParseOpenAPI parses an OpenAPI specification and returns an API model.
 func ParseOpenAPI(source, serviceConfigFile string, options map[string]string) (*api.API, error) {
 	contents, err := os.ReadFile(source)
 	if err != nil {

@@ -20,6 +20,18 @@ import (
 	"strings"
 )
 
+// SkipModelElements prunes the model of any elements that are not desired.
+//
+// The elements to be pruned are determined by the `options` map.
+//
+// The `included-ids` key is a comma-separated list of fully-qualified IDs.
+// If this key is present, then any element that is not a dependency of one of
+// the listed IDs is pruned.
+//
+// The `skipped-ids` key is a comma-separated list of fully-qualified IDs.
+// If this key is present, then any element with an ID in this list is pruned.
+//
+// It is an error to specify both `included-ids` and `skipped-ids`.
 func SkipModelElements(model *API, options map[string]string) error {
 	included_ids, included_ok := options["included-ids"]
 	skipped_ids, skipped_ok := options["skipped-ids"]

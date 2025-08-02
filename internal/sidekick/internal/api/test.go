@@ -16,6 +16,7 @@ package api
 
 import "strings"
 
+// NewTestAPI creates a new test API.
 func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	packageName := ""
 	state := &APIState{

@@ -19,6 +19,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
+// Generate generates gcloud commands from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	return nil
 }

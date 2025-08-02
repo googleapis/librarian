@@ -30,6 +30,7 @@ type mustacheProvider struct {
 	dirname string
 }
 
+// Get gets the template contents.
 func (p *mustacheProvider) Get(name string) (string, error) {
 	if strings.HasPrefix(name, "/") {
 		return p.impl(strings.TrimPrefix(name, "/") + ".mustache")

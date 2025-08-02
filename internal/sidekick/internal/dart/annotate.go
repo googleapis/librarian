@@ -54,10 +54,12 @@ type modelAnnotations struct {
 	DoNotPublish        bool
 }
 
+// HasServices returns true if the model has services.
 func (m *modelAnnotations) HasServices() bool {
 	return len(m.Parent.Services) > 0
 }
 
+// HasDependencies returns true if the model has package dependencies.
 func (m *modelAnnotations) HasDependencies() bool {
 	return len(m.PackageDependencies) > 0
 }
@@ -88,15 +90,18 @@ type messageAnnotation struct {
 	ToStringLines   []string
 }
 
+// HasFields returns true if the message has fields.
 func (m *messageAnnotation) HasFields() bool {
 	return len(m.Parent.Fields) > 0
 }
 
+// HasCustomEncoding returns true if the message has custom encoding.
 func (m *messageAnnotation) HasCustomEncoding() bool {
 	_, hasCustomEncoding := usesCustomEncoding[m.Parent.ID]
 	return hasCustomEncoding
 }
 
+// HasToStringLines returns true if the message has toString lines.
 func (m *messageAnnotation) HasToStringLines() bool {
 	return len(m.ToStringLines) > 0
 }
@@ -115,10 +120,12 @@ type methodAnnotation struct {
 	IsLROGetOperation bool
 }
 
+// HasBody returns true if the method has a body.
 func (m *methodAnnotation) HasBody() bool {
 	return m.Parent.PathInfo.BodyFieldPath != ""
 }
 
+// HasQueryLines returns true if the method has query lines.
 func (m *methodAnnotation) HasQueryLines() bool {
 	return len(m.QueryLines) > 0
 }

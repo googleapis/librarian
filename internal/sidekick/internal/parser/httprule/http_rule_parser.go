@@ -85,7 +85,10 @@ func ParseSegments(pathTemplate string) (*api.PathTemplate, error) {
 	return parsePathTemplate(pathTemplate)
 }
 
+// Literal is a literal in a path template.
 type Literal string
+
+// Identifier is an identifier in a path template.
 type Identifier string
 
 const (

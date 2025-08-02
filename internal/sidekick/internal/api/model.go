@@ -346,6 +346,7 @@ type PathInfo struct {
 	Codec any
 }
 
+// PathBinding is a binding of a path to a method.
 type PathBinding struct {
 	// HTTP Verb.
 	//
@@ -425,10 +426,12 @@ type RoutingInfoVariant struct {
 	Codec any
 }
 
+// FieldName returns the field path as a string.
 func (v *RoutingInfoVariant) FieldName() string {
 	return strings.Join(v.FieldPath, ".")
 }
 
+// TemplateAsString returns the template as a string.
 func (v *RoutingInfoVariant) TemplateAsString() string {
 	var full []string
 	full = append(full, v.Prefix.Segments...)
@@ -437,6 +440,7 @@ func (v *RoutingInfoVariant) TemplateAsString() string {
 	return strings.Join(full, "/")
 }
 
+// RoutingPathSpec is a specification for a routing path.
 type RoutingPathSpec struct {
 	// A sequence of matching segments.
 	//
@@ -455,16 +459,19 @@ const (
 	MultiSegmentWildcard = "**"
 )
 
+// PathTemplate is a template for a path.
 type PathTemplate struct {
 	Segments []PathSegment
 	Verb     *string
 }
 
+// PathSegment is a segment of a path.
 type PathSegment struct {
 	Literal  *string
 	Variable *PathVariable
 }
 
+// PathVariable is a variable in a path.
 type PathVariable struct {
 	FieldPath []string
 	Segments  []string
@@ -481,41 +488,49 @@ func NewPathTemplate() *PathTemplate {
 	return &PathTemplate{}
 }
 
+// NewPathVariable creates a new path variable.
 func NewPathVariable(fields ...string) *PathVariable {
 	return &PathVariable{FieldPath: fields}
 }
 
+// WithLiteral adds a literal to the path template.
 func (p *PathTemplate) WithLiteral(l string) *PathTemplate {
 	p.Segments = append(p.Segments, PathSegment{Literal: &l})
 	return p
 }
 
+// WithVariable adds a variable to the path template.
 func (p *PathTemplate) WithVariable(v *PathVariable) *PathTemplate {
 	p.Segments = append(p.Segments, PathSegment{Variable: v})
 	return p
 }
 
+// WithVariableNamed adds a variable with the given name to the path template.
 func (p *PathTemplate) WithVariableNamed(fields ...string) *PathTemplate {
 	v := PathVariable{FieldPath: fields}
 	p.Segments = append(p.Segments, PathSegment{Variable: v.WithMatch()})
 	return p
 }
 
+// WithVerb adds a verb to the path template.
 func (p *PathTemplate) WithVerb(v string) *PathTemplate {
 	p.Verb = &v
 	return p
 }
 
+// WithLiteral adds a literal to the path variable.
 func (v *PathVariable) WithLiteral(l string) *PathVariable {
 	v.Segments = append(v.Segments, l)
 	return v
 }
 
+// WithMatchRecursive adds a recursive match to the path variable.
 func (v *PathVariable) WithMatchRecursive() *PathVariable {
 	v.Segments = append(v.Segments, MultiSegmentWildcard)
 	return v
 }
 
+// WithMatch adds a match to the path variable.
 func (v *PathVariable) WithMatch() *PathVariable {
 	v.Segments = append(v.Segments, SingleSegmentWildcard)
 	return v
@@ -672,14 +687,17 @@ type Field struct {
 	Codec any
 }
 
+// DocumentAsRequired returns true if the field should be documented as required.
 func (field *Field) DocumentAsRequired() bool {
 	return slices.Contains(field.Behavior, FIELD_BEHAVIOR_REQUIRED)
 }
 
+// Singular returns true if the field is not a map or a repeated field.
 func (f *Field) Singular() bool {
 	return !f.Map && !f.Repeated
 }
 
+// NameEqualJSONName returns true if the field's name is the same as its JSON name.
 func (f *Field) NameEqualJSONName() bool {
 	return f.JSONName == f.Name
 }

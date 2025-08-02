@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
+// DetermineInputFiles determines the input files from the source and options.
 func DetermineInputFiles(source string, options map[string]string) ([]string, error) {
 	if _, ok := options["include-list"]; ok {
 		if _, ok := options["exclude-list"]; ok {
