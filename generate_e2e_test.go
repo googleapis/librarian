@@ -20,19 +20,21 @@ package librarian
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
-)
 
-const (
-	repo               = "repo"
-	localRepoBackupDir = "testdata/e2e/generate/repo_backup"
-	localAPISource     = "testdata/e2e/generate/api_root"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestRunGenerate(t *testing.T) {
+	const (
+		repo                = "repo"
+		initialRepoStateDir = "testdata/e2e/generate/repo_backup"
+		localAPISource      = "testdata/e2e/generate/api_root"
+	)
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
@@ -44,15 +46,15 @@ func TestRunGenerate(t *testing.T) {
 			api:  "google/cloud/pubsub/v1",
 		},
 		{
-			name:    "non existant in api source",
-			api:     "google/invalid/path",
+			name:    "non existent in api source",
+			api:     "google/non-existent/path",
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := filepath.Join(t.TempDir())
 			repo := filepath.Join(workRoot, repo)
-			if err := prepareTest(t, repo, workRoot, localRepoBackupDir); err != nil {
+			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
 
@@ -96,6 +98,86 @@ func TestRunGenerate(t *testing.T) {
 				if content.ErrorMessage == "" {
 					t.Fatalf("can not find error message in generate response")
 				}
+			}
+		})
+	}
+}
+
+func TestRunConfigure(t *testing.T) {
+	const (
+		localRepoDir        = "testdata/e2e/configure/repo"
+		initialRepoStateDir = "testdata/e2e/configure/repo_backup"
+		repo                = "repo"
+	)
+	for _, test := range []struct {
+		name         string
+		api          string
+		library      string
+		apiSource    string
+		updatedState string
+		wantErr      bool
+	}{
+		{
+			name:         "runs successfully",
+			api:          "google/cloud/new-library-path/v2",
+			library:      "new-library",
+			apiSource:    "testdata/e2e/configure/api_root",
+			updatedState: "testdata/e2e/configure/updated-state.yaml",
+		},
+		{
+			name:         "failed due to missing configure request file",
+			api:          "google/cloud/non-existent-path/v3",
+			library:      "simulate-configure-error-id",
+			apiSource:    "testdata/e2e/configure/api_root",
+			updatedState: "testdata/e2e/configure/updated-state.yaml",
+			wantErr:      true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("rand-%d", rand.Intn(1000)))
+			repo := filepath.Join(workRoot, repo)
+			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
+				t.Fatalf("prepare test error = %v", err)
+			}
+
+			cmd := exec.Command(
+				"go",
+				"run",
+				"github.com/googleapis/librarian/cmd/librarian",
+				"generate",
+				fmt.Sprintf("--api=%s", test.api),
+				fmt.Sprintf("--output=%s", workRoot),
+				fmt.Sprintf("--repo=%s", repo),
+				fmt.Sprintf("--api-source=%s", test.apiSource),
+				fmt.Sprintf("--library=%s", test.library),
+			)
+			cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+			err := cmd.Run()
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("Configure command should fail")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Failed to run configure: %v", err)
+			}
+
+			// Verify the file content
+			gotBytes, err := os.ReadFile(filepath.Join(repo, ".librarian", "state.yaml"))
+			if err != nil {
+				t.Fatalf("Failed to read configure response file: %v", err)
+			}
+
+			wantBytes, readErr := os.ReadFile(test.updatedState)
+			if readErr != nil {
+				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
+			}
+
+			if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
+				t.Errorf("Generated yaml mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
