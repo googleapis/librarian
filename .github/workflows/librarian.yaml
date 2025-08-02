@@ -25,6 +25,9 @@ jobs:
           go-version-file: 'go.mod'
       - name: Display Go version
         run: go version
+      - name: Install protoc
+        run: |
+          sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Check Go formatting
