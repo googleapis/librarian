@@ -240,7 +240,7 @@ func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], packa
 	return methods, nil
 }
 
-// Creates (if needed) the request message for `operation`. Returns the message
+// makeRequestMessage creates (if needed) the request message for `operation`. Returns the message
 // and the body field path (if any) for the request.
 func makeRequestMessage(a *api.API, operation *v3.Operation, packageName, template string) (*api.Message, string, error) {
 	messageName := fmt.Sprintf("%sRequest", operation.OperationId)

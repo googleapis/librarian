@@ -38,7 +38,7 @@ const (
 	branch           = "master"
 )
 
-// Describe overrides for the documentation of a single element.
+// DocumentationOverride describes overrides for the documentation of a single element.
 //
 // This should be used sparingly. Generally we should prefer updating the
 // comments upstream, and then getting a new version of the services
@@ -62,7 +62,7 @@ type Config struct {
 	Gcloud *gcloudyaml.Config
 }
 
-// Configuration parameters that affect Parsers and Codecs, including the
+// GeneralConfig contains configuration parameters that affect Parsers and Codecs, including the
 // selection of parser and codec.
 type GeneralConfig struct {
 	Language            string `toml:"language,omitempty"`

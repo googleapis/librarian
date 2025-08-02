@@ -239,7 +239,7 @@ func generateMethod(m *api.Method) bool {
 	return m.PathInfo.Bindings[0].PathTemplate != nil
 }
 
-// The list of Golang keywords and reserved words can be found at:
+// escapeKeyword escapes Golang keywords and reserved words. The list of Golang keywords and reserved words can be found at:
 //
 // https://go.dev/ref/spec#Keywords
 func escapeKeyword(symbol string) string {

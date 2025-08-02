@@ -45,7 +45,7 @@ directories from the name of the service config YAML file.
 	)
 }
 
-// generate takes some state and applies it to a template to create a client
+// rustGenerate takes some state and applies it to a template to create a client
 // library.
 func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 	if cmdLine.SpecificationSource == "" {

@@ -57,7 +57,7 @@ type modelAnnotations struct {
 	Incomplete bool
 }
 
-// When bootstrapping the well-known types crate the templates add some
+// IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
 // ad-hoc code.
 func (m *modelAnnotations) IsWktCrate() bool {
 	return m.PackageName == "google-cloud-wkt"
@@ -68,7 +68,7 @@ func (m *modelAnnotations) HasServices() bool {
 	return len(m.Services) > 0
 }
 
-// We handle references to `gaxi` traits from within the `gaxi` crate, by
+// IsGaxiCrate returns true if we handle references to `gaxi` traits from within the `gaxi` crate, by
 // injecting some ad-hoc code.
 func (m *modelAnnotations) IsGaxiCrate() bool {
 	return m.PackageName == "google-cloud-gax-internal"
@@ -112,7 +112,7 @@ func (m *methodAnnotation) HasBindingSubstitutions() bool {
 	return false
 }
 
-// If true, this service includes methods that return long-running operations.
+// HasLROs returns true if this service includes methods that return long-running operations.
 func (s *serviceAnnotations) HasLROs() bool {
 	return len(s.LROTypes) > 0
 }
@@ -266,7 +266,7 @@ type bindingSubstitution struct {
 	Template []string
 }
 
-// Rust code that yields an array of path segments.
+// TemplateAsArray returns Rust code that yields an array of path segments.
 //
 // This array is supplied as an argument to `gaxi::path_parameter::try_match()`,
 // and `gaxi::path_parameter::PathMismatchBuilder`.
@@ -276,7 +276,7 @@ func (s *bindingSubstitution) TemplateAsArray() string {
 	return "&[" + strings.Join(annotateSegments(s.Template), ", ") + "]"
 }
 
-// The expected template, which can be used as a static string.
+// TemplateAsString returns the expected template, which can be used as a static string.
 //
 // e.g.: "projects/*"
 func (s *bindingSubstitution) TemplateAsString() string {
@@ -296,7 +296,7 @@ type pathBindingAnnotation struct {
 	Substitutions []*bindingSubstitution
 }
 
-// We serialize certain query parameters, which can fail. The code we generate
+// QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
 // uses the try operator '?'. We need to run this code in a closure which
 // returns a `Result<>`.
 func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
@@ -569,7 +569,7 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	}
 }
 
-// Maps "google.foo.v1" to "google::foo::v1"
+// packageToModuleName maps "google.foo.v1" to "google::foo::v1"
 func packageToModuleName(p string) string {
 	components := strings.Split(p, ".")
 	for i, c := range components {
@@ -811,7 +811,7 @@ func annotatePathBinding(b *api.PathBinding, m *api.Method, state *api.APIState)
 	}
 }
 
-// Annotates the `PathInfo` and all of its `PathBinding`s.
+// annotatePathInfo annotates the `PathInfo` and all of its `PathBinding`s.
 func annotatePathInfo(p *api.PathInfo, m *api.Method, state *api.APIState) {
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
@@ -1009,7 +1009,7 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, e *api.Enum, state *api.API
 	}
 }
 
-// Returns "true" if the method is idempotent by default, and "false", if not.
+// isIdempotent returns "true" if the method is idempotent by default, and "false", if not.
 func isIdempotent(p *api.PathInfo) string {
 	if len(p.Bindings) == 0 {
 		return "false"

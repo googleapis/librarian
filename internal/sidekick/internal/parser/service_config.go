@@ -49,7 +49,7 @@ func readServiceConfig(serviceConfigPath string) (*serviceconfig.Service, error)
 	return cfg, nil
 }
 
-// Finds the service config path for the current parser configuration.
+// findServiceConfigPath finds the service config path for the current parser configuration.
 //
 // The service config files are specified as relative to the `googleapis-root`
 // path (or `extra-protos-root` when set). This finds the right path given a

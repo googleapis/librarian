@@ -25,6 +25,7 @@ type Typez int
 const (
 	// These are the different field types as defined in
 	// descriptorpb.FieldDescriptorProto_Type
+
 	UNDEFINED_TYPE Typez = iota // 0
 	DOUBLE_TYPE                 // 1
 	FLOAT_TYPE                  // 2
@@ -55,16 +56,16 @@ const (
 type FieldBehavior int
 
 const (
-	// No special behavior.
+	// FIELD_BEHAVIOR_UNSPECIFIED is the default, unspecified field behavior.
 	FIELD_BEHAVIOR_UNSPECIFIED FieldBehavior = iota
 
-	// Specifically denotes a field as optional.
+	// FIELD_BEHAVIOR_OPTIONAL specifically denotes a field as optional.
 	//
 	// While Google Cloud uses proto3, where fields are either optional or have
 	// a default value, this may be specified for emphasis.
 	FIELD_BEHAVIOR_OPTIONAL
 
-	// Denotes a field as required.
+	// FIELD_BEHAVIOR_REQUIRED denotes a field as required.
 	//
 	// This indicates that the field **must** be provided as part of the request,
 	// and failure to do so will cause an error (usually `INVALID_ARGUMENT`).
@@ -73,7 +74,7 @@ const (
 	// parameter necessary to construct the request.
 	FIELD_BEHAVIOR_REQUIRED
 
-	// Denotes a field as output only.
+	// FIELD_BEHAVIOR_OUTPUT_ONLY denotes a field as output only.
 	//
 	// Some messages (and their fields) are used in both requests and responses.
 	// This indicates that the field is provided in responses, but including the
@@ -84,33 +85,33 @@ const (
 	// request" vs. "the standalone message" may omit this field in the former.
 	FIELD_BEHAVIOR_OUTPUT_ONLY
 
-	// Denotes a field as input only.
+	// FIELD_BEHAVIOR_INPUT_ONLY denotes a field as input only.
 	//
 	// This indicates that the field is provided in requests, and the
 	// corresponding field is not included in output.
 	FIELD_BEHAVIOR_INPUT_ONLY
 
-	// Denotes a field as immutable.
+	// FIELD_BEHAVIOR_IMMUTABLE denotes a field as immutable.
 	//
 	// This indicates that the field may be set once in a request to create a
 	// resource, but may not be changed thereafter.
 	FIELD_BEHAVIOR_IMMUTABLE
 
-	// Denotes that a (repeated) field is an unordered list.
+	// FIELD_BEHAVIOR_UNORDERED_LIST denotes that a (repeated) field is an unordered list.
 	//
 	// This indicates that the service may provide the elements of the list
 	// in any arbitrary  order, rather than the order the user originally
 	// provided. Additionally, the list's order may or may not be stable.
 	FIELD_BEHAVIOR_UNORDERED_LIST
 
-	// Denotes that this field returns a non-empty default value if not set.
+	// FIELD_BEHAVIOR_UNORDERED_NON_EMPTY_DEFAULT denotes that this field returns a non-empty default value if not set.
 	//
 	// This indicates that if the user provides the empty value in a request,
 	// a non-empty value will be returned. The user will not be aware of what
 	// non-empty value to expect.
 	FIELD_BEHAVIOR_UNORDERED_NON_EMPTY_DEFAULT
 
-	// Denotes that the field in a resource (a message annotated with
+	// FIELD_BEHAVIOR_IDENTIFIER denotes that the field in a resource (a message annotated with
 	// google.api.resource) is used in the resource name to uniquely identify the
 	// resource.
 	//
@@ -191,22 +192,23 @@ type Service struct {
 
 // Method defines a RPC belonging to a Service.
 type Method struct {
-	// Documentation for the method.
+	// Documentation is the documentation for the method.
 	Documentation string
-	// Name of the attribute.
+	// Name is the name of the attribute.
 	Name string
 	// ID is a unique identifier.
 	ID string
-	// Some source specifications allow marking methods as deprecated.
+	// Deprecated is true if the method is deprecated.
 	Deprecated bool
-	// InputType is the input to the Method
+	// InputTypeID is the ID of the input type for the Method.
 	InputTypeID string
-	InputType   *Message
-	// OutputType is the output of the Method
+	// InputType is the input to the Method.
+	InputType *Message
+	// OutputTypeID is the ID of the output type for the Method.
 	OutputTypeID string
-	OutputType   *Message
-	// Some methods return nothing and the language mapping represents such
-	// method with a special type such as `void`, or `()`.
+	// OutputType is the output of the Method.
+	OutputType *Message
+	// ReturnsEmpty is true if the method returns nothing.
 	//
 	// Protobuf uses the well-known type `google.protobuf.Empty` message to
 	// represent this.
@@ -214,36 +216,38 @@ type Method struct {
 	// OpenAPIv3 uses a missing content field:
 	//   https://swagger.io/docs/specification/v3_0/describing-responses/#empty-response-body
 	ReturnsEmpty bool
-	// PathInfo information about the HTTP request
+	// PathInfo contains information about the HTTP request.
 	PathInfo *PathInfo
 	// Pagination holds the `page_token` field if the method conforms to the
 	// standard defined by [AIP-4233](https://google.aip.dev/client-libraries/4233).
 	Pagination *Field
-	// The streaming attributes of the method. Bidi streaming methods have both
-	// set to true.
+	// ClientSideStreaming is true if the method supports client-side streaming.
 	ClientSideStreaming bool
+	// ServerSideStreaming is true if the method supports server-side streaming.
 	ServerSideStreaming bool
-	// For methods returning long-running operations
+	// OperationInfo contains information for methods returning long-running operations.
 	OperationInfo *OperationInfo
-	// The routing annotations, if any
+	// Routing contains the routing annotations, if any.
 	Routing []*RoutingInfo
-	// The auto-populated (request_id) field, if any, as defined in
+	// AutoPopulated contains the auto-populated (request_id) field, if any, as defined in
 	// [AIP-4235](https://google.aip.dev/client-libraries/4235)
 	//
 	// The field must be eligible for auto-population, and be listed in the
 	// `google.api.MethodSettings.auto_populated_fields` entry in
 	// `google.api.Publishing.method_settings` in the service config file.
 	AutoPopulated []*Field
-	// The model this method belongs to, mustache templates use this field to
+	// Model is the model this method belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
-	// The service this method belongs to, mustache templates use this field to
+	// Service is the service this method belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Service *Service
-	// Language specific annotations
+	// Codec contains language specific annotations.
 	Codec any
 }
 
+// RoutingCombos returns all combinations of routing parameters.
+//
 // The routing info is stored as a map from the key to a list of the variants.
 // e.g.:
 //
@@ -305,24 +309,28 @@ func (m *Method) RoutingCombos() []*RoutingInfoCombo {
 	return combos
 }
 
+// RoutingInfoCombo represents a single combination of routing parameters.
 type RoutingInfoCombo struct {
 	Items []*RoutingInfoComboItem
 }
 
+// RoutingInfoComboItem represents a single item in a RoutingInfoCombo.
 type RoutingInfoComboItem struct {
 	Name    string
 	Variant *RoutingInfoVariant
 }
 
+// HasRouting returns true if the method has routing information.
 func (m *Method) HasRouting() bool {
 	return len(m.Routing) != 0
 }
 
+// HasAutoPopulatedFields returns true if the method has auto-populated fields.
 func (m *Method) HasAutoPopulatedFields() bool {
 	return len(m.AutoPopulated) != 0
 }
 
-// Normalized request path information.
+// PathInfo contains normalized request path information.
 type PathInfo struct {
 	// The list of bindings, including the top-level binding.
 	Bindings []*PathBinding
@@ -356,7 +364,7 @@ type PathBinding struct {
 	Codec any
 }
 
-// Normalized long running operation info
+// OperationInfo contains normalized long running operation info
 type OperationInfo struct {
 	// The metadata type. If there is no metadata, this is set to
 	// `.google.protobuf.Empty`.
@@ -370,7 +378,7 @@ type OperationInfo struct {
 	Codec any
 }
 
-// Normalize routing info.
+// RoutingInfo contains normalized routing info.
 //
 // The routing information format is documented in:
 //
@@ -403,7 +411,7 @@ type RoutingInfo struct {
 	Variants []*RoutingInfoVariant
 }
 
-// The routing information stripped of its name.
+// RoutingInfoVariant represents the routing information stripped of its name.
 type RoutingInfoVariant struct {
 	// The sequence of field names accessed to get the routing information.
 	FieldPath []string
@@ -438,9 +446,12 @@ type RoutingPathSpec struct {
 }
 
 const (
-	// A special routing path segment which indicates "match anything that does not include a `/`"
+	// SingleSegmentWildcard is a special routing path segment which indicates
+	// "match anything that does not include a `/`"
 	SingleSegmentWildcard = "*"
-	// A special routing path segment which indicates "match anything including `/`"
+
+	// MultiSegmentWildcard is a special routing path segment which indicates
+	// "match anything including `/`"
 	MultiSegmentWildcard = "**"
 )
 
@@ -459,12 +470,13 @@ type PathVariable struct {
 	Segments  []string
 }
 
-// PathMatch represents a single '*' match.
+// PathMatch is a single wildcard match in a path.
 type PathMatch struct{}
 
-// MatchRecursive represents a '**' match.
+// PathMatchRecursive is a recursive wildcard match in a path.
 type PathMatchRecursive struct{}
 
+// NewPathTemplate creates a new PathTemplate.
 func NewPathTemplate() *PathTemplate {
 	return &PathTemplate{}
 }
@@ -543,11 +555,12 @@ type Message struct {
 	Codec any
 }
 
+// HasFields returns true if the message has fields.
 func (m *Message) HasFields() bool {
 	return len(m.Fields) != 0
 }
 
-// Information related to pagination aka [AIP-4233](https://google.aip.dev/client-libraries/4233).
+// PaginationInfo contains information related to pagination aka [AIP-4233](https://google.aip.dev/client-libraries/4233).
 type PaginationInfo struct {
 	// The field that gives us the next page token.
 	NextPageToken *Field
@@ -679,7 +692,7 @@ type Pair struct {
 	Value string
 }
 
-// A group of fields that are mutually exclusive. Notably, proto3 optional
+// OneOf is a group of fields that are mutually exclusive. Notably, proto3 optional
 // fields are all their own one-of.
 type OneOf struct {
 	// Name of the attribute.
@@ -690,6 +703,6 @@ type OneOf struct {
 	Documentation string
 	// Fields associated with the one-of.
 	Fields []*Field
-	// A placeholder to put language specific annotations.
+	// Codec is a placeholder to put language specific annotations.
 	Codec any
 }

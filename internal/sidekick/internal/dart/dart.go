@@ -36,7 +36,7 @@ var needsCtorValidation = map[string]string{
 	".google.protobuf.Timestamp": "",
 }
 
-// This list needs to be kept in sync with
+// usesCustomEncoding needs to be kept in sync with
 // generator/dart/generated/google_cloud_protobuf/lib/src/protobuf.p.dart.
 var usesCustomEncoding = map[string]string{
 	".google.protobuf.BoolValue":   "",
@@ -56,16 +56,16 @@ var usesCustomEncoding = map[string]string{
 	".google.protobuf.Value":       "",
 }
 
-// Used to concatenate a message and a child message.
+// nestedMessageChar is used to concatenate a message and a child message.
 var nestedMessageChar = "_"
 
-// Used to concatenate a message and a child enum.
+// nestedEnumChar is used to concatenate a message and a child enum.
 var nestedEnumChar = "_"
 
-// Appended to a name to avoid conflicting with a Dart identifier.
+// deconflictChar is appended to a name to avoid conflicting with a Dart identifier.
 var deconflictChar = "$"
 
-// Dart reserved words.
+// reservedNames is a blocklist of Dart reserved words.
 //
 // This blocklist includes words that can never be used as an identifier as well
 // as a few that could be used depending on context. We can add additional
@@ -180,7 +180,7 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 	return builder.String()
 }
 
-// This regex matches Google API documentation reference links; it supports
+// commentRefsRegex matches Google API documentation reference links; it supports
 // both regular references as well as implit references.
 //
 // - `[Code][google.rpc.Code]`
