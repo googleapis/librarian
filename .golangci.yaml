@@ -29,7 +29,6 @@ linters:
     - unparam
     - unused
     - usetesting
-
   # TODO(https://github.com/googleapis/librarian/issues/1510): fix tests and
   # remove
   exclusions:
