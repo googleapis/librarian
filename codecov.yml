@@ -25,6 +25,8 @@ ignore:
   - internal/sidekick/internal/golang
   - internal/sidekick/internal/language
   - internal/sidekick/internal/license
+  - internal/sidekick/internal/license
+  - internal/sidekick/internal/protobuf
   - internal/sidekick/internal/rust_prost
   - internal/sidekick/internal/sample
   - internal/sidekick/internal/sidekick
