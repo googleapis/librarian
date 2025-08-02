@@ -31,21 +31,34 @@ import (
 	"testing"
 )
 
-var doubleSlashHeader = regexp.MustCompile(`^// Copyright 20\d\d Google LLC
-//
-// Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
+var noHeaderRequiredFiles = []string{
+	".github/CODEOWNERS",
+	".gitignore",
+	"LICENSE",
+	"coverage.out",
+	"go.mod",
+	"go.sum",
+	"librarian",
+	"renovate.json",
 
-var shellHeader = regexp.MustCompile(`^#!/.*
+	// TODO(https://github.com/googleapis/librarian/issues/1510) remove
+	"internal/sidekick/go.mod",
+	"internal/sidekick/go.sum",
+}
 
-# Copyright 20\d\d Google LLC
-#
-# Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
+var ignoredExts = map[string]bool{
+	".excalidraw": true,
+	".md":         true,
+}
 
-var hashHeader = regexp.MustCompile(`^# Copyright 20\d\d Google LLC
-#
-# Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
+var ignoredDirs = []string{
+	".git",
+	".idea",
+	".vscode",
+	"testdata",
+}
 
-var noHeaderRequiredFiles = []string{".github/CODEOWNERS", "go.sum", "go.mod", ".gitignore", "LICENSE", "renovate.json", "coverage.out", "librarian"}
+var headerRE = regexp.MustCompile(`(?ms)^(?:#!/.*\n)?(?:\/\/|#|{{!)\s*Copyright 20\d\d Google LLC.*?\n.*?Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
@@ -53,47 +66,31 @@ func TestHeaders(t *testing.T) {
 		if err != nil {
 			return err
 		}
+
 		if d.IsDir() {
-			if d.Name() == "testdata" || d.Name() == ".git" || d.Name() == ".vscode" || d.Name() == ".idea" {
+			if slices.Contains(ignoredDirs, d.Name()) {
 				return fs.SkipDir
 			}
 			return nil
 		}
 
-		var requiredHeader *regexp.Regexp
-		switch {
-		case strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".proto"):
-			requiredHeader = doubleSlashHeader
-		case strings.HasSuffix(path, ".sh"):
-			requiredHeader = shellHeader
-		case strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || strings.HasPrefix(path, "Dockerfile"):
-			requiredHeader = hashHeader
-		case strings.HasSuffix(path, ".md"):
-			return nil
-		case strings.HasSuffix(path, ".excalidraw"):
-			return nil
-		case strings.HasPrefix(path, "internal/sidekick"):
-			// TODO(https://github.com/googleapis/librarian/issues/1510): fix
-			// tests for sidekick and remove this case statement.
-			return nil
-		case slices.Contains(noHeaderRequiredFiles, path):
-			return nil
-		default:
-			// Given the mixture of allow-lists and requirements, if there's a file which
-			// isn't covered, we report an error.
-			t.Errorf("%q: unknown header requirements", path)
+		ext := filepath.Ext(path)
+		if slices.Contains(noHeaderRequiredFiles, path) || ignoredExts[ext] {
 			return nil
 		}
+		if ext == "" && !strings.HasPrefix(filepath.Base(path), "Dockerfile") {
+			t.Errorf("%q: no known header rule (file has no extension and is not a Dockerfile). "+
+				"Add a header rule or add the file to noHeaderRequiredFiles if it should be ignored.", path)
+			return nil
+		}
+
 		f, err := sfs.Open(path)
 		if err != nil {
 			return err
 		}
-		defer func() {
-			if cerr := f.Close(); cerr != nil {
-				t.Fatal(err)
-			}
-		}()
-		if !requiredHeader.MatchReader(bufio.NewReader(f)) {
+		defer f.Close()
+
+		if !headerRE.MatchReader(bufio.NewReader(f)) {
 			t.Errorf("%q: incorrect header", path)
 		}
 		return nil
