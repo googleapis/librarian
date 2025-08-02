@@ -136,7 +136,6 @@ func TestGoImports(t *testing.T) {
 }
 
 func TestGoModTidy(t *testing.T) {
-
 	rungo(t, "mod", "tidy", "-diff")
 }
 
