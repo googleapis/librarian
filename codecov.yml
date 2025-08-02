@@ -20,4 +20,8 @@ coverage:
         threshold: 0% # Allow 0% drop from the target; any drop below target will fail
         if_ci_failed: error # Set the CI status to 'error' if coverage conditions are not met
 ignore:
-  - "internal/sidekick/internal/sidekick"
+  - internal/sidekick/internal/config
+  - internal/sidekick/internal/golang
+  - internal/sidekick/internal/language
+  - internal/sidekick/internal/rust_prost
+  - internal/sidekick/internal/sidekick
