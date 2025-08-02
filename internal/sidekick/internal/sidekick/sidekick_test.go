@@ -419,7 +419,6 @@ func TestGoFromProtobuf(t *testing.T) {
 		}
 
 		dir := path.Join(outDir, config.Name)
-		execCommand(t, dir, "goimports", "-w", ".")
 		execCommand(t, dir, "go", "mod", "tidy")
 		for _, expected := range []string{".sidekick.toml", "go.mod", "client.go"} {
 			filename := path.Join(outDir, config.Name, expected)
