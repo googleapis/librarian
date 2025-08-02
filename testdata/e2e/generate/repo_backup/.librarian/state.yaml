@@ -5,5 +5,5 @@ libraries:
     last_generated_commit:
     apis:
       - path: google/cloud/pubsub/v1
-    source_paths:
+    source_roots:
       - google-cloud-pubsub/v1

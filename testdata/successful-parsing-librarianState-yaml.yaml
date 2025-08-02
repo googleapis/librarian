@@ -6,7 +6,7 @@ libraries:
     apis:
       - path: google/cloud/compute/v1
         service_config: example_service_config.yaml
-    source_paths:
+    source_roots:
       - src/example/path
     preserve_regex:
       - example-preserve-regex
@@ -18,6 +18,6 @@ libraries:
     apis:
       - path: google/storage/v1
         service_config: storage_service_config.yaml
-    source_paths: []
+    source_roots: []
     preserve_regex: []
     remove_regex: []

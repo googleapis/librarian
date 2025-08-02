@@ -304,7 +304,7 @@ func TestDockerRun(t *testing.T) {
 									ServiceConfig: "another_v1.yaml",
 								},
 							},
-							SourcePaths: []string{
+							SourceRoots: []string{
 								"another-example-source-path",
 							},
 						},
@@ -446,7 +446,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 								ServiceConfig: "example_service_config.yaml",
 							},
 						},
-						SourcePaths: []string{
+						SourceRoots: []string{
 							"src/example/path",
 						},
 						PreserveRegex: []string{
