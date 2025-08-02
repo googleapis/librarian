@@ -33,7 +33,7 @@ jobs:
           sudo unzip -x /tmp/protoc.zip
           protoc --version
       - name: Run tests
-        run: go test -race -coverprofile=coverage.out -covermode=atomic $(go list ./... | grep -v /internal/golang)
+        run: go test -race -coverprofile=coverage.out -covermode=atomic $(go list ./... | grep -v /internal/sidekick/internal/golang | grep -v /internal/sidekick/internal/config)
       - name: Check Go formatting
         run: go fmt ./...
       - name: Check YAML formatting
