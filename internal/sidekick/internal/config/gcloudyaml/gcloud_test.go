@@ -16,6 +16,7 @@ package gcloudyaml
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -51,7 +52,7 @@ func TestGcloudConfig(t *testing.T) {
 			continue
 		}
 	}
-	want := strings.Join(lines[index:], "\n")
+	want := fmt.Sprintf("service_name: %s\n%s", config.ServiceName, strings.Join(lines[index:], "\n"))
 	if diff := cmp.Diff(want, got.String()); diff != "" {
 		t.Errorf("mismatch(-want, +got)\n%s", diff)
 	}
