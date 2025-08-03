@@ -188,7 +188,7 @@ func writeToOutput(option *generateOption) (err error) {
 
 func populateAdditionalFields(library *libraryState) *libraryState {
 	library.Version = "1.0.0"
-	library.SourcePaths = []string{"example-source-path", "example-source-path-2"}
+	library.SourceRoots = []string{"example-source-path", "example-source-path-2"}
 	library.PreserveRegex = []string{"example-preserve-regex", "example-preserve-regex-2"}
 	library.RemoveRegex = []string{"example-remove-regex", "example-remove-regex-2"}
 
@@ -214,7 +214,7 @@ type libraryState struct {
 	ID            string   `json:"id"`
 	Version       string   `json:"version"`
 	APIs          []*api   `json:"apis"`
-	SourcePaths   []string `json:"source_paths"`
+	SourceRoots   []string `json:"source_roots"`
 	PreserveRegex []string `json:"preserve_regex"`
 	RemoveRegex   []string `json:"remove_regex"`
 }

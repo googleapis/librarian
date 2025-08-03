@@ -6,7 +6,7 @@ libraries:
     apis:
       - path: google/cloud/pubsub/v1
         service_config: pubsub_v1.yaml
-    source_paths:
+    source_roots:
       - google-cloud-pubsub/v1
     preserve_regex: []
     remove_regex: []
@@ -16,7 +16,7 @@ libraries:
     apis:
       - path: google/cloud/new-library-path/v2
         service_config: library_v2.yaml
-    source_paths:
+    source_roots:
       - example-source-path
       - example-source-path-2
     preserve_regex:
