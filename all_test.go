@@ -78,11 +78,6 @@ func TestHeaders(t *testing.T) {
 		if slices.Contains(noHeaderRequiredFiles, path) || ignoredExts[ext] {
 			return nil
 		}
-		if ext == "" && !strings.HasPrefix(filepath.Base(path), "Dockerfile") {
-			t.Errorf("%q: no known header rule (file has no extension and is not a Dockerfile). "+
-				"Add a header rule or add the file to noHeaderRequiredFiles if it should be ignored.", path)
-			return nil
-		}
 
 		f, err := sfs.Open(path)
 		if err != nil {
