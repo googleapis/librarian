@@ -69,6 +69,7 @@ func TestLoadRootConfig(t *testing.T) {
 		General: GeneralConfig{
 			Language:            "root-language",
 			SpecificationFormat: "root-specification-format",
+			IgnoredDirectories:  []string{"a", "b"},
 		},
 		Source: map[string]string{
 			"s1": "v1",
@@ -101,6 +102,7 @@ func TestMergeLocalForGeneral(t *testing.T) {
 		General: GeneralConfig{
 			Language:            "root-language",
 			SpecificationFormat: "root-specification-format",
+			IgnoredDirectories:  []string{"a", "b"},
 		},
 	}
 
@@ -123,6 +125,7 @@ func TestMergeLocalForGeneral(t *testing.T) {
 			SpecificationFormat: "local-specification-format",
 			SpecificationSource: "local-specification-source",
 			ServiceConfig:       "local-service-config",
+			IgnoredDirectories:  []string{"a", "b"},
 		},
 		Codec:  map[string]string{},
 		Source: map[string]string{},

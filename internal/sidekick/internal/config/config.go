@@ -66,10 +66,11 @@ type Config struct {
 // GeneralConfig contains configuration parameters that affect Parsers and Codecs, including the
 // selection of parser and codec.
 type GeneralConfig struct {
-	Language            string `toml:"language,omitempty"`
-	SpecificationFormat string `toml:"specification-format,omitempty"`
-	SpecificationSource string `toml:"specification-source,omitempty"`
-	ServiceConfig       string `toml:"service-config,omitempty"`
+	Language            string   `toml:"language,omitempty"`
+	SpecificationFormat string   `toml:"specification-format,omitempty"`
+	SpecificationSource string   `toml:"specification-source,omitempty"`
+	ServiceConfig       string   `toml:"service-config,omitempty"`
+	IgnoredDirectories  []string `toml:"ignored-directories,omitempty"`
 }
 
 // LoadConfig loads the top-level configuration file and validates its contents.
@@ -130,6 +131,7 @@ func mergeConfigs(rootConfig, local *Config) (*Config, error) {
 		General: GeneralConfig{
 			Language:            rootConfig.General.Language,
 			SpecificationFormat: rootConfig.General.SpecificationFormat,
+			IgnoredDirectories:  rootConfig.General.IgnoredDirectories,
 		},
 		Source:           map[string]string{},
 		Codec:            map[string]string{},

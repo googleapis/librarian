@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -68,7 +69,7 @@ func refreshAll(rootConfig *config.Config, cmdLine *CommandLine) error {
 	if err != nil {
 		return err
 	}
-	directories, err := findAllDirectories()
+	directories, err := findAllDirectories(override)
 	if err != nil {
 		return err
 	}
@@ -104,28 +105,18 @@ func refreshAll(rootConfig *config.Config, cmdLine *CommandLine) error {
 	return errors.Join(failures...)
 }
 
-func findAllDirectories() ([]string, error) {
+func findAllDirectories(config *config.Config) ([]string, error) {
 	var result []string
 	err := fs.WalkDir(os.DirFS("."), ".", func(path string, d fs.DirEntry, _ error) error {
 		if d.IsDir() {
 			return nil
 		}
-		dir := filepath.Dir(path)
-
-		// TODO(https://github.com/googleapis/librarian/issues/1563): do not
-		// harcode
-		if dir == "dart" {
-			return nil
-		}
-		ignored := []string{
-			"dart/",           // Testing
-			"target/package/", // The output from `cargo package`
-		}
-		for _, candidate := range ignored {
-			if strings.Contains(dir, candidate) {
+		for _, ignore := range config.General.IgnoredDirectories {
+			if isInPath(ignore, path) {
 				return nil
 			}
 		}
+		dir := filepath.Dir(path)
 		if d.Name() == ".sidekick.toml" && dir != "." {
 			result = append(result, dir)
 		}
@@ -135,4 +126,9 @@ func findAllDirectories() ([]string, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func isInPath(dir, path string) bool {
+	components := strings.Split(path, string(filepath.Separator))
+	return slices.Contains(components, dir)
 }
