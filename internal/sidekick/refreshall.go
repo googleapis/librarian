@@ -111,9 +111,12 @@ func findAllDirectories() ([]string, error) {
 			return nil
 		}
 		dir := filepath.Dir(path)
+
+		// TODO(https://github.com/googleapis/librarian/issues/1563): do not
+		// harcode
 		ignored := []string{
 			"target/package/", // The output from `cargo package`
-			"generator/",      // Testing
+			"dart/",           // Testing
 		}
 		for _, candidate := range ignored {
 			if strings.Contains(dir, candidate) {
