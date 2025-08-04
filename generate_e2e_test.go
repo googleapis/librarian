@@ -33,7 +33,7 @@ import (
 func TestRunGenerate(t *testing.T) {
 	const (
 		repo                = "repo"
-		initialRepoStateDir = "testdata/e2e/generate/repo_backup"
+		initialRepoStateDir = "testdata/e2e/generate/repo_init"
 		localAPISource      = "testdata/e2e/generate/api_root"
 	)
 	t.Parallel()
@@ -107,7 +107,7 @@ func TestRunGenerate(t *testing.T) {
 func TestRunConfigure(t *testing.T) {
 	const (
 		localRepoDir        = "testdata/e2e/configure/repo"
-		initialRepoStateDir = "testdata/e2e/configure/repo_backup"
+		initialRepoStateDir = "testdata/e2e/configure/repo_init"
 		repo                = "repo"
 	)
 	for _, test := range []struct {
