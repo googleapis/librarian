@@ -125,8 +125,8 @@ func TestRunConfigure(t *testing.T) {
 			updatedState: "testdata/e2e/configure/updated-state.yaml",
 		},
 		{
-			name:         "failed due to missing configure request file",
-			api:          "google/cloud/non-existent-path/v3",
+			name:         "failed due to simulated error in configure command",
+			api:          "google/cloud/another-library/v3",
 			library:      "simulate-configure-error-id",
 			apiSource:    "testdata/e2e/configure/api_root",
 			updatedState: "testdata/e2e/configure/updated-state.yaml",
@@ -134,7 +134,7 @@ func TestRunConfigure(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("rand-%d", rand.Intn(1000)))
 			repo := filepath.Join(workRoot, repo)
 			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
@@ -159,6 +159,7 @@ func TestRunConfigure(t *testing.T) {
 				if err == nil {
 					t.Fatal("Configure command should fail")
 				}
+
 				return
 			}
 			if err != nil {
