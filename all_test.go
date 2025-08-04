@@ -132,7 +132,6 @@ func TestGovulncheck(t *testing.T) {
 func TestGodocLint(t *testing.T) {
 	rungo(t, "run", "github.com/godoc-lint/godoc-lint/cmd/godoclint@latest",
 		"-exclude", "cmd/librarian/main.go",
-		"-exclude", "internal/statepb",
 		// TODO(https://github.com/googleapis/librarian/issues/1510): fix test
 		"-exclude", "internal/sidekick",
 		"./...")
