@@ -29,10 +29,10 @@ const (
 	// projectRoot is the root of the google-cloud-rust. The golden files for
 	// these tests depend on code in ../../auth and ../../src/gax.
 	projectRoot = "../.."
-	testdataDir = "testdata"
 )
 
 var (
+	testdataDir, _             = filepath.Abs("testdata")
 	googleapisRoot             = fmt.Sprintf("%s/googleapis", testdataDir)
 	outputDir                  = fmt.Sprintf("%s/test-only", testdataDir)
 	secretManagerServiceConfig = "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"
