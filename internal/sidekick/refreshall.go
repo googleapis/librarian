@@ -115,8 +115,8 @@ func findAllDirectories() ([]string, error) {
 		// TODO(https://github.com/googleapis/librarian/issues/1563): do not
 		// harcode
 		ignored := []string{
+			"dart",            // Testing
 			"target/package/", // The output from `cargo package`
-			"dart/",           // Testing
 		}
 		for _, candidate := range ignored {
 			if strings.Contains(dir, candidate) {
