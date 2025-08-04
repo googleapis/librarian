@@ -22,14 +22,15 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
-	"github.com/googleapis/google-cloud-rust/generator/internal/language"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/language"
 )
 
 //go:embed all:templates
 var templates embed.FS
 
+// Generate generates Rust code from the model using prost.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	if cfg.General.SpecificationFormat != "protobuf" {
 		return fmt.Errorf("the `rust+prost` generator only supports `protobuf` as a specification source, outdir=%s", outdir)

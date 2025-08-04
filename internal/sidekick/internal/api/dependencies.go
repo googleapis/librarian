@@ -18,7 +18,7 @@ import (
 	"fmt"
 )
 
-// Returns the IDs of model elements required by the given set of `ids`
+// FindDependencies returns the IDs of model elements required by the given set of `ids`
 //
 // We can think of the `model` as a directed graph, with nodes for each of the
 // model elements. Finding required elements is a graph traversal problem.

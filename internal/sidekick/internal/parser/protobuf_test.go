@@ -15,12 +15,13 @@
 package parser
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/sample"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/types/known/apipb"
@@ -28,6 +29,7 @@ import (
 )
 
 func TestProtobuf_Info(t *testing.T) {
+	requireProtoc(t)
 	sc := sample.ServiceConfig()
 	got := makeAPIForProtobuf(sc, newTestCodeGeneratorRequest(t, "scalar.proto"))
 	if got.Name != "secretmanager" {
@@ -42,6 +44,7 @@ func TestProtobuf_Info(t *testing.T) {
 }
 
 func TestProtobuf_PartialInfo(t *testing.T) {
+	requireProtoc(t)
 	var serviceConfig = &serviceconfig.Service{
 		Name:  "secretmanager.googleapis.com",
 		Title: "Secret Manager API",
@@ -60,6 +63,7 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 }
 
 func TestProtobuf_Scalar(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar.proto"))
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
@@ -181,6 +185,7 @@ func TestProtobuf_Scalar(t *testing.T) {
 }
 
 func TestProtobuf_ScalarArray(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar_array.proto"))
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
@@ -229,6 +234,7 @@ func TestProtobuf_ScalarArray(t *testing.T) {
 }
 
 func TestProtobuf_ScalarOptional(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar_optional.proto"))
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
@@ -277,6 +283,7 @@ func TestProtobuf_ScalarOptional(t *testing.T) {
 }
 
 func TestProtobuf_SkipExternalMessages(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
 	// Both `ImportedMessage` and `LocalMessage` should be in the index:
 	_, ok := test.State.MessageByID[".away.ImportedMessage"]
@@ -322,6 +329,7 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 }
 
 func TestProtobuf_SkipExternaEnums(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
 	// Both `ImportedEnum` and `LocalEnum` should be in the index:
 	_, ok := test.State.EnumByID[".away.ImportedEnum"]
@@ -361,6 +369,7 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 }
 
 func TestProtobuf_Comments(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "comments.proto"))
 	message, ok := test.State.MessageByID[".test.Request"]
 	if !ok {
@@ -462,6 +471,7 @@ func TestProtobuf_Comments(t *testing.T) {
 }
 
 func TestProtobuf_UniqueEnumValues(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "enum_values.proto"))
 	withAlias, ok := test.State.EnumByID[".test.WithAlias"]
 	if !ok {
@@ -514,6 +524,7 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 }
 
 func TestProtobuf_OneOfs(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "oneofs.proto"))
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
@@ -585,6 +596,7 @@ func TestProtobuf_OneOfs(t *testing.T) {
 }
 
 func TestProtobuf_ObjectFields(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "object_fields.proto"))
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
@@ -618,6 +630,7 @@ func TestProtobuf_ObjectFields(t *testing.T) {
 }
 
 func TestProtobuf_WellKnownTypeFields(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "wkt_fields.proto"))
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
@@ -681,6 +694,7 @@ func TestProtobuf_WellKnownTypeFields(t *testing.T) {
 }
 
 func TestProtobuf_JsonName(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "json_name.proto"))
 	message, ok := test.State.MessageByID[".test.Request"]
 	if !ok {
@@ -715,6 +729,7 @@ func TestProtobuf_JsonName(t *testing.T) {
 }
 
 func TestProtobuf_MapFields(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "map_fields.proto"))
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
@@ -809,6 +824,7 @@ func TestProtobuf_MapFields(t *testing.T) {
 }
 
 func TestProtobuf_Service(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "test_service.proto"))
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
@@ -938,6 +954,7 @@ func TestProtobuf_Service(t *testing.T) {
 }
 
 func TestProtobuf_QueryParameters(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "query_parameters.proto"))
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
@@ -1001,6 +1018,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 }
 
 func TestProtobuf_Enum(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "enum.proto"))
 	e, ok := test.State.EnumByID[".test.Code"]
 	if !ok {
@@ -1050,6 +1068,7 @@ func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
 }
 
 func TestProtobuf_Pagination(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "pagination.proto"))
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
@@ -1276,6 +1295,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 }
 
 func TestProtobuf_OperationInfo(t *testing.T) {
+	requireProtoc(t)
 	var serviceConfig = &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
@@ -1399,6 +1419,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 }
 
 func TestProtobuf_AutoPopulated(t *testing.T) {
+	requireProtoc(t)
 	var serviceConfig = &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
@@ -1564,6 +1585,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 }
 
 func TestProtobuf_Deprecated(t *testing.T) {
+	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "deprecated.proto"))
 	s, ok := test.State.ServiceByID[".test.ServiceA"]
 	if !ok {
@@ -1693,4 +1715,11 @@ func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGe
 		t.Fatal(err)
 	}
 	return request
+}
+
+func requireProtoc(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("protoc"); err != nil {
+		t.Skip("skipping test because protoc is not installed")
+	}
 }

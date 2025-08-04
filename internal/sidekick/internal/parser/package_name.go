@@ -14,7 +14,7 @@
 
 package parser
 
-import "github.com/googleapis/google-cloud-rust/generator/internal/api"
+import "github.com/googleapis/librarian/internal/sidekick/internal/api"
 
 // updatePackageName() sets the PackageName field if it is not set. This happens
 // often with protobuf libraries that lack a service config YAML file, typically

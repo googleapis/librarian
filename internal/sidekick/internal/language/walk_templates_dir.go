@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-// Handles a common case for Codecs: the templates filenames can encode the
+// WalkTemplatesDir handles a common case for Codecs: the templates filenames can encode the
 // output filenames.
 //
 // For some languages (e.g. Go and Rust) the name of the mustache templates can

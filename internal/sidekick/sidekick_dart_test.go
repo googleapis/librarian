@@ -20,15 +20,17 @@ import (
 	"testing"
 )
 
-func TestRustProstFromProtobuf(t *testing.T) {
+func TestDartFromProtobuf(t *testing.T) {
+	requireProtoc(t)
+
 	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(outDir)
-	svcConfig := path.Join(testdataDir, "googleapis/google/type/type.yaml")
-	specificationSource := path.Join(testdataDir, "googleapis/google/type")
-	googleapisRoot := path.Join(testdataDir, "googleapis")
+
+	svcConfig := path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml")
+	specificationSource := path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1")
 
 	cmdLine := &CommandLine{
 		Command:             []string{},
@@ -37,13 +39,18 @@ func TestRustProstFromProtobuf(t *testing.T) {
 		SpecificationSource: specificationSource,
 		Source: map[string]string{
 			"googleapis-root": googleapisRoot,
+			"name-override":   "secretmanager",
 		},
 		ServiceConfig: svcConfig,
-		Language:      "rust+prost",
+		Language:      "dart",
 		Output:        outDir,
 		Codec: map[string]string{
-			"copyright-year":      "2025",
-			"not-for-publication": "true",
+			"copyright-year":              "2025",
+			"not-for-publication":         "true",
+			"version":                     "0.1.0",
+			"skip-format":                 "true",
+			"proto:google.protobuf":       "package:google_cloud_protobuf/protobuf.dart",
+			"proto:google.cloud.location": "package:google_cloud_location/location.dart",
 		},
 	}
 	cmdGenerate, _, _ := cmdSidekick.lookup([]string{"generate"})
@@ -51,7 +58,7 @@ func TestRustProstFromProtobuf(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, expected := range []string{".sidekick.toml", "google.r#type.rs"} {
+	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md"} {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
 		if os.IsNotExist(err) {

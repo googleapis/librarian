@@ -17,14 +17,15 @@ package rust
 import (
 	"embed"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
-	"github.com/googleapis/google-cloud-rust/generator/internal/language"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/language"
 )
 
 //go:embed all:templates
 var templates embed.FS
 
+// Generate generates Rust code from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	codec, err := newCodec(cfg.General.SpecificationFormat == "protobuf", cfg.Codec)
 	if err != nil {
@@ -36,6 +37,7 @@ func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }
 
+// GenerateStorage generates Rust code for the storage service.
 func GenerateStorage(outdir string, storageModel *api.API, storageConfig *config.Config, controlModel *api.API, controlConfig *config.Config) error {
 	storageCodec, err := newCodec(storageConfig.General.SpecificationFormat == "protobuf", storageConfig.Codec)
 	if err != nil {

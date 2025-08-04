@@ -17,14 +17,15 @@ package codec_sample
 import (
 	"embed"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
-	"github.com/googleapis/google-cloud-rust/generator/internal/language"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/language"
 )
 
 //go:embed all:templates
 var templates embed.FS
 
+// Generate generates code from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	// A template provide converts a template name into the contents.
 	provider := func(name string) (string, error) {

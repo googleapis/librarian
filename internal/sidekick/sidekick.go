@@ -20,7 +20,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
 var cmdSidekick = newCommand(

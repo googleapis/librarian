@@ -41,13 +41,15 @@ import "strings"
 // link to `.test.v1.M.Child.f1`.  We may also refer to the same field as
 // `[Child.f1][]` or `[M.Child.f1][]` or even `[.test.v1.M.Child.f1]][]`.
 //
-// Meanwhile, in the context of `M` when we say `[f1][]` that refers to
+// In the context of `M` when we say `[f1][]` that refers to
 // `.test.v1.M.f1`.
 
+// Scopes returns the scopes for a service.
 func (x *Service) Scopes() []string {
 	return []string{strings.TrimPrefix(x.ID, "."), x.Package}
 }
 
+// Scopes returns the scopes for a message.
 func (x *Message) Scopes() []string {
 	localScope := strings.TrimPrefix(x.ID, ".")
 	if x.Parent == nil {
@@ -56,6 +58,7 @@ func (x *Message) Scopes() []string {
 	return append([]string{localScope}, x.Parent.Scopes()...)
 }
 
+// Scopes returns the scopes for an enum.
 func (x *Enum) Scopes() []string {
 	localScope := strings.TrimPrefix(x.ID, ".")
 	if x.Parent == nil {
@@ -64,6 +67,7 @@ func (x *Enum) Scopes() []string {
 	return append([]string{localScope}, x.Parent.Scopes()...)
 }
 
+// Scopes returns the scopes for an enum value.
 func (x *EnumValue) Scopes() []string {
 	localScope := strings.TrimPrefix(x.ID, ".")
 	if x.Parent == nil {

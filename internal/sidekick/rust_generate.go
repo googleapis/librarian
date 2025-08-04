@@ -23,7 +23,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	toml "github.com/pelletier/go-toml/v2"
 )
 
@@ -45,7 +45,7 @@ directories from the name of the service config YAML file.
 	)
 }
 
-// generate takes some state and applies it to a template to create a client
+// rustGenerate takes some state and applies it to a template to create a client
 // library.
 func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 	if cmdLine.SpecificationSource == "" {
@@ -139,10 +139,12 @@ func getPackageName(output string) (string, error) {
 	return cargo.Package.Name, nil
 }
 
+// CargoConfig is the configuration for a cargo package.
 type CargoConfig struct {
 	Package CargoPackage // `toml:"package"`
 }
 
+// CargoPackage is a cargo package.
 type CargoPackage struct {
 	Name string // `toml:"name"`
 }

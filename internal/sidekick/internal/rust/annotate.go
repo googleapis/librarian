@@ -20,9 +20,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/language"
-	"github.com/googleapis/google-cloud-rust/generator/internal/license"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/language"
+	"github.com/googleapis/librarian/internal/sidekick/internal/license"
 	"github.com/iancoleman/strcase"
 )
 
@@ -57,7 +57,7 @@ type modelAnnotations struct {
 	Incomplete bool
 }
 
-// When bootstrapping the well-known types crate the templates add some
+// IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
 // ad-hoc code.
 func (m *modelAnnotations) IsWktCrate() bool {
 	return m.PackageName == "google-cloud-wkt"
@@ -68,7 +68,7 @@ func (m *modelAnnotations) HasServices() bool {
 	return len(m.Services) > 0
 }
 
-// We handle references to `gaxi` traits from within the `gaxi` crate, by
+// IsGaxiCrate returns true if we handle references to `gaxi` traits from within the `gaxi` crate, by
 // injecting some ad-hoc code.
 func (m *modelAnnotations) IsGaxiCrate() bool {
 	return m.PackageName == "google-cloud-gax-internal"
@@ -101,6 +101,7 @@ type serviceAnnotations struct {
 	Incomplete bool
 }
 
+// HasBindingSubstitutions returns true if the method has binding substitutions.
 func (m *methodAnnotation) HasBindingSubstitutions() bool {
 	for _, b := range m.PathInfo.Bindings {
 		for _, s := range b.PathTemplate.Segments {
@@ -112,35 +113,42 @@ func (m *methodAnnotation) HasBindingSubstitutions() bool {
 	return false
 }
 
-// If true, this service includes methods that return long-running operations.
+// HasLROs returns true if this service includes methods that return long-running operations.
 func (s *serviceAnnotations) HasLROs() bool {
 	return len(s.LROTypes) > 0
 }
 
+// FeatureName returns the feature name for the service.
 func (a *serviceAnnotations) FeatureName() string {
 	return strcase.ToKebab(a.ModuleName)
 }
 
+// MultiFeatureGates returns true if there are multiple feature gates.
 func (a *messageAnnotation) MultiFeatureGates() bool {
 	return len(a.FeatureGates) > 1
 }
 
+// MultiFeatureGates returns true if there are multiple feature gates.
 func (a *enumAnnotation) MultiFeatureGates() bool {
 	return len(a.FeatureGates) > 1
 }
 
+// MultiFeatureGates returns true if there are multiple feature gates.
 func (a *oneOfAnnotation) MultiFeatureGates() bool {
 	return len(a.FeatureGates) > 1
 }
 
+// SingleFeatureGate returns true if there is a single feature gate.
 func (a *messageAnnotation) SingleFeatureGate() bool {
 	return len(a.FeatureGates) == 1
 }
 
+// SingleFeatureGate returns true if there is a single feature gate.
 func (a *enumAnnotation) SingleFeatureGate() bool {
 	return len(a.FeatureGates) == 1
 }
 
+// SingleFeatureGate returns true if there is a single feature gate.
 func (a *oneOfAnnotation) SingleFeatureGate() bool {
 	return len(a.FeatureGates) == 1
 }
@@ -216,18 +224,22 @@ type operationInfo struct {
 	PackageNamespace string
 }
 
+// OnlyMetadataIsEmpty returns true if only the metadata is empty.
 func (info *operationInfo) OnlyMetadataIsEmpty() bool {
 	return info.MetadataType == "wkt::Empty" && info.ResponseType != "wkt::Empty"
 }
 
+// OnlyResponseIsEmpty returns true if only the response is empty.
 func (info *operationInfo) OnlyResponseIsEmpty() bool {
 	return info.MetadataType != "wkt::Empty" && info.ResponseType == "wkt::Empty"
 }
 
+// BothAreEmpty returns true if both the metadata and response are empty.
 func (info *operationInfo) BothAreEmpty() bool {
 	return info.MetadataType == "wkt::Empty" && info.ResponseType == "wkt::Empty"
 }
 
+// NoneAreEmpty returns true if neither the metadata nor the response are empty.
 func (info *operationInfo) NoneAreEmpty() bool {
 	return info.MetadataType != "wkt::Empty" && info.ResponseType != "wkt::Empty"
 }
@@ -266,7 +278,7 @@ type bindingSubstitution struct {
 	Template []string
 }
 
-// Rust code that yields an array of path segments.
+// TemplateAsArray returns Rust code that yields an array of path segments.
 //
 // This array is supplied as an argument to `gaxi::path_parameter::try_match()`,
 // and `gaxi::path_parameter::PathMismatchBuilder`.
@@ -276,7 +288,7 @@ func (s *bindingSubstitution) TemplateAsArray() string {
 	return "&[" + strings.Join(annotateSegments(s.Template), ", ") + "]"
 }
 
-// The expected template, which can be used as a static string.
+// TemplateAsString returns the expected template, which can be used as a static string.
 //
 // e.g.: "projects/*"
 func (s *bindingSubstitution) TemplateAsString() string {
@@ -296,7 +308,7 @@ type pathBindingAnnotation struct {
 	Substitutions []*bindingSubstitution
 }
 
-// We serialize certain query parameters, which can fail. The code we generate
+// QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
 // uses the try operator '?'. We need to run this code in a closure which
 // returns a `Result<>`.
 func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
@@ -308,6 +320,7 @@ func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
 	return false
 }
 
+// HasVariablePath returns true if the path has a variable.
 func (b *pathBindingAnnotation) HasVariablePath() bool {
 	return len(b.Substitutions) != 0
 }
@@ -373,10 +386,12 @@ type fieldAnnotations struct {
 	IsWktNullValue bool
 }
 
+// SkipIfIsEmpty returns true if the field should be skipped if it is empty.
 func (a *fieldAnnotations) SkipIfIsEmpty() bool {
 	return !a.SkipIfIsDefault
 }
 
+// RequiresSerdeAs returns true if the field requires a serde_as annotation.
 func (a *fieldAnnotations) RequiresSerdeAs() bool {
 	return a.SerdeAs != ""
 }
@@ -569,7 +584,7 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	}
 }
 
-// Maps "google.foo.v1" to "google::foo::v1"
+// packageToModuleName maps "google.foo.v1" to "google::foo::v1"
 func packageToModuleName(p string) string {
 	components := strings.Split(p, ".")
 	for i, c := range components {
@@ -811,7 +826,7 @@ func annotatePathBinding(b *api.PathBinding, m *api.Method, state *api.APIState)
 	}
 }
 
-// Annotates the `PathInfo` and all of its `PathBinding`s.
+// annotatePathInfo annotates the `PathInfo` and all of its `PathBinding`s.
 func annotatePathInfo(p *api.PathInfo, m *api.Method, state *api.APIState) {
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
@@ -1009,7 +1024,7 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, e *api.Enum, state *api.API
 	}
 }
 
-// Returns "true" if the method is idempotent by default, and "false", if not.
+// isIdempotent returns "true" if the method is idempotent by default, and "false", if not.
 func isIdempotent(p *api.PathInfo) string {
 	if len(p.Bindings) == 0 {
 		return "false"

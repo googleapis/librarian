@@ -15,7 +15,7 @@
 package parser
 
 import (
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
 

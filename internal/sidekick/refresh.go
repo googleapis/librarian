@@ -18,15 +18,15 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/codec_sample"
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
-	"github.com/googleapis/google-cloud-rust/generator/internal/dart"
-	"github.com/googleapis/google-cloud-rust/generator/internal/gcloud"
-	"github.com/googleapis/google-cloud-rust/generator/internal/golang"
-	"github.com/googleapis/google-cloud-rust/generator/internal/parser"
-	"github.com/googleapis/google-cloud-rust/generator/internal/rust"
-	"github.com/googleapis/google-cloud-rust/generator/internal/rust_prost"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/codec_sample"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/dart"
+	"github.com/googleapis/librarian/internal/sidekick/internal/gcloud"
+	"github.com/googleapis/librarian/internal/sidekick/internal/golang"
+	"github.com/googleapis/librarian/internal/sidekick/internal/parser"
+	"github.com/googleapis/librarian/internal/sidekick/internal/rust"
+	"github.com/googleapis/librarian/internal/sidekick/internal/rust_prost"
 )
 
 func init() {
