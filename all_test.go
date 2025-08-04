@@ -15,12 +15,12 @@
 package librarian
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -34,21 +34,20 @@ import (
 var noHeaderRequiredFiles = []string{
 	".github/CODEOWNERS",
 	".gitignore",
+	"Dockerfile",
 	"LICENSE",
 	"coverage.out",
 	"go.mod",
 	"go.sum",
 	"librarian",
 	"renovate.json",
-
-	// TODO(https://github.com/googleapis/librarian/issues/1510) remove
-	"internal/sidekick/go.mod",
-	"internal/sidekick/go.sum",
 }
 
 var ignoredExts = map[string]bool{
 	".excalidraw": true,
 	".md":         true,
+	".yml":        true,
+	".yaml":       true,
 }
 
 var ignoredDirs = []string{
@@ -58,7 +57,14 @@ var ignoredDirs = []string{
 	"testdata",
 }
 
-var headerRE = regexp.MustCompile(`(?ms)^(?:#!/.*\n)?(?:\/\/|#|{{!)\s*Copyright 20\d\d Google LLC.*?\n.*?Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
+// expectedHeader defines the regex for the required copyright header.
+const expectedHeader = `// Copyright 202\d Google LLC
+//
+// Licensed under the Apache License, Version 2.0 \(the "License"\);
+// you may not use this file except in compliance with the License\.
+// You may obtain a copy of the License at`
+
+var headerRegex = regexp.MustCompile("(?s)" + expectedHeader)
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
@@ -67,15 +73,14 @@ func TestHeaders(t *testing.T) {
 			return err
 		}
 
+		// Skip ignored files and directories.
 		if d.IsDir() {
 			if slices.Contains(ignoredDirs, d.Name()) {
 				return fs.SkipDir
 			}
 			return nil
 		}
-
-		ext := filepath.Ext(path)
-		if slices.Contains(noHeaderRequiredFiles, path) || ignoredExts[ext] {
+		if slices.Contains(noHeaderRequiredFiles, path) || ignoredExts[filepath.Ext(path)] {
 			return nil
 		}
 
@@ -85,14 +90,66 @@ func TestHeaders(t *testing.T) {
 		}
 		defer f.Close()
 
-		if !headerRE.MatchReader(bufio.NewReader(f)) {
-			t.Errorf("%q: incorrect header", path)
+		ok, err := hasValidHeader(path, f)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			t.Errorf("%q: invalid header", path)
 		}
 		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func hasValidHeader(path string, r io.Reader) (bool, error) {
+	allBytes, err := io.ReadAll(r)
+	if err != nil {
+		return false, err
+	}
+
+	// If the file is a shell script and starts with a shebang, skip that line.
+	if strings.HasSuffix(path, ".sh") && bytes.HasPrefix(allBytes, []byte("#!")) {
+		// Find the index of the first newline to get the rest of the content.
+		if i := bytes.IndexByte(allBytes, '\n'); i > -1 {
+			allBytes = allBytes[i+1:]
+		}
+	}
+
+	// If the file is a mustache template, the license is expected to be
+	// wrapped as:
+	// {{!
+	// Copyright 2024 Google LLC
+	// ...
+	// }}
+	if strings.HasSuffix(path, ".mustache") {
+		if !bytes.HasPrefix(allBytes, []byte("{{!")) {
+			return false, nil
+		}
+		end := bytes.Index(allBytes, []byte("}}"))
+		if end == -1 {
+			return false, nil
+		}
+		headerContent := allBytes[len("{{!"):end]
+		headerContent = bytes.TrimPrefix(headerContent, []byte("\n"))
+		var builder strings.Builder
+		lines := strings.Split(string(headerContent), "\n")
+		for i, line := range lines {
+			builder.WriteString("//")
+			if len(line) > 0 {
+				builder.WriteString(" ")
+			}
+			builder.WriteString(line)
+			if i < len(lines)-1 {
+				builder.WriteString("\n")
+			}
+		}
+		return headerRegex.MatchString(builder.String()), nil
+	}
+
+	return headerRegex.Match(allBytes), nil
 }
 
 func TestGolangCILint(t *testing.T) {
