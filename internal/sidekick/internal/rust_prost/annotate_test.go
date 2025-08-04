@@ -19,8 +19,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
 func TestModelAnnotations(t *testing.T) {

@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/language"
-	"github.com/googleapis/google-cloud-rust/generator/internal/license"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/language"
+	"github.com/googleapis/librarian/internal/sidekick/internal/license"
 	"github.com/iancoleman/strcase"
 )
 
@@ -54,15 +54,17 @@ type modelAnnotations struct {
 	DoNotPublish        bool
 }
 
+// HasServices returns true if the model has services.
 func (m *modelAnnotations) HasServices() bool {
 	return len(m.Parent.Services) > 0
 }
 
+// HasDependencies returns true if the model has package dependencies.
 func (m *modelAnnotations) HasDependencies() bool {
 	return len(m.PackageDependencies) > 0
 }
 
-// Whether the generated package specified any dev_dependencies.
+// HasDevDependencies returns whether the generated package specified any dev_dependencies.
 func (m *modelAnnotations) HasDevDependencies() bool {
 	return len(m.DevDependencies) > 0
 }
@@ -88,15 +90,18 @@ type messageAnnotation struct {
 	ToStringLines   []string
 }
 
+// HasFields returns true if the message has fields.
 func (m *messageAnnotation) HasFields() bool {
 	return len(m.Parent.Fields) > 0
 }
 
+// HasCustomEncoding returns true if the message has custom encoding.
 func (m *messageAnnotation) HasCustomEncoding() bool {
 	_, hasCustomEncoding := usesCustomEncoding[m.Parent.ID]
 	return hasCustomEncoding
 }
 
+// HasToStringLines returns true if the message has toString lines.
 func (m *messageAnnotation) HasToStringLines() bool {
 	return len(m.ToStringLines) > 0
 }
@@ -115,10 +120,12 @@ type methodAnnotation struct {
 	IsLROGetOperation bool
 }
 
+// HasBody returns true if the method has a body.
 func (m *methodAnnotation) HasBody() bool {
 	return m.Parent.PathInfo.BodyFieldPath != ""
 }
 
+// HasQueryLines returns true if the method has query lines.
 func (m *methodAnnotation) HasQueryLines() bool {
 	return len(m.QueryLines) > 0
 }
@@ -328,7 +335,7 @@ func calculateRequiredFields(model *api.API) map[string]*api.Field {
 	return required
 }
 
-// Calculate package dependencies based on `package:` imports.
+// calculateDependencies calculates package dependencies based on `package:` imports.
 func calculateDependencies(imports map[string]string) []packageDependency {
 	var deps []packageDependency
 
@@ -697,7 +704,7 @@ func createToJsonLine(field *api.Field, state *api.APIState, required bool) stri
 	return name
 }
 
-// Build a string or strings representing query parameters for the given field.
+// buildQueryLines builds a string or strings representing query parameters for the given field.
 //
 // Docs on the format are at
 // https://github.com/googleapis/googleapis/blob/master/google/api/http.proto.

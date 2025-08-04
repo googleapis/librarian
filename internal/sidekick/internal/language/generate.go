@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/cbroglie/mustache"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
 type mustacheProvider struct {
@@ -30,6 +30,7 @@ type mustacheProvider struct {
 	dirname string
 }
 
+// Get gets the template contents.
 func (p *mustacheProvider) Get(name string) (string, error) {
 	if strings.HasPrefix(name, "/") {
 		return p.impl(strings.TrimPrefix(name, "/") + ".mustache")

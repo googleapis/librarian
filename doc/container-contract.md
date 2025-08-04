@@ -127,9 +127,9 @@ For more details, see the Go implementation in [state.go](../internal/librarian/
 | `version`               | string | The last released version of the library.                                                                                                                             | No       | Must be a valid semantic version, "v" prefix is optional. |
 | `last_generated_commit` | string | The commit hash from the API definition repository at which the library was last generated.                                                                         | No       | Must be a 40-character hexadecimal string. |
 | `apis`                  | list   | A list of [APIs](#apis-object) that are part of this library.                                                                                                             | Yes      | Must not be empty.     |
-| `source_paths`          | list   | A list of directories in the language repository where Librarian contributes code.                                                                                    | Yes      | Must not be empty, and each path must be a valid directory path. |
+| `source_roots`          | list   | A list of directories in the language repository where Librarian contributes code.                                                                                    | Yes      | Must not be empty, and each path must be a valid directory path. |
 | `preserve_regex`        | list   | A list of regular expressions for files and directories to preserve during the copy and remove process.                                                                    | No       | Each entry must be a valid regular expression. |
-| `remove_regex`          | list   | A list of regular expressions for files and directories to remove before copying generated code. If not set, this defaults to the `source_paths`. A more specific `preserve_regex` takes precedence. | No       | Each entry must be a valid regular expression. |
+| `remove_regex`          | list   | A list of regular expressions for files and directories to remove before copying generated code. If not set, this defaults to the `source_roots`. A more specific `preserve_regex` takes precedence. | No       | Each entry must be a valid regular expression. |
 
 #### `apis` Object
 
@@ -153,7 +153,7 @@ Each object in the `apis` list represents a single API and has the following fie
       "service_config": "storage.yaml"
     }
   ],
-  "source_paths": [
+  "source_roots": [
     "src/google/cloud/storage",
     "test/google/cloud/storage"
   ],

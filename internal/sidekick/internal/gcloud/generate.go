@@ -15,10 +15,11 @@
 package gcloud
 
 import (
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
+// Generate generates gcloud commands from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	return nil
 }

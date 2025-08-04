@@ -42,7 +42,7 @@ func TestParseLibrarianState(t *testing.T) {
 			content: `image: gcr.io/test/image:v1.2.3
 libraries:
   - id: a/b
-    source_paths:
+    source_roots:
       - src/a
       - src/b
     apis:
@@ -55,7 +55,7 @@ libraries:
 				Libraries: []*config.LibraryState{
 					{
 						ID:          "a/b",
-						SourcePaths: []string{"src/a", "src/b"},
+						SourceRoots: []string{"src/a", "src/b"},
 						APIs: []*config.API{
 							{
 								Path:          "a/b/v1",
@@ -71,7 +71,7 @@ libraries:
 			content: `image: gcr.io/test/image:v1.2.3
 libraries:
   - id: a/b
-    source_paths:
+    source_roots:
       - src/a
       - src/b
     apis:
@@ -274,7 +274,7 @@ func TestSaveLibrarianState(t *testing.T) {
 		Libraries: []*config.LibraryState{
 			{
 				ID: "a/b",
-				SourcePaths: []string{
+				SourceRoots: []string{
 					"src/a",
 					"src/b",
 				},
@@ -331,7 +331,7 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 						ServiceConfig: "example_service_config.yaml",
 					},
 				},
-				SourcePaths:   []string{"src/example/path"},
+				SourceRoots:   []string{"src/example/path"},
 				PreserveRegex: []string{"example-preserve-regex"},
 				RemoveRegex:   []string{"example-remove-regex"},
 			},

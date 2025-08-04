@@ -31,7 +31,7 @@ func TestLibrarianState_Validate(t *testing.T) {
 				Libraries: []*LibraryState{
 					{
 						ID:          "a/b",
-						SourcePaths: []string{"src/a", "src/b"},
+						SourceRoots: []string{"src/a", "src/b"},
 						APIs: []*API{
 							{
 								Path: "a/b/v1",
@@ -47,7 +47,7 @@ func TestLibrarianState_Validate(t *testing.T) {
 				Libraries: []*LibraryState{
 					{
 						ID:          "a/b",
-						SourcePaths: []string{"src/a", "src/b"},
+						SourceRoots: []string{"src/a", "src/b"},
 						APIs: []*API{
 							{
 								Path: "a/b/v1",
@@ -84,7 +84,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "valid library",
 			library: &LibraryState{
 				ID:          "a/b",
-				SourcePaths: []string{"src/a", "src/b"},
+				SourceRoots: []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
 						Path: "a/b/v1",
@@ -95,7 +95,7 @@ func TestLibrary_Validate(t *testing.T) {
 		{
 			name: "missing id",
 			library: &LibraryState{
-				SourcePaths: []string{"src/a", "src/b"},
+				SourceRoots: []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
 						Path: "a/b/v1",
@@ -108,7 +108,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "id is dot",
 			library: &LibraryState{
 				ID:          ".",
-				SourcePaths: []string{"src/a", "src/b"},
+				SourceRoots: []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
 						Path: "a/b/v1",
@@ -121,7 +121,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "id is double dot",
 			library: &LibraryState{
 				ID:          "..",
-				SourcePaths: []string{"src/a", "src/b"},
+				SourceRoots: []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
 						Path: "a/b/v1",
@@ -146,7 +146,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "missing apis",
 			library: &LibraryState{
 				ID:          "a/b",
-				SourcePaths: []string{"src/a", "src/b"},
+				SourceRoots: []string{"src/a", "src/b"},
 			},
 			wantErr: true,
 		},
@@ -155,7 +155,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				Version:     "1.2.3",
-				SourcePaths: []string{"src/a", "src/b"},
+				SourceRoots: []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
 						Path: "a/b/v1",
@@ -167,7 +167,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "invalid id characters",
 			library: &LibraryState{
 				ID:          "a/b!",
-				SourcePaths: []string{"src/a", "src/b"},
+				SourceRoots: []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
 						Path: "a/b/v1",
@@ -181,7 +181,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:                  "a/b",
 				LastGeneratedCommit: "not-a-hex-string",
-				SourcePaths:         []string{"src/a", "src/b"},
+				SourceRoots:         []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
 						Path: "a/b/v1",
@@ -195,7 +195,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:                  "a/b",
 				LastGeneratedCommit: "deadbeef",
-				SourcePaths:         []string{"src/a", "src/b"},
+				SourceRoots:         []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
 						Path: "a/b/v1",
@@ -208,7 +208,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "valid preserve_regex",
 			library: &LibraryState{
 				ID:            "a/b",
-				SourcePaths:   []string{"src/a"},
+				SourceRoots:   []string{"src/a"},
 				APIs:          []*API{{Path: "a/b/v1"}},
 				PreserveRegex: []string{".*\\.txt"},
 			},
@@ -217,7 +217,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "invalid preserve_regex",
 			library: &LibraryState{
 				ID:            "a/b",
-				SourcePaths:   []string{"src/a"},
+				SourceRoots:   []string{"src/a"},
 				APIs:          []*API{{Path: "a/b/v1"}},
 				PreserveRegex: []string{"["},
 			},
@@ -227,7 +227,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "valid remove_regex",
 			library: &LibraryState{
 				ID:          "a/b",
-				SourcePaths: []string{"src/a"},
+				SourceRoots: []string{"src/a"},
 				APIs:        []*API{{Path: "a/b/v1"}},
 				RemoveRegex: []string{".*\\.log"},
 			},
@@ -236,7 +236,7 @@ func TestLibrary_Validate(t *testing.T) {
 			name: "invalid remove_regex",
 			library: &LibraryState{
 				ID:          "a/b",
-				SourcePaths: []string{"src/a"},
+				SourceRoots: []string{"src/a"},
 				APIs:        []*API{{Path: "a/b/v1"}},
 				RemoveRegex: []string{"("},
 			},

@@ -14,6 +14,7 @@
 
 package api
 
+// HasDeprecatedEntities returns true if the API has any deprecated entities.
 func (model *API) HasDeprecatedEntities() bool {
 	for _, e := range model.Enums {
 		if e.hasDeprecatedEntities() {

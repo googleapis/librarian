@@ -16,12 +16,14 @@ package license
 
 import "fmt"
 
+// LicenseHeader returns the license header with the given year.
 func LicenseHeader(year string) []string {
 	full := []string{fmt.Sprintf(" Copyright %s Google LLC", year)}
 	full = append(full, LicenseHeaderBulk()...)
 	return full
 }
 
+// LicenseHeaderBulk returns the bulk of the license header.
 func LicenseHeaderBulk() []string {
 	return []string{
 		"",

@@ -19,7 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
 func checkMessage(t *testing.T, got *api.Message, want *api.Message) {

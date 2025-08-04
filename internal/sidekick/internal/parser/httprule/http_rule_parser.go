@@ -18,12 +18,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
-// The following documentation was copied and adapted from the [C++ HTTP Annotation parser]
+// ParseSegments parses a PathTemplate, defined at the [google.api.http annotation].
 //
-// This parser interprets the PathTemplate syntax, defined at the [google.api.http annotation].
+// The following documentation was copied and adapted from the [C++ HTTP Annotation parser]
 //
 // A `google.api.http` annotation describes how to convert gRPC RPCs to HTTP
 // URLs. The description uses a "path template", showing what portions of the
@@ -85,7 +85,10 @@ func ParseSegments(pathTemplate string) (*api.PathTemplate, error) {
 	return parsePathTemplate(pathTemplate)
 }
 
+// Literal is a literal in a path template.
 type Literal string
+
+// Identifier is an identifier in a path template.
 type Identifier string
 
 const (

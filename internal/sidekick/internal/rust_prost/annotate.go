@@ -17,11 +17,11 @@ package rust_prost
 import (
 	"strings"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
-	"github.com/googleapis/google-cloud-rust/generator/internal/license"
-	"github.com/googleapis/google-cloud-rust/generator/internal/protobuf"
-	"github.com/googleapis/google-cloud-rust/generator/internal/rust"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/license"
+	"github.com/googleapis/librarian/internal/sidekick/internal/protobuf"
+	"github.com/googleapis/librarian/internal/sidekick/internal/rust"
 )
 
 type modelAnnotations struct {

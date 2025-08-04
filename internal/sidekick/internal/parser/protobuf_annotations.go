@@ -20,13 +20,14 @@ import (
 	"strings"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/parser/httprule"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/parser/httprule"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+// normalizeTypeID normalizes the types in LRO annotations.
 // The types in LRO annotations sometimes (always?) are missing the leading `.`.
 // We need to add them so they are useful when searching in
 // `state.MessageByID[]`.

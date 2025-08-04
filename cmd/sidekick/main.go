@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/sidekick"
+	"github.com/googleapis/librarian/internal/sidekick"
 )
 
 func main() {

@@ -14,6 +14,7 @@
 
 package api
 
+// LabelRecursiveFields labels fields that recursively reference other messages.
 func LabelRecursiveFields(model *API) {
 	for _, message := range model.State.MessageByID {
 		for _, field := range message.Fields {

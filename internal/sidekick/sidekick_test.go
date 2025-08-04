@@ -29,10 +29,10 @@ const (
 	// projectRoot is the root of the google-cloud-rust. The golden files for
 	// these tests depend on code in ../../auth and ../../src/gax.
 	projectRoot = "../.."
-	testdataDir = "testdata"
 )
 
 var (
+	testdataDir, _             = filepath.Abs("testdata")
 	googleapisRoot             = fmt.Sprintf("%s/googleapis", testdataDir)
 	outputDir                  = fmt.Sprintf("%s/test-only", testdataDir)
 	secretManagerServiceConfig = "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"
@@ -80,6 +80,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 }
 
 func TestRustFromProtobuf(t *testing.T) {
+	requireProtoc(t)
 	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
 	if err != nil {
 		t.Fatal(err)
@@ -171,6 +172,7 @@ func TestRustFromProtobuf(t *testing.T) {
 }
 
 func TestRustModuleFromProtobuf(t *testing.T) {
+	requireProtoc(t)
 	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
 	if err != nil {
 		t.Fatal(err)
@@ -238,6 +240,7 @@ func TestRustModuleFromProtobuf(t *testing.T) {
 }
 
 func TestRustBootstrapWkt(t *testing.T) {
+	requireProtoc(t)
 	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
 	if err != nil {
 		t.Fatal(err)
@@ -304,6 +307,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 }
 
 func TestRustOverrideTitleAndDescription(t *testing.T) {
+	requireProtoc(t)
 	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
 	if err != nil {
 		t.Fatal(err)
@@ -355,6 +359,7 @@ func TestRustOverrideTitleAndDescription(t *testing.T) {
 }
 
 func TestGoFromProtobuf(t *testing.T) {
+	requireProtoc(t)
 	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
 	if err != nil {
 		t.Fatal(err)
@@ -414,7 +419,6 @@ func TestGoFromProtobuf(t *testing.T) {
 		}
 
 		dir := path.Join(outDir, config.Name)
-		execCommand(t, dir, "goimports", "-w", ".")
 		execCommand(t, dir, "go", "mod", "tidy")
 		for _, expected := range []string{".sidekick.toml", "go.mod", "client.go"} {
 			filename := path.Join(outDir, config.Name, expected)
@@ -439,5 +443,12 @@ func execCommand(t *testing.T, dir, c string, arg ...string) {
 			t.Fatalf("%v: %v\n%s", cmd, err, ee.Stderr)
 		}
 		t.Fatalf("%v: %v\n%s", cmd, err, output)
+	}
+}
+
+func requireProtoc(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("protoc"); err != nil {
+		t.Skip("skipping test because protoc is not installed")
 	}
 }

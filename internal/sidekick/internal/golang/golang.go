@@ -21,9 +21,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
-	"github.com/googleapis/google-cloud-rust/generator/internal/language"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/language"
 	"github.com/iancoleman/strcase"
 )
 
@@ -35,6 +35,7 @@ type goImport struct {
 	name string
 }
 
+// Generate generates Go code from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	_, err := annotateModel(model, cfg.Codec)
 	if err != nil {
@@ -239,7 +240,7 @@ func generateMethod(m *api.Method) bool {
 	return m.PathInfo.Bindings[0].PathTemplate != nil
 }
 
-// The list of Golang keywords and reserved words can be found at:
+// escapeKeyword escapes Golang keywords and reserved words. The list of Golang keywords and reserved words can be found at:
 //
 // https://go.dev/ref/spec#Keywords
 func escapeKeyword(symbol string) string {

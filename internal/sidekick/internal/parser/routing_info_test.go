@@ -19,10 +19,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
 func TestExamples(t *testing.T) {
+	requireProtoc(t)
 	tests := []struct {
 		methodID string
 		want     []*api.RoutingInfo

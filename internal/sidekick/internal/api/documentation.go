@@ -19,9 +19,10 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
+// PatchDocumentation overrides the documentation of the API model with the provided configuration.
 func PatchDocumentation(model *API, config *config.Config) error {
 	for _, override := range config.CommentOverrides {
 		id := override.ID

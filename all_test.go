@@ -15,12 +15,12 @@
 package librarian
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -31,21 +31,40 @@ import (
 	"testing"
 )
 
-var doubleSlashHeader = regexp.MustCompile(`^// Copyright 20\d\d Google LLC
+var noHeaderRequiredFiles = []string{
+	".github/CODEOWNERS",
+	".gitignore",
+	"Dockerfile",
+	"LICENSE",
+	"coverage.out",
+	"go.mod",
+	"go.sum",
+	"librarian",
+	"renovate.json",
+}
+
+var ignoredExts = map[string]bool{
+	".excalidraw": true,
+	".md":         true,
+	".yml":        true,
+	".yaml":       true,
+}
+
+var ignoredDirs = []string{
+	".git",
+	".idea",
+	".vscode",
+	"testdata",
+}
+
+// expectedHeader defines the regex for the required copyright header.
+const expectedHeader = `// Copyright 202\d Google LLC
 //
-// Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
+// Licensed under the Apache License, Version 2.0 \(the "License"\);
+// you may not use this file except in compliance with the License\.
+// You may obtain a copy of the License at`
 
-var shellHeader = regexp.MustCompile(`^#!/.*
-
-# Copyright 20\d\d Google LLC
-#
-# Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
-
-var hashHeader = regexp.MustCompile(`^# Copyright 20\d\d Google LLC
-#
-# Licensed under the Apache License, Version 2\.0 \(the "License"\);`)
-
-var noHeaderRequiredFiles = []string{".github/CODEOWNERS", "go.sum", "go.mod", ".gitignore", "LICENSE", "renovate.json", "coverage.out", "librarian"}
+var headerRegex = regexp.MustCompile("(?s)" + expectedHeader)
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
@@ -53,54 +72,84 @@ func TestHeaders(t *testing.T) {
 		if err != nil {
 			return err
 		}
+
+		// Skip ignored files and directories.
 		if d.IsDir() {
-			if d.Name() == "testdata" || d.Name() == ".git" || d.Name() == ".vscode" || d.Name() == ".idea" {
+			if slices.Contains(ignoredDirs, d.Name()) {
 				return fs.SkipDir
 			}
 			return nil
 		}
-
-		var requiredHeader *regexp.Regexp
-		switch {
-		case strings.HasSuffix(path, ".go") || strings.HasSuffix(path, ".proto"):
-			requiredHeader = doubleSlashHeader
-		case strings.HasSuffix(path, ".sh"):
-			requiredHeader = shellHeader
-		case strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || strings.HasPrefix(path, "Dockerfile"):
-			requiredHeader = hashHeader
-		case strings.HasSuffix(path, ".md"):
-			return nil
-		case strings.HasSuffix(path, ".excalidraw"):
-			return nil
-		case strings.HasPrefix(path, "internal/sidekick"):
-			// TODO(https://github.com/googleapis/librarian/issues/1510): fix
-			// tests for sidekick and remove this case statement.
-			return nil
-		case slices.Contains(noHeaderRequiredFiles, path):
-			return nil
-		default:
-			// Given the mixture of allow-lists and requirements, if there's a file which
-			// isn't covered, we report an error.
-			t.Errorf("%q: unknown header requirements", path)
+		if slices.Contains(noHeaderRequiredFiles, path) || ignoredExts[filepath.Ext(path)] {
 			return nil
 		}
+
 		f, err := sfs.Open(path)
 		if err != nil {
 			return err
 		}
-		defer func() {
-			if cerr := f.Close(); cerr != nil {
-				t.Fatal(err)
-			}
-		}()
-		if !requiredHeader.MatchReader(bufio.NewReader(f)) {
-			t.Errorf("%q: incorrect header", path)
+		defer f.Close()
+
+		ok, err := hasValidHeader(path, f)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			t.Errorf("%q: invalid header", path)
 		}
 		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func hasValidHeader(path string, r io.Reader) (bool, error) {
+	allBytes, err := io.ReadAll(r)
+	if err != nil {
+		return false, err
+	}
+
+	// If the file is a shell script and starts with a shebang, skip that line.
+	if strings.HasSuffix(path, ".sh") && bytes.HasPrefix(allBytes, []byte("#!")) {
+		// Find the index of the first newline to get the rest of the content.
+		if i := bytes.IndexByte(allBytes, '\n'); i > -1 {
+			allBytes = allBytes[i+1:]
+		}
+	}
+
+	// If the file is a mustache template, the license is expected to be
+	// wrapped as:
+	// {{!
+	// Copyright 2024 Google LLC
+	// ...
+	// }}
+	if strings.HasSuffix(path, ".mustache") {
+		if !bytes.HasPrefix(allBytes, []byte("{{!")) {
+			return false, nil
+		}
+		end := bytes.Index(allBytes, []byte("}}"))
+		if end == -1 {
+			return false, nil
+		}
+		headerContent := allBytes[len("{{!"):end]
+		headerContent = bytes.TrimPrefix(headerContent, []byte("\n"))
+		var builder strings.Builder
+		lines := strings.Split(string(headerContent), "\n")
+		for i, line := range lines {
+			builder.WriteString("//")
+			if len(line) > 0 {
+				builder.WriteString(" ")
+			}
+			builder.WriteString(line)
+			if i < len(lines)-1 {
+				builder.WriteString("\n")
+			}
+		}
+		return headerRegex.MatchString(builder.String()), nil
+	}
+
+	return headerRegex.Match(allBytes), nil
 }
 
 func TestGolangCILint(t *testing.T) {
@@ -130,9 +179,9 @@ func TestGovulncheck(t *testing.T) {
 }
 
 func TestGodocLint(t *testing.T) {
-	rungo(t, "run", "github.com/godoc-lint/godoc-lint/cmd/godoclint@latest",
-		"-exclude", "cmd/librarian/main.go",
-		"-exclude", "internal/statepb",
+	rungo(t, "run", "github.com/godoc-lint/godoc-lint/cmd/godoclint@v0.3.0",
+		// TODO(https://github.com/googleapis/librarian/issues/1510): fix test
+		"-exclude", "internal/sidekick",
 		"./...")
 }
 
@@ -156,11 +205,6 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
 			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
-			return nil
-		}
-		// TODO(https://github.com/googleapis/librarian/issues/1510): fix docs
-		// for sidekick and remove
-		if strings.HasPrefix(path, "internal/sidekick") {
 			return nil
 		}
 

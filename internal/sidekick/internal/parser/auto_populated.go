@@ -15,11 +15,11 @@
 package parser
 
 import (
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
-// Adds auto-populated fields to methods. Fields that do not conform to
+// updateAutoPopulatedFields adds auto-populated fields to methods. Fields that do not conform to
 // [AIP-4235](https://google.aip.dev/client-libraries/4235) are skipped.
 //
 // The first phases of the parser have no knowledge of the service config

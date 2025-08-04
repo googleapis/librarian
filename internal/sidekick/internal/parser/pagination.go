@@ -14,7 +14,7 @@
 
 package parser
 
-import "github.com/googleapis/google-cloud-rust/generator/internal/api"
+import "github.com/googleapis/librarian/internal/sidekick/internal/api"
 
 const (
 	pageSize      = "pageSize"

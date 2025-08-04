@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/parser/httprule"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/parser/httprule"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -32,6 +32,7 @@ import (
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
+// ParseOpenAPI parses an OpenAPI specification and returns an API model.
 func ParseOpenAPI(source, serviceConfigFile string, options map[string]string) (*api.API, error) {
 	contents, err := os.ReadFile(source)
 	if err != nil {
@@ -240,7 +241,7 @@ func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], packa
 	return methods, nil
 }
 
-// Creates (if needed) the request message for `operation`. Returns the message
+// makeRequestMessage creates (if needed) the request message for `operation`. Returns the message
 // and the body field path (if any) for the request.
 func makeRequestMessage(a *api.API, operation *v3.Operation, packageName, template string) (*api.Message, string, error) {
 	messageName := fmt.Sprintf("%sRequest", operation.OperationId)

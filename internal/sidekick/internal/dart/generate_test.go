@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
 func TestGeneratedFiles(t *testing.T) {

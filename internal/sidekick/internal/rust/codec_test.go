@@ -22,9 +22,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
-	"github.com/googleapis/google-cloud-rust/generator/internal/language"
-	"github.com/googleapis/google-cloud-rust/generator/internal/sample"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/language"
+	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 )
 
 func createRustCodec() *codec {

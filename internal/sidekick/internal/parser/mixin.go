@@ -21,7 +21,7 @@ import (
 
 	"cloud.google.com/go/iam/apiv1/iampb"
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"github.com/googleapis/google-cloud-rust/generator/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	locationpb "google.golang.org/genproto/googleapis/cloud/location"
 	statuspb "google.golang.org/genproto/googleapis/rpc/status"
@@ -117,7 +117,7 @@ func loadMixinMethods(serviceConfig *serviceconfig.Service) mixinMethods {
 	return enabledMixinMethods
 }
 
-// Apply `serviceConfig` overrides to `targetMethod`.
+// applyServiceConfigMethodOverrides applies `serviceConfig` overrides to `targetMethod`.
 //
 // The service config file may include overrides to mixin method definitions.
 // These overrides reference the original fully-qualified name of the method,

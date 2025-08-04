@@ -16,6 +16,7 @@ package api
 
 import "strings"
 
+// NewTestAPI creates a new test API.
 func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	packageName := ""
 	state := &APIState{
@@ -68,7 +69,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	}
 }
 
-// Creates a populated API state from lists of messages, enums, and services.
+// parentName returns the parent's name from a fully qualified identifier.
 func parentName(id string) string {
 	if lastIndex := strings.LastIndex(id, "."); lastIndex != -1 {
 		return id[:lastIndex]
