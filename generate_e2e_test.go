@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -134,7 +135,7 @@ func TestRunConfigure(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
 			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("rand-%d", rand.Intn(1000)))
 			repo := filepath.Join(workRoot, repo)
 			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
@@ -160,6 +161,9 @@ func TestRunConfigure(t *testing.T) {
 					t.Fatal("Configure command should fail")
 				}
 
+				if g, w := err.Error(), "exit status 1"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", g, w)
+				}
 				return
 			}
 			if err != nil {
