@@ -41,7 +41,7 @@ import "strings"
 // link to `.test.v1.M.Child.f1`.  We may also refer to the same field as
 // `[Child.f1][]` or `[M.Child.f1][]` or even `[.test.v1.M.Child.f1]][]`.
 //
-// // In the context of `M` when we say `[f1][]` that refers to
+// In the context of `M` when we say `[f1][]` that refers to
 // `.test.v1.M.f1`.
 
 // Scopes returns the scopes for a service.
