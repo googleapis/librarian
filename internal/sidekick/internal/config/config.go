@@ -90,11 +90,7 @@ func LoadConfig(language string, source, codec map[string]string) (*Config, erro
 		Source: maps.Clone(source),
 		Codec:  maps.Clone(codec),
 	}
-	config, err := mergeConfigs(rootConfig, argsConfig)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
+	return mergeConfigs(rootConfig, argsConfig), nil
 }
 
 // LoadRootConfig loads the root configuration file.
@@ -124,10 +120,10 @@ func MergeConfigAndFile(rootConfig *Config, filename string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading configuration %s: %w", filename, err)
 	}
-	return mergeConfigs(rootConfig, &local)
+	return mergeConfigs(rootConfig, &local), nil
 }
 
-func mergeConfigs(rootConfig, local *Config) (*Config, error) {
+func mergeConfigs(rootConfig, local *Config) *Config {
 	merged := Config{
 		General: GeneralConfig{
 			Language:            rootConfig.General.Language,
@@ -162,7 +158,7 @@ func mergeConfigs(rootConfig, local *Config) (*Config, error) {
 		merged.Source[k] = v
 	}
 	// Ignore errors reading the top-level file.
-	return &merged, nil
+	return &merged
 }
 
 // UpdateRootConfig updates the root configuration file with the latest SHA from GitHub.
