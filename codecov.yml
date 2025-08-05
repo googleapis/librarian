@@ -18,6 +18,5 @@ coverage:
         target: 80% # The target coverage percentage for the project
         threshold: 0% # Allow 0% drop from the target; any drop below target will fail
         if_ci_failed: error # Set the CI status to 'error' if coverage conditions are not met
-# TODO(https://github.com/googleapis/librarian/issues/1543): restore to 80%
 ignore:
-  - internal/sidekick
+  - internal/sidekick/internal/sample
