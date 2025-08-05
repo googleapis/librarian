@@ -88,7 +88,7 @@ func TestDeprecatedMessage(t *testing.T) {
 		},
 	}
 	if !m3.hasDeprecatedEntities() {
-		t.Errorf("expected no deprecated entities in message %v", m3)
+		t.Errorf("expected deprecated entities in message %v", m3)
 	}
 
 	m4 := &Message{
@@ -106,7 +106,7 @@ func TestDeprecatedMessage(t *testing.T) {
 		},
 	}
 	if !m4.hasDeprecatedEntities() {
-		t.Errorf("expected no deprecated entities in message %v", m4)
+		t.Errorf("expected deprecated entities in message %v", m4)
 	}
 
 	m5 := &Message{
@@ -202,6 +202,6 @@ func TestDeprecatedService(t *testing.T) {
 		},
 	}
 	if s3.hasDeprecatedEntities() {
-		t.Errorf("expected deprecated entities in enum %v", s3)
+		t.Errorf("expected no deprecated entities in enum %v", s3)
 	}
 }
