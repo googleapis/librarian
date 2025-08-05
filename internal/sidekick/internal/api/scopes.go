@@ -69,9 +69,8 @@ func (x *Enum) Scopes() []string {
 
 // Scopes returns the scopes for an enum value.
 func (x *EnumValue) Scopes() []string {
-	localScope := strings.TrimPrefix(x.ID, ".")
 	if x.Parent == nil {
-		return []string{localScope}
+		return []string{}
 	}
-	return append([]string{localScope}, x.Parent.Scopes()...)
+	return x.Parent.Scopes()
 }
