@@ -29,13 +29,12 @@ var dartTemplates embed.FS
 // Generate generates Dart code from the model.
 func Generate(model *api.API, outdir string, config *config.Config) error {
 	annotate := newAnnotateModel(model)
-	_, err := annotate.annotateModel(config.Codec)
-	if err != nil {
+	if err := annotate.annotateModel(config.Codec); err != nil {
 		return err
 	}
 
 	provider := templatesProvider()
-	err = language.GenerateFromModel(outdir, model, provider, generatedFiles(model))
+	err := language.GenerateFromModel(outdir, model, provider, generatedFiles(model))
 	if err == nil {
 		// Check if we're configured to skip formatting.
 		skipFormat := config.Codec["skip-format"]
@@ -43,7 +42,6 @@ func Generate(model *api.API, outdir string, config *config.Config) error {
 			err = formatDirectory(outdir)
 		}
 	}
-
 	return err
 }
 

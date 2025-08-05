@@ -21,3 +21,26 @@ func TestRefreshAll(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestIsInPath(t *testing.T) {
+	type TestCase struct {
+		Dir  string
+		Path string
+		Want bool
+	}
+	testCases := []TestCase{
+		{"dart", "dart", true},
+		{"dart", "dartboard", false},
+		{"dart", "dart/v2", true},
+		{"dart", "dart/v2/d2/d4", true},
+		{"dart", "a/b/c/d/dart/v2/d2/d4", true},
+		{"generator", "dart/v2", false},
+		{"generator", "generator/", true},
+	}
+	for _, test := range testCases {
+		got := isInPath(test.Dir, test.Path)
+		if got != test.Want {
+			t.Errorf("got (%v) != want (%v) for %q in %q", got, test.Want, test.Dir, test.Path)
+		}
+	}
+}

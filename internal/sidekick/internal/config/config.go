@@ -36,6 +36,7 @@ const (
 	defaultGitHub    = "https://github.com"
 	repo             = "googleapis/googleapis"
 	branch           = "master"
+	configName       = ".sidekick.toml"
 )
 
 // DocumentationOverride describes overrides for the documentation of a single element.
@@ -66,10 +67,11 @@ type Config struct {
 // GeneralConfig contains configuration parameters that affect Parsers and Codecs, including the
 // selection of parser and codec.
 type GeneralConfig struct {
-	Language            string `toml:"language,omitempty"`
-	SpecificationFormat string `toml:"specification-format,omitempty"`
-	SpecificationSource string `toml:"specification-source,omitempty"`
-	ServiceConfig       string `toml:"service-config,omitempty"`
+	Language            string   `toml:"language,omitempty"`
+	SpecificationFormat string   `toml:"specification-format,omitempty"`
+	SpecificationSource string   `toml:"specification-source,omitempty"`
+	ServiceConfig       string   `toml:"service-config,omitempty"`
+	IgnoredDirectories  []string `toml:"ignored-directories,omitempty"`
 }
 
 // LoadConfig loads the top-level configuration file and validates its contents.
@@ -77,7 +79,7 @@ type GeneralConfig struct {
 // Where applicable, overrides the top level (or default) configuration values with the ones passed in the command line.
 // Returns the merged configuration, or an error if the top level configuration is invalid.
 func LoadConfig(language string, source, codec map[string]string) (*Config, error) {
-	rootConfig, err := LoadRootConfig(".sidekick.toml")
+	rootConfig, err := LoadRootConfig(configName)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +132,7 @@ func mergeConfigs(rootConfig, local *Config) (*Config, error) {
 		General: GeneralConfig{
 			Language:            rootConfig.General.Language,
 			SpecificationFormat: rootConfig.General.SpecificationFormat,
+			IgnoredDirectories:  rootConfig.General.IgnoredDirectories,
 		},
 		Source:           map[string]string{},
 		Codec:            map[string]string{},

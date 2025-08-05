@@ -47,7 +47,7 @@ func TestGoEnumAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	_, err := annotateModel(model, map[string]string{})
+	err := annotateModel(model, map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}

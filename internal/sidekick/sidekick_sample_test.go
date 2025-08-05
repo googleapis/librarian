@@ -22,11 +22,7 @@ import (
 
 func TestSampleFromProtobuf(t *testing.T) {
 	requireProtoc(t)
-	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(outDir)
+	outDir := t.TempDir()
 	svcConfig := path.Join(testdataDir, "googleapis/google/type/type.yaml")
 	specificationSource := path.Join(testdataDir, "googleapis/google/type")
 	googleapisRoot := path.Join(testdataDir, "googleapis")

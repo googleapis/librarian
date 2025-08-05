@@ -60,7 +60,7 @@ func updateMethodPagination(a *api.API) {
 				break
 			}
 		}
-		if !(hasPageSize && hasPageToken != nil) {
+		if !hasPageSize || hasPageToken == nil {
 			continue
 		}
 
@@ -84,7 +84,7 @@ func updateMethodPagination(a *api.API) {
 				break
 			}
 		}
-		if !(hasNextPageToken && hasRepeatedItem) {
+		if !hasNextPageToken || !hasRepeatedItem {
 			continue
 		}
 		m.Pagination = hasPageToken
