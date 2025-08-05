@@ -49,6 +49,7 @@ func TestCreateModelOpenAPI(t *testing.T) {
 }
 
 func TestCreateModelProtobuf(t *testing.T) {
+	requireProtoc(t)
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
@@ -71,6 +72,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 }
 
 func TestCreateModelOverrides(t *testing.T) {
+	requireProtoc(t)
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
