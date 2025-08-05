@@ -583,7 +583,7 @@ func TestFindDependenciesService(t *testing.T) {
 	}
 }
 
-// Simplify the test expectations
+// Simplify the test expectations.
 func flatten(m map[string]bool) []string {
 	var arr []string
 	for k, v := range m {

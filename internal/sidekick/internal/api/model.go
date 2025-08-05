@@ -24,7 +24,7 @@ type Typez int
 
 const (
 	// These are the different field types as defined in
-	// descriptorpb.FieldDescriptorProto_Type
+	// descriptorpb.FieldDescriptorProto_Type.
 
 	UNDEFINED_TYPE Typez = iota // 0
 	DOUBLE_TYPE                 // 1
@@ -287,7 +287,7 @@ type Method struct {
 //	[(a, va3), (b, vb2), (c, vc1)],
 //
 // ]
-// ```
+// ```.
 func (m *Method) RoutingCombos() []*RoutingInfoCombo {
 	combos := []*RoutingInfoCombo{
 		{},
@@ -365,7 +365,7 @@ type PathBinding struct {
 	Codec any
 }
 
-// OperationInfo contains normalized long running operation info
+// OperationInfo contains normalized long running operation info.
 type OperationInfo struct {
 	// The metadata type. If there is no metadata, this is set to
 	// `.google.protobuf.Empty`.
@@ -451,11 +451,11 @@ type RoutingPathSpec struct {
 
 const (
 	// SingleSegmentWildcard is a special routing path segment which indicates
-	// "match anything that does not include a `/`"
+	// "match anything that does not include a `/`".
 	SingleSegmentWildcard = "*"
 
 	// MultiSegmentWildcard is a special routing path segment which indicates
-	// "match anything including `/`"
+	// "match anything including `/`".
 	MultiSegmentWildcard = "**"
 )
 

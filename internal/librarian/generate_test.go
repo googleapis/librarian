@@ -331,6 +331,17 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 		},
 		{
+			name: "invalid api source",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: t.TempDir(), // Not a git repo
+				Repo:      newTestGitRepo(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+			wantErr: true,
+		},
+		{
 			name: "missing image",
 			cfg: &config.Config{
 
@@ -353,21 +364,10 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 		},
 		{
-			name: "load repo state fails",
+			name: "clone googleapis fails",
 			cfg: &config.Config{
 				API:       "some/api",
-				APISource: t.TempDir(),
-				Repo:      newTestGitRepoWithState(t, false).GetDir(),
-				WorkRoot:  t.TempDir(),
-				Image:     "gcr.io/test/test-image",
-			},
-			wantErr: true,
-		},
-		{
-			name: "new repository fails",
-			cfg: &config.Config{
-				API:       "some/api",
-				APISource: "non-existent-dir",
+				APISource: "", // This will trigger the clone of googleapis
 				Repo:      newTestGitRepo(t).GetDir(),
 				WorkRoot:  t.TempDir(),
 				Image:     "gcr.io/test/test-image",
@@ -384,6 +384,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
 					t.Fatalf("os.MkdirAll() = %v", err)
 				}
+
 				state := &config.LibrarianState{
 					Image: "some/image:v1.2.3",
 					Libraries: []*config.LibraryState{
@@ -398,6 +399,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				if err != nil {
 					t.Fatalf("yaml.Marshal() = %v", err)
 				}
+
 				if err := os.WriteFile(stateFile, b, 0644); err != nil {
 					t.Fatalf("os.WriteFile(%q, ...) = %v", stateFile, err)
 				}
@@ -407,6 +409,35 @@ func TestNewGenerateRunner(t *testing.T) {
 				}
 				runGit(t, test.cfg.Repo, "add", ".")
 				runGit(t, test.cfg.Repo, "commit", "-m", "add config")
+			}
+
+			if test.cfg.APISource == "" && test.cfg.WorkRoot != "" {
+				if test.name == "clone googleapis fails" {
+					// The function will try to clone googleapis into the workroot.
+					// To make it fail, create a non-empty, non-git directory.
+					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
+					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(filepath.Join(googleapisDir, "some-file"), []byte("foo"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				} else {
+					// The function will try to clone googleapis into the workroot.
+					// To prevent a real clone, we can pre-create a fake googleapis repo.
+					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
+					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					runGit(t, googleapisDir, "init")
+					runGit(t, googleapisDir, "config", "user.email", "test@example.com")
+					runGit(t, googleapisDir, "config", "user.name", "Test User")
+					if err := os.WriteFile(filepath.Join(googleapisDir, "README.md"), []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile: %v", err)
+					}
+					runGit(t, googleapisDir, "add", "README.md")
+					runGit(t, googleapisDir, "commit", "-m", "initial commit")
+				}
 			}
 
 			_, err := newGenerateRunner(test.cfg)
@@ -466,20 +497,22 @@ func runGit(t *testing.T, dir string, args ...string) {
 func TestGenerateRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name               string
-		api                string
-		repo               gitrepo.Repository
-		state              *config.LibrarianState
-		container          *mockContainerClient
-		ghClient           GitHubClient
-		build              bool
-		wantErr            bool
-		wantGenerateCalls  int
-		wantBuildCalls     int
-		wantConfigureCalls int
+		name                  string
+		api                   string
+		library               string
+		repo                  gitrepo.Repository
+		state                 *config.LibrarianState
+		container             *mockContainerClient
+		ghClient              GitHubClient
+		build                 bool
+		wantErr               bool
+		wantGenerateCalls     int
+		wantGenerateLibraryID string
+		wantBuildCalls        int
+		wantConfigureCalls    int
 	}{
 		{
-			name: "generation of API",
+			name: "re-generation with API",
 			api:  "some/api",
 			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
@@ -491,12 +524,56 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:          &mockContainerClient{},
-			ghClient:           &mockGitHubClient{},
-			build:              true,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-			wantConfigureCalls: 0,
+			container:             &mockContainerClient{},
+			ghClient:              &mockGitHubClient{},
+			build:                 true,
+			wantGenerateCalls:     1,
+			wantGenerateLibraryID: "some-library",
+			wantBuildCalls:        1,
+			wantConfigureCalls:    0,
+		},
+		{
+			name:    "re-generation with library",
+			library: "some-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:             &mockContainerClient{},
+			ghClient:              &mockGitHubClient{},
+			build:                 true,
+			wantGenerateCalls:     1,
+			wantGenerateLibraryID: "some-library",
+			wantBuildCalls:        1,
+			wantConfigureCalls:    0,
+		},
+		{
+			name:    "re-generation of library with both library and api",
+			library: "some-library",
+			api:     "some/api",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:             &mockContainerClient{},
+			ghClient:              &mockGitHubClient{},
+			build:                 true,
+			wantGenerateCalls:     1,
+			wantGenerateLibraryID: "some-library",
+			wantBuildCalls:        1,
+			wantConfigureCalls:    0,
 		},
 		{
 			name: "symlink in output",
@@ -583,6 +660,7 @@ func TestGenerateRun(t *testing.T) {
 			r := &generateRunner{
 				cfg: &config.Config{
 					API:       test.api,
+					Library:   test.library,
 					APISource: t.TempDir(),
 					Build:     test.build,
 				},
@@ -617,6 +695,11 @@ func TestGenerateRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
 				t.Errorf("run() generateCalls mismatch (-want +got):%s", diff)
+			}
+			if test.wantGenerateLibraryID != "" {
+				if diff := cmp.Diff(test.wantGenerateLibraryID, test.container.requestLibraryID); diff != "" {
+					t.Errorf("run() generateLibraryID mismatch (-want +got):%s", diff)
+				}
 			}
 			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
 				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)

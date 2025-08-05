@@ -30,11 +30,7 @@ import (
 )
 
 func TestExistingDirectory(t *testing.T) {
-	tmp, err := os.MkdirTemp(t.TempDir(), "sidekick-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 	rootConfig := config.Config{
 		Source: map[string]string{
 			"googleapis-root": tmp,
@@ -62,11 +58,7 @@ func TestValidateConfig(t *testing.T) {
 }
 
 func TestWithDownload(t *testing.T) {
-	testDir, err := os.MkdirTemp(t.TempDir(), "sidekick-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(testDir)
+	testDir := t.TempDir()
 
 	simulatedSha := "2d08f07eab9bbe8300cd20b871d0811bbb693fab"
 	simulatedSubdir := fmt.Sprintf("googleapis-%s", simulatedSha)
@@ -109,11 +101,7 @@ func TestWithDownload(t *testing.T) {
 }
 
 func TestTargetExists(t *testing.T) {
-	testDir, err := os.MkdirTemp(t.TempDir(), "sidekick-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(testDir)
+	testDir := t.TempDir()
 
 	sha256 := "eb853d49313f20a096607fea87dfc10bd6a1b917ad17ad5db8a205b457a940e1"
 	rootConfig := &config.Config{
@@ -144,16 +132,9 @@ func TestTargetExists(t *testing.T) {
 }
 
 func TestDownloadGoogleapisRootTgzExists(t *testing.T) {
-	testDir, err := os.MkdirTemp(t.TempDir(), "sidekick-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(testDir)
+	testDir := t.TempDir()
 
-	tarball, err := makeTestContents(t)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tarball := makeTestContents(t)
 
 	// In this test we will create the download file with the right contents.
 	target := path.Join(testDir, "existing-file")
@@ -167,16 +148,9 @@ func TestDownloadGoogleapisRootTgzExists(t *testing.T) {
 }
 
 func TestDownloadGoogleapisRootNeedsDownload(t *testing.T) {
-	testDir, err := os.MkdirTemp(t.TempDir(), "sidekick-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(testDir)
+	testDir := t.TempDir()
 
-	tarball, err := makeTestContents(t)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tarball := makeTestContents(t)
 
 	// In this test we expect that a download is needed.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +180,7 @@ type contents struct {
 	Contents []byte
 }
 
-func makeTestContents(t *testing.T) (*contents, error) {
+func makeTestContents(t *testing.T) *contents {
 	t.Helper()
 
 	hasher := sha256.New()
@@ -220,7 +194,7 @@ func makeTestContents(t *testing.T) (*contents, error) {
 	return &contents{
 		Sha256:   fmt.Sprintf("%x", hasher.Sum(nil)),
 		Contents: data,
-	}, nil
+	}
 }
 
 func makeTestTarball(t *testing.T, tempDir, subdir string) (*contents, error) {

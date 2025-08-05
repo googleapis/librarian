@@ -26,7 +26,7 @@ func TestAnnotateModel(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "test"
 	annotate := newAnnotateModel(model)
-	_, err := annotate.annotateModel(map[string]string{})
+	err := annotate.annotateModel(map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestAnnotateModel(t *testing.T) {
 func TestAnnotateModel_Options(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	annotate := newAnnotateModel(model)
-	_, err := annotate.annotateModel(map[string]string{
+	err := annotate.annotateModel(map[string]string{
 		"version":   "1.0.0",
 		"part-file": "src/test.p.dart",
 	})
@@ -80,7 +80,7 @@ func TestAnnotateMethod(t *testing.T) {
 	)
 	api.Validate(model)
 	annotate := newAnnotateModel(model)
-	_, err := annotate.annotateModel(map[string]string{})
+	err := annotate.annotateModel(map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}

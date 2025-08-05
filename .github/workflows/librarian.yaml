@@ -34,8 +34,6 @@ jobs:
           protoc --version
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
-      - name: Check Go formatting
-        run: go fmt ./...
       - name: Check YAML formatting
         run: |
           go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2

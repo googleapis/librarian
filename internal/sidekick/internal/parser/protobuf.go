@@ -16,6 +16,7 @@ package parser
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -58,7 +59,8 @@ func newCodeGeneratorRequest(source string, options map[string]string) (_ *plugi
 		return nil, err
 	}
 	defer func() {
-		rerr := os.Remove(tempFile.Name())
+		rerr := tempFile.Close()
+		rerr = errors.Join(rerr, os.Remove(tempFile.Name()))
 		if err == nil {
 			err = rerr
 		}
@@ -171,6 +173,8 @@ const (
 	messageDescriptorExtension      = 6
 	messageDescriptorOptions        = 7
 	messageDescriptorOneOf          = 8
+	messageDescriptorReservedRange  = 9
+	messageDescriptorReservedName   = 10
 
 	// From https://pkg.go.dev/google.golang.org/protobuf/types/descriptorpb#EnumDescriptorProto
 
@@ -613,6 +617,8 @@ func addMessageDocumentation(state *api.APIState, m *descriptorpb.DescriptorProt
 	case p[0] == messageDescriptorExtensionRange:
 	case p[0] == messageDescriptorOptions:
 	case p[0] == messageDescriptorExtension:
+	case p[0] == messageDescriptorReservedRange:
+	case p[0] == messageDescriptorReservedName:
 		// These comments are ignored, as they refer to Protobuf elements
 		// without corresponding public APIs in the generated code.
 	default:

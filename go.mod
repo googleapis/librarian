@@ -6,7 +6,6 @@ require (
 	cloud.google.com/go/iam v1.5.2
 	cloud.google.com/go/longrunning v0.6.7
 	github.com/cbroglie/mustache v1.4.0
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.16.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v69 v69.2.0
@@ -52,5 +51,4 @@ require (
 	golang.org/x/text v0.27.0 // indirect
 	google.golang.org/grpc v1.74.2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

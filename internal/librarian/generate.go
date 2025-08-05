@@ -110,15 +110,21 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	repo, err := cloneOrOpenLanguageRepo(workRoot, cfg.Repo, cfg.CI)
+
+	apiSource := cfg.APISource
+	if apiSource == "" {
+		apiSource = "https://github.com/googleapis/googleapis"
+	}
+	sourceRepo, err := cloneOrOpenRepo(workRoot, apiSource, cfg.CI)
 	if err != nil {
 		return nil, err
 	}
-	sourceRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: cfg.APISource})
+
+	languageRepo, err := cloneOrOpenRepo(workRoot, cfg.Repo, cfg.CI)
 	if err != nil {
 		return nil, err
 	}
-	state, err := loadRepoState(repo, cfg.APISource)
+	state, err := loadRepoState(languageRepo, sourceRepo.GetDir())
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +149,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	return &generateRunner{
 		cfg:             cfg,
 		workRoot:        workRoot,
-		repo:            repo,
+		repo:            languageRepo,
 		sourceRepo:      sourceRepo,
 		state:           state,
 		image:           image,

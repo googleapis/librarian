@@ -16,6 +16,7 @@ package rust
 
 import (
 	"embed"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
@@ -68,7 +69,7 @@ type storageAnnotations struct {
 
 func templatesProvider() language.TemplateProvider {
 	return func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
+		contents, err := templates.ReadFile(filepath.ToSlash(name))
 		if err != nil {
 			return "", err
 		}

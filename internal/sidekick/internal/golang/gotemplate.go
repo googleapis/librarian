@@ -103,7 +103,7 @@ type enumValueAnnotation struct {
 // Fields and methods defined in this struct directly correspond to Mustache
 // tags. For example, the Mustache tag {{#Services}} uses the
 // [Template.Services] field.
-func annotateModel(model *api.API, options map[string]string) (*modelAnnotations, error) {
+func annotateModel(model *api.API, options map[string]string) error {
 	var (
 		sourceSpecificationPackageName string
 		packageNameOverride            string
@@ -123,11 +123,11 @@ func annotateModel(model *api.API, options map[string]string) (*modelAnnotations
 		case strings.HasPrefix(key, "import-mapping"):
 			keys := strings.Split(key, ":")
 			if len(keys) != 2 {
-				return nil, fmt.Errorf("key should be in the format import-mapping:proto.path, got=%q", key)
+				return fmt.Errorf("key should be in the format import-mapping:proto.path, got=%q", key)
 			}
 			defs := strings.Split(definition, ";")
 			if len(defs) != 2 {
-				return nil, fmt.Errorf("%s should be in the format path;name, got=%q", definition, keys[1])
+				return fmt.Errorf("%s should be in the format path;name, got=%q", definition, keys[1])
 			}
 			importMap[keys[1]] = &goImport{
 				path: defs[0],
@@ -165,7 +165,7 @@ func annotateModel(model *api.API, options map[string]string) (*modelAnnotations
 	}
 
 	model.Codec = ann
-	return ann, nil
+	return nil
 }
 
 func annotateService(s *api.Service, state *api.APIState) {

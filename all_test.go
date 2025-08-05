@@ -156,17 +156,17 @@ func TestGolangCILint(t *testing.T) {
 	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest", "run")
 }
 
-func TestGoFmt(t *testing.T) {
-	cmd := exec.Command("gofmt", "-l", ".")
+func TestGoImports(t *testing.T) {
+	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@latest", "-d", ".")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("gofmt failed to run: %v\nOutput:\n%s", err, out.String())
+		t.Fatalf("goimports failed to run: %v\nOutput:\n%s", err, out.String())
 	}
 	if out.Len() > 0 {
-		t.Errorf("gofmt found unformatted files:\n%s", out.String())
+		t.Errorf("goimports found unformatted files:\n%s", out.String())
 	}
 }
 
