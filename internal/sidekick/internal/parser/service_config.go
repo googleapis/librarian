@@ -15,14 +15,15 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 
-	"github.com/ghodss/yaml"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/encoding/protojson"
+	"gopkg.in/yaml.v3"
 )
 
 func readServiceConfig(serviceConfigPath string) (*serviceconfig.Service, error) {
@@ -31,7 +32,11 @@ func readServiceConfig(serviceConfigPath string) (*serviceconfig.Service, error)
 		return nil, fmt.Errorf("error reading service config [%s]: %w", serviceConfigPath, err)
 	}
 
-	j, err := yaml.YAMLToJSON(y)
+	var yamlData interface{}
+	if err := yaml.Unmarshal(y, &yamlData); err != nil {
+		return nil, fmt.Errorf("error parsing YAML [%s]: %w", serviceConfigPath, err)
+	}
+	j, err := json.Marshal(yamlData)
 	if err != nil {
 		return nil, fmt.Errorf("error converting YAML to JSON [%s]: %w", serviceConfigPath, err)
 	}
