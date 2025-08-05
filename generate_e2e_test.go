@@ -182,7 +182,10 @@ func TestRunConfigure(t *testing.T) {
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
-
+			var gotState *config.LibrarianState
+			if err := yaml.Unmarshal(gotBytes, &gotState); err != nil {
+				t.Fatalf("Failed to unmarshal configure response file: %v", err)
+			}
 			var wantState *config.LibrarianState
 			if err := yaml.Unmarshal(wantBytes, &wantState); err != nil {
 				t.Fatalf("Failed to unmarshal expected state: %v", err)
