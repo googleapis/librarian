@@ -164,3 +164,70 @@ func TestRoutingCombosFull(t *testing.T) {
 		t.Errorf("Incorrect routing combos (-want, +got):\n%s", diff)
 	}
 }
+
+func TestRoutingInfoVarianFieldName(t *testing.T) {
+	variant := &RoutingInfoVariant{
+		FieldPath: []string{"request", "b", "c"},
+	}
+	got := variant.FieldName()
+	want := "request.b.c"
+	if got != want {
+		t.Errorf("mismatch in FieldName got=%q, want=%q", got, want)
+	}
+}
+
+func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
+	variant := &RoutingInfoVariant{
+		Prefix: RoutingPathSpec{
+			Segments: []string{"a", "b", "c"},
+		},
+		Matching: RoutingPathSpec{
+			Segments: []string{"d", "*"},
+		},
+		Suffix: RoutingPathSpec{
+			Segments: []string{"e", "**"},
+		},
+	}
+	got := variant.TemplateAsString()
+	want := "a/b/c/d/*/e/**"
+	if got != want {
+		t.Errorf("mismatch in TemplateAsString got=%q, want=%q", got, want)
+	}
+}
+
+func TestPathTemplateBuilder(t *testing.T) {
+	got := NewPathTemplate().
+		WithLiteral("v1").
+		WithVariable(NewPathVariable("parent", "child").
+			WithLiteral("projects").
+			WithMatch().
+			WithLiteral("locations").
+			WithMatchRecursive()).
+		WithVariableNamed("v2", "field").
+		WithVerb("verb")
+	name := "v1"
+	verb := "verb"
+	want := &PathTemplate{
+		Segments: []PathSegment{
+			{
+				Literal: &name,
+			},
+			{
+				Variable: &PathVariable{
+					FieldPath: []string{"parent", "child"},
+					Segments:  []string{"projects", "*", "locations", "**"},
+				},
+			},
+			{
+				Variable: &PathVariable{
+					FieldPath: []string{"v2", "field"},
+					Segments:  []string{"*"},
+				},
+			},
+		},
+		Verb: &verb,
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("bad builder result (-want, +got):\n%s", diff)
+	}
+}
