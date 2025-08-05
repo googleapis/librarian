@@ -24,6 +24,8 @@ Each object in the `libraries` list represents a single library and has the foll
 | `source_roots`          | list   | A list of directories in the language repository where Librarian contributes code.                                                                                    | Yes      | Must not be empty, and each path must be a valid directory path. |
 | `preserve_regex`        | list   | A list of regular expressions for files and directories to preserve during the copy and remove process.                                                                    | No       | Each entry must be a valid regular expression. |
 | `remove_regex`          | list   | A list of regular expressions for files and directories to remove before copying generated code. If not set, this defaults to the `source_roots`. A more specific `preserve_regex` takes precedence. | No       | Each entry must be a valid regular expression. |
+| `release_exclude_paths` | list   | A list of directories to exclude from the release.                                                                                                                    | No       | Each entry must be a valid directory path.     |
+| `tag_format`            | string | A format string for the release tag. The supported placeholders are `{id}` and `{version}`.                                                                           | No       | Must only contain `{id}` and `{version}` as placeholders. |
 
 ## `apis` Object
 
