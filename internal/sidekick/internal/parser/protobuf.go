@@ -16,6 +16,7 @@ package parser
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -58,7 +59,8 @@ func newCodeGeneratorRequest(source string, options map[string]string) (_ *plugi
 		return nil, err
 	}
 	defer func() {
-		rerr := os.Remove(tempFile.Name())
+		rerr := tempFile.Close()
+		rerr = errors.Join(rerr, os.Remove(tempFile.Name()))
 		if err == nil {
 			err = rerr
 		}
