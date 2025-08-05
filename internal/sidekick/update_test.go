@@ -32,14 +32,7 @@ func TestUpdateRootConfig(t *testing.T) {
 	// temporary directory to avoid changing the actual configuration, and any
 	// conflicts with other tests running at the same time.
 	tempDir := t.TempDir()
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(cwd)
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tempDir)
 
 	const (
 		getLatestShaPath      = "/repos/googleapis/googleapis/commits/master"

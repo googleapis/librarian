@@ -199,7 +199,7 @@ func newAnnotateModel(model *api.API) *annotateModel {
 // Fields and methods defined in this struct directly correspond to Mustache
 // tags. For example, the Mustache tag {{#Services}} uses the
 // [Template.Services] field.
-func (annotate *annotateModel) annotateModel(options map[string]string) (*modelAnnotations, error) {
+func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	var (
 		packageNameOverride string
 		generationYear      string
@@ -224,7 +224,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) (*modelA
 		case key == "not-for-publication":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
-				return nil, fmt.Errorf(
+				return fmt.Errorf(
 					"cannot convert `not-for-publication` value %q to boolean: %w",
 					definition,
 					err,
@@ -235,7 +235,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) (*modelA
 			// "proto:google.protobuf" = "package:google_cloud_protobuf/protobuf.dart"
 			keys := strings.Split(key, ":")
 			if len(keys) != 2 {
-				return nil, fmt.Errorf("key should be in the format proto:<proto-package>, got=%q", key)
+				return fmt.Errorf("key should be in the format proto:<proto-package>, got=%q", key)
 			}
 			protoPackage := keys[1]
 			annotate.packageMapping[protoPackage] = definition
@@ -243,7 +243,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) (*modelA
 			// 'prefix:google.protobuf' = 'protobuf'
 			keys := strings.Split(key, ":")
 			if len(keys) != 2 {
-				return nil, fmt.Errorf("key should be in the format prefix:<proto-package>, got=%q", key)
+				return fmt.Errorf("key should be in the format prefix:<proto-package>, got=%q", key)
 			}
 			protoPackage := keys[1]
 			annotate.packagePrefixes[protoPackage] = definition
@@ -307,7 +307,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) (*modelA
 	}
 
 	model.Codec = ann
-	return ann, nil
+	return nil
 }
 
 func calculateRequiredFields(model *api.API) map[string]*api.Field {
@@ -590,13 +590,13 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 
 	switch {
 	case isList:
-		switch {
-		case field.Typez == api.BYTES_TYPE:
+		switch field.Typez {
+		case api.BYTES_TYPE:
 			return fmt.Sprintf("decodeListBytes(%s)%s", data, bang)
-		case field.Typez == api.ENUM_TYPE:
+		case api.ENUM_TYPE:
 			typeName := enumName(state.EnumByID[field.TypezID])
 			return fmt.Sprintf("decodeListEnum(%s, %s.fromJson)%s", data, typeName, bang)
-		case field.Typez == api.MESSAGE_TYPE:
+		case api.MESSAGE_TYPE:
 			_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
 			typeName := annotate.resolveTypeName(state.MessageByID[field.TypezID], true)
 			if hasCustomEncoding {
@@ -610,13 +610,13 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	case isMap:
 		valueField := message.Fields[1]
 
-		switch {
-		case valueField.Typez == api.BYTES_TYPE:
+		switch valueField.Typez {
+		case api.BYTES_TYPE:
 			return fmt.Sprintf("decodeMapBytes(%s)%s", data, bang)
-		case valueField.Typez == api.ENUM_TYPE:
+		case api.ENUM_TYPE:
 			typeName := enumName(state.EnumByID[valueField.TypezID])
 			return fmt.Sprintf("decodeMapEnum(%s, %s.fromJson)%s", data, typeName, bang)
-		case valueField.Typez == api.MESSAGE_TYPE:
+		case api.MESSAGE_TYPE:
 			_, hasCustomEncoding := usesCustomEncoding[valueField.TypezID]
 			typeName := annotate.resolveTypeName(state.MessageByID[valueField.TypezID], true)
 			if hasCustomEncoding {
@@ -666,10 +666,10 @@ func createToJsonLine(field *api.Field, state *api.APIState, required bool) stri
 
 	switch {
 	case isList:
-		switch {
-		case field.Typez == api.BYTES_TYPE:
+		switch field.Typez {
+		case api.BYTES_TYPE:
 			return fmt.Sprintf("encodeListBytes(%s)", name)
-		case field.Typez == api.MESSAGE_TYPE || field.Typez == api.ENUM_TYPE:
+		case api.MESSAGE_TYPE, api.ENUM_TYPE:
 			return fmt.Sprintf("encodeList(%s)", name)
 		default:
 			// identity
@@ -678,10 +678,10 @@ func createToJsonLine(field *api.Field, state *api.APIState, required bool) stri
 	case isMap:
 		valueField := message.Fields[1]
 
-		switch {
-		case valueField.Typez == api.BYTES_TYPE:
+		switch valueField.Typez {
+		case api.BYTES_TYPE:
 			return fmt.Sprintf("encodeMapBytes(%s)", name)
-		case valueField.Typez == api.MESSAGE_TYPE || valueField.Typez == api.ENUM_TYPE:
+		case api.MESSAGE_TYPE, api.ENUM_TYPE:
 			return fmt.Sprintf("encodeMap(%s)", name)
 		default:
 			// identity
@@ -727,21 +727,17 @@ func buildQueryLines(
 	switch {
 	case field.Repeated:
 		// Handle lists; these should be lists of strings or other primitives.
-		switch {
-		case field.Typez == api.STRING_TYPE:
+		switch field.Typez {
+		case api.STRING_TYPE:
 			return append(result, fmt.Sprintf("%s: %s!", preable, ref))
-		case field.Typez == api.ENUM_TYPE:
+		case api.ENUM_TYPE:
 			return append(result, fmt.Sprintf("%s: %s!.map((e) => e.value)", preable, ref))
-		case field.Typez == api.BOOL_TYPE ||
-			field.Typez == api.INT32_TYPE ||
-			field.Typez == api.UINT32_TYPE || field.Typez == api.SINT32_TYPE ||
-			field.Typez == api.FIXED32_TYPE || field.Typez == api.SFIXED32_TYPE ||
-			field.Typez == api.INT64_TYPE ||
-			field.Typez == api.UINT64_TYPE || field.Typez == api.SINT64_TYPE ||
-			field.Typez == api.FIXED64_TYPE || field.Typez == api.SFIXED64_TYPE ||
-			field.Typez == api.FLOAT_TYPE || field.Typez == api.DOUBLE_TYPE:
+		case api.BOOL_TYPE, api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
+			api.FIXED32_TYPE, api.SFIXED32_TYPE, api.INT64_TYPE,
+			api.UINT64_TYPE, api.SINT64_TYPE, api.FIXED64_TYPE, api.SFIXED64_TYPE,
+			api.FLOAT_TYPE, api.DOUBLE_TYPE:
 			return append(result, fmt.Sprintf("%s: %s!.map((e) => '$e')", preable, ref))
-		case field.Typez == api.BYTES_TYPE:
+		case api.BYTES_TYPE:
 			return append(result, fmt.Sprintf("%s: %s!.map((e) => encodeBytes(e)!)", preable, ref))
 		default:
 			slog.Error("unhandled list query param", "type", field.Typez)

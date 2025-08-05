@@ -40,11 +40,7 @@ var (
 )
 
 func TestRustFromOpenAPI(t *testing.T) {
-	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(outDir)
+	outDir := t.TempDir()
 	cmdLine := &CommandLine{
 		Command:             []string{},
 		ProjectRoot:         projectRoot,
@@ -81,11 +77,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 
 func TestRustFromProtobuf(t *testing.T) {
 	requireProtoc(t)
-	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(outDir)
+	outDir := t.TempDir()
 
 	type TestConfig struct {
 		Source        string
@@ -145,7 +137,7 @@ func TestRustFromProtobuf(t *testing.T) {
 			Codec: map[string]string{
 				"not-for-publication":   "true",
 				"copyright-year":        "2024",
-				"package-name-override": strings.Replace(config.Name, "/", "-", -1) + "-golden-protobuf",
+				"package-name-override": strings.ReplaceAll(config.Name, "/", "-") + "-golden-protobuf",
 				"package:wkt":           "package=google-cloud-wkt,source=google.protobuf",
 				"package:gax":           "package=gcp-sdk-gax,feature=unstable-sdk-client",
 			},
@@ -173,11 +165,7 @@ func TestRustFromProtobuf(t *testing.T) {
 
 func TestRustModuleFromProtobuf(t *testing.T) {
 	requireProtoc(t)
-	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(outDir)
+	outDir := t.TempDir()
 
 	type TestConfig struct {
 		Source        string
@@ -241,11 +229,7 @@ func TestRustModuleFromProtobuf(t *testing.T) {
 
 func TestRustBootstrapWkt(t *testing.T) {
 	requireProtoc(t)
-	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(outDir)
+	outDir := t.TempDir()
 
 	type TestConfig struct {
 		Source        string
@@ -308,11 +292,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 
 func TestRustOverrideTitleAndDescription(t *testing.T) {
 	requireProtoc(t)
-	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(outDir)
+	outDir := t.TempDir()
 	titleOverride := "Replace or Provide Custom Title"
 	descriptionOverride := "Replace or Provide Custom Description\nIncluding multiple lines."
 	cmdLine := &CommandLine{
@@ -360,11 +340,7 @@ func TestRustOverrideTitleAndDescription(t *testing.T) {
 
 func TestGoFromProtobuf(t *testing.T) {
 	requireProtoc(t)
-	outDir, err := os.MkdirTemp(t.TempDir(), "golden")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(outDir)
+	outDir := t.TempDir()
 
 	type TestConfig struct {
 		Source       string

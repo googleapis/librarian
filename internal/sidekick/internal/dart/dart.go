@@ -184,7 +184,7 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 // both regular references as well as implit references.
 //
 // - `[Code][google.rpc.Code]`
-// - `[google.rpc.Code][]`
+// - `[google.rpc.Code][]`.
 var commentRefsRegex = regexp.MustCompile(`\[([\w\d\._]+)\]\[([\d\w\._]*)\]`)
 
 func formatDocComments(documentation string, _ *api.APIState) []string {

@@ -63,7 +63,7 @@ func (m *modelAnnotations) IsWktCrate() bool {
 	return m.PackageName == "google-cloud-wkt"
 }
 
-// HasServices returns true if there are any services in the model
+// HasServices returns true if there are any services in the model.
 func (m *modelAnnotations) HasServices() bool {
 	return len(m.Services) > 0
 }
@@ -283,14 +283,14 @@ type bindingSubstitution struct {
 // This array is supplied as an argument to `gaxi::path_parameter::try_match()`,
 // and `gaxi::path_parameter::PathMismatchBuilder`.
 //
-// e.g.: `&[Segment::Literal("projects/"), Segment::SingleWildcard]`
+// e.g.: `&[Segment::Literal("projects/"), Segment::SingleWildcard]`.
 func (s *bindingSubstitution) TemplateAsArray() string {
 	return "&[" + strings.Join(annotateSegments(s.Template), ", ") + "]"
 }
 
 // TemplateAsString returns the expected template, which can be used as a static string.
 //
-// e.g.: "projects/*"
+// e.g.: "projects/*".
 func (s *bindingSubstitution) TemplateAsString() string {
 	return strings.Join(s.Template, "/")
 }
@@ -584,7 +584,7 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	}
 }
 
-// packageToModuleName maps "google.foo.v1" to "google::foo::v1"
+// packageToModuleName maps "google.foo.v1" to "google::foo::v1".
 func packageToModuleName(p string) string {
 	components := strings.Split(p, ".")
 	for i, c := range components {
@@ -772,8 +772,8 @@ func annotateSegments(segments []string) []string {
 		literalBuffer = ""
 	}
 	for index, segment := range segments {
-		switch {
-		case segment == api.MultiSegmentWildcard:
+		switch segment {
+		case api.MultiSegmentWildcard:
 			flushBuffer()
 			if len(segments) == 1 {
 				ann = append(ann, "Segment::MultiWildcard")
@@ -782,7 +782,7 @@ func annotateSegments(segments []string) []string {
 			} else {
 				ann = append(ann, "Segment::TrailingMultiWildcard")
 			}
-		case segment == api.SingleSegmentWildcard:
+		case api.SingleSegmentWildcard:
 			if index != 0 {
 				literalBuffer += "/"
 			}
