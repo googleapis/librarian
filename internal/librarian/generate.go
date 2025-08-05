@@ -76,6 +76,10 @@ local working tree for inspection.`,
 	},
 }
 
+var libraryStateLoader = func(data []byte, libraryState *config.LibraryState) error {
+	return json.Unmarshal(data, libraryState)
+}
+
 func init() {
 	cmdGenerate.Init()
 	fs := cmdGenerate.Flags
@@ -246,9 +250,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 
 	// Read the library state from the response.
 	if _, err := readLibraryState(
-		func(data []byte, libraryState *config.LibraryState) error {
-			return json.Unmarshal(data, libraryState)
-		},
+		libraryStateLoader,
 		filepath.Join(generateRequest.RepoDir, config.LibrarianDir, config.GenerateResponse)); err != nil {
 		return "", err
 	}
@@ -306,9 +308,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 
 	// Read the library state from the response.
 	_, err := readLibraryState(
-		func(data []byte, libraryState *config.LibraryState) error {
-			return json.Unmarshal(data, libraryState)
-		},
+		libraryStateLoader,
 		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse))
 
 	return err
@@ -522,9 +522,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 
 	// Read the new library state from the response.
 	libraryState, err := readLibraryState(
-		func(data []byte, libraryState *config.LibraryState) error {
-			return json.Unmarshal(data, libraryState)
-		},
+		libraryStateLoader,
 		filepath.Join(r.repo.GetDir(), config.LibrarianDir, config.ConfigureResponse))
 	if err != nil {
 		return "", err
