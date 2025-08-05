@@ -89,6 +89,102 @@ func TestPatchCommentsMessage(t *testing.T) {
 	}
 }
 
+func testPatchCommentsModel() *API {
+	m0 := &Message{
+		Name:          "Message0",
+		Package:       "test",
+		ID:            ".test.Message0",
+		Documentation: Input,
+		Fields: []*Field{
+			{
+				Name:          "Field0",
+				ID:            ".test.Message0.Field0",
+				Documentation: Input,
+			},
+		},
+	}
+	e0 := &Enum{
+		Name:          "Enum0",
+		Package:       "test",
+		ID:            ".test.Enum0",
+		Documentation: Input,
+		Values: []*EnumValue{
+			{
+				Name:          "EV0",
+				ID:            ".test.Enum0.EV0",
+				Documentation: Input,
+			},
+		},
+	}
+	s0 := &Service{
+		Name:          "Service0",
+		Package:       "test",
+		ID:            ".test.Service0",
+		Documentation: Input,
+		Methods: []*Method{
+			{
+				Name:          "Method0",
+				ID:            ".test.Service0.Method0",
+				Documentation: Input,
+			},
+		},
+	}
+	return NewTestAPI([]*Message{m0}, []*Enum{e0}, []*Service{s0})
+}
+
+func TestPatchCommentsMessageNotFound(t *testing.T) {
+	model := testPatchCommentsModel()
+
+	missing := []string{
+		".test.MissingMessage",
+		".test.Message0.MissingField",
+		".test.Enum0.MissingEnumValue",
+		".test.Service0.MissingMethod",
+		"NotAThing",
+	}
+	for _, id := range missing {
+		cfg := config.Config{
+			CommentOverrides: []config.DocumentationOverride{
+				{
+					ID:      id,
+					Match:   Match,
+					Replace: Replace,
+				},
+			},
+		}
+		if err := PatchDocumentation(model, &cfg); err == nil {
+			t.Errorf("expected an error searching for missing entity %q", id)
+		}
+	}
+}
+
+func TestPatchCommentsNoMatch(t *testing.T) {
+	model := testPatchCommentsModel()
+
+	missing := []string{
+		".test.Message0",
+		".test.Message0.Field0",
+		".test.Enum0",
+		".test.Enum0.EV0",
+		".test.Service0",
+		".test.Service0.Method0",
+	}
+	for _, id := range missing {
+		cfg := config.Config{
+			CommentOverrides: []config.DocumentationOverride{
+				{
+					ID:      id,
+					Match:   "NOT A STRING WE WILL FIND",
+					Replace: Replace,
+				},
+			},
+		}
+		if err := PatchDocumentation(model, &cfg); err == nil {
+			t.Errorf("expected an error replacing comments for entity %q", id)
+		}
+	}
+}
+
 func TestPatchCommentsField(t *testing.T) {
 	f0 := &Field{
 		Name:          "field_name",
