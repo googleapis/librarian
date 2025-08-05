@@ -69,22 +69,20 @@ libraries.
 
 ## Files used by Librarian in language repositories
 
-Each language repo used by Librarian must have a `generator-input` root directory.
-Within that directory, there must be two files: `pipeline-state.json` and `pipeline-config.json`.
-Broadly speaking, `pipeline-state.json` is maintained automatically, but `pipeline-config.json`
-is maintained by hand (and is expected to change rarely). The current split of information
-is more blurry than we'd like; go/sdk-librarian-state-config proposes a clearer split.
+Each language repo used by Librarian must have a `.librarian` root directory.
+Within that directory, there must be a `state.yaml` file. This file is maintained
+automatically by the Librarian CLI.
 
-These files are JSON representations of the `PipelineState` and `PipelineConfig` messages
-declared in [pipeline.proto](https://github.com/googleapis/librarian/blob/v0.1.0/proto/pipeline.proto).
-See the schema for more details, but the most important aspect is the list of libraries within
-`PipelineState`.
+This file is a YAML representation of the `LibrarianState` struct
+declared in [internal/config/state.go](https://github.com/googleapis/librarian/blob/main/internal/config/state.go).
+See the struct definition for more details, but the most important aspect is the list of libraries within
+`LibrarianState`.
 
 ## The meaning of "library" within Librarian
 
 Librarian manages libraries - but the meaning of "library" is not as intuitive and universal
 as we might like or imagine it to be. Within Librarian, the term "library" has a very specific
-meaning, namely "an entry within the `pipeline-state.json` file, within a given repository".
+meaning, namely "an entry within the `state.yaml` file, within a given repository".
 Librarian cares about information relating to a library such as:
 
 - The library ID: this is how Librarian instructs language-specific containers to operate
@@ -96,7 +94,7 @@ Librarian cares about information relating to a library such as:
   the library, so that Librarian can determine that a new version of the library should be released.
 
 This is not an exhaustive list; see
-[pipeline.proto](https://github.com/googleapis/librarian/blob/v0.1.0/proto/pipeline.proto) for more details.
+[internal/config/state.go](https://github.com/googleapis/librarian/blob/main/internal/config/state.go) for more details.
 
 This approach is designed to accommodate the requirements of different languages:
 
