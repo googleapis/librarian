@@ -23,7 +23,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/dart"
 	"github.com/googleapis/librarian/internal/sidekick/internal/gcloud"
-	"github.com/googleapis/librarian/internal/sidekick/internal/golang"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser"
 	"github.com/googleapis/librarian/internal/sidekick/internal/rust"
 	"github.com/googleapis/librarian/internal/sidekick/internal/rust_prost"
@@ -138,8 +137,6 @@ func refreshDir(rootConfig *config.Config, cmdLine *CommandLine, output string) 
 		return rust.GenerateStorage(output, storageModel, storageConfig, controlModel, controlConfig)
 	case "rust+prost":
 		return rust_prost.Generate(model, output, config)
-	case "go":
-		return golang.Generate(model, output, config)
 	case "dart":
 		return dart.Generate(model, output, config)
 	case "sample":

@@ -33,6 +33,7 @@ type Repository interface {
 	IsClean() (bool, error)
 	Remotes() ([]*git.Remote, error)
 	GetDir() string
+	HeadHash() (string, error)
 }
 
 // LocalRepository represents a git repository.
@@ -185,6 +186,15 @@ func (r *LocalRepository) IsClean() (bool, error) {
 // Remotes returns the remotes within the repository.
 func (r *LocalRepository) Remotes() ([]*git.Remote, error) {
 	return r.repo.Remotes()
+}
+
+// HeadHash returns hash of the commit for the repository's HEAD.
+func (r *LocalRepository) HeadHash() (string, error) {
+	ref, err := r.repo.Head()
+	if err != nil {
+		return "", err
+	}
+	return ref.Hash().String(), nil
 }
 
 // GetDir returns the directory of the repository.

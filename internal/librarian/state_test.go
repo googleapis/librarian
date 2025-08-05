@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,10 +24,9 @@ import (
 	"strings"
 	"testing"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"gopkg.in/yaml.v3"
 )
 
 func TestParseLibrarianState(t *testing.T) {
@@ -265,7 +263,52 @@ func TestPopulateServiceConfig(t *testing.T) {
 	}
 }
 
-func TestReadLibraryStateFromJSON(t *testing.T) {
+func TestSaveLibrarianState(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(tmpDir, config.LibrarianDir), 0755); err != nil {
+		t.Fatal(err)
+	}
+	state := &config.LibrarianState{
+		Image: "gcr.io/test/image:v1.2.3",
+		Libraries: []*config.LibraryState{
+			{
+				ID: "a/b",
+				SourceRoots: []string{
+					"src/a",
+					"src/b",
+				},
+				APIs: []*config.API{
+					{
+						Path:          "a/b/v1",
+						ServiceConfig: "a/b/v1/service.yaml",
+					},
+				},
+				PreserveRegex: []string{},
+				RemoveRegex:   []string{},
+			},
+		},
+	}
+	if err := saveLibrarianState(tmpDir, state); err != nil {
+		t.Fatalf("saveLibrarianState() failed: %v", err)
+	}
+
+	path := filepath.Join(tmpDir, config.LibrarianDir, "state.yaml")
+	gotBytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("os.ReadFile() failed: %v", err)
+	}
+	gotState := &config.LibrarianState{}
+	if err := yaml.Unmarshal(gotBytes, gotState); err != nil {
+		t.Fatalf("yaml.Unmarshal() failed: %v", err)
+	}
+
+	if diff := cmp.Diff(state, gotState); diff != "" {
+		t.Errorf("saveLibrarianState() mismatch (-want +got): %s", diff)
+	}
+}
+
+func TestReadConfigureResponseJSON(t *testing.T) {
 	t.Parallel()
 	contentLoader := func(data []byte, state *config.LibraryState) error {
 		return json.Unmarshal(data, state)
@@ -375,141 +418,6 @@ func TestReadLibraryStateFromJSON(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
 				t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestWriteLibrarianState(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name     string
-		filename string
-		state    *config.LibrarianState
-	}{
-		{
-			name:     "successful parsing librarianState to yaml",
-			filename: "successful-parsing-librarianState-yaml",
-			state: &config.LibrarianState{
-				Image: "v1.0.0",
-				Libraries: []*config.LibraryState{
-					{
-						ID:                  "google-cloud-go",
-						Version:             "1.0.0",
-						LastGeneratedCommit: "abcd123",
-						APIs: []*config.API{
-							{
-								Path:          "google/cloud/compute/v1",
-								ServiceConfig: "example_service_config.yaml",
-							},
-						},
-						SourceRoots: []string{
-							"src/example/path",
-						},
-						PreserveRegex: []string{
-							"example-preserve-regex",
-						},
-						RemoveRegex: []string{
-							"example-remove-regex",
-						},
-					},
-					{
-						ID:      "google-cloud-storage",
-						Version: "1.2.3",
-						APIs: []*config.API{
-							{
-								Path:          "google/storage/v1",
-								ServiceConfig: "storage_service_config.yaml",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name:     "empty librarianState to yaml",
-			filename: "empty-librarianState-yaml",
-			state:    &config.LibrarianState{},
-		},
-		{
-			name:  "invalid file name",
-			state: &config.LibrarianState{},
-		},
-		{
-			name:  "invalid content parser",
-			state: &config.LibrarianState{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			contentParser := func(state *config.LibrarianState) ([]byte, error) {
-				data := &bytes.Buffer{}
-				encoder := yaml.NewEncoder(data)
-				encoder.SetIndent(2)
-				if err := encoder.Encode(state); err != nil {
-					return nil, err
-				}
-
-				if err := encoder.Close(); err != nil {
-					return nil, err
-				}
-				return data.Bytes(), nil
-			}
-			if test.name == "invalid file name" {
-				filePath := filepath.Join(tempDir, "my\x00file.yaml")
-				err := writeLibrarianState(contentParser, test.state, filePath)
-				if err == nil {
-					t.Errorf("writeLibrarianState() expected an error but got nil")
-				}
-
-				if g, w := err.Error(), "failed to create librarian state file"; !strings.Contains(g, w) {
-					t.Errorf("got %q, wanted it to contain %q", g, w)
-				}
-				return
-			}
-
-			if test.name == "invalid content parser" {
-				invalidContentParser := func(state *config.LibrarianState) ([]byte, error) {
-					return nil, errors.New("simulated parsing error")
-				}
-				if err := os.MkdirAll(filepath.Join(tempDir, ".librarian"), 0755); err != nil {
-					t.Errorf("MkdirAll() failed to make directory")
-				}
-				err := writeLibrarianState(invalidContentParser, test.state, tempDir)
-				if err == nil {
-					t.Errorf("writeLibrarianState() expected an error but got nil")
-				}
-
-				if g, w := err.Error(), "failed to convert state to bytes"; !strings.Contains(g, w) {
-					t.Errorf("got %q, wanted it to contain %q", g, w)
-				}
-				return
-			}
-
-			if err := os.MkdirAll(filepath.Join(tempDir, ".librarian"), 0755); err != nil {
-				t.Errorf("MkdirAll() failed to make directory")
-			}
-
-			err := writeLibrarianState(contentParser, test.state, tempDir)
-
-			if err != nil {
-				t.Fatalf("writeLibrarianState() unexpected error: %v", err)
-			}
-
-			// Verify the file content
-			gotBytes, err := os.ReadFile(filepath.Join(tempDir, ".librarian", pipelineStateFile))
-			if err != nil {
-				t.Fatalf("Failed to read generated file: %v", err)
-			}
-
-			fileName := fmt.Sprintf("%s.yaml", test.filename)
-			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
-			if readErr != nil {
-				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
-			}
-
-			if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
-				t.Errorf("Generated YAML mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

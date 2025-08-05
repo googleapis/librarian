@@ -24,9 +24,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/config"
-
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestNew(t *testing.T) {
@@ -525,6 +524,36 @@ func TestToGenerateRequestJSON(t *testing.T) {
 
 			if diff := cmp.Diff(strings.TrimSpace(string(wantBytes)), string(gotBytes)); diff != "" {
 				t.Errorf("Generated JSON mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDocker_runCommand(t *testing.T) {
+	tests := []struct {
+		name    string
+		cmdName string
+		args    []string
+		wantErr bool
+	}{
+		{
+			name:    "success",
+			cmdName: "echo",
+			args:    []string{"hello"},
+			wantErr: false,
+		},
+		{
+			name:    "failure",
+			cmdName: "some-non-existent-command",
+			args:    []string{},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Docker{}
+			if err := c.runCommand(tt.cmdName, tt.args...); (err != nil) != tt.wantErr {
+				t.Errorf("Docker.runCommand() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -27,6 +27,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
+	"gopkg.in/yaml.v3"
 )
 
 func TestRunGenerate(t *testing.T) {
@@ -56,10 +59,10 @@ func TestRunGenerate(t *testing.T) {
 			workRoot := filepath.Join(t.TempDir())
 			repo := filepath.Join(workRoot, repo)
 			APISourceRepo := filepath.Join(workRoot, APISourceRepo)
-			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
+			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("languageRepo prepare test error = %v", err)
 			}
-			if err := prepareTest(t, APISourceRepo, workRoot, localAPISource); err != nil {
+			if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
@@ -133,10 +136,10 @@ func TestRunConfigure(t *testing.T) {
 			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("rand-%d", rand.Intn(1000)))
 			repo := filepath.Join(workRoot, repo)
 			APISourceRepo := filepath.Join(workRoot, APISourceRepo)
-			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
+			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
-			if err := prepareTest(t, APISourceRepo, workRoot, test.apiSource); err != nil {
+			if err := initRepo(t, APISourceRepo, test.apiSource); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
@@ -175,36 +178,32 @@ func TestRunConfigure(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to read configure response file: %v", err)
 			}
-
 			wantBytes, readErr := os.ReadFile(test.updatedState)
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
 
-			if diff := cmp.Diff(string(wantBytes), string(gotBytes)); diff != "" {
+			var wantState *config.LibrarianState
+			if err := yaml.Unmarshal(wantBytes, &wantState); err != nil {
+				t.Fatalf("Failed to unmarshal expected state: %v", err)
+			}
+
+			if diff := cmp.Diff(wantState, gotState, cmpopts.IgnoreFields(config.LibraryState{}, "LastGeneratedCommit")); diff != "" {
 				t.Fatalf("Generated yaml mismatch (-want +got):\n%s", diff)
 			}
+			for _, lib := range gotState.Libraries {
+				if lib.ID == test.library && lib.LastGeneratedCommit == "" {
+					t.Fatal("LastGeneratedCommit should not be empty")
+				}
+			}
+
 		})
 	}
 }
 
-func prepareTest(t *testing.T, destRepoDir, workRoot, sourceRepoDir string) error {
-	if err := initTestRepo(t, destRepoDir, sourceRepoDir); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(workRoot, 0755); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// initTestRepo initiates an empty git repo in the given directory, copy
+// initRepo initiates a git repo in the given directory, copy
 // files from source directory and create a commit.
-func initTestRepo(t *testing.T, dir, source string) error {
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
+func initRepo(t *testing.T, dir, source string) error {
 	if err := os.CopyFS(dir, os.DirFS(source)); err != nil {
 		return err
 	}

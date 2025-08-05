@@ -126,7 +126,16 @@ func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path s
 	return "", errors.New("could not find service config in " + path)
 }
 
-// readLibraryState reads the library state from container command response.
+func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
+	path := filepath.Join(repoDir, config.LibrarianDir, pipelineStateFile)
+	bytes, err := yaml.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, bytes, 0644)
+}
+
+// readConfigureResponse reads the library state from configure-response.json.
 //
 // The response file is removed afterwards.
 func readLibraryState(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
@@ -151,30 +160,4 @@ func readLibraryState(contentLoader func(data []byte, state *config.LibraryState
 	}
 
 	return libraryState, nil
-}
-
-// writeLibrarianState writes the given librarian state to a yaml file.
-func writeLibrarianState(contentParser func(state *config.LibrarianState) ([]byte, error), state *config.LibrarianState, repoDir string) (err error) {
-	yamlFilePath := filepath.Join(repoDir, config.LibrarianDir, pipelineStateFile)
-	yamlFile, err := os.Create(yamlFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to create librarian state file, path: %s, error: %w", yamlFilePath, err)
-	}
-
-	defer func() {
-		if err = errors.Join(err, yamlFile.Close()); err != nil {
-			err = fmt.Errorf("WriteLibrarianState(), file path: %s, error: %w", yamlFilePath, err)
-		}
-	}()
-
-	data, err := contentParser(state)
-	if err != nil {
-		return fmt.Errorf("failed to convert state to bytes: %w", err)
-	}
-
-	if _, err := yamlFile.Write(data); err != nil {
-		return fmt.Errorf("failed to write librarian state file, path: %s, error: %w", yamlFilePath, err)
-	}
-
-	return nil
 }

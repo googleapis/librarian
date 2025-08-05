@@ -491,6 +491,52 @@ func TestNewGenerateRunner(t *testing.T) {
 	}
 }
 
+// newTestGitRepo creates a new git repository in a temporary directory.
+func newTestGitRepo(t *testing.T) gitrepo.Repository {
+	return newTestGitRepoWithState(t, true)
+}
+
+// newTestGitRepo creates a new git repository in a temporary directory.
+func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
+	t.Helper()
+	dir := t.TempDir()
+	remoteURL := "https://github.com/googleapis/librarian.git"
+	runGit(t, dir, "init")
+	runGit(t, dir, "config", "user.email", "test@example.com")
+	runGit(t, dir, "config", "user.name", "Test User")
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	if writeState {
+		// Create an empty state.yaml file
+		stateDir := filepath.Join(dir, config.LibrarianDir)
+		if err := os.MkdirAll(stateDir, 0755); err != nil {
+			t.Fatalf("os.MkdirAll: %v", err)
+		}
+		stateFile := filepath.Join(stateDir, "state.yaml")
+		if err := os.WriteFile(stateFile, []byte(""), 0644); err != nil {
+			t.Fatalf("os.WriteFile: %v", err)
+		}
+	}
+	runGit(t, dir, "add", ".")
+	runGit(t, dir, "commit", "-m", "initial commit")
+	runGit(t, dir, "remote", "add", "origin", remoteURL)
+	repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
+	if err != nil {
+		t.Fatalf("gitrepo.Open(%q) = %v", dir, err)
+	}
+	return repo
+}
+
+func runGit(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git %v: %v", args, err)
+	}
+}
+
 func TestGenerateRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -662,6 +708,7 @@ func TestGenerateRun(t *testing.T) {
 					Build:     test.build,
 				},
 				repo:            test.repo,
+				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
 				containerClient: test.container,
 				ghClient:        test.ghClient,
@@ -903,6 +950,7 @@ func TestGenerateScenarios(t *testing.T) {
 			r := &generateRunner{
 				cfg:             cfg,
 				repo:            test.repo,
+				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
 				containerClient: test.container,
 				ghClient:        test.ghClient,
@@ -951,6 +999,31 @@ func TestGenerateScenarios(t *testing.T) {
 				t.Errorf("%s: run() configureCalls mismatch (-want +got):%s", test.name, diff)
 			}
 		})
+	}
+}
+
+func TestUpdateLastGeneratedCommitState(t *testing.T) {
+	t.Parallel()
+	sourceRepo := newTestGitRepo(t)
+	hash, err := sourceRepo.HeadHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := &generateRunner{
+		sourceRepo: sourceRepo,
+		state: &config.LibrarianState{
+			Libraries: []*config.LibraryState{
+				{
+					ID: "some-library",
+				},
+			},
+		},
+	}
+	if err := r.updateLastGeneratedCommitState("some-library"); err != nil {
+		t.Fatal(err)
+	}
+	if r.state.Libraries[0].LastGeneratedCommit != hash {
+		t.Errorf("updateState() got = %v, want %v", r.state.Libraries[0].LastGeneratedCommit, hash)
 	}
 }
 
@@ -1577,35 +1650,5 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
-	}
-}
-
-// newTestGitRepo creates a new git repository in a temporary directory.
-func newTestGitRepo(t *testing.T) gitrepo.Repository {
-	t.Helper()
-	dir := t.TempDir()
-	remoteURL := "https://github.com/googleapis/librarian.git"
-	runGit(t, dir, "init")
-	runGit(t, dir, "config", "user.email", "test@example.com")
-	runGit(t, dir, "config", "user.name", "Test User")
-	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
-	}
-	runGit(t, dir, "add", "README.md")
-	runGit(t, dir, "commit", "-m", "initial commit")
-	runGit(t, dir, "remote", "add", "origin", remoteURL)
-	repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
-	if err != nil {
-		t.Fatalf("gitrepo.Open(%q) = %v", dir, err)
-	}
-	return repo
-}
-
-func runGit(t *testing.T, dir string, args ...string) {
-	t.Helper()
-	cmd := exec.Command("git", args...)
-	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("git %v: %v", args, err)
 	}
 }
