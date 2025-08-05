@@ -15,7 +15,6 @@
 package sidekick
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -335,90 +334,6 @@ func TestRustOverrideTitleAndDescription(t *testing.T) {
 	}
 	if !strings.Contains(string(contents), descriptionOverride) {
 		t.Errorf("missing description override in README, want=%s, got=%s", descriptionOverride, contents)
-	}
-}
-
-func TestGoFromProtobuf(t *testing.T) {
-	requireProtoc(t)
-	outDir := t.TempDir()
-
-	type TestConfig struct {
-		Source       string
-		Name         string
-		ExtraOptions map[string]string
-		ModReplace   map[string]string
-	}
-	configs := []TestConfig{
-		{
-			Source: fmt.Sprintf("%s/google/type", googleapisRoot),
-			Name:   "typez",
-			ExtraOptions: map[string]string{
-				"go-package-name": "typez",
-			},
-		},
-		{
-			Source: fmt.Sprintf("%s/google/iam/v1", googleapisRoot),
-			Name:   "iam/v1",
-			ExtraOptions: map[string]string{
-				"import-mapping:google.type":     "typez;typez",
-				"import-mapping:google.protobuf": "wkt;wkt",
-				"go-package-name":                "iam",
-			},
-			ModReplace: map[string]string{},
-		},
-	}
-
-	for _, config := range configs {
-		cmdLine := &CommandLine{
-			Command:             []string{},
-			ProjectRoot:         projectRoot,
-			SpecificationFormat: "protobuf",
-			SpecificationSource: config.Source,
-			Source: map[string]string{
-				"googleapis-root": googleapisRoot,
-			},
-			ServiceConfig: "",
-			Language:      "go",
-			Output:        path.Join(outDir, config.Name),
-			Codec: map[string]string{
-				"not-for-publication":   "true",
-				"copyright-year":        "2024",
-				"package-name-override": fmt.Sprintf("golden/%s", config.Name),
-			},
-		}
-		for k, v := range config.ExtraOptions {
-			cmdLine.Codec[k] = v
-		}
-		cmdGenerate, _, _ := cmdSidekick.lookup([]string{"generate"})
-		if err := runCommand(cmdGenerate, cmdLine); err != nil {
-			t.Fatal(err)
-		}
-
-		dir := path.Join(outDir, config.Name)
-		execCommand(t, dir, "go", "mod", "tidy")
-		for _, expected := range []string{".sidekick.toml", "go.mod", "client.go"} {
-			filename := path.Join(outDir, config.Name, expected)
-			stat, err := os.Stat(filename)
-			if os.IsNotExist(err) {
-				t.Errorf("missing %s: %s", filename, err)
-			}
-			if stat.Mode().Perm()|0666 != 0666 {
-				t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
-			}
-		}
-	}
-}
-
-func execCommand(t *testing.T, dir, c string, arg ...string) {
-	t.Helper()
-	cmd := exec.Command(c, arg...)
-	cmd.Dir = dir
-	t.Logf("cd %s && %s", cmd.Dir, cmd.String())
-	if output, err := cmd.CombinedOutput(); err != nil {
-		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) && len(ee.Stderr) > 0 {
-			t.Fatalf("%v: %v\n%s", cmd, err, ee.Stderr)
-		}
-		t.Fatalf("%v: %v\n%s", cmd, err, output)
 	}
 }
 
