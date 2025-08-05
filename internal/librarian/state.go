@@ -135,7 +135,7 @@ func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 	return os.WriteFile(path, bytes, 0644)
 }
 
-// readConfigureResponse reads the library state from configure-response.json.
+// readLibraryState reads the library state from configure-response.json.
 //
 // The response file is removed afterwards.
 func readLibraryState(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
