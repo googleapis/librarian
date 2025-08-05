@@ -67,11 +67,13 @@ func DetermineInputFiles(source string, options map[string]string) ([]string, er
 
 func findFiles(files map[string]bool, source string) error {
 	const maxDepth = 1
+	source = filepath.ToSlash(source)
 	return filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		depth := strings.Count(filepath.ToSlash(strings.TrimPrefix(path, source)), "/")
+		path = filepath.ToSlash(path)
+		depth := strings.Count(strings.TrimPrefix(path, source), "/")
 		if info.IsDir() && depth >= maxDepth {
 			return filepath.SkipDir
 		}
