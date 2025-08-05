@@ -33,6 +33,7 @@ func TestRunGenerate(t *testing.T) {
 	const (
 		repo                = "repo"
 		initialRepoStateDir = "testdata/e2e/generate/repo_init"
+		APISourceRepo       = "apisource"
 		localAPISource      = "testdata/e2e/generate/api_root"
 	)
 	t.Parallel()
@@ -54,8 +55,12 @@ func TestRunGenerate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := filepath.Join(t.TempDir())
 			repo := filepath.Join(workRoot, repo)
+			APISourceRepo := filepath.Join(workRoot, APISourceRepo)
 			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
-				t.Fatalf("prepare test error = %v", err)
+				t.Fatalf("languageRepo prepare test error = %v", err)
+			}
+			if err := prepareTest(t, APISourceRepo, workRoot, localAPISource); err != nil {
+				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
 			cmd := exec.Command(
@@ -66,7 +71,7 @@ func TestRunGenerate(t *testing.T) {
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--api-source=%s", localAPISource),
+				fmt.Sprintf("--api-source=%s", APISourceRepo),
 			)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
@@ -97,6 +102,7 @@ func TestRunConfigure(t *testing.T) {
 		localRepoDir        = "testdata/e2e/configure/repo"
 		initialRepoStateDir = "testdata/e2e/configure/repo_init"
 		repo                = "repo"
+		APISourceRepo       = "apisource"
 	)
 	for _, test := range []struct {
 		name         string
@@ -126,8 +132,12 @@ func TestRunConfigure(t *testing.T) {
 			t.Parallel()
 			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("rand-%d", rand.Intn(1000)))
 			repo := filepath.Join(workRoot, repo)
+			APISourceRepo := filepath.Join(workRoot, APISourceRepo)
 			if err := prepareTest(t, repo, workRoot, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
+			}
+			if err := prepareTest(t, APISourceRepo, workRoot, test.apiSource); err != nil {
+				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
 			cmd := exec.Command(
@@ -138,7 +148,7 @@ func TestRunConfigure(t *testing.T) {
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--api-source=%s", test.apiSource),
+				fmt.Sprintf("--api-source=%s", APISourceRepo),
 				fmt.Sprintf("--library=%s", test.library),
 			)
 			cmd.Stderr = os.Stderr
