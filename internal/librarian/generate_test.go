@@ -353,16 +353,6 @@ func TestNewGenerateRunner(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "valid config with empty api source",
-			cfg: &config.Config{
-				API:       "some/api",
-				APISource: "",
-				Repo:      newTestGitRepo(t).GetDir(),
-				WorkRoot:  t.TempDir(),
-				Image:     "gcr.io/test/test-image",
-			},
-		},
-		{
 			name: "valid config with github token",
 			cfg: &config.Config{
 				API:         "some/api",

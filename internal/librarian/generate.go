@@ -112,14 +112,13 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cfg.APISource == "" {
-		if _, err := cloneOrOpenRepo(workRoot, "https://github.com/googleapis/googleapis", cfg.CI); err != nil {
-			return nil, err
-		}
-	} else {
-		if _, err := cloneOrOpenRepo(workRoot, cfg.APISource, cfg.CI); err != nil {
-			return nil, err
-		}
+
+	apiSource := cfg.APISource
+	if apiSource == "" {
+		apiSource = "https://github.com/googleapis/googleapis"
+	}
+	if _, err := cloneOrOpenRepo(workRoot, cfg.APISource, cfg.CI); err != nil {
+		return nil, err
 	}
 
 	languageRepo, err := cloneOrOpenRepo(workRoot, cfg.Repo, cfg.CI)
