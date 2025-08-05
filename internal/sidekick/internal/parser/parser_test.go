@@ -106,6 +106,30 @@ func TestCreateModelOverrides(t *testing.T) {
 	}
 }
 
+func TestCreateModelNone(t *testing.T) {
+	requireProtoc(t)
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "none",
+			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			SpecificationSource: "none",
+		},
+		Source: map[string]string{
+			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"name-override":        "Name Override",
+			"title-override":       "Title Override",
+			"description-override": "Description Override",
+		},
+	}
+	model, err := CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if model != nil {
+		t.Errorf("expected `nil` model with source format == none")
+	}
+}
+
 func checkMessage(t *testing.T, got *api.Message, want *api.Message) {
 	t.Helper()
 	// Checking Parent, Messages, Fields, and OneOfs requires special handling.

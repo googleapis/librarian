@@ -33,6 +33,8 @@ func CreateModel(config *config.Config) (*api.API, error) {
 		model, err = ParseOpenAPI(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
 	case "protobuf":
 		model, err = ParseProtobuf(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
+	case "none":
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("unknown parser %q", config.General.SpecificationFormat)
 	}
