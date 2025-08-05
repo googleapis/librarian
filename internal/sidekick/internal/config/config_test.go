@@ -16,12 +16,71 @@ package config
 
 import (
 	"bytes"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	toml "github.com/pelletier/go-toml/v2"
 )
+
+func TestLoadConfig(t *testing.T) {
+	t.Chdir(t.TempDir())
+	child := Config{
+		General: GeneralConfig{
+			SpecificationFormat: "child-specification-format",
+		},
+		Source: map[string]string{
+			"s1": "v1",
+			"s2": "v2",
+		},
+		Codec: map[string]string{
+			"o1": "v3",
+			"o2": "v4",
+		},
+	}
+
+	out, err := os.Create(configName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	to := toml.NewEncoder(out)
+	if err := to.Encode(&child); err != nil {
+		t.Fatal(err)
+	}
+	if err := out.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	source := map[string]string{"root1": "rv1"}
+	codec := map[string]string{"root2": "rv2"}
+	got, err := LoadConfig("root-language", source, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &Config{
+		General: GeneralConfig{
+			Language:            "root-language",
+			SpecificationFormat: "child-specification-format",
+		},
+		Source: map[string]string{
+			"s1":    "v1",
+			"s2":    "v2",
+			"root1": "rv1",
+		},
+		Codec: map[string]string{
+			"o1":    "v3",
+			"o2":    "v4",
+			"root2": "rv2",
+		},
+	}
+	if diff := cmp.Diff(want, got); len(diff) != 0 {
+		t.Errorf("mismatched config from LoadConfig (-want, +got):\n%s", diff)
+	}
+}
 
 func TestLoadRootConfigOnlyGeneral(t *testing.T) {
 	tempFile, err := os.CreateTemp(t.TempDir(), "root-config-")
@@ -324,4 +383,82 @@ func mergeTestConfigs(t *testing.T, root, local *Config) (*Config, error) {
 	}
 	tempFile.Close()
 	return MergeConfigAndFile(root, tempFile.Name())
+}
+
+func TestUpdateRootConfig(t *testing.T) {
+	// update() normally writes `.sidekick.toml` to cwd. We need to change to a
+	// temporary directory to avoid changing the actual configuration, and any
+	// conflicts with other tests running at the same time.
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	const (
+		getLatestShaPath      = "/repos/googleapis/googleapis/commits/master"
+		latestSha             = "5d5b1bf126485b0e2c972bac41b376438601e266"
+		tarballPath           = "/googleapis/googleapis/archive/5d5b1bf126485b0e2c972bac41b376438601e266.tar.gz"
+		latestShaContents     = "The quick brown fox jumps over the lazy dog"
+		latestShaContentsHash = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"
+	)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case getLatestShaPath:
+			got := r.Header.Get("Accept")
+			want := "application/vnd.github.VERSION.sha"
+			if got != want {
+				t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(latestSha))
+		case tarballPath:
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(latestShaContents))
+		default:
+			t.Fatalf("unexpected request path %q", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	rootConfig := &Config{
+		General: GeneralConfig{
+			Language:            "rust",
+			SpecificationFormat: "protobuf",
+		},
+		Source: map[string]string{
+			"github-api":        server.URL,
+			"github":            server.URL,
+			"googleapis-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/old.tar.gz", server.URL),
+			"googleapis-sha256": "old-sha-unused",
+		},
+		Codec: map[string]string{},
+	}
+	if err := WriteSidekickToml(".", rootConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UpdateRootConfig(rootConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	got := &Config{}
+	contents, err := os.ReadFile(path.Join(tempDir, ".sidekick.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := toml.Unmarshal(contents, got); err != nil {
+		t.Fatal("error reading top-level configuration: %w", err)
+	}
+	want := &Config{
+		General: rootConfig.General,
+		Source: map[string]string{
+			"github-api":        server.URL,
+			"github":            server.URL,
+			"googleapis-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/%s.tar.gz", server.URL, latestSha),
+			"googleapis-sha256": latestShaContentsHash,
+		},
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in loaded root config (-want, +got)\n:%s", diff)
+	}
 }
