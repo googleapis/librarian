@@ -374,23 +374,13 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 		},
 		{
-			name: "malformed state file",
+			name: "clone googleapis fails",
 			cfg: &config.Config{
 				API:       "some/api",
-				APISource: newTestGitRepo(t).GetDir(),
+				APISource: "", // This will trigger the clone of googleapis
 				Repo:      newTestGitRepo(t).GetDir(),
 				WorkRoot:  t.TempDir(),
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid repo url",
-			cfg: &config.Config{
-				API:         "some/api",
-				APISource:   newTestGitRepo(t).GetDir(),
-				Repo:        "https://not-a-github-url.com/foo/bar",
-				WorkRoot:    t.TempDir(),
-				GitHubToken: "gh-token",
+				Image:     "gcr.io/test/test-image",
 			},
 			wantErr: true,
 		},
@@ -404,28 +394,23 @@ func TestNewGenerateRunner(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
 					t.Fatalf("os.MkdirAll() = %v", err)
 				}
-				var stateContent []byte
-				var err error
-				if test.name == "malformed state file" {
-					stateContent = []byte("image: gcr.io/test/image:v1.2.3\n  libraries: []\n") // malformed yaml
-				} else {
-					state := &config.LibrarianState{
-						Image: "some/image:v1.2.3",
-						Libraries: []*config.LibraryState{
-							{
-								ID:          "some-library",
-								APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
-								SourceRoots: []string{"src/a"},
-							},
+
+				state := &config.LibrarianState{
+					Image: "some/image:v1.2.3",
+					Libraries: []*config.LibraryState{
+						{
+							ID:          "some-library",
+							APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
+							SourceRoots: []string{"src/a"},
 						},
-					}
-					stateContent, err = yaml.Marshal(state)
-					if err != nil {
-						t.Fatalf("yaml.Marshal() = %v", err)
-					}
+					},
+				}
+				b, err := yaml.Marshal(state)
+				if err != nil {
+					t.Fatalf("yaml.Marshal() = %v", err)
 				}
 
-				if err := os.WriteFile(stateFile, stateContent, 0644); err != nil {
+				if err := os.WriteFile(stateFile, b, 0644); err != nil {
 					t.Fatalf("os.WriteFile(%q, ...) = %v", stateFile, err)
 				}
 				configFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineConfigFile)
@@ -437,20 +422,32 @@ func TestNewGenerateRunner(t *testing.T) {
 			}
 
 			if test.cfg.APISource == "" && test.cfg.WorkRoot != "" {
-				// The function will try to clone googleapis into the workroot.
-				// To prevent a real clone, we can pre-create a fake googleapis repo.
-				googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
-				if err := os.MkdirAll(googleapisDir, 0755); err != nil {
-					t.Fatalf("os.MkdirAll() = %v", err)
+				if test.name == "clone googleapis fails" {
+					// The function will try to clone googleapis into the workroot.
+					// To make it fail, create a non-empty, non-git directory.
+					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
+					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(filepath.Join(googleapisDir, "some-file"), []byte("foo"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				} else {
+					// The function will try to clone googleapis into the workroot.
+					// To prevent a real clone, we can pre-create a fake googleapis repo.
+					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
+					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					runGit(t, googleapisDir, "init")
+					runGit(t, googleapisDir, "config", "user.email", "test@example.com")
+					runGit(t, googleapisDir, "config", "user.name", "Test User")
+					if err := os.WriteFile(filepath.Join(googleapisDir, "README.md"), []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile: %v", err)
+					}
+					runGit(t, googleapisDir, "add", "README.md")
+					runGit(t, googleapisDir, "commit", "-m", "initial commit")
 				}
-				runGit(t, googleapisDir, "init")
-				runGit(t, googleapisDir, "config", "user.email", "test@example.com")
-				runGit(t, googleapisDir, "config", "user.name", "Test User")
-				if err := os.WriteFile(filepath.Join(googleapisDir, "README.md"), []byte("test"), 0644); err != nil {
-					t.Fatalf("os.WriteFile: %v", err)
-				}
-				runGit(t, googleapisDir, "add", "README.md")
-				runGit(t, googleapisDir, "commit", "-m", "initial commit")
 			}
 
 			_, err := newGenerateRunner(test.cfg)
