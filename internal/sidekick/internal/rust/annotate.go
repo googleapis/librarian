@@ -586,10 +586,14 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // packageToModuleName maps "google.foo.v1" to "google::foo::v1".
 =======
 // Maps "google.foo.v1" to "google::foo::v1"
 >>>>>>> parent of 27ff7c8e (fix(internal/sidekick): fix godoclint errors (#1554))
+=======
+// packageToModuleName maps "google.foo.v1" to "google::foo::v1"
+>>>>>>> parent of 849127ec (fix(golangci-lint): fix errors in internal/sidekick (#1575))
 =======
 // packageToModuleName maps "google.foo.v1" to "google::foo::v1"
 >>>>>>> parent of 849127ec (fix(golangci-lint): fix errors in internal/sidekick (#1575))

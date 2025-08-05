@@ -26,7 +26,11 @@ const (
 	// These are the different field types as defined in
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// descriptorpb.FieldDescriptorProto_Type.
+=======
+	// descriptorpb.FieldDescriptorProto_Type
+>>>>>>> parent of 849127ec (fix(golangci-lint): fix errors in internal/sidekick (#1575))
 =======
 	// descriptorpb.FieldDescriptorProto_Type
 >>>>>>> parent of 849127ec (fix(golangci-lint): fix errors in internal/sidekick (#1575))
@@ -368,10 +372,14 @@ type PathBinding struct {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // OperationInfo contains normalized long running operation info.
 =======
 // Normalized long running operation info
 >>>>>>> parent of 27ff7c8e (fix(internal/sidekick): fix godoclint errors (#1554))
+=======
+// OperationInfo contains normalized long running operation info
+>>>>>>> parent of 849127ec (fix(golangci-lint): fix errors in internal/sidekick (#1575))
 =======
 // OperationInfo contains normalized long running operation info
 >>>>>>> parent of 849127ec (fix(golangci-lint): fix errors in internal/sidekick (#1575))
@@ -466,12 +474,16 @@ const (
 
 	// MultiSegmentWildcard is a special routing path segment which indicates
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// "match anything including `/`".
 =======
 	// A special routing path segment which indicates "match anything that does not include a `/`"
 	SingleSegmentWildcard = "*"
 	// A special routing path segment which indicates "match anything including `/`"
 >>>>>>> parent of 27ff7c8e (fix(internal/sidekick): fix godoclint errors (#1554))
+=======
+	// "match anything including `/`"
+>>>>>>> parent of 849127ec (fix(golangci-lint): fix errors in internal/sidekick (#1575))
 =======
 	// "match anything including `/`"
 >>>>>>> parent of 849127ec (fix(golangci-lint): fix errors in internal/sidekick (#1575))
