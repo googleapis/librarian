@@ -373,6 +373,27 @@ func TestNewGenerateRunner(t *testing.T) {
 				GitHubToken: "gh-token",
 			},
 		},
+		{
+			name: "malformed state file",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: newTestGitRepo(t).GetDir(),
+				Repo:      newTestGitRepo(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid repo url",
+			cfg: &config.Config{
+				API:         "some/api",
+				APISource:   newTestGitRepo(t).GetDir(),
+				Repo:        "https://not-a-github-url.com/foo/bar",
+				WorkRoot:    t.TempDir(),
+				GitHubToken: "gh-token",
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -383,21 +404,28 @@ func TestNewGenerateRunner(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
 					t.Fatalf("os.MkdirAll() = %v", err)
 				}
-				state := &config.LibrarianState{
-					Image: "some/image:v1.2.3",
-					Libraries: []*config.LibraryState{
-						{
-							ID:          "some-library",
-							APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
-							SourceRoots: []string{"src/a"},
+				var stateContent []byte
+				var err error
+				if test.name == "malformed state file" {
+					stateContent = []byte("image: gcr.io/test/image:v1.2.3\n  libraries: []\n") // malformed yaml
+				} else {
+					state := &config.LibrarianState{
+						Image: "some/image:v1.2.3",
+						Libraries: []*config.LibraryState{
+							{
+								ID:          "some-library",
+								APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
+								SourceRoots: []string{"src/a"},
+							},
 						},
-					},
+					}
+					stateContent, err = yaml.Marshal(state)
+					if err != nil {
+						t.Fatalf("yaml.Marshal() = %v", err)
+					}
 				}
-				b, err := yaml.Marshal(state)
-				if err != nil {
-					t.Fatalf("yaml.Marshal() = %v", err)
-				}
-				if err := os.WriteFile(stateFile, b, 0644); err != nil {
+
+				if err := os.WriteFile(stateFile, stateContent, 0644); err != nil {
 					t.Fatalf("os.WriteFile(%q, ...) = %v", stateFile, err)
 				}
 				configFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineConfigFile)
