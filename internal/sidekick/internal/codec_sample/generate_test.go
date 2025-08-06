@@ -60,14 +60,12 @@ func TestFromProtobuf(t *testing.T) {
 	if err := Generate(model, outDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"README.md"} {
-		filename := path.Join(outDir, expected)
-		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
-			t.Errorf("missing %s: %s", filename, err)
-		}
-		if stat.Mode().Perm()|0666 != 0666 {
-			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
-		}
+	filename := path.Join(outDir, "README.md")
+	stat, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		t.Errorf("missing %s: %s", filename, err)
+	}
+	if stat.Mode().Perm()|0666 != 0666 {
+		t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 	}
 }
