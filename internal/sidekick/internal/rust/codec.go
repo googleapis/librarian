@@ -325,6 +325,14 @@ var wellKnownMessages = []*api.Message{
 		Name:    "Timestamp",
 		Package: "google.protobuf",
 	},
+	{ID: ".google.protobuf.BytesValue", Name: "BytesValue", Package: "google.protobuf"},
+	{ID: ".google.protobuf.UInt64Value", Name: "UInt64Value", Package: "google.protobuf"},
+	{ID: ".google.protobuf.Int64Value", Name: "Int64Value", Package: "google.protobuf"},
+	{ID: ".google.protobuf.UInt32Value", Name: "UInt32Value", Package: "google.protobuf"},
+	{ID: ".google.protobuf.Int32Value", Name: "Int32Value", Package: "google.protobuf"},
+	{ID: ".google.protobuf.FloatValue", Name: "FloatValue", Package: "google.protobuf"},
+	{ID: ".google.protobuf.DoubleValue", Name: "DoubleValue", Package: "google.protobuf"},
+	{ID: ".google.protobuf.BoolValue", Name: "BoolValue", Package: "google.protobuf"},
 }
 
 func loadWellKnownTypes(s *api.APIState) {

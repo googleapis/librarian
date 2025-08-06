@@ -16,12 +16,62 @@ package dart
 
 import (
 	"io/fs"
+	"os"
+	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/parser"
 )
+
+var (
+	testdataDir, _ = filepath.Abs("../../testdata")
+)
+
+func TestFromProtobuf(t *testing.T) {
+	requireProtoc(t)
+	outDir := t.TempDir()
+
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "protobuf",
+			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			SpecificationSource: "google/cloud/secretmanager/v1",
+		},
+		Source: map[string]string{
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
+		},
+		Codec: map[string]string{
+			"copyright-year":              "2025",
+			"not-for-publication":         "true",
+			"version":                     "0.1.0",
+			"skip-format":                 "true",
+			"proto:google.protobuf":       "package:google_cloud_protobuf/protobuf.dart",
+			"proto:google.cloud.location": "package:google_cloud_location/location.dart",
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Generate(model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md"} {
+		filename := path.Join(outDir, expected)
+		stat, err := os.Stat(filename)
+		if os.IsNotExist(err) {
+			t.Errorf("missing %s: %s", filename, err)
+		}
+		if stat.Mode().Perm()|0666 != 0666 {
+			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
+		}
+	}
+}
 
 func TestGeneratedFiles(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
@@ -56,5 +106,12 @@ func TestTemplatesAvailable(t *testing.T) {
 
 	if count == 0 {
 		t.Errorf("no dart templates found")
+	}
+}
+
+func requireProtoc(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("protoc"); err != nil {
+		t.Skip("skipping test because protoc is not installed")
 	}
 }

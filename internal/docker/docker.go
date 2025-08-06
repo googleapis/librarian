@@ -152,7 +152,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
 	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", librarianDir), // readonly volume
+		fmt.Sprintf("%s:/librarian", librarianDir),
 		fmt.Sprintf("%s:/input", generatorInput),
 		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume

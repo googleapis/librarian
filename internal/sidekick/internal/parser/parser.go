@@ -14,7 +14,58 @@
 
 package parser
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+)
+
+// CreateModel parses the service specification referenced in `config`,
+// cross-references the model, and applies any transformations or overrides
+// required by the configuration.
+func CreateModel(config *config.Config) (*api.API, error) {
+	var err error
+	var model *api.API
+	switch config.General.SpecificationFormat {
+	case "openapi":
+		model, err = ParseOpenAPI(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
+	case "protobuf":
+		model, err = ParseProtobuf(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
+	case "none":
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("unknown parser %q", config.General.SpecificationFormat)
+	}
+	if err != nil {
+		return nil, err
+	}
+	api.LabelRecursiveFields(model)
+	if err := api.CrossReference(model); err != nil {
+		return nil, err
+	}
+	if err := api.SkipModelElements(model, config.Source); err != nil {
+		return nil, err
+	}
+	if err := api.PatchDocumentation(model, config); err != nil {
+		return nil, err
+	}
+	// Verify all the services, messages and enums are in the same package.
+	if err := api.Validate(model); err != nil {
+		return nil, err
+	}
+	if name, ok := config.Source["name-override"]; ok {
+		model.Name = name
+	}
+	if title, ok := config.Source["title-override"]; ok {
+		model.Title = title
+	}
+	if description, ok := config.Source["description-override"]; ok {
+		model.Description = description
+	}
+	return model, nil
+}
 
 func splitApiName(name string) (string, string) {
 	li := strings.LastIndex(name, ".")

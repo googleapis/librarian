@@ -7,3 +7,10 @@ libraries:
       - path: google/cloud/pubsub/v1
     source_roots:
       - google-cloud-pubsub/v1
+  - id: simulate-command-error-id
+    version:
+    last_generated_commit:
+    apis:
+      - path: google/cloud/future/v2
+    source_roots:
+      - google-cloud-future/v2

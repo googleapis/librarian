@@ -16,8 +16,12 @@ package librarian
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -48,18 +52,34 @@ func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.R
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
-	generateCalls     int
-	buildCalls        int
-	configureCalls    int
-	generateErr       error
-	buildErr          error
-	configureErr      error
-	failGenerateForID string
-	requestLibraryID  string
+	generateCalls       int
+	buildCalls          int
+	configureCalls      int
+	generateErr         error
+	buildErr            error
+	configureErr        error
+	failGenerateForID   string
+	requestLibraryID    string
+	noBuildResponse     bool
+	noConfigureResponse bool
+	wantErrorMsg        bool
 }
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
+	// Write a generate-response.json because it is required by generate
+	// command.
+	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
+		return err
+	}
+
+	libraryStr := "{}"
+	if m.wantErrorMsg {
+		libraryStr = "{error: simulated error message}"
+	}
+	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), []byte(libraryStr), 0755); err != nil {
+		return err
+	}
 	if m.failGenerateForID != "" {
 		if request.LibraryID == m.failGenerateForID {
 			return m.generateErr
@@ -73,11 +93,53 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
 	m.buildCalls++
+	if m.noBuildResponse {
+		return m.buildErr
+	}
+	// Write a build-response.json because it is required by generate
+	// command.
+	if err := os.MkdirAll(filepath.Join(request.RepoDir, ".librarian"), 0755); err != nil {
+		return err
+	}
+
+	libraryStr := "{}"
+	if m.wantErrorMsg {
+		libraryStr = "{error: simulated error message}"
+	}
+	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.BuildResponse), []byte(libraryStr), 0755); err != nil {
+		return err
+	}
 	return m.buildErr
 }
 
 func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error) {
 	m.configureCalls++
+
+	if m.noConfigureResponse {
+		return "", m.configureErr
+	}
+
+	// Write a configure-response.json because it is required by configure
+	// command.
+	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
+		return "", err
+	}
+
+	libraryStr := ""
+	if m.wantErrorMsg {
+		libraryStr = fmt.Sprintf(`{
+	"ID": "%s",
+  "error": "simulated error message"
+}`, request.State.Libraries[0].ID)
+	} else {
+		libraryStr = fmt.Sprintf(`{
+	"ID": "%s"
+}`, request.State.Libraries[0].ID)
+	}
+
+	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryStr), 0755); err != nil {
+		return "", err
+	}
 	return "", m.configureErr
 }
 

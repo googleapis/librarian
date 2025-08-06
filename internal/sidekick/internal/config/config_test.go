@@ -82,6 +82,19 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+func TestLoadConfigBadRoot(t *testing.T) {
+	t.Chdir(t.TempDir())
+	err := os.WriteFile(configName, []byte("bad-toml: [ a, 1, "), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := map[string]string{"root1": "rv1"}
+	codec := map[string]string{"root2": "rv2"}
+	if _, err = LoadConfig("root-language", source, codec); err == nil {
+		t.Errorf("expected an error when loading a missing file")
+	}
+}
+
 func TestLoadRootConfigOnlyGeneral(t *testing.T) {
 	tempFile, err := os.CreateTemp(t.TempDir(), "root-config-")
 	if err != nil {
@@ -244,6 +257,39 @@ func TestMergeLocalForDocumentationOverrides(t *testing.T) {
 
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
 		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
+	}
+}
+
+func TestMergeConfigAndFileBadRead(t *testing.T) {
+	root := Config{
+		General: GeneralConfig{
+			Language:            "root-language",
+			SpecificationFormat: "root-specification-format",
+			IgnoredDirectories:  []string{"a", "b"},
+		},
+	}
+
+	filename := path.Join(t.TempDir(), "file-does-not-exist")
+	if _, err := MergeConfigAndFile(&root, filename); err == nil {
+		t.Error("expected read error with missing file")
+	}
+}
+
+func TestMergeConfigAndFileBadContent(t *testing.T) {
+	root := Config{
+		General: GeneralConfig{
+			Language:            "root-language",
+			SpecificationFormat: "root-specification-format",
+			IgnoredDirectories:  []string{"a", "b"},
+		},
+	}
+
+	filename := path.Join(t.TempDir(), configName)
+	if err := os.WriteFile(filename, []byte("bad-toml = [ 1, 2"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := MergeConfigAndFile(&root, filename); err == nil {
+		t.Error("expected read error with bad contents")
 	}
 }
 

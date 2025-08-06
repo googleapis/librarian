@@ -61,53 +61,11 @@ func loadDir(rootConfig *config.Config, output string) (*api.API, *config.Config
 	if config.General.SpecificationSource == "" {
 		return nil, nil, fmt.Errorf("must provide general.specification-source")
 	}
-	model, err := createModel(config)
+	model, err := parser.CreateModel(config)
 	if err != nil {
 		return nil, nil, err
 	}
 	return model, config, nil
-}
-
-func createModel(config *config.Config) (*api.API, error) {
-	var err error
-	var model *api.API
-	switch config.General.SpecificationFormat {
-	case "openapi":
-		model, err = parser.ParseOpenAPI(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
-	case "protobuf":
-		model, err = parser.ParseProtobuf(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
-	case "none":
-		return nil, nil
-	default:
-		return nil, fmt.Errorf("unknown parser %q", config.General.SpecificationFormat)
-	}
-	if err != nil {
-		return nil, err
-	}
-	api.LabelRecursiveFields(model)
-	if err := api.CrossReference(model); err != nil {
-		return nil, err
-	}
-	if err := api.SkipModelElements(model, config.Source); err != nil {
-		return nil, err
-	}
-	if err := api.PatchDocumentation(model, config); err != nil {
-		return nil, err
-	}
-	// Verify all the services, messages and enums are in the same package.
-	if err := api.Validate(model); err != nil {
-		return nil, err
-	}
-	if name, ok := config.Source["name-override"]; ok {
-		model.Name = name
-	}
-	if title, ok := config.Source["title-override"]; ok {
-		model.Title = title
-	}
-	if description, ok := config.Source["description-override"]; ok {
-		model.Description = description
-	}
-	return model, nil
 }
 
 func refreshDir(rootConfig *config.Config, cmdLine *CommandLine, output string) error {

@@ -597,6 +597,62 @@ func TestRemotes(t *testing.T) {
 	}
 }
 
+func TestHeadHash(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, dir string)
+		wantErr bool
+	}{
+		{
+			name: "success",
+			setup: func(t *testing.T, dir string) {
+				gitRepo, err := git.PlainInit(dir, false)
+				if err != nil {
+					t.Fatalf("git.PlainInit failed: %v", err)
+				}
+				w, err := gitRepo.Worktree()
+				if err != nil {
+					t.Fatalf("Worktree() failed: %v", err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := w.Add("README.md"); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := w.Commit("initial commit", &git.CommitOptions{
+					Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+				}); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "error",
+			setup: func(t *testing.T, dir string) {
+				if _, err := git.PlainInit(dir, false); err != nil {
+					t.Fatalf("git.PlainInit failed: %v", err)
+				}
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			test.setup(t, dir)
+			repo, err := NewRepository(&RepositoryOptions{Dir: dir})
+			if err != nil {
+				t.Fatalf("NewRepository() failed: %v", err)
+			}
+			_, err = repo.HeadHash()
+			if (err != nil) != test.wantErr {
+				t.Errorf("HeadHash() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
 func TestGetDir(t *testing.T) {
 	t.Parallel()
 	want := "/test/dir"

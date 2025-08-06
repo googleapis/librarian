@@ -107,6 +107,9 @@ type LibraryState struct {
 	// permitted to reference the values configured in the library. If not specified
 	// the assumed format is {id}-{version}.
 	TagFormat string `yaml:"tag_format,omitempty" json:"tag_format,omitempty"`
+	// An error message from the docker response.
+	// This field is ignored when writing to state.yaml.
+	ErrorMessage string `yaml:"-" json:"error,omitempty"`
 }
 
 var (

@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -63,6 +64,14 @@ func serviceAnnotationsModel() *api.API {
 		Name:    "Response",
 		Package: "test.v1",
 		ID:      ".test.v1.Response",
+		Fields: []*api.Field{
+			{
+				Name:    "field",
+				ID:      ".test.v1.Response.field",
+				Typez:   api.ENUM_TYPE,
+				TypezID: ".test.v1.UsedEnum",
+			},
+		},
 	}
 	method := &api.Method{
 		Name:         "GetResource",
@@ -112,9 +121,20 @@ func serviceAnnotationsModel() *api.API {
 		Methods: []*api.Method{method, emptyMethod, noHttpMethod},
 	}
 
+	usedEnum := &api.Enum{
+		Name:    "UsedEnum",
+		ID:      ".test.v1.UsedEnum",
+		Package: "test.v1",
+	}
+	extraEnum := &api.Enum{
+		Name:    "ExtraEnum",
+		ID:      ".test.v1.ExtraEnum",
+		Package: "test.v1",
+	}
+
 	model := api.NewTestAPI(
 		[]*api.Message{request, response},
-		[]*api.Enum{},
+		[]*api.Enum{usedEnum, extraEnum},
 		[]*api.Service{service})
 	loadWellKnownTypes(model.State)
 	api.CrossReference(model)
@@ -405,10 +425,7 @@ func TestOneOfAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message, map_message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := createRustCodec()
 	annotateModel(model, codec)
 
 	// Stops the recursion when comparing fields.
@@ -498,8 +515,8 @@ func TestOneOfAnnotations(t *testing.T) {
 		BranchName:         "OneofFieldBoxed",
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
-		FieldType:          "std::boxed::Box<>",
-		PrimitiveFieldType: "",
+		FieldType:          "std::boxed::Box<wkt::DoubleValue>",
+		PrimitiveFieldType: "wkt::DoubleValue",
 		AddQueryParameter:  `let builder = req.oneof_field_boxed().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofFieldBoxed") });`,
 		IsBoxed:            true,
 		SerdeAs:            "wkt::internal::F64",
@@ -507,7 +524,6 @@ func TestOneOfAnnotations(t *testing.T) {
 	}, boxed_field.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
-
 }
 
 func TestOneOfConflictAnnotations(t *testing.T) {
@@ -1020,6 +1036,123 @@ func TestFieldAnnotations(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantField, boxed_field.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestPrimitiveFieldAnnotations(t *testing.T) {
+	tests := []struct {
+		wantType    string
+		wantSerdeAs string
+		typez       api.Typez
+	}{
+		{"i32", "wkt::internal::I32", api.INT32_TYPE},
+		{"i32", "wkt::internal::I32", api.SFIXED32_TYPE},
+		{"i32", "wkt::internal::I32", api.SINT32_TYPE},
+		{"i64", "wkt::internal::I64", api.INT64_TYPE},
+		{"i64", "wkt::internal::I64", api.SFIXED64_TYPE},
+		{"i64", "wkt::internal::I64", api.SINT64_TYPE},
+		{"u32", "wkt::internal::U32", api.UINT32_TYPE},
+		{"u32", "wkt::internal::U32", api.FIXED32_TYPE},
+		{"u64", "wkt::internal::U64", api.UINT64_TYPE},
+		{"u64", "wkt::internal::U64", api.FIXED64_TYPE},
+		{"f32", "wkt::internal::F32", api.FLOAT_TYPE},
+		{"f64", "wkt::internal::F64", api.DOUBLE_TYPE},
+	}
+
+	for _, c := range tests {
+		singular_field := &api.Field{
+			Name:     "singular_field",
+			JSONName: "singularField",
+			ID:       ".test.Message.singular_field",
+			Typez:    c.typez,
+		}
+		message := &api.Message{
+			Name:          "TestMessage",
+			Package:       "test",
+			ID:            ".test.TestMessage",
+			Documentation: "A test message.",
+			Fields:        []*api.Field{singular_field},
+		}
+		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+		api.CrossReference(model)
+		api.LabelRecursiveFields(model)
+		codec, err := newCodec(true, map[string]string{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		annotateModel(model, codec)
+
+		wantField := &fieldAnnotations{
+			FieldName:          "singular_field",
+			SetterName:         "singular_field",
+			BranchName:         "SingularField",
+			FQMessageName:      "crate::model::TestMessage",
+			FieldType:          c.wantType,
+			PrimitiveFieldType: c.wantType,
+			SerdeAs:            c.wantSerdeAs,
+			AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
+			SkipIfIsDefault:    true,
+		}
+		if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
+			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		}
+
+	}
+}
+
+func TestWrapperFieldAnnotations(t *testing.T) {
+	tests := []struct {
+		wantType    string
+		wantSerdeAs string
+		typezID     string
+	}{
+		{"wkt::BytesValue", "serde_with::base64::Base64", ".google.protobuf.BytesValue"},
+		{"wkt::UInt64Value", "wkt::internal::U64", ".google.protobuf.UInt64Value"},
+		{"wkt::Int64Value", "wkt::internal::I64", ".google.protobuf.Int64Value"},
+		{"wkt::UInt32Value", "wkt::internal::U32", ".google.protobuf.UInt32Value"},
+		{"wkt::Int32Value", "wkt::internal::I32", ".google.protobuf.Int32Value"},
+		{"wkt::FloatValue", "wkt::internal::F32", ".google.protobuf.FloatValue"},
+		{"wkt::DoubleValue", "wkt::internal::F64", ".google.protobuf.DoubleValue"},
+		{"wkt::BoolValue", "", ".google.protobuf.BoolValue"},
+	}
+
+	for _, c := range tests {
+		singular_field := &api.Field{
+			Name:     "singular_field",
+			JSONName: "singularField",
+			ID:       ".test.Message.singular_field",
+			Typez:    api.MESSAGE_TYPE,
+			TypezID:  c.typezID,
+			Optional: true,
+		}
+		message := &api.Message{
+			Name:          "TestMessage",
+			Package:       "test",
+			ID:            ".test.TestMessage",
+			Documentation: "A test message.",
+			Fields:        []*api.Field{singular_field},
+		}
+		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+		loadWellKnownTypes(model.State)
+		api.CrossReference(model)
+		api.LabelRecursiveFields(model)
+		codec := createRustCodec()
+		annotateModel(model, codec)
+
+		wantField := &fieldAnnotations{
+			FieldName:          "singular_field",
+			SetterName:         "singular_field",
+			BranchName:         "SingularField",
+			FQMessageName:      "crate::model::TestMessage",
+			FieldType:          fmt.Sprintf("std::option::Option<%s>", c.wantType),
+			PrimitiveFieldType: c.wantType,
+			SerdeAs:            c.wantSerdeAs,
+			SkipIfIsDefault:    true,
+		}
+		if diff := cmp.Diff(wantField, singular_field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "AddQueryParameter")); diff != "" {
+			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		}
+
 	}
 }
 
