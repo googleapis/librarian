@@ -111,11 +111,10 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		return nil, err
 	}
 
-	apiSource := cfg.APISource
-	if apiSource == "" {
-		apiSource = "https://github.com/googleapis/googleapis"
+	if cfg.APISource == "" {
+		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
-	sourceRepo, err := cloneOrOpenRepo(workRoot, apiSource, cfg.CI)
+	sourceRepo, err := cloneOrOpenRepo(workRoot, cfg.APISource, cfg.CI)
 	if err != nil {
 		return nil, err
 	}

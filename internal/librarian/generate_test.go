@@ -71,6 +71,7 @@ func TestRunGenerateCommand(t *testing.T) {
 					APISource: t.TempDir(),
 				},
 				repo:            test.repo,
+				sourceRepo:      newTestGitRepo(t),
 				ghClient:        test.ghClient,
 				state:           test.state,
 				containerClient: test.container,
