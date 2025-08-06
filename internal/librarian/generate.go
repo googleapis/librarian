@@ -255,7 +255,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 	if findLibraryByID(r.state, libraryID) == nil {
 		return "", fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
 	}
-	apiRoot, err := filepath.Abs(r.cfg.APISource)
+	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
 	if err != nil {
 		return "", err
 	}
