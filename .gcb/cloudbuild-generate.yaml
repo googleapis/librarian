@@ -17,7 +17,7 @@
 # This runs the `librarian generate` command with a provided repository,
 # secret name, and optional library ID
 steps:
-  - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:99a3cff71f58951df1da1ceef05ffad62b3670fd5add4ce78aed07f9853587e3'
+  - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:dac8d6d46eefecde4241c88348315e6162ccd0d39e84db2b98e4da7393f65c29'
     args:
       - 'generate'
       - '-repo'
