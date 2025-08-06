@@ -99,6 +99,14 @@ type LibraryState struct {
 	// If not set, this defaults to the `source_roots`.
 	// A more specific `preserve_regex` takes precedence.
 	RemoveRegex []string `yaml:"remove_regex" json:"remove_regex"`
+	// Path of commits to be excluded from parsing while calculating library changes.
+	// If all files from commit belong to one of the paths it will be skipped.
+	ReleaseExcludePaths []string `yaml:"release_exclude_paths,omitempty" json:"release_exclude_paths,omitempty"`
+	// Specifying a tag format allows librarian to honor this format when creating
+	// a tag for the release of the library. The replacement values of {id} and {version}
+	// permitted to reference the values configured in the library. If not specified
+	// the assumed format is {id}-{version}.
+	TagFormat string `yaml:"tag_format,omitempty" json:"tag_format,omitempty"`
 	// An error message from the docker response.
 	// This field is ignored when writing to state.yaml.
 	ErrorMessage string `yaml:"-" json:"error,omitempty"`
@@ -108,6 +116,7 @@ var (
 	libraryIDRegex = regexp.MustCompile(`^[a-zA-Z0-9/._-]+$`)
 	semverRegex    = regexp.MustCompile(`^v?\d+\.\d+\.\d+$`)
 	hexRegex       = regexp.MustCompile("^[a-fA-F0-9]+$")
+	tagFormatRegex = regexp.MustCompile(`{[^{}]*}`)
 )
 
 // Validate checks that the Library is valid.
@@ -146,6 +155,19 @@ func (l *LibraryState) Validate() error {
 	for i, p := range l.SourceRoots {
 		if !isValidDirPath(p) {
 			return fmt.Errorf("invalid source_path at index %d: %q", i, p)
+		}
+	}
+	for i, p := range l.ReleaseExcludePaths {
+		if !isValidDirPath(p) {
+			return fmt.Errorf("invalid release_exclude_path at index %d: %q", i, p)
+		}
+	}
+	if l.TagFormat != "" {
+		matches := tagFormatRegex.FindAllString(l.TagFormat, -1)
+		for _, match := range matches {
+			if match != "{id}" && match != "{version}" {
+				return fmt.Errorf("invalid placeholder in tag_format: %s", match)
+			}
 		}
 	}
 	for i, r := range l.PreserveRegex {

@@ -242,6 +242,44 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "valid release_exclude_path",
+			library: &LibraryState{
+				ID:                  "a/b",
+				SourceRoots:         []string{"src/a"},
+				APIs:                []*API{{Path: "a/b/v1"}},
+				ReleaseExcludePaths: []string{"a/b", "c"},
+			},
+		},
+		{
+			name: "invalid release_exclude_path",
+			library: &LibraryState{
+				ID:                  "a/b",
+				SourceRoots:         []string{"src/a"},
+				APIs:                []*API{{Path: "a/b/v1"}},
+				ReleaseExcludePaths: []string{"/a/b"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid tag_format",
+			library: &LibraryState{
+				ID:          "a/b",
+				SourceRoots: []string{"src/a"},
+				APIs:        []*API{{Path: "a/b/v1"}},
+				TagFormat:   "v{id}-{version}",
+			},
+		},
+		{
+			name: "invalid tag_format placeholder",
+			library: &LibraryState{
+				ID:          "a/b",
+				SourceRoots: []string{"src/a"},
+				APIs:        []*API{{Path: "a/b/v1"}},
+				TagFormat:   "{id}-{foo}",
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := test.library.Validate(); (err != nil) != test.wantErr {
