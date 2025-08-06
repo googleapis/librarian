@@ -388,7 +388,6 @@ func TestNewGenerateRunner(t *testing.T) {
 		{
 			name: "missing image",
 			cfg: &config.Config{
-
 				API:       "some/api",
 				APISource: t.TempDir(),
 				Repo:      "https://github.com/googleapis/librarian.git",
@@ -405,6 +404,16 @@ func TestNewGenerateRunner(t *testing.T) {
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
 				GitHubToken: "gh-token",
+			},
+		},
+		{
+			name: "empty API source",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: "", // This will trigger the clone of googleapis
+				Repo:      newTestGitRepo(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
 			},
 		},
 		{
@@ -457,7 +466,7 @@ func TestNewGenerateRunner(t *testing.T) {
 
 			if test.cfg.APISource == "" && test.cfg.WorkRoot != "" {
 				if test.name == "clone googleapis fails" {
-					// The function will try to clone googleapis into the workroot.
+					// The function will try to clone googleapis into the current work directory.
 					// To make it fail, create a non-empty, non-git directory.
 					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
 					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
@@ -467,7 +476,7 @@ func TestNewGenerateRunner(t *testing.T) {
 						t.Fatalf("os.WriteFile() = %v", err)
 					}
 				} else {
-					// The function will try to clone googleapis into the workroot.
+					// The function will try to clone googleapis into the current work directory.
 					// To prevent a real clone, we can pre-create a fake googleapis repo.
 					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
 					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
