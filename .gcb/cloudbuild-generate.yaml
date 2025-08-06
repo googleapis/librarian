@@ -21,13 +21,13 @@ steps:
     args:
       - 'generate'
       - '-repo'
-      - $_LANGUAGE_REPO
+      - $_REPOSITORY
       - '-library'
       - $_LIBRARY_ID
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
 availableSecrets:
   secretManager:
-    - versionName: projects/$PROJECT_ID/secrets/$_SECRET_NAME/versions/latest
+    - versionName: projects/$PROJECT_ID/secrets/$_GITHUB_TOKEN_SECRET_NAME/versions/latest
       env: 'LIBRARIAN_GITHUB_TOKEN'
 options:
   logging: CLOUD_LOGGING_ONLY
