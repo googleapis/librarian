@@ -161,3 +161,54 @@ func TestParseRepositoriesConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestRepositoriesForCommand(t *testing.T) {
+	testConfig := &RepositoriesConfig{
+		Repositories: []*RepositoryConfig{
+			{
+				Name:              "google-cloud-python",
+				SupportedCommands: []string{"generate", "release"},
+			},
+			{
+				Name:              "google-cloud-ruby",
+				SupportedCommands: []string{"release"},
+			},
+			{
+				Name:              "google-cloud-dotnet",
+				SupportedCommands: []string{"generate", "release"},
+			},
+		},
+	}
+	for _, test := range []struct {
+		name    string
+		command string
+		want    []string
+	}{
+		{
+			name:    "finds subset",
+			command: "generate",
+			want:    []string{"google-cloud-python", "google-cloud-dotnet"},
+		},
+		{
+			name:    "finds all",
+			command: "release",
+			want:    []string{"google-cloud-python", "google-cloud-ruby", "google-cloud-dotnet"},
+		},
+		{
+			name:    "finds none",
+			command: "non-existent",
+			want:    []string{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := testConfig.RepositoriesForCommand(test.command)
+			var names = make([]string, 0)
+			for _, r := range got {
+				names = append(names, r.Name)
+			}
+			if diff := cmp.Diff(test.want, names); diff != "" {
+				t.Errorf("parseRepositoriesConfig() mismatch (-want +got): %s", diff)
+			}
+		})
+	}
+}

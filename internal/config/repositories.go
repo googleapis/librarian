@@ -16,6 +16,7 @@ package config
 
 import (
 	"fmt"
+	"slices"
 
 	"gopkg.in/yaml.v3"
 )
@@ -55,6 +56,17 @@ func (c *RepositoriesConfig) Validate() error {
 		}
 	}
 	return nil
+}
+
+// RepositoriesForCommand return a subset of repositories that support the provided command.
+func (c *RepositoriesConfig) RepositoriesForCommand(command string) []*RepositoryConfig {
+	var repositories []*RepositoryConfig
+	for _, r := range c.Repositories {
+		if slices.Contains(r.SupportedCommands, command) {
+			repositories = append(repositories, r)
+		}
+	}
+	return repositories
 }
 
 func parseRepositoriesConfig(contentLoader func(file string) ([]byte, error), path string) (*RepositoriesConfig, error) {
