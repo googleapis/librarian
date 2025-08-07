@@ -18,6 +18,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -135,8 +136,21 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 	return pullRequestMetadata, nil
 }
 
+func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number int, labels []string) error {
+	_, response, err := c.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, number, labels)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != 200 {
+		return errors.New(fmt.Sprintf("failed to add labels, %s, response code: %d", labels, response.StatusCode))
+	}
+
+	return nil
+}
+
 // FetchGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
-// There must be a remote named 'origin' with a Github URL (as the first URL), in order to
+// There must be a remote named 'origin' with a GitHub URL (as the first URL), in order to
 // provide an unambiguous result.
 // Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
 func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {

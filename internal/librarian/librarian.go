@@ -79,6 +79,7 @@ func Run(ctx context.Context, arg ...string) error {
 type GitHubClient interface {
 	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
 	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error)
+	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
 }
 
 // ContainerClient is an abstraction over the Docker client.

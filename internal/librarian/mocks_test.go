@@ -33,7 +33,9 @@ type mockGitHubClient struct {
 	rawContent             []byte
 	rawErr                 error
 	createPullRequestCalls int
+	addLabelsToIssuesCalls int
 	createPullRequestErr   error
+	addLabelsToIssuesErr   error
 	createdPR              *github.PullRequestMetadata
 }
 
@@ -47,6 +49,11 @@ func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.R
 		return nil, m.createPullRequestErr
 	}
 	return m.createdPR, nil
+}
+
+func (m *mockGitHubClient) AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error {
+	m.addLabelsToIssuesCalls++
+	return m.addLabelsToIssuesErr
 }
 
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
