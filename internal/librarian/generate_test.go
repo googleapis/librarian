@@ -291,8 +291,6 @@ func TestRunConfigureCommand(t *testing.T) {
 				noInitVersion: true,
 			},
 			wantConfigureCalls: 1,
-			wantErr:            true,
-			wantErrMsg:         "doesn't have an initial version after configuration",
 		},
 		{
 			name: "configure command failed",

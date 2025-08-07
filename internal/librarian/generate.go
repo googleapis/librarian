@@ -559,7 +559,8 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	if libraryState.Version == "" {
-		return "", fmt.Errorf("library, %s, doesn't have an initial version after configuration", r.cfg.Library)
+		slog.Info("library doesn't receive a version, apply the default version", "id", r.cfg.Library)
+		libraryState.Version = "0.0.0"
 	}
 
 	// Update the library state in the librarian state.
