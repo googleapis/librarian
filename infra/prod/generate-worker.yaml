@@ -47,7 +47,7 @@ steps:
       - '-api-source'
       - '/workspace/googleapis'
       - '-host-mount'
-      - '/tmp:/tmp'
+      - '/workspace:/workspace'
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
 tags: ['generate-$_REPOSITORY']
 availableSecrets:
