@@ -400,3 +400,74 @@ func TestCreatePullRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestAddLabelsToIssue(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name          string
+		handler       http.HandlerFunc
+		issueNum      int
+		labels        []string
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{
+			name: "add labels to an issue",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("unexpected method: got %s, want %s", r.Method, http.MethodPost)
+				}
+				wantPath := fmt.Sprintf("/repos/owner/repo/issues/7/labels")
+				if r.URL.Path != wantPath {
+					t.Errorf("unexpected path: got %s, want %s", r.URL.Path, wantPath)
+				}
+				var labels []string
+				if err := json.NewDecoder(r.Body).Decode(&labels); err != nil {
+					t.Fatalf("failed to decode request body: %v", err)
+				}
+				expectedBody := []string{"new-label", "another-label"}
+				if strings.Join(labels, ",") != strings.Join(expectedBody, ",") {
+					t.Errorf("unexpected body: got %q, want %q", labels, expectedBody)
+				}
+			},
+			issueNum: 7,
+			labels:   []string{"new-label", "another-label"},
+		},
+		{
+			name:          "GitHub API error",
+			handler:       func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) },
+			wantErr:       true,
+			wantErrSubstr: "500",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(test.handler)
+			defer server.Close()
+
+			repo := &Repository{Owner: "owner", Name: "repo"}
+			client, err := newClientWithHTTP("fake-token", repo, server.Client())
+			if err != nil {
+				t.Fatalf("newClientWithHTTP() error = %v", err)
+			}
+			client.BaseURL, _ = url.Parse(server.URL + "/")
+
+			err = client.AddLabelsToIssue(context.Background(), repo, test.issueNum, test.labels)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("AddLabelsToIssue() should return an error")
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("AddLabelsToIssue() err = %v, want error containing %q", err, test.wantErrSubstr)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("AddLabelsToIssue() err = %v, want nil", err)
+			}
+		})
+	}
+}
