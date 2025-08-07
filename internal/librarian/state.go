@@ -103,7 +103,7 @@ func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader fu
 func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path string) (string, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		return "", errors.Join(fmt.Errorf("failed to read dir: %s", path), err)
+		return "", fmt.Errorf("failed to read dir %q: %w", path, err)
 	}
 
 	for _, entry := range entries {

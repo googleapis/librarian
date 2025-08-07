@@ -1624,6 +1624,7 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 
 // newTestGitRepo creates a new git repository in a temporary directory.
 func newTestGitRepo(t *testing.T) gitrepo.Repository {
+	t.Helper()
 	return newTestGitRepoWithState(t, true)
 }
 
