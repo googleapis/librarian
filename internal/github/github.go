@@ -139,11 +139,7 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number int, labels []string) error {
 	slog.Info("Labels added to issue", "number", number, "labels", labels)
 	_, _, err := c.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, number, labels)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // FetchGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
