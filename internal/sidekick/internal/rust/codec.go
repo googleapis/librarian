@@ -691,11 +691,14 @@ func fullyQualifiedEnumValueName(v *api.EnumValue, modulePath, sourceSpecificati
 }
 
 func bodyAccessor(m *api.Method) string {
-	if m.PathInfo.BodyFieldPath == "*" {
-		// no accessor needed, use the whole request
-		return ""
+	if m.PathInfo.BodyFieldPath == "" {
+		return "None::<gaxi::http::NoBody>"
 	}
-	return "." + toSnake(m.PathInfo.BodyFieldPath)
+	if m.PathInfo.BodyFieldPath == "*" {
+		// use the whole request
+		return "Some(req)"
+	}
+	return "req." + toSnake(m.PathInfo.BodyFieldPath)
 }
 
 func httpPathFmt(t *api.PathTemplate) string {

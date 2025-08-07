@@ -186,7 +186,7 @@ type methodAnnotation struct {
 	BuilderName         string
 	DocLines            []string
 	PathInfo            *api.PathInfo
-	BodyAccessor        string
+	Body                string
 	ServiceNameToPascal string
 	ServiceNameToCamel  string
 	ServiceNameToSnake  string
@@ -694,7 +694,7 @@ func (c *codec) annotateMethod(m *api.Method, s *api.Service, state *api.APIStat
 	annotation := &methodAnnotation{
 		Name:                strcase.ToSnake(m.Name),
 		BuilderName:         toPascal(m.Name),
-		BodyAccessor:        bodyAccessor(m),
+		Body:                bodyAccessor(m),
 		DocLines:            c.formatDocComments(m.Documentation, m.ID, state, s.Scopes()),
 		PathInfo:            m.PathInfo,
 		ServiceNameToPascal: toPascal(serviceName),

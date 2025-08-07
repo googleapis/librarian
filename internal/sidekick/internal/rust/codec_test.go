@@ -1857,3 +1857,26 @@ func TestPathFmt(t *testing.T) {
 	}
 
 }
+
+func TestBodyAccessor(t *testing.T) {
+	for _, test := range []struct {
+		bodyFieldPath string
+		want          string
+	}{
+		{"*", "Some(req)"},
+		{"field", "req.field"},
+		{"", "None::<gaxi::http::NoBody>"},
+	} {
+		method := &api.Method{
+			Name: "DoFoo",
+			ID:   ".test.Service.DoFoo",
+			PathInfo: &api.PathInfo{
+				BodyFieldPath: test.bodyFieldPath,
+			},
+		}
+		got := bodyAccessor(method)
+		if test.want != got {
+			t.Errorf("incorrect body, for BodyFieldPath=%s\nwant=%s\n got=%s", test.bodyFieldPath, test.want, got)
+		}
+	}
+}
