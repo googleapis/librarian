@@ -103,7 +103,7 @@ func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader fu
 func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path string) (string, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		return "", err
+		return "", errors.Join(fmt.Errorf("failed to read dir: %s", path), err)
 	}
 
 	for _, entry := range entries {
@@ -135,7 +135,7 @@ func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 	return os.WriteFile(path, bytes, 0644)
 }
 
-// readLibraryState reads the library state from configure-response.json.
+// readLibraryState reads the library state from a container response.
 //
 // The response file is removed afterwards.
 func readLibraryState(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
