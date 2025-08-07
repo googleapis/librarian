@@ -24,7 +24,6 @@ steps:
       - 'clone'
       - '--depth=1'
       - https://github.com/googleapis/$_REPOSITORY
-  
   - name: gcr.io/cloud-builders/git
     id: clone-googleapis
     waitFor: ['-']
@@ -33,7 +32,6 @@ steps:
       - '--single-branch'
       - '--branch=master'
       - https://github.com/googleapis/googleapis
-  
   - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:dac8d6d46eefecde4241c88348315e6162ccd0d39e84db2b98e4da7393f65c29'
     id: generate
     waitFor: ['clone-language-repo', 'clone-googleapis']
