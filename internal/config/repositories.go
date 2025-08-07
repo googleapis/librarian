@@ -1,0 +1,69 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package config
+
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
+type RepositoryConfig struct {
+	Name              string   `yaml:"name"`
+	SecretName        string   `yaml:"github-token-secret-name"`
+	SupportedCommands []string `yaml:"supported-commands"`
+}
+
+type RepositoriesConfig struct {
+	Repositories []*RepositoryConfig `yaml:"repositories"`
+}
+
+func (c *RepositoryConfig) Validate() error {
+	if c.Name == "" {
+		return fmt.Errorf("name is required")
+	}
+	if c.SecretName == "" {
+		return fmt.Errorf("secret name is required")
+	}
+	if len(c.SupportedCommands) == 0 {
+		return fmt.Errorf("supported commands cannot be empty")
+	}
+	return nil
+}
+
+func (c *RepositoriesConfig) Validate() error {
+	for i, r := range c.Repositories {
+		err := r.Validate()
+		if err != nil {
+			return fmt.Errorf("invalid repository config at index %d: %w", i, err)
+		}
+	}
+	return nil
+}
+
+func parseRepositoriesConfig(contentLoader func(file string) ([]byte, error), path string) (*RepositoriesConfig, error) {
+	bytes, err := contentLoader(path)
+	if err != nil {
+		return nil, err
+	}
+	var c RepositoriesConfig
+	if err := yaml.Unmarshal(bytes, &c); err != nil {
+		return nil, fmt.Errorf("unmarshaling repositories config state: %w", err)
+	}
+	if err := c.Validate(); err != nil {
+		return nil, fmt.Errorf("validating repositories config state: %w", err)
+	}
+	return &c, nil
+}
