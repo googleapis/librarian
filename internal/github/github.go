@@ -135,6 +135,7 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 	return pullRequestMetadata, nil
 }
 
+// AddLabelsToIssue adds labels to an existing issue in a GitHub repository.
 func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number int, labels []string) error {
 	_, response, err := c.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, number, labels)
 	if err != nil {
