@@ -137,13 +137,10 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 
 // AddLabelsToIssue adds labels to an existing issue in a GitHub repository.
 func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number int, labels []string) error {
-	_, response, err := c.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, number, labels)
+	slog.Info("Labels added to issue", "number", number, "labels", labels)
+	_, _, err := c.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, number, labels)
 	if err != nil {
 		return err
-	}
-
-	if response.StatusCode != 200 {
-		return fmt.Errorf("failed to add labels, %s, response code: %d", labels, response.StatusCode)
 	}
 
 	return nil
