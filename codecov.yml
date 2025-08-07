@@ -15,8 +15,9 @@ coverage:
   status:
     project:
       default:
-        target: 75% # The target coverage percentage for the project
+        target: 80% # The target coverage percentage for the project
         threshold: 0% # Allow 0% drop from the target; any drop below target will fail
         if_ci_failed: error # Set the CI status to 'error' if coverage conditions are not met
 ignore:
   - internal/sidekick/internal/sample
+  - internal/sidekick/internal/rust_prost
