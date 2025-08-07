@@ -20,14 +20,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// RepositoryConfig represents a single registered librarian GitHub repository
+// RepositoryConfig represents a single registered librarian GitHub repository.
 type RepositoryConfig struct {
 	Name              string   `yaml:"name"`
 	SecretName        string   `yaml:"github-token-secret-name"`
 	SupportedCommands []string `yaml:"supported-commands"`
 }
 
-// RepositoriesConfig represents all the registered librarian GitHub repositories
+// RepositoriesConfig represents all the registered librarian GitHub repositories.
 type RepositoriesConfig struct {
 	Repositories []*RepositoryConfig `yaml:"repositories"`
 }
