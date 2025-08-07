@@ -18,7 +18,6 @@ package github
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -143,7 +142,7 @@ func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number 
 	}
 
 	if response.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("failed to add labels, %s, response code: %d", labels, response.StatusCode))
+		return fmt.Errorf("failed to add labels, %s, response code: %d", labels, response.StatusCode)
 	}
 
 	return nil
