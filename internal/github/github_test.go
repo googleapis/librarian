@@ -417,7 +417,7 @@ func TestAddLabelsToIssue(t *testing.T) {
 				if r.Method != http.MethodPost {
 					t.Errorf("unexpected method: got %s, want %s", r.Method, http.MethodPost)
 				}
-				wantPath := fmt.Sprintf("/repos/owner/repo/issues/7/labels")
+				wantPath := "/repos/owner/repo/issues/7/labels"
 				if r.URL.Path != wantPath {
 					t.Errorf("unexpected path: got %s, want %s", r.URL.Path, wantPath)
 				}
