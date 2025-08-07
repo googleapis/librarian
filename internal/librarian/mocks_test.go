@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/config"
@@ -69,6 +70,7 @@ type mockContainerClient struct {
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
+	noInitVersion       bool
 	wantErrorMsg        bool
 }
 
@@ -132,19 +134,16 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 		return "", err
 	}
 
-	libraryStr := ""
-	if m.wantErrorMsg {
-		libraryStr = fmt.Sprintf(`{
-	"ID": "%s",
-  "error": "simulated error message"
-}`, request.State.Libraries[0].ID)
-	} else {
-		libraryStr = fmt.Sprintf(`{
-	"ID": "%s"
-}`, request.State.Libraries[0].ID)
+	var libraryBuilder strings.Builder
+	libraryBuilder.WriteString(fmt.Sprintf("{\"id\":\"%s\"", request.State.Libraries[0].ID))
+	if !m.noInitVersion {
+		libraryBuilder.WriteString(",\"version\": \"0.1.0\"")
 	}
-
-	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryStr), 0755); err != nil {
+	if m.wantErrorMsg {
+		libraryBuilder.WriteString(",\"error\": \"simulated error message\"")
+	}
+	libraryBuilder.WriteString("}")
+	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryBuilder.String()), 0755); err != nil {
 		return "", err
 	}
 	return "", m.configureErr
