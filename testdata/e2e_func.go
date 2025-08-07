@@ -77,7 +77,7 @@ func parseConfigureRequest(args []string) (*configureOption, error) {
 		strs := strings.Split(option, "=")
 		switch strs[0] {
 		case inputDir:
-			configureOption.intputDir = strs[1]
+			configureOption.inputDir = strs[1]
 		case librarian:
 			configureOption.librarianDir = strs[1]
 		case source:
@@ -97,7 +97,7 @@ func parseGenerateRequest(args []string) (*generateOption, error) {
 		strs := strings.Split(option, "=")
 		switch strs[0] {
 		case inputDir:
-			generateOption.intputDir = strs[1]
+			generateOption.inputDir = strs[1]
 		case librarian:
 			generateOption.librarianDir = strs[1]
 		case outputDir:
@@ -196,14 +196,14 @@ func populateAdditionalFields(library *libraryState) *libraryState {
 }
 
 type configureOption struct {
-	intputDir    string
+	inputDir     string
 	librarianDir string
 	libraryID    string
 	sourceDir    string
 }
 
 type generateOption struct {
-	intputDir    string
+	inputDir     string
 	outputDir    string
 	librarianDir string
 	libraryID    string

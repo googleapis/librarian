@@ -24,6 +24,8 @@ steps:
       - https://github.com/googleapis/$_REPOSITORY
       - '-library'
       - $_LIBRARY_ID
+      - '-host-mount'
+      - '/tmp:/tmp'
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
 tags: ['generate-$_REPOSITORY']
 availableSecrets:
