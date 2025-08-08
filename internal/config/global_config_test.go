@@ -77,7 +77,7 @@ func TestGlobalConfig_Validate(t *testing.T) {
 				},
 			},
 			wantErr:    true,
-			wantErrMsg: "invalid global file permission",
+			wantErrMsg: "invalid global file permissions",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

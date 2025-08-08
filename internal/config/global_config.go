@@ -43,7 +43,7 @@ func (g *GlobalConfig) Validate() error {
 			return fmt.Errorf("invalid global file path at index %d: %q", i, path)
 		}
 		if _, ok := validPermissions[permissions]; !ok {
-			return fmt.Errorf("invalid global file permission at index %d: %q", i, permissions)
+			return fmt.Errorf("invalid global file permissions at index %d: %q", i, permissions)
 		}
 	}
 
