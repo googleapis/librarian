@@ -29,10 +29,10 @@ type GlobalFile struct {
 	Permissions string `yaml:"permissions"`
 }
 
-var validPermissions = map[string]int{
-	"read-only":  1,
-	"write-only": 2,
-	"read-write": 3,
+var validPermissions = map[string]bool{
+	"read-only":  true,
+	"write-only": true,
+	"read-write": true,
 }
 
 // Validate checks that the GlobalConfig is valid.
