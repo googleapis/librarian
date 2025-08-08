@@ -124,7 +124,7 @@ func TestParseRepositoriesConfig(t *testing.T) {
     github-token-secret-name: google-cloud-python-github-token
     supported-commands:
       - generate
-      - release
+      - stage-release
 `,
 			want: &RepositoriesConfig{
 				Repositories: []*RepositoryConfig{
@@ -143,7 +143,7 @@ func TestParseRepositoriesConfig(t *testing.T) {
       github-token-secret-name: google-cloud-python-github-token # bad indent
     supported-commands:
       - generate
-      - release
+      - stage-release
 `,
 			want:    nil,
 			wantErr: true,
