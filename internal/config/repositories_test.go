@@ -33,7 +33,7 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 					{
 						Name:              "google-cloud-foo",
 						SecretName:        "google-cloud-foo-github-token",
-						SupportedCommands: []string{"generate", "release"},
+						SupportedCommands: []string{"generate", "stage-release", "publish-release"},
 					},
 				},
 			},
@@ -45,7 +45,7 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 				Repositories: []*RepositoryConfig{
 					{
 						SecretName:        "google-cloud-foo-github-token",
-						SupportedCommands: []string{"generate", "release"},
+						SupportedCommands: []string{"generate", "stage-release", "publish-release"},
 					},
 				},
 			},
@@ -57,7 +57,7 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 				Repositories: []*RepositoryConfig{
 					{
 						Name:              "google-cloud-foo",
-						SupportedCommands: []string{"generate", "release"},
+						SupportedCommands: []string{"generate", "stage-release", "publish-release"},
 					},
 				},
 			},
@@ -83,6 +83,19 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 						Name:              "google-cloud-foo",
 						SecretName:        "google-cloud-foo-github-token",
 						SupportedCommands: []string{},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid command",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-foo",
+						SecretName:        "google-cloud-foo-github-token",
+						SupportedCommands: []string{"generate", "invalid", "publish-release"},
 					},
 				},
 			},

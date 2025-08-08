@@ -21,6 +21,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var availableCommands = map[string]bool{
+	"generate":        true,
+	"stage-release":   true,
+	"publish-release": true,
+}
+
 // RepositoryConfig represents a single registered librarian GitHub repository.
 type RepositoryConfig struct {
 	Name              string   `yaml:"name"`
@@ -43,6 +49,11 @@ func (c *RepositoryConfig) Validate() error {
 	}
 	if len(c.SupportedCommands) == 0 {
 		return fmt.Errorf("supported commands cannot be empty")
+	}
+	for _, command := range c.SupportedCommands {
+		if !availableCommands[command] {
+			return fmt.Errorf("unsupported command: %s", command)
+		}
 	}
 	return nil
 }

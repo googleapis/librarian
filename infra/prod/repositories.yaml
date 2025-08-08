@@ -3,4 +3,5 @@ repositories:
     github-token-secret-name: "google-cloud-python-github-token"
     supported-commands:
       - generate
-      - release
+      - stage-release
+      - publish-release
