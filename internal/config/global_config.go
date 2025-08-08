@@ -25,32 +25,14 @@ type GlobalConfig struct {
 
 // GlobalFile defines the global files in language repositories.
 type GlobalFile struct {
-	Path        string     `yaml:"path"`
-	Permissions Permission `yaml:"permissions"`
+	Path        string `yaml:"path"`
+	Permissions string `yaml:"permissions"`
 }
 
-// Permission defines the global file permissions.
-type Permission int
-
-const (
-	ReadOnly Permission = iota
-	WriteOnly
-	ReadWrite
-	Unknown
-)
-
-// String converts a Permission to string.
-func (permission Permission) String() string {
-	switch permission {
-	case ReadOnly:
-		return "ReadOnly"
-	case WriteOnly:
-		return "WriteOnly"
-	case ReadWrite:
-		return "ReadWrite"
-	default:
-		return "Unknown"
-	}
+var validPermissions = map[string]int{
+	"read-only":  1,
+	"write-only": 2,
+	"read-write": 3,
 }
 
 // Validate checks that the GlobalConfig is valid.
@@ -60,7 +42,7 @@ func (g *GlobalConfig) Validate() error {
 		if !isValidDirPath(path) {
 			return fmt.Errorf("invalid global file path at index %d: %q", i, path)
 		}
-		if permissions == Unknown {
+		if _, ok := validPermissions[permissions]; !ok {
 			return fmt.Errorf("invalid global file permission at index %d: %q", i, permissions)
 		}
 	}

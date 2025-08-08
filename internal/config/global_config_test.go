@@ -32,15 +32,15 @@ func TestGlobalConfig_Validate(t *testing.T) {
 				GlobalFilesAllowlist: []*GlobalFile{
 					{
 						Path:        "a/path",
-						Permissions: ReadOnly,
+						Permissions: "read-only",
 					},
 					{
 						Path:        "another/path",
-						Permissions: WriteOnly,
+						Permissions: "write-only",
 					},
 					{
 						Path:        "other/paths",
-						Permissions: ReadWrite,
+						Permissions: "read-write",
 					},
 				},
 			},
@@ -51,11 +51,11 @@ func TestGlobalConfig_Validate(t *testing.T) {
 				GlobalFilesAllowlist: []*GlobalFile{
 					{
 						Path:        "a/path",
-						Permissions: ReadOnly,
+						Permissions: "read-only",
 					},
 					{
 						Path:        "/another/absolute/path",
-						Permissions: WriteOnly,
+						Permissions: "write-only",
 					},
 				},
 			},
@@ -68,11 +68,11 @@ func TestGlobalConfig_Validate(t *testing.T) {
 				GlobalFilesAllowlist: []*GlobalFile{
 					{
 						Path:        "a/path",
-						Permissions: ReadOnly,
+						Permissions: "write-only",
 					},
 					{
 						Path:        "another/path",
-						Permissions: Unknown,
+						Permissions: "unknown",
 					},
 				},
 			},
@@ -96,42 +96,6 @@ func TestGlobalConfig_Validate(t *testing.T) {
 
 			if err != nil {
 				t.Errorf("GlobalConfig.Validate() error = %v, wantErr %v", err, test.wantErr)
-			}
-		})
-	}
-}
-
-func TestPermission_String(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		permission Permission
-		wantStr    string
-	}{
-		{
-			name:       "read only",
-			permission: 0,
-			wantStr:    "ReadOnly",
-		},
-		{
-			name:       "write only",
-			permission: 1,
-			wantStr:    "WriteOnly",
-		},
-		{
-			name:       "read write",
-			permission: 2,
-			wantStr:    "ReadWrite",
-		},
-		{
-			name:       "unknown",
-			permission: 5,
-			wantStr:    "Unknown",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			perString := test.permission.String()
-			if perString != test.wantStr {
-				t.Errorf("Permission.String() want %s, got %s", test.wantStr, perString)
 			}
 		})
 	}
