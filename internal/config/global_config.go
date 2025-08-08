@@ -14,7 +14,9 @@
 
 package config
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // GlobalConfig defines the contract for the config.yaml file.
 type GlobalConfig struct {
@@ -33,6 +35,7 @@ const (
 	ReadOnly Permission = iota
 	WriteOnly
 	ReadWrite
+	Unknown
 )
 
 func (permission Permission) String() string {
@@ -44,6 +47,20 @@ func (permission Permission) String() string {
 	case ReadWrite:
 		return "ReadWrite"
 	default:
-		return fmt.Sprintf("Invalid Status: %d", permission)
+		return "Unknown"
 	}
+}
+
+func (g *GlobalConfig) Validate() error {
+	for i, globalFile := range g.GlobalFilesAllowlist {
+		path, permissions := globalFile.Path, globalFile.Permissions
+		if !isValidDirPath(path) {
+			return fmt.Errorf("invalid global file path at index %d: %q", i, path)
+		}
+		if permissions == Unknown {
+			return fmt.Errorf("invalid global file permission at index %d: %q", i, permissions)
+		}
+	}
+
+	return nil
 }
