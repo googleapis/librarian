@@ -29,6 +29,7 @@ type GlobalFile struct {
 	Permissions Permission `yaml:"permissions"`
 }
 
+// Permission defines the global file permissions.
 type Permission int
 
 const (
@@ -51,6 +52,7 @@ func (permission Permission) String() string {
 	}
 }
 
+// Validate checks that the GlobalConfig is valid.
 func (g *GlobalConfig) Validate() error {
 	for i, globalFile := range g.GlobalFilesAllowlist {
 		path, permissions := globalFile.Path, globalFile.Permissions
