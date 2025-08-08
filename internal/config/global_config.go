@@ -39,6 +39,7 @@ const (
 	Unknown
 )
 
+// String converts a Permission to string.
 func (permission Permission) String() string {
 	switch permission {
 	case ReadOnly:
