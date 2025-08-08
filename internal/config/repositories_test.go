@@ -131,7 +131,7 @@ func TestParseRepositoriesConfig(t *testing.T) {
 					{
 						Name:              "google-cloud-python",
 						SecretName:        "google-cloud-python-github-token",
-						SupportedCommands: []string{"generate", "release"},
+						SupportedCommands: []string{"generate", "stage-release"},
 					},
 				},
 			},
