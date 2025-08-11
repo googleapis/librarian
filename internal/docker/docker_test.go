@@ -537,7 +537,7 @@ func TestWriteLibraryState(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name: "successful-marshaling-and-writing",
+			name: "write library state to file",
 			state: &config.LibrarianState{
 				Image: "v1.0.0",
 				Libraries: []*config.LibraryState{
@@ -578,14 +578,14 @@ func TestWriteLibraryState(t *testing.T) {
 			wantFile: "successful-marshaling-and-writing.json",
 		},
 		{
-			name:     "empty-pipelineState",
+			name:     "empty library state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),
 			filename: "release-init-request.json",
 			wantFile: "empty-library-state.json",
 		},
 		{
-			name:       "nonexistent_dir_for_test",
+			name:       "nonexistent directory",
 			state:      &config.LibrarianState{},
 			path:       "/nonexistent_dir_for_test",
 			filename:   "example.json",
@@ -593,7 +593,7 @@ func TestWriteLibraryState(t *testing.T) {
 			wantErrMsg: "failed to make directory",
 		},
 		{
-			name:       "invalid_file_name",
+			name:       "invalid file name",
 			state:      &config.LibrarianState{},
 			path:       os.TempDir(),
 			filename:   "my\u0000file.json",
@@ -688,14 +688,14 @@ func TestWriteLibrarianState(t *testing.T) {
 			wantFile: "write-librarian-state-example.json",
 		},
 		{
-			name:     "empty-librarian-state",
+			name:     "empty librarian state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),
 			filename: "release-init-request.json",
 			wantFile: "empty-librarian-state.json",
 		},
 		{
-			name:       "nonexistent_dir_for_test",
+			name:       "nonexistent directory",
 			state:      &config.LibrarianState{},
 			path:       "/nonexistent_dir_for_test",
 			filename:   "example.json",
@@ -703,7 +703,7 @@ func TestWriteLibrarianState(t *testing.T) {
 			wantErrMsg: "failed to make directory",
 		},
 		{
-			name:       "invalid_file_name",
+			name:       "invalid file name",
 			state:      &config.LibrarianState{},
 			path:       os.TempDir(),
 			filename:   "my\u0000file.json",
