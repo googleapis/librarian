@@ -63,41 +63,17 @@ type mockContainerClient struct {
 	generateCalls       int
 	buildCalls          int
 	configureCalls      int
+	releaseCalls        int
 	generateErr         error
 	buildErr            error
 	configureErr        error
+	releaseErr          error
 	failGenerateForID   string
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
 	noInitVersion       bool
 	wantErrorMsg        bool
-}
-
-func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
-	m.generateCalls++
-	// Write a generate-response.json because it is required by generate
-	// command.
-	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
-		return err
-	}
-
-	libraryStr := "{}"
-	if m.wantErrorMsg {
-		libraryStr = "{error: simulated error message}"
-	}
-	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), []byte(libraryStr), 0755); err != nil {
-		return err
-	}
-	if m.failGenerateForID != "" {
-		if request.LibraryID == m.failGenerateForID {
-			return m.generateErr
-		}
-		m.requestLibraryID = request.LibraryID
-		return nil
-	}
-	m.requestLibraryID = request.LibraryID
-	return m.generateErr
 }
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
@@ -147,6 +123,37 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 		return "", err
 	}
 	return "", m.configureErr
+}
+
+func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
+	m.generateCalls++
+	// Write a generate-response.json because it is required by generate
+	// command.
+	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
+		return err
+	}
+
+	libraryStr := "{}"
+	if m.wantErrorMsg {
+		libraryStr = "{error: simulated error message}"
+	}
+	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), []byte(libraryStr), 0755); err != nil {
+		return err
+	}
+	if m.failGenerateForID != "" {
+		if request.LibraryID == m.failGenerateForID {
+			return m.generateErr
+		}
+		m.requestLibraryID = request.LibraryID
+		return nil
+	}
+	m.requestLibraryID = request.LibraryID
+	return m.generateErr
+}
+
+func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseRequest) error {
+	m.releaseCalls++
+	return m.releaseErr
 }
 
 type MockRepository struct {
