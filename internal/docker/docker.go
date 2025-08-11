@@ -245,7 +245,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 
 // ReleaseInit initiates a release for a given language repository.
 func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error {
-	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseRequest)
+	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
 		return err
 	}
