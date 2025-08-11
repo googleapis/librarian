@@ -343,7 +343,7 @@ func writeLibraryState(state *config.LibrarianState, libraryID, jsonFilePath str
 	}
 	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to create generate request JSON file: %w", err)
+		return fmt.Errorf("failed to create JSON file: %w", err)
 	}
 	defer jsonFile.Close()
 

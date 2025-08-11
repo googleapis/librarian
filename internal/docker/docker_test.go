@@ -525,7 +525,7 @@ func TestDockerRun(t *testing.T) {
 	}
 }
 
-func TestToGenerateRequestJSON(t *testing.T) {
+func TestWriteLibraryState(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name       string
