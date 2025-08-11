@@ -528,9 +528,13 @@ func TestDockerRun(t *testing.T) {
 func TestToGenerateRequestJSON(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name      string
-		state     *config.LibrarianState
-		expectErr bool
+		name       string
+		state      *config.LibrarianState
+		path       string
+		filename   string
+		wantFile   string
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "successful-marshaling-and-writing",
@@ -569,47 +573,48 @@ func TestToGenerateRequestJSON(t *testing.T) {
 					},
 				},
 			},
-			expectErr: false,
+			path:     os.TempDir(),
+			filename: "example.json",
+			wantFile: "successful-marshaling-and-writing.json",
 		},
 		{
-			name:      "empty-pipelineState",
-			state:     &config.LibrarianState{},
-			expectErr: false,
+			name:     "empty-pipelineState",
+			state:    &config.LibrarianState{},
+			path:     os.TempDir(),
+			filename: "release-init-request.json",
+			wantFile: "empty-library-state.json",
 		},
 		{
-			name:      "nonexistent_dir_for_test",
-			state:     &config.LibrarianState{},
-			expectErr: true,
+			name:       "nonexistent_dir_for_test",
+			state:      &config.LibrarianState{},
+			path:       "/nonexistent_dir_for_test",
+			filename:   "example.json",
+			wantErr:    true,
+			wantErrMsg: "failed to make directory",
 		},
 		{
-			name:      "invalid_file_name",
-			state:     &config.LibrarianState{},
-			expectErr: true,
+			name:       "invalid_file_name",
+			state:      &config.LibrarianState{},
+			path:       os.TempDir(),
+			filename:   "my\u0000file.json",
+			wantErr:    true,
+			wantErrMsg: "failed to create JSON file",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			if test.name == "invalid_file_name" {
-				filePath := filepath.Join(tempDir, "my\x00file.json")
-				err := writeLibraryState(test.state, "google-cloud-go", filePath)
-				if err == nil {
-					t.Errorf("writeGenerateRequest() expected an error but got nil")
-				}
-				return
-			} else if test.expectErr {
-				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
-				err := writeLibraryState(test.state, "google-cloud-go", filePath)
-				if err == nil {
-					t.Errorf("writeGenerateRequest() expected an error but got nil")
-				}
-				return
-			}
-
-			filePath := filepath.Join(tempDir, "generate-request.json")
+			filePath := filepath.Join(test.path, test.filename)
 			err := writeLibraryState(test.state, "google-cloud-go", filePath)
 
-			if err != nil {
-				t.Fatalf("writeGenerateRequest() unexpected error: %v", err)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("writeLibraryState() shoud fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
 			}
 
 			// Verify the file content
@@ -618,8 +623,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 				t.Fatalf("Failed to read generated file: %v", err)
 			}
 
-			fileName := fmt.Sprintf("%s.json", test.name)
-			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
+			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", test.wantFile))
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
