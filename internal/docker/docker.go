@@ -154,7 +154,7 @@ func New(workRoot, image, uid, gid string) (*Docker, error) {
 // library.
 func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
-	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+	if err := writeLibraryState(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
 	defer func(name string) {
@@ -187,7 +187,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 // the Librarian state file for the repository with a root of repoRoot.
 func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
-	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+	if err := writeLibraryState(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
 	defer func(name string) {
@@ -216,7 +216,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 // Returns the configured library id if the command succeeds.
 func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (string, error) {
 	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
-	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
+	if err := writeLibraryState(request.State, request.LibraryID, requestFilePath); err != nil {
 		return "", err
 	}
 	defer func() {
@@ -248,7 +248,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 // ReleaseInit initiates a release for a given language repository.
 func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error {
 	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseInitRequest)
-	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
+	if err := writeLibraryState(request.State, request.LibraryID, requestFilePath); err != nil {
 		return err
 	}
 	defer func() {
@@ -337,7 +337,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
+func writeLibraryState(state *config.LibrarianState, libraryID, jsonFilePath string) error {
 	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
@@ -363,4 +363,24 @@ func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) 
 	}
 
 	return nil
+}
+
+func writeLibrarianState(state *config.LibrarianState, jsonFilePath string) error {
+	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %w", err)
+	}
+	jsonFile, err := os.Create(jsonFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create JSON file: %w", err)
+	}
+	defer jsonFile.Close()
+
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal state to JSON: %w", err)
+	}
+
+	_, err = jsonFile.Write(data)
+
+	return err
 }

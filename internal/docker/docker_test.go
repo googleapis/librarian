@@ -591,14 +591,14 @@ func TestToGenerateRequestJSON(t *testing.T) {
 			tempDir := t.TempDir()
 			if test.name == "invalid_file_name" {
 				filePath := filepath.Join(tempDir, "my\x00file.json")
-				err := writeRequest(test.state, "google-cloud-go", filePath)
+				err := writeLibraryState(test.state, "google-cloud-go", filePath)
 				if err == nil {
 					t.Errorf("writeGenerateRequest() expected an error but got nil")
 				}
 				return
 			} else if test.expectErr {
 				filePath := filepath.Join("/non-exist-dir", "generate-request.json")
-				err := writeRequest(test.state, "google-cloud-go", filePath)
+				err := writeLibraryState(test.state, "google-cloud-go", filePath)
 				if err == nil {
 					t.Errorf("writeGenerateRequest() expected an error but got nil")
 				}
@@ -606,7 +606,7 @@ func TestToGenerateRequestJSON(t *testing.T) {
 			}
 
 			filePath := filepath.Join(tempDir, "generate-request.json")
-			err := writeRequest(test.state, "google-cloud-go", filePath)
+			err := writeLibraryState(test.state, "google-cloud-go", filePath)
 
 			if err != nil {
 				t.Fatalf("writeGenerateRequest() unexpected error: %v", err)
@@ -620,6 +620,115 @@ func TestToGenerateRequestJSON(t *testing.T) {
 
 			fileName := fmt.Sprintf("%s.json", test.name)
 			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", fileName))
+			if readErr != nil {
+				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
+			}
+
+			if diff := cmp.Diff(strings.TrimSpace(string(wantBytes)), string(gotBytes)); diff != "" {
+				t.Errorf("Generated JSON mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestWriteLibrarianState(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		state      *config.LibrarianState
+		path       string
+		filename   string
+		wantFile   string
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "write to a json file",
+			state: &config.LibrarianState{
+				Image: "v1.0.0",
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "google-cloud-go",
+						Version:             "1.0.0",
+						LastGeneratedCommit: "abcd123",
+						APIs: []*config.API{
+							{
+								Path:          "google/cloud/compute/v1",
+								ServiceConfig: "example_service_config.yaml",
+							},
+						},
+						SourceRoots: []string{
+							"src/example/path",
+						},
+						PreserveRegex: []string{
+							"example-preserve-regex",
+						},
+						RemoveRegex: []string{
+							"example-remove-regex",
+						},
+					},
+					{
+						ID:      "google-cloud-storage",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{
+								Path:          "google/storage/v1",
+								ServiceConfig: "storage_service_config.yaml",
+							},
+						},
+					},
+				},
+			},
+			path:     os.TempDir(),
+			filename: "release-init-request.json",
+			wantFile: "write-librarian-state-example.json",
+		},
+		{
+			name:     "empty-pipelineState",
+			state:    &config.LibrarianState{},
+			path:     os.TempDir(),
+			filename: "release-init-request.json",
+			wantFile: "empty-librarian-state.json",
+		},
+		{
+			name:       "nonexistent_dir_for_test",
+			state:      &config.LibrarianState{},
+			path:       "/nonexistent_dir_for_test",
+			filename:   "example.json",
+			wantErr:    true,
+			wantErrMsg: "failed to make directory",
+		},
+		{
+			name:       "invalid_file_name",
+			state:      &config.LibrarianState{},
+			path:       os.TempDir(),
+			filename:   "my\u0000file.json",
+			wantErr:    true,
+			wantErrMsg: "failed to create JSON file",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			filePath := filepath.Join(test.path, test.filename)
+			err := writeLibrarianState(test.state, filePath)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("writeLibrarianState() shoud fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			// Verify the file content
+			gotBytes, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Fatalf("Failed to read generated file: %v", err)
+			}
+
+			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", test.wantFile))
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
