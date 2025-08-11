@@ -44,7 +44,6 @@ steps:
           exit 1
         fi
       done
-      
       echo "Finished validating credentials."
 options:
   logging: CLOUD_LOGGING_ONLY
