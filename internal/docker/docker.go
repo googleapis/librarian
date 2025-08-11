@@ -113,6 +113,8 @@ type GenerateRequest struct {
 	RepoDir string
 }
 
+// ReleaseRequest contains all the information required for a language
+// container to run the release command.
 type ReleaseRequest struct {
 	// cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
