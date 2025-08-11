@@ -560,6 +560,7 @@ func TestDockerRun(t *testing.T) {
 }
 
 func TestWriteLibraryState(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name       string
 		state      *config.LibrarianState
@@ -607,14 +608,14 @@ func TestWriteLibraryState(t *testing.T) {
 				},
 			},
 			path:     os.TempDir(),
-			filename: "example.json",
+			filename: "a-library-example.json",
 			wantFile: "successful-marshaling-and-writing.json",
 		},
 		{
 			name:     "empty library state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),
-			filename: "empty-request.json",
+			filename: "empty-library.json",
 			wantFile: "empty-library-state.json",
 		},
 		{
@@ -717,14 +718,14 @@ func TestWriteLibrarianState(t *testing.T) {
 				},
 			},
 			path:     os.TempDir(),
-			filename: "release-init-request.json",
+			filename: "a-librarian-example.json",
 			wantFile: "write-librarian-state-example.json",
 		},
 		{
 			name:     "empty librarian state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),
-			filename: "release-init-request.json",
+			filename: "empty-librarian.json",
 			wantFile: "empty-librarian-state.json",
 		},
 		{
