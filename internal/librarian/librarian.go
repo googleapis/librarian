@@ -87,7 +87,7 @@ type ContainerClient interface {
 	Build(ctx context.Context, request *docker.BuildRequest) error
 	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
 	Generate(ctx context.Context, request *docker.GenerateRequest) error
-	Release(ctx context.Context, request *docker.ReleaseRequest) error
+	ReleaseInit(ctx context.Context, request *docker.ReleaseRequest) error
 }
 
 func isURL(s string) bool {
