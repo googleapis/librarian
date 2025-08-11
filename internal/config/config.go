@@ -120,6 +120,16 @@ type Config struct {
 	// api is specified all currently managed libraries will be regenerated.
 	Library string
 
+	// LibraryVersion is the library version to release.
+	//
+	// Overrides the automatic semantic version calculation and forces a specific
+	// version for a library.
+	// This is intended for exceptional cases, such as applying a backport patch
+	// or forcing a major version bump.
+	//
+	// Requires the --library flag to be specified.
+	LibraryVersion string
+
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
 	// configure and update-apis.
@@ -206,6 +216,10 @@ func (c *Config) SetupUser() error {
 func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
 		return false, errors.New("no GitHub token supplied for push")
+	}
+
+	if c.Library == "" && c.LibraryVersion != "" {
+		return false, errors.New("specified library version without library id")
 	}
 
 	if _, err := validateHostMount(c.HostMount, ""); err != nil {
