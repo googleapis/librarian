@@ -366,6 +366,62 @@ func TestDockerRun(t *testing.T) {
 			want:    []string{},
 			wantErr: true,
 		},
+		{
+			name: "Release init for all libraries",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				releaseInitRequest := &ReleaseRequest{
+					Cfg:     cfg,
+					State:   state,
+					RepoDir: repoDir,
+					Output:  testOutput,
+				}
+
+				return d.ReleaseInit(ctx, releaseInitRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
+				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				testImage,
+				string(CommandReleaseInit),
+				"--librarian=/librarian",
+				"--repo=/repo",
+				"--output=/output",
+			},
+		},
+		{
+			name: "Release init for one library",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				releaseInitRequest := &ReleaseRequest{
+					Cfg:       cfg,
+					State:     state,
+					RepoDir:   repoDir,
+					Output:    testOutput,
+					LibraryID: testLibraryID,
+				}
+
+				return d.ReleaseInit(ctx, releaseInitRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
+				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				testImage,
+				string(CommandReleaseInit),
+				"--librarian=/librarian",
+				"--repo=/repo",
+				"--output=/output",
+				fmt.Sprintf("--library=%s", testLibraryID),
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			test.docker.run = func(args ...string) error {
