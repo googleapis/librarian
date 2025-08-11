@@ -614,7 +614,7 @@ func TestWriteLibraryState(t *testing.T) {
 			name:     "empty library state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),
-			filename: "release-init-request.json",
+			filename: "empty-request.json",
 			wantFile: "empty-library-state.json",
 		},
 		{
