@@ -37,12 +37,14 @@ type Command string
 
 // The set of commands passed to the language container, in a single place to avoid typos.
 const (
-	// CommandGenerate performs generation for a configured library.
-	CommandGenerate Command = "generate"
 	// CommandBuild builds a library.
 	CommandBuild Command = "build"
 	// CommandConfigure configures a new API as a library.
 	CommandConfigure Command = "configure"
+	// CommandGenerate performs generation for a configured library.
+	CommandGenerate Command = "generate"
+	// CommandReleaseInit performs release for a library.
+	CommandReleaseInit Command = "release init"
 )
 
 // Docker contains all the information required to run language-specific
@@ -146,39 +148,6 @@ func New(workRoot, image, uid, gid string) (*Docker, error) {
 	return docker, nil
 }
 
-// Generate performs generation for an API which is configured as part of a
-// library.
-func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
-	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
-	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
-		return err
-	}
-	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
-		}
-	}(jsonFilePath)
-
-	commandArgs := []string{
-		"--librarian=/librarian",
-		"--input=/input",
-		"--output=/output",
-		"--source=/source",
-	}
-
-	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
-	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
-	mounts := []string{
-		fmt.Sprintf("%s:/librarian", librarianDir),
-		fmt.Sprintf("%s:/input", generatorInput),
-		fmt.Sprintf("%s:/output", request.Output),
-		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
-	}
-
-	return c.runDocker(ctx, request.Cfg, CommandGenerate, mounts, commandArgs)
-}
-
 // Build builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
 func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
@@ -239,6 +208,70 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	}
 
 	return request.LibraryID, nil
+}
+
+// Generate performs generation for an API which is configured as part of a
+// library.
+func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
+	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
+	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+		return err
+	}
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+		}
+	}(jsonFilePath)
+
+	commandArgs := []string{
+		"--librarian=/librarian",
+		"--input=/input",
+		"--output=/output",
+		"--source=/source",
+	}
+
+	generatorInput := filepath.Join(request.RepoDir, config.GeneratorInputDir)
+	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
+	mounts := []string{
+		fmt.Sprintf("%s:/librarian", librarianDir),
+		fmt.Sprintf("%s:/input", generatorInput),
+		fmt.Sprintf("%s:/output", request.Output),
+		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
+	}
+
+	return c.runDocker(ctx, request.Cfg, CommandGenerate, mounts, commandArgs)
+}
+
+// ReleaseInit initiates a release for a given language repository.
+func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error {
+	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseRequest)
+	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
+		return err
+	}
+	defer func() {
+		err := os.Remove(requestFilePath)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", requestFilePath), slog.Any("err", err))
+		}
+	}()
+	commandArgs := []string{
+		"--librarian=/librarian",
+		"--repo=/repo",
+		"--output=/output",
+	}
+	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
+	mounts := []string{
+		fmt.Sprintf("%s:/librarian:ro", librarianDir), // readonly volume
+		fmt.Sprintf("%s:/repo", request.RepoDir),
+		fmt.Sprintf("%s:/output", request.Output),
+	}
+
+	if err := c.runDocker(ctx, request.Cfg, CommandReleaseInit, mounts, commandArgs); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
