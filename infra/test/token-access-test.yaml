@@ -17,23 +17,33 @@
 # This runs the `librarian generate` command with a provided repository,
 # secret name, and optional library ID
 steps:
-  - name: 'bash'
+  - name: 'gcr.io/cloud-builders/gcloud-slim'
     id: validate-credentials
     waitFor: ['-']
     script: |
       #!/usr/bin/env bash
       echo "Your project ID is $PROJECT_ID"
+      echo "gcloud config get-value core/account:"
+      gcloud config get-value core/account
       echo "pwd is $(pwd)"
       echo "ls -la ."
       ls -la .
       echo "Finding YAML files:"
       find /workspace/librarian -name '*.yaml'
-
+      ROBOT_ACCOUNT=cloud-sdk-librarian-robot
       if [[ $- == *x* ]]; then
         echo "xtrace is ON. Exiting to avoid credentials showing up in logs."
         exit 1
       fi
-      curl --version
+      cat infra/prod/repositories.yaml | grep '^\s*-\s*name:' |awk '{print $NF}' |tr -d '"' | while read -r repo_name; do
+        echo "Validating credentials for repository: $repo_name"
+        GITHUB_TOKEN=$(gcloud secrets versions access latest --secret="${repo_name}-github-token")
+        curl -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/googleapis/${repo_name}/collaborators/${ROBOT_ACCOUNT}/permission"
+        if [[ $? -ne 0 ]]; then
+          echo "Failed to validate credentials for repository: $repo_name"
+          exit 1
+        fi
+      done
       
       echo "Finished validating credentials."
 options:
