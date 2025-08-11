@@ -271,8 +271,8 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error
 
 	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", librarianDir), // readonly volume
-		fmt.Sprintf("%s:/repo", request.RepoDir),
+		fmt.Sprintf("%s:/librarian", librarianDir),
+		fmt.Sprintf("%s:/repo:ro", request.RepoDir), // readonly volume
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 

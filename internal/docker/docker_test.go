@@ -388,8 +388,8 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
-				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s:/repo:ro", repoDir),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
 				string(CommandReleaseInit),
@@ -452,8 +452,8 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
-				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s:/repo:ro", repoDir),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
 				string(CommandReleaseInit),
@@ -482,8 +482,8 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
-				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s:/repo:ro", repoDir),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
 				string(CommandReleaseInit),
