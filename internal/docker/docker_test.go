@@ -16,7 +16,6 @@ package docker
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -252,14 +251,6 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 				}
-				jsonData, _ := json.MarshalIndent(&config.LibraryState{}, "", "  ")
-				if err := os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755); err != nil {
-					return err
-				}
-				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
-				if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
-					return err
-				}
 
 				_, err := d.Configure(ctx, configureRequest)
 
@@ -276,7 +267,6 @@ func TestDockerRun(t *testing.T) {
 				"--input=/input",
 				"--source=/source",
 			},
-			wantErr: false,
 		},
 		{
 			name: "Configure with multiple libraries in librarian state",
@@ -316,24 +306,6 @@ func TestDockerRun(t *testing.T) {
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 				}
-				jsonData, _ := json.MarshalIndent(&config.LibraryState{
-					ID: testLibraryID,
-					APIs: []*config.API{
-						{
-							Path:          "example/path/v1",
-							ServiceConfig: "generated_example_v1.yaml",
-						},
-					},
-				}, "", "  ")
-
-				if err := os.MkdirAll(filepath.Join(configureRequest.RepoDir, config.LibrarianDir), 0755); err != nil {
-					return err
-				}
-
-				jsonFilePath := filepath.Join(configureRequest.RepoDir, config.LibrarianDir, config.ConfigureResponse)
-				if err := os.WriteFile(jsonFilePath, jsonData, 0644); err != nil {
-					return err
-				}
 
 				configuredLibrary, err := d.Configure(ctx, configureRequest)
 				if configuredLibrary != testLibraryID {
@@ -353,7 +325,6 @@ func TestDockerRun(t *testing.T) {
 				"--input=/input",
 				"--source=/source",
 			},
-			wantErr: false,
 		},
 		{
 			name: "Configure with invalid repo dir",
