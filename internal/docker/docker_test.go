@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -378,27 +377,29 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				randInt := rand.Intn(10000)
-				localRepo := filepath.Join(os.TempDir(), fmt.Sprintf("%d", randInt))
-				releaseInitRequest := &ReleaseRequest{
-					Cfg: &config.Config{
-						Repo: localRepo,
-					},
-					State:          state,
-					PartialRepoDir: repoDir,
-					Output:         testOutput,
-				}
-
-				if err := os.MkdirAll(filepath.Join(localRepo, config.LibrarianDir), 0755); err != nil {
+				partialRepoDir := filepath.Join(repoDir, "release-init-all-libraries")
+				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
 				}
+
+				releaseInitRequest := &ReleaseRequest{
+					Cfg: &config.Config{
+						Repo: repoDir,
+					},
+					State:          state,
+					PartialRepoDir: partialRepoDir,
+					Output:         testOutput,
+					GlobalConfig:   &config.GlobalConfig{},
+				}
+
+				defer os.RemoveAll(partialRepoDir)
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
-				"-v", fmt.Sprintf("%s:/repo:ro", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", filepath.Join(repoDir, "release-init-all-libraries")),
+				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-init-all-libraries")),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
 				string(CommandReleaseInit),
@@ -413,12 +414,21 @@ func TestDockerRun(t *testing.T) {
 				Image: mockImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				releaseInitRequest := &ReleaseRequest{
-					Cfg:            cfg,
-					State:          state,
-					PartialRepoDir: repoDir,
-					Output:         testOutput,
+				partialRepoDir := filepath.Join(repoDir, "release-init-returns-error")
+				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
+					t.Fatal(err)
 				}
+
+				releaseInitRequest := &ReleaseRequest{
+					Cfg: &config.Config{
+						Repo: repoDir,
+					},
+					State:          state,
+					PartialRepoDir: partialRepoDir,
+					Output:         testOutput,
+					GlobalConfig:   &config.GlobalConfig{},
+				}
+				defer os.RemoveAll(partialRepoDir)
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
 			},
@@ -449,20 +459,28 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
+				partialRepoDir := filepath.Join(repoDir, "release-init-one-library")
+				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
+					t.Fatal(err)
+				}
 				releaseInitRequest := &ReleaseRequest{
-					Cfg:            cfg,
+					Cfg: &config.Config{
+						Repo: repoDir,
+					},
 					State:          state,
-					PartialRepoDir: repoDir,
+					PartialRepoDir: partialRepoDir,
 					Output:         testOutput,
 					LibraryID:      testLibraryID,
+					GlobalConfig:   &config.GlobalConfig{},
 				}
+				defer os.RemoveAll(partialRepoDir)
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
-				"-v", fmt.Sprintf("%s:/repo:ro", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", filepath.Join(repoDir, "release-init-one-library")),
+				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-init-one-library")),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
 				string(CommandReleaseInit),
@@ -478,21 +496,28 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
+				partialRepoDir := filepath.Join(repoDir, "release-init-one-library-with-version")
+				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
+					t.Fatal(err)
+				}
+
 				releaseInitRequest := &ReleaseRequest{
 					Cfg:            cfg,
 					State:          state,
-					PartialRepoDir: repoDir,
+					PartialRepoDir: partialRepoDir,
 					Output:         testOutput,
 					LibraryID:      testLibraryID,
 					LibraryVersion: "1.2.3",
+					GlobalConfig:   &config.GlobalConfig{},
 				}
+				defer os.RemoveAll(partialRepoDir)
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
-				"-v", fmt.Sprintf("%s:/repo:ro", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", filepath.Join(repoDir, "release-init-one-library-with-version")),
+				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-init-one-library-with-version")),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
 				string(CommandReleaseInit),
