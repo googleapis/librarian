@@ -54,11 +54,12 @@ func TestNew(t *testing.T) {
 
 func TestDockerRun(t *testing.T) {
 	const (
-		mockImage     = "mockImage"
-		testAPIRoot   = "testAPIRoot"
-		testImage     = "testImage"
-		testLibraryID = "testLibraryID"
-		testOutput    = "testOutput"
+		mockImage            = "mockImage"
+		testAPIRoot          = "testAPIRoot"
+		testImage            = "testImage"
+		testLibraryID        = "testLibraryID"
+		testOutput           = "testOutput"
+		simulateDockerErrMsg = "simulate docker command failure for testing"
 	)
 
 	state := &config.LibrarianState{}
@@ -73,6 +74,7 @@ func TestDockerRun(t *testing.T) {
 		runCommand func(ctx context.Context, d *Docker) error
 		want       []string
 		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "Generate",
@@ -104,7 +106,6 @@ func TestDockerRun(t *testing.T) {
 				"--output=/output",
 				"--source=/source",
 			},
-			wantErr: false,
 		},
 		{
 			name: "Generate with invalid repo root",
@@ -122,8 +123,9 @@ func TestDockerRun(t *testing.T) {
 				}
 				return d.Generate(ctx, generateRequest)
 			},
-			want:    []string{},
-			wantErr: true,
+			want:       []string{},
+			wantErr:    true,
+			wantErrMsg: "failed to make directory",
 		},
 		{
 			name: "Generate with mock image",
@@ -142,8 +144,9 @@ func TestDockerRun(t *testing.T) {
 
 				return d.Generate(ctx, generateRequest)
 			},
-			want:    []string{},
-			wantErr: true,
+			want:       []string{},
+			wantErr:    true,
+			wantErrMsg: simulateDockerErrMsg,
 		},
 		{
 			name: "Generate runs in docker",
@@ -175,7 +178,6 @@ func TestDockerRun(t *testing.T) {
 				"--output=/output",
 				"--source=/source",
 			},
-			wantErr: false,
 		},
 		{
 			name: "Build",
@@ -201,7 +203,6 @@ func TestDockerRun(t *testing.T) {
 				"--librarian=/librarian",
 				"--repo=/repo",
 			},
-			wantErr: false,
 		},
 		{
 			name: "Build with invalid repo dir",
@@ -217,8 +218,9 @@ func TestDockerRun(t *testing.T) {
 				}
 				return d.Build(ctx, buildRequest)
 			},
-			want:    []string{},
-			wantErr: true,
+			want:       []string{},
+			wantErr:    true,
+			wantErrMsg: "failed to make directory",
 		},
 		{
 			name: "Build with mock image",
@@ -235,8 +237,9 @@ func TestDockerRun(t *testing.T) {
 
 				return d.Build(ctx, buildRequest)
 			},
-			want:    []string{},
-			wantErr: true,
+			want:       []string{},
+			wantErr:    true,
+			wantErrMsg: simulateDockerErrMsg,
 		},
 		{
 			name: "Configure",
@@ -342,8 +345,9 @@ func TestDockerRun(t *testing.T) {
 				_, err := d.Configure(ctx, configureRequest)
 				return err
 			},
-			want:    []string{},
-			wantErr: true,
+			want:       []string{},
+			wantErr:    true,
+			wantErrMsg: "failed to make directory",
 		},
 		{
 			name: "Configure with mock image",
@@ -363,8 +367,9 @@ func TestDockerRun(t *testing.T) {
 
 				return err
 			},
-			want:    []string{},
-			wantErr: true,
+			want:       []string{},
+			wantErr:    true,
+			wantErrMsg: simulateDockerErrMsg,
 		},
 		{
 			name: "Release init for all libraries",
@@ -392,6 +397,42 @@ func TestDockerRun(t *testing.T) {
 				"--repo=/repo",
 				"--output=/output",
 			},
+		},
+		{
+			name: "Release init returns error",
+			docker: &Docker{
+				Image: mockImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				releaseInitRequest := &ReleaseRequest{
+					Cfg:     cfg,
+					State:   state,
+					RepoDir: repoDir,
+					Output:  testOutput,
+				}
+
+				return d.ReleaseInit(ctx, releaseInitRequest)
+			},
+			wantErr:    true,
+			wantErrMsg: simulateDockerErrMsg,
+		},
+		{
+			name: "Release init with invalid repo dir",
+			docker: &Docker{
+				Image: mockImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				releaseInitRequest := &ReleaseRequest{
+					Cfg:     cfg,
+					State:   state,
+					RepoDir: "/non-exist-dir",
+					Output:  testOutput,
+				}
+
+				return d.ReleaseInit(ctx, releaseInitRequest)
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to make directory",
 		},
 		{
 			name: "Release init for one library",
@@ -439,6 +480,9 @@ func TestDockerRun(t *testing.T) {
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
 				}
 				return
 			}
