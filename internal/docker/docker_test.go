@@ -688,7 +688,7 @@ func TestWriteLibrarianState(t *testing.T) {
 			wantFile: "write-librarian-state-example.json",
 		},
 		{
-			name:     "empty-pipelineState",
+			name:     "empty-librarian-state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),
 			filename: "release-init-request.json",

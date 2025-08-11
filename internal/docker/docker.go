@@ -248,7 +248,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 // ReleaseInit initiates a release for a given language repository.
 func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error {
 	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseInitRequest)
-	if err := writeLibraryState(request.State, request.LibraryID, requestFilePath); err != nil {
+	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return err
 	}
 	defer func() {
