@@ -16,10 +16,16 @@ package automation
 
 import (
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"gopkg.in/yaml.v3"
+
+	_ "embed"
 )
+
+//go:embed prod/repositories.yaml
+var prodRepositoriesYaml []byte
 
 var availableCommands = map[string]bool{
 	"generate":        true,
@@ -93,4 +99,28 @@ func parseRepositoriesConfig(contentLoader func(file string) ([]byte, error), pa
 		return nil, fmt.Errorf("validating repositories config state: %w", err)
 	}
 	return &c, nil
+}
+
+func loadRepositoriesConfig() (*RepositoriesConfig, error) {
+	return parseRepositoriesConfig(func(file string) ([]byte, error) { return prodRepositoriesYaml, nil }, "unused")
+}
+
+// RunCommand triggers a command for each registered repository that supports it.
+func RunCommand(command string) error {
+	// validate command is allowed
+	if !availableCommands[command] {
+		return fmt.Errorf("unsupported command: %s", command)
+	}
+
+	config, err := loadRepositoriesConfig()
+	if err != nil {
+		slog.Error("error loading repositories config", slog.Any("err", err))
+		return err
+	}
+
+	repositories := config.RepositoriesForCommand(command)
+	for _, repository := range repositories {
+		slog.Debug("running command", slog.String("command", command), slog.String("repository", repository.Name))
+	}
+	return nil
 }
