@@ -44,7 +44,7 @@ const (
 	// CommandGenerate performs generation for a configured library.
 	CommandGenerate Command = "generate"
 	// CommandReleaseInit performs release for a library.
-	CommandReleaseInit Command = "release init"
+	CommandReleaseInit Command = "release-init"
 )
 
 // Docker contains all the information required to run language-specific
