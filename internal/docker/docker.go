@@ -21,7 +21,9 @@ package docker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -118,21 +120,26 @@ type GenerateRequest struct {
 // ReleaseRequest contains all the information required for a language
 // container to run the release command.
 type ReleaseRequest struct {
-	// cfg is a pointer to the [config.Config] struct, holding general configuration
+	// Cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
 	Cfg *config.Config
-	// state is a pointer to the [config.LibrarianState] struct, representing
+	// GlobalConfig is a pointer to the [config.GlobalConfig] struct, holding
+	// global files configuration in a language repository.
+	GlobalConfig *config.GlobalConfig
+	// State is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
-	// libraryID specifies the ID of the library to release.
+	// LibraryID specifies the ID of the library to release.
 	LibraryID string
-	// libraryID specifies the version of the library to release.
+	// LibraryVersion specifies the version of the library to release.
 	LibraryVersion string
-	// output specifies the empty output directory into which the command should
-	// generate code
+	// Output specifies the empty output directory into which the command should
+	// generate code.
 	Output string
-	// RepoDir is the local root directory of the language repository.
-	RepoDir string
+	// PartialRepoDir is the local root directory of language repository contains
+	// files that make up libraries and global files.
+	// This is the directory that container can access.
+	PartialRepoDir string
 }
 
 // New constructs a Docker instance which will invoke the specified
@@ -247,7 +254,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 
 // ReleaseInit initiates a release for a given language repository.
 func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error {
-	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseInitRequest)
+	requestFilePath := filepath.Join(request.Cfg.Repo, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return err
 	}
@@ -269,10 +276,14 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error
 		commandArgs = append(commandArgs, fmt.Sprintf("--library-version=%s", request.LibraryVersion))
 	}
 
-	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
+	if err := partialCopyRepo(request); err != nil {
+		return err
+	}
+	librarianDir := filepath.Join(request.PartialRepoDir, config.LibrarianDir)
+
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian", librarianDir),
-		fmt.Sprintf("%s:/repo:ro", request.RepoDir), // readonly volume
+		fmt.Sprintf("%s:/repo:ro", request.PartialRepoDir), // readonly volume
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
@@ -334,6 +345,94 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	slog.Info(strings.Repeat("-", 80))
 	err := cmd.Run()
 	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
+	return err
+}
+
+// partialCopyRepo copies the following files from the [config.Config.Repo] to
+// [ReleaseRequest.PartialRepoDir] in the given ReleaseRequest:
+//
+// 1. all directories that make up all libraries, or one library, if the library
+// ID is specified.
+//
+// 2. the .librarian directory.
+//
+// 3. global files declared in config.yaml.
+func partialCopyRepo(request *ReleaseRequest) error {
+	dst := request.PartialRepoDir
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %w", err)
+	}
+
+	for _, library := range request.State.Libraries {
+		// Only copy files that make up one library.
+		if request.LibraryID != "" {
+			if library.ID == request.LibraryID {
+				if err := copyOneLibrary(dst, library); err != nil {
+					return err
+				}
+				break
+			}
+			continue
+		}
+
+		// Copy all files make up all libraries.
+		if err := copyOneLibrary(dst, library); err != nil {
+			return err
+		}
+	}
+
+	src := request.Cfg.Repo
+	// Copy the .librarian directory.
+	if err := os.CopyFS(dst, os.DirFS(filepath.Join(src, config.LibrarianDir))); err != nil {
+		return fmt.Errorf("failed to copy librarian dir to %s: %w", dst, err)
+	}
+
+	// Copy global files declared in global config, skipping write only files.
+	for _, globalFile := range request.GlobalConfig.GlobalFilesAllowlist {
+		if globalFile.Permissions == config.PermissionWriteOnly {
+			continue
+		}
+
+		dstPath := filepath.Join(dst, globalFile.Path)
+		srcPath := filepath.Join(src, globalFile.Path)
+		if err := copyFile(dstPath, srcPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func copyOneLibrary(dst string, library *config.LibraryState) error {
+	for _, src := range library.SourceRoots {
+		if err := os.CopyFS(dst, os.DirFS(src)); err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dst, err)
+		}
+	}
+
+	return nil
+}
+
+func copyFile(dst, src string) (err error) {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err = errors.Join(err, destinationFile.Close()); err != nil {
+			err = fmt.Errorf("copyFile(%q, %q): %w", dst, src, err)
+		}
+	}()
+
+	_, err = io.Copy(destinationFile, sourceFile)
+
 	return err
 }
 

@@ -18,6 +18,12 @@ import (
 	"fmt"
 )
 
+const (
+	PermissionReadOnly  = "read-only"
+	PermissionWriteOnly = "write-only"
+	PermissionReadWrite = "read-write"
+)
+
 // GlobalConfig defines the contract for the config.yaml file.
 type GlobalConfig struct {
 	GlobalFilesAllowlist []*GlobalFile `yaml:"global_files_allowlist"`
@@ -30,9 +36,9 @@ type GlobalFile struct {
 }
 
 var validPermissions = map[string]bool{
-	"read-only":  true,
-	"write-only": true,
-	"read-write": true,
+	PermissionReadOnly:  true,
+	PermissionWriteOnly: true,
+	PermissionReadWrite: true,
 }
 
 // Validate checks that the GlobalConfig is valid.

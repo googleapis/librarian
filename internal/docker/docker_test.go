@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -377,11 +378,19 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
+				randInt := rand.Intn(10000)
+				localRepo := filepath.Join(os.TempDir(), fmt.Sprintf("%d", randInt))
 				releaseInitRequest := &ReleaseRequest{
-					Cfg:     cfg,
-					State:   state,
-					RepoDir: repoDir,
-					Output:  testOutput,
+					Cfg: &config.Config{
+						Repo: localRepo,
+					},
+					State:          state,
+					PartialRepoDir: repoDir,
+					Output:         testOutput,
+				}
+
+				if err := os.MkdirAll(filepath.Join(localRepo, config.LibrarianDir), 0755); err != nil {
+					t.Fatal(err)
 				}
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
@@ -405,10 +414,10 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseRequest{
-					Cfg:     cfg,
-					State:   state,
-					RepoDir: repoDir,
-					Output:  testOutput,
+					Cfg:            cfg,
+					State:          state,
+					PartialRepoDir: repoDir,
+					Output:         testOutput,
 				}
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
@@ -423,10 +432,10 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseRequest{
-					Cfg:     cfg,
-					State:   state,
-					RepoDir: "/non-exist-dir",
-					Output:  testOutput,
+					Cfg:            cfg,
+					State:          state,
+					PartialRepoDir: "/non-exist-dir",
+					Output:         testOutput,
 				}
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
@@ -441,11 +450,11 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseRequest{
-					Cfg:       cfg,
-					State:     state,
-					RepoDir:   repoDir,
-					Output:    testOutput,
-					LibraryID: testLibraryID,
+					Cfg:            cfg,
+					State:          state,
+					PartialRepoDir: repoDir,
+					Output:         testOutput,
+					LibraryID:      testLibraryID,
 				}
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
@@ -472,7 +481,7 @@ func TestDockerRun(t *testing.T) {
 				releaseInitRequest := &ReleaseRequest{
 					Cfg:            cfg,
 					State:          state,
-					RepoDir:        repoDir,
+					PartialRepoDir: repoDir,
 					Output:         testOutput,
 					LibraryID:      testLibraryID,
 					LibraryVersion: "1.2.3",
