@@ -126,6 +126,8 @@ type ReleaseRequest struct {
 	State *config.LibrarianState
 	// libraryID specifies the ID of the library to release.
 	LibraryID string
+	// libraryID specifies the version of the library to release.
+	LibraryVersion string
 	// output specifies the empty output directory into which the command should
 	// generate code
 	Output string
@@ -262,6 +264,9 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error
 	}
 	if request.LibraryID != "" {
 		commandArgs = append(commandArgs, fmt.Sprintf("--library=%s", request.LibraryID))
+	}
+	if request.LibraryVersion != "" {
+		commandArgs = append(commandArgs, fmt.Sprintf("--library-version=%s", request.LibraryVersion))
 	}
 
 	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
