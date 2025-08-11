@@ -260,6 +260,10 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error
 		"--repo=/repo",
 		"--output=/output",
 	}
+	if request.LibraryID != "" {
+		commandArgs = append(commandArgs, fmt.Sprintf("--library=%s", request.LibraryID))
+	}
+
 	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian:ro", librarianDir), // readonly volume
