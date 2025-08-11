@@ -61,26 +61,6 @@ type Docker struct {
 	run func(args ...string) error
 }
 
-// GenerateRequest contains all the information required for a language
-// container to run the generate command.
-type GenerateRequest struct {
-	// cfg is a pointer to the [config.Config] struct, holding general configuration
-	// values parsed from flags or environment variables.
-	Cfg *config.Config
-	// state is a pointer to the [config.LibrarianState] struct, representing
-	// the overall state of the generation and release pipeline.
-	State *config.LibrarianState
-	// apiRoot specifies the root directory of the API specification repo.
-	ApiRoot string
-	// libraryID specifies the ID of the library to generate
-	LibraryID string
-	// output specifies the empty output directory into which the command should
-	// generate code
-	Output string
-	// RepoDir is the local root directory of the language repository.
-	RepoDir string
-}
-
 // BuildRequest contains all the information required for a language
 // container to run the build command.
 type BuildRequest struct {
@@ -90,7 +70,7 @@ type BuildRequest struct {
 	// state is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
-	// libraryID specifies the ID of the library to build
+	// libraryID specifies the ID of the library to build.
 	LibraryID string
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
@@ -107,8 +87,44 @@ type ConfigureRequest struct {
 	State *config.LibrarianState
 	// apiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
-	// libraryID specifies the ID of the library to generate
+	// libraryID specifies the ID of the library to configure.
 	LibraryID string
+	// RepoDir is the local root directory of the language repository.
+	RepoDir string
+}
+
+// GenerateRequest contains all the information required for a language
+// container to run the generate command.
+type GenerateRequest struct {
+	// cfg is a pointer to the [config.Config] struct, holding general configuration
+	// values parsed from flags or environment variables.
+	Cfg *config.Config
+	// state is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
+	// apiRoot specifies the root directory of the API specification repo.
+	ApiRoot string
+	// libraryID specifies the ID of the library to generate.
+	LibraryID string
+	// output specifies the empty output directory into which the command should
+	// generate code
+	Output string
+	// RepoDir is the local root directory of the language repository.
+	RepoDir string
+}
+
+type ReleaseRequest struct {
+	// cfg is a pointer to the [config.Config] struct, holding general configuration
+	// values parsed from flags or environment variables.
+	Cfg *config.Config
+	// state is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
+	// libraryID specifies the ID of the library to release.
+	LibraryID string
+	// output specifies the empty output directory into which the command should
+	// generate code
+	Output string
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
 }
