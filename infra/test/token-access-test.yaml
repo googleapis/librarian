@@ -1,0 +1,49 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# This Cloud Build configuration is used by a Louhi flow for the Artifact
+# Registry (AR) Exit Gate process (go/cloud-sdk-ar-exit-gate-onboarding).
+#
+# This runs the `librarian generate` command with a provided repository,
+# secret name, and optional library ID
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud-slim'
+    id: validate-credentials
+    waitFor: ['-']
+    script: |
+      #!/usr/bin/env bash
+      echo "Your project ID is $PROJECT_ID"
+      echo "gcloud config get-value core/account:"
+      gcloud config get-value core/account
+      echo "pwd is $(pwd)"
+      echo "ls -la ."
+      ls -la .
+      echo "Finding YAML files:"
+      find /workspace/librarian -name '*.yaml'
+      ROBOT_ACCOUNT=cloud-sdk-librarian-robot
+      if [[ $- == *x* ]]; then
+        echo "xtrace is ON. Exiting to avoid credentials showing up in logs."
+        exit 1
+      fi
+      cat infra/prod/repositories.yaml | grep '^\s*-\s*name:' |awk '{print $NF}' |tr -d '"' | while read -r repo_name; do
+        echo "Validating credentials for repository: $repo_name"
+        GITHUB_TOKEN=$(gcloud secrets versions access latest --secret="${repo_name}-github-token")
+        curl --fail -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/googleapis/${repo_name}/collaborators/${ROBOT_ACCOUNT}/permission"
+        if [[ $? -ne 0 ]]; then
+          echo "Failed to validate credentials for repository: $repo_name"
+          exit 1
+        fi
+      done
+      echo "Finished validating credentials."
+options:
+  logging: CLOUD_LOGGING_ONLY
