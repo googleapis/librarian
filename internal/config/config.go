@@ -45,6 +45,8 @@ const (
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
 	LibrarianDir = ".librarian"
+	// ReleaseRequest is a JSON file that describes which library to release.
+	ReleaseRequest = "release-request.json"
 )
 
 // Config holds all configuration values parsed from flags or environment
