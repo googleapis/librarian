@@ -783,7 +783,7 @@ func TestWriteLibraryState(t *testing.T) {
 			name:     "empty library state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),
-			filename: "empty-library.json",
+			filename: "another-library-example.json",
 			wantFile: "empty-library-state.json",
 		},
 		{
@@ -825,7 +825,7 @@ func TestWriteLibraryState(t *testing.T) {
 				t.Fatalf("Failed to read generated file: %v", err)
 			}
 
-			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", test.wantFile))
+			wantBytes, readErr := os.ReadFile(filepath.Join("../..", "testdata", "test-write-library-state", test.wantFile))
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
@@ -893,7 +893,7 @@ func TestWriteLibrarianState(t *testing.T) {
 			name:     "empty librarian state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),
-			filename: "empty-librarian.json",
+			filename: "another-librarian-example.json",
 			wantFile: "empty-librarian-state.json",
 		},
 		{
@@ -934,7 +934,7 @@ func TestWriteLibrarianState(t *testing.T) {
 				t.Fatalf("Failed to read generated file: %v", err)
 			}
 
-			wantBytes, readErr := os.ReadFile(filepath.Join("..", "..", "testdata", test.wantFile))
+			wantBytes, readErr := os.ReadFile(filepath.Join("../..", "testdata", "test-write-librarian-state", test.wantFile))
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
