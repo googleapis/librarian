@@ -559,6 +559,54 @@ func TestDockerRun(t *testing.T) {
 	}
 }
 
+func TestPartialCopyRepo(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		request    *ReleaseRequest
+		repoDir    string
+		postCheck  func(wantRepo, gotRepo string) error
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "invalid partial repo dir",
+			request: &ReleaseRequest{
+				PartialRepoDir: "/invalid-path",
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to make directory",
+		},
+		{
+			name: "invalid source repo dir",
+			request: &ReleaseRequest{
+				Cfg: &config.Config{
+					Repo: "/non-existent-path",
+				},
+				State:          &config.LibrarianState{},
+				PartialRepoDir: os.TempDir(),
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to copy librarian dir",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := partialCopyRepo(test.request)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+		})
+	}
+}
+
 func TestWriteLibraryState(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
