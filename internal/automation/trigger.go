@@ -17,9 +17,12 @@ package automation
 import (
 	"context"
 	"fmt"
+	"iter"
 	"log/slog"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
+	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
+	"github.com/googleapis/gax-go/v2"
 )
 
 var triggerNameByCommandName = map[string]string{
@@ -29,6 +32,18 @@ var triggerNameByCommandName = map[string]string{
 }
 
 const region = "global"
+
+type cloudBuildClient struct {
+	client *cloudbuild.Client
+}
+
+func (c *cloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) (*cloudbuild.RunBuildTriggerOperation, error) {
+	return c.client.RunBuildTrigger(ctx, req, opts...)
+}
+
+func (c *cloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
+	return c.client.ListBuildTriggers(ctx, req, opts...).All()
+}
 
 // RunCommand triggers a command for each registered repository that supports it.
 func RunCommand(ctx context.Context, command string, projectId string) error {
@@ -52,6 +67,9 @@ func RunCommand(ctx context.Context, command string, projectId string) error {
 		return fmt.Errorf("error creating cloudbuild client: %w", err)
 	}
 	defer c.Close()
+	wrappedClient := &cloudBuildClient{
+		client: c,
+	}
 
 	repositories := config.RepositoriesForCommand(command)
 	for _, repository := range repositories {
@@ -61,7 +79,7 @@ func RunCommand(ctx context.Context, command string, projectId string) error {
 			"_REPOSITORY":               repository.Name,
 			"_GITHUB_TOKEN_SECRET_NAME": repository.SecretName,
 		}
-		err = runCloudBuildTriggerByName(ctx, c, projectId, region, triggerName, substitutions)
+		err = runCloudBuildTriggerByName(ctx, wrappedClient, projectId, region, triggerName, substitutions)
 		if err != nil {
 			slog.Error("Error triggering cloudbuild", slog.Any("err", err))
 		}

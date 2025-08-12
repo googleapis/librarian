@@ -25,15 +25,10 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-// BuildTriggerIterator is an interface for iterating of BuildTrigger list values.
-type BuildTriggerIterator interface {
-	All() iter.Seq2[*cloudbuildpb.BuildTrigger, error]
-}
-
 // CloudBuildClient is an interface for mocking calls to Cloud Build.
 type CloudBuildClient interface {
 	RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) (*cloudbuild.RunBuildTriggerOperation, error)
-	ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) BuildTriggerIterator
+	ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error]
 }
 
 func runCloudBuildTriggerByName(ctx context.Context, c CloudBuildClient, projectId string, location string, triggerName string, substitutions map[string]string) error {
@@ -54,7 +49,7 @@ func findTriggerIdByName(ctx context.Context, c CloudBuildClient, projectId stri
 	req := &cloudbuildpb.ListBuildTriggersRequest{
 		Parent: fmt.Sprintf("projects/%s/locations/%s", projectId, location),
 	}
-	for resp, err := range c.ListBuildTriggers(ctx, req).All() {
+	for resp, err := range c.ListBuildTriggers(ctx, req) {
 		if err != nil {
 			return "", fmt.Errorf("error running trigger %w", err)
 		}

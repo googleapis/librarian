@@ -30,10 +30,6 @@ type mockCloudBuildClient struct {
 	buildTriggers []*cloudbuildpb.BuildTrigger
 }
 
-type mockBuildTriggerIterator struct {
-	buildTriggers []*cloudbuildpb.BuildTrigger
-}
-
 func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) (*cloudbuild.RunBuildTriggerOperation, error) {
 	if c.runError != nil {
 		return nil, c.runError
@@ -41,19 +37,13 @@ func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbu
 	return &cloudbuild.RunBuildTriggerOperation{}, nil
 }
 
-func (i *mockBuildTriggerIterator) All() iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
+func (c *mockCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
 	return func(yield func(*cloudbuildpb.BuildTrigger, error) bool) {
-		for _, v := range i.buildTriggers {
+		for _, v := range c.buildTriggers {
 			if !yield(v, nil) {
 				return // Stop iteration if yield returns false
 			}
 		}
-	}
-}
-
-func (c *mockCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) BuildTriggerIterator {
-	return &mockBuildTriggerIterator{
-		buildTriggers: c.buildTriggers,
 	}
 }
 
