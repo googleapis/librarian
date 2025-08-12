@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+// BuildTriggerIterator is an interface for iterating of BuildTrigger list values.
 type BuildTriggerIterator interface {
 	All() iter.Seq2[*cloudbuildpb.BuildTrigger, error]
 }
