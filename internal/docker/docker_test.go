@@ -867,6 +867,61 @@ func TestWriteLibraryState(t *testing.T) {
 	}
 }
 
+func TestCopyFile(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		dst         string
+		src         string
+		wantSrcFile bool
+		wantErr     bool
+		wantErrMsg  string
+	}{
+		{
+			name:       "invalid src",
+			src:        "/invalid-path/example.txt",
+			wantErr:    true,
+			wantErrMsg: "failed to open file",
+		},
+		{
+			name:        "invalid dst",
+			src:         filepath.Join(os.TempDir(), "example.txt"),
+			dst:         "/invalid-path",
+			wantSrcFile: true,
+			wantErr:     true,
+			wantErrMsg:  "failed to create file",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.wantSrcFile {
+				if err := os.MkdirAll(filepath.Dir(test.src), 0755); err != nil {
+					t.Error(err)
+				}
+				sourceFile, err := os.Create(test.src)
+				if err != nil {
+					t.Error(err)
+				}
+				if err := sourceFile.Close(); err != nil {
+					t.Error(err)
+				}
+			}
+			err := copyFile(test.dst, test.src)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("copyFile() shoud fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+		})
+	}
+}
+
 func TestWriteLibrarianState(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

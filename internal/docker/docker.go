@@ -420,7 +420,7 @@ func copyOneLibrary(dst, src string, library *config.LibraryState) error {
 func copyFile(dst, src string) (err error) {
 	sourceFile, err := os.Open(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open file: %s", src)
 	}
 	defer sourceFile.Close()
 
@@ -429,7 +429,7 @@ func copyFile(dst, src string) (err error) {
 	}
 	destinationFile, err := os.Create(dst)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create file: %s", dst)
 	}
 
 	defer func() {
