@@ -626,6 +626,62 @@ func TestPartialCopyRepo(t *testing.T) {
 			},
 		},
 		{
+			name: "copy one library and required files to partial repo",
+			request: &ReleaseRequest{
+				Cfg: &config.Config{
+					Repo: filepath.Join(os.TempDir(), "repo"),
+				},
+				LibraryID: "a-library",
+				State: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "a-library",
+							SourceRoots: []string{
+								"a-library/a/path",
+								"a-library/another/path",
+							},
+						},
+						{
+							ID: "another-library",
+							SourceRoots: []string{
+								"another-library/one/path",
+								"another-library/two/path",
+							},
+						},
+					},
+				},
+				PartialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
+				GlobalConfig: &config.GlobalConfig{
+					GlobalFilesAllowlist: []*config.GlobalFile{
+						{
+							Path:        "read/one.txt",
+							Permissions: "read-only",
+						},
+						{
+							Path:        "write/two.txt",
+							Permissions: "write-only",
+						},
+						{
+							Path:        "read-write/three.txt",
+							Permissions: "read-write",
+						},
+					},
+				},
+			},
+			includedFiles: []string{
+				"a-library/a/path/empty.txt",
+				"a-library/another/path/empty.txt",
+				".librarian/empty.txt",
+				"read/one.txt",
+				"read-write/three.txt",
+			},
+			excludedFiles: []string{
+				"another-library/one/path/empty.txt",
+				"another-library/two/path/empty.txt",
+				"write/two.txt",
+			},
+		},
+		{
 			name: "invalid partial repo dir",
 			request: &ReleaseRequest{
 				Cfg: &config.Config{
