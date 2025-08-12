@@ -17,18 +17,25 @@ package automation
 import (
 	"context"
 	"fmt"
+	"iter"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
+	"github.com/googleapis/gax-go/v2"
 	"golang.org/x/exp/slog"
 )
 
-func runCloudBuildTriggerByName(ctx context.Context, projectId string, location string, triggerName string, substitutions map[string]string) error {
-	c, err := cloudbuild.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("error creating cloudbuild client: %w", err)
-	}
-	defer c.Close()
+type BuildTriggerIterator interface {
+	All() iter.Seq2[*cloudbuildpb.BuildTrigger, error]
+}
+
+// CloudBuildClient is an interface for mocking calls to Cloud Build.
+type CloudBuildClient interface {
+	RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) (*cloudbuild.RunBuildTriggerOperation, error)
+	ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) BuildTriggerIterator
+}
+
+func runCloudBuildTriggerByName(ctx context.Context, c CloudBuildClient, projectId string, location string, triggerName string, substitutions map[string]string) error {
 	triggerId, err := findTriggerIdByName(ctx, c, projectId, location, triggerName)
 	if err != nil {
 		return fmt.Errorf("error finding triggerid: %w", err)
@@ -37,7 +44,7 @@ func runCloudBuildTriggerByName(ctx context.Context, projectId string, location 
 	return runCloudBuildTrigger(ctx, c, projectId, location, triggerId, substitutions)
 }
 
-func findTriggerIdByName(ctx context.Context, c *cloudbuild.Client, projectId string, location string, triggerName string) (string, error) {
+func findTriggerIdByName(ctx context.Context, c CloudBuildClient, projectId string, location string, triggerName string) (string, error) {
 	slog.Info("looking for triggerId by name",
 		slog.String("projectId", projectId),
 		slog.String("location", location),
@@ -57,7 +64,7 @@ func findTriggerIdByName(ctx context.Context, c *cloudbuild.Client, projectId st
 	return "", fmt.Errorf("could not find trigger id")
 }
 
-func runCloudBuildTrigger(ctx context.Context, c *cloudbuild.Client, projectId string, location string, triggerId string, substitutions map[string]string) error {
+func runCloudBuildTrigger(ctx context.Context, c CloudBuildClient, projectId string, location string, triggerId string, substitutions map[string]string) error {
 	triggerName := fmt.Sprintf("projects/%s/locations/%s/triggers/%s", projectId, location, triggerId)
 	req := &cloudbuildpb.RunBuildTriggerRequest{
 		Name:      triggerName,

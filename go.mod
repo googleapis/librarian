@@ -10,6 +10,7 @@ require (
 	github.com/go-git/go-git/v5 v5.16.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v69 v69.2.0
+	github.com/googleapis/gax-go/v2 v2.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/pb33f/libopenapi v0.25.0
 	github.com/pelletier/go-toml/v2 v2.2.4
@@ -46,7 +47,6 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
-	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
