@@ -22,6 +22,8 @@ steps:
     waitFor: ['-']
     script: |
       #!/usr/bin/env bash
+
+      set -eo pipefail
       echo "Your project ID is $PROJECT_ID"
       echo "gcloud config get-value core/account:"
       gcloud config get-value core/account
@@ -36,11 +38,16 @@ steps:
         exit 1
       fi
       cat infra/prod/repositories.yaml | grep '^\s*-\s*name:' |awk '{print $NF}' |tr -d '"' | while read -r repo_name; do
-        echo "Validating credentials for repository: $repo_name"
+        echo "Validating credentials for repository: ${repo_name}"
         GITHUB_TOKEN=$(gcloud secrets versions access latest --secret="${repo_name}-github-token")
-        curl --fail -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/googleapis/${repo_name}/collaborators/${ROBOT_ACCOUNT}/permission"
+        if [[ -z "${GITHUB_TOKEN}" ]]; then
+          echo "GitHub token for repository ${repo_name} is not set."
+          exit 1
+        fi
+        permission_url="https://api.github.com/repos/googleapis/${repo_name}/collaborators/${ROBOT_ACCOUNT}/permission"
+        curl --fail -H "Authorization: token ${GITHUB_TOKEN}" "${permission_url}"
         if [[ $? -ne 0 ]]; then
-          echo "Failed to validate credentials for repository: $repo_name"
+          echo "Failed to validate credentials for repository: ${repo_name} via ${permission_url}"
           exit 1
         fi
       done
