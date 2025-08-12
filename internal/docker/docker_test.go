@@ -562,13 +562,104 @@ func TestDockerRun(t *testing.T) {
 func TestPartialCopyRepo(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name       string
-		request    *ReleaseRequest
-		repoDir    string
-		postCheck  func(wantRepo, gotRepo string) error
-		wantErr    bool
-		wantErrMsg string
+		name          string
+		request       *ReleaseRequest
+		repoDir       string
+		prepare       func(request *ReleaseRequest)
+		includedFiles []string
+		excludedFiles []string
+		wantErr       bool
+		wantErrMsg    string
 	}{
+		{
+			name: "copy all libraries and required files to partial repo",
+			request: &ReleaseRequest{
+				Cfg: &config.Config{
+					Repo: filepath.Join(os.TempDir(), "repo"),
+				},
+				State: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "a-library",
+							SourceRoots: []string{
+								"a-library/a/path",
+								"a-library/another/path",
+							},
+						},
+						{
+							ID: "another-library",
+							SourceRoots: []string{
+								"another-library/one/path",
+								"another-library/two/path",
+							},
+						},
+					},
+				},
+				PartialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
+				GlobalConfig: &config.GlobalConfig{
+					GlobalFilesAllowlist: []*config.GlobalFile{
+						{
+							Path:        "read/one.txt",
+							Permissions: "read-only",
+						},
+						{
+							Path:        "write/two.txt",
+							Permissions: "write-only",
+						},
+						{
+							Path:        "read-write/three.txt",
+							Permissions: "read-write",
+						},
+					},
+				},
+			},
+			prepare: func(request *ReleaseRequest) {
+				emptyFilename := "empty.txt"
+				repo := request.Cfg.Repo
+				// Create library files.
+				for _, library := range request.State.Libraries {
+					for _, sourcePath := range library.SourceRoots {
+						sourcePath = filepath.Join(repo, sourcePath)
+						if err := os.MkdirAll(sourcePath, 0755); err != nil {
+							t.Error(err)
+						}
+						if err := createEmptyFile(filepath.Join(sourcePath, emptyFilename)); err != nil {
+							t.Error(err)
+						}
+					}
+				}
+				// Create .librarian directory.
+				librarianDir := filepath.Join(repo, ".librarian")
+				if err := os.MkdirAll(librarianDir, 0755); err != nil {
+					t.Error(err)
+				}
+				if err := createEmptyFile(filepath.Join(librarianDir, emptyFilename)); err != nil {
+					t.Error(err)
+				}
+				// Create global files.
+				for _, globalFile := range request.GlobalConfig.GlobalFilesAllowlist {
+					filename := filepath.Join(repo, globalFile.Path)
+					if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+						t.Error(err)
+					}
+					if err := createEmptyFile(filename); err != nil {
+						t.Error(err)
+					}
+				}
+			},
+			includedFiles: []string{
+				"a-library/a/path/empty.txt",
+				"a-library/another/path/empty.txt",
+				"another-library/one/path/empty.txt",
+				"another-library/two/path/empty.txt",
+				".librarian/empty.txt",
+				"read/one.txt",
+				"read-write/three.txt",
+			},
+			excludedFiles: []string{
+				"write/two.txt",
+			},
+		},
 		{
 			name: "invalid partial repo dir",
 			request: &ReleaseRequest{
@@ -591,6 +682,17 @@ func TestPartialCopyRepo(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if !test.wantErr {
+				if err := os.RemoveAll(test.request.Cfg.Repo); err != nil {
+					t.Error(err)
+				}
+				if err := os.RemoveAll(test.request.PartialRepoDir); err != nil {
+					t.Error(err)
+				}
+
+				test.prepare(test.request)
+			}
+
 			err := partialCopyRepo(test.request)
 			if test.wantErr {
 				if err == nil {
@@ -602,6 +704,24 @@ func TestPartialCopyRepo(t *testing.T) {
 				}
 
 				return
+			}
+
+			if err != nil {
+				t.Errorf("partialCopyRepo failed, error: %q", err)
+			}
+
+			for _, includedFile := range test.includedFiles {
+				filename := filepath.Join(test.request.PartialRepoDir, includedFile)
+				if _, err := os.Stat(filename); err != nil {
+					t.Error(err)
+				}
+			}
+
+			for _, excludedFile := range test.excludedFiles {
+				filename := filepath.Join(test.request.PartialRepoDir, excludedFile)
+				if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+					t.Error(err)
+				}
 			}
 		})
 	}
@@ -854,4 +974,16 @@ func TestDocker_runCommand(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createEmptyFile(filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %s", filename)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("failed to close file: %s", filename)
+	}
+
+	return nil
 }

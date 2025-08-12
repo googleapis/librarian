@@ -359,6 +359,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 // 3. global files declared in config.yaml.
 func partialCopyRepo(request *ReleaseRequest) error {
 	dst := request.PartialRepoDir
+	src := request.Cfg.Repo
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
@@ -367,7 +368,7 @@ func partialCopyRepo(request *ReleaseRequest) error {
 		// Only copy files that make up one library.
 		if request.LibraryID != "" {
 			if library.ID == request.LibraryID {
-				if err := copyOneLibrary(dst, library); err != nil {
+				if err := copyOneLibrary(dst, src, library); err != nil {
 					return err
 				}
 				break
@@ -376,12 +377,11 @@ func partialCopyRepo(request *ReleaseRequest) error {
 		}
 
 		// Copy all files make up all libraries.
-		if err := copyOneLibrary(dst, library); err != nil {
+		if err := copyOneLibrary(dst, src, library); err != nil {
 			return err
 		}
 	}
 
-	src := request.Cfg.Repo
 	// Copy the .librarian directory.
 	if err := os.CopyFS(dst, os.DirFS(filepath.Join(src, config.LibrarianDir))); err != nil {
 		return fmt.Errorf("failed to copy librarian dir to %s: %w", dst, err)
@@ -403,9 +403,10 @@ func partialCopyRepo(request *ReleaseRequest) error {
 	return nil
 }
 
-func copyOneLibrary(dst string, library *config.LibraryState) error {
-	for _, src := range library.SourceRoots {
-		if err := os.CopyFS(dst, os.DirFS(src)); err != nil {
+func copyOneLibrary(dst, src string, library *config.LibraryState) error {
+	for _, srcRoot := range library.SourceRoots {
+		path := filepath.Join(src, srcRoot)
+		if err := os.CopyFS(dst, os.DirFS(path)); err != nil {
 			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dst, err)
 		}
 	}
