@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
@@ -27,7 +28,9 @@ import (
 
 func main() {
 	slog.Info("args:", slog.Any("args", os.Args[1:]))
-	err := automation.RunCommand("generate")
+	ctx := context.Background()
+	projectId := "chingor-test"
+	err := automation.RunCommand(ctx, "generate", projectId)
 	if err != nil {
 		slog.Error("Error running command", slog.Any("err", err))
 	}
