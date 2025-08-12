@@ -425,7 +425,7 @@ func copyFile(dst, src string) (err error) {
 	defer sourceFile.Close()
 
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to make directory: %s", src)
 	}
 	destinationFile, err := os.Create(dst)
 	if err != nil {
