@@ -383,7 +383,9 @@ func partialCopyRepo(request *ReleaseRequest) error {
 	}
 
 	// Copy the .librarian directory.
-	if err := os.CopyFS(dst, os.DirFS(filepath.Join(src, config.LibrarianDir))); err != nil {
+	if err := os.CopyFS(
+		filepath.Join(dst, config.LibrarianDir),
+		os.DirFS(filepath.Join(src, config.LibrarianDir))); err != nil {
 		return fmt.Errorf("failed to copy librarian dir to %s: %w", dst, err)
 	}
 
@@ -405,8 +407,9 @@ func partialCopyRepo(request *ReleaseRequest) error {
 
 func copyOneLibrary(dst, src string, library *config.LibraryState) error {
 	for _, srcRoot := range library.SourceRoots {
-		path := filepath.Join(src, srcRoot)
-		if err := os.CopyFS(dst, os.DirFS(path)); err != nil {
+		dstPath := filepath.Join(dst, srcRoot)
+		srcPath := filepath.Join(src, srcRoot)
+		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
 			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dst, err)
 		}
 	}
@@ -421,6 +424,9 @@ func copyFile(dst, src string) (err error) {
 	}
 	defer sourceFile.Close()
 
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
 	destinationFile, err := os.Create(dst)
 	if err != nil {
 		return err
