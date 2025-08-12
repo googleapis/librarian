@@ -436,13 +436,15 @@ func TestDockerRun(t *testing.T) {
 			wantErrMsg: simulateDockerErrMsg,
 		},
 		{
-			name: "Release init with invalid repo dir",
+			name: "Release init with invalid partial repo dir",
 			docker: &Docker{
 				Image: mockImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseRequest{
-					Cfg:            cfg,
+					Cfg: &config.Config{
+						Repo: os.TempDir(),
+					},
 					State:          state,
 					PartialRepoDir: "/non-exist-dir",
 					Output:         testOutput,
@@ -502,7 +504,9 @@ func TestDockerRun(t *testing.T) {
 				}
 
 				releaseInitRequest := &ReleaseRequest{
-					Cfg:            cfg,
+					Cfg: &config.Config{
+						Repo: os.TempDir(),
+					},
 					State:          state,
 					PartialRepoDir: partialRepoDir,
 					Output:         testOutput,
