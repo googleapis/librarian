@@ -23,6 +23,8 @@ steps:
     script: |
       #!/usr/bin/env bash
 
+      # "-o pipefail" stops execution of the piped command fails, especially
+      # the body of the while loop in this case.
       set -eo pipefail
       echo "Your project ID is $PROJECT_ID"
       echo "gcloud config get-value core/account:"
