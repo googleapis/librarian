@@ -867,6 +867,61 @@ func TestWriteLibraryState(t *testing.T) {
 	}
 }
 
+func TestCopyOneLibrary(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		dst        string
+		src        string
+		library    *config.LibraryState
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "invalid src",
+			dst:  os.TempDir(),
+			src:  "/invalid-path",
+			library: &config.LibraryState{
+				ID: "example-library",
+				SourceRoots: []string{
+					"a-library/path",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to copy",
+		},
+		{
+			name: "invalid dst",
+			dst:  "/invalid-path",
+			src:  os.TempDir(),
+			library: &config.LibraryState{
+				ID: "example-library",
+				SourceRoots: []string{
+					"a-library/path",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to copy",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := copyOneLibrary(test.dst, test.src, test.library)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("copyOneLibrary() shoud fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+		})
+	}
+}
+
 func TestCopyFile(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
