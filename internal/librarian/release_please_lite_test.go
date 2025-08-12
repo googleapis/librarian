@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestParseCommit(t *testing.T) {
@@ -79,6 +80,27 @@ func TestParseCommit(t *testing.T) {
 					"Co-authored-by": "John Doe <john.doe@example.com>",
 					"Reviewed-by":    "Jane Smith <jane.smith@example.com>",
 				},
+				SHA: "fake-sha",
+			},
+		},
+		{
+			name: "feat with multiple footers for generated changes",
+			message: `feat: [library-name] add new feature
+This is the body.
+...
+
+PiperOrigin-RevId: piper_cl_number
+
+Source-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})
+`,
+			want: &ConventionalCommit{
+				Type:        "feat",
+				Description: "[library-name] add new feature",
+				Body:        "This is the body.\n...",
+				IsBreaking:  false,
+				Footers: map[string]string{
+					"PiperOrigin-RevId": "piper_cl_number",
+					"Source-Link":       "[googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})"},
 				SHA: "fake-sha",
 			},
 		},
@@ -185,6 +207,41 @@ func TestShouldExclude(t *testing.T) {
 			got := shouldExclude(tc.files, tc.excludePaths)
 			if got != tc.want {
 				t.Errorf("shouldExclude(%v, %v) = %v, want %v", tc.files, tc.excludePaths, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestFormatTag(t *testing.T) {
+	testCases := []struct {
+		name    string
+		library *config.LibraryState
+		want    string
+	}{
+		{
+			name: "default format",
+			library: &config.LibraryState{
+				ID:      "google.cloud.foo.v1",
+				Version: "1.2.3",
+			},
+			want: "google.cloud.foo.v1-1.2.3",
+		},
+		{
+			name: "custom format",
+			library: &config.LibraryState{
+				ID:        "google.cloud.foo.v1",
+				Version:   "1.2.3",
+				TagFormat: "v{version}-{id}",
+			},
+			want: "v1.2.3-google.cloud.foo.v1",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := formatTag(tc.library)
+			if got != tc.want {
+				t.Errorf("formatTag() = %q, want %q", got, tc.want)
 			}
 		})
 	}

@@ -128,7 +128,8 @@ func GetCommits(repo *gitrepo.LocalRepository, state *config.LibrarianState, lib
 	var paths []string
 	paths = append(paths, library.SourceRoots...)
 
-	commits, err := repo.GetCommitsForPathsSinceTag(paths, library.Version)
+	tag := formatTag(library)
+	commits, err := repo.GetCommitsForPathsSinceTag(paths, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}
@@ -165,3 +166,13 @@ func shouldExclude(files, excludePaths []string) bool {
 	}
 	return true
 }
+
+func formatTag(library *config.LibraryState) string {
+	tagFormat := library.TagFormat
+	if tagFormat == "" {
+		tagFormat = "{id}-{version}"
+	}
+	r := strings.NewReplacer("{id}", library.ID, "{version}", library.Version)
+	return r.Replace(tagFormat)
+}
+
