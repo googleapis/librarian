@@ -211,7 +211,7 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "Invalid config - invalid pull request url",
 			cfg: Config{
-				PullRequest: "123",
+				PullRequest: "https://github.com/owner/repo/issues/123",
 			},
 			wantErr:    true,
 			wantErrMsg: "pull request URL is not valid",
