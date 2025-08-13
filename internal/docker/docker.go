@@ -222,7 +222,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 // Returns the configured library id if the command succeeds.
 func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (string, error) {
 	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
-	if err := writeLibraryState(request.State, request.LibraryID, requestFilePath); err != nil {
+	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return "", err
 	}
 	defer func() {

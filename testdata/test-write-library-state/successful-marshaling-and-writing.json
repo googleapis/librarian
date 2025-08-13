@@ -5,7 +5,8 @@
   "apis": [
     {
       "path": "google/cloud/compute/v1",
-      "service_config": "example_service_config.yaml"
+      "service_config": "example_service_config.yaml",
+      "status": "new"
     }
   ],
   "source_roots": [

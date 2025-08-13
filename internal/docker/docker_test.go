@@ -820,6 +820,7 @@ func TestWriteLibraryState(t *testing.T) {
 							{
 								Path:          "google/cloud/compute/v1",
 								ServiceConfig: "example_service_config.yaml",
+								Status:        "new",
 							},
 						},
 						SourceRoots: []string{
@@ -839,6 +840,7 @@ func TestWriteLibraryState(t *testing.T) {
 							{
 								Path:          "google/storage/v1",
 								ServiceConfig: "storage_service_config.yaml",
+								Status:        "existing",
 							},
 						},
 					},
@@ -1048,6 +1050,7 @@ func TestWriteLibrarianState(t *testing.T) {
 							{
 								Path:          "google/cloud/compute/v1",
 								ServiceConfig: "example_service_config.yaml",
+								Status:        "existing",
 							},
 						},
 						SourceRoots: []string{
@@ -1067,6 +1070,7 @@ func TestWriteLibrarianState(t *testing.T) {
 							{
 								Path:          "google/storage/v1",
 								ServiceConfig: "storage_service_config.yaml",
+								Status:        "existing",
 							},
 						},
 					},

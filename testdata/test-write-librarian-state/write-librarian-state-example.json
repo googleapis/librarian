@@ -8,7 +8,8 @@
       "apis": [
         {
           "path": "google/cloud/compute/v1",
-          "service_config": "example_service_config.yaml"
+          "service_config": "example_service_config.yaml",
+          "status": "existing"
         }
       ],
       "source_roots": [
@@ -28,7 +29,8 @@
       "apis": [
         {
           "path": "google/storage/v1",
-          "service_config": "storage_service_config.yaml"
+          "service_config": "storage_service_config.yaml",
+          "status": "existing"
         }
       ],
       "source_roots": null,
