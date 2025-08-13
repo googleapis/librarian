@@ -387,9 +387,9 @@ func TestDockerRun(t *testing.T) {
 						Repo: repoDir,
 					},
 					State:          state,
-					PartialRepoDir: partialRepoDir,
 					Output:         testOutput,
 					GlobalConfig:   &config.GlobalConfig{},
+					partialRepoDir: partialRepoDir,
 				}
 
 				defer os.RemoveAll(partialRepoDir)
@@ -424,7 +424,7 @@ func TestDockerRun(t *testing.T) {
 						Repo: repoDir,
 					},
 					State:          state,
-					PartialRepoDir: partialRepoDir,
+					partialRepoDir: partialRepoDir,
 					Output:         testOutput,
 					GlobalConfig:   &config.GlobalConfig{},
 				}
@@ -446,7 +446,7 @@ func TestDockerRun(t *testing.T) {
 						Repo: os.TempDir(),
 					},
 					State:          state,
-					PartialRepoDir: "/non-exist-dir",
+					partialRepoDir: "/non-exist-dir",
 					Output:         testOutput,
 				}
 
@@ -470,7 +470,7 @@ func TestDockerRun(t *testing.T) {
 						Repo: repoDir,
 					},
 					State:          state,
-					PartialRepoDir: partialRepoDir,
+					partialRepoDir: partialRepoDir,
 					Output:         testOutput,
 					LibraryID:      testLibraryID,
 					GlobalConfig:   &config.GlobalConfig{},
@@ -508,7 +508,7 @@ func TestDockerRun(t *testing.T) {
 						Repo: os.TempDir(),
 					},
 					State:          state,
-					PartialRepoDir: partialRepoDir,
+					partialRepoDir: partialRepoDir,
 					Output:         testOutput,
 					LibraryID:      testLibraryID,
 					LibraryVersion: "1.2.3",
@@ -598,7 +598,7 @@ func TestPartialCopyRepo(t *testing.T) {
 						},
 					},
 				},
-				PartialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
+				partialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
 				GlobalConfig: &config.GlobalConfig{
 					GlobalFilesAllowlist: []*config.GlobalFile{
 						{
@@ -654,7 +654,7 @@ func TestPartialCopyRepo(t *testing.T) {
 						},
 					},
 				},
-				PartialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
+				partialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
 				GlobalConfig: &config.GlobalConfig{
 					GlobalFilesAllowlist: []*config.GlobalFile{
 						{
@@ -691,7 +691,7 @@ func TestPartialCopyRepo(t *testing.T) {
 				Cfg: &config.Config{
 					Repo: os.TempDir(),
 				},
-				PartialRepoDir: "/invalid-path",
+				partialRepoDir: "/invalid-path",
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to make directory",
@@ -703,7 +703,7 @@ func TestPartialCopyRepo(t *testing.T) {
 					Repo: "/non-existent-path",
 				},
 				State:          &config.LibrarianState{},
-				PartialRepoDir: os.TempDir(),
+				partialRepoDir: os.TempDir(),
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to copy librarian dir",
@@ -714,7 +714,7 @@ func TestPartialCopyRepo(t *testing.T) {
 				if err := os.RemoveAll(test.request.Cfg.Repo); err != nil {
 					t.Error(err)
 				}
-				if err := os.RemoveAll(test.request.PartialRepoDir); err != nil {
+				if err := os.RemoveAll(test.request.partialRepoDir); err != nil {
 					t.Error(err)
 				}
 
@@ -723,7 +723,7 @@ func TestPartialCopyRepo(t *testing.T) {
 				}
 			}
 
-			err := partialCopyRepo(test.request)
+			err := setupPartialRepo(test.request)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -741,14 +741,14 @@ func TestPartialCopyRepo(t *testing.T) {
 			}
 
 			for _, includedFile := range test.includedFiles {
-				filename := filepath.Join(test.request.PartialRepoDir, includedFile)
+				filename := filepath.Join(test.request.partialRepoDir, includedFile)
 				if _, err := os.Stat(filename); err != nil {
 					t.Error(err)
 				}
 			}
 
 			for _, excludedFile := range test.excludedFiles {
-				filename := filepath.Join(test.request.PartialRepoDir, excludedFile)
+				filename := filepath.Join(test.request.partialRepoDir, excludedFile)
 				if _, err := os.Stat(filename); !errors.Is(err, os.ErrNotExist) {
 					t.Error(err)
 				}

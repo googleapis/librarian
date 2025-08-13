@@ -22,14 +22,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/googleapis/librarian/internal/config"
 	"io"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/googleapis/librarian/internal/config"
 )
 
 // Command is the string representation of a command to be passed to the language-specific
@@ -135,10 +134,10 @@ type ReleaseRequest struct {
 	// Output specifies the empty output directory into which the command should
 	// generate code.
 	Output string
-	// PartialRepoDir is the local root directory of language repository contains
+	// partialRepoDir is the local root directory of language repository contains
 	// files that make up libraries and global files.
 	// This is the directory that container can access.
-	PartialRepoDir string
+	partialRepoDir string
 }
 
 // New constructs a Docker instance which will invoke the specified
@@ -275,14 +274,14 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error
 		commandArgs = append(commandArgs, fmt.Sprintf("--library-version=%s", request.LibraryVersion))
 	}
 
-	if err := partialCopyRepo(request); err != nil {
+	if err := setupPartialRepo(request); err != nil {
 		return err
 	}
-	librarianDir := filepath.Join(request.PartialRepoDir, config.LibrarianDir)
 
+	librarianDir := filepath.Join(request.partialRepoDir, config.LibrarianDir)
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian", librarianDir),
-		fmt.Sprintf("%s:/repo:ro", request.PartialRepoDir), // readonly volume
+		fmt.Sprintf("%s:/repo:ro", request.partialRepoDir), // readonly volume
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
@@ -347,8 +346,8 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-// partialCopyRepo copies the following files from the [config.Config.Repo] to
-// [ReleaseRequest.PartialRepoDir] in the given ReleaseRequest:
+// setupPartialRepo copies the following files from the [config.Config.Repo] to
+// partialRepoDir in the given ReleaseRequest:
 //
 // 1. all directories that make up all libraries, or one library, if the library
 // ID is specified.
@@ -356,8 +355,11 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 // 2. the .librarian directory.
 //
 // 3. global files declared in config.yaml.
-func partialCopyRepo(request *ReleaseRequest) error {
-	dst := request.PartialRepoDir
+func setupPartialRepo(request *ReleaseRequest) error {
+	if request.partialRepoDir == "" {
+		request.partialRepoDir = filepath.Join(os.TempDir())
+	}
+	dst := request.partialRepoDir
 	src := request.Cfg.Repo
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
