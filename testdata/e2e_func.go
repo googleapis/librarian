@@ -128,7 +128,7 @@ func validateLibrarianDir(dir, requestFile string) error {
 // readConfigureRequest reads the configure request file and creates a librarianState
 // object.
 func readConfigureRequest(path string) (*librarianState, error) {
-	var state *librarianState
+	state := &librarianState{}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func writeConfigureResponse(option *configureOption, state *librarianState) erro
 // readGenerateRequest reads the generate request file and creates a libraryState
 // object.
 func readGenerateRequest(path string) (*libraryState, error) {
-	var library *libraryState
+	library := &libraryState{}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
