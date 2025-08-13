@@ -147,7 +147,9 @@ func readConfigureRequest(path string) (*librarianState, error) {
 
 func writeConfigureResponse(option *configureOption, state *librarianState) error {
 	for _, library := range state.Libraries {
-		populateAdditionalFields(library)
+		if library.ID == option.libraryID {
+			populateAdditionalFields(library)
+		}
 	}
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
