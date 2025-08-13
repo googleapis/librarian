@@ -22,25 +22,33 @@ steps:
     waitFor: ['-']
     script: |
       #!/usr/bin/env bash
-      echo "Your project ID is $PROJECT_ID"
+
+      # "-o pipefail" stops execution of the piped command fails, especially
+      # the body of the while loop in this case.
+      set -eo pipefail
+      echo "gcloud config get-value project:"
+      gcloud config get-value project
       echo "gcloud config get-value core/account:"
       gcloud config get-value core/account
       echo "pwd is $(pwd)"
       echo "ls -la ."
       ls -la .
-      echo "Finding YAML files:"
-      find /workspace/librarian -name '*.yaml'
       ROBOT_ACCOUNT=cloud-sdk-librarian-robot
       if [[ $- == *x* ]]; then
         echo "xtrace is ON. Exiting to avoid credentials showing up in logs."
         exit 1
       fi
-      cat infra/prod/repositories.yaml | grep '^\s*-\s*name:' |awk '{print $NF}' |tr -d '"' | while read -r repo_name; do
-        echo "Validating credentials for repository: $repo_name"
+      sed -n 's/.* - name: \"\(.*\)".*/\1/p' infra/prod/repositories.yaml | while read -r repo_name; do
+        echo "Validating credentials for repository: ${repo_name}"
         GITHUB_TOKEN=$(gcloud secrets versions access latest --secret="${repo_name}-github-token")
-        curl --fail -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/googleapis/${repo_name}/collaborators/${ROBOT_ACCOUNT}/permission"
+        if [[ -z "${GITHUB_TOKEN}" ]]; then
+          echo "GitHub token for repository ${repo_name} is not set."
+          exit 1
+        fi
+        permission_url="https://api.github.com/repos/googleapis/${repo_name}/collaborators/${ROBOT_ACCOUNT}/permission"
+        curl --fail -H "Authorization: token ${GITHUB_TOKEN}" "${permission_url}"
         if [[ $? -ne 0 ]]; then
-          echo "Failed to validate credentials for repository: $repo_name"
+          echo "Failed to validate credentials for repository: ${repo_name} via ${permission_url}"
           exit 1
         fi
       done

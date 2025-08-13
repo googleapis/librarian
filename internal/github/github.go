@@ -135,6 +135,27 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 	return pullRequestMetadata, nil
 }
 
+// GetLabels fetches the labels for an issue.
+func (c *Client) GetLabels(ctx context.Context, number int) ([]string, error) {
+	slog.Info("Getting labels", "number", number)
+	labels, _, err := c.Issues.ListLabelsByIssue(ctx, c.repo.Owner, c.repo.Name, number, nil)
+	if err != nil {
+		return nil, err
+	}
+	var labelNames []string
+	for _, label := range labels {
+		labelNames = append(labelNames, *label.Name)
+	}
+	return labelNames, nil
+}
+
+// ReplaceLabels replaces all labels for an issue.
+func (c *Client) ReplaceLabels(ctx context.Context, number int, labels []string) error {
+	slog.Info("Replacing labels", "number", number, "labels", labels)
+	_, _, err := c.Issues.ReplaceLabelsForIssue(ctx, c.repo.Owner, c.repo.Name, number, labels)
+	return err
+}
+
 // AddLabelsToIssue adds labels to an existing issue in a GitHub repository.
 func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number int, labels []string) error {
 	slog.Info("Labels added to issue", "number", number, "labels", labels)
@@ -164,4 +185,57 @@ func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
 	}
 
 	return nil, fmt.Errorf("could not find an 'origin' remote pointing to a GitHub https URL")
+}
+
+// SearchPullRequests searches for pull requests in the repository using the provided raw query.
+func (c *Client) SearchPullRequests(ctx context.Context, query string) ([]*PullRequest, error) {
+	var prs []*PullRequest
+	opts := &github.SearchOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+	for {
+		result, resp, err := c.Search.Issues(ctx, query, opts)
+		if err != nil {
+			return nil, err
+		}
+		for _, issue := range result.Issues {
+			if issue.IsPullRequest() {
+				pr, _, err := c.PullRequests.Get(ctx, c.repo.Owner, c.repo.Name, issue.GetNumber())
+				if err != nil {
+					return nil, err
+				}
+				prs = append(prs, pr)
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	return prs, nil
+}
+
+// GetPullRequest gets a pull request by its number.
+func (c *Client) GetPullRequest(ctx context.Context, number int) (*PullRequest, error) {
+	pr, _, err := c.PullRequests.Get(ctx, c.repo.Owner, c.repo.Name, number)
+	return pr, err
+}
+
+// CreateRelease creates a tag and release in the repository at the given commitish.
+func (c *Client) CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error) {
+	r, _, err := c.Repositories.CreateRelease(ctx, c.repo.Owner, c.repo.Name, &github.RepositoryRelease{
+		TagName:         &tagName,
+		Name:            &name,
+		Body:            &body,
+		TargetCommitish: &commitish,
+	})
+	return r, err
+}
+
+// CreateIssueComment adds a comment to the issue number provided.
+func (c *Client) CreateIssueComment(ctx context.Context, number int, comment string) error {
+	_, _, err := c.Issues.CreateComment(ctx, c.repo.Owner, c.repo.Name, number, &github.IssueComment{
+		Body: &comment,
+	})
+	return err
 }
