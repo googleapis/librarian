@@ -22,13 +22,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/googleapis/librarian/internal/config"
 	"io"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
 // Command is the string representation of a command to be passed to the language-specific

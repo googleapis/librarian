@@ -568,7 +568,6 @@ func TestPartialCopyRepo(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		request       *ReleaseRequest
-		repoDir       string
 		includedFiles []string
 		excludedFiles []string
 		wantErr       bool
