@@ -23,13 +23,35 @@ import (
 // Run parses the command line arguments and triggers the specified command.
 func Run(args []string) error {
 	ctx := context.Background()
-	projectId := flag.String("project", "cloud-sdk-librarian-prod", "GCP project ID")
-	command := flag.String("command", "generate", "The librarian command to run")
-	flag.Parse()
+	options, err := parseFlags(args)
+	if err != nil {
+		slog.Error("Error parsing command", slog.Any("err", err))
+		return err
+	}
 
-	err := RunCommand(ctx, *command, *projectId)
+	err = RunCommand(ctx, options.Command, options.ProjectId)
 	if err != nil {
 		slog.Error("Error running command", slog.Any("err", err))
+		return err
 	}
 	return nil
+}
+
+type runOptions struct {
+	Command   string
+	ProjectId string
+}
+
+func parseFlags(args []string) (*runOptions, error) {
+	flagSet := flag.NewFlagSet("fanout", flag.ContinueOnError)
+	projectId := flagSet.String("project", "cloud-sdk-librarian-prod", "GCP project ID")
+	command := flagSet.String("command", "generate", "The librarian command to run")
+	err := flagSet.Parse(args)
+	if err != nil {
+		return nil, err
+	}
+	return &runOptions{
+		ProjectId: *projectId,
+		Command:   *command,
+	}, nil
 }
