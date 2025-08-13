@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -96,10 +95,11 @@ libraries:
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			contentLoader := func(path string) ([]byte, error) {
-				return []byte(path), nil
+			path := filepath.Join(t.TempDir(), "state.yaml")
+			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+				t.Fatalf("os.WriteFile() failed: %v", err)
 			}
-			got, err := parseLibrarianState(contentLoader, test.content, test.source)
+			got, err := parseLibrarianState(path, test.source)
 			if (err != nil) != test.wantErr {
 				t.Errorf("parseLibrarianState() error = %v, wantErr %v", err, test.wantErr)
 				return
@@ -113,59 +113,43 @@ libraries:
 
 func TestFindServiceConfigIn(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		contentLoader func(file string) ([]byte, error)
-		path          string
-		want          string
-		wantErr       bool
+		name    string
+		path    string
+		want    string
+		wantErr bool
 	}{
 		{
 			name: "find a service config",
-			contentLoader: func(file string) ([]byte, error) {
-				return os.ReadFile(file)
-			},
 			path: filepath.Join("..", "..", "testdata", "find_a_service_config"),
 			want: "service_config.yaml",
 		},
 		{
-			name: "non existed source path",
-			contentLoader: func(file string) ([]byte, error) {
-				return os.ReadFile(file)
-			},
+			name:    "non existed source path",
 			path:    filepath.Join("..", "..", "testdata", "non-existed-path"),
 			want:    "",
 			wantErr: true,
 		},
 		{
-			name: "non service config in a source path",
-			contentLoader: func(file string) ([]byte, error) {
-				return os.ReadFile(file)
-			},
+			name:    "non service config in a source path",
 			path:    filepath.Join("..", "..", "testdata", "no_service_config"),
 			want:    "",
 			wantErr: true,
 		},
 		{
-			name: "simulated load error",
-			contentLoader: func(file string) ([]byte, error) {
-				return nil, errors.New("simulate loading error for testing")
-			},
+			name:    "simulated load error",
 			path:    filepath.Join("..", "..", "testdata", "no_service_config"),
 			want:    "",
 			wantErr: true,
 		},
 		{
-			name: "invalid yaml",
-			contentLoader: func(file string) ([]byte, error) {
-				return os.ReadFile(file)
-			},
+			name:    "invalid yaml",
 			path:    filepath.Join("..", "..", "testdata", "invalid_yaml"),
 			want:    "",
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := findServiceConfigIn(test.contentLoader, test.path)
+			got, err := findServiceConfigIn(test.path)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("findServiceConfigIn() should return error")
@@ -245,10 +229,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			contentLoader := func(file string) ([]byte, error) {
-				return os.ReadFile(file)
-			}
-			err := populateServiceConfigIfEmpty(test.state, contentLoader, test.path)
+			err := populateServiceConfigIfEmpty(test.state, test.path)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("findServiceConfigIn() should return error")
@@ -310,9 +291,6 @@ func TestSaveLibrarianState(t *testing.T) {
 
 func TestReadConfigureResponseJSON(t *testing.T) {
 	t.Parallel()
-	contentLoader := func(data []byte, state *config.LibraryState) error {
-		return json.Unmarshal(data, state)
-	}
 	for _, test := range []struct {
 		name         string
 		jsonFilePath string
@@ -350,17 +328,12 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 			name:      "invalid file name",
 			wantState: nil,
 		},
-		{
-			name:         "invalid content loader",
-			jsonFilePath: "../../testdata/invalid-contentLoader.json",
-			wantState:    nil,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			if test.name == "invalid file name" {
 				filePath := filepath.Join(tempDir, "my\x00file.json")
-				_, err := readLibraryState(contentLoader, filePath)
+				_, err := readLibraryState(filePath)
 				if err == nil {
 					t.Error("readLibraryState() expected an error but got nil")
 				}
@@ -373,14 +346,11 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 			}
 
 			if test.name == "invalid content loader" {
-				invalidContentLoader := func(data []byte, state *config.LibraryState) error {
-					return errors.New("simulated Unmarshal error")
-				}
 				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
 				if err := copyFile(dst, test.jsonFilePath); err != nil {
 					t.Error(err)
 				}
-				_, err := readLibraryState(invalidContentLoader, dst)
+				_, err := readLibraryState(dst)
 				if err == nil {
 					t.Errorf("readLibraryState() expected an error but got nil")
 				}
@@ -398,7 +368,7 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 				t.Error(err)
 			}
 
-			gotState, err := readLibraryState(contentLoader, dstFilePath)
+			gotState, err := readLibraryState(dstFilePath)
 
 			if test.name == "load content with an error message" {
 				if err == nil {
