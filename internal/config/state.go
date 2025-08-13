@@ -24,9 +24,9 @@ import (
 // LibrarianState defines the contract for the state.yaml file.
 type LibrarianState struct {
 	// The name and tag of the generator image to use. tag is required.
-	Image string `yaml:"image"`
+	Image string `yaml:"image" json:"image"`
 	// A list of library configurations.
-	Libraries []*LibraryState `yaml:"libraries"`
+	Libraries []*LibraryState `yaml:"libraries" json:"libraries"`
 }
 
 // Validate checks that the LibrarianState is valid.

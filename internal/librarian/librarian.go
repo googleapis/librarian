@@ -40,6 +40,7 @@ func init() {
 	CmdLibrarian.Init()
 	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
 		cmdGenerate,
+		cmdRelease,
 		cmdVersion,
 	)
 }
@@ -84,9 +85,10 @@ type GitHubClient interface {
 
 // ContainerClient is an abstraction over the Docker client.
 type ContainerClient interface {
-	Generate(ctx context.Context, request *docker.GenerateRequest) error
 	Build(ctx context.Context, request *docker.BuildRequest) error
 	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
+	Generate(ctx context.Context, request *docker.GenerateRequest) error
+	ReleaseInit(ctx context.Context, request *docker.ReleaseRequest) error
 }
 
 func isURL(s string) bool {

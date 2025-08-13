@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -37,12 +38,14 @@ type Command string
 
 // The set of commands passed to the language container, in a single place to avoid typos.
 const (
-	// CommandGenerate performs generation for a configured library.
-	CommandGenerate Command = "generate"
 	// CommandBuild builds a library.
 	CommandBuild Command = "build"
 	// CommandConfigure configures a new API as a library.
 	CommandConfigure Command = "configure"
+	// CommandGenerate performs generation for a configured library.
+	CommandGenerate Command = "generate"
+	// CommandReleaseInit performs release for a library.
+	CommandReleaseInit Command = "release-init"
 )
 
 // Docker contains all the information required to run language-specific
@@ -61,26 +64,6 @@ type Docker struct {
 	run func(args ...string) error
 }
 
-// GenerateRequest contains all the information required for a language
-// container to run the generate command.
-type GenerateRequest struct {
-	// cfg is a pointer to the [config.Config] struct, holding general configuration
-	// values parsed from flags or environment variables.
-	Cfg *config.Config
-	// state is a pointer to the [config.LibrarianState] struct, representing
-	// the overall state of the generation and release pipeline.
-	State *config.LibrarianState
-	// apiRoot specifies the root directory of the API specification repo.
-	ApiRoot string
-	// libraryID specifies the ID of the library to generate
-	LibraryID string
-	// output specifies the empty output directory into which the command should
-	// generate code
-	Output string
-	// RepoDir is the local root directory of the language repository.
-	RepoDir string
-}
-
 // BuildRequest contains all the information required for a language
 // container to run the build command.
 type BuildRequest struct {
@@ -90,7 +73,7 @@ type BuildRequest struct {
 	// state is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
-	// libraryID specifies the ID of the library to build
+	// libraryID specifies the ID of the library to build.
 	LibraryID string
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
@@ -107,10 +90,55 @@ type ConfigureRequest struct {
 	State *config.LibrarianState
 	// apiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
-	// libraryID specifies the ID of the library to generate
+	// libraryID specifies the ID of the library to configure.
 	LibraryID string
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
+}
+
+// GenerateRequest contains all the information required for a language
+// container to run the generate command.
+type GenerateRequest struct {
+	// cfg is a pointer to the [config.Config] struct, holding general configuration
+	// values parsed from flags or environment variables.
+	Cfg *config.Config
+	// state is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
+	// apiRoot specifies the root directory of the API specification repo.
+	ApiRoot string
+	// libraryID specifies the ID of the library to generate.
+	LibraryID string
+	// output specifies the empty output directory into which the command should
+	// generate code
+	Output string
+	// RepoDir is the local root directory of the language repository.
+	RepoDir string
+}
+
+// ReleaseRequest contains all the information required for a language
+// container to run the release command.
+type ReleaseRequest struct {
+	// Cfg is a pointer to the [config.Config] struct, holding general configuration
+	// values parsed from flags or environment variables.
+	Cfg *config.Config
+	// GlobalConfig is a pointer to the [config.GlobalConfig] struct, holding
+	// global files configuration in a language repository.
+	GlobalConfig *config.GlobalConfig
+	// State is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
+	// LibraryID specifies the ID of the library to release.
+	LibraryID string
+	// LibraryVersion specifies the version of the library to release.
+	LibraryVersion string
+	// Output specifies the empty output directory into which the command should
+	// generate code.
+	Output string
+	// partialRepoDir is the local root directory of language repository contains
+	// files that make up libraries and global files.
+	// This is the directory that container can access.
+	partialRepoDir string
 }
 
 // New constructs a Docker instance which will invoke the specified
@@ -132,7 +160,7 @@ func New(workRoot, image, uid, gid string) (*Docker, error) {
 // library.
 func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
-	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+	if err := writeLibraryState(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
 	defer func(name string) {
@@ -165,7 +193,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 // the Librarian state file for the repository with a root of repoRoot.
 func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
-	if err := writeRequest(request.State, request.LibraryID, jsonFilePath); err != nil {
+	if err := writeLibraryState(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
 	}
 	defer func(name string) {
@@ -194,7 +222,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 // Returns the configured library id if the command succeeds.
 func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (string, error) {
 	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
-	if err := writeRequest(request.State, request.LibraryID, requestFilePath); err != nil {
+	if err := writeLibraryState(request.State, request.LibraryID, requestFilePath); err != nil {
 		return "", err
 	}
 	defer func() {
@@ -221,6 +249,48 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	}
 
 	return request.LibraryID, nil
+}
+
+// ReleaseInit initiates a release for a given language repository.
+func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error {
+	requestFilePath := filepath.Join(request.Cfg.Repo, config.LibrarianDir, config.ReleaseInitRequest)
+	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
+		return err
+	}
+	defer func() {
+		err := os.Remove(requestFilePath)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", requestFilePath), slog.Any("err", err))
+		}
+	}()
+	commandArgs := []string{
+		"--librarian=/librarian",
+		"--repo=/repo",
+		"--output=/output",
+	}
+	if request.LibraryID != "" {
+		commandArgs = append(commandArgs, fmt.Sprintf("--library=%s", request.LibraryID))
+	}
+	if request.LibraryVersion != "" {
+		commandArgs = append(commandArgs, fmt.Sprintf("--library-version=%s", request.LibraryVersion))
+	}
+
+	if err := setupPartialRepo(request); err != nil {
+		return err
+	}
+
+	librarianDir := filepath.Join(request.partialRepoDir, config.LibrarianDir)
+	mounts := []string{
+		fmt.Sprintf("%s:/librarian", librarianDir),
+		fmt.Sprintf("%s:/repo:ro", request.partialRepoDir), // readonly volume
+		fmt.Sprintf("%s:/output", request.Output),
+	}
+
+	if err := c.runDocker(ctx, request.Cfg, CommandReleaseInit, mounts, commandArgs); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
@@ -277,13 +347,103 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	return err
 }
 
-func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) error {
+// setupPartialRepo copies the following files from the [config.Config.Repo] to
+// partialRepoDir in the given ReleaseRequest:
+//
+// 1. all directories that make up all libraries, or one library, if the library
+// ID is specified.
+//
+// 2. the .librarian directory.
+//
+// 3. global files declared in config.yaml.
+func setupPartialRepo(request *ReleaseRequest) error {
+	if request.partialRepoDir == "" {
+		request.partialRepoDir = filepath.Join(request.Cfg.WorkRoot, "release-init")
+	}
+	dst := request.partialRepoDir
+	src := request.Cfg.Repo
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %w", err)
+	}
+
+	for _, library := range request.State.Libraries {
+		// Only copy files that make up one library.
+		if request.LibraryID != "" {
+			if library.ID == request.LibraryID {
+				if err := copyOneLibrary(dst, src, library); err != nil {
+					return err
+				}
+				break
+			}
+			continue
+		}
+
+		// Copy all files make up all libraries.
+		if err := copyOneLibrary(dst, src, library); err != nil {
+			return err
+		}
+	}
+
+	// Copy the .librarian directory.
+	if err := os.CopyFS(
+		filepath.Join(dst, config.LibrarianDir),
+		os.DirFS(filepath.Join(src, config.LibrarianDir))); err != nil {
+		return fmt.Errorf("failed to copy librarian dir to %s: %w", dst, err)
+	}
+
+	// Copy global files declared in global config.
+	for _, globalFile := range request.GlobalConfig.GlobalFilesAllowlist {
+		dstPath := filepath.Join(dst, globalFile.Path)
+		srcPath := filepath.Join(src, globalFile.Path)
+		if err := copyFile(dstPath, srcPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func copyOneLibrary(dst, src string, library *config.LibraryState) error {
+	for _, srcRoot := range library.SourceRoots {
+		dstPath := filepath.Join(dst, srcRoot)
+		srcPath := filepath.Join(src, srcRoot)
+		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dstPath, err)
+		}
+	}
+
+	return nil
+}
+
+func copyFile(dst, src string) (err error) {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %q: %w", src, err)
+	}
+	defer sourceFile.Close()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %s", src)
+	}
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %s", dst)
+	}
+	defer destinationFile.Close()
+
+	_, err = io.Copy(destinationFile, sourceFile)
+
+	return err
+}
+
+func writeLibraryState(state *config.LibrarianState, libraryID, jsonFilePath string) error {
 	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
 	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to create generate request JSON file: %w", err)
+		return fmt.Errorf("failed to create JSON file: %w", err)
 	}
 	defer jsonFile.Close()
 
@@ -303,4 +463,24 @@ func writeRequest(state *config.LibrarianState, libraryID, jsonFilePath string) 
 	}
 
 	return nil
+}
+
+func writeLibrarianState(state *config.LibrarianState, jsonFilePath string) error {
+	if err := os.MkdirAll(filepath.Dir(jsonFilePath), 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %w", err)
+	}
+	jsonFile, err := os.Create(jsonFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create JSON file: %w", err)
+	}
+	defer jsonFile.Close()
+
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal state to JSON: %w", err)
+	}
+
+	_, err = jsonFile.Write(data)
+
+	return err
 }

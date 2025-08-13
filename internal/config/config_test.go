@@ -8,7 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// WITHOUT WARRANTIES, OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -17,6 +17,7 @@ package config
 import (
 	"errors"
 	"os/user"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -128,10 +129,10 @@ func TestSetupUser(t *testing.T) {
 
 func TestIsValid(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		cfg       Config
-		wantValid bool
-		wantErr   bool
+		name       string
+		cfg        Config
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "Valid config - Push false",
@@ -139,8 +140,6 @@ func TestIsValid(t *testing.T) {
 				Push:        false,
 				GitHubToken: "",
 			},
-			wantValid: true,
-			wantErr:   false,
 		},
 		{
 			name: "Valid config - Push true, token present",
@@ -148,8 +147,20 @@ func TestIsValid(t *testing.T) {
 				Push:        true,
 				GitHubToken: "some_token",
 			},
-			wantValid: true,
-			wantErr:   false,
+		},
+		{
+			name: "Valid config - missing library version",
+			cfg: Config{
+				Push:        true,
+				GitHubToken: "some_token",
+				Library:     "library-id",
+			},
+		},
+		{
+			name: "Valid config - valid pull request",
+			cfg: Config{
+				PullRequest: "https://github.com/owner/repo/pull/123",
+			},
 		},
 		{
 			name: "Invalid config - Push true, token missing",
@@ -157,8 +168,18 @@ func TestIsValid(t *testing.T) {
 				Push:        true,
 				GitHubToken: "",
 			},
-			wantValid: false,
-			wantErr:   true,
+			wantErr:    true,
+			wantErrMsg: "no GitHub token supplied for push",
+		},
+		{
+			name: "Invalid config - library version presents, missing library id",
+			cfg: Config{
+				Push:           true,
+				GitHubToken:    "some_token",
+				LibraryVersion: "1.2.3",
+			},
+			wantErr:    true,
+			wantErrMsg: "specified library version without library id",
 		},
 		{
 			name: "Invalid config - host mount invalid, missing local-dir",
@@ -166,8 +187,8 @@ func TestIsValid(t *testing.T) {
 				Push:      false,
 				HostMount: "host-dir:",
 			},
-			wantValid: false,
-			wantErr:   true,
+			wantErr:    true,
+			wantErrMsg: "unable to parse host mount",
 		},
 		{
 			name: "Invalid config - host mount invalid, missing host-dir",
@@ -175,8 +196,8 @@ func TestIsValid(t *testing.T) {
 				Push:      false,
 				HostMount: ":local-dir",
 			},
-			wantValid: false,
-			wantErr:   true,
+			wantErr:    true,
+			wantErrMsg: "unable to parse host mount",
 		},
 		{
 			name: "Invalid config - host mount invalid, missing separator",
@@ -184,25 +205,26 @@ func TestIsValid(t *testing.T) {
 				Push:      false,
 				HostMount: "host-dir/local-dir",
 			},
-			wantValid: false,
-			wantErr:   true,
+			wantErr:    true,
+			wantErrMsg: "unable to parse host mount",
+		},
+		{
+			name: "Invalid config - invalid pull request url",
+			cfg: Config{
+				PullRequest: "https://github.com/owner/repo/issues/123",
+			},
+			wantErr:    true,
+			wantErrMsg: "pull request URL is not valid",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotValid, err := test.cfg.IsValid()
 
-			if gotValid != test.wantValid {
-				t.Errorf("IsValid() got valid = %t, want %t", gotValid, test.wantValid)
+			if gotValid != !test.wantErr {
+				t.Errorf("IsValid() got valid = %t, want %t", gotValid, !test.wantErr)
 			}
 
-			if (err != nil) != test.wantErr {
-				t.Errorf("IsValid() got error = %v, want error = %t", err, test.wantErr)
-			}
-			if test.wantErr &&
-				err != nil &&
-				err.Error() != "no GitHub token supplied for push" &&
-				err.Error() != "unable to parse push config" &&
-				err.Error() != "unable to parse host mount" {
+			if test.wantErr && !strings.Contains(err.Error(), test.wantErrMsg) {
 				t.Errorf("IsValid() got unexpected error message: %q", err.Error())
 			}
 		})

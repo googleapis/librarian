@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"regexp"
 	"strings"
 )
 
@@ -45,6 +46,13 @@ const (
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
 	LibrarianDir = ".librarian"
+	// ReleaseInitRequest is a JSON file that describes which library to release.
+	ReleaseInitRequest = "release-init-request.json"
+)
+
+var (
+	// pullRequestRegexp is regular expression that describes a uri of a pull request.
+	pullRequestRegexp = regexp.MustCompile(`^https://github\.com/([a-zA-Z0-9-._]+)/([a-zA-Z0-9-._]+)/pull/([0-9]+)$`)
 )
 
 // Config holds all configuration values parsed from flags or environment
@@ -117,6 +125,24 @@ type Config struct {
 	// be a Go module or for dotnet the name of a NuGet package. If neither this nor
 	// api is specified all currently managed libraries will be regenerated.
 	Library string
+
+	// LibraryVersion is the library version to release.
+	//
+	// Overrides the automatic semantic version calculation and forces a specific
+	// version for a library.
+	// This is intended for exceptional cases, such as applying a backport patch
+	// or forcing a major version bump.
+	//
+	// Requires the --library flag to be specified.
+	LibraryVersion string
+
+	// PullRequest to target and operate one in the context of a release.
+	//
+	// The pull request should be in the format `https://github.com/{owner}/{repo}/pull/{number}`.
+	// Setting this field for `tag-and-release` means librarian will only attempt
+	// to process this exact pull request and not search for other pull requests
+	// that may be ready for tagging and releasing.
+	PullRequest string
 
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
@@ -204,6 +230,17 @@ func (c *Config) SetupUser() error {
 func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
 		return false, errors.New("no GitHub token supplied for push")
+	}
+
+	if c.Library == "" && c.LibraryVersion != "" {
+		return false, errors.New("specified library version without library id")
+	}
+
+	if c.PullRequest != "" {
+		matched := pullRequestRegexp.MatchString(c.PullRequest)
+		if !matched {
+			return false, errors.New("pull request URL is not valid")
+		}
 	}
 
 	if _, err := validateHostMount(c.HostMount, ""); err != nil {
