@@ -358,7 +358,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 // 3. global files declared in config.yaml.
 func setupPartialRepo(request *ReleaseRequest) error {
 	if request.partialRepoDir == "" {
-		request.partialRepoDir = filepath.Join(os.TempDir())
+		request.partialRepoDir = filepath.Join(request.Cfg.WorkRoot, "release-init")
 	}
 	dst := request.partialRepoDir
 	src := request.Cfg.Repo
