@@ -15,28 +15,96 @@
 package automation
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 )
 
-func TestRunCommand(t *testing.T) {
+func TestRunCommandWithClient(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		want    string
-		wantErr bool
+		name          string
+		command       string
+		want          string
+		runError      error
+		wantErr       bool
+		buildTriggers []*cloudbuildpb.BuildTrigger
 	}{
 		{
-			name:    "foo",
-			want:    "bar",
+			name:    "runs generate trigger",
+			command: "generate",
 			wantErr: false,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "generate",
+					Id:   "generate-trigger-id",
+				},
+				{
+					Name: "prepare-release",
+					Id:   "prepare-release-trigger-id",
+				},
+			},
+		},
+		{
+			name:    "runs prepare-release trigger",
+			command: "stage-release",
+			wantErr: false,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "generate",
+					Id:   "generate-trigger-id",
+				},
+				{
+					Name: "stage-release",
+					Id:   "stage-release-trigger-id",
+				},
+			},
+		},
+		{
+			name:    "invalid command",
+			command: "invalid-command",
+			wantErr: true,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "generate",
+					Id:   "generate-trigger-id",
+				},
+				{
+					Name: "stage-release",
+					Id:   "stage-release-trigger-id",
+				},
+			},
+		},
+		{
+			name:     "error triggering",
+			command:  "generate",
+			runError: fmt.Errorf("some-error"),
+			wantErr:  true,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "generate",
+					Id:   "generate-trigger-id",
+				},
+				{
+					Name: "stage-release",
+					Id:   "stage-release-trigger-id",
+				},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if diff := cmp.Diff(test.want, "bar"); diff != "" {
-				t.Errorf("runCloudBuildTrigger() error")
+			ctx := context.Background()
+			client := &mockCloudBuildClient{
+				runError:      test.runError,
+				buildTriggers: test.buildTriggers,
+			}
+			err := runCommandWithClient(ctx, client, test.command, "some-project")
+			if test.wantErr && err == nil {
+				t.Errorf("expected error, but did not return one")
+			} else if !test.wantErr && err != nil {
+				t.Errorf("did not expect error, but received one: %s", err)
 			}
 		})
-
 	}
 }

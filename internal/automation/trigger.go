@@ -16,6 +16,7 @@ package automation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
 	"log/slog"
@@ -33,50 +34,52 @@ var triggerNameByCommandName = map[string]string{
 
 const region = "global"
 
-type cloudBuildClient struct {
+type wrappedCloudBuildClient struct {
 	client *cloudbuild.Client
 }
 
 // RunBuildTrigger executes the RPC to trigger a Cloud Build trigger.
-func (c *cloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error {
+func (c *wrappedCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error {
 	resp, err := c.client.RunBuildTrigger(ctx, req, opts...)
 	if err != nil {
 		return err
 	}
 
-	slog.Info("triggered", slog.String("LRO Name", resp.Name()))
+	slog.Debug("triggered", slog.String("LRO Name", resp.Name()))
 	return err
 }
 
 // ListBuildTriggers executes the RPC to list Cloud Build triggers.
-func (c *cloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
+func (c *wrappedCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
 	return c.client.ListBuildTriggers(ctx, req, opts...).All()
 }
 
 // RunCommand triggers a command for each registered repository that supports it.
 func RunCommand(ctx context.Context, command string, projectId string) error {
-	// validate command is allowed
-	if !availableCommands[command] {
-		return fmt.Errorf("unsupported command: %s", command)
-	}
-	triggerName := triggerNameByCommandName[command]
-	if triggerName == "" {
-		return fmt.Errorf("could not find trigger name for command: %s", command)
-	}
-
-	config, err := loadRepositoriesConfig()
-	if err != nil {
-		slog.Error("error loading repositories config", slog.Any("err", err))
-		return err
-	}
-
 	c, err := cloudbuild.NewClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error creating cloudbuild client: %w", err)
 	}
 	defer c.Close()
-	wrappedClient := &cloudBuildClient{
+	wrappedClient := &wrappedCloudBuildClient{
 		client: c,
+	}
+	return runCommandWithClient(ctx, wrappedClient, command, projectId)
+}
+
+func runCommandWithClient(ctx context.Context, client CloudBuildClient, command string, projectId string) error {
+	// validate command is allowed
+	triggerName := triggerNameByCommandName[command]
+	if triggerName == "" {
+		return fmt.Errorf("unsuppoted command: %s", command)
+	}
+
+	errs := make([]error, 0)
+
+	config, err := loadRepositoriesConfig()
+	if err != nil {
+		slog.Error("error loading repositories config", slog.Any("err", err))
+		return err
 	}
 
 	repositories := config.RepositoriesForCommand(command)
@@ -87,10 +90,11 @@ func RunCommand(ctx context.Context, command string, projectId string) error {
 			"_REPOSITORY":               repository.Name,
 			"_GITHUB_TOKEN_SECRET_NAME": repository.SecretName,
 		}
-		err = runCloudBuildTriggerByName(ctx, wrappedClient, projectId, region, triggerName, substitutions)
+		err = runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions)
 		if err != nil {
 			slog.Error("Error triggering cloudbuild", slog.Any("err", err))
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
