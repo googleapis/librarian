@@ -20,6 +20,7 @@ import (
 	"log/slog"
 )
 
+// Run parses the command line arguments and triggers the specified command.
 func Run(args []string) error {
 	ctx := context.Background()
 	projectId := flag.String("project", "cloud-sdk-librarian-prod", "GCP project ID")
