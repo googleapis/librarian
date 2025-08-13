@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	statusNew      = "new"
-	statusExisting = "existing"
+	StatusNew      = "new"
+	StatusExisting = "existing"
 )
 
 // LibrarianState defines the contract for the state.yaml file.
@@ -203,7 +203,7 @@ func (a *API) Validate() error {
 	if !isValidDirPath(a.Path) {
 		return fmt.Errorf("invalid path: %q", a.Path)
 	}
-	if a.Status != statusNew && a.Status != statusExisting {
+	if a.Status != StatusNew && a.Status != StatusExisting {
 		return fmt.Errorf("invalid status: %q", a.Status)
 	}
 	return nil

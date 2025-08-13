@@ -37,7 +37,7 @@ func TestLibrarianState_Validate(t *testing.T) {
 						APIs: []*API{
 							{
 								Path:   "a/b/v1",
-								Status: statusNew,
+								Status: StatusNew,
 							},
 						},
 					},
@@ -106,7 +106,7 @@ func TestLibrary_Validate(t *testing.T) {
 				APIs: []*API{
 					{
 						Path:   "a/b/v1",
-						Status: statusNew,
+						Status: StatusNew,
 					},
 				},
 			},
@@ -165,7 +165,7 @@ func TestLibrary_Validate(t *testing.T) {
 				APIs: []*API{
 					{
 						Path:   "a/b/v1",
-						Status: statusNew,
+						Status: StatusNew,
 					},
 				},
 			},
@@ -201,7 +201,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:            "a/b",
 				SourceRoots:   []string{"src/a"},
-				APIs:          []*API{{Path: "a/b/v1", Status: statusNew}},
+				APIs:          []*API{{Path: "a/b/v1", Status: StatusNew}},
 				PreserveRegex: []string{".*\\.txt"},
 			},
 		},
@@ -210,7 +210,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:            "a/b",
 				SourceRoots:   []string{"src/a"},
-				APIs:          []*API{{Path: "a/b/v1", Status: statusNew}},
+				APIs:          []*API{{Path: "a/b/v1", Status: StatusNew}},
 				PreserveRegex: []string{"["},
 			},
 			wantErr:    true,
@@ -221,7 +221,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1", Status: statusNew}},
+				APIs:        []*API{{Path: "a/b/v1", Status: StatusNew}},
 				RemoveRegex: []string{".*\\.log"},
 			},
 		},
@@ -230,7 +230,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1", Status: statusNew}},
+				APIs:        []*API{{Path: "a/b/v1", Status: StatusNew}},
 				RemoveRegex: []string{"("},
 			},
 			wantErr:    true,
@@ -241,7 +241,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:                  "a/b",
 				SourceRoots:         []string{"src/a"},
-				APIs:                []*API{{Path: "a/b/v1", Status: statusNew}},
+				APIs:                []*API{{Path: "a/b/v1", Status: StatusNew}},
 				ReleaseExcludePaths: []string{"a/b", "c"},
 			},
 		},
@@ -250,7 +250,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:                  "a/b",
 				SourceRoots:         []string{"src/a"},
-				APIs:                []*API{{Path: "a/b/v1", Status: statusNew}},
+				APIs:                []*API{{Path: "a/b/v1", Status: StatusNew}},
 				ReleaseExcludePaths: []string{"/a/b"},
 			},
 			wantErr:    true,
@@ -261,7 +261,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1", Status: statusNew}},
+				APIs:        []*API{{Path: "a/b/v1", Status: StatusNew}},
 				TagFormat:   "v{id}-{version}",
 			},
 		},
@@ -270,7 +270,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1", Status: statusNew}},
+				APIs:        []*API{{Path: "a/b/v1", Status: StatusNew}},
 				TagFormat:   "{id}-{foo}",
 			},
 			wantErr:    true,

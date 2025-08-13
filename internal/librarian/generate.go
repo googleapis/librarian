@@ -518,7 +518,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	// record to state, not write to state.yaml
 	r.state.Libraries = append(r.state.Libraries, &config.LibraryState{
 		ID:   r.cfg.Library,
-		APIs: []*config.API{{Path: r.cfg.API}},
+		APIs: []*config.API{{Path: r.cfg.API, Status: config.StatusNew}},
 	})
 
 	if err := populateServiceConfigIfEmpty(
