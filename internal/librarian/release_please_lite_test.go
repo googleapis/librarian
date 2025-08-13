@@ -15,10 +15,16 @@
 package librarian
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestParseCommit(t *testing.T) {
@@ -100,7 +106,8 @@ Source-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/goo
 				IsBreaking:  false,
 				Footers: map[string]string{
 					"PiperOrigin-RevId": "piper_cl_number",
-					"Source-Link":       "[googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})"},
+					"Source-Link":       "[googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})",
+				},
 				SHA: "fake-sha",
 			},
 		},
@@ -146,7 +153,7 @@ Source-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/goo
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := ParseCommit(test.message, "fake-sha")
+			got, err := parseCommit(test.message, "fake-sha")
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -242,6 +249,104 @@ func TestFormatTag(t *testing.T) {
 			got := formatTag(tc.library)
 			if got != tc.want {
 				t.Errorf("formatTag() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func setupRepoForGetCommits(t *testing.T) *gitrepo.LocalRepository {
+	t.Helper()
+	dir := t.TempDir()
+	gitRepo, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("git.PlainInit failed: %v", err)
+	}
+
+	createAndCommit := func(path, msg string) {
+		w, err := gitRepo.Worktree()
+		if err != nil {
+			t.Fatalf("Worktree() failed: %v", err)
+		}
+		fullPath := filepath.Join(dir, path)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatalf("os.MkdirAll failed: %v", err)
+		}
+		if err := os.WriteFile(fullPath, []byte("content"), 0644); err != nil {
+			t.Fatalf("os.WriteFile failed: %v", err)
+		}
+		if _, err := w.Add(path); err != nil {
+			t.Fatalf("w.Add failed: %v", err)
+		}
+		_, err = w.Commit(msg, &git.CommitOptions{
+			Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+		})
+		if err != nil {
+			t.Fatalf("w.Commit failed: %v", err)
+		}
+	}
+
+	createAndCommit("foo/a.txt", "feat(foo): initial commit for foo")
+	head, err := gitRepo.Head()
+	if err != nil {
+		t.Fatalf("repo.Head() failed: %v", err)
+	}
+	if _, err := gitRepo.CreateTag("foo-v1.0.0", head.Hash(), nil); err != nil {
+		t.Fatalf("CreateTag failed: %v", err)
+	}
+
+	createAndCommit("bar/a.txt", "feat(bar): initial commit for bar")
+	createAndCommit("foo/b.txt", "fix(foo): a fix for foo")
+	createAndCommit("foo/README.md", "docs(foo): update README")
+	createAndCommit("foo/c.txt", "feat(foo): another feature for foo")
+
+	r, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
+	if err != nil {
+		t.Fatalf("gitrepo.NewRepository failed: %v", err)
+	}
+	return r
+}
+
+func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
+	repo := setupRepoForGetCommits(t)
+	for _, test := range []struct {
+		name    string
+		library *config.LibraryState
+		want    []*ConventionalCommit
+		wantErr bool
+	}{
+		{
+			name: "get commits for foo",
+			library: &config.LibraryState{
+				ID:                  "foo",
+				Version:             "1.0.0",
+				TagFormat:           "{id}-v{version}",
+				SourceRoots:         []string{"foo"},
+				ReleaseExcludePaths: []string{"foo/README.md"},
+			},
+			want: []*ConventionalCommit{
+				{
+					Type:        "feat",
+					Scope:       "foo",
+					Description: "another feature for foo",
+					Footers:     make(map[string]string),
+				},
+				{
+					Type:        "fix",
+					Scope:       "foo",
+					Description: "a fix for foo",
+					Footers:     make(map[string]string),
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := GetConventionalCommitsSinceLastRelease(repo, test.library)
+			if (err != nil) != test.wantErr {
+				t.Errorf("GetCommits() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
+				t.Errorf("GetCommits() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

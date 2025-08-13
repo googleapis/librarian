@@ -38,10 +38,10 @@ type ConventionalCommit struct {
 var commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
 var footerRegex = regexp.MustCompile(`^([A-Za-z-]+|BREAKING CHANGE):\s(.*)`)
 
-// ParseCommit parses a single commit message and returns a ConventionalCommit.
+// parseCommit parses a single commit message and returns a ConventionalCommit.
 // If the commit message does not follow the conventional commit format,
-// nil is returned.
-func ParseCommit(message, hashString string) (*ConventionalCommit, error) {
+// error is returned.
+func parseCommit(message, hashString string) (*ConventionalCommit, error) {
 	lines := strings.Split(strings.TrimSpace(message), "\n")
 	if len(lines) == 0 {
 		return nil, fmt.Errorf("empty commit message")
@@ -122,9 +122,9 @@ func ParseCommit(message, hashString string) (*ConventionalCommit, error) {
 	return cc, nil
 }
 
-// GetCommits returns all conventional commits for the given library since the
+// GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file.
-func GetCommits(repo *gitrepo.LocalRepository, state *config.LibrarianState, library *config.LibraryState) ([]*ConventionalCommit, error) {
+func GetConventionalCommitsSinceLastRelease(repo *gitrepo.LocalRepository, library *config.LibraryState) ([]*ConventionalCommit, error) {
 	var paths []string
 	paths = append(paths, library.SourceRoots...)
 
@@ -142,7 +142,7 @@ func GetCommits(repo *gitrepo.LocalRepository, state *config.LibrarianState, lib
 		if shouldExclude(files, library.ReleaseExcludePaths) {
 			continue
 		}
-		conventionalCommit, err := ParseCommit(commit.Message, commit.Hash.String())
+		conventionalCommit, err := parseCommit(commit.Message, commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
@@ -151,6 +151,8 @@ func GetCommits(repo *gitrepo.LocalRepository, state *config.LibrarianState, lib
 	return conventionalCommits, nil
 }
 
+// shouldExclude determines if a commit should be excluded from a release.
+// It returns true if all files in the commit match one of the exclude paths.
 func shouldExclude(files, excludePaths []string) bool {
 	for _, file := range files {
 		excluded := false
@@ -167,6 +169,7 @@ func shouldExclude(files, excludePaths []string) bool {
 	return true
 }
 
+// formatTag returns the git tag for a given library version.
 func formatTag(library *config.LibraryState) string {
 	tagFormat := library.TagFormat
 	if tagFormat == "" {
@@ -175,4 +178,3 @@ func formatTag(library *config.LibraryState) string {
 	r := strings.NewReplacer("{id}", library.ID, "{version}", library.Version)
 	return r.Replace(tagFormat)
 }
-
