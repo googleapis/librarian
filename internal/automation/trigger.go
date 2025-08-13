@@ -48,7 +48,7 @@ func (c *cloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildp
 	return err
 }
 
-// ListBuildTrigger executes the RPC to list Cloud Build triggers.
+// ListBuildTriggers executes the RPC to list Cloud Build triggers.
 func (c *cloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
 	return c.client.ListBuildTriggers(ctx, req, opts...).All()
 }

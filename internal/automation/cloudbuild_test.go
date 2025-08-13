@@ -42,7 +42,12 @@ func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbu
 func (c *mockCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
 	return func(yield func(*cloudbuildpb.BuildTrigger, error) bool) {
 		for _, v := range c.buildTriggers {
-			if !yield(v, nil) {
+			var err error
+			if c.runError != nil {
+				v = nil
+				err = c.runError
+			}
+			if !yield(v, err) {
 				return // Stop iteration if yield returns false
 			}
 		}
@@ -56,9 +61,8 @@ func TestRunCloudBuildTrigger(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "pass",
-			runError: nil,
-			wantErr:  false,
+			name:    "pass",
+			wantErr: false,
 		},
 		{
 			name:     "error",
@@ -74,26 +78,139 @@ func TestRunCloudBuildTrigger(t *testing.T) {
 			}
 			substitutions := make(map[string]string)
 			err := runCloudBuildTrigger(ctx, client, "some-project", "some-location", "some-trigger-id", substitutions)
-			slog.Info("error", slog.Any("erro", err))
-			// if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
-			// 	t.Errorf("runCloudBuildTrigger() error")
-			// }
+			if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
+				t.Errorf("runCloudBuildTrigger() error")
+			}
 		})
 	}
 }
 
 func TestFindTriggerIdByName(t *testing.T) {
-	t.Run("foo", func(t *testing.T) {
-		if diff := cmp.Diff("foo", "bar"); diff != "" {
-			t.Errorf("runCloudBuildTrigger() error")
-		}
-	})
+	for _, test := range []struct {
+		name          string
+		want          string
+		runError      error
+		wantErr       bool
+		buildTriggers []*cloudbuildpb.BuildTrigger
+	}{
+		{
+			name:    "finds trigger",
+			want:    "some-trigger-id",
+			wantErr: false,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "different-trigger",
+					Id:   "different-trigger-id",
+				},
+				{
+					Name: "some-trigger-name",
+					Id:   "some-trigger-id",
+				},
+			},
+		},
+		{
+			name:    "not found",
+			want:    "",
+			wantErr: true,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "different-trigger",
+					Id:   "different-trigger-id",
+				},
+			},
+		},
+		{
+			name:     "runtime error",
+			want:     "",
+			runError: fmt.Errorf("some-error"),
+			wantErr:  true,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "different-trigger",
+					Id:   "different-trigger-id",
+				},
+				{
+					Name: "some-trigger-name",
+					Id:   "some-trigger-id",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			client := &mockCloudBuildClient{
+				runError:      test.runError,
+				buildTriggers: test.buildTriggers,
+			}
+			triggerId, err := findTriggerIdByName(ctx, client, "some-project", "some-location", "some-trigger-name")
+			if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
+				t.Errorf("expected error() error")
+			}
+			if diff := cmp.Diff(test.want, triggerId); diff != "" {
+				t.Errorf("runCloudBuildTrigger() error")
+			}
+		})
+	}
 }
 
 func TestRunCloudBuildTriggerByName(t *testing.T) {
-	t.Run("foo", func(t *testing.T) {
-		if diff := cmp.Diff("foo", "bar"); diff != "" {
-			t.Errorf("runCloudBuildTrigger() error")
-		}
-	})
+	for _, test := range []struct {
+		name          string
+		want          string
+		runError      error
+		wantErr       bool
+		buildTriggers []*cloudbuildpb.BuildTrigger
+	}{
+		{
+			name:    "finds trigger",
+			wantErr: false,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "different-trigger",
+					Id:   "different-trigger-id",
+				},
+				{
+					Name: "some-trigger-name",
+					Id:   "some-trigger-id",
+				},
+			},
+		},
+		{
+			name:    "not found",
+			wantErr: true,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "different-trigger",
+					Id:   "different-trigger-id",
+				},
+			},
+		},
+		{
+			name:     "runtime error",
+			runError: fmt.Errorf("some-error"),
+			wantErr:  true,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "different-trigger",
+					Id:   "different-trigger-id",
+				},
+				{
+					Name: "some-trigger-name",
+					Id:   "some-trigger-id",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			client := &mockCloudBuildClient{
+				runError:      test.runError,
+				buildTriggers: test.buildTriggers,
+			}
+			err := runCloudBuildTriggerByName(ctx, client, "some-project", "some-location", "some-trigger-name", make(map[string]string))
+			if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
+				t.Errorf("expected error() error")
+			}
+		})
+	}
 }
