@@ -460,8 +460,14 @@ func TestNewGenerateRunner(t *testing.T) {
 					Image: "some/image:v1.2.3",
 					Libraries: []*config.LibraryState{
 						{
-							ID:          "some-library",
-							APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
+							ID: "some-library",
+							APIs: []*config.API{
+								{
+									Path:          "some/api",
+									ServiceConfig: "api_config.yaml",
+									Status:        config.StatusExisting,
+								},
+							},
 							SourceRoots: []string{"src/a"},
 						},
 					},
