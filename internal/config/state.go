@@ -201,7 +201,7 @@ func (a *API) Validate() error {
 
 // invalidPathChars contains characters that are invalid in path components,
 // plus path separators and the null byte.
-const invalidPathChars = `<>:"|?*\/\\x00`
+const invalidPathChars = "<>:\"|?*/\\\x00"
 
 func isValidDirPath(pathString string) bool {
 	if pathString == "" {

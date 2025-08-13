@@ -323,12 +323,14 @@ func TestIsValidDirPath(t *testing.T) {
 	}{
 		{"valid", "a/b/c", true},
 		{"valid with dots", "a/./b/../c", true},
+		{"valid path area120", "google/area120/tables/v1alpha1", true},
 		{"empty", "", false},
 		{"absolute", "/a/b", false},
 		{"up traversal", "../a", false},
 		{"double dot", "..", false},
 		{"single dot", ".", false},
 		{"invalid chars", "a/b<c", false},
+		{"invalid null byte", "a/b\x00c", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := isValidDirPath(test.path); got != test.want {
