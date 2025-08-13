@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
@@ -677,6 +678,46 @@ func TestPartialCopyRepo(t *testing.T) {
 				"read/one.txt",
 				"write/two.txt",
 				"read-write/three.txt",
+			},
+			excludedFiles: []string{
+				"another-library/one/path/empty.txt",
+				"another-library/two/path/empty.txt",
+			},
+		},
+		{
+			name: "copy one library with empty initial directory",
+			request: &ReleaseRequest{
+				Cfg: &config.Config{
+					Repo:     filepath.Join(os.TempDir(), "repo"),
+					WorkRoot: filepath.Join(os.TempDir(), time.Now().String()),
+				},
+				LibraryID: "a-library",
+				State: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "a-library",
+							SourceRoots: []string{
+								"a-library/a/path",
+								"a-library/another/path",
+							},
+						},
+						{
+							ID: "another-library",
+							SourceRoots: []string{
+								"another-library/one/path",
+								"another-library/two/path",
+							},
+						},
+					},
+				},
+				GlobalConfig: &config.GlobalConfig{
+					GlobalFilesAllowlist: []*config.GlobalFile{},
+				},
+			},
+			includedFiles: []string{
+				"a-library/a/path/empty.txt",
+				"a-library/another/path/empty.txt",
+				".librarian/empty.txt",
 			},
 			excludedFiles: []string{
 				"another-library/one/path/empty.txt",
