@@ -137,9 +137,10 @@ func readConfigureRequest(path string) (*librarianState, error) {
 		return nil, err
 	}
 
-	if state.Libraries[0].ID == simulateCommandErrorID {
-		// Simulate a command error
-		return nil, errors.New("simulate command error")
+	for _, library := range state.Libraries {
+		if library.ID == simulateCommandErrorID {
+			return nil, errors.New("simulate command error")
+		}
 	}
 
 	return state, nil
@@ -147,11 +148,19 @@ func readConfigureRequest(path string) (*librarianState, error) {
 
 func writeConfigureResponse(option *configureOption, state *librarianState) error {
 	for _, library := range state.Libraries {
-		if library.ID != option.libraryID {
+		needConfigure := false
+		for _, api := range library.APIs {
+			if api.Status == "new" {
+				needConfigure = true
+			}
+		}
+
+		if !needConfigure {
 			continue
 		}
 
 		populateAdditionalFields(library)
+		log.Printf("populated library: %+v", library)
 		data, err := json.MarshalIndent(library, "", "  ")
 		if err != nil {
 			return err
@@ -214,6 +223,7 @@ func writeGenerateResponse(option *generateOption) (err error) {
 }
 
 func populateAdditionalFields(library *libraryState) {
+	log.Print("populate library fields")
 	library.Version = "1.0.0"
 	library.SourceRoots = []string{"example-source-path", "example-source-path-2"}
 	library.PreserveRegex = []string{"example-preserve-regex", "example-preserve-regex-2"}
