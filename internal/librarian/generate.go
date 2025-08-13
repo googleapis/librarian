@@ -539,26 +539,26 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		return "", err
 	}
 
-	// Read the new library state from the response.
-	libraryState, err := readLibraryState(
+	// Read the new librarian state from the response.
+	state, err := readLibrarianState(
 		filepath.Join(r.repo.GetDir(), config.LibrarianDir, config.ConfigureResponse),
 	)
 	if err != nil {
 		return "", err
 	}
 
-	if libraryState.Version == "" {
-		slog.Info("library doesn't receive a version, apply the default version", "id", r.cfg.Library)
-		libraryState.Version = "0.0.0"
-	}
-
 	// Update the library state in the librarian state.
-	for i, library := range r.state.Libraries {
-		if library.ID != libraryState.ID {
+	for _, library := range state.Libraries {
+		if library.ID != r.cfg.Library {
 			continue
 		}
-		r.state.Libraries[i] = libraryState
+		if library.Version == "" {
+			slog.Info("library doesn't receive a version, apply the default version", "id", r.cfg.Library)
+			library.Version = "0.0.0"
+		}
 	}
 
-	return libraryState.ID, nil
+	r.state = state
+
+	return r.cfg.Library, nil
 }

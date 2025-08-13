@@ -156,3 +156,32 @@ func readLibraryState(jsonFilePath string) (*config.LibraryState, error) {
 
 	return libraryState, nil
 }
+
+// readLibrarianState reads the librarian state from a container response.
+//
+// The response file is removed afterwards.
+func readLibrarianState(jsonFilePath string) (*config.LibrarianState, error) {
+	data, err := os.ReadFile(jsonFilePath)
+	defer func() {
+		if err := os.Remove(jsonFilePath); err != nil {
+			slog.Warn("fail to remove file", slog.String("name", jsonFilePath), slog.Any("err", err))
+		}
+	}()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response file, path: %s, error: %w", jsonFilePath, err)
+	}
+
+	var state *config.LibrarianState
+
+	if err := json.Unmarshal(data, &state); err != nil {
+		return nil, fmt.Errorf("failed to load file, %s, to state: %w", jsonFilePath, err)
+	}
+
+	for _, library := range state.Libraries {
+		if library.ErrorMessage != "" {
+			return nil, fmt.Errorf("failed with error message: %s", library.ErrorMessage)
+		}
+	}
+
+	return state, nil
+}
