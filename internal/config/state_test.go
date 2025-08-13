@@ -15,6 +15,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -34,7 +35,8 @@ func TestLibrarianState_Validate(t *testing.T) {
 						SourceRoots: []string{"src/a", "src/b"},
 						APIs: []*API{
 							{
-								Path: "a/b/v1",
+								Path:   "a/b/v1",
+								Status: statusNew,
 							},
 						},
 					},
@@ -87,7 +89,8 @@ func TestLibrary_Validate(t *testing.T) {
 				SourceRoots: []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
-						Path: "a/b/v1",
+						Path:   "a/b/v1",
+						Status: statusNew,
 					},
 				},
 			},
@@ -158,7 +161,8 @@ func TestLibrary_Validate(t *testing.T) {
 				SourceRoots: []string{"src/a", "src/b"},
 				APIs: []*API{
 					{
-						Path: "a/b/v1",
+						Path:   "a/b/v1",
+						Status: statusNew,
 					},
 				},
 			},
@@ -209,7 +213,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:            "a/b",
 				SourceRoots:   []string{"src/a"},
-				APIs:          []*API{{Path: "a/b/v1"}},
+				APIs:          []*API{{Path: "a/b/v1", Status: statusNew}},
 				PreserveRegex: []string{".*\\.txt"},
 			},
 		},
@@ -218,7 +222,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:            "a/b",
 				SourceRoots:   []string{"src/a"},
-				APIs:          []*API{{Path: "a/b/v1"}},
+				APIs:          []*API{{Path: "a/b/v1", Status: statusNew}},
 				PreserveRegex: []string{"["},
 			},
 			wantErr: true,
@@ -228,7 +232,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1"}},
+				APIs:        []*API{{Path: "a/b/v1", Status: statusNew}},
 				RemoveRegex: []string{".*\\.log"},
 			},
 		},
@@ -237,7 +241,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1"}},
+				APIs:        []*API{{Path: "a/b/v1", Status: statusNew}},
 				RemoveRegex: []string{"("},
 			},
 			wantErr: true,
@@ -247,7 +251,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:                  "a/b",
 				SourceRoots:         []string{"src/a"},
-				APIs:                []*API{{Path: "a/b/v1"}},
+				APIs:                []*API{{Path: "a/b/v1", Status: statusNew}},
 				ReleaseExcludePaths: []string{"a/b", "c"},
 			},
 		},
@@ -256,7 +260,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:                  "a/b",
 				SourceRoots:         []string{"src/a"},
-				APIs:                []*API{{Path: "a/b/v1"}},
+				APIs:                []*API{{Path: "a/b/v1", Status: statusNew}},
 				ReleaseExcludePaths: []string{"/a/b"},
 			},
 			wantErr: true,
@@ -266,7 +270,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1"}},
+				APIs:        []*API{{Path: "a/b/v1", Status: statusNew}},
 				TagFormat:   "v{id}-{version}",
 			},
 		},
@@ -275,7 +279,7 @@ func TestLibrary_Validate(t *testing.T) {
 			library: &LibraryState{
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1"}},
+				APIs:        []*API{{Path: "a/b/v1", Status: statusNew}},
 				TagFormat:   "{id}-{foo}",
 			},
 			wantErr: true,
@@ -291,24 +295,63 @@ func TestLibrary_Validate(t *testing.T) {
 
 func TestAPI_Validate(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		api     *API
-		wantErr bool
+		name       string
+		api        *API
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
-			name: "valid api",
+			name: "new api",
 			api: &API{
-				Path: "a/b/v1",
+				Path:   "a/b/v1",
+				Status: "new",
 			},
 		},
 		{
-			name:    "missing path",
-			api:     &API{},
-			wantErr: true,
+			name: "existing api",
+			api: &API{
+				Path:   "a/b/v1",
+				Status: "existing",
+			},
+		},
+		{
+			name:       "missing path",
+			api:        &API{},
+			wantErr:    true,
+			wantErrMsg: "invalid path",
+		},
+		{
+			name: "missing status",
+			api: &API{
+				Path: "a/b/v1",
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid status",
+		},
+		{
+			name: "wrong status",
+			api: &API{
+				Path:   "a/b/v1",
+				Status: "wrong",
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid status",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.api.Validate(); (err != nil) != test.wantErr {
+			err := test.api.Validate()
+			if test.wantErr {
+				if err == nil {
+					t.Error("API.Validate() should fail")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
 				t.Errorf("API.Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
