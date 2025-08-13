@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Librarian manages Google API client libraries by automating onboarding,
-// regeneration, and release. It runs language‑agnostic workflows while
-// delegating language‑specific tasks—such as code generation, building, and
-// testing—to Docker images.
-package main
+package automation
 
 import (
-	"log"
-	"os"
-
-	"github.com/googleapis/librarian/internal/automation"
+	"context"
+	"flag"
+	"log/slog"
 )
 
-func main() {
-	if err := automation.Run(os.Args[1:]); err != nil {
-		log.Fatal(err)
+func Run(args []string) error {
+	ctx := context.Background()
+	projectId := flag.String("project", "cloud-sdk-librarian-prod", "GCP project ID")
+	command := flag.String("command", "generate", "The librarian command to run")
+	flag.Parse()
+
+	err := RunCommand(ctx, *command, *projectId)
+	if err != nil {
+		slog.Error("Error running command", slog.Any("err", err))
 	}
+	return nil
 }
