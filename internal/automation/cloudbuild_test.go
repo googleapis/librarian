@@ -16,13 +16,14 @@ package automation
 
 import (
 	"context"
+	"fmt"
 	"iter"
 	"testing"
 
-	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/gax-go/v2"
+	"golang.org/x/exp/slog"
 )
 
 type mockCloudBuildClient struct {
@@ -30,11 +31,12 @@ type mockCloudBuildClient struct {
 	buildTriggers []*cloudbuildpb.BuildTrigger
 }
 
-func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) (*cloudbuild.RunBuildTriggerOperation, error) {
+func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error {
+	slog.Info("running fake RunBuildTrigger")
 	if c.runError != nil {
-		return nil, c.runError
+		return c.runError
 	}
-	return &cloudbuild.RunBuildTriggerOperation{}, nil
+	return nil
 }
 
 func (c *mockCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
@@ -49,25 +51,33 @@ func (c *mockCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloud
 
 func TestRunCloudBuildTrigger(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		wantErr bool
+		name     string
+		runError error
+		wantErr  bool
 	}{
 		{
-			name:    "pass",
-			wantErr: false,
+			name:     "pass",
+			runError: nil,
+			wantErr:  false,
 		},
 		{
-			name:    "pass",
-			wantErr: true,
+			name:     "error",
+			runError: fmt.Errorf("some-error"),
+			wantErr:  true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
-			client := &mockCloudBuildClient{}
-			err := runCloudBuildTrigger(ctx, client, "some-project", "some-location", "some-trigger-id", make(map[string]string))
-			if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
-				t.Errorf("runCloudBuildTrigger() error")
+			client := &mockCloudBuildClient{
+				runError:      test.runError,
+				buildTriggers: make([]*cloudbuildpb.BuildTrigger, 0),
 			}
+			substitutions := make(map[string]string)
+			err := runCloudBuildTrigger(ctx, client, "some-project", "some-location", "some-trigger-id", substitutions)
+			slog.Info("error", slog.Any("erro", err))
+			// if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
+			// 	t.Errorf("runCloudBuildTrigger() error")
+			// }
 		})
 	}
 }

@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"iter"
 
-	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/googleapis/gax-go/v2"
 	"golang.org/x/exp/slog"
@@ -27,7 +26,7 @@ import (
 
 // CloudBuildClient is an interface for mocking calls to Cloud Build.
 type CloudBuildClient interface {
-	RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) (*cloudbuild.RunBuildTriggerOperation, error)
+	RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error
 	ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error]
 }
 
@@ -71,11 +70,9 @@ func runCloudBuildTrigger(ctx context.Context, c CloudBuildClient, projectId str
 		},
 	}
 	slog.Info("triggering", slog.String("triggerName", triggerName), slog.String("triggerId", triggerId))
-	resp, err := c.RunBuildTrigger(ctx, req)
+	err := c.RunBuildTrigger(ctx, req)
 	if err != nil {
 		return fmt.Errorf("error running trigger %w", err)
 	}
-
-	slog.Info("triggered", slog.String("LRO Name", resp.Name()))
 	return nil
 }

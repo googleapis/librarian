@@ -37,10 +37,18 @@ type cloudBuildClient struct {
 	client *cloudbuild.Client
 }
 
-func (c *cloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) (*cloudbuild.RunBuildTriggerOperation, error) {
-	return c.client.RunBuildTrigger(ctx, req, opts...)
+// RunBuildTrigger executes the RPC to trigger a Cloud Build trigger.
+func (c *cloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error {
+	resp, err := c.client.RunBuildTrigger(ctx, req, opts...)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("triggered", slog.String("LRO Name", resp.Name()))
+	return err
 }
 
+// ListBuildTrigger executes the RPC to list Cloud Build triggers.
 func (c *cloudBuildClient) ListBuildTriggers(ctx context.Context, req *cloudbuildpb.ListBuildTriggersRequest, opts ...gax.CallOption) iter.Seq2[*cloudbuildpb.BuildTrigger, error] {
 	return c.client.ListBuildTriggers(ctx, req, opts...).All()
 }
