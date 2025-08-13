@@ -1,0 +1,53 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# This Cloud Build configuration is used by a Louhi flow for the Artifact
+# Registry (AR) Exit Gate process (go/cloud-sdk-ar-exit-gate-onboarding).
+#
+# This runs the `librarian release init` command with a provided repository,
+# secret name, and optional library ID
+steps:
+  - name: gcr.io/cloud-builders/git
+    id: clone-language-repo
+    waitFor: ['-']
+    args:
+      - 'clone'
+      - '--depth=1'
+      - https://github.com/googleapis/$_REPOSITORY
+  - name: gcr.io/cloud-builders/git
+    id: clone-googleapis
+    waitFor: ['-']
+    args:
+      - 'clone'
+      - '--single-branch'
+      - '--branch=master'
+      - https://github.com/googleapis/googleapis
+  - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:dac8d6d46eefecde4241c88348315e6162ccd0d39e84db2b98e4da7393f65c29'
+    id: stage-release
+    waitFor: ['clone-language-repo', 'clone-googleapis']
+    args:
+      - 'release init'
+      - '-repo'
+      - '/workspace/$_REPOSITORY'
+      - '-library'
+      - $_LIBRARY_ID
+      - '-api-source'
+      - '/workspace/googleapis'
+    secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
+tags: ['stage-release-$_REPOSITORY']
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/$_GITHUB_TOKEN_SECRET_NAME/versions/latest
+      env: 'LIBRARIAN_GITHUB_TOKEN'
+options:
+  logging: CLOUD_LOGGING_ONLY
