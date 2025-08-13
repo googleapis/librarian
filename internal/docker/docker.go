@@ -390,12 +390,8 @@ func setupPartialRepo(request *ReleaseRequest) error {
 		return fmt.Errorf("failed to copy librarian dir to %s: %w", dst, err)
 	}
 
-	// Copy global files declared in global config, skipping write only files.
+	// Copy global files declared in global config.
 	for _, globalFile := range request.GlobalConfig.GlobalFilesAllowlist {
-		if globalFile.Permissions == config.PermissionWriteOnly {
-			continue
-		}
-
 		dstPath := filepath.Join(dst, globalFile.Path)
 		srcPath := filepath.Join(src, globalFile.Path)
 		if err := copyFile(dstPath, srcPath); err != nil {

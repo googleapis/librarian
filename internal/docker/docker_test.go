@@ -623,11 +623,10 @@ func TestPartialCopyRepo(t *testing.T) {
 				"another-library/two/path/empty.txt",
 				".librarian/empty.txt",
 				"read/one.txt",
+				"write/two.txt",
 				"read-write/three.txt",
 			},
-			excludedFiles: []string{
-				"write/two.txt",
-			},
+			excludedFiles: []string{},
 		},
 		{
 			name: "copy one library and required files to partial repo",
@@ -677,12 +676,12 @@ func TestPartialCopyRepo(t *testing.T) {
 				"a-library/another/path/empty.txt",
 				".librarian/empty.txt",
 				"read/one.txt",
+				"write/two.txt",
 				"read-write/three.txt",
 			},
 			excludedFiles: []string{
 				"another-library/one/path/empty.txt",
 				"another-library/two/path/empty.txt",
-				"write/two.txt",
 			},
 		},
 		{
