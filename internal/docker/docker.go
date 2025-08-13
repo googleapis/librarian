@@ -21,7 +21,6 @@ package docker
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -410,7 +409,7 @@ func copyOneLibrary(dst, src string, library *config.LibraryState) error {
 		dstPath := filepath.Join(dst, srcRoot)
 		srcPath := filepath.Join(src, srcRoot)
 		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
-			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dst, err)
+			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dstPath, err)
 		}
 	}
 
@@ -420,23 +419,19 @@ func copyOneLibrary(dst, src string, library *config.LibraryState) error {
 func copyFile(dst, src string) (err error) {
 	sourceFile, err := os.Open(src)
 	if err != nil {
-		return fmt.Errorf("failed to open file: %s", src)
+		return fmt.Errorf("failed to open file: %q: %w", src, err)
 	}
 	defer sourceFile.Close()
 
 	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %s", src)
 	}
+
 	destinationFile, err := os.Create(dst)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %s", dst)
 	}
-
-	defer func() {
-		if err = errors.Join(err, destinationFile.Close()); err != nil {
-			err = fmt.Errorf("copyFile(%q, %q): %w", dst, src, err)
-		}
-	}()
+	defer destinationFile.Close()
 
 	_, err = io.Copy(destinationFile, sourceFile)
 
