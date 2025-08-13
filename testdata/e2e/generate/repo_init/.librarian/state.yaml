@@ -5,6 +5,7 @@ libraries:
     last_generated_commit:
     apis:
       - path: google/cloud/pubsub/v1
+        status: existing
     source_roots:
       - google-cloud-pubsub/v1
   - id: simulate-command-error-id
@@ -12,5 +13,6 @@ libraries:
     last_generated_commit:
     apis:
       - path: google/cloud/future/v2
+        status: existing
     source_roots:
       - google-cloud-future/v2
