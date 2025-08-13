@@ -251,7 +251,8 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 		if commit.Hash == finalHash {
 			return ErrStopIterating
 		}
-
+		// Skips the initial commit as it has no parents.
+		// This is a known limitation that should be addressed in the future.
 		// Skip any commit with multiple parents. We shouldn't see this
 		// as we don't use merge commits.
 		if commit.NumParents() != 1 {
@@ -323,11 +324,29 @@ func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for hash %s: %w", commitHash, err)
 	}
-	parent, err := commit.Parent(0)
+
+	var fromTree *object.Tree
+	var toTree *object.Tree
+
+	toTree, err = commit.Tree()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get parent for commit %s: %w", commitHash, err)
+		return nil, fmt.Errorf("failed to get tree for commit %s: %w", commitHash, err)
 	}
-	patch, err := parent.Patch(commit)
+
+	if commit.NumParents() == 0 {
+		fromTree = &object.Tree{} // Empty tree for initial commit
+	} else {
+		parent, err := commit.Parent(0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get parent for commit %s: %w", commitHash, err)
+		}
+		fromTree, err = parent.Tree()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get parent tree for commit %s: %w", commitHash, err)
+		}
+	}
+
+	patch, err := fromTree.Patch(toTree)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get patch for commit %s: %w", commitHash, err)
 	}
