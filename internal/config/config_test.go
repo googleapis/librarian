@@ -8,7 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// WITHOUT WARRANTIES, OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -157,6 +157,12 @@ func TestIsValid(t *testing.T) {
 			},
 		},
 		{
+			name: "Valid config - valid pull request",
+			cfg: Config{
+				PullRequest: "https://github.com/owner/repo/pull/123",
+			},
+		},
+		{
 			name: "Invalid config - Push true, token missing",
 			cfg: Config{
 				Push:        true,
@@ -201,6 +207,14 @@ func TestIsValid(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "unable to parse host mount",
+		},
+		{
+			name: "Invalid config - invalid pull request url",
+			cfg: Config{
+				PullRequest: "https://github.com/owner/repo/issues/123",
+			},
+			wantErr:    true,
+			wantErrMsg: "pull request URL is not valid",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
