@@ -33,10 +33,10 @@ steps:
       - '--branch=master'
       - https://github.com/googleapis/googleapis
   - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:dac8d6d46eefecde4241c88348315e6162ccd0d39e84db2b98e4da7393f65c29'
-    id: generate
+    id: stage-release
     waitFor: ['clone-language-repo', 'clone-googleapis']
     args:
-      - 'generate'
+      - 'release init'
       - '-repo'
       - '/workspace/$_REPOSITORY'
       - '-library'
@@ -44,7 +44,7 @@ steps:
       - '-api-source'
       - '/workspace/googleapis'
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
-tags: ['generate-$_REPOSITORY']
+tags: ['stage-release-$_REPOSITORY']
 availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_ID/secrets/$_GITHUB_TOKEN_SECRET_NAME/versions/latest
