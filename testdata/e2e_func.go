@@ -147,25 +147,27 @@ func readConfigureRequest(path string) (*librarianState, error) {
 
 func writeConfigureResponse(option *configureOption, state *librarianState) error {
 	for _, library := range state.Libraries {
-		if library.ID == option.libraryID {
-			populateAdditionalFields(library)
+		if library.ID != option.libraryID {
+			continue
 		}
-	}
-	data, err := json.MarshalIndent(state, "", "  ")
-	if err != nil {
-		return err
-	}
 
-	jsonFilePath := filepath.Join(option.librarianDir, configureResponse)
-	jsonFile, err := os.Create(jsonFilePath)
-	if err != nil {
-		return err
-	}
+		populateAdditionalFields(library)
+		data, err := json.MarshalIndent(library, "", "  ")
+		if err != nil {
+			return err
+		}
 
-	if _, err := jsonFile.Write(data); err != nil {
-		return err
+		jsonFilePath := filepath.Join(option.librarianDir, configureResponse)
+		jsonFile, err := os.Create(jsonFilePath)
+		if err != nil {
+			return err
+		}
+
+		if _, err := jsonFile.Write(data); err != nil {
+			return err
+		}
+		log.Print("write configure response to " + jsonFilePath)
 	}
-	log.Print("write configure response to " + jsonFilePath)
 
 	return nil
 }
