@@ -19,7 +19,10 @@ steps:
     id: generate-dispatcher
     entrypoint: go
     args:
-      - 'version'
+      - 'run'
+      - './cmd/automation'
+      - '--project=$PROJECT_ID'
+      - '--command=generate'
 tags: ['generate-dispatcher']
 availableSecrets:
 options:
