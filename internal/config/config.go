@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -60,6 +61,11 @@ var (
 	now         = time.Now
 	tempDir     = os.TempDir
 	currentUser = user.Current
+)
+
+var (
+	// pullRequestRegexp is regular expression that describes a uri of a pull request.
+	pullRequestRegexp = regexp.MustCompile(`^https://github\.com/([a-zA-Z0-9-._]+)/([a-zA-Z0-9-._]+)/pull/([0-9]+)$`)
 )
 
 // Config holds all configuration values parsed from flags or environment
@@ -142,6 +148,14 @@ type Config struct {
 	//
 	// Requires the --library flag to be specified.
 	LibraryVersion string
+
+	// PullRequest to target and operate one in the context of a release.
+	//
+	// The pull request should be in the format `https://github.com/{owner}/{repo}/pull/{number}`.
+	// Setting this field for `tag-and-release` means librarian will only attempt
+	// to process this exact pull request and not search for other pull requests
+	// that may be ready for tagging and releasing.
+	PullRequest string
 
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
@@ -285,6 +299,13 @@ func (c *Config) IsValid() (bool, error) {
 
 	if c.Library == "" && c.LibraryVersion != "" {
 		return false, errors.New("specified library version without library id")
+	}
+
+	if c.PullRequest != "" {
+		matched := pullRequestRegexp.MatchString(c.PullRequest)
+		if !matched {
+			return false, errors.New("pull request URL is not valid")
+		}
 	}
 
 	if _, err := validateHostMount(c.HostMount, ""); err != nil {

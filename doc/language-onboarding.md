@@ -255,20 +255,25 @@ The `release-init` command is the core of the release workflow. After Librarian 
 the commits for a release, it invokes this container command to apply the necessary changes to the repository.
 
 The container command's primary responsibility is to update all required files with the new version and commit
-information. This includes, but is not limited to, updating `CHANGELOG.md` files, bumping version numbers in metadata
-files (e.g., `pom.xml`, `package.json`), and updating any global files that reference the libraries being released.
+information for libraries that have the `release_triggered` set to true. This includes, but is not limited to, updating
+`CHANGELOG.md` files, bumping version numbers in metadata files (e.g., `pom.xml`, `package.json`), and updating any
+global files that reference the libraries being released.
 
 **Contract:**
 
 | Context      | Type                | Description                                                                     |
 | :----------- | :------------------ | :------------------------------------------------------------------------------ |
 | `/librarian` | Mount (Read/Write)  | Contains `release-init-request.json`. Container writes back a `release-init-response.json`. |
-| `/repo`      | Mount (Read/Write)  | The entire language repository, allowing the container to make any necessary global edits. |
+| `/repo`      | Mount (Read)        | Parts of the language repo. This directory will contain all directories that make up a library, the .librarian folder, and any global file declared in the `config.yaml`. |
 | `/output`    | Mount (Write)       | Any files updated during the release phase should be moved to this directory, preserving their original paths. |
 | `command`    | Positional Argument | The value will always be `release-init`. |
 | flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo`, `--output` |
 
 **Example `release-init-request.json`:**
+
+The request will have entries for all libraries configured in the state.yaml -- this information may be needed for any
+global file edits. The libraries that are being released will be marked by the `release_triggered` field being set to
+`true`.
 
 ```json
 {
@@ -303,7 +308,8 @@ files (e.g., `pom.xml`, `package.json`), and updating any global files that refe
       "source_roots": [
         "secretmanager",
         "other/location/secretmanager"
-      ]
+      ],
+      "release_triggered": true
     }
   ]
 }
