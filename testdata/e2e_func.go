@@ -149,8 +149,8 @@ func readConfigureRequest(path string) (*librarianState, error) {
 func writeConfigureResponse(option *configureOption, state *librarianState) error {
 	for _, library := range state.Libraries {
 		needConfigure := false
-		for _, api := range library.APIs {
-			if api.Status == "new" {
+		for _, oneAPI := range library.APIs {
+			if oneAPI.Status == "new" {
 				needConfigure = true
 			}
 		}
@@ -226,8 +226,8 @@ func populateAdditionalFields(library *libraryState) {
 	library.SourceRoots = []string{"example-source-path", "example-source-path-2"}
 	library.PreserveRegex = []string{"example-preserve-regex", "example-preserve-regex-2"}
 	library.RemoveRegex = []string{"example-remove-regex", "example-remove-regex-2"}
-	for _, oneApi := range library.APIs {
-		oneApi.Status = "existing"
+	for _, oneAPI := range library.APIs {
+		oneAPI.Status = "existing"
 	}
 }
 
