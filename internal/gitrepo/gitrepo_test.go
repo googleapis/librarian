@@ -824,53 +824,44 @@ func TestChangedFilesInCommit(t *testing.T) {
 	}
 }
 
-func TestGetCommitsForPaths(t *testing.T) {
+func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 	t.Parallel()
 
 	repo, commits := setupRepoForGetCommitsTest(t)
 
 	for _, test := range []struct {
-		name                string
-		paths               []string
-		tagName             string
-		sinceCommit         string
-		wantCommits         []string
-		wantErr             bool
-		useGetCommitsForTag bool
+		name        string
+		paths       []string
+		tagName     string
+		sinceCommit string
+		wantCommits []string
+		wantErr     bool
 	}{
 		{
-			name:        "GetCommitsForPathsSinceCommit - one path, one commit",
+			name:        "one path, one commit",
 			paths:       []string{"file2.txt"},
 			sinceCommit: commits["commit1"],
 			wantCommits: []string{"feat: commit 2"},
 		},
 		{
-			name:        "GetCommitsForPathsSinceCommit - all paths, all commits",
+			name:        "all paths, all commits",
 			paths:       []string{"file1.txt", "file2.txt", "file3.txt"},
 			sinceCommit: "",
 			// The current implementation skips the initial commit.
 			wantCommits: []string{"feat: commit 3", "feat: commit 2"},
 		},
 		{
-			name:        "GetCommitsForPathsSinceCommit - no matching commits",
+			name:        "no matching commits",
 			paths:       []string{"non-existent-file.txt"},
 			sinceCommit: "",
 			wantCommits: []string{},
 		},
 		{
-			name:                "GetCommitsForPathsSinceTag - all paths, multiple commits",
-			paths:               []string{"file2.txt", "file3.txt"},
-			tagName:             "v1.0.0",
-			wantCommits:         []string{"feat: commit 3", "feat: commit 2"},
-			useGetCommitsForTag: true,
-		},
-		{
-			name:                "GetCommitsForPathsSinceTag - invalid tag",
-			paths:               []string{"file2.txt"},
-			tagName:             "non-existent-tag",
-			wantCommits:         []string{},
-			wantErr:             true,
-			useGetCommitsForTag: true,
+			name:        "no paths specified",
+			paths:       []string{},
+			tagName:     "v1.0.0",
+			wantCommits: []string{},
+			wantErr:     true,
 		},
 	} {
 
@@ -879,18 +870,67 @@ func TestGetCommitsForPaths(t *testing.T) {
 				gotCommits []*Commit
 				err        error
 			)
-			if test.useGetCommitsForTag {
-				gotCommits, err = repo.GetCommitsForPathsSinceTag(test.paths, test.tagName)
-			} else {
-				gotCommits, err = repo.GetCommitsForPathsSinceCommit(test.paths, test.sinceCommit)
-			}
+
+			gotCommits, err = repo.GetCommitsForPathsSinceCommit(test.paths, test.sinceCommit)
 
 			if (err != nil) != test.wantErr {
 				t.Errorf("GetCommitsForPaths() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
 
-			var gotCommitMessages = []string{}
+			gotCommitMessages := []string{}
+			for _, c := range gotCommits {
+				gotCommitMessages = append(gotCommitMessages, strings.Split(c.Message, "\n")[0])
+			}
+
+			if diff := cmp.Diff(test.wantCommits, gotCommitMessages); diff != "" {
+				t.Errorf("GetCommitsForPaths() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetCommitsForPathsSinceTag(t *testing.T) {
+	t.Parallel()
+
+	repo, _ := setupRepoForGetCommitsTest(t)
+
+	for _, test := range []struct {
+		name        string
+		paths       []string
+		tagName     string
+		sinceCommit string
+		wantCommits []string
+		wantErr     bool
+	}{
+		{
+			name:        "all paths, multiple commits",
+			paths:       []string{"file2.txt", "file3.txt"},
+			tagName:     "v1.0.0",
+			wantCommits: []string{"feat: commit 3", "feat: commit 2"},
+		},
+		{
+			name:        "invalid tag",
+			paths:       []string{"file2.txt"},
+			tagName:     "non-existent-tag",
+			wantCommits: []string{},
+			wantErr:     true,
+		},
+	} {
+
+		t.Run(test.name, func(t *testing.T) {
+			var (
+				gotCommits []*Commit
+				err        error
+			)
+			gotCommits, err = repo.GetCommitsForPathsSinceTag(test.paths, test.tagName)
+
+			if (err != nil) != test.wantErr {
+				t.Errorf("GetCommitsForPaths() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+
+			gotCommitMessages := []string{}
 			for _, c := range gotCommits {
 				gotCommitMessages = append(gotCommitMessages, strings.Split(c.Message, "\n")[0])
 			}
