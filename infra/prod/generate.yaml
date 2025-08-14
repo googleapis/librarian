@@ -21,7 +21,7 @@ steps:
     args:
       - 'clone'
       - '--depth=1'
-      - https://github.com/googleapis/$_REPOSITORY
+      - https://github.com/$_ORGANIZATION/$_REPOSITORY
   - name: gcr.io/cloud-builders/git
     id: clone-googleapis
     waitFor: ['-']
