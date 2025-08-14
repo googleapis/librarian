@@ -195,16 +195,14 @@ type API struct {
 	// The name of the service config file, relative to the API `path`.
 	ServiceConfig string `yaml:"service_config" json:"service_config"`
 	// The status of the API, one of "new" or "existing".
-	Status string `yaml:"status" json:"status"`
+	// This field is ignored when writing to state.yaml.
+	Status string `yaml:"-" json:"status"`
 }
 
 // Validate checks that the API is valid.
 func (a *API) Validate() error {
 	if !isValidDirPath(a.Path) {
 		return fmt.Errorf("invalid path: %q", a.Path)
-	}
-	if a.Status != StatusNew && a.Status != StatusExisting {
-		return fmt.Errorf("invalid status: %q", a.Status)
 	}
 	return nil
 }
