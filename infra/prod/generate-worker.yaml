@@ -19,9 +19,7 @@ steps:
     id: generate-dispatcher
     entrypoint: go
     args:
-      - 'run'
-      - 'github.com/googleapis/librarian/cmd/automation@main'
-      - '--command=generate'
+      - 'version'
 tags: ['generate-dispatcher']
 availableSecrets:
 options:
