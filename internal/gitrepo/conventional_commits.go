@@ -23,13 +23,20 @@ import (
 // ConventionalCommit represents a parsed conventional commit message.
 // See https://www.conventionalcommits.org/en/v1.0.0/ for details.
 type ConventionalCommit struct {
-	Type        string
-	Scope       string
+	// Type is the type of change (e.g., "feat", "fix", "docs").
+	Type string
+	// Scope is the scope of the change.
+	Scope string
+	// Description is the short summary of the change.
 	Description string
-	Body        string
-	Footers     map[string]string
-	IsBreaking  bool
-	SHA         string
+	// Body is the long-form description of the change.
+	Body string
+	// Footers contain metadata (e.g.,"BREAKING CHANGE", "Reviewed-by").
+	Footers map[string]string
+	// IsBreaking indicates if the commit introduces a breaking change.
+	IsBreaking bool
+	// SHA is the full commit hash.
+	SHA string
 }
 
 const breakingChangeKey = "BREAKING CHANGE"
