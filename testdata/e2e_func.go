@@ -160,7 +160,6 @@ func writeConfigureResponse(option *configureOption, state *librarianState) erro
 		}
 
 		populateAdditionalFields(library)
-		log.Printf("populated library: %+v", library)
 		data, err := json.MarshalIndent(library, "", "  ")
 		if err != nil {
 			return err
@@ -223,7 +222,6 @@ func writeGenerateResponse(option *generateOption) (err error) {
 }
 
 func populateAdditionalFields(library *libraryState) {
-	log.Print("populate library fields")
 	library.Version = "1.0.0"
 	library.SourceRoots = []string{"example-source-path", "example-source-path-2"}
 	library.PreserveRegex = []string{"example-preserve-regex", "example-preserve-regex-2"}
