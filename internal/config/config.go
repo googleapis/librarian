@@ -276,6 +276,7 @@ func (c *Config) deriveRepo() error {
 		return nil
 	}
 	if c.Repo != "" {
+		slog.Debug("repo value provided by user", "repo", c.Repo)
 		return nil
 	}
 	wd, err := os.Getwd()
