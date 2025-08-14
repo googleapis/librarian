@@ -100,9 +100,6 @@ type LibraryState struct {
 	SourceRoots []string `yaml:"source_roots" json:"source_roots"`
 	// A list of regular expressions for files and directories to preserve during the copy and remove process.
 	PreserveRegex []string `yaml:"preserve_regex" json:"preserve_regex"`
-	// Whether to release this library.
-	// This field is ignored when writing to state.yaml.
-	Releasing bool `yaml:"-" json:"releasing"`
 	// A list of regular expressions for files and directories to remove before copying generated code.
 	// If not set, this defaults to the `source_roots`.
 	// A more specific `preserve_regex` takes precedence.
