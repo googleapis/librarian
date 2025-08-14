@@ -52,6 +52,7 @@ func init() {
 type initRunner struct {
 	cfg   *config.Config
 	state *config.LibrarianState
+	image string
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
@@ -59,8 +60,28 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		return nil, fmt.Errorf("invalid config: %+v", cfg)
 	}
 
+	if cfg.APISource == "" {
+		cfg.APISource = "https://github.com/googleapis/googleapis"
+	}
+	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to clone or open source repo, %s: %w", cfg.APISource, err)
+	}
+
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to clone or open language repo, %s: %w", cfg.Repo, err)
+	}
+	state, err := loadRepoState(languageRepo, sourceRepo.GetDir())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load librarian state from source repo, %s: %w", sourceRepo.GetDir(), err)
+	}
+	image := deriveImage(cfg.Image, state)
+
 	return &initRunner{
-		cfg: cfg,
+		cfg:   cfg,
+		state: state,
+		image: image,
 	}, nil
 }
 
