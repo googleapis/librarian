@@ -167,6 +167,7 @@ func TestIsValid(t *testing.T) {
 			name: "Valid config - valid pull request",
 			cfg: Config{
 				PullRequest: "https://github.com/owner/repo/pull/123",
+				Repo:        "/tmp/some/repo",
 			},
 		},
 		{
@@ -265,7 +266,7 @@ func TestCreateWorkRoot(t *testing.T) {
 		name     string
 		workRoot string
 		setup    func(t *testing.T) (string, func())
-		wantErr  bool
+		errMsg   string
 	}{
 		{
 			name:     "configured root",
@@ -298,7 +299,7 @@ func TestCreateWorkRoot(t *testing.T) {
 					}
 				}
 			},
-			wantErr: true,
+			errMsg: "working directory already exists",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -309,14 +310,12 @@ func TestCreateWorkRoot(t *testing.T) {
 				WorkRoot: test.workRoot,
 			}
 			err := c.createWorkRoot()
-			if test.wantErr {
-				if err == nil {
-					t.Error("createWorkRoot() expected an error but got nil")
+			if test.errMsg != "" {
+				if !strings.Contains(err.Error(), test.errMsg) {
+					t.Errorf("createWorkRoot() = %q, want contains %q", err, test.errMsg)
 				}
 				return
-			}
-
-			if err != nil {
+			} else if err != nil {
 				t.Errorf("createWorkRoot() got unexpected error: %v", err)
 				return
 			}
