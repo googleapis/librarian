@@ -50,7 +50,8 @@ func init() {
 }
 
 type initRunner struct {
-	cfg *config.Config
+	cfg   *config.Config
+	state *config.LibrarianState
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
