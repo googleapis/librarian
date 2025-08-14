@@ -24,9 +24,9 @@ import (
 // LibrarianState defines the contract for the state.yaml file.
 type LibrarianState struct {
 	// The name and tag of the generator image to use. tag is required.
-	Image string `yaml:"image"`
+	Image string `yaml:"image" json:"image"`
 	// A list of library configurations.
-	Libraries []*LibraryState `yaml:"libraries"`
+	Libraries []*LibraryState `yaml:"libraries" json:"libraries"`
 }
 
 // Validate checks that the LibrarianState is valid.
@@ -105,7 +105,7 @@ type LibraryState struct {
 	// Specifying a tag format allows librarian to honor this format when creating
 	// a tag for the release of the library. The replacement values of {id} and {version}
 	// permitted to reference the values configured in the library. If not specified
-	// the assumed format is {id}-{version}. e.g., {id}/v{version}.
+	// the assumed format is {id}-{version}.
 	TagFormat string `yaml:"tag_format,omitempty" json:"tag_format,omitempty"`
 	// An error message from the docker response.
 	// This field is ignored when writing to state.yaml.
@@ -163,9 +163,6 @@ func (l *LibraryState) Validate() error {
 		}
 	}
 	if l.TagFormat != "" {
-		if !strings.Contains(l.TagFormat, "{id}") || !strings.Contains(l.TagFormat, "{version}") {
-			return fmt.Errorf("tag_format must contain {id} and {version}")
-		}
 		matches := tagFormatRegex.FindAllString(l.TagFormat, -1)
 		for _, match := range matches {
 			if match != "{id}" && match != "{version}" {
