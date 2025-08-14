@@ -133,9 +133,10 @@ func TestParseCommit(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid commit",
+			name:    "invalid conventional commit",
 			message: "this is not a conventional commit",
-			wantErr: true,
+			wantErr: false,
+			want:    nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

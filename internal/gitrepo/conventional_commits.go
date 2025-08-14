@@ -16,6 +16,7 @@ package gitrepo
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 )
@@ -45,8 +46,8 @@ var commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<br
 var footerRegex = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
 
 // ParseCommit parses a single commit message and returns a ConventionalCommit.
-// If the commit message does not follow the conventional commit format,
-// error is returned.
+// If the commit message does not follow the conventional commit format, it
+// logs a warning and returns a nil commit and no error.
 func ParseCommit(message, hashString string) (*ConventionalCommit, error) {
 	lines := strings.Split(strings.TrimSpace(message), "\n")
 	if len(lines) == 0 {
@@ -54,7 +55,8 @@ func ParseCommit(message, hashString string) (*ConventionalCommit, error) {
 	}
 	match := commitRegex.FindStringSubmatch(lines[0])
 	if len(match) == 0 {
-		return nil, fmt.Errorf("invalid commit message: %s", message)
+		slog.Warn("Invalid conventional commit message", "message", message, "hash", hashString)
+		return nil, nil
 	}
 
 	result := make(map[string]string)
