@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -57,6 +58,41 @@ func TestNewInitRunner(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("newInitRunner() got nil runner, want non-nil")
+			}
+		})
+	}
+}
+
+func TestInitRun(t *testing.T) {
+	testcases := []struct {
+		name       string
+		runner     *initRunner
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:       "invalid",
+			runner:     &initRunner{},
+			wantErr:    true,
+			wantErrMsg: "not implemented",
+		},
+	}
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.runner.run(context.Background())
+			if test.wantErr {
+				if err == nil {
+					t.Error("run() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Errorf("run() got nil runner, want non-nil")
 			}
 		})
 	}
