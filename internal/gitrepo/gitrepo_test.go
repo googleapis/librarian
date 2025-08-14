@@ -650,55 +650,6 @@ func TestGetDir(t *testing.T) {
 	}
 }
 
-// initTestRepo creates a new git repository in a temporary directory.
-func initTestRepo(t *testing.T) (*git.Repository, string) {
-	t.Helper()
-	dir := t.TempDir()
-	repo, err := git.PlainInit(dir, false)
-	if err != nil {
-		t.Fatalf("git.PlainInit failed: %v", err)
-	}
-	return repo, dir
-}
-
-// createAndCommit creates and commits a file or directory.
-func createAndCommit(t *testing.T, repo *git.Repository, path string, content []byte, commitMsg string) *object.Commit {
-	t.Helper()
-	w, err := repo.Worktree()
-	if err != nil {
-		t.Fatalf("Worktree() failed: %v", err)
-	}
-
-	fullPath := filepath.Join(w.Filesystem.Root(), path)
-	if content != nil { // It's a file
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-			t.Fatalf("os.MkdirAll failed: %v", err)
-		}
-		if err := os.WriteFile(fullPath, content, 0644); err != nil {
-			t.Fatalf("os.WriteFile failed: %v", err)
-		}
-	} else { // It's a directory
-		if err := os.MkdirAll(fullPath, 0755); err != nil {
-			t.Fatalf("os.MkdirAll failed: %v", err)
-		}
-	}
-
-	if _, err := w.Add(path); err != nil {
-		t.Fatalf("w.Add failed: %v", err)
-	}
-	hash, err := w.Commit(commitMsg, &git.CommitOptions{
-		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
-	})
-	if err != nil {
-		t.Fatalf("w.Commit failed: %v", err)
-	}
-	commit, err := repo.CommitObject(hash)
-	if err != nil {
-		t.Fatalf("repo.CommitObject failed: %v", err)
-	}
-	return commit
-}
-
 func TestGetHashForPathOrEmpty(t *testing.T) {
 	t.Parallel()
 
@@ -828,29 +779,6 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 	}
 }
 
-// setupRepoForChangedFilesTest sets up a repository with a series of commits for testing.
-// It returns the repository and a map of commit names to their hashes.
-func setupRepoForChangedFilesTest(t *testing.T) (*LocalRepository, map[string]string) {
-	t.Helper()
-	repo, dir := initTestRepo(t)
-
-	commitHashes := make(map[string]string)
-
-	// Commit 1
-	commit1 := createAndCommit(t, repo, "file1.txt", []byte("content1"), "commit 1")
-	commitHashes["commit 1"] = commit1.Hash.String()
-
-	// Commit 2 (modify file1.txt)
-	commit2 := createAndCommit(t, repo, "file1.txt", []byte("content2"), "commit 2")
-	commitHashes["commit 2"] = commit2.Hash.String()
-
-	// Commit 3 (add file2.txt)
-	commit3 := createAndCommit(t, repo, "file2.txt", []byte("content3"), "commit 3")
-	commitHashes["commit 3"] = commit3.Hash.String()
-
-	return &LocalRepository{Dir: dir, repo: repo}, commitHashes
-}
-
 func TestChangedFilesInCommit(t *testing.T) {
 	t.Parallel()
 	r, commitHashes := setupRepoForChangedFilesTest(t)
@@ -894,32 +822,6 @@ func TestChangedFilesInCommit(t *testing.T) {
 			}
 		})
 	}
-}
-
-// setupRepoForGetCommitsTest creates a repository with a few commits and tags.
-func setupRepoForGetCommitsTest(t *testing.T) (*LocalRepository, map[string]string) {
-	t.Helper()
-	repo, dir := initTestRepo(t)
-	commits := make(map[string]string)
-
-	// Commit 1
-	commit1 := createAndCommit(t, repo, "file1.txt", []byte("content1"), "feat: commit 1")
-	commits["commit1"] = commit1.Hash.String()
-
-	// Tag for commit 1
-	if _, err := repo.CreateTag("v1.0.0", commit1.Hash, nil); err != nil {
-		t.Fatalf("CreateTag failed: %v", err)
-	}
-
-	// Commit 2
-	commit2 := createAndCommit(t, repo, "file2.txt", []byte("content2"), "feat: commit 2")
-	commits["commit2"] = commit2.Hash.String()
-
-	// Commit 3
-	commit3 := createAndCommit(t, repo, "file3.txt", []byte("content3"), "feat: commit 3")
-	commits["commit3"] = commit3.Hash.String()
-
-	return &LocalRepository{Dir: dir, repo: repo}, commits
 }
 
 func TestGetCommitsForPaths(t *testing.T) {
@@ -998,4 +900,102 @@ func TestGetCommitsForPaths(t *testing.T) {
 			}
 		})
 	}
+}
+
+// initTestRepo creates a new git repository in a temporary directory.
+func initTestRepo(t *testing.T) (*git.Repository, string) {
+	t.Helper()
+	dir := t.TempDir()
+	repo, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("git.PlainInit failed: %v", err)
+	}
+	return repo, dir
+}
+
+// createAndCommit creates and commits a file or directory.
+func createAndCommit(t *testing.T, repo *git.Repository, path string, content []byte, commitMsg string) *object.Commit {
+	t.Helper()
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree() failed: %v", err)
+	}
+
+	fullPath := filepath.Join(w.Filesystem.Root(), path)
+	if content != nil { // It's a file
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatalf("os.MkdirAll failed: %v", err)
+		}
+		if err := os.WriteFile(fullPath, content, 0644); err != nil {
+			t.Fatalf("os.WriteFile failed: %v", err)
+		}
+	} else { // It's a directory
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
+			t.Fatalf("os.MkdirAll failed: %v", err)
+		}
+	}
+
+	if _, err := w.Add(path); err != nil {
+		t.Fatalf("w.Add failed: %v", err)
+	}
+	hash, err := w.Commit(commitMsg, &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+	if err != nil {
+		t.Fatalf("w.Commit failed: %v", err)
+	}
+	commit, err := repo.CommitObject(hash)
+	if err != nil {
+		t.Fatalf("repo.CommitObject failed: %v", err)
+	}
+	return commit
+}
+
+// setupRepoForChangedFilesTest sets up a repository with a series of commits for testing.
+// It returns the repository and a map of commit names to their hashes.
+func setupRepoForChangedFilesTest(t *testing.T) (*LocalRepository, map[string]string) {
+	t.Helper()
+	repo, dir := initTestRepo(t)
+
+	commitHashes := make(map[string]string)
+
+	// Commit 1
+	commit1 := createAndCommit(t, repo, "file1.txt", []byte("content1"), "commit 1")
+	commitHashes["commit 1"] = commit1.Hash.String()
+
+	// Commit 2 (modify file1.txt)
+	commit2 := createAndCommit(t, repo, "file1.txt", []byte("content2"), "commit 2")
+	commitHashes["commit 2"] = commit2.Hash.String()
+
+	// Commit 3 (add file2.txt)
+	commit3 := createAndCommit(t, repo, "file2.txt", []byte("content3"), "commit 3")
+	commitHashes["commit 3"] = commit3.Hash.String()
+
+	return &LocalRepository{Dir: dir, repo: repo}, commitHashes
+}
+
+// setupRepoForGetCommitsTest creates a repository with a few commits and tags.
+func setupRepoForGetCommitsTest(t *testing.T) (*LocalRepository, map[string]string) {
+	t.Helper()
+	repo, dir := initTestRepo(t)
+	commits := make(map[string]string)
+
+	// Commit 1
+	commit1 := createAndCommit(t, repo, "file1.txt", []byte("content1"), "feat: commit 1")
+	commits["commit1"] = commit1.Hash.String()
+
+	// Tag for commit 1
+	if _, err := repo.CreateTag("v1.0.0", commit1.Hash, nil); err != nil {
+		t.Fatalf("CreateTag failed: %v", err)
+	}
+
+	// Commit 2
+	commit2 := createAndCommit(t, repo, "file2.txt", []byte("content2"), "feat: commit 2")
+	commits["commit2"] = commit2.Hash.String()
+
+	// Commit 3
+	commit3 := createAndCommit(t, repo, "file3.txt", []byte("content3"), "feat: commit 3")
+	commits["commit3"] = commit3.Hash.String()
+
+	return &LocalRepository{Dir: dir, repo: repo}, commits
 }

@@ -211,19 +211,19 @@ func (r *LocalRepository) GetDir() string {
 func (r *LocalRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error) {
 	var hash string
 	if tagName == "" {
-		hash = ""
-	} else {
-		tagRef, err := r.repo.Tag(tagName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
-		}
-
-		tagCommit, err := r.repo.CommitObject(tagRef.Hash())
-		if err != nil {
-			return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
-		}
-		hash = tagCommit.Hash.String()
+		return r.GetCommitsForPathsSinceCommit(paths, "")
 	}
+	tagRef, err := r.repo.Tag(tagName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
+	}
+
+	tagCommit, err := r.repo.CommitObject(tagRef.Hash())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
+	}
+	hash = tagCommit.Hash.String()
+
 	return r.GetCommitsForPathsSinceCommit(paths, hash)
 }
 
@@ -246,7 +246,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 		return nil, err
 	}
 	// Sentinel "error" - this can be replaced using LogOptions.To when that's available.
-	var ErrStopIterating = fmt.Errorf("fake error to stop iterating")
+	ErrStopIterating := fmt.Errorf("iteration done")
 	err = logIterator.ForEach(func(commit *object.Commit) error {
 		if commit.Hash == finalHash {
 			return ErrStopIterating

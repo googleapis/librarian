@@ -32,8 +32,10 @@ type ConventionalCommit struct {
 	SHA         string
 }
 
+const breakingChangeKey = "BREAKING CHANGE"
+
 var commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
-var footerRegex = regexp.MustCompile(`^([A-Za-z-]+|BREAKING CHANGE):\s(.*)`)
+var footerRegex = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
 
 // ParseCommit parses a single commit message and returns a ConventionalCommit.
 // If the commit message does not follow the conventional commit format,
@@ -105,7 +107,7 @@ func ParseCommit(message, hashString string) (*ConventionalCommit, error) {
 			value := strings.TrimSpace(footerMatches[2])
 			cc.Footers[key] = value
 			lastKey = key
-			if key == "BREAKING CHANGE" {
+			if key == breakingChangeKey {
 				cc.IsBreaking = true
 			}
 		} else if lastKey != "" && strings.TrimSpace(line) != "" {
