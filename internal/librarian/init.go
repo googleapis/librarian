@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -53,6 +54,10 @@ type initRunner struct {
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
+	if ok, err := cfg.IsValid(); !ok || err != nil {
+		return nil, fmt.Errorf("invalid config: %+v", cfg)
+	}
+
 	return &initRunner{
 		cfg: cfg,
 	}, nil

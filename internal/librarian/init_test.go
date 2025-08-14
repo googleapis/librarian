@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -22,23 +23,39 @@ import (
 
 func TestNewInitRunner(t *testing.T) {
 	testcases := []struct {
-		name    string
-		cfg     *config.Config
-		wantErr bool
+		name       string
+		cfg        *config.Config
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "valid config",
 			cfg:  &config.Config{},
 		},
+		{
+			name: "invalid config",
+			cfg: &config.Config{
+				Push: true,
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid config",
+		},
 	}
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			r, err := newInitRunner(tc.cfg)
-			if (err != nil) != tc.wantErr {
-				t.Errorf("newTagAndReleaseRunner() error = %v, wantErr %v", err, tc.wantErr)
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := newInitRunner(test.cfg)
+			if test.wantErr {
+				if err == nil {
+					t.Error("newInitRunner() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+
 				return
 			}
-			if !tc.wantErr && r == nil {
+			if err != nil {
 				t.Errorf("newInitRunner() got nil runner, want non-nil")
 			}
 		})
