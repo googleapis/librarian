@@ -263,6 +263,7 @@ func TestSaveLibrarianState(t *testing.T) {
 					{
 						Path:          "a/b/v1",
 						ServiceConfig: "a/b/v1/service.yaml",
+						Status:        "existing",
 					},
 				},
 				PreserveRegex: []string{},
@@ -283,7 +284,8 @@ func TestSaveLibrarianState(t *testing.T) {
 	if err := yaml.Unmarshal(gotBytes, gotState); err != nil {
 		t.Fatalf("yaml.Unmarshal() failed: %v", err)
 	}
-
+	// API status should be ignored when writing to yaml.
+	state.Libraries[0].APIs[0].Status = ""
 	if diff := cmp.Diff(state, gotState); diff != "" {
 		t.Errorf("saveLibrarianState() mismatch (-want +got): %s", diff)
 	}
