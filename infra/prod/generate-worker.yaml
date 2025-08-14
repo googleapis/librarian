@@ -20,7 +20,8 @@ steps:
     entrypoint: go
     args:
       - 'run'
-      - 'github.com/googleapis/librarian/cmd/automation@main'
+      - './cmd/automation'
+      - '--project=$PROJECT_ID'
       - '--command=generate'
 tags: ['generate-dispatcher']
 availableSecrets:
