@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -29,22 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
-
-func deriveRepoPath(repoFlag string) (string, error) {
-	if repoFlag != "" {
-		return repoFlag, nil
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("getting working directory: %w", err)
-	}
-	stateFile := filepath.Join(wd, config.LibrarianDir, pipelineStateFile)
-	if _, err := os.Stat(stateFile); err != nil {
-		return "", fmt.Errorf("repo flag not specified and no state file found in current working directory: %w", err)
-	}
-	slog.Info("repo not specified, using current working directory as repo root", "path", wd)
-	return wd, nil
-}
 
 func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
@@ -125,30 +108,6 @@ func findLibraryByID(state *config.LibrarianState, libraryID string) *config.Lib
 func formatTimestamp(t time.Time) string {
 	const yyyyMMddHHmmss = "20060102T150405Z" // Expected format by time library
 	return t.Format(yyyyMMddHHmmss)
-}
-
-func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
-	if workRootOverride != "" {
-		slog.Info("Using specified working directory", "dir", workRootOverride)
-		return workRootOverride, nil
-	}
-
-	path := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(t)))
-
-	_, err := os.Stat(path)
-	switch {
-	case os.IsNotExist(err):
-		if err := os.Mkdir(path, 0755); err != nil {
-			return "", fmt.Errorf("unable to create temporary working directory '%s': %w", path, err)
-		}
-	case err == nil:
-		return "", fmt.Errorf("temporary working directory already exists: %s", path)
-	default:
-		return "", fmt.Errorf("unable to check directory '%s': %w", path, err)
-	}
-
-	slog.Info("Temporary working directory", "dir", path)
-	return path, nil
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated

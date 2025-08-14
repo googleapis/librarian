@@ -25,7 +25,6 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -99,26 +98,15 @@ type generateRunner struct {
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
-	repoPath, err := deriveRepoPath(cfg.Repo)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg.Repo = repoPath
-	workRoot, err := createWorkRoot(time.Now(), cfg.WorkRoot)
-	if err != nil {
-		return nil, err
-	}
-
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
-	sourceRepo, err := cloneOrOpenRepo(workRoot, cfg.APISource, cfg.CI)
+	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
 	if err != nil {
 		return nil, err
 	}
 
-	languageRepo, err := cloneOrOpenRepo(workRoot, cfg.Repo, cfg.CI)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI)
 	if err != nil {
 		return nil, err
 	}
@@ -140,13 +128,13 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 		}
 	}
-	container, err := docker.New(workRoot, image, cfg.UserUID, cfg.UserGID)
+	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
 	}
 	return &generateRunner{
 		cfg:             cfg,
-		workRoot:        workRoot,
+		workRoot:        cfg.WorkRoot,
 		repo:            languageRepo,
 		sourceRepo:      sourceRepo,
 		state:           state,
