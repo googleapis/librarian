@@ -43,7 +43,7 @@ type runOptions struct {
 }
 
 func parseFlags(args []string) (*runOptions, error) {
-	flagSet := flag.NewFlagSet("fanout", flag.ContinueOnError)
+	flagSet := flag.NewFlagSet("dispatcher", flag.ContinueOnError)
 	projectId := flagSet.String("project", "cloud-sdk-librarian-prod", "GCP project ID")
 	command := flagSet.String("command", "generate", "The librarian command to run")
 	err := flagSet.Parse(args)
