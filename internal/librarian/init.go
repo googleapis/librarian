@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"errors"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -58,5 +59,5 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 }
 
 func (r *initRunner) run(ctx context.Context) error {
-	return nil
+	return errors.New("not implemented")
 }
