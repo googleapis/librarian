@@ -23,6 +23,22 @@ steps:
       - '--depth=1'
       - https://github.com/$_ORGANIZATION/$_REPOSITORY
   - name: gcr.io/cloud-builders/git
+    id: configure-language-repo-name
+    waitFor: ['clone-language-repo']
+    workDir: /workspace/$_REPOSITORY
+    args:
+      - 'config'
+      - 'user.name'
+      - 'Librarian'
+  - name: gcr.io/cloud-builders/git
+    id: configure-language-repo-email
+    waitFor: ['configure-language-repo-name']
+    workDir: /workspace/$_REPOSITORY
+    args:
+      - 'config'
+      - 'user.email'
+      - 'librarian@google.com'
+  - name: gcr.io/cloud-builders/git
     id: clone-googleapis
     waitFor: ['-']
     args:
@@ -32,7 +48,7 @@ steps:
       - https://github.com/googleapis/googleapis
   - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:fbbcb383c99f3b8a0269b07574dc3aed74328668b7643ace25d9f2fa60979278'
     id: generate
-    waitFor: ['clone-language-repo', 'clone-googleapis']
+    waitFor: ['configure-language-repo-email', 'clone-googleapis']
     args:
       - 'generate'
       - '-repo'
