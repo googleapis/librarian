@@ -36,6 +36,7 @@ type Repository interface {
 	GetDir() string
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
+	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 }
 
 // LocalRepository represents a git repository.
