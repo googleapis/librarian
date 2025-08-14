@@ -17,13 +17,11 @@ package librarian
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-git/go-git/v5"
 	gogitConfig "github.com/go-git/go-git/v5/config"
@@ -50,61 +48,6 @@ func TestCommandUsage(t *testing.T) {
 	}
 }
 
-func TestDeriveRepoPath(t *testing.T) {
-	for _, test := range []struct {
-		name         string
-		repoPath     string
-		setup        func(t *testing.T, dir string)
-		wantErr      bool
-		wantRepoPath string
-	}{
-		{
-			name:         "repo path provided",
-			repoPath:     "/some/path",
-			wantRepoPath: "/some/path",
-		},
-		{
-			name: "empty repo path, state file exists",
-			setup: func(t *testing.T, dir string) {
-				stateDir := filepath.Join(dir, config.LibrarianDir)
-				if err := os.MkdirAll(stateDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				stateFile := filepath.Join(stateDir, pipelineStateFile)
-				if err := os.WriteFile(stateFile, []byte("test"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name:    "empty repo path, no state file",
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			if test.setup != nil {
-				test.setup(t, tmpDir)
-			}
-			t.Chdir(tmpDir)
-
-			gotRepoPath, err := deriveRepoPath(test.repoPath)
-			if (err != nil) != test.wantErr {
-				t.Errorf("deriveRepoPath() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
-
-			wantPath := test.wantRepoPath
-			if wantPath == "" && !test.wantErr {
-				wantPath = tmpDir
-			}
-
-			if diff := cmp.Diff(wantPath, gotRepoPath); diff != "" {
-				t.Errorf("deriveRepoPath() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
 func TestFindLibraryByID(t *testing.T) {
 	lib1 := &config.LibraryState{ID: "lib1"}
 	lib2 := &config.LibraryState{ID: "lib2"}
@@ -192,77 +135,6 @@ func TestDeriveImage(t *testing.T) {
 
 			if got != test.want {
 				t.Errorf("deriveImage() = %q, want %q", got, test.want)
-			}
-		})
-	}
-}
-
-func TestCreateWorkRoot(t *testing.T) {
-	now := time.Now()
-	for _, test := range []struct {
-		name             string
-		workRootOverride string
-		setup            func(t *testing.T) (string, func())
-		wantErr          bool
-	}{
-		{
-			name:             "with override",
-			workRootOverride: "/fake/path",
-			setup: func(t *testing.T) (string, func()) {
-				return "/fake/path", func() {}
-			},
-		},
-		{
-			name: "without override, new dir",
-			setup: func(t *testing.T) (string, func()) {
-				expectedPath := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(now)))
-				return expectedPath, func() {
-					if err := os.RemoveAll(expectedPath); err != nil {
-						t.Errorf("os.RemoveAll(%q) = %v; want nil", expectedPath, err)
-					}
-				}
-			},
-		},
-		{
-			name: "without override, dir exists",
-			setup: func(t *testing.T) (string, func()) {
-				expectedPath := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(now)))
-				if err := os.Mkdir(expectedPath, 0755); err != nil {
-					t.Fatalf("failed to create test dir: %v", err)
-				}
-				return expectedPath, func() {
-					if err := os.RemoveAll(expectedPath); err != nil {
-						t.Errorf("os.RemoveAll(%q) = %v; want nil", expectedPath, err)
-					}
-				}
-			},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			want, cleanup := test.setup(t)
-			defer cleanup()
-
-			got, err := createWorkRoot(now, test.workRootOverride)
-			if test.wantErr {
-				if err == nil {
-					t.Error("createWorkRoot() expected an error but got nil")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("createWorkRoot() got unexpected error: %v", err)
-				return
-			}
-
-			if got != want {
-				t.Errorf("createWorkRoot() = %v, want %v", got, want)
-			}
-			if test.workRootOverride == "" {
-				if _, err := os.Stat(got); os.IsNotExist(err) {
-					t.Errorf("createWorkRoot() did not create directory %v", got)
-				}
 			}
 		})
 	}

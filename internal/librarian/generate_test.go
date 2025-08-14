@@ -378,11 +378,6 @@ func TestNewGenerateRunner(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "invalid config without repo flag",
-			cfg:     &config.Config{API: "some/api"},
-			wantErr: true,
-		},
-		{
 			name: "valid config",
 			cfg: &config.Config{
 				API:       "some/api",

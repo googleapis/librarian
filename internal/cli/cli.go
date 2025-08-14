@@ -110,7 +110,7 @@ func (c *Command) Init() *Command {
 	c.Flags.Usage = func() {
 		c.usage(c.Flags.Output())
 	}
-	c.Config = config.New()
+	c.Config = config.New(c.Name())
 	return c
 }
 
