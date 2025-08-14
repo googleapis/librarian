@@ -234,7 +234,6 @@ func populateAdditionalFields(library *libraryState) {
 type configureOption struct {
 	intputDir    string
 	librarianDir string
-	libraryID    string
 	sourceDir    string
 }
 
