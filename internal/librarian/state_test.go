@@ -47,7 +47,6 @@ libraries:
     apis:
       - path: a/b/v1
         service_config: a/b/v1/service.yaml
-        status: existing
 `,
 			source: "",
 			want: &config.LibrarianState{
@@ -60,7 +59,6 @@ libraries:
 							{
 								Path:          "a/b/v1",
 								ServiceConfig: "a/b/v1/service.yaml",
-								Status:        "existing",
 							},
 						},
 					},
