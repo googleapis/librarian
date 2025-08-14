@@ -25,7 +25,7 @@ steps:
   - name: gcr.io/cloud-builders/git
     id: configure-language-repo-name
     waitFor: ['clone-language-repo']
-    workDir: /workspace/$_REPOSITORY
+    dir: /workspace/$_REPOSITORY
     args:
       - 'config'
       - 'user.name'
@@ -33,7 +33,7 @@ steps:
   - name: gcr.io/cloud-builders/git
     id: configure-language-repo-email
     waitFor: ['configure-language-repo-name']
-    workDir: /workspace/$_REPOSITORY
+    dir: /workspace/$_REPOSITORY
     args:
       - 'config'
       - 'user.email'
