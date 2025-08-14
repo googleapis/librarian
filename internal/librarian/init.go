@@ -55,7 +55,7 @@ type initRunner struct {
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	if ok, err := cfg.IsValid(); !ok || err != nil {
-		return nil, fmt.Errorf("invalid config: %+v", cfg)
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
 	return &initRunner{

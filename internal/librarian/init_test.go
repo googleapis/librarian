@@ -31,7 +31,9 @@ func TestNewInitRunner(t *testing.T) {
 	}{
 		{
 			name: "valid config",
-			cfg:  &config.Config{},
+			cfg: &config.Config{
+				Repo: "/tmp/repo",
+			},
 		},
 		{
 			name: "invalid config",
@@ -57,7 +59,7 @@ func TestNewInitRunner(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Errorf("newInitRunner() got nil runner, want non-nil")
+				t.Errorf("newInitRunner() = %v, want nil", err)
 			}
 		})
 	}
