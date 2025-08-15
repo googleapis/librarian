@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -173,15 +174,17 @@ func setupRepoForGetCommits(t *testing.T) *gitrepo.LocalRepository {
 }
 
 func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
-	repo := setupRepoForGetCommits(t)
-	for _, test := range []struct {
+	repoWithCommits := setupRepoForGetCommits(t)
+	testCases := []struct {
 		name    string
+		repo    gitrepo.Repository
 		library *config.LibraryState
 		want    []*gitrepo.ConventionalCommit
 		wantErr bool
 	}{
 		{
 			name: "get commits for foo",
+			repo: repoWithCommits,
 			library: &config.LibraryState{
 				ID:                  "foo",
 				Version:             "1.0.0",
@@ -203,16 +206,50 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 					Footers:     make(map[string]string),
 				},
 			},
+			wantErr: false,
 		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := GetConventionalCommitsSinceLastRelease(repo, test.library)
-			if (err != nil) != test.wantErr {
-				t.Errorf("GetCommits() error = %v, wantErr %v", err, test.wantErr)
+		{
+			name: "GetCommitsForPathsSinceTag error",
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagError: fmt.Errorf("error"),
+			},
+			library: &config.LibraryState{ID: "foo"},
+			wantErr: true,
+		},
+		{
+			name: "ChangedFilesInCommit error",
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
+					{Message: "feat(foo): a feature"},
+				},
+				ChangedFilesInCommitError: fmt.Errorf("error"),
+			},
+			library: &config.LibraryState{ID: "foo"},
+			wantErr: true,
+		},
+		{
+			name: "ParseCommit error",
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
+					{Message: ""},
+				},
+				ChangedFilesInCommitValue: []string{"foo/a.txt"},
+			},
+			library: &config.LibraryState{ID: "foo"},
+			wantErr: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := GetConventionalCommitsSinceLastRelease(tc.repo, tc.library)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("GetConventionalCommitsSinceLastRelease() error = %v, wantErr %v", err, tc.wantErr)
 				return
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
-				t.Errorf("GetCommits() mismatch (-want +got):\n%s", diff)
+			if !tc.wantErr {
+				if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
+					t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
