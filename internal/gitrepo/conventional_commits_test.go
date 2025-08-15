@@ -112,6 +112,18 @@ func TestParseCommit(t *testing.T) {
 			},
 		},
 		{
+			name:    "feat with wrong breaking change footer",
+			message: "feat: add new feature\n\nBreaking change: this is a breaking change",
+			want: &ConventionalCommit{
+				Type:        "feat",
+				Description: "add new feature",
+				Body:        "Breaking change: this is a breaking change",
+				IsBreaking:  false,
+				Footers:     map[string]string{},
+				SHA:         "fake-sha",
+			},
+		},
+		{
 			name:    "feat with body and footers",
 			message: "feat: add new feature\n\nThis is the body of the commit message.\nIt can span multiple lines.\n\nCo-authored-by: John Doe <john.doe@example.com>",
 			want: &ConventionalCommit{
