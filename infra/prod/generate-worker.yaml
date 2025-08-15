@@ -23,6 +23,7 @@ steps:
       - './cmd/automation'
       - '--project=$PROJECT_ID'
       - '--command=generate'
+      - '--push=$_PUSH'
 tags: ['generate-dispatcher']
 availableSecrets:
 options:

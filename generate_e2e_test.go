@@ -215,6 +215,7 @@ func initRepo(t *testing.T, dir, source string) error {
 	runGit(t, dir, "config", "user.email", "test@github.com")
 	runGit(t, dir, "config", "user.name", "Test User")
 	runGit(t, dir, "commit", "-m", "init test repo")
+	runGit(t, dir, "remote", "add", "origin", "https://github.com/googleapis/librarian.git")
 	return nil
 }
 
