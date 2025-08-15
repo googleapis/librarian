@@ -23,12 +23,23 @@ import (
 )
 
 func TestNewInitRunner(t *testing.T) {
+	t.Parallel()
 	testcases := []struct {
 		name       string
 		cfg        *config.Config
 		wantErr    bool
 		wantErrMsg string
 	}{
+		{
+			name: "valid config",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: newTestGitRepo(t).GetDir(),
+				Repo:      newTestGitRepo(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+		},
 		{
 			name: "invalid config",
 			cfg: &config.Config{
@@ -39,7 +50,6 @@ func TestNewInitRunner(t *testing.T) {
 		},
 	}
 	for _, test := range testcases {
-		t.Parallel()
 		t.Run(test.name, func(t *testing.T) {
 			_, err := newInitRunner(test.cfg)
 			if test.wantErr {
