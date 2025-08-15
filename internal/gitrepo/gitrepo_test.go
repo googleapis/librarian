@@ -836,6 +836,7 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 		sinceCommit string
 		wantCommits []string
 		wantErr     bool
+		wantErrMsg  string
 	}{
 		{
 			name:        "one path, one commit",
@@ -862,6 +863,15 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			tagName:     "v1.0.0",
 			wantCommits: []string{},
 			wantErr:     true,
+			wantErrMsg:  "no paths to check for commits",
+		},
+		{
+			name:        "since commit not found",
+			paths:       []string{"file1.txt"},
+			sinceCommit: "nonexistenthash",
+			wantCommits: []string{},
+			wantErr:     true,
+			wantErrMsg:  "did not find commit",
 		},
 	} {
 
@@ -874,7 +884,11 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			gotCommits, err = repo.GetCommitsForPathsSinceCommit(test.paths, test.sinceCommit)
 
 			if (err != nil) != test.wantErr {
-				t.Errorf("GetCommitsForPaths() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("GetCommitsForPathsSinceCommit() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if test.wantErr && test.wantErrMsg != "" && !strings.Contains(err.Error(), test.wantErrMsg) {
+				t.Errorf("GetCommitsForPathsSinceCommit() error message = %q, want to contain %q", err.Error(), test.wantErrMsg)
 				return
 			}
 
@@ -884,7 +898,7 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.wantCommits, gotCommitMessages); diff != "" {
-				t.Errorf("GetCommitsForPaths() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GetCommitsForPathsSinceCommit() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -926,7 +940,7 @@ func TestGetCommitsForPathsSinceTag(t *testing.T) {
 			gotCommits, err = repo.GetCommitsForPathsSinceTag(test.paths, test.tagName)
 
 			if (err != nil) != test.wantErr {
-				t.Errorf("GetCommitsForPaths() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("GetCommitsForPathsSinceTag() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
 
@@ -936,7 +950,7 @@ func TestGetCommitsForPathsSinceTag(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.wantCommits, gotCommitMessages); diff != "" {
-				t.Errorf("GetCommitsForPaths() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GetCommitsForPathsSinceTag() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
