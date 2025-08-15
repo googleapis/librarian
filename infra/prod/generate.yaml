@@ -29,7 +29,7 @@ steps:
     args:
       - 'config'
       - 'user.name'
-      - 'Librarian'
+      - 'Cloud SDK Librarian'
   - name: gcr.io/cloud-builders/git
     id: configure-language-repo-email
     waitFor: ['configure-language-repo-name']
@@ -37,7 +37,7 @@ steps:
     args:
       - 'config'
       - 'user.email'
-      - 'librarian@google.com'
+      - 'cloud-sdk-librarian-robot@google.com'
   - name: gcr.io/cloud-builders/git
     id: clone-googleapis
     waitFor: ['-']
@@ -57,7 +57,7 @@ steps:
       - $_LIBRARY_ID
       - '-api-source'
       - '/workspace/googleapis'
-      - '-push'
+      - '-push=$_PUSH'
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
 tags: ['generate-$_REPOSITORY']
 availableSecrets:
