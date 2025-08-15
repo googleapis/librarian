@@ -17,9 +17,17 @@ package librarian
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"regexp"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+)
+
+var (
+	detailsRegex = regexp.MustCompile(`(?s)<details><summary>(.*?)</summary>(.*?)</details>`)
+	summaryRegex = regexp.MustCompile(`(.*?): (v?\d+\.\d+\.\d+)`)
 )
 
 // cmdTagAndRelease is the command for the `release tag-and-release` subcommand.
@@ -60,4 +68,40 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 
 func (r *tagAndReleaseRunner) run(ctx context.Context) error {
 	return nil
+}
+
+// libraryRelease holds the parsed information from a pull request body.
+type libraryRelease struct {
+	// Body contains the release notes.
+	Body string
+	// Library is the library id of the library being released
+	Library string
+	// Version is the version that is being released
+	Version string
+}
+
+// parsePullRequestBody parses a string containing release notes and returns a slice of ParsedPullRequestBody.
+func parsePullRequestBody(body string) []libraryRelease {
+	slog.Info("parsing pull request body")
+	var parsedBodies []libraryRelease
+	matches := detailsRegex.FindAllStringSubmatch(body, -1)
+	for _, match := range matches {
+		summary := match[1]
+		content := strings.TrimSpace(match[2])
+
+		summaryMatches := summaryRegex.FindStringSubmatch(summary)
+		if len(summaryMatches) == 3 {
+			slog.Info("parsed pull request body", "library", summaryMatches[1], "version", summaryMatches[2])
+			library := strings.TrimSpace(summaryMatches[1])
+			version := strings.TrimSpace(summaryMatches[2])
+			parsedBodies = append(parsedBodies, libraryRelease{
+				Version: version,
+				Library: library,
+				Body:    content,
+			})
+		}
+		slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
+	}
+
+	return parsedBodies
 }
