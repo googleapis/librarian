@@ -31,13 +31,24 @@ import (
 // mockGitHubClient is a mock implementation of the GitHubClient interface for testing.
 type mockGitHubClient struct {
 	GitHubClient
-	rawContent             []byte
-	rawErr                 error
-	createPullRequestCalls int
-	addLabelsToIssuesCalls int
-	createPullRequestErr   error
-	addLabelsToIssuesErr   error
-	createdPR              *github.PullRequestMetadata
+	rawContent              []byte
+	rawErr                  error
+	createPullRequestCalls  int
+	addLabelsToIssuesCalls  int
+	getLabelsCalls          int
+	replaceLabelsCalls      int
+	searchPullRequestsCalls int
+	getPullRequestCalls     int
+	createPullRequestErr    error
+	addLabelsToIssuesErr    error
+	getLabelsErr            error
+	replaceLabelsErr        error
+	searchPullRequestsErr   error
+	getPullRequestErr       error
+	createdPR               *github.PullRequestMetadata
+	labels                  []string
+	pullRequests            []*github.PullRequest
+	pullRequest             *github.PullRequest
 }
 
 func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) ([]byte, error) {
@@ -55,6 +66,26 @@ func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.R
 func (m *mockGitHubClient) AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error {
 	m.addLabelsToIssuesCalls++
 	return m.addLabelsToIssuesErr
+}
+
+func (m *mockGitHubClient) GetLabels(ctx context.Context, number int) ([]string, error) {
+	m.getLabelsCalls++
+	return m.labels, m.getLabelsErr
+}
+
+func (m *mockGitHubClient) ReplaceLabels(ctx context.Context, number int, labels []string) error {
+	m.replaceLabelsCalls++
+	return m.replaceLabelsErr
+}
+
+func (m *mockGitHubClient) SearchPullRequests(ctx context.Context, query string) ([]*github.PullRequest, error) {
+	m.searchPullRequestsCalls++
+	return m.pullRequests, m.searchPullRequestsErr
+}
+
+func (m *mockGitHubClient) GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error) {
+	m.getPullRequestCalls++
+	return m.pullRequest, m.getPullRequestErr
 }
 
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.

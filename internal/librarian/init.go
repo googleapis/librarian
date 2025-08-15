@@ -26,7 +26,7 @@ import (
 
 // cmdInit is the command for the `release init` subcommand.
 var cmdInit = &cli.Command{
-	Short:     "release init initiates a release by creating a release pull request.",
+	Short:     "init initiates a release by creating a release pull request.",
 	UsageLine: "librarian release init [arguments]",
 	Long: `The release init command is the primary entry point for initiating a release.
 It orchestrates the process of parsing commits, determining new versions, generating

@@ -37,6 +37,9 @@ type RepositoryCommit = github.RepositoryCommit
 // PullRequestReview is a type alias for the go-github type.
 type PullRequestReview = github.PullRequestReview
 
+// RepositoryRelease is a type alias for the go-github type.
+type RepositoryRelease = github.RepositoryRelease
+
 // MergeMethodRebase is a constant alias for the go-github constant.
 const MergeMethodRebase = github.MergeMethodRebase
 

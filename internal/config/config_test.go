@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestNew(t *testing.T) {
@@ -42,6 +41,7 @@ func TestNew(t *testing.T) {
 			},
 			want: Config{
 				GitHubToken: "gh_token",
+				CommandName: "test",
 			},
 		},
 		{
@@ -49,6 +49,7 @@ func TestNew(t *testing.T) {
 			envVars: map[string]string{},
 			want: Config{
 				GitHubToken: "",
+				CommandName: "test",
 			},
 		},
 		{
@@ -58,6 +59,7 @@ func TestNew(t *testing.T) {
 			},
 			want: Config{
 				GitHubToken: "gh_token",
+				CommandName: "test",
 			},
 		},
 	} {
@@ -68,7 +70,7 @@ func TestNew(t *testing.T) {
 
 			got := New("test")
 
-			if diff := cmp.Diff(&test.want, got, cmpopts.IgnoreUnexported(Config{})); diff != "" {
+			if diff := cmp.Diff(&test.want, got); diff != "" {
 				t.Errorf("New() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -280,7 +282,7 @@ func TestCreateWorkRoot(t *testing.T) {
 		{
 			name: "version command",
 			config: &Config{
-				commandName: "version",
+				CommandName: "version",
 				WorkRoot:    "/some/path",
 			},
 			setup: func(t *testing.T) (string, func()) {
@@ -376,7 +378,7 @@ func TestDeriveRepo(t *testing.T) {
 			name: "version command",
 			config: &Config{
 				Repo:        "/some/path",
-				commandName: "version",
+				CommandName: "version",
 			},
 			wantRepoPath: "/some/path",
 		},

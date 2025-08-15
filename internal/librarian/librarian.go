@@ -81,6 +81,12 @@ type GitHubClient interface {
 	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
 	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error)
 	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
+	GetLabels(ctx context.Context, number int) ([]string, error)
+	ReplaceLabels(ctx context.Context, number int, labels []string) error
+	SearchPullRequests(ctx context.Context, query string) ([]*github.PullRequest, error)
+	GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error)
+	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
+	CreateIssueComment(ctx context.Context, number int, comment string) error
 }
 
 // ContainerClient is an abstraction over the Docker client.
