@@ -263,20 +263,33 @@ func TestCreateWorkRoot(t *testing.T) {
 		tempDir = os.TempDir
 	}()
 	for _, test := range []struct {
-		name     string
-		workRoot string
-		setup    func(t *testing.T) (string, func())
-		errMsg   string
+		name   string
+		config *Config
+		setup  func(t *testing.T) (string, func())
+		errMsg string
 	}{
 		{
-			name:     "configured root",
-			workRoot: "/some/path",
+			name: "configured root",
+			config: &Config{
+				WorkRoot: "/some/path",
+			},
 			setup: func(t *testing.T) (string, func()) {
 				return "/some/path", func() {}
 			},
 		},
 		{
-			name: "without override, new dir",
+			name: "version command",
+			config: &Config{
+				commandName: "version",
+				WorkRoot:    "/some/path",
+			},
+			setup: func(t *testing.T) (string, func()) {
+				return "/some/path", func() {}
+			},
+		},
+		{
+			name:   "without override, new dir",
+			config: &Config{},
 			setup: func(t *testing.T) (string, func()) {
 				expectedPath := filepath.Join(localTempDir, fmt.Sprintf("librarian-%s", formatTimestamp(timestamp)))
 				return expectedPath, func() {
@@ -287,7 +300,8 @@ func TestCreateWorkRoot(t *testing.T) {
 			},
 		},
 		{
-			name: "without override, dir exists",
+			name:   "without override, dir exists",
+			config: &Config{},
 			setup: func(t *testing.T) (string, func()) {
 				expectedPath := filepath.Join(localTempDir, fmt.Sprintf("librarian-%s", formatTimestamp(timestamp)))
 				if err := os.Mkdir(expectedPath, 0755); err != nil {
@@ -306,10 +320,7 @@ func TestCreateWorkRoot(t *testing.T) {
 			want, cleanup := test.setup(t)
 			defer cleanup()
 
-			c := &Config{
-				WorkRoot: test.workRoot,
-			}
-			err := c.createWorkRoot()
+			err := test.config.createWorkRoot()
 			if test.errMsg != "" {
 				if !strings.Contains(err.Error(), test.errMsg) {
 					t.Errorf("createWorkRoot() = %q, want contains %q", err, test.errMsg)
@@ -320,8 +331,8 @@ func TestCreateWorkRoot(t *testing.T) {
 				return
 			}
 
-			if c.WorkRoot != want {
-				t.Errorf("createWorkRoot() = %v, want %v", c.WorkRoot, want)
+			if test.config.WorkRoot != want {
+				t.Errorf("createWorkRoot() = %v, want %v", test.config.WorkRoot, want)
 			}
 		})
 	}
@@ -330,18 +341,21 @@ func TestCreateWorkRoot(t *testing.T) {
 func TestDeriveRepo(t *testing.T) {
 	for _, test := range []struct {
 		name         string
-		repoPath     string
+		config       *Config
 		setup        func(t *testing.T, dir string)
 		wantErr      bool
 		wantRepoPath string
 	}{
 		{
-			name:         "configured repo path",
-			repoPath:     "/some/path",
+			name: "configured repo path",
+			config: &Config{
+				Repo: "/some/path",
+			},
 			wantRepoPath: "/some/path",
 		},
 		{
-			name: "empty repo path, state file exists",
+			name:   "empty repo path, state file exists",
+			config: &Config{},
 			setup: func(t *testing.T, dir string) {
 				stateDir := filepath.Join(dir, LibrarianDir)
 				if err := os.MkdirAll(stateDir, 0755); err != nil {
@@ -355,7 +369,16 @@ func TestDeriveRepo(t *testing.T) {
 		},
 		{
 			name:    "empty repo path, no state file",
+			config:  &Config{},
 			wantErr: true,
+		},
+		{
+			name: "version command",
+			config: &Config{
+				Repo:        "/some/path",
+				commandName: "version",
+			},
+			wantRepoPath: "/some/path",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -365,10 +388,7 @@ func TestDeriveRepo(t *testing.T) {
 			}
 			t.Chdir(tmpDir)
 
-			c := &Config{
-				Repo: test.repoPath,
-			}
-			err := c.deriveRepo()
+			err := test.config.deriveRepo()
 			if (err != nil) != test.wantErr {
 				t.Errorf("deriveRepoPath() error = %v, wantErr %v", err, test.wantErr)
 				return
@@ -379,7 +399,7 @@ func TestDeriveRepo(t *testing.T) {
 				wantPath = tmpDir
 			}
 
-			if diff := cmp.Diff(wantPath, c.Repo); diff != "" {
+			if diff := cmp.Diff(wantPath, test.config.Repo); diff != "" {
 				t.Errorf("deriveRepoPath() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -487,6 +507,53 @@ func TestSetDefaults(t *testing.T) {
 
 			if test.repoRoot == "" && cfg.Repo == "" {
 				t.Errorf("Repo not set")
+			}
+		})
+	}
+}
+
+func TestValidateHostMount(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		hostMount    string
+		defaultMount string
+		wantErr      bool
+		wantErrMsg   string
+	}{
+		{
+			name:         "default host mount",
+			hostMount:    "example/path:/path",
+			defaultMount: "example/path:/path",
+		},
+		{
+			name:         "valid host mount",
+			hostMount:    "example/path:/mounted/path",
+			defaultMount: "another/path:/path",
+		},
+		{
+			name:         "invalid host mount",
+			hostMount:    "example/path",
+			defaultMount: "example/path:/path",
+			wantErr:      true,
+			wantErrMsg:   "unable to parse host mount",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ok, err := validateHostMount(test.hostMount, test.defaultMount)
+			if test.wantErr {
+				if err == nil {
+					t.Error("validateHostMount() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			if !ok || err != nil {
+				t.Error("validateHostMount() should not return error")
 			}
 		})
 	}
