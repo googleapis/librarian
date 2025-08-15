@@ -16,6 +16,8 @@ package librarian
 
 import (
 	"context"
+	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -77,6 +79,28 @@ func TestInitRun(t *testing.T) {
 		wantErr    bool
 		wantErrMsg string
 	}{
+		{
+			name: "run docker command",
+			runner: &initRunner{
+				workRoot:        os.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
+				state:           &config.LibrarianState{},
+			},
+		},
+		{
+			name: "docker command returns error",
+			runner: &initRunner{
+				workRoot: os.TempDir(),
+				containerClient: &mockContainerClient{
+					initErr: errors.New("simulated init error"),
+				},
+				cfg:   &config.Config{},
+				state: &config.LibrarianState{},
+			},
+			wantErr:    true,
+			wantErrMsg: "simulated init error",
+		},
 		{
 			name: "invalid work root",
 			runner: &initRunner{

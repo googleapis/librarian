@@ -86,7 +86,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 
 func (r *initRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
-	if err := os.Mkdir(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
