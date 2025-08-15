@@ -115,9 +115,13 @@ func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, e
 // At the moment this requires a single remote to be configured,
 // which must have a GitHub HTTPS URL. We assume a base branch of "main".
 func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, title, body string) (*PullRequestMetadata, error) {
+	slog.Info("here0")
 	if body == "" {
 		body = "Regenerated all changed APIs. See individual commits for details."
 	}
+	slog.Info("here1")
+	slog.Info("body", slog.String("body", body))
+	slog.Info("here2")
 	slog.Info("Creating PR", slog.String("branch", remoteBranch), slog.String("title", title), slog.String("body", body))
 	newPR := &github.NewPullRequest{
 		Title:               &title,
