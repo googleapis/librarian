@@ -84,6 +84,7 @@ func init() {
 	addFlagLibrary(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
+	addFlagPush(fs, cfg)
 }
 
 type generateRunner struct {
