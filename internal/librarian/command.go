@@ -24,10 +24,70 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/docker"
+
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
+
+type commandRunner struct {
+	cfg             *config.Config
+	repo            gitrepo.Repository
+	sourceRepo      gitrepo.Repository
+	state           *config.LibrarianState
+	ghClient        GitHubClient
+	containerClient ContainerClient
+	workRoot        string
+	image           string
+}
+
+func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
+	if cfg.APISource == "" {
+		cfg.APISource = "https://github.com/googleapis/googleapis"
+	}
+	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
+	if err != nil {
+		return nil, err
+	}
+
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI)
+	if err != nil {
+		return nil, err
+	}
+	state, err := loadRepoState(languageRepo, sourceRepo.GetDir())
+	if err != nil {
+		return nil, err
+	}
+	image := deriveImage(cfg.Image, state)
+
+	var ghClient GitHubClient
+	if isURL(cfg.Repo) {
+		// repo is a URL
+		languageRepo, err := github.ParseURL(cfg.Repo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse repo url: %w", err)
+		}
+		ghClient, err = github.NewClient(cfg.GitHubToken, languageRepo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
+		}
+	}
+	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	if err != nil {
+		return nil, err
+	}
+	return &commandRunner{
+		cfg:             cfg,
+		workRoot:        cfg.WorkRoot,
+		repo:            languageRepo,
+		sourceRepo:      sourceRepo,
+		state:           state,
+		image:           image,
+		ghClient:        ghClient,
+		containerClient: container,
+	}, nil
+}
 
 func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
