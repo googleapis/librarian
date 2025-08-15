@@ -438,6 +438,16 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "valid config with local repo",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: newTestGitRepo(t).GetDir(),
+				Repo:      newTestGitRepo(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -470,9 +480,24 @@ func TestNewGenerateRunner(t *testing.T) {
 				}
 			}
 
-			_, err := newGenerateRunner(test.cfg)
+			r, err := newGenerateRunner(test.cfg)
 			if (err != nil) != test.wantErr {
 				t.Errorf("newGenerateRunner() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+			if r.ghClient == nil {
+				t.Errorf("newGenerateRunner() ghClient is nil")
+			}
+			if r.containerClient == nil {
+				t.Errorf("newGenerateRunner() containerClient is nil")
+			}
+			if r.repo == nil {
+				t.Errorf("newGenerateRunner() repo is nil")
+			}
+			if r.sourceRepo == nil {
+				t.Errorf("newGenerateRunner() sourceRepo is nil")
 			}
 		})
 	}
