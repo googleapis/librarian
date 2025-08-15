@@ -78,10 +78,12 @@ func TestInitRun(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name:       "invalid",
-			runner:     &initRunner{},
+			name: "invalid work root",
+			runner: &initRunner{
+				workRoot: "/invalid/path",
+			},
 			wantErr:    true,
-			wantErrMsg: "not implemented",
+			wantErrMsg: "failed to create output dir",
 		},
 	}
 	for _, test := range testcases {
