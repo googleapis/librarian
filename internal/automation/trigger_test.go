@@ -26,6 +26,7 @@ func TestRunCommandWithClient(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		command       string
+		push          bool
 		want          string
 		runError      error
 		wantErr       bool
@@ -34,6 +35,7 @@ func TestRunCommandWithClient(t *testing.T) {
 		{
 			name:    "runs generate trigger",
 			command: "generate",
+			push:    true,
 			wantErr: false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -49,6 +51,7 @@ func TestRunCommandWithClient(t *testing.T) {
 		{
 			name:    "runs prepare-release trigger",
 			command: "stage-release",
+			push:    true,
 			wantErr: false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -64,6 +67,7 @@ func TestRunCommandWithClient(t *testing.T) {
 		{
 			name:    "invalid command",
 			command: "invalid-command",
+			push:    true,
 			wantErr: true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -79,6 +83,7 @@ func TestRunCommandWithClient(t *testing.T) {
 		{
 			name:     "error triggering",
 			command:  "generate",
+			push:     true,
 			runError: fmt.Errorf("some-error"),
 			wantErr:  true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
@@ -99,7 +104,7 @@ func TestRunCommandWithClient(t *testing.T) {
 				runError:      test.runError,
 				buildTriggers: test.buildTriggers,
 			}
-			err := runCommandWithClient(ctx, client, test.command, "some-project")
+			err := runCommandWithClient(ctx, client, test.command, "some-project", test.push)
 			if test.wantErr && err == nil {
 				t.Errorf("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
