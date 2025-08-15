@@ -108,24 +108,24 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 // setReleaseTrigger sets the release trigger for the library with a non-empty
 // libraryID and override the version, if provided; or for all libraries if
 // the libraryID is empty.
-func setReleaseTrigger(state *config.LibrarianState, libraryID, libraryVersion string, triggered bool) {
+func setReleaseTrigger(state *config.LibrarianState, libraryID, libraryVersion string, trigger bool) {
 	for _, library := range state.Libraries {
 		if libraryID != "" {
 			// Only set the trigger for one library.
 			if libraryID != library.ID {
 				// Set other libraries with an opposite value.
-				library.ReleaseTriggered = !triggered
+				library.ReleaseTriggered = !trigger
 				continue
 			}
 
 			if libraryVersion != "" {
 				library.Version = libraryVersion
 			}
-			library.ReleaseTriggered = triggered
+			library.ReleaseTriggered = trigger
 
 			break
 		}
 		// Set the trigger for all libraries.
-		library.ReleaseTriggered = triggered
+		library.ReleaseTriggered = trigger
 	}
 }
