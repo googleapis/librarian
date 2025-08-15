@@ -24,6 +24,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 // Repository defines the interface for git repository operations.
@@ -34,6 +35,8 @@ type Repository interface {
 	Remotes() ([]*git.Remote, error)
 	GetDir() string
 	HeadHash() (string, error)
+	ChangedFilesInCommit(commitHash string) ([]string, error)
+	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 }
 
 // LocalRepository represents a git repository.
@@ -200,4 +203,163 @@ func (r *LocalRepository) HeadHash() (string, error) {
 // GetDir returns the directory of the repository.
 func (r *LocalRepository) GetDir() string {
 	return r.Dir
+}
+
+// GetCommitsForPathsSinceTag returns all commits since tagName that contains
+// files in paths.
+//
+// If tagName empty, all commits for the given paths are returned.
+func (r *LocalRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error) {
+	var hash string
+	if tagName == "" {
+		return r.GetCommitsForPathsSinceCommit(paths, "")
+	}
+	tagRef, err := r.repo.Tag(tagName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find tag %s: %w", tagName, err)
+	}
+
+	tagCommit, err := r.repo.CommitObject(tagRef.Hash())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
+	}
+	hash = tagCommit.Hash.String()
+
+	return r.GetCommitsForPathsSinceCommit(paths, hash)
+}
+
+// GetCommitsForPathsSinceCommit returns the commits affecting any of the given
+// paths, stopping looking at the given commit (which is not included in the
+// results).
+// The returned commits are ordered such that the most recent commit is first.
+//
+// If sinceCommit is not provided, all commits are searched; otherwise, if no
+// commit matching sinceCommit is found, an error is returned.
+func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error) {
+	if len(paths) == 0 {
+		return nil, errors.New("no paths to check for commits")
+	}
+	commits := []*Commit{}
+	finalHash := plumbing.NewHash(sinceCommit)
+	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
+	logIterator, err := r.repo.Log(&logOptions)
+	if err != nil {
+		return nil, err
+	}
+	// Sentinel "error" - this can be replaced using LogOptions.To when that's available.
+	ErrStopIterating := fmt.Errorf("iteration done")
+	err = logIterator.ForEach(func(commit *object.Commit) error {
+		if commit.Hash == finalHash {
+			return ErrStopIterating
+		}
+		// Skips the initial commit as it has no parents.
+		// This is a known limitation that should be addressed in the future.
+		// Skip any commit with multiple parents. We shouldn't see this
+		// as we don't use merge commits.
+		if commit.NumParents() != 1 {
+			return nil
+		}
+		parentCommit, err := commit.Parent(0)
+		if err != nil {
+			return err
+		}
+
+		// We perform filtering by finding out if the tree hash for the given
+		// path at the commit we're looking at is the same as the tree hash
+		// for the commit's parent.
+		// This is much, much faster than any other filtering option, it seems.
+		// In theory, we should be able to remember our "current" commit for each
+		// path, but that's likely to be significantly more complex.
+		for _, candidatePath := range paths {
+			currentPathHash, err := getHashForPathOrEmpty(commit, candidatePath)
+			if err != nil {
+				return err
+			}
+			parentPathHash, err := getHashForPathOrEmpty(parentCommit, candidatePath)
+			if err != nil {
+				return err
+			}
+			// If we've found a change (including a path being added or removed),
+			// add it to our list of commits and proceed to the next commit.
+			if currentPathHash != parentPathHash {
+
+				commits = append(commits, &Commit{
+					Hash:    commit.Hash,
+					Message: commit.Message,
+				})
+				return nil
+			}
+		}
+
+		return nil
+	})
+	if err != nil && err != ErrStopIterating {
+		return nil, err
+	}
+	if sinceCommit != "" && err != ErrStopIterating {
+		return nil, fmt.Errorf("did not find commit %s when iterating", sinceCommit)
+	}
+	return commits, nil
+}
+
+// getHashForPathOrEmpty returns the hash for a path at a given commit, or an
+// empty string if the path (file or directory) did not exist.
+func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
+	tree, err := commit.Tree()
+	if err != nil {
+		return "", err
+	}
+	treeEntry, err := tree.FindEntry(path)
+	if err == object.ErrEntryNotFound || err == object.ErrDirectoryNotFound {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return treeEntry.Hash.String(), nil
+}
+
+// ChangedFilesInCommit returns the files changed in the given commit.
+func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, error) {
+	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit object for hash %s: %w", commitHash, err)
+	}
+
+	var fromTree *object.Tree
+	var toTree *object.Tree
+
+	toTree, err = commit.Tree()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tree for commit %s: %w", commitHash, err)
+	}
+
+	if commit.NumParents() == 0 {
+		fromTree = &object.Tree{} // Empty tree for initial commit
+	} else {
+		parent, err := commit.Parent(0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get parent for commit %s: %w", commitHash, err)
+		}
+		fromTree, err = parent.Tree()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get parent tree for commit %s: %w", commitHash, err)
+		}
+	}
+
+	patch, err := fromTree.Patch(toTree)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get patch for commit %s: %w", commitHash, err)
+	}
+	var files []string
+	for _, filePatch := range patch.FilePatches() {
+		from, to := filePatch.Files()
+		if from != nil {
+			files = append(files, from.Path())
+		}
+		if to != nil && (from == nil || from.Path() != to.Path()) {
+			files = append(files, to.Path())
+		}
+	}
+	return files, nil
 }
