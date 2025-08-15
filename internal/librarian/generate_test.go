@@ -1647,7 +1647,16 @@ func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 			t.Fatalf("os.MkdirAll: %v", err)
 		}
 		stateFile := filepath.Join(stateDir, "state.yaml")
-		if err := os.WriteFile(stateFile, []byte(""), 0644); err != nil {
+		state := `
+image: gcr.io/test/image:v1.2.3
+libraries:
+  - id: some-library
+    apis:
+      - path: some/api
+    source_roots:
+      - "some/path"
+`
+		if err := os.WriteFile(stateFile, []byte(state), 0644); err != nil {
 			t.Fatalf("os.WriteFile: %v", err)
 		}
 	}
