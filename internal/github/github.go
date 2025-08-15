@@ -118,6 +118,7 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 	if body == "" {
 		body = "Regenerated all changed APIs. See individual commits for details."
 	}
+	slog.Info("Creating PR", slog.String("branch", remoteBranch), slog.String("title", title), slog.String("body", body))
 	newPR := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &remoteBranch,
