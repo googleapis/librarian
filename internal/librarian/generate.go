@@ -135,6 +135,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		if err := r.generateSingleLibrary(ctx, libraryID, outputDir); err != nil {
 			return err
 		}
+		prBody += fmt.Sprintf("feat: generated %s\n", libraryID)
 	} else {
 		for _, library := range r.state.Libraries {
 			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {

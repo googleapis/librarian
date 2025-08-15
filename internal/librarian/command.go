@@ -204,12 +204,15 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 		return err
 	}
 
+	slog.Info("created commit")
+
 	// Create a new branch, set title and message for the PR.
 	datetimeNow := formatTimestamp(time.Now())
 	titlePrefix := "Librarian pull request"
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
-
+	slog.Info("About to create pull request", slog.String("branch", branch), slog.String("title", title))
+	slog.Info("ghClient", slog.Any("client", r.ghClient))
 	if _, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
