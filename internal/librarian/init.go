@@ -16,8 +16,10 @@ package librarian
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/docker"
 
@@ -82,6 +84,15 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	}, nil
 }
 
+func (r *initRunner) run(ctx context.Context) error {
+	outputDir := filepath.Join(r.workRoot, "output")
+	if err := os.Mkdir(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create dir: %s", outputDir)
+	}
+	slog.Info("Code will be generated", "dir", outputDir)
+	return r.runInitCommand(ctx, outputDir)
+}
+
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
 	setReleaseTrigger(r.state, r.cfg.Library, r.cfg.LibraryVersion, true)
 	initRequest := &docker.InitRequest{
@@ -92,10 +103,6 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		Output:         outputDir,
 	}
 	return r.containerClient.ReleaseInit(ctx, initRequest)
-}
-
-func (r *initRunner) run(ctx context.Context) error {
-	return errors.New("not implemented")
 }
 
 // setReleaseTrigger sets the release trigger for the library with a non-empty
