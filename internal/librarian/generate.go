@@ -117,18 +117,23 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	}
 	image := deriveImage(cfg.Image, state)
 
-	var ghClient GitHubClient
+	var gitRepo *github.Repository
 	if isURL(cfg.Repo) {
-		// repo is a URL
-		languageRepo, err := github.ParseURL(cfg.Repo)
+		gitRepo, err = github.ParseURL(cfg.Repo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repo url: %w", err)
 		}
-		ghClient, err = github.NewClient(cfg.GitHubToken, languageRepo)
+	} else {
+		gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
+			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
 		}
 	}
+	ghClient, err := github.NewClient(cfg.GitHubToken, gitRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
+	}
+
 	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err

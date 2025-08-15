@@ -440,6 +440,16 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "valid config with local repo",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: newTestGitRepo(t).GetDir(),
+				Repo:      newTestGitRepo(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
