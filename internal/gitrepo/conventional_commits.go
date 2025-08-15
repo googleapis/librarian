@@ -49,10 +49,11 @@ var footerRegex = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s
 // If the commit message does not follow the conventional commit format, it
 // logs a warning and returns a nil commit and no error.
 func ParseCommit(message, hashString string) (*ConventionalCommit, error) {
-	lines := strings.Split(strings.TrimSpace(message), "\n")
-	if len(lines) == 0 {
+	trimmedMessage := strings.TrimSpace(message)
+	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
+	lines := strings.Split(trimmedMessage, "\n")
 	match := commitRegex.FindStringSubmatch(lines[0])
 	if len(match) == 0 {
 		slog.Warn("Invalid conventional commit message", "message", message, "hash", hashString)

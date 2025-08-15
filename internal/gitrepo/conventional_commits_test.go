@@ -138,6 +138,11 @@ func TestParseCommit(t *testing.T) {
 			wantErr: false,
 			want:    nil,
 		},
+		{
+			name:    "empty commit",
+			message: "",
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := ParseCommit(test.message, "fake-sha")
