@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -64,7 +65,7 @@ type initRunner struct {
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	runner, err := newCommandRunner(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create init runner: %w", err)
 	}
 	return &initRunner{
 		cfg:             runner.cfg,

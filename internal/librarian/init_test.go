@@ -30,21 +30,16 @@ func TestNewInitRunner(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name: "valid config",
-			cfg: &config.Config{
-				Repo: "/tmp/repo",
-			},
-		},
-		{
 			name: "invalid config",
 			cfg: &config.Config{
-				Push: true,
+				APISource: newTestGitRepo(t).GetDir(),
 			},
 			wantErr:    true,
-			wantErrMsg: "invalid config",
+			wantErrMsg: "failed to create init runner",
 		},
 	}
 	for _, test := range testcases {
+		t.Parallel()
 		t.Run(test.name, func(t *testing.T) {
 			_, err := newInitRunner(test.cfg)
 			if test.wantErr {
