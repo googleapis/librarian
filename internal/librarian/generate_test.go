@@ -522,9 +522,24 @@ func TestNewGenerateRunner(t *testing.T) {
 				}
 			}
 
-			_, err := newGenerateRunner(test.cfg)
+			r, err := newGenerateRunner(test.cfg)
 			if (err != nil) != test.wantErr {
 				t.Errorf("newGenerateRunner() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+			if r.ghClient == nil {
+				t.Errorf("newGenerateRunner() ghClient is nil")
+			}
+			if r.containerClient == nil {
+				t.Errorf("newGenerateRunner() containerClient is nil")
+			}
+			if r.repo == nil {
+				t.Errorf("newGenerateRunner() repo is nil")
+			}
+			if r.sourceRepo == nil {
+				t.Errorf("newGenerateRunner() sourceRepo is nil")
 			}
 		})
 	}
