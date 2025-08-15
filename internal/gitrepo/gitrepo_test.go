@@ -830,13 +830,13 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 	repo, commits := setupRepoForGetCommitsTest(t)
 
 	for _, test := range []struct {
-		name        string
-		paths       []string
-		tagName     string
-		sinceCommit string
-		wantCommits []string
-		wantErr     bool
-		wantErrMsg  string
+		name          string
+		paths         []string
+		tagName       string
+		sinceCommit   string
+		wantCommits   []string
+		wantErr       bool
+		wantErrPhrase string
 	}{
 		{
 			name:        "one path, one commit",
@@ -858,20 +858,20 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			wantCommits: []string{},
 		},
 		{
-			name:        "no paths specified",
-			paths:       []string{},
-			tagName:     "v1.0.0",
-			wantCommits: []string{},
-			wantErr:     true,
-			wantErrMsg:  "no paths to check for commits",
+			name:          "no paths specified",
+			paths:         []string{},
+			tagName:       "v1.0.0",
+			wantCommits:   []string{},
+			wantErr:       true,
+			wantErrPhrase: "no paths to check for commits",
 		},
 		{
-			name:        "since commit not found",
-			paths:       []string{"file1.txt"},
-			sinceCommit: "nonexistenthash",
-			wantCommits: []string{},
-			wantErr:     true,
-			wantErrMsg:  "did not find commit",
+			name:          "since commit not found",
+			paths:         []string{"file1.txt"},
+			sinceCommit:   "nonexistenthash",
+			wantCommits:   []string{},
+			wantErr:       true,
+			wantErrPhrase: "did not find commit",
 		},
 	} {
 
@@ -887,9 +887,18 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 				t.Errorf("GetCommitsForPathsSinceCommit() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
-			if test.wantErr && test.wantErrMsg != "" && !strings.Contains(err.Error(), test.wantErrMsg) {
-				t.Errorf("GetCommitsForPathsSinceCommit() error message = %q, want to contain %q", err.Error(), test.wantErrMsg)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("GetCommitsForPathsSinceCommit() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
 				return
+			}
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			gotCommitMessages := []string{}
@@ -910,12 +919,13 @@ func TestGetCommitsForPathsSinceTag(t *testing.T) {
 	repo, _ := setupRepoForGetCommitsTest(t)
 
 	for _, test := range []struct {
-		name        string
-		paths       []string
-		tagName     string
-		sinceCommit string
-		wantCommits []string
-		wantErr     bool
+		name          string
+		paths         []string
+		tagName       string
+		sinceCommit   string
+		wantCommits   []string
+		wantErr       bool
+		wantErrPhrase string
 	}{
 		{
 			name:        "all paths, multiple commits",
@@ -924,11 +934,12 @@ func TestGetCommitsForPathsSinceTag(t *testing.T) {
 			wantCommits: []string{"feat: commit 3", "feat: commit 2"},
 		},
 		{
-			name:        "invalid tag",
-			paths:       []string{"file2.txt"},
-			tagName:     "non-existent-tag",
-			wantCommits: []string{},
-			wantErr:     true,
+			name:          "invalid tag",
+			paths:         []string{"file2.txt"},
+			tagName:       "non-existent-tag",
+			wantCommits:   []string{},
+			wantErr:       true,
+			wantErrPhrase: "failed to find tag",
 		},
 	} {
 
@@ -939,9 +950,17 @@ func TestGetCommitsForPathsSinceTag(t *testing.T) {
 			)
 			gotCommits, err = repo.GetCommitsForPathsSinceTag(test.paths, test.tagName)
 
-			if (err != nil) != test.wantErr {
-				t.Errorf("GetCommitsForPathsSinceTag() error = %v, wantErr %v", err, test.wantErr)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("GetCommitsForPathsSinceTag() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
 				return
+			}
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			gotCommitMessages := []string{}

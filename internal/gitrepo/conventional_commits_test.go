@@ -15,6 +15,7 @@
 package gitrepo
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,10 +23,11 @@ import (
 
 func TestParseCommit(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		message string
-		want    *ConventionalCommit
-		wantErr bool
+		name          string
+		message       string
+		want          *ConventionalCommit
+		wantErr       bool
+		wantErrPhrase string
 	}{
 		{
 			name:    "simple feat",
@@ -139,9 +141,10 @@ func TestParseCommit(t *testing.T) {
 			want:    nil,
 		},
 		{
-			name:    "empty commit",
-			message: "",
-			wantErr: true,
+			name:          "empty commit message",
+			message:       "",
+			wantErr:       true,
+			wantErrPhrase: "empty commit",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -149,6 +152,9 @@ func TestParseCommit(t *testing.T) {
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("ParseCommit(%q) returned error %q, want to contain %q", test.message, err.Error(), test.wantErrPhrase)
 				}
 				return
 			}
