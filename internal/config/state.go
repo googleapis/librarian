@@ -114,7 +114,7 @@ type LibraryState struct {
 	TagFormat string `yaml:"tag_format,omitempty" json:"tag_format,omitempty"`
 	// Whether including this library in a release.
 	// This field is ignored when writing to state.yaml.
-	ReleaseTriggered bool `yaml:"-" json:"release_triggered"`
+	ReleaseTriggered bool `yaml:"-" json:"release_triggered,omitempty"`
 	// An error message from the docker response.
 	// This field is ignored when writing to state.yaml.
 	ErrorMessage string `yaml:"-" json:"error,omitempty"`

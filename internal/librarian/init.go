@@ -106,6 +106,8 @@ func setReleaseTrigger(state *config.LibrarianState, libraryID, libraryVersion s
 		if libraryID != "" {
 			// Only set the trigger for one library.
 			if libraryID != library.ID {
+				// Set other libraries with an opposite value.
+				library.ReleaseTriggered = !triggered
 				continue
 			}
 
