@@ -151,7 +151,7 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	return m.generateErr
 }
 
-func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseRequest) error {
+func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.InitRequest) error {
 	m.releaseCalls++
 	return m.releaseErr
 }
