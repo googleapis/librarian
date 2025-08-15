@@ -55,7 +55,7 @@ func (c *wrappedCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cl
 }
 
 // RunCommand triggers a command for each registered repository that supports it.
-func RunCommand(ctx context.Context, command string, projectId string) error {
+func RunCommand(ctx context.Context, command string, projectId string, push bool) error {
 	c, err := cloudbuild.NewClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error creating cloudbuild client: %w", err)
@@ -64,10 +64,10 @@ func RunCommand(ctx context.Context, command string, projectId string) error {
 	wrappedClient := &wrappedCloudBuildClient{
 		client: c,
 	}
-	return runCommandWithClient(ctx, wrappedClient, command, projectId)
+	return runCommandWithClient(ctx, wrappedClient, command, projectId, push)
 }
 
-func runCommandWithClient(ctx context.Context, client CloudBuildClient, command string, projectId string) error {
+func runCommandWithClient(ctx context.Context, client CloudBuildClient, command string, projectId string, push bool) error {
 	// validate command is allowed
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
@@ -89,6 +89,7 @@ func runCommandWithClient(ctx context.Context, client CloudBuildClient, command 
 		substitutions := map[string]string{
 			"_REPOSITORY":               repository.Name,
 			"_GITHUB_TOKEN_SECRET_NAME": repository.SecretName,
+			"_PUSH":                     fmt.Sprintf("%v", push),
 		}
 		err = runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions)
 		if err != nil {

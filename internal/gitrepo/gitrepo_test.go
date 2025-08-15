@@ -266,11 +266,7 @@ func TestIsClean(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			dir := t.TempDir()
-			repo, err := git.PlainInit(dir, false)
-			if err != nil {
-				t.Fatalf("failed to init repo: %v", err)
-			}
+			repo, dir := initTestRepo(t)
 			w, err := repo.Worktree()
 			if err != nil {
 				t.Fatalf("failed to get worktree: %v", err)
@@ -336,11 +332,7 @@ func TestAddAll(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			dir := t.TempDir()
-			gogitRepo, err := git.PlainInit(dir, false)
-			if err != nil {
-				t.Fatalf("failed to init repo: %v", err)
-			}
+			gogitRepo, dir := initTestRepo(t)
 			r := &LocalRepository{
 				Dir:  dir,
 				repo: gogitRepo,
@@ -371,11 +363,7 @@ func TestCommit(t *testing.T) {
 	// setupRepo is a helper to create a repository with an initial commit.
 	setupRepo := func(t *testing.T) *LocalRepository {
 		t.Helper()
-		dir := t.TempDir()
-		goGitRepo, err := git.PlainInit(dir, false)
-		if err != nil {
-			t.Fatalf("git.PlainInit failed: %v", err)
-		}
+		goGitRepo, dir := initTestRepo(t)
 
 		author := struct {
 			Name  string
@@ -565,11 +553,7 @@ func TestRemotes(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			dir := t.TempDir()
-			gogitRepo, err := git.PlainInit(dir, false)
-			if err != nil {
-				t.Fatalf("git.PlainInit failed: %v", err)
-			}
+			gogitRepo, dir := initTestRepo(t)
 
 			for name, urls := range tt.setupRemotes {
 				if _, err := gogitRepo.CreateRemote(&goGitConfig.RemoteConfig{
@@ -664,4 +648,427 @@ func TestGetDir(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("GetDir() mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestGetHashForPathOrEmpty(t *testing.T) {
+	t.Parallel()
+
+	setupInitialRepo := func(t *testing.T) (*git.Repository, *object.Commit) {
+		t.Helper()
+		repo, _ := initTestRepo(t)
+		commit := createAndCommit(t, repo, "initial.txt", []byte("initial content"), "initial commit")
+		return repo, commit
+	}
+
+	for _, test := range []struct {
+		name     string
+		setup    func(t *testing.T) (commit *object.Commit, path string)
+		wantHash func(commit *object.Commit, path string) string
+		wantErr  bool
+	}{
+		{
+			name: "existing file",
+			setup: func(t *testing.T) (*object.Commit, string) {
+				_, commit := setupInitialRepo(t)
+				return commit, "initial.txt"
+			},
+			wantHash: func(commit *object.Commit, path string) string {
+				tree, err := commit.Tree()
+				if err != nil {
+					t.Fatalf("failed to get tree: %v", err)
+				}
+				entry, err := tree.FindEntry(path)
+				if err != nil {
+					t.Fatalf("failed to find entry for path %q: %v", path, err)
+				}
+				return entry.Hash.String()
+			},
+		},
+		{
+			name: "existing directory",
+			setup: func(t *testing.T) (*object.Commit, string) {
+				repo, _ := setupInitialRepo(t)
+				// Create a directory and a file inside it to ensure the directory gets a hash
+				_ = createAndCommit(t, repo, "my_dir/file_in_dir.txt", []byte("content of file in dir"), "add dir and file")
+				head, err := repo.Head()
+				if err != nil {
+					t.Fatalf("repo.Head failed: %v", err)
+				}
+				commit, err := repo.CommitObject(head.Hash())
+				if err != nil {
+					t.Fatalf("repo.CommitObject failed: %v", err)
+				}
+				return commit, "my_dir"
+			},
+			wantHash: func(commit *object.Commit, path string) string {
+				tree, err := commit.Tree()
+				if err != nil {
+					t.Fatalf("failed to get tree: %v", err)
+				}
+				entry, err := tree.FindEntry(path)
+				if err != nil {
+					t.Fatalf("failed to find entry for path %q: %v", path, err)
+				}
+				return entry.Hash.String()
+			},
+		},
+		{
+			name: "non-existent file",
+			setup: func(t *testing.T) (*object.Commit, string) {
+				_, commit := setupInitialRepo(t)
+				return commit, "non_existent_file.txt"
+			},
+			wantHash: func(commit *object.Commit, path string) string {
+				return ""
+			},
+		},
+		{
+			name: "non-existent directory",
+			setup: func(t *testing.T) (*object.Commit, string) {
+				_, commit := setupInitialRepo(t)
+				return commit, "non_existent_dir"
+			},
+			wantHash: func(commit *object.Commit, path string) string {
+				return ""
+			},
+		},
+		{
+			name: "file in subdirectory",
+			setup: func(t *testing.T) (*object.Commit, string) {
+				repo, _ := setupInitialRepo(t)
+				_ = createAndCommit(t, repo, "another_dir/sub_dir/nested_file.txt", []byte("nested content"), "add nested file")
+				head, err := repo.Head()
+				if err != nil {
+					t.Fatalf("repo.Head failed: %v", err)
+				}
+				commit, err := repo.CommitObject(head.Hash())
+				if err != nil {
+					t.Fatalf("repo.CommitObject failed: %v", err)
+				}
+				return commit, "another_dir/sub_dir/nested_file.txt"
+			},
+			wantHash: func(commit *object.Commit, path string) string {
+				tree, err := commit.Tree()
+				if err != nil {
+					t.Fatalf("failed to get tree: %v", err)
+				}
+				entry, err := tree.FindEntry(path)
+				if err != nil {
+					t.Fatalf("failed to find entry for path %q: %v", path, err)
+				}
+				return entry.Hash.String()
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			commit, path := test.setup(t)
+
+			got, err := getHashForPathOrEmpty(commit, path)
+			if (err != nil) != test.wantErr {
+				t.Errorf("getHashForPathOrEmpty() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+
+			wantHash := test.wantHash(commit, path)
+			if diff := cmp.Diff(wantHash, got); diff != "" {
+				t.Errorf("getHashForPathOrEmpty() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestChangedFilesInCommit(t *testing.T) {
+	t.Parallel()
+	r, commitHashes := setupRepoForChangedFilesTest(t)
+
+	for _, test := range []struct {
+		name       string
+		commitHash string
+		wantFiles  []string
+		wantErr    bool
+	}{
+		{
+			name:       "commit 1",
+			commitHash: commitHashes["commit 1"],
+			wantFiles:  []string{"file1.txt"},
+		},
+		{
+			name:       "commit 2",
+			commitHash: commitHashes["commit 2"],
+			wantFiles:  []string{"file1.txt"},
+		},
+		{
+			name:       "commit 3",
+			commitHash: commitHashes["commit 3"],
+			wantFiles:  []string{"file2.txt"},
+		},
+		{
+			name:       "invalid commit hash",
+			commitHash: "invalid",
+			wantErr:    true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			gotFiles, err := r.ChangedFilesInCommit(test.commitHash)
+			if (err != nil) != test.wantErr {
+				t.Errorf("ChangedFilesInCommit() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("ChangedFilesInCommit() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetCommitsForPathsSinceCommit(t *testing.T) {
+	t.Parallel()
+
+	repo, commits := setupRepoForGetCommitsTest(t)
+
+	for _, test := range []struct {
+		name          string
+		paths         []string
+		tagName       string
+		sinceCommit   string
+		wantCommits   []string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name:        "one path, one commit",
+			paths:       []string{"file2.txt"},
+			sinceCommit: commits["commit1"],
+			wantCommits: []string{"feat: commit 2"},
+		},
+		{
+			name:        "all paths, all commits",
+			paths:       []string{"file1.txt", "file2.txt", "file3.txt"},
+			sinceCommit: "",
+			// The current implementation skips the initial commit.
+			wantCommits: []string{"feat: commit 3", "feat: commit 2"},
+		},
+		{
+			name:        "no matching commits",
+			paths:       []string{"non-existent-file.txt"},
+			sinceCommit: "",
+			wantCommits: []string{},
+		},
+		{
+			name:          "no paths specified",
+			paths:         []string{},
+			tagName:       "v1.0.0",
+			wantCommits:   []string{},
+			wantErr:       true,
+			wantErrPhrase: "no paths to check for commits",
+		},
+		{
+			name:          "since commit not found",
+			paths:         []string{"file1.txt"},
+			sinceCommit:   "nonexistenthash",
+			wantCommits:   []string{},
+			wantErr:       true,
+			wantErrPhrase: "did not find commit",
+		},
+	} {
+
+		t.Run(test.name, func(t *testing.T) {
+			var (
+				gotCommits []*Commit
+				err        error
+			)
+
+			gotCommits, err = repo.GetCommitsForPathsSinceCommit(test.paths, test.sinceCommit)
+
+			if (err != nil) != test.wantErr {
+				t.Errorf("GetCommitsForPathsSinceCommit() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("GetCommitsForPathsSinceCommit() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			gotCommitMessages := []string{}
+			for _, c := range gotCommits {
+				gotCommitMessages = append(gotCommitMessages, strings.Split(c.Message, "\n")[0])
+			}
+
+			if diff := cmp.Diff(test.wantCommits, gotCommitMessages); diff != "" {
+				t.Errorf("GetCommitsForPathsSinceCommit() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetCommitsForPathsSinceTag(t *testing.T) {
+	t.Parallel()
+
+	repo, _ := setupRepoForGetCommitsTest(t)
+
+	for _, test := range []struct {
+		name          string
+		paths         []string
+		tagName       string
+		sinceCommit   string
+		wantCommits   []string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name:        "all paths, multiple commits",
+			paths:       []string{"file2.txt", "file3.txt"},
+			tagName:     "v1.0.0",
+			wantCommits: []string{"feat: commit 3", "feat: commit 2"},
+		},
+		{
+			name:          "invalid tag",
+			paths:         []string{"file2.txt"},
+			tagName:       "non-existent-tag",
+			wantCommits:   []string{},
+			wantErr:       true,
+			wantErrPhrase: "failed to find tag",
+		},
+	} {
+
+		t.Run(test.name, func(t *testing.T) {
+			var (
+				gotCommits []*Commit
+				err        error
+			)
+			gotCommits, err = repo.GetCommitsForPathsSinceTag(test.paths, test.tagName)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("GetCommitsForPathsSinceTag() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			gotCommitMessages := []string{}
+			for _, c := range gotCommits {
+				gotCommitMessages = append(gotCommitMessages, strings.Split(c.Message, "\n")[0])
+			}
+
+			if diff := cmp.Diff(test.wantCommits, gotCommitMessages); diff != "" {
+				t.Errorf("GetCommitsForPathsSinceTag() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// initTestRepo creates a new git repository in a temporary directory.
+func initTestRepo(t *testing.T) (*git.Repository, string) {
+	t.Helper()
+	dir := t.TempDir()
+	repo, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("git.PlainInit failed: %v", err)
+	}
+	return repo, dir
+}
+
+// createAndCommit creates and commits a file or directory.
+func createAndCommit(t *testing.T, repo *git.Repository, path string, content []byte, commitMsg string) *object.Commit {
+	t.Helper()
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree() failed: %v", err)
+	}
+
+	fullPath := filepath.Join(w.Filesystem.Root(), path)
+	if content != nil { // It's a file
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatalf("os.MkdirAll failed: %v", err)
+		}
+		if err := os.WriteFile(fullPath, content, 0644); err != nil {
+			t.Fatalf("os.WriteFile failed: %v", err)
+		}
+	} else { // It's a directory
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
+			t.Fatalf("os.MkdirAll failed: %v", err)
+		}
+	}
+
+	if _, err := w.Add(path); err != nil {
+		t.Fatalf("w.Add failed: %v", err)
+	}
+	hash, err := w.Commit(commitMsg, &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+	if err != nil {
+		t.Fatalf("w.Commit failed: %v", err)
+	}
+	commit, err := repo.CommitObject(hash)
+	if err != nil {
+		t.Fatalf("repo.CommitObject failed: %v", err)
+	}
+	return commit
+}
+
+// setupRepoForChangedFilesTest sets up a repository with a series of commits for testing.
+// It returns the repository and a map of commit names to their hashes.
+func setupRepoForChangedFilesTest(t *testing.T) (*LocalRepository, map[string]string) {
+	t.Helper()
+	repo, dir := initTestRepo(t)
+
+	commitHashes := make(map[string]string)
+
+	// Commit 1
+	commit1 := createAndCommit(t, repo, "file1.txt", []byte("content1"), "commit 1")
+	commitHashes["commit 1"] = commit1.Hash.String()
+
+	// Commit 2 (modify file1.txt)
+	commit2 := createAndCommit(t, repo, "file1.txt", []byte("content2"), "commit 2")
+	commitHashes["commit 2"] = commit2.Hash.String()
+
+	// Commit 3 (add file2.txt)
+	commit3 := createAndCommit(t, repo, "file2.txt", []byte("content3"), "commit 3")
+	commitHashes["commit 3"] = commit3.Hash.String()
+
+	return &LocalRepository{Dir: dir, repo: repo}, commitHashes
+}
+
+// setupRepoForGetCommitsTest creates a repository with a few commits and tags.
+func setupRepoForGetCommitsTest(t *testing.T) (*LocalRepository, map[string]string) {
+	t.Helper()
+	repo, dir := initTestRepo(t)
+	commits := make(map[string]string)
+
+	// Commit 1
+	commit1 := createAndCommit(t, repo, "file1.txt", []byte("content1"), "feat: commit 1")
+	commits["commit1"] = commit1.Hash.String()
+
+	// Tag for commit 1
+	if _, err := repo.CreateTag("v1.0.0", commit1.Hash, nil); err != nil {
+		t.Fatalf("CreateTag failed: %v", err)
+	}
+
+	// Commit 2
+	commit2 := createAndCommit(t, repo, "file2.txt", []byte("content2"), "feat: commit 2")
+	commits["commit2"] = commit2.Hash.String()
+
+	// Commit 3
+	commit3 := createAndCommit(t, repo, "file3.txt", []byte("content3"), "feat: commit 3")
+	commits["commit3"] = commit3.Hash.String()
+
+	return &LocalRepository{Dir: dir, repo: repo}, commits
 }

@@ -34,6 +34,7 @@ func TestParseArgs(t *testing.T) {
 			want: &runOptions{
 				Command:   "generate",
 				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      true,
 			},
 		},
 		{
@@ -43,6 +44,7 @@ func TestParseArgs(t *testing.T) {
 			want: &runOptions{
 				Command:   "generate",
 				ProjectId: "some-project-id",
+				Push:      true,
 			},
 		},
 		{
@@ -52,6 +54,17 @@ func TestParseArgs(t *testing.T) {
 			want: &runOptions{
 				Command:   "stage-release",
 				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      true,
+			},
+		},
+		{
+			name:    "sets command",
+			args:    []string{"--command=stage-release", "--push=false"},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "stage-release",
+				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      false,
 			},
 		},
 	} {
