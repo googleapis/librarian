@@ -87,6 +87,17 @@ func init() {
 	addFlagPush(fs, cfg)
 }
 
+type commandRunner struct {
+	cfg             *config.Config
+	repo            gitrepo.Repository
+	sourceRepo      gitrepo.Repository
+	state           *config.LibrarianState
+	ghClient        GitHubClient
+	containerClient ContainerClient
+	workRoot        string
+	image           string
+}
+
 type generateRunner struct {
 	cfg             *config.Config
 	repo            gitrepo.Repository
@@ -98,7 +109,7 @@ type generateRunner struct {
 	image           string
 }
 
-func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
+func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
@@ -133,7 +144,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &generateRunner{
+	return &commandRunner{
 		cfg:             cfg,
 		workRoot:        cfg.WorkRoot,
 		repo:            languageRepo,
@@ -142,6 +153,23 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		image:           image,
 		ghClient:        ghClient,
 		containerClient: container,
+	}, nil
+}
+
+func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
+	runner, err := newCommandRunner(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &generateRunner{
+		cfg:             runner.cfg,
+		workRoot:        runner.workRoot,
+		repo:            runner.repo,
+		sourceRepo:      runner.sourceRepo,
+		state:           runner.state,
+		image:           runner.image,
+		ghClient:        runner.ghClient,
+		containerClient: runner.containerClient,
 	}, nil
 }
 

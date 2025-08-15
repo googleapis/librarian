@@ -17,10 +17,9 @@ package librarian
 import (
 	"context"
 	"errors"
-	"fmt"
-
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 // cmdInit is the command for the `release init` subcommand.
@@ -44,44 +43,37 @@ func init() {
 	fs := cmdInit.Flags
 	cfg := cmdInit.Config
 
-	addFlagRepo(fs, cfg)
+	addFlagPush(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLibrary(fs, cfg)
+	addFlagRepo(fs, cfg)
 }
 
 type initRunner struct {
-	cfg   *config.Config
-	state *config.LibrarianState
-	image string
+	cfg             *config.Config
+	repo            gitrepo.Repository
+	sourceRepo      gitrepo.Repository
+	state           *config.LibrarianState
+	ghClient        GitHubClient
+	containerClient ContainerClient
+	workRoot        string
+	image           string
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
-	if ok, err := cfg.IsValid(); !ok || err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
-	}
-
-	if cfg.APISource == "" {
-		cfg.APISource = "https://github.com/googleapis/googleapis"
-	}
-	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to clone or open source repo, %s: %w", cfg.APISource, err)
+		return nil, err
 	}
-
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI)
-	if err != nil {
-		return nil, fmt.Errorf("failed to clone or open language repo, %s: %w", cfg.Repo, err)
-	}
-	state, err := loadRepoState(languageRepo, sourceRepo.GetDir())
-	if err != nil {
-		return nil, fmt.Errorf("failed to load librarian state from source repo, %s: %w", sourceRepo.GetDir(), err)
-	}
-	image := deriveImage(cfg.Image, state)
-
 	return &initRunner{
-		cfg:   cfg,
-		state: state,
-		image: image,
+		cfg:             runner.cfg,
+		workRoot:        runner.workRoot,
+		repo:            runner.repo,
+		sourceRepo:      runner.sourceRepo,
+		state:           runner.state,
+		image:           runner.image,
+		ghClient:        runner.ghClient,
+		containerClient: runner.containerClient,
 	}, nil
 }
 
