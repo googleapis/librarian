@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	pipelineStateFile  = "state.yaml"
-	pipelineConfigFile = "pipeline-config.json"
+	globalConfigFile   = "config.yaml"
+	librarianStateFile = "state.yaml"
 	serviceConfigType  = "type"
 	serviceConfigValue = "google.api.Service"
 )
@@ -42,8 +42,17 @@ func loadRepoState(repo *gitrepo.LocalRepository, source string) (*config.Librar
 		slog.Info("repo is nil, skipping state loading")
 		return nil, nil
 	}
-	path := filepath.Join(repo.Dir, config.LibrarianDir, pipelineStateFile)
+	path := filepath.Join(repo.Dir, config.LibrarianDir, librarianStateFile)
 	return parseLibrarianState(path, source)
+}
+
+func loadGlobalConfig(repo *gitrepo.LocalRepository) (*config.GlobalConfig, error) {
+	if repo == nil {
+		slog.Info("repo is nil, skipping state loading")
+		return nil, nil
+	}
+	path := filepath.Join(repo.Dir, config.LibrarianDir, globalConfigFile)
+	return parseGlobalConfig(path)
 }
 
 func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
@@ -57,6 +66,21 @@ func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
 	}
 	if err := populateServiceConfigIfEmpty(&s, source); err != nil {
 		return nil, fmt.Errorf("populating service config: %w", err)
+	}
+	if err := s.Validate(); err != nil {
+		return nil, fmt.Errorf("validating librarian state: %w", err)
+	}
+	return &s, nil
+}
+
+func parseGlobalConfig(path string) (*config.GlobalConfig, error) {
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var s config.GlobalConfig
+	if err := yaml.Unmarshal(bytes, &s); err != nil {
+		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
 	if err := s.Validate(); err != nil {
 		return nil, fmt.Errorf("validating librarian state: %w", err)
@@ -122,7 +146,7 @@ func findServiceConfigIn(path string) (string, error) {
 }
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
-	path := filepath.Join(repoDir, config.LibrarianDir, pipelineStateFile)
+	path := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
 	bytes, err := yaml.Marshal(state)
 	if err != nil {
 		return err
