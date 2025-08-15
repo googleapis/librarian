@@ -46,7 +46,7 @@ steps:
       - '--single-branch'
       - '--branch=master'
       - https://github.com/googleapis/googleapis
-  - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:fbbcb383c99f3b8a0269b07574dc3aed74328668b7643ace25d9f2fa60979278'
+  - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:d7e6fe44d071b405df7b0f1f4b702937265748579208b5c1477790a4e350c2ad'
     id: generate
     waitFor: ['configure-language-repo-email', 'clone-googleapis']
     args:
