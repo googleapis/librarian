@@ -46,16 +46,21 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
-	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
-	if err != nil {
-		return nil, err
-	}
-
 	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI)
 	if err != nil {
 		return nil, err
 	}
-	state, err := loadRepoState(languageRepo, sourceRepo.GetDir())
+
+	var sourceRepo gitrepo.Repository
+	var sourceRepoDir string
+	if cfg.CommandName != tagAndReleaseCmdName {
+		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
+		if err != nil {
+			return nil, err
+		}
+		sourceRepoDir = sourceRepo.GetDir()
+	}
+	state, err := loadRepoState(languageRepo, sourceRepoDir)
 	if err != nil {
 		return nil, err
 	}

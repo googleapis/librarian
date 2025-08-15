@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -36,12 +37,15 @@ func TestNewTagAndReleaseRunner(t *testing.T) {
 				GitHubToken: "some-token",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
+				CommandName: tagAndReleaseCmdName,
 			},
 			wantErr: false,
 		},
 		{
-			name:    "missing github token",
-			cfg:     &config.Config{},
+			name: "missing github token",
+			cfg: &config.Config{
+				CommandName: tagAndReleaseCmdName,
+			},
 			wantErr: true,
 		},
 	}
@@ -62,11 +66,11 @@ func TestNewTagAndReleaseRunner(t *testing.T) {
 func TestDeterminePullRequestsToProcess(t *testing.T) {
 	pr123 := &github.PullRequest{}
 	for _, test := range []struct {
-		name     string
-		cfg      *config.Config
-		ghClient GitHubClient
-		want     []*github.PullRequest
-		wantErr  bool
+		name       string
+		cfg        *config.Config
+		ghClient   GitHubClient
+		want       []*github.PullRequest
+		wantErrMsg string
 	}{
 		{
 			name: "with pull request config",
@@ -84,27 +88,27 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 			cfg: &config.Config{
 				PullRequest: "invalid",
 			},
-			ghClient: &mockGitHubClient{},
-			wantErr:  true,
+			ghClient:   &mockGitHubClient{},
+			wantErrMsg: "invalid pull request format",
 		},
 		{
 			name: "invalid pull request number",
 			cfg: &config.Config{
-				PullRequest: "owner/repo/pulls/abc",
+				PullRequest: "github.com/googleapis/librarian/pulls/abc",
 			},
-			ghClient: &mockGitHubClient{},
-			wantErr:  true,
+			ghClient:   &mockGitHubClient{},
+			wantErrMsg: "invalid pull request number",
 		},
 		{
 			name: "get pull request error",
 			cfg: &config.Config{
-				PullRequest: "owner/repo/pulls/123",
+				PullRequest: "github.com/googleapis/librarian/pulls/123",
 			},
 			ghClient: &mockGitHubClient{
 				getPullRequestCalls: 1,
 				getPullRequestErr:   errors.New("get pr error"),
 			},
-			wantErr: true,
+			wantErrMsg: "failed to get pull request",
 		},
 		{
 			name: "search pull requests",
@@ -122,7 +126,7 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 				searchPullRequestsCalls: 1,
 				searchPullRequestsErr:   errors.New("search pr error"),
 			},
-			wantErr: true,
+			wantErrMsg: "failed to search pull requests",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -131,8 +135,13 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 				ghClient: test.ghClient,
 			}
 			got, err := r.determinePullRequestsToProcess(context.Background())
-			if (err != nil) != test.wantErr {
-				t.Errorf("determinePullRequestsToProcess() error = %v, wantErr %v", err, test.wantErr)
+			if err != nil {
+				if test.wantErrMsg == "" {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Fatalf("got %q, want contains %q", err, test.wantErrMsg)
+				}
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
@@ -149,7 +158,7 @@ func Test_tagAndReleaseRunner_run(t *testing.T) {
 	for _, test := range []struct {
 		name                        string
 		ghClient                    *mockGitHubClient
-		wantErr                     bool
+		wantErrMsg                  string
 		wantSearchPullRequestsCalls int
 		wantGetPullRequestCalls     int
 	}{
@@ -178,7 +187,7 @@ func Test_tagAndReleaseRunner_run(t *testing.T) {
 				searchPullRequestsErr: errors.New("search pr error"),
 			},
 			wantSearchPullRequestsCalls: 1,
-			wantErr:                     true,
+			wantErrMsg:                  "failed to search pull requests",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -187,10 +196,13 @@ func Test_tagAndReleaseRunner_run(t *testing.T) {
 				ghClient: test.ghClient,
 			}
 			err := r.run(context.Background())
-			if (err != nil) != test.wantErr {
-				t.Errorf("run() error = %v, wantErr %v", err, test.wantErr)
-			}
-			if test.wantErr {
+			if err != nil {
+				if test.wantErrMsg == "" {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Fatalf("got %q, want contains %q", err, test.wantErrMsg)
+				}
 				return
 			}
 			if test.ghClient.searchPullRequestsCalls != test.wantSearchPullRequestsCalls {
