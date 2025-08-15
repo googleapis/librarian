@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"gopkg.in/yaml.v3"
 )
 
 func TestRunGenerateCommand(t *testing.T) {
@@ -442,46 +441,6 @@ func TestNewGenerateRunner(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			// We need to create a fake state and config file for the test to pass.
-			if test.cfg.Repo != "" && !isURL(test.cfg.Repo) {
-				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineStateFile)
-
-				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
-					t.Fatalf("os.MkdirAll() = %v", err)
-				}
-
-				state := &config.LibrarianState{
-					Image: "some/image:v1.2.3",
-					Libraries: []*config.LibraryState{
-						{
-							ID: "some-library",
-							APIs: []*config.API{
-								{
-									Path:          "some/api",
-									ServiceConfig: "api_config.yaml",
-									Status:        config.StatusExisting,
-								},
-							},
-							SourceRoots: []string{"src/a"},
-						},
-					},
-				}
-				b, err := yaml.Marshal(state)
-				if err != nil {
-					t.Fatalf("yaml.Marshal() = %v", err)
-				}
-
-				if err := os.WriteFile(stateFile, b, 0644); err != nil {
-					t.Fatalf("os.WriteFile(%q, ...) = %v", stateFile, err)
-				}
-				configFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineConfigFile)
-				if err := os.WriteFile(configFile, []byte("{}"), 0644); err != nil {
-					t.Fatalf("os.WriteFile(%q, ...) = %v", configFile, err)
-				}
-				runGit(t, test.cfg.Repo, "add", ".")
-				runGit(t, test.cfg.Repo, "commit", "-m", "add config")
-			}
-
 			if test.cfg.APISource == "" && test.cfg.WorkRoot != "" {
 				if test.name == "clone googleapis fails" {
 					// The function will try to clone googleapis into the current work directory.

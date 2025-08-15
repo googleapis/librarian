@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"gopkg.in/yaml.v3"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -42,13 +43,35 @@ func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 		t.Fatalf("os.WriteFile: %v", err)
 	}
 	if writeState {
-		// Create an empty state.yaml file
+		// Create a state.yaml file.
 		stateDir := filepath.Join(dir, config.LibrarianDir)
 		if err := os.MkdirAll(stateDir, 0755); err != nil {
 			t.Fatalf("os.MkdirAll: %v", err)
 		}
+
+		state := &config.LibrarianState{
+			Image: "some/image:v1.2.3",
+			Libraries: []*config.LibraryState{
+				{
+					ID: "some-library",
+					APIs: []*config.API{
+						{
+							Path:          "some/api",
+							ServiceConfig: "api_config.yaml",
+							Status:        config.StatusExisting,
+						},
+					},
+					SourceRoots: []string{"src/a"},
+				},
+			},
+		}
+
+		bytes, err := yaml.Marshal(state)
+		if err != nil {
+			t.Fatalf("yaml.Marshal() = %v", err)
+		}
 		stateFile := filepath.Join(stateDir, "state.yaml")
-		if err := os.WriteFile(stateFile, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
 			t.Fatalf("os.WriteFile: %v", err)
 		}
 	}
