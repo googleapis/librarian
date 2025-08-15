@@ -43,6 +43,11 @@ type ConventionalCommit struct {
 const breakingChangeKey = "BREAKING CHANGE"
 
 var commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
+
+// footerRegex defines the format for a conventional commit footer.
+// A footer key consists of letters and hyphens, or is the "BREAKING CHANGE"
+// literal. The key is followed by ": " and then the value.
+// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
 var footerRegex = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
 
 // parsedHeader holds the result of parsing the header line.
@@ -104,23 +109,29 @@ func separateBodyAndFooters(lines []string) (bodyLines, footerLines []string) {
 	return bodyLines, footerLines
 }
 
-// parseFooters parses the footer lines into a map and detects breaking changes.
+// parseFooters parses footer lines from a conventional commit message into a map
+// of key-value pairs. It supports multi-line footers and also returns a
+// boolean indicating if a breaking change was detected.
 func parseFooters(footerLines []string) (footers map[string]string, isBreaking bool) {
 	footers = make(map[string]string)
 	var lastKey string
 	for _, line := range footerLines {
 		footerMatches := footerRegex.FindStringSubmatch(line)
-		if len(footerMatches) > 0 {
-			key := strings.TrimSpace(footerMatches[1])
-			value := strings.TrimSpace(footerMatches[2])
-			footers[key] = value
-			lastKey = key
-			if key == breakingChangeKey {
-				isBreaking = true
+		if len(footerMatches) == 0 {
+			// Not a new footer. If we have a previous key and the line is not
+			// empty, append it to the last value.
+			if lastKey != "" && strings.TrimSpace(line) != "" {
+				footers[lastKey] += "\n" + line
 			}
-		} else if lastKey != "" && strings.TrimSpace(line) != "" {
-			// This is a continuation of the previous footer.
-			footers[lastKey] += "\n" + line
+			continue
+		}
+		// This is a new footer.
+		key := strings.TrimSpace(footerMatches[1])
+		value := strings.TrimSpace(footerMatches[2])
+		footers[key] = value
+		lastKey = key
+		if key == breakingChangeKey {
+			isBreaking = true
 		}
 	}
 	return footers, isBreaking
