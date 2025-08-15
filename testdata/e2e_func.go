@@ -51,12 +51,12 @@ func doConfigure(args []string) error {
 		return err
 	}
 
-	library, err := readCommandRequest(filepath.Join(request.librarianDir, configureRequest))
+	state, err := readConfigureRequest(filepath.Join(request.librarianDir, configureRequest))
 	if err != nil {
 		return err
 	}
 
-	return writeConfigureResponse(request, library)
+	return writeConfigureResponse(request, state)
 }
 
 func doGenerate(args []string) error {
@@ -68,7 +68,7 @@ func doGenerate(args []string) error {
 		return err
 	}
 
-	if _, err := readCommandRequest(filepath.Join(request.librarianDir, generateRequest)); err != nil {
+	if _, err := readGenerateRequest(filepath.Join(request.librarianDir, generateRequest)); err != nil {
 		return err
 	}
 
@@ -125,9 +125,64 @@ func validateLibrarianDir(dir, requestFile string) error {
 	return nil
 }
 
-// readCommandRequest reads the command request file, e.g., configure-request.json
-// or generate-request.json.
-func readCommandRequest(path string) (*libraryState, error) {
+// readConfigureRequest reads the configure request file and creates a librarianState
+// object.
+func readConfigureRequest(path string) (*librarianState, error) {
+	state := &librarianState{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(data, state); err != nil {
+		return nil, err
+	}
+
+	for _, library := range state.Libraries {
+		if library.ID == simulateCommandErrorID {
+			return nil, errors.New("simulate command error")
+		}
+	}
+
+	return state, nil
+}
+
+func writeConfigureResponse(option *configureOption, state *librarianState) error {
+	for _, library := range state.Libraries {
+		needConfigure := false
+		for _, oneAPI := range library.APIs {
+			if oneAPI.Status == "new" {
+				needConfigure = true
+			}
+		}
+
+		if !needConfigure {
+			continue
+		}
+
+		populateAdditionalFields(library)
+		data, err := json.MarshalIndent(library, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		jsonFilePath := filepath.Join(option.librarianDir, configureResponse)
+		jsonFile, err := os.Create(jsonFilePath)
+		if err != nil {
+			return err
+		}
+
+		if _, err := jsonFile.Write(data); err != nil {
+			return err
+		}
+		log.Print("write configure response to " + jsonFilePath)
+	}
+
+	return nil
+}
+
+// readGenerateRequest reads the generate request file and creates a libraryState
+// object.
+func readGenerateRequest(path string) (*libraryState, error) {
 	library := &libraryState{}
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -143,27 +198,6 @@ func readCommandRequest(path string) (*libraryState, error) {
 	}
 
 	return library, nil
-}
-
-func writeConfigureResponse(option *configureOption, library *libraryState) error {
-	library = populateAdditionalFields(library)
-	data, err := json.MarshalIndent(library, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	jsonFilePath := filepath.Join(option.librarianDir, configureResponse)
-	jsonFile, err := os.Create(jsonFilePath)
-	if err != nil {
-		return err
-	}
-
-	if _, err := jsonFile.Write(data); err != nil {
-		return err
-	}
-	log.Print("write configure response to " + jsonFilePath)
-
-	return nil
 }
 
 func writeGenerateResponse(option *generateOption) (err error) {
@@ -187,19 +221,19 @@ func writeGenerateResponse(option *generateOption) (err error) {
 	return err
 }
 
-func populateAdditionalFields(library *libraryState) *libraryState {
+func populateAdditionalFields(library *libraryState) {
 	library.Version = "1.0.0"
 	library.SourceRoots = []string{"example-source-path", "example-source-path-2"}
 	library.PreserveRegex = []string{"example-preserve-regex", "example-preserve-regex-2"}
 	library.RemoveRegex = []string{"example-remove-regex", "example-remove-regex-2"}
-
-	return library
+	for _, oneAPI := range library.APIs {
+		oneAPI.Status = "existing"
+	}
 }
 
 type configureOption struct {
 	intputDir    string
 	librarianDir string
-	libraryID    string
 	sourceDir    string
 }
 
@@ -208,6 +242,11 @@ type generateOption struct {
 	outputDir    string
 	librarianDir string
 	sourceDir    string
+}
+
+type librarianState struct {
+	Image     string          `json:"image"`
+	Libraries []*libraryState `json:"libraries"`
 }
 
 type libraryState struct {
@@ -222,4 +261,5 @@ type libraryState struct {
 type api struct {
 	Path          string `json:"path"`
 	ServiceConfig string `json:"service_config"`
+	Status        string `json:"status"`
 }

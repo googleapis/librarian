@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -36,27 +37,17 @@ const (
 
 // Utility functions for saving and loading pipeline state and config from various places.
 
-func loadRepoState(languageRepo *gitrepo.LocalRepository, source string) (*config.LibrarianState, error) {
-	if languageRepo == nil {
+func loadRepoState(repo *gitrepo.LocalRepository, source string) (*config.LibrarianState, error) {
+	if repo == nil {
+		slog.Info("repo is nil, skipping state loading")
 		return nil, nil
 	}
-	state, err := loadLibrarianState(languageRepo, source)
-	if err != nil {
-		return nil, err
-	}
-	return state, nil
+	path := filepath.Join(repo.Dir, config.LibrarianDir, pipelineStateFile)
+	return parseLibrarianState(path, source)
 }
 
-func loadLibrarianState(languageRepo *gitrepo.LocalRepository, source string) (*config.LibrarianState, error) {
-	if languageRepo == nil {
-		return nil, nil
-	}
-	path := filepath.Join(languageRepo.Dir, config.LibrarianDir, pipelineStateFile)
-	return parseLibrarianState(func(file string) ([]byte, error) { return os.ReadFile(file) }, path, source)
-}
-
-func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, source string) (*config.LibrarianState, error) {
-	bytes, err := contentLoader(path)
+func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +55,7 @@ func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, 
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
-	if err := populateServiceConfigIfEmpty(&s, contentLoader, source); err != nil {
+	if err := populateServiceConfigIfEmpty(&s, source); err != nil {
 		return nil, fmt.Errorf("populating service config: %w", err)
 	}
 	if err := s.Validate(); err != nil {
@@ -73,7 +64,11 @@ func parseLibrarianState(contentLoader func(file string) ([]byte, error), path, 
 	return &s, nil
 }
 
-func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader func(file string) ([]byte, error), source string) error {
+func populateServiceConfigIfEmpty(state *config.LibrarianState, source string) error {
+	if source == "" {
+		slog.Info("source not specified, skipping service config population")
+		return nil
+	}
 	for i, library := range state.Libraries {
 		for j, api := range library.APIs {
 			if api.ServiceConfig != "" {
@@ -81,7 +76,7 @@ func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader fu
 				continue
 			}
 			apiPath := filepath.Join(source, api.Path)
-			serviceConfig, err := findServiceConfigIn(contentLoader, apiPath)
+			serviceConfig, err := findServiceConfigIn(apiPath)
 			if err != nil {
 				return err
 			}
@@ -100,7 +95,7 @@ func populateServiceConfigIfEmpty(state *config.LibrarianState, contentLoader fu
 // 1. the file ends with `.yaml` and it is a valid yaml file.
 //
 // 2. the file contains `type: google.api.Service`.
-func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path string) (string, error) {
+func findServiceConfigIn(path string) (string, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return "", fmt.Errorf("failed to read dir %q: %w", path, err)
@@ -110,7 +105,7 @@ func findServiceConfigIn(contentLoader func(file string) ([]byte, error), path s
 		if !strings.HasSuffix(entry.Name(), ".yaml") {
 			continue
 		}
-		bytes, err := contentLoader(filepath.Join(path, entry.Name()))
+		bytes, err := os.ReadFile(filepath.Join(path, entry.Name()))
 		if err != nil {
 			return "", err
 		}
@@ -138,7 +133,7 @@ func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 // readLibraryState reads the library state from a container response.
 //
 // The response file is removed afterwards.
-func readLibraryState(contentLoader func(data []byte, state *config.LibraryState) error, jsonFilePath string) (*config.LibraryState, error) {
+func readLibraryState(jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
 	defer func() {
 		if err := os.Remove(jsonFilePath); err != nil {
@@ -149,9 +144,9 @@ func readLibraryState(contentLoader func(data []byte, state *config.LibraryState
 		return nil, fmt.Errorf("failed to read response file, path: %s, error: %w", jsonFilePath, err)
 	}
 
-	libraryState := &config.LibraryState{}
+	var libraryState *config.LibraryState
 
-	if err := contentLoader(data, libraryState); err != nil {
+	if err := json.Unmarshal(data, &libraryState); err != nil {
 		return nil, fmt.Errorf("failed to load file, %s, to state: %w", jsonFilePath, err)
 	}
 

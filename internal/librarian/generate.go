@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -26,12 +25,10 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
-	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -86,6 +83,7 @@ func init() {
 	addFlagLibrary(fs, cfg)
 	addFlagRepo(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
+	addFlagPush(fs, cfg)
 }
 
 type generateRunner struct {
@@ -100,60 +98,19 @@ type generateRunner struct {
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
-	repoPath, err := deriveRepoPath(cfg.Repo)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg.Repo = repoPath
-	workRoot, err := createWorkRoot(time.Now(), cfg.WorkRoot)
-	if err != nil {
-		return nil, err
-	}
-
-	if cfg.APISource == "" {
-		cfg.APISource = "https://github.com/googleapis/googleapis"
-	}
-	sourceRepo, err := cloneOrOpenRepo(workRoot, cfg.APISource, cfg.CI)
-	if err != nil {
-		return nil, err
-	}
-
-	languageRepo, err := cloneOrOpenRepo(workRoot, cfg.Repo, cfg.CI)
-	if err != nil {
-		return nil, err
-	}
-	state, err := loadRepoState(languageRepo, sourceRepo.GetDir())
-	if err != nil {
-		return nil, err
-	}
-	image := deriveImage(cfg.Image, state)
-
-	var ghClient GitHubClient
-	if isURL(cfg.Repo) {
-		// repo is a URL
-		languageRepo, err := github.ParseURL(cfg.Repo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse repo url: %w", err)
-		}
-		ghClient, err = github.NewClient(cfg.GitHubToken, languageRepo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
-		}
-	}
-	container, err := docker.New(workRoot, image, cfg.UserUID, cfg.UserGID)
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &generateRunner{
-		cfg:             cfg,
-		workRoot:        workRoot,
-		repo:            languageRepo,
-		sourceRepo:      sourceRepo,
-		state:           state,
-		image:           image,
-		ghClient:        ghClient,
-		containerClient: container,
+		cfg:             runner.cfg,
+		workRoot:        runner.workRoot,
+		repo:            runner.repo,
+		sourceRepo:      runner.sourceRepo,
+		state:           runner.state,
+		image:           runner.image,
+		ghClient:        runner.ghClient,
+		containerClient: runner.containerClient,
 	}, nil
 }
 
@@ -274,9 +231,6 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 
 	// Read the library state from the response.
 	if _, err := readLibraryState(
-		func(data []byte, libraryState *config.LibraryState) error {
-			return json.Unmarshal(data, libraryState)
-		},
 		filepath.Join(generateRequest.RepoDir, config.LibrarianDir, config.GenerateResponse)); err != nil {
 		return "", err
 	}
@@ -334,10 +288,8 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 
 	// Read the library state from the response.
 	_, err := readLibraryState(
-		func(data []byte, libraryState *config.LibraryState) error {
-			return json.Unmarshal(data, libraryState)
-		},
-		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse))
+		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse),
+	)
 
 	return err
 }
@@ -521,17 +473,15 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		return "", err
 	}
 
-	// record to state, not write to state.yaml
+	setAllAPIStatus(r.state, config.StatusExisting)
+	// Record to state, not write to state.yaml
 	r.state.Libraries = append(r.state.Libraries, &config.LibraryState{
 		ID:   r.cfg.Library,
-		APIs: []*config.API{{Path: r.cfg.API}},
+		APIs: []*config.API{{Path: r.cfg.API, Status: config.StatusNew}},
 	})
 
 	if err := populateServiceConfigIfEmpty(
 		r.state,
-		func(file string) ([]byte, error) {
-			return os.ReadFile(file)
-		},
 		r.cfg.APISource); err != nil {
 		return "", err
 	}
@@ -550,10 +500,8 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 
 	// Read the new library state from the response.
 	libraryState, err := readLibraryState(
-		func(data []byte, libraryState *config.LibraryState) error {
-			return json.Unmarshal(data, libraryState)
-		},
-		filepath.Join(r.repo.GetDir(), config.LibrarianDir, config.ConfigureResponse))
+		filepath.Join(r.repo.GetDir(), config.LibrarianDir, config.ConfigureResponse),
+	)
 	if err != nil {
 		return "", err
 	}
@@ -572,4 +520,12 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	return libraryState.ID, nil
+}
+
+func setAllAPIStatus(state *config.LibrarianState, status string) {
+	for _, library := range state.Libraries {
+		for _, api := range library.APIs {
+			api.Status = status
+		}
+	}
 }

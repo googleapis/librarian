@@ -19,31 +19,79 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func deriveRepoPath(repoFlag string) (string, error) {
-	if repoFlag != "" {
-		return repoFlag, nil
+type commandRunner struct {
+	cfg             *config.Config
+	repo            gitrepo.Repository
+	sourceRepo      gitrepo.Repository
+	state           *config.LibrarianState
+	ghClient        GitHubClient
+	containerClient ContainerClient
+	workRoot        string
+	image           string
+}
+
+func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
+	if cfg.APISource == "" {
+		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
-	wd, err := os.Getwd()
+	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
 	if err != nil {
-		return "", fmt.Errorf("getting working directory: %w", err)
+		return nil, err
 	}
-	stateFile := filepath.Join(wd, config.LibrarianDir, pipelineStateFile)
-	if _, err := os.Stat(stateFile); err != nil {
-		return "", fmt.Errorf("repo flag not specified and no state file found in current working directory: %w", err)
+
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI)
+	if err != nil {
+		return nil, err
 	}
-	slog.Info("repo not specified, using current working directory as repo root", "path", wd)
-	return wd, nil
+	state, err := loadRepoState(languageRepo, sourceRepo.GetDir())
+	if err != nil {
+		return nil, err
+	}
+	image := deriveImage(cfg.Image, state)
+
+	var gitRepo *github.Repository
+	if isURL(cfg.Repo) {
+		gitRepo, err = github.ParseURL(cfg.Repo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse repo url: %w", err)
+		}
+	} else {
+		gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
+		}
+	}
+	ghClient, err := github.NewClient(cfg.GitHubToken, gitRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
+	}
+
+	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	if err != nil {
+		return nil, err
+	}
+	return &commandRunner{
+		cfg:             cfg,
+		workRoot:        cfg.WorkRoot,
+		repo:            languageRepo,
+		sourceRepo:      sourceRepo,
+		state:           state,
+		image:           image,
+		ghClient:        ghClient,
+		containerClient: container,
+	}, nil
 }
 
 func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
@@ -76,11 +124,11 @@ func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error
 	if err != nil {
 		return nil, err
 	}
-	clean, err := githubRepo.IsClean()
+	cleanRepo, err := githubRepo.IsClean()
 	if err != nil {
 		return nil, err
 	}
-	if !clean {
+	if !cleanRepo {
 		return nil, fmt.Errorf("%s repo must be clean", repo)
 	}
 	return githubRepo, nil
@@ -125,30 +173,6 @@ func findLibraryByID(state *config.LibrarianState, libraryID string) *config.Lib
 func formatTimestamp(t time.Time) string {
 	const yyyyMMddHHmmss = "20060102T150405Z" // Expected format by time library
 	return t.Format(yyyyMMddHHmmss)
-}
-
-func createWorkRoot(t time.Time, workRootOverride string) (string, error) {
-	if workRootOverride != "" {
-		slog.Info("Using specified working directory", "dir", workRootOverride)
-		return workRootOverride, nil
-	}
-
-	path := filepath.Join(os.TempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(t)))
-
-	_, err := os.Stat(path)
-	switch {
-	case os.IsNotExist(err):
-		if err := os.Mkdir(path, 0755); err != nil {
-			return "", fmt.Errorf("unable to create temporary working directory '%s': %w", path, err)
-		}
-	case err == nil:
-		return "", fmt.Errorf("temporary working directory already exists: %s", path)
-	default:
-		return "", fmt.Errorf("unable to check directory '%s': %w", path, err)
-	}
-
-	slog.Info("Temporary working directory", "dir", path)
-	return path, nil
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated

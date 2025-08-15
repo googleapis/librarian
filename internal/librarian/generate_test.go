@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -28,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"gopkg.in/yaml.v3"
 )
 
 func TestRunGenerateCommand(t *testing.T) {
@@ -378,11 +376,6 @@ func TestNewGenerateRunner(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "invalid config without repo flag",
-			cfg:     &config.Config{API: "some/api"},
-			wantErr: true,
-		},
-		{
 			name: "valid config",
 			cfg: &config.Config{
 				API:       "some/api",
@@ -445,43 +438,19 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "valid config with local repo",
+			cfg: &config.Config{
+				API:       "some/api",
+				APISource: newTestGitRepo(t).GetDir(),
+				Repo:      newTestGitRepo(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			// We need to create a fake state and config file for the test to pass.
-			if test.cfg.Repo != "" && !isURL(test.cfg.Repo) {
-				stateFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineStateFile)
-
-				if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
-					t.Fatalf("os.MkdirAll() = %v", err)
-				}
-
-				state := &config.LibrarianState{
-					Image: "some/image:v1.2.3",
-					Libraries: []*config.LibraryState{
-						{
-							ID:          "some-library",
-							APIs:        []*config.API{{Path: "some/api", ServiceConfig: "api_config.yaml"}},
-							SourceRoots: []string{"src/a"},
-						},
-					},
-				}
-				b, err := yaml.Marshal(state)
-				if err != nil {
-					t.Fatalf("yaml.Marshal() = %v", err)
-				}
-
-				if err := os.WriteFile(stateFile, b, 0644); err != nil {
-					t.Fatalf("os.WriteFile(%q, ...) = %v", stateFile, err)
-				}
-				configFile := filepath.Join(test.cfg.Repo, config.LibrarianDir, pipelineConfigFile)
-				if err := os.WriteFile(configFile, []byte("{}"), 0644); err != nil {
-					t.Fatalf("os.WriteFile(%q, ...) = %v", configFile, err)
-				}
-				runGit(t, test.cfg.Repo, "add", ".")
-				runGit(t, test.cfg.Repo, "commit", "-m", "add config")
-			}
-
 			if test.cfg.APISource == "" && test.cfg.WorkRoot != "" {
 				if test.name == "clone googleapis fails" {
 					// The function will try to clone googleapis into the current work directory.
@@ -511,9 +480,24 @@ func TestNewGenerateRunner(t *testing.T) {
 				}
 			}
 
-			_, err := newGenerateRunner(test.cfg)
+			r, err := newGenerateRunner(test.cfg)
 			if (err != nil) != test.wantErr {
 				t.Errorf("newGenerateRunner() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+			if r.ghClient == nil {
+				t.Errorf("newGenerateRunner() ghClient is nil")
+			}
+			if r.containerClient == nil {
+				t.Errorf("newGenerateRunner() containerClient is nil")
+			}
+			if r.repo == nil {
+				t.Errorf("newGenerateRunner() repo is nil")
+			}
+			if r.sourceRepo == nil {
+				t.Errorf("newGenerateRunner() sourceRepo is nil")
 			}
 		})
 	}
@@ -1619,52 +1603,5 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
-	}
-}
-
-// newTestGitRepo creates a new git repository in a temporary directory.
-func newTestGitRepo(t *testing.T) gitrepo.Repository {
-	t.Helper()
-	return newTestGitRepoWithState(t, true)
-}
-
-// newTestGitRepo creates a new git repository in a temporary directory.
-func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
-	t.Helper()
-	dir := t.TempDir()
-	remoteURL := "https://github.com/googleapis/librarian.git"
-	runGit(t, dir, "init")
-	runGit(t, dir, "config", "user.email", "test@example.com")
-	runGit(t, dir, "config", "user.name", "Test User")
-	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
-		t.Fatalf("os.WriteFile: %v", err)
-	}
-	if writeState {
-		// Create an empty state.yaml file
-		stateDir := filepath.Join(dir, config.LibrarianDir)
-		if err := os.MkdirAll(stateDir, 0755); err != nil {
-			t.Fatalf("os.MkdirAll: %v", err)
-		}
-		stateFile := filepath.Join(stateDir, "state.yaml")
-		if err := os.WriteFile(stateFile, []byte(""), 0644); err != nil {
-			t.Fatalf("os.WriteFile: %v", err)
-		}
-	}
-	runGit(t, dir, "add", ".")
-	runGit(t, dir, "commit", "-m", "initial commit")
-	runGit(t, dir, "remote", "add", "origin", remoteURL)
-	repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
-	if err != nil {
-		t.Fatalf("gitrepo.Open(%q) = %v", dir, err)
-	}
-	return repo
-}
-
-func runGit(t *testing.T, dir string, args ...string) {
-	t.Helper()
-	cmd := exec.Command("git", args...)
-	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("git %v: %v", args, err)
 	}
 }

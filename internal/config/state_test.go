@@ -15,14 +15,16 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
 func TestLibrarianState_Validate(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		state   *LibrarianState
-		wantErr bool
+		name       string
+		state      *LibrarianState
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "valid state",
@@ -56,19 +58,33 @@ func TestLibrarianState_Validate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "image is required",
 		},
 		{
 			name: "missing libraries",
 			state: &LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "libraries cannot be empty",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.state.Validate(); (err != nil) != test.wantErr {
-				t.Errorf("LibrarianState.Validate() error = %v, wantErr %v", err, test.wantErr)
+			err := test.state.Validate()
+			if test.wantErr {
+				if err == nil {
+					t.Error("Librarian.Validate() should fail")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Librarian.Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -76,9 +92,10 @@ func TestLibrarianState_Validate(t *testing.T) {
 
 func TestLibrary_Validate(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *LibraryState
-		wantErr bool
+		name       string
+		library    *LibraryState
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "valid library",
@@ -93,42 +110,26 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "missing id",
-			library: &LibraryState{
-				SourceRoots: []string{"src/a", "src/b"},
-				APIs: []*API{
-					{
-						Path: "a/b/v1",
-					},
-				},
-			},
-			wantErr: true,
+			name:       "missing id",
+			library:    &LibraryState{},
+			wantErr:    true,
+			wantErrMsg: "id is required",
 		},
 		{
 			name: "id is dot",
 			library: &LibraryState{
-				ID:          ".",
-				SourceRoots: []string{"src/a", "src/b"},
-				APIs: []*API{
-					{
-						Path: "a/b/v1",
-					},
-				},
+				ID: ".",
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "id cannot be",
 		},
 		{
 			name: "id is double dot",
 			library: &LibraryState{
-				ID:          "..",
-				SourceRoots: []string{"src/a", "src/b"},
-				APIs: []*API{
-					{
-						Path: "a/b/v1",
-					},
-				},
+				ID: "..",
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "id cannot be",
 		},
 		{
 			name: "missing source paths",
@@ -140,7 +141,8 @@ func TestLibrary_Validate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "source_roots cannot be empty",
 		},
 		{
 			name: "missing apis",
@@ -148,7 +150,8 @@ func TestLibrary_Validate(t *testing.T) {
 				ID:          "a/b",
 				SourceRoots: []string{"src/a", "src/b"},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "apis cannot be empty",
 		},
 		{
 			name: "valid version without v prefix",
@@ -166,43 +169,28 @@ func TestLibrary_Validate(t *testing.T) {
 		{
 			name: "invalid id characters",
 			library: &LibraryState{
-				ID:          "a/b!",
-				SourceRoots: []string{"src/a", "src/b"},
-				APIs: []*API{
-					{
-						Path: "a/b/v1",
-					},
-				},
+				ID: "a/b!",
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "invalid id",
 		},
 		{
 			name: "invalid last generated commit non-hex",
 			library: &LibraryState{
 				ID:                  "a/b",
 				LastGeneratedCommit: "not-a-hex-string",
-				SourceRoots:         []string{"src/a", "src/b"},
-				APIs: []*API{
-					{
-						Path: "a/b/v1",
-					},
-				},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "last_generated_commit must be a hex string",
 		},
 		{
 			name: "invalid last generated commit wrong length",
 			library: &LibraryState{
 				ID:                  "a/b",
 				LastGeneratedCommit: "deadbeef",
-				SourceRoots:         []string{"src/a", "src/b"},
-				APIs: []*API{
-					{
-						Path: "a/b/v1",
-					},
-				},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "last_generated_commit must be 40 characters",
 		},
 		{
 			name: "valid preserve_regex",
@@ -221,7 +209,8 @@ func TestLibrary_Validate(t *testing.T) {
 				APIs:          []*API{{Path: "a/b/v1"}},
 				PreserveRegex: []string{"["},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "invalid preserve_regex at index",
 		},
 		{
 			name: "valid remove_regex",
@@ -240,7 +229,8 @@ func TestLibrary_Validate(t *testing.T) {
 				APIs:        []*API{{Path: "a/b/v1"}},
 				RemoveRegex: []string{"("},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "invalid remove_regex at index",
 		},
 		{
 			name: "valid release_exclude_path",
@@ -259,7 +249,8 @@ func TestLibrary_Validate(t *testing.T) {
 				APIs:                []*API{{Path: "a/b/v1"}},
 				ReleaseExcludePaths: []string{"/a/b"},
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "invalid release_exclude_path at index",
 		},
 		{
 			name: "valid tag_format",
@@ -269,16 +260,6 @@ func TestLibrary_Validate(t *testing.T) {
 				APIs:        []*API{{Path: "a/b/v1"}},
 				TagFormat:   "v{id}-{version}",
 			},
-		},
-		{
-			name: "invalid tag_format placeholder",
-			library: &LibraryState{
-				ID:          "a/b",
-				SourceRoots: []string{"src/a"},
-				APIs:        []*API{{Path: "a/b/v1"}},
-				TagFormat:   "{id}-{foo}",
-			},
-			wantErr: true,
 		},
 		{
 			name: "invalid tag_format with id only",
@@ -302,7 +283,19 @@ func TestLibrary_Validate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.library.Validate(); (err != nil) != test.wantErr {
+			err := test.library.Validate()
+			if test.wantErr {
+				if err == nil {
+					t.Error("Library.Validate() should fail")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
 				t.Errorf("Library.Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
@@ -311,24 +304,44 @@ func TestLibrary_Validate(t *testing.T) {
 
 func TestAPI_Validate(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		api     *API
-		wantErr bool
+		name       string
+		api        *API
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
-			name: "valid api",
+			name: "new api",
 			api: &API{
 				Path: "a/b/v1",
 			},
 		},
 		{
-			name:    "missing path",
-			api:     &API{},
-			wantErr: true,
+			name: "existing api",
+			api: &API{
+				Path: "a/b/v1",
+			},
+		},
+		{
+			name:       "missing path",
+			api:        &API{},
+			wantErr:    true,
+			wantErrMsg: "invalid path",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.api.Validate(); (err != nil) != test.wantErr {
+			err := test.api.Validate()
+			if test.wantErr {
+				if err == nil {
+					t.Error("API.Validate() should fail")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
 				t.Errorf("API.Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
@@ -343,12 +356,14 @@ func TestIsValidDirPath(t *testing.T) {
 	}{
 		{"valid", "a/b/c", true},
 		{"valid with dots", "a/./b/../c", true},
+		{"valid path area120", "google/area120/tables/v1alpha1", true},
 		{"empty", "", false},
 		{"absolute", "/a/b", false},
 		{"up traversal", "../a", false},
 		{"double dot", "..", false},
 		{"single dot", ".", false},
 		{"invalid chars", "a/b<c", false},
+		{"invalid null byte", "a/b\x00c", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := isValidDirPath(test.path); got != test.want {

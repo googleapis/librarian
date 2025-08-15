@@ -40,6 +40,7 @@ func init() {
 	CmdLibrarian.Init()
 	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
 		cmdGenerate,
+		cmdRelease,
 		cmdVersion,
 	)
 }
@@ -66,8 +67,8 @@ func Run(ctx context.Context, arg ...string) error {
 		return err
 	}
 	slog.Info("librarian", "arguments", arg)
-	if err := cmd.Config.SetupUser(); err != nil {
-		return fmt.Errorf("failed to setup user config: %w", err)
+	if err := cmd.Config.SetDefaults(); err != nil {
+		return fmt.Errorf("failed to initialize config: %w", err)
 	}
 	if _, err := cmd.Config.IsValid(); err != nil {
 		return fmt.Errorf("failed to validate config: %s", err)
@@ -84,9 +85,10 @@ type GitHubClient interface {
 
 // ContainerClient is an abstraction over the Docker client.
 type ContainerClient interface {
-	Generate(ctx context.Context, request *docker.GenerateRequest) error
 	Build(ctx context.Context, request *docker.BuildRequest) error
 	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
+	Generate(ctx context.Context, request *docker.GenerateRequest) error
+	ReleaseInit(ctx context.Context, request *docker.ReleaseRequest) error
 }
 
 func isURL(s string) bool {

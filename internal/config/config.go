@@ -18,9 +18,13 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/user"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -45,6 +49,23 @@ const (
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
 	LibrarianDir = ".librarian"
+	// ReleaseInitRequest is a JSON file that describes which library to release.
+	ReleaseInitRequest = "release-init-request.json"
+
+	pipelineStateFile = "state.yaml"
+	versionCmdName    = "version"
+)
+
+// are variables so it can be replaced during testing.
+var (
+	now         = time.Now
+	tempDir     = os.TempDir
+	currentUser = user.Current
+)
+
+var (
+	// pullRequestRegexp is regular expression that describes a uri of a pull request.
+	pullRequestRegexp = regexp.MustCompile(`^https://github\.com/([a-zA-Z0-9-._]+)/([a-zA-Z0-9-._]+)/pull/([0-9]+)$`)
 )
 
 // Config holds all configuration values parsed from flags or environment
@@ -118,6 +139,24 @@ type Config struct {
 	// api is specified all currently managed libraries will be regenerated.
 	Library string
 
+	// LibraryVersion is the library version to release.
+	//
+	// Overrides the automatic semantic version calculation and forces a specific
+	// version for a library.
+	// This is intended for exceptional cases, such as applying a backport patch
+	// or forcing a major version bump.
+	//
+	// Requires the --library flag to be specified.
+	LibraryVersion string
+
+	// PullRequest to target and operate one in the context of a release.
+	//
+	// The pull request should be in the format `https://github.com/{owner}/{repo}/pull/{number}`.
+	// Setting this field for `tag-and-release` means librarian will only attempt
+	// to process this exact pull request and not search for other pull requests
+	// that may be ready for tagging and releasing.
+	PullRequest string
+
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
 	// configure and update-apis.
@@ -175,22 +214,26 @@ type Config struct {
 	//
 	// WorkRoot is used by all librarian commands.
 	WorkRoot string
+
+	// commandName is the name of the command being executed.
+	//
+	// commandName is populated automatically after flag parsing. No user setup is
+	// expected.
+	commandName string
 }
 
 // New returns a new Config populated with environment variables.
-func New() *Config {
+func New(cmdName string) *Config {
 	return &Config{
+		commandName: cmdName,
 		GitHubToken: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
 	}
 }
 
-// currentUser is a variable, so it can be replaced during testing.
-var currentUser = user.Current
-
-// SetupUser performs late initialization of user-specific configuration,
+// setupUser performs late initialization of user-specific configuration,
 // determining the current user. This is in a separate method as it
 // can fail, and is called after flag parsing.
-func (c *Config) SetupUser() error {
+func (c *Config) setupUser() error {
 	user, err := currentUser()
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
@@ -200,17 +243,95 @@ func (c *Config) SetupUser() error {
 	return nil
 }
 
+func (c *Config) createWorkRoot() error {
+	if c.commandName == versionCmdName {
+		return nil
+	}
+	if c.WorkRoot != "" {
+		slog.Info("Using specified working directory", "dir", c.WorkRoot)
+		return nil
+	}
+	t := now()
+	path := filepath.Join(tempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(t)))
+
+	_, err := os.Stat(path)
+	switch {
+	case os.IsNotExist(err):
+		if err := os.Mkdir(path, 0755); err != nil {
+			return fmt.Errorf("unable to create temporary working directory '%s': %w", path, err)
+		}
+	case err == nil:
+		return fmt.Errorf("temporary working directory already exists: %s", path)
+	default:
+		return fmt.Errorf("unable to check directory '%s': %w", path, err)
+	}
+
+	slog.Info("Temporary working directory", "dir", path)
+	c.WorkRoot = path
+	return nil
+}
+
+func (c *Config) deriveRepo() error {
+	if c.commandName == versionCmdName {
+		return nil
+	}
+	if c.Repo != "" {
+		slog.Debug("repo value provided by user", "repo", c.Repo)
+		return nil
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
+	stateFile := filepath.Join(wd, LibrarianDir, pipelineStateFile)
+	if _, err := os.Stat(stateFile); err != nil {
+		return fmt.Errorf("repo flag not specified and no state file found in current working directory: %w", err)
+	}
+	slog.Info("repo not specified, using current working directory as repo root", "path", wd)
+	c.Repo = wd
+	return nil
+}
+
 // IsValid ensures the values contained in a Config are valid.
 func (c *Config) IsValid() (bool, error) {
 	if c.Push && c.GitHubToken == "" {
 		return false, errors.New("no GitHub token supplied for push")
 	}
 
+	if c.Library == "" && c.LibraryVersion != "" {
+		return false, errors.New("specified library version without library id")
+	}
+
+	if c.PullRequest != "" {
+		matched := pullRequestRegexp.MatchString(c.PullRequest)
+		if !matched {
+			return false, errors.New("pull request URL is not valid")
+		}
+	}
+
 	if _, err := validateHostMount(c.HostMount, ""); err != nil {
 		return false, err
 	}
 
+	if c.commandName != versionCmdName && c.Repo == "" {
+		return false, errors.New("language repository not specified or detected")
+	}
+
 	return true, nil
+}
+
+// SetDefaults initializes values not set directly by the user.
+func (c *Config) SetDefaults() error {
+	if err := c.setupUser(); err != nil {
+		return err
+	}
+	if err := c.createWorkRoot(); err != nil {
+		return err
+	}
+	if err := c.deriveRepo(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func validateHostMount(hostMount, defaultValue string) (bool, error) {
@@ -224,4 +345,9 @@ func validateHostMount(hostMount, defaultValue string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func formatTimestamp(t time.Time) string {
+	const yyyyMMddHHmmss = "20060102T150405Z" // Expected format by time library
+	return t.Format(yyyyMMddHHmmss)
 }
