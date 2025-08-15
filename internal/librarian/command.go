@@ -64,11 +64,11 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	var ghClient GitHubClient
 	if isURL(cfg.Repo) {
 		// repo is a URL
-		languageRepo, err := github.ParseURL(cfg.Repo)
+		githubRepo, err := github.ParseURL(cfg.Repo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repo url: %w", err)
 		}
-		ghClient, err = github.NewClient(cfg.GitHubToken, languageRepo)
+		ghClient, err = github.NewClient(cfg.GitHubToken, githubRepo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 		}
@@ -119,11 +119,11 @@ func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error
 	if err != nil {
 		return nil, err
 	}
-	clean, err := githubRepo.IsClean()
+	cleanRepo, err := githubRepo.IsClean()
 	if err != nil {
 		return nil, err
 	}
-	if !clean {
+	if !cleanRepo {
 		return nil, fmt.Errorf("%s repo must be clean", repo)
 	}
 	return githubRepo, nil
