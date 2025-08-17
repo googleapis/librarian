@@ -80,10 +80,10 @@ func parseGlobalConfig(path string) (*config.GlobalConfig, error) {
 	}
 	var gc config.GlobalConfig
 	if err := yaml.Unmarshal(bytes, &gc); err != nil {
-		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal global config: %w", err)
 	}
 	if err := gc.Validate(); err != nil {
-		return nil, fmt.Errorf("validating librarian state: %w", err)
+		return nil, fmt.Errorf("invalid global config: %w", err)
 	}
 	return &gc, nil
 }
