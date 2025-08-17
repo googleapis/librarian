@@ -78,14 +78,14 @@ func parseGlobalConfig(path string) (*config.GlobalConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	var s config.GlobalConfig
-	if err := yaml.Unmarshal(bytes, &s); err != nil {
+	var gc config.GlobalConfig
+	if err := yaml.Unmarshal(bytes, &gc); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
-	if err := s.Validate(); err != nil {
+	if err := gc.Validate(); err != nil {
 		return nil, fmt.Errorf("validating librarian state: %w", err)
 	}
-	return &s, nil
+	return &gc, nil
 }
 
 func populateServiceConfigIfEmpty(state *config.LibrarianState, source string) error {
