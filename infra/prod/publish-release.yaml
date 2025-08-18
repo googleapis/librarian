@@ -44,7 +44,7 @@ steps:
       - '-pr'
       - $_PR
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
-tags: ['stage-release-$_REPOSITORY']
+tags: ['publish-release-$_REPOSITORY']
 availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_ID/secrets/$_GITHUB_TOKEN_SECRET_NAME/versions/latest
