@@ -32,7 +32,7 @@ type ConventionalCommit struct {
 	Description string
 	// Body is the long-form description of the change.
 	Body string
-	// Footers contain metadata (e.g.,"BREAKING CHANGE", "Reviewed-by").
+	// Footers contain metadata (e.g,"BREAKING CHANGE", "Reviewed-by").
 	Footers map[string]string
 	// IsBreaking indicates if the commit introduces a breaking change.
 	IsBreaking bool
@@ -140,6 +140,8 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 const (
 	beginCommitOverride = "BEGIN_COMMIT_OVERRIDE"
 	endCommitOverride   = "END_COMMIT_OVERRIDE"
+	beginNestedCommit   = "BEGIN_NESTED_COMMIT"
+	endNestedCommit     = "END_NESTED_COMMIT"
 )
 
 func extractCommitMessageOverride(message string) string {
@@ -155,11 +157,61 @@ func extractCommitMessageOverride(message string) string {
 	return strings.TrimSpace(afterBegin[:endIndex])
 }
 
-// ParseCommit parses a single commit message and returns a ConventionalCommit.
-// If the commit message does not follow the conventional commit format, it
-// logs a warning and returns a nil commit and no error.
-func ParseCommit(message, hashString string) (*ConventionalCommit, error) {
+func extractCommitParts(message string) []string {
+	parts := strings.Split(message, beginNestedCommit)
+	var commitParts []string
+
+	// The first part is the primary commit.
+	if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
+		commitParts = append(commitParts, strings.TrimSpace(parts[0]))
+	}
+
+	// The rest of the parts are nested commits.
+	for i := 1; i < len(parts); i++ {
+		nestedPart := parts[i]
+		endIndex := strings.Index(nestedPart, endNestedCommit)
+		if endIndex == -1 {
+			// Malformed, ignore.
+			continue
+		}
+		commitStr := strings.TrimSpace(nestedPart[:endIndex])
+		if commitStr == "" {
+			continue
+		}
+		commitParts = append(commitParts, commitStr)
+	}
+	return commitParts
+}
+
+// ParseCommits parses a commit message and returns a slice of ConventionalCommits.
+// It supports commit override gated with BEGIN_COMMIT_OVERRIDE/END_COMMIT_OVERRIDE
+// and nested commits using BEGIN_NESTED_COMMIT and END_NESTED_COMMIT markers.
+func ParseCommits(message, hashString string) ([]*ConventionalCommit, error) {
+	if strings.TrimSpace(message) == "" {
+		return nil, fmt.Errorf("empty commit message")
+	}
 	message = extractCommitMessageOverride(message)
+
+	var commits []*ConventionalCommit
+
+	for _, commitPart := range extractCommitParts(message) {
+		c, err := parseSimpleCommit(commitPart, hashString)
+		if err != nil {
+			slog.Warn("failed to parse nested commit part", "commit", commitPart, "error", err)
+			continue
+		}
+
+		if c != nil {
+			commits = append(commits, c)
+		}
+	}
+
+	return commits, nil
+}
+
+// parseSimpleCommit parses a simple commit message and returns a ConventionalCommit.
+// A simple commit message is commit that does not include override or nested commits.
+func parseSimpleCommit(message, hashString string) (*ConventionalCommit, error) {
 	trimmedMessage := strings.TrimSpace(message)
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")

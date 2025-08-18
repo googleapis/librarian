@@ -41,11 +41,11 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 		if shouldExclude(files, library.ReleaseExcludePaths) {
 			continue
 		}
-		conventionalCommit, err := gitrepo.ParseCommit(commit.Message, commit.Hash.String())
+		parsedCommits, err := gitrepo.ParseCommits(commit.Message, commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
-		conventionalCommits = append(conventionalCommits, conventionalCommit)
+		conventionalCommits = append(conventionalCommits, parsedCommits...)
 	}
 	return conventionalCommits, nil
 }
