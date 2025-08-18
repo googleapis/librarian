@@ -98,7 +98,7 @@ func (r *initRunner) run(ctx context.Context) error {
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
 	setReleaseTrigger(r.state, r.cfg.Library, r.cfg.LibraryVersion, true)
-	initRequest := &docker.InitRequest{
+	initRequest := &docker.ReleaseInitRequest{
 		Cfg:            r.cfg,
 		State:          r.state,
 		LibraryID:      r.cfg.Library,

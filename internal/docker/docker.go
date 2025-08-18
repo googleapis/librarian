@@ -116,9 +116,9 @@ type GenerateRequest struct {
 	RepoDir string
 }
 
-// InitRequest contains all the information required for a language
+// ReleaseInitRequest contains all the information required for a language
 // container to run the  init command.
-type InitRequest struct {
+type ReleaseInitRequest struct {
 	// Cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
 	Cfg *config.Config
@@ -252,7 +252,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 }
 
 // ReleaseInit initiates a release for a given language repository.
-func (c *Docker) ReleaseInit(ctx context.Context, request *InitRequest) error {
+func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
 	requestFilePath := filepath.Join(request.Cfg.Repo, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return err
@@ -348,7 +348,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 }
 
 // setupPartialRepo copies the following files from the [config.Config.Repo] to
-// partialRepoDir in the given InitRequest:
+// partialRepoDir in the given ReleaseInitRequest:
 //
 // 1. all directories that make up all libraries, or one library, if the library
 // ID is specified.
@@ -356,7 +356,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 // 2. the .librarian directory.
 //
 // 3. global files declared in config.yaml.
-func setupPartialRepo(request *InitRequest) error {
+func setupPartialRepo(request *ReleaseInitRequest) error {
 	if request.partialRepoDir == "" {
 		request.partialRepoDir = filepath.Join(request.Cfg.WorkRoot, "release-init")
 	}
