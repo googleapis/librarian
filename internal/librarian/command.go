@@ -46,12 +46,12 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
-	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
+	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI, "")
 	if err != nil {
 		return nil, err
 	}
 
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}, nil
 }
 
-func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo, ci string, githubToken string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
 	}
@@ -106,10 +106,11 @@ func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error
 		repoName := path.Base(strings.TrimSuffix(repo, "/"))
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-			Dir:        repoPath,
-			MaybeClone: true,
-			RemoteURL:  repo,
-			CI:         ci,
+			Dir:         repoPath,
+			MaybeClone:  true,
+			RemoteURL:   repo,
+			CI:          ci,
+			GitHubToken: githubToken,
 		})
 	}
 	// repo is a directory
@@ -199,26 +200,29 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 		return nil
 	}
 
-	if err := r.repo.CreateBranchAndCheckout("librarian-generate"); err != nil {
+	datetimeNow := formatTimestamp(time.Now())
+	branch := fmt.Sprintf("librarian-%s", datetimeNow)
+	slog.Info("Creating branch", slog.String("branch", branch))
+	if err := r.repo.CreateBranchAndCheckout(branch); err != nil {
 		return err
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
+	slog.Info("Committing", slog.String("message", commitMessage))
 	if err := r.repo.Commit(commitMessage); err != nil {
 		return err
 	}
 
 	slog.Info("created commit")
-	if err := r.repo.Push("librarian-generate"); err != nil {
+	slog.Info("pushing to branch", slog.String("branch", branch))
+	if err := r.repo.Push(branch); err != nil {
 		return err
 	}
 
 	// Create a new branch, set title and message for the PR.
-	datetimeNow := formatTimestamp(time.Now())
 	titlePrefix := "Librarian pull request"
-	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
-	slog.Info("About to create pull request", slog.String("branch", branch), slog.String("title", title))
+	slog.Info("creating pull request", slog.String("branch", branch), slog.String("title", title))
 	slog.Info("ghClient", slog.Any("client", r.ghClient))
 	if _, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)

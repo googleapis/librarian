@@ -26,6 +26,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	httpAuth "github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 // Repository defines the interface for git repository operations.
@@ -65,7 +66,8 @@ type RepositoryOptions struct {
 	RemoteURL string
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
-	CI string
+	CI          string
+	GitHubToken string
 }
 
 // NewRepository provides access to a git repository based on the provided options.
@@ -103,6 +105,25 @@ func open(dir string) (*LocalRepository, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	cfg, err := repo.Config()
+	if err != nil {
+		return nil, err
+	}
+	slog.Info("remotes", slog.Any("remotes", cfg.Remotes))
+	slog.Info("origin", slog.Any("origin", cfg.Remotes["origin"]))
+
+	cfg.User.Name = ""
+	cfg.User.Email = ""
+	// cfg.
+	// slog.Info("seting up GitHub auth")
+	// err = repo.Fetch(&git.FetchOptions{
+	// 	Auth: http.BasicAuth{
+	// 		Username: "",
+	// 		Password: "",
+	// 	},
+	// })
+
 	return &LocalRepository{
 		Dir:  dir,
 		repo: repo,
@@ -382,12 +403,16 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 
 func (r *LocalRepository) Push(branchName string) error {
 	slog.Info("pushing changes")
-	refSpec := config.RefSpec(fmt.Sprintf("%s:%s", branchName, branchName))
+	// https://stackoverflow.com/a/75727620
+	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
+	slog.Info("refspec", slog.Any("refspec", refSpec))
 	if err := r.repo.Push(&git.PushOptions{
 		RemoteName: "origin",
 		RefSpecs:   []config.RefSpec{refSpec},
-		// TODO I think we need auth here...
-		//Auth: ,
+		Auth: &httpAuth.BasicAuth{
+			Username: "chingor13",
+			Password: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		},
 	}); err != nil {
 		return err
 	}
