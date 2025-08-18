@@ -33,37 +33,44 @@ type Version struct {
 	PrereleaseNumber string
 }
 
+// Regex from https://semver.org/, with buildmetadata part removed.
+// It uses named capture groups for major, minor, patch, and prerelease.
+var semverRegex = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$`)
+
 // Parse parses a version string into a Version struct.
 func Parse(versionString string) (*Version, error) {
-	parts := strings.SplitN(versionString, "-", 2)
-	versionPart := parts[0]
-
-	versionParts := strings.Split(versionPart, ".")
-	if len(versionParts) != 3 {
+	matches := semverRegex.FindStringSubmatch(versionString)
+	if matches == nil {
 		return nil, fmt.Errorf("invalid version format: %s", versionString)
 	}
 
-	major, err := strconv.Atoi(versionParts[0])
+	// Create a map of capture group names to their values.
+	result := make(map[string]string)
+	for i, name := range semverRegex.SubexpNames() {
+		if i != 0 && name != "" {
+			result[name] = matches[i]
+		}
+	}
+
+	v := &Version{}
+	var err error
+	v.Major, err = strconv.Atoi(result["major"])
 	if err != nil {
+		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid major version: %w", err)
 	}
-	minor, err := strconv.Atoi(versionParts[1])
+	v.Minor, err = strconv.Atoi(result["minor"])
 	if err != nil {
+		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid minor version: %w", err)
 	}
-	patch, err := strconv.Atoi(versionParts[2])
+	v.Patch, err = strconv.Atoi(result["patch"])
 	if err != nil {
+		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid patch version: %w", err)
 	}
 
-	v := &Version{
-		Major: major,
-		Minor: minor,
-		Patch: patch,
-	}
-
-	if len(parts) > 1 {
-		prerelease := parts[1]
+	if prerelease := result["prerelease"]; prerelease != "" {
 		if i := strings.LastIndex(prerelease, "."); i != -1 {
 			v.Prerelease = prerelease[:i]
 			v.PrereleaseSeparator = "."
