@@ -169,6 +169,8 @@ type MockRepository struct {
 	CommitCalls                     int
 	GetCommitsForPathsSinceTagValue []*gitrepo.Commit
 	GetCommitsForPathsSinceTagError error
+	ChangedFilesInCommitValue       []string
+	ChangedFilesInCommitError       error
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -206,4 +208,11 @@ func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName stri
 		return nil, m.GetCommitsForPathsSinceTagError
 	}
 	return m.GetCommitsForPathsSinceTagValue, nil
+}
+
+func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
+	if m.ChangedFilesInCommitError != nil {
+		return nil, m.ChangedFilesInCommitError
+	}
+	return m.ChangedFilesInCommitValue, nil
 }
