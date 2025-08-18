@@ -26,7 +26,7 @@ import (
 
 func TestNewInitRunner(t *testing.T) {
 	t.Parallel()
-	testcases := []struct {
+	for _, test := range []struct {
 		name       string
 		cfg        *config.Config
 		wantErr    bool
@@ -50,8 +50,7 @@ func TestNewInitRunner(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to create init runner",
 		},
-	}
-	for _, test := range testcases {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := newInitRunner(test.cfg)
 			if test.wantErr {
@@ -73,7 +72,8 @@ func TestNewInitRunner(t *testing.T) {
 }
 
 func TestInitRun(t *testing.T) {
-	testcases := []struct {
+	t.Parallel()
+	for _, test := range []struct {
 		name       string
 		runner     *initRunner
 		wantErr    bool
@@ -109,8 +109,7 @@ func TestInitRun(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to create output dir",
 		},
-	}
-	for _, test := range testcases {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := test.runner.run(context.Background())
 			if test.wantErr {
@@ -132,7 +131,8 @@ func TestInitRun(t *testing.T) {
 }
 
 func TestSetReleaseTrigger(t *testing.T) {
-	testcases := []struct {
+	t.Parallel()
+	for _, test := range []struct {
 		name                 string
 		state                *config.LibrarianState
 		libraryID            string
@@ -216,8 +216,7 @@ func TestSetReleaseTrigger(t *testing.T) {
 				"another-example-id": "2.0.0",
 			},
 		},
-	}
-	for _, test := range testcases {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			setReleaseTrigger(test.state, test.libraryID, test.libraryVersion, test.trigger)
 			for _, library := range test.state.Libraries {
