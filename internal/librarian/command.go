@@ -46,12 +46,23 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
-	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI, "")
+
+	var gitUser *gitrepo.GitUser
+	if cfg.GitHubToken != "" {
+		gitUser = &gitrepo.GitUser{
+			Username:    "Cloud SDK Librarian",
+			Password:    cfg.GitHubToken,
+			DisplayName: "cloud-sdk-librarian",
+			Email:       "cloud-sdk-librarian-robot@google.com",
+		}
+	}
+
+	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI, gitUser)
 	if err != nil {
 		return nil, err
 	}
 
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI, cfg.GitHubToken)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI, gitUser)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +105,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}, nil
 }
 
-func cloneOrOpenRepo(workRoot, repo, ci string, githubToken string) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo, ci string, gitUser *gitrepo.GitUser) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
 	}
@@ -106,11 +117,11 @@ func cloneOrOpenRepo(workRoot, repo, ci string, githubToken string) (*gitrepo.Lo
 		repoName := path.Base(strings.TrimSuffix(repo, "/"))
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-			Dir:         repoPath,
-			MaybeClone:  true,
-			RemoteURL:   repo,
-			CI:          ci,
-			GitHubToken: githubToken,
+			Dir:        repoPath,
+			MaybeClone: true,
+			RemoteURL:  repo,
+			CI:         ci,
+			User:       gitUser,
 		})
 	}
 	// repo is a directory
@@ -119,8 +130,9 @@ func cloneOrOpenRepo(workRoot, repo, ci string, githubToken string) (*gitrepo.Lo
 		return nil, err
 	}
 	githubRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-		Dir: absRepoRoot,
-		CI:  ci,
+		Dir:  absRepoRoot,
+		CI:   ci,
+		User: gitUser,
 	})
 	if err != nil {
 		return nil, err

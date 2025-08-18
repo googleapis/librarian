@@ -47,6 +47,19 @@ type Repository interface {
 type LocalRepository struct {
 	Dir  string
 	repo *git.Repository
+	user *GitUser
+}
+
+// GitUser represents a git user for commits.
+type GitUser struct {
+	// Username is the username used for Basic Authentication.
+	Username string
+	// Password is the password used for Basic Authentication.
+	Password string
+	// DisplayName is the user.name specified for a commit.
+	DisplayName string
+	// Email is the user.email specified for a commit.
+	Email string
 }
 
 // Commit represents a git commit.
@@ -66,8 +79,9 @@ type RepositoryOptions struct {
 	RemoteURL string
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
-	CI          string
-	GitHubToken string
+	CI string
+	// GitUser is the metadata used for git commits and pushes.
+	User *GitUser
 }
 
 // NewRepository provides access to a git repository based on the provided options.
@@ -77,6 +91,15 @@ type RepositoryOptions struct {
 // otherwise it clones from opts.RemoteURL.
 // If opts.Clone is CloneOptionAlways, it always clones from opts.RemoteURL.
 func NewRepository(opts *RepositoryOptions) (*LocalRepository, error) {
+	repo, err := newRepositoryWithoutUser(opts)
+	if err != nil {
+		return repo, err
+	}
+	repo.user = opts.User
+	return repo, nil
+}
+
+func newRepositoryWithoutUser(opts *RepositoryOptions) (*LocalRepository, error) {
 	if opts.Dir == "" {
 		return nil, errors.New("gitrepo: dir is required")
 	}
@@ -105,24 +128,6 @@ func open(dir string) (*LocalRepository, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	cfg, err := repo.Config()
-	if err != nil {
-		return nil, err
-	}
-	slog.Info("remotes", slog.Any("remotes", cfg.Remotes))
-	slog.Info("origin", slog.Any("origin", cfg.Remotes["origin"]))
-
-	cfg.User.Name = ""
-	cfg.User.Email = ""
-	// cfg.
-	// slog.Info("seting up GitHub auth")
-	// err = repo.Fetch(&git.FetchOptions{
-	// 	Auth: http.BasicAuth{
-	// 		Username: "",
-	// 		Password: "",
-	// 	},
-	// })
 
 	return &LocalRepository{
 		Dir:  dir,
@@ -402,17 +407,21 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 }
 
 func (r *LocalRepository) Push(branchName string) error {
-	slog.Info("pushing changes")
 	// https://stackoverflow.com/a/75727620
 	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
-	slog.Info("refspec", slog.Any("refspec", refSpec))
+	slog.Info("pushing changes", slog.Any("refspec", refSpec))
+	var auth *httpAuth.BasicAuth
+	if r.user != nil {
+		slog.Info("authenticating with basic auth", slog.String("user", r.user.Username))
+		auth = &httpAuth.BasicAuth{
+			Username: r.user.Username,
+			Password: r.user.Password,
+		}
+	}
 	if err := r.repo.Push(&git.PushOptions{
 		RemoteName: "origin",
 		RefSpecs:   []config.RefSpec{refSpec},
-		Auth: &httpAuth.BasicAuth{
-			Username: "chingor13",
-			Password: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
-		},
+		Auth:       auth,
 	}); err != nil {
 		return err
 	}
