@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
@@ -37,6 +38,8 @@ type Repository interface {
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
+	CreateBranchAndCheckout(name string) error
+	Push(branchName string) error
 }
 
 // LocalRepository represents a git repository.
@@ -362,4 +365,32 @@ func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, err
 		}
 	}
 	return files, nil
+}
+
+func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
+	slog.Info("creating branch and checking out", "name", name)
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(name),
+		Create: true,
+		Keep:   true,
+	})
+}
+
+func (r *LocalRepository) Push(branchName string) error {
+	slog.Info("pushing changes")
+	refSpec := config.RefSpec(fmt.Sprintf("%s:%s", branchName, branchName))
+	if err := r.repo.Push(&git.PushOptions{
+		RemoteName: "origin",
+		RefSpecs:   []config.RefSpec{refSpec},
+		// TODO I think we need auth here...
+		//Auth: ,
+	}); err != nil {
+		return err
+	}
+	slog.Info("successfully pushed branch to remote 'origin", "branch", branchName)
+	return nil
 }

@@ -199,12 +199,19 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 		return nil
 	}
 
+	if err := r.repo.CreateBranchAndCheckout("librarian-generate"); err != nil {
+		return err
+	}
+
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	if err := r.repo.Commit(commitMessage); err != nil {
 		return err
 	}
 
 	slog.Info("created commit")
+	if err := r.repo.Push("librarian-generate"); err != nil {
+		return err
+	}
 
 	// Create a new branch, set title and message for the PR.
 	datetimeNow := formatTimestamp(time.Now())
