@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
@@ -29,7 +30,8 @@ import (
 )
 
 func TestShouldExclude(t *testing.T) {
-	testCases := []struct {
+	t.Parallel()
+	for _, tc := range []struct {
 		name         string
 		files        []string
 		excludePaths []string
@@ -65,9 +67,7 @@ func TestShouldExclude(t *testing.T) {
 			excludePaths: []string{"a/b", "d/e"},
 			want:         true,
 		},
-	}
-
-	for _, tc := range testCases {
+	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := shouldExclude(tc.files, tc.excludePaths)
 			if got != tc.want {
@@ -78,7 +78,8 @@ func TestShouldExclude(t *testing.T) {
 }
 
 func TestFormatTag(t *testing.T) {
-	testCases := []struct {
+	t.Parallel()
+	for _, tc := range []struct {
 		name    string
 		library *config.LibraryState
 		want    string
@@ -109,9 +110,7 @@ func TestFormatTag(t *testing.T) {
 			},
 			want: "v1.2.3",
 		},
-	}
-
-	for _, tc := range testCases {
+	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := formatTag(tc.library)
 			if got != tc.want {
@@ -174,13 +173,15 @@ func setupRepoForGetCommits(t *testing.T) *gitrepo.LocalRepository {
 }
 
 func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
+	t.Parallel()
 	repoWithCommits := setupRepoForGetCommits(t)
-	testCases := []struct {
-		name    string
-		repo    gitrepo.Repository
-		library *config.LibraryState
-		want    []*gitrepo.ConventionalCommit
-		wantErr bool
+	for _, test := range []struct {
+		name          string
+		repo          gitrepo.Repository
+		library       *config.LibraryState
+		want          []*gitrepo.ConventionalCommit
+		wantErr       bool
+		wantErrPhrase string
 	}{
 		{
 			name: "get commits for foo",
@@ -211,10 +212,11 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		{
 			name: "GetCommitsForPathsSinceTag error",
 			repo: &MockRepository{
-				GetCommitsForPathsSinceTagError: fmt.Errorf("error"),
+				GetCommitsForPathsSinceTagError: fmt.Errorf("mock error from GetCommitsForPathsSinceTagError"),
 			},
-			library: &config.LibraryState{ID: "foo"},
-			wantErr: true,
+			library:       &config.LibraryState{ID: "foo"},
+			wantErr:       true,
+			wantErrPhrase: "mock error from GetCommitsForPathsSinceTagError",
 		},
 		{
 			name: "ChangedFilesInCommit error",
@@ -222,10 +224,11 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 				GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 					{Message: "feat(foo): a feature"},
 				},
-				ChangedFilesInCommitError: fmt.Errorf("error"),
+				ChangedFilesInCommitError: fmt.Errorf("mock error from ChangedFilesInCommit"),
 			},
-			library: &config.LibraryState{ID: "foo"},
-			wantErr: true,
+			library:       &config.LibraryState{ID: "foo"},
+			wantErr:       true,
+			wantErrPhrase: "mock error from ChangedFilesInCommit",
 		},
 		{
 			name: "ParseCommit error",
@@ -235,21 +238,27 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 				},
 				ChangedFilesInCommitValue: []string{"foo/a.txt"},
 			},
-			library: &config.LibraryState{ID: "foo"},
-			wantErr: true,
+			library:       &config.LibraryState{ID: "foo"},
+			wantErr:       true,
+			wantErrPhrase: "failed to parse commit",
 		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := GetConventionalCommitsSinceLastRelease(tc.repo, tc.library)
-			if (err != nil) != tc.wantErr {
-				t.Errorf("GetConventionalCommitsSinceLastRelease() error = %v, wantErr %v", err, tc.wantErr)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := GetConventionalCommitsSinceLastRelease(test.repo, test.library)
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("GetConventionalCommitsSinceLastRelease() should have failed")
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("GetConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
 				return
 			}
-			if !tc.wantErr {
-				if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
-					t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
-				}
+			if err != nil {
+				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
+				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

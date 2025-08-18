@@ -169,12 +169,12 @@ func (l *LibraryState) Validate() error {
 	}
 	if l.TagFormat != "" {
 		if !strings.Contains(l.TagFormat, "{version}") {
-			return fmt.Errorf("tag_format must contain {version}")
+			return fmt.Errorf("invalid tag_format: must contain {version}")
 		}
 		matches := tagFormatRegex.FindAllString(l.TagFormat, -1)
 		for _, match := range matches {
 			if match != "{id}" && match != "{version}" {
-				return fmt.Errorf("invalid placeholder in tag_format: %s", match)
+				return fmt.Errorf("invalid tag_format: placeholder %s not recognized", match)
 			}
 		}
 	}

@@ -262,6 +262,17 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "invalid tag_format placeholder",
+			library: &LibraryState{
+				ID:          "a/b",
+				SourceRoots: []string{"src/a"},
+				APIs:        []*API{{Path: "a/b/v1"}},
+				TagFormat:   "{version}-{foo}",
+			},
+			wantErr:    true,
+			wantErrMsg: "not recognized",
+		},
+		{
 			name: "invalid tag_format with id only",
 			library: &LibraryState{
 				ID:          "a/b",
@@ -269,7 +280,8 @@ func TestLibrary_Validate(t *testing.T) {
 				APIs:        []*API{{Path: "a/b/v1"}},
 				TagFormat:   "{id}v1.2.3",
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "must contain",
 		},
 		{
 			name: "valid tag_format with version only",

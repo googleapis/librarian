@@ -22,6 +22,8 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+const defaultTagFormat = "{id}-{version}"
+
 // GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file.
 func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*gitrepo.ConventionalCommit, error) {
@@ -70,7 +72,7 @@ func shouldExclude(files, excludePaths []string) bool {
 func formatTag(library *config.LibraryState) string {
 	tagFormat := library.TagFormat
 	if tagFormat == "" {
-		tagFormat = "{id}-{version}"
+		tagFormat = defaultTagFormat
 	}
 	r := strings.NewReplacer("{id}", library.ID, "{version}", library.Version)
 	return r.Replace(tagFormat)
