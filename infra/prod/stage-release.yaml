@@ -41,8 +41,7 @@ steps:
       - '/workspace/$_REPOSITORY'
       - '-library'
       - $_LIBRARY_ID
-      - '-api-source'
-      - '/workspace/googleapis'
+      - '-push=$_PUSH'
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
 tags: ['stage-release-$_REPOSITORY']
 availableSecrets:
