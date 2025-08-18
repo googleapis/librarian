@@ -29,10 +29,10 @@ import (
 )
 
 const (
-	globalConfigFile   = "config.yaml"
-	librarianStateFile = "state.yaml"
-	serviceConfigType  = "type"
-	serviceConfigValue = "google.api.Service"
+	globalConfigFile    = "config.yaml"
+	librarianConfigFile = "state.yaml"
+	serviceConfigType   = "type"
+	serviceConfigValue  = "google.api.Service"
 )
 
 // Utility functions for saving and loading pipeline state and config from various places.
@@ -42,7 +42,7 @@ func loadRepoState(repo *gitrepo.LocalRepository, source string) (*config.Librar
 		slog.Info("repo is nil, skipping state loading")
 		return nil, nil
 	}
-	path := filepath.Join(repo.Dir, config.LibrarianDir, librarianStateFile)
+	path := filepath.Join(repo.Dir, config.LibrarianDir, librarianConfigFile)
 	return parseLibrarianState(path, source)
 }
 
@@ -146,7 +146,7 @@ func findServiceConfigIn(path string) (string, error) {
 }
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
-	path := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
+	path := filepath.Join(repoDir, config.LibrarianDir, librarianConfigFile)
 	bytes, err := yaml.Marshal(state)
 	if err != nil {
 		return err
