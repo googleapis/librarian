@@ -8,7 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// WITHOUT WARRANTIES, OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -265,7 +265,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 }
 
 func TestGetHighestChange(t *testing.T) {
-	ttestCases := []struct {
+	for _, test := range []struct {
 		name           string
 		commits        []*gitrepo.ConventionalCommit
 		expectedChange string
@@ -307,13 +307,63 @@ func TestGetHighestChange(t *testing.T) {
 			commits:        []*gitrepo.ConventionalCommit{},
 			expectedChange: "none",
 		},
-	}
-
-	for _, tc := range ttestCases {
-		t.Run(tc.name, func(t *testing.T) {
-			highestChange := getHighestChange(tc.commits)
-			if diff := cmp.Diff(tc.expectedChange, highestChange); diff != "" {
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			highestChange := getHighestChange(test.commits)
+			if diff := cmp.Diff(test.expectedChange, highestChange); diff != "" {
 				t.Errorf("getHighestChange() returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNextVersion(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name                string
+		commits             []*gitrepo.ConventionalCommit
+		currentVersion      string
+		overrideNextVersion string
+		wantVersion         string
+		wantErr             bool
+	}{
+		{
+			name:                "with override version",
+			commits:             []*gitrepo.ConventionalCommit{},
+			currentVersion:      "1.0.0",
+			overrideNextVersion: "2.0.0",
+			wantVersion:         "2.0.0",
+			wantErr:             false,
+		},
+		{
+			name: "without override version",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "feat"},
+			},
+			currentVersion:      "1.0.0",
+			overrideNextVersion: "",
+			wantVersion:         "1.1.0",
+			wantErr:             false,
+		},
+		{
+			name: "derive next returns error",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "feat"},
+			},
+			currentVersion:      "invalid-version",
+			overrideNextVersion: "",
+			wantVersion:         "",
+			wantErr:             true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotVersion, err := NextVersion(test.commits, test.currentVersion, test.overrideNextVersion)
+			if (err != nil) != test.wantErr {
+				t.Errorf("NextVersion() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if gotVersion != test.wantVersion {
+				t.Errorf("NextVersion() = %v, want %v", gotVersion, test.wantVersion)
 			}
 		})
 	}

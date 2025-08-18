@@ -21,7 +21,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	testCases := []struct {
+	for _, test := range []struct {
 		name        string
 		version     string
 		expected    *Version
@@ -79,15 +79,13 @@ func TestParse(t *testing.T) {
 			version:     "1.2",
 			expectError: true,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual, err := Parse(tc.version)
-			if (err != nil) != tc.expectError {
-				t.Fatalf("Parse() error = %v, expectError %v", err, tc.expectError)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			actual, err := Parse(test.version)
+			if (err != nil) != test.expectError {
+				t.Fatalf("Parse() error = %v, expectError %v", err, test.expectError)
 			}
-			if diff := cmp.Diff(tc.expected, actual); diff != "" {
+			if diff := cmp.Diff(test.expected, actual); diff != "" {
 				t.Errorf("Parse() returned diff (-want +got):\n%s", diff)
 			}
 		})
@@ -95,7 +93,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestVersion_String(t *testing.T) {
-	testCases := []struct {
+	for _, test := range []struct {
 		name     string
 		version  *Version
 		expected string
@@ -142,19 +140,17 @@ func TestVersion_String(t *testing.T) {
 			},
 			expected: "1.2.3-beta",
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if actual := tc.version.String(); actual != tc.expected {
-				t.Errorf("String() = %q, want %q", actual, tc.expected)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if actual := test.version.String(); actual != test.expected {
+				t.Errorf("String() = %q, want %q", actual, test.expected)
 			}
 		})
 	}
 }
 
 func TestDeriveNext(t *testing.T) {
-	testCases := []struct {
+	for _, test := range []struct {
 		name            string
 		highestChange   string
 		currentVersion  string
@@ -220,15 +216,13 @@ func TestDeriveNext(t *testing.T) {
 			currentVersion:  "1.2.3",
 			expectedVersion: "1.2.3",
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			nextVersion, err := DeriveNext(tc.highestChange, tc.currentVersion)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			nextVersion, err := DeriveNext(test.highestChange, test.currentVersion)
 			if err != nil {
 				t.Fatalf("DeriveNext() returned an error: %v", err)
 			}
-			if diff := cmp.Diff(tc.expectedVersion, nextVersion); diff != "" {
+			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
 				t.Errorf("DeriveNext() returned diff (-want +got):\n%s", diff)
 			}
 		})

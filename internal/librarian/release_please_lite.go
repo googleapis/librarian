@@ -80,7 +80,11 @@ func formatTag(library *config.LibraryState) string {
 }
 
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
-func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string) (string, error) {
+// If overrideNextVersion is not empty, it is returned as the next version.
+func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion, overrideNextVersion string) (string, error) {
+	if overrideNextVersion != "" {
+		return overrideNextVersion, nil
+	}
 	highestChange := getHighestChange(commits)
 	return semver.DeriveNext(highestChange, currentVersion)
 }
