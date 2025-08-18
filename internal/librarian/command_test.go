@@ -254,7 +254,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 				}
 			}()
 
-			repo, err := cloneOrOpenRepo(workRoot, test.repo, test.ci)
+			repo, err := cloneOrOpenRepo(workRoot, test.repo, test.ci, nil)
 			if test.wantErr {
 				if err == nil {
 					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")
@@ -375,6 +375,30 @@ func TestCommitAndPush(t *testing.T) {
 			expectedErrMsg: "mock add all error",
 		},
 		{
+			name: "Create branch error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:                          t.TempDir(),
+					AddAllStatus:                 status,
+					RemotesValue:                 []*git.Remote{remote},
+					CreateBranchAndCheckoutError: errors.New("create branch error"),
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			push:           true,
+			wantErr:        true,
+			expectedErrMsg: "create branch error",
+		},
+		{
 			name: "Commit error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
@@ -397,6 +421,30 @@ func TestCommitAndPush(t *testing.T) {
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
+		},
+		{
+			name: "Push error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+					PushError:    errors.New("push error"),
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			push:           true,
+			wantErr:        true,
+			expectedErrMsg: "push error",
 		},
 		{
 			name: "Create pull request error",
