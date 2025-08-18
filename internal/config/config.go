@@ -103,7 +103,7 @@ type Config struct {
 	// the tool is executing.
 	CI string
 
-	// commandName is the name of the command being executed.
+	// CommandName is the name of the command being executed.
 	//
 	// commandName is populated automatically after flag parsing. No user setup is
 	// expected.
