@@ -205,7 +205,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 
 	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", librarianDir), // readonly volume
+		fmt.Sprintf("%s:/librarian", librarianDir),
 		fmt.Sprintf("%s:/repo", request.RepoDir),
 	}
 	commandArgs := []string{
