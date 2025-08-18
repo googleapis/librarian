@@ -22,7 +22,7 @@ steps:
       - 'run'
       - './cmd/automation'
       - '--project=$PROJECT_ID'
-      - '--command=release init'
+      - '--command=stage-release'
 tags: ['stage-release-dispatcher']
 availableSecrets:
 options:
