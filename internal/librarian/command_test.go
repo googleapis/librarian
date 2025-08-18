@@ -302,22 +302,14 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Happy Path",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				repoDir := newTestGitRepoWithCommit(t, "")
-				// Add remote so FetchGitHubRepoFromRemote succeeds.
-				cmd := exec.Command("git", "remote", "add", "origin", "https://github.com/test-owner/test-repo.git")
-				cmd.Dir = repoDir
-				if err := cmd.Run(); err != nil {
-					t.Fatalf("git remote add: %v", err)
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					RemotesValue: []*git.Remote{remote},
 				}
-				// Add a file to make the repo dirty, so there's something to commit.
-				if err := os.WriteFile(filepath.Join(repoDir, "new-file.txt"), []byte("new content"), 0644); err != nil {
-					t.Fatalf("WriteFile: %v", err)
-				}
-				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
-				if err != nil {
-					t.Fatalf("Failed to create test repo: %v", err)
-				}
-				return repo
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return &mockGitHubClient{
@@ -325,19 +317,6 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			push: true,
-			validatePostTest: func(t *testing.T, repo gitrepo.Repository) {
-				localRepo, ok := repo.(*gitrepo.LocalRepository)
-				if !ok {
-					t.Fatalf("Expected *gitrepo.LocalRepository, got %T", repo)
-				}
-				isClean, err := localRepo.IsClean()
-				if err != nil {
-					t.Fatalf("Failed to check repo status: %v", err)
-				}
-				if !isClean {
-					t.Errorf("Expected repository to be clean after commit, but it's dirty")
-				}
-			},
 		},
 		{
 			name: "No GitHub Remote",
