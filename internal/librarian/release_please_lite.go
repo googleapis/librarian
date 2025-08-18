@@ -20,6 +20,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 const defaultTagFormat = "{id}-{version}"
@@ -76,4 +77,31 @@ func formatTag(library *config.LibraryState) string {
 	}
 	r := strings.NewReplacer("{id}", library.ID, "{version}", library.Version)
 	return r.Replace(tagFormat)
+}
+
+// NextVersion calculates the next semantic version based on a slice of conventional commits.
+func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string) (string, error) {
+	highestChange := getHighestChange(commits)
+	return semver.DeriveNext(highestChange, currentVersion)
+}
+
+// getHighestChange determines the highest-ranking change type from a slice of commits.
+func getHighestChange(commits []*gitrepo.ConventionalCommit) string {
+	highestChange := "none"
+	for _, commit := range commits {
+		if commit == nil {
+			continue
+		}
+		if commit.IsBreaking {
+			highestChange = "major"
+			break // Major change has the highest precedence
+		}
+		if commit.Type == "feat" && highestChange != "major" {
+			highestChange = "minor"
+		}
+		if commit.Type == "fix" && highestChange == "none" {
+			highestChange = "patch"
+		}
+	}
+	return highestChange
 }

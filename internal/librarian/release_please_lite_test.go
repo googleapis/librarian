@@ -263,3 +263,58 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		})
 	}
 }
+
+func TestGetHighestChange(t *testing.T) {
+	ttestCases := []struct {
+		name           string
+		commits        []*gitrepo.ConventionalCommit
+		expectedChange string
+	}{
+		{
+			name: "major change",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "feat", IsBreaking: true},
+				{Type: "feat"},
+				{Type: "fix"},
+			},
+			expectedChange: "major",
+		},
+		{
+			name: "minor change",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "feat"},
+				{Type: "fix"},
+			},
+			expectedChange: "minor",
+		},
+		{
+			name: "patch change",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "fix"},
+			},
+			expectedChange: "patch",
+		},
+		{
+			name: "no change",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "docs"},
+				{Type: "chore"},
+			},
+			expectedChange: "none",
+		},
+		{
+			name:           "no commits",
+			commits:        []*gitrepo.ConventionalCommit{},
+			expectedChange: "none",
+		},
+	}
+
+	for _, tc := range ttestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			highestChange := getHighestChange(tc.commits)
+			if diff := cmp.Diff(tc.expectedChange, highestChange); diff != "" {
+				t.Errorf("getHighestChange() returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
