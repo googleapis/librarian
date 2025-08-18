@@ -975,6 +975,54 @@ func TestGetCommitsForPathsSinceTag(t *testing.T) {
 	}
 }
 
+func TestCreateBranchAndCheckout(t *testing.T) {
+	t.Parallel()
+
+	// repo, _ := setupRepoForGetCommitsTest(t)
+
+	for _, test := range []struct {
+		name          string
+		branchName    string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name:       "works",
+			branchName: "test-branch",
+		},
+	} {
+
+		t.Run(test.name, func(t *testing.T) {
+			repo, _ := setupRepoForGetCommitsTest(t)
+			err := repo.CreateBranchAndCheckout(test.branchName)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("CreateBranchAndCheckout() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			config, _ := repo.repo.Config()
+			t.Logf("%#v", config)
+			branches, _ := repo.repo.Branches()
+			t.Logf("%#v", branches)
+			t.Logf("%#v", repo.repo)
+			existing, err := repo.repo.Branch(test.branchName)
+			if err != nil {
+				t.Errorf("%s should create branch", test.branchName)
+			}
+			if diff := cmp.Diff(test.branchName, existing.Name); diff != "" {
+				t.Errorf("CreateBranchAndCheckout() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 // initTestRepo creates a new git repository in a temporary directory.
 func initTestRepo(t *testing.T) (*git.Repository, string) {
 	t.Helper()
