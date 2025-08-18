@@ -16,13 +16,23 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
+	"github.com/googleapis/librarian/internal/gitrepo"
+)
+
+const (
+	pullRequestSegments  = 5
+	tagAndReleaseCmdName = "tag-and-release"
 )
 
 var (
@@ -32,7 +42,7 @@ var (
 
 // cmdTagAndRelease is the command for the `release tag-and-release` subcommand.
 var cmdTagAndRelease = &cli.Command{
-	Short:     "release tag-and-release tags and creates a GitHub release for a merged pull request.",
+	Short:     "tag-and-release tags and creates a GitHub release for a merged pull request.",
 	UsageLine: "librarian release tag-and-release [arguments]",
 	Long:      "Tags and creates a GitHub release for a merged pull request.",
 	Run: func(ctx context.Context, cfg *config.Config) error {
@@ -54,19 +64,92 @@ func init() {
 }
 
 type tagAndReleaseRunner struct {
-	cfg *config.Config
+	cfg      *config.Config
+	ghClient GitHubClient
+	repo     gitrepo.Repository
+	state    *config.LibrarianState
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
+	runner, err := newCommandRunner(cfg)
+	if err != nil {
+		return nil, err
+	}
 	if cfg.GitHubToken == "" {
 		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
 	}
 	return &tagAndReleaseRunner{
-		cfg: cfg,
+		cfg:      cfg,
+		repo:     runner.repo,
+		state:    runner.state,
+		ghClient: runner.ghClient,
 	}, nil
 }
 
 func (r *tagAndReleaseRunner) run(ctx context.Context) error {
+	slog.Info("running tag-and-release command")
+	prs, err := r.determinePullRequestsToProcess(ctx)
+	if err != nil {
+		return err
+	}
+	if len(prs) == 0 {
+		slog.Info("no pull requests to process, exiting")
+		return nil
+	}
+
+	var hadErrors bool
+	for _, p := range prs {
+		if err := r.processPullRequest(ctx, p); err != nil {
+			slog.Error("failed to process pull request", "pr", p.GetNumber(), "error", err)
+			hadErrors = true
+			continue
+		}
+		slog.Info("processed pull request", "pr", p.GetNumber())
+	}
+	slog.Info("finished processing all pull requests")
+
+	if hadErrors {
+		return errors.New("failed to process some pull requests")
+	}
+	return nil
+}
+
+func (r *tagAndReleaseRunner) determinePullRequestsToProcess(ctx context.Context) ([]*github.PullRequest, error) {
+	slog.Info("determining pull requests to process")
+	if r.cfg.PullRequest != "" {
+		slog.Info("processing a single pull request", "pr", r.cfg.PullRequest)
+		ss := strings.Split(r.cfg.PullRequest, "/")
+		if len(ss) != pullRequestSegments {
+			return nil, fmt.Errorf("invalid pull request format: %s", r.cfg.PullRequest)
+		}
+		prNum, err := strconv.Atoi(ss[pullRequestSegments-1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid pull request number: %s", ss[pullRequestSegments-1])
+		}
+		pr, err := r.ghClient.GetPullRequest(ctx, prNum)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get pull request %d: %w", prNum, err)
+		}
+		return []*github.PullRequest{pr}, nil
+	}
+
+	slog.Info("searching for pull requests to tag and release")
+	thirtyDaysAgo := time.Now().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
+	query := fmt.Sprintf("label:release:pending merged:>=%s", thirtyDaysAgo)
+	prs, err := r.ghClient.SearchPullRequests(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search pull requests: %w", err)
+	}
+	return prs, nil
+}
+
+func (r *tagAndReleaseRunner) processPullRequest(_ context.Context, p *github.PullRequest) error {
+	slog.Info("processing pull request", "pr", p.GetNumber())
+	// hack to make CI happy until we impl
+	// TODO(https://github.com/googleapis/librarian/issues/1009)
+	if p.GetNumber() != 0 {
+		return fmt.Errorf("skipping pull request %d", p.GetNumber())
+	}
 	return nil
 }
 
