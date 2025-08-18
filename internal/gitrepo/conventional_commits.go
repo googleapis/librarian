@@ -137,10 +137,29 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 	return footers, isBreaking
 }
 
+const (
+	beginCommitOverride = "BEGIN_COMMIT_OVERRIDE"
+	endCommitOverride   = "END_COMMIT_OVERRIDE"
+)
+
+func extractCommitMessageOverride(message string) string {
+	beginIndex := strings.Index(message, beginCommitOverride)
+	if beginIndex == -1 {
+		return message
+	}
+	afterBegin := message[beginIndex+len(beginCommitOverride):]
+	endIndex := strings.Index(afterBegin, endCommitOverride)
+	if endIndex == -1 {
+		return message
+	}
+	return strings.TrimSpace(afterBegin[:endIndex])
+}
+
 // ParseCommit parses a single commit message and returns a ConventionalCommit.
 // If the commit message does not follow the conventional commit format, it
 // logs a warning and returns a nil commit and no error.
 func ParseCommit(message, hashString string) (*ConventionalCommit, error) {
+	message = extractCommitMessageOverride(message)
 	trimmedMessage := strings.TrimSpace(message)
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")

@@ -147,6 +147,26 @@ func TestParseCommit(t *testing.T) {
 			},
 		},
 		{
+			name: "commit override",
+			message: `feat: original message
+
+BEGIN_COMMIT_OVERRIDE
+fix(override): this is the override message
+
+This is the body of the override.
+
+Reviewed-by: Jane Doe
+END_COMMIT_OVERRIDE`,
+			want: &ConventionalCommit{
+				Type:        "fix",
+				Scope:       "override",
+				Description: "this is the override message",
+				Body:        "This is the body of the override.",
+				Footers:     map[string]string{"Reviewed-by": "Jane Doe"},
+				SHA:         "fake-sha",
+			},
+		},
+		{
 			name:    "invalid conventional commit",
 			message: "this is not a conventional commit",
 			wantErr: false,
