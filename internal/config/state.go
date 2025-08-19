@@ -94,6 +94,8 @@ type LibraryState struct {
 	Version string `yaml:"version" json:"version"`
 	// The commit hash from the API definition repository at which the library was last generated.
 	LastGeneratedCommit string `yaml:"last_generated_commit" json:"last_generated_commit"`
+	// The changes from the language repository since the library was last generated.
+	Changes []*Change `yaml:"changes" json:"changes"`
 	// A list of APIs that are part of this library.
 	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
@@ -211,6 +213,15 @@ func (a *API) Validate() error {
 		return fmt.Errorf("invalid path: %q", a.Path)
 	}
 	return nil
+}
+
+type Change struct {
+	// The type of the change, should be one of the conventional type.
+	Type       string `yaml:"type" json:"type"`
+	Subject    string `yaml:"subject" json:"subject"`
+	Body       string `yaml:"body" json:"body"`
+	ClNum      string `yaml:"piper_cl_number" json:"piper_cl_number"`
+	CommitHash string `yaml:"source_commit_hash" json:"source_commit_hash"`
 }
 
 // invalidPathChars contains characters that are invalid in path components,
