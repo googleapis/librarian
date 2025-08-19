@@ -351,6 +351,84 @@ func TestGetLibraryChanges(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "get changelogs of one library",
+			pathAndMessages: []pathAndMessage{
+				{
+					path:    "non-related/path/example.txt",
+					message: "chore: initial commit",
+				},
+				{
+					path:    "one/path/example.txt",
+					message: "feat: add a config file\n\nThis is the body.\n\nPiperOrigin-RevId: 12345",
+				},
+				{
+					path:    "one/path/example.txt",
+					message: "fix: change a typo",
+				},
+				{
+					path:    "third/path/config.txt",
+					message: "feat: add another config file",
+				},
+			},
+			tags: []string{
+				"one-id-1.2.3",
+				"another-id-2.3.4",
+			},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+					},
+					{
+						ID:      "another-id",
+						Version: "2.3.4",
+						SourceRoots: []string{
+							"third/path",
+							"fourth/path",
+						},
+					},
+				},
+			},
+			libraryID: "one-id",
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+						Changes: []*config.Change{
+							{
+								Type:    "fix",
+								Subject: "change a typo",
+							},
+							{
+								Type:    "feat",
+								Subject: "add a config file",
+								Body:    "This is the body.",
+								ClNum:   "12345",
+							},
+						},
+					},
+					{
+						ID:      "another-id",
+						Version: "2.3.4",
+						SourceRoots: []string{
+							"third/path",
+							"fourth/path",
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
