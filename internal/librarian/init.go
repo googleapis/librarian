@@ -28,6 +28,8 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+const KeyClNum = "PiperOrigin-RevId"
+
 // cmdInit is the command for the `release init` subcommand.
 var cmdInit = &cli.Command{
 	Short:     "init initiates a release by creating a release pull request.",
@@ -96,6 +98,11 @@ func (r *initRunner) run(ctx context.Context) error {
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
 	setReleaseTrigger(r.state, r.cfg.Library, r.cfg.LibraryVersion, true)
+
+	if err := getLibraryChanges(r.repo, r.state, r.cfg.Library); err != nil {
+		return fmt.Errorf("failed to fetch changelog for library, %s, from repo, %s: %w", r.cfg.Library, r.repo.GetDir(), err)
+	}
+
 	initRequest := &docker.ReleaseInitRequest{
 		Cfg:            r.cfg,
 		State:          r.state,
@@ -129,4 +136,60 @@ func setReleaseTrigger(state *config.LibrarianState, libraryID, libraryVersion s
 		// Set the trigger for all libraries.
 		library.ReleaseTriggered = trigger
 	}
+}
+
+// getLibraryChanges gets the changelog for the library with a non-empty libraryID,
+// if provided; or for all libraries if the libraryID is empty since the library
+// was last generated.
+func getLibraryChanges(repo gitrepo.Repository, state *config.LibrarianState, libraryID string) error {
+	for i, library := range state.Libraries {
+		if libraryID != "" {
+			// Only fetch the changelog for one library.
+			if libraryID != library.ID {
+				continue
+			}
+			updatedLibrary, err := getChangesOf(repo, library)
+			if err != nil {
+				return err
+			}
+			state.Libraries[i] = updatedLibrary
+			break
+		}
+		// Fetch changelog for all libraries.
+		updatedLibrary, err := getChangesOf(repo, library)
+		if err != nil {
+			return err
+		}
+		state.Libraries[i] = updatedLibrary
+	}
+
+	return nil
+}
+
+// getChangesOf gets changelogs of the given library.
+func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*config.LibraryState, error) {
+	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+	}
+
+	changes := make([]*config.Change, 0)
+	for _, commit := range commits {
+		clNum := ""
+		if cl, ok := commit.Footers[KeyClNum]; ok {
+			clNum = cl
+		}
+
+		changes = append(changes, &config.Change{
+			Type:       commit.Type,
+			Subject:    commit.Description,
+			Body:       commit.Body,
+			ClNum:      clNum,
+			CommitHash: commit.SHA,
+		})
+	}
+
+	library.Changes = changes
+
+	return library, nil
 }
