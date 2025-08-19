@@ -216,6 +216,7 @@ func (a *API) Validate() error {
 	return nil
 }
 
+// Change represents the changelog of a library.
 type Change struct {
 	// The type of the change, should be one of the conventional type.
 	Type       string `yaml:"type" json:"type"`
