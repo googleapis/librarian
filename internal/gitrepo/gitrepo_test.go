@@ -976,10 +976,6 @@ func TestGetCommitsForPathsSinceTag(t *testing.T) {
 }
 
 func TestCreateBranchAndCheckout(t *testing.T) {
-	t.Parallel()
-
-	// repo, _ := setupRepoForGetCommitsTest(t)
-
 	for _, test := range []struct {
 		name          string
 		branchName    string
@@ -990,8 +986,13 @@ func TestCreateBranchAndCheckout(t *testing.T) {
 			name:       "works",
 			branchName: "test-branch",
 		},
+		{
+			name:          "invalid branch name",
+			branchName:    "invalid branch name",
+			wantErr:       true,
+			wantErrPhrase: "invalid",
+		},
 	} {
-
 		t.Run(test.name, func(t *testing.T) {
 			repo, _ := setupRepoForGetCommitsTest(t)
 			err := repo.CreateBranchAndCheckout(test.branchName)
@@ -1007,16 +1008,8 @@ func TestCreateBranchAndCheckout(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			config, _ := repo.repo.Config()
-			t.Logf("%#v", config)
-			branches, _ := repo.repo.Branches()
-			t.Logf("%#v", branches)
-			t.Logf("%#v", repo.repo)
-			existing, err := repo.repo.Branch(test.branchName)
-			if err != nil {
-				t.Errorf("%s should create branch", test.branchName)
-			}
-			if diff := cmp.Diff(test.branchName, existing.Name); diff != "" {
+			head, _ := repo.repo.Head()
+			if diff := cmp.Diff(test.branchName, head.Name().Short()); diff != "" {
 				t.Errorf("CreateBranchAndCheckout() mismatch (-want +got):\n%s", diff)
 			}
 		})
