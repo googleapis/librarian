@@ -16,14 +16,15 @@ package librarian
 
 import (
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"log"
 	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"

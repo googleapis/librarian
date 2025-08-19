@@ -17,11 +17,12 @@ package librarian
 import (
 	"context"
 	"errors"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/googleapis/librarian/internal/config"
 )
