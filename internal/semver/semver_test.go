@@ -15,6 +15,7 @@
 package semver
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,29 +23,31 @@ import (
 
 func TestParse(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		version     string
-		expected    *Version
-		expectError bool
+		name          string
+		version       string
+		want          *Version
+		wantErr       bool
+		wantErrPhrase string
 	}{
 		{
 			name:    "valid version",
 			version: "1.2.3",
-			expected: &Version{
+			want: &Version{
 				Major: 1,
 				Minor: 2,
 				Patch: 3,
 			},
 		},
 		{
-			name:        "invalid version with v prefix",
-			version:     "v1.2.3",
-			expectError: true,
+			name:          "invalid version with v prefix",
+			version:       "v1.2.3",
+			wantErr:       true,
+			wantErrPhrase: "invalid version format",
 		},
 		{
 			name:    "valid version with prerelease",
 			version: "1.2.3-alpha.1",
-			expected: &Version{
+			want: &Version{
 				Major:               1,
 				Minor:               2,
 				Patch:               3,
@@ -56,7 +59,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-betaXX",
 			version: "1.2.3-beta21",
-			expected: &Version{
+			want: &Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -67,7 +70,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with prerelease without version",
 			version: "1.2.3-beta",
-			expected: &Version{
+			want: &Version{
 				Major:      1,
 				Minor:      2,
 				Patch:      3,
@@ -75,17 +78,27 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:        "invalid version",
-			version:     "1.2",
-			expectError: true,
+			name:          "invalid version",
+			version:       "1.2",
+			wantErr:       true,
+			wantErrPhrase: "invalid version format",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			actual, err := Parse(test.version)
-			if (err != nil) != test.expectError {
-				t.Fatalf("Parse() error = %v, expectError %v", err, test.expectError)
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("Parse() should have failed")
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("Parse() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
 			}
-			if diff := cmp.Diff(test.expected, actual); diff != "" {
+			if err != nil {
+				t.Fatalf("Parse() failed: %v", err)
+			}
+			if diff := cmp.Diff(test.want, actual); diff != "" {
 				t.Errorf("Parse() returned diff (-want +got):\n%s", diff)
 			}
 		})
