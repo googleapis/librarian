@@ -37,6 +37,9 @@ type RepositoryCommit = github.RepositoryCommit
 // PullRequestReview is a type alias for the go-github type.
 type PullRequestReview = github.PullRequestReview
 
+// RepositoryRelease is a type alias for the go-github type.
+type RepositoryRelease = github.RepositoryRelease
+
 // MergeMethodRebase is a constant alias for the go-github constant.
 const MergeMethodRebase = github.MergeMethodRebase
 
@@ -117,12 +120,10 @@ func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, e
 func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, title, body string) (*PullRequestMetadata, error) {
 	slog.Info("here0")
 	if body == "" {
+		slog.Warn("Provided PR body is empty, setting default.")
 		body = "Regenerated all changed APIs. See individual commits for details."
 	}
-	slog.Info("here1")
-	slog.Info("body", slog.String("body", body))
-	slog.Info("here2")
-	slog.Info("Creating PR", slog.String("branch", remoteBranch), slog.String("title", title), slog.String("body", body))
+	slog.Info("Creating PR", "branch", remoteBranch, "title", title, "body", body)
 	newPR := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &remoteBranch,

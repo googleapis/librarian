@@ -31,13 +31,24 @@ import (
 // mockGitHubClient is a mock implementation of the GitHubClient interface for testing.
 type mockGitHubClient struct {
 	GitHubClient
-	rawContent             []byte
-	rawErr                 error
-	createPullRequestCalls int
-	addLabelsToIssuesCalls int
-	createPullRequestErr   error
-	addLabelsToIssuesErr   error
-	createdPR              *github.PullRequestMetadata
+	rawContent              []byte
+	rawErr                  error
+	createPullRequestCalls  int
+	addLabelsToIssuesCalls  int
+	getLabelsCalls          int
+	replaceLabelsCalls      int
+	searchPullRequestsCalls int
+	getPullRequestCalls     int
+	createPullRequestErr    error
+	addLabelsToIssuesErr    error
+	getLabelsErr            error
+	replaceLabelsErr        error
+	searchPullRequestsErr   error
+	getPullRequestErr       error
+	createdPR               *github.PullRequestMetadata
+	labels                  []string
+	pullRequests            []*github.PullRequest
+	pullRequest             *github.PullRequest
 }
 
 func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) ([]byte, error) {
@@ -57,17 +68,37 @@ func (m *mockGitHubClient) AddLabelsToIssue(ctx context.Context, repo *github.Re
 	return m.addLabelsToIssuesErr
 }
 
+func (m *mockGitHubClient) GetLabels(ctx context.Context, number int) ([]string, error) {
+	m.getLabelsCalls++
+	return m.labels, m.getLabelsErr
+}
+
+func (m *mockGitHubClient) ReplaceLabels(ctx context.Context, number int, labels []string) error {
+	m.replaceLabelsCalls++
+	return m.replaceLabelsErr
+}
+
+func (m *mockGitHubClient) SearchPullRequests(ctx context.Context, query string) ([]*github.PullRequest, error) {
+	m.searchPullRequestsCalls++
+	return m.pullRequests, m.searchPullRequestsErr
+}
+
+func (m *mockGitHubClient) GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error) {
+	m.getPullRequestCalls++
+	return m.pullRequest, m.getPullRequestErr
+}
+
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
 	generateCalls       int
 	buildCalls          int
 	configureCalls      int
-	releaseCalls        int
+	initCalls           int
 	generateErr         error
 	buildErr            error
 	configureErr        error
-	releaseErr          error
+	initErr             error
 	failGenerateForID   string
 	requestLibraryID    string
 	noBuildResponse     bool
@@ -151,9 +182,9 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	return m.generateErr
 }
 
-func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseRequest) error {
-	m.releaseCalls++
-	return m.releaseErr
+func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error {
+	m.initCalls++
+	return m.initErr
 }
 
 type MockRepository struct {
@@ -169,6 +200,10 @@ type MockRepository struct {
 	CommitCalls                     int
 	GetCommitsForPathsSinceTagValue []*gitrepo.Commit
 	GetCommitsForPathsSinceTagError error
+	ChangedFilesInCommitValue       []string
+	ChangedFilesInCommitError       error
+	CreateBranchAndCheckoutError    error
+	PushError                       error
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -206,4 +241,25 @@ func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName stri
 		return nil, m.GetCommitsForPathsSinceTagError
 	}
 	return m.GetCommitsForPathsSinceTagValue, nil
+}
+
+func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
+	if m.ChangedFilesInCommitError != nil {
+		return nil, m.ChangedFilesInCommitError
+	}
+	return m.ChangedFilesInCommitValue, nil
+}
+
+func (m *MockRepository) CreateBranchAndCheckout(name string) error {
+	if m.CreateBranchAndCheckoutError != nil {
+		return m.CreateBranchAndCheckoutError
+	}
+	return nil
+}
+
+func (m *MockRepository) Push(name string) error {
+	if m.PushError != nil {
+		return m.PushError
+	}
+	return nil
 }

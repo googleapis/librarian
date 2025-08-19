@@ -116,15 +116,15 @@ type GenerateRequest struct {
 	RepoDir string
 }
 
-// ReleaseRequest contains all the information required for a language
-// container to run the release command.
-type ReleaseRequest struct {
+// ReleaseInitRequest contains all the information required for a language
+// container to run the  init command.
+type ReleaseInitRequest struct {
 	// Cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
 	Cfg *config.Config
-	// GlobalConfig is a pointer to the [config.GlobalConfig] struct, holding
+	// LibrarianConfig is a pointer to the [config.LibrarianConfig] struct, holding
 	// global files configuration in a language repository.
-	GlobalConfig *config.GlobalConfig
+	LibrarianConfig *config.LibrarianConfig
 	// State is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
@@ -205,7 +205,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 
 	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
 	mounts := []string{
-		fmt.Sprintf("%s:/librarian:ro", librarianDir), // readonly volume
+		fmt.Sprintf("%s:/librarian", librarianDir),
 		fmt.Sprintf("%s:/repo", request.RepoDir),
 	}
 	commandArgs := []string{
@@ -252,7 +252,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 }
 
 // ReleaseInit initiates a release for a given language repository.
-func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseRequest) error {
+func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
 	requestFilePath := filepath.Join(request.Cfg.Repo, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return err
@@ -348,7 +348,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 }
 
 // setupPartialRepo copies the following files from the [config.Config.Repo] to
-// partialRepoDir in the given ReleaseRequest:
+// partialRepoDir in the given ReleaseInitRequest:
 //
 // 1. all directories that make up all libraries, or one library, if the library
 // ID is specified.
@@ -356,7 +356,7 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 // 2. the .librarian directory.
 //
 // 3. global files declared in config.yaml.
-func setupPartialRepo(request *ReleaseRequest) error {
+func setupPartialRepo(request *ReleaseInitRequest) error {
 	if request.partialRepoDir == "" {
 		request.partialRepoDir = filepath.Join(request.Cfg.WorkRoot, "release-init")
 	}
@@ -391,8 +391,8 @@ func setupPartialRepo(request *ReleaseRequest) error {
 		return fmt.Errorf("failed to copy librarian dir to %s: %w", dst, err)
 	}
 
-	// Copy global files declared in global config.
-	for _, globalFile := range request.GlobalConfig.GlobalFilesAllowlist {
+	// Copy global files declared in librarian config.
+	for _, globalFile := range request.LibrarianConfig.GlobalFilesAllowlist {
 		dstPath := filepath.Join(dst, globalFile.Path)
 		srcPath := filepath.Join(src, globalFile.Path)
 		if err := copyFile(dstPath, srcPath); err != nil {

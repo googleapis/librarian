@@ -267,10 +267,31 @@ func TestLibrary_Validate(t *testing.T) {
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
 				APIs:        []*API{{Path: "a/b/v1"}},
-				TagFormat:   "{id}-{foo}",
+				TagFormat:   "{version}-{foo}",
 			},
 			wantErr:    true,
-			wantErrMsg: "invalid placeholder in tag_format",
+			wantErrMsg: "not recognized",
+		},
+		{
+			name: "invalid tag_format with id only",
+			library: &LibraryState{
+				ID:          "a/b",
+				SourceRoots: []string{"src/a"},
+				APIs:        []*API{{Path: "a/b/v1"}},
+				TagFormat:   "{id}v1.2.3",
+			},
+			wantErr:    true,
+			wantErrMsg: "must contain",
+		},
+		{
+			name: "valid tag_format with version only",
+			library: &LibraryState{
+				ID:          "a/b",
+				SourceRoots: []string{"src/a"},
+				APIs:        []*API{{Path: "a/b/v1"}},
+				TagFormat:   "v{version}",
+			},
+			wantErr: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

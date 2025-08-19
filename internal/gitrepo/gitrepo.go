@@ -23,8 +23,10 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	httpAuth "github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 // Repository defines the interface for git repository operations.
@@ -37,12 +39,15 @@ type Repository interface {
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
+	CreateBranchAndCheckout(name string) error
+	Push(branchName string) error
 }
 
 // LocalRepository represents a git repository.
 type LocalRepository struct {
-	Dir  string
-	repo *git.Repository
+	Dir         string
+	repo        *git.Repository
+	gitPassword string
 }
 
 // Commit represents a git commit.
@@ -63,6 +68,8 @@ type RepositoryOptions struct {
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
+	// GitPassword is used for HTTP basic auth.
+	GitPassword string
 }
 
 // NewRepository provides access to a git repository based on the provided options.
@@ -72,6 +79,15 @@ type RepositoryOptions struct {
 // otherwise it clones from opts.RemoteURL.
 // If opts.Clone is CloneOptionAlways, it always clones from opts.RemoteURL.
 func NewRepository(opts *RepositoryOptions) (*LocalRepository, error) {
+	repo, err := newRepositoryWithoutUser(opts)
+	if err != nil {
+		return repo, err
+	}
+	repo.gitPassword = opts.GitPassword
+	return repo, nil
+}
+
+func newRepositoryWithoutUser(opts *RepositoryOptions) (*LocalRepository, error) {
 	if opts.Dir == "" {
 		return nil, errors.New("gitrepo: dir is required")
 	}
@@ -100,6 +116,7 @@ func open(dir string) (*LocalRepository, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &LocalRepository{
 		Dir:  dir,
 		repo: repo,
@@ -362,4 +379,42 @@ func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, err
 		}
 	}
 	return files, nil
+}
+
+// CreateBranchAndCheckout creates a new git branch and checks out the
+// branch in the local git repository.
+func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
+	slog.Info("Creating branch and checking out", "name", name)
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(name),
+		Create: true,
+		Keep:   true,
+	})
+}
+
+// Push pushes the local branch to the origin remote.
+func (r *LocalRepository) Push(branchName string) error {
+	// https://stackoverflow.com/a/75727620
+	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
+	slog.Info("Pushing changes", slog.Any("refspec", refSpec))
+	var auth *httpAuth.BasicAuth
+	if r.gitPassword != "" {
+		slog.Info("Authenticating with basic auth")
+		auth = &httpAuth.BasicAuth{
+			Password: r.gitPassword,
+		}
+	}
+	if err := r.repo.Push(&git.PushOptions{
+		RemoteName: "origin",
+		RefSpecs:   []config.RefSpec{refSpec},
+		Auth:       auth,
+	}); err != nil {
+		return err
+	}
+	slog.Info("Successfully pushed branch to remote 'origin", "branch", branchName)
+	return nil
 }

@@ -115,9 +115,9 @@ func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 		t.Fatalf("os.WriteFile: %v", err)
 	}
 	if writeState {
-		// Create a state.yaml file.
-		stateDir := filepath.Join(dir, config.LibrarianDir)
-		if err := os.MkdirAll(stateDir, 0755); err != nil {
+		// Create a state.yaml and config.yaml file in .librarian dir.
+		librarianDir := filepath.Join(dir, config.LibrarianDir)
+		if err := os.MkdirAll(librarianDir, 0755); err != nil {
 			t.Fatalf("os.MkdirAll: %v", err)
 		}
 
@@ -142,8 +142,12 @@ func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 		if err != nil {
 			t.Fatalf("yaml.Marshal() = %v", err)
 		}
-		stateFile := filepath.Join(stateDir, "state.yaml")
+		stateFile := filepath.Join(librarianDir, "state.yaml")
 		if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
+			t.Fatalf("os.WriteFile: %v", err)
+		}
+		configFile := filepath.Join(librarianDir, "config.yaml")
+		if err := os.WriteFile(configFile, []byte{}, 0644); err != nil {
 			t.Fatalf("os.WriteFile: %v", err)
 		}
 	}

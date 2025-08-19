@@ -29,10 +29,10 @@ import (
 )
 
 const (
-	pipelineStateFile  = "state.yaml"
-	pipelineConfigFile = "pipeline-config.json"
-	serviceConfigType  = "type"
-	serviceConfigValue = "google.api.Service"
+	librarianConfigFile = "config.yaml"
+	librarianStateFile  = "state.yaml"
+	serviceConfigType   = "type"
+	serviceConfigValue  = "google.api.Service"
 )
 
 // Utility functions for saving and loading pipeline state and config from various places.
@@ -42,8 +42,17 @@ func loadRepoState(repo *gitrepo.LocalRepository, source string) (*config.Librar
 		slog.Info("repo is nil, skipping state loading")
 		return nil, nil
 	}
-	path := filepath.Join(repo.Dir, config.LibrarianDir, pipelineStateFile)
+	path := filepath.Join(repo.Dir, config.LibrarianDir, librarianStateFile)
 	return parseLibrarianState(path, source)
+}
+
+func loadLibrarianConfig(repo *gitrepo.LocalRepository) (*config.LibrarianConfig, error) {
+	if repo == nil {
+		slog.Info("repo is nil, skipping state loading")
+		return nil, nil
+	}
+	path := filepath.Join(repo.Dir, config.LibrarianDir, librarianConfigFile)
+	return parseLibrarianConfig(path)
 }
 
 func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
@@ -62,6 +71,21 @@ func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
 		return nil, fmt.Errorf("validating librarian state: %w", err)
 	}
 	return &s, nil
+}
+
+func parseLibrarianConfig(path string) (*config.LibrarianConfig, error) {
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var lc config.LibrarianConfig
+	if err := yaml.Unmarshal(bytes, &lc); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal global config: %w", err)
+	}
+	if err := lc.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid global config: %w", err)
+	}
+	return &lc, nil
 }
 
 func populateServiceConfigIfEmpty(state *config.LibrarianState, source string) error {
@@ -122,7 +146,7 @@ func findServiceConfigIn(path string) (string, error) {
 }
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
-	path := filepath.Join(repoDir, config.LibrarianDir, pipelineStateFile)
+	path := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
 	bytes, err := yaml.Marshal(state)
 	if err != nil {
 		return err
