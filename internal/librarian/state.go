@@ -76,6 +76,10 @@ func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
 func parseLibrarianConfig(path string) (*config.LibrarianConfig, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			slog.Info("config.yaml not found, proceeding")
+			return nil, nil
+		}
 		return nil, err
 	}
 	var lc config.LibrarianConfig
