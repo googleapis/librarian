@@ -117,9 +117,28 @@ func (v *Version) incrementPrerelease() error {
 	return nil
 }
 
+// ChangeLevel represents the level of change, corresponding to semantic versioning.
+type ChangeLevel int
+
+const (
+	// None indicates no change.
+	None ChangeLevel = iota
+	// Patch is for backward-compatible bug fixes.
+	Patch
+	// Minor is for backward-compatible new features.
+	Minor
+	// Major is for incompatible API changes.
+	Major
+)
+
+// String converts a ChangeLevel to its string representation.
+func (c ChangeLevel) String() string {
+	return [...]string{"none", "patch", "minor", "major"}[c]
+}
+
 // DeriveNext calculates the next version based on the highest change type and current version.
-func DeriveNext(highestChange, currentVersion string) (string, error) {
-	if highestChange == "none" {
+func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
+	if highestChange == None {
 		return currentVersion, nil
 	}
 
@@ -138,7 +157,7 @@ func DeriveNext(highestChange, currentVersion string) (string, error) {
 
 	// Handle standard versions
 	if currentSemVer.Major == 0 {
-		if highestChange == "major" {
+		if highestChange == Major {
 			currentSemVer.Major++
 			currentSemVer.Minor = 0
 			currentSemVer.Patch = 0
@@ -147,14 +166,14 @@ func DeriveNext(highestChange, currentVersion string) (string, error) {
 		}
 	} else {
 		switch highestChange {
-		case "major":
+		case Major:
 			currentSemVer.Major++
 			currentSemVer.Minor = 0
 			currentSemVer.Patch = 0
-		case "minor":
+		case Minor:
 			currentSemVer.Minor++
 			currentSemVer.Patch = 0
-		case "patch":
+		case Patch:
 			currentSemVer.Patch++
 		}
 	}

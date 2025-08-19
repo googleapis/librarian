@@ -150,79 +150,79 @@ func TestVersion_String(t *testing.T) {
 }
 
 func TestDeriveNext(t *testing.T) {
-	for _, test := range []struct {
+	for _, tt := range []struct {
 		name            string
-		highestChange   string
+		highestChange   ChangeLevel
 		currentVersion  string
 		expectedVersion string
 	}{
 		{
 			name:            "major bump",
-			highestChange:   "major",
+			highestChange:   Major,
 			currentVersion:  "1.2.3",
 			expectedVersion: "2.0.0",
 		},
 		{
 			name:            "minor bump",
-			highestChange:   "minor",
+			highestChange:   Minor,
 			currentVersion:  "1.2.3",
 			expectedVersion: "1.3.0",
 		},
 		{
 			name:            "patch bump",
-			highestChange:   "patch",
+			highestChange:   Patch,
 			currentVersion:  "1.2.3",
 			expectedVersion: "1.2.4",
 		},
 		{
 			name:            "pre-1.0.0 feat is patch bump",
-			highestChange:   "minor", // feat is minor
+			highestChange:   Minor, // feat is minor
 			currentVersion:  "0.2.3",
 			expectedVersion: "0.2.4",
 		},
 		{
 			name:            "pre-1.0.0 fix is patch bump",
-			highestChange:   "patch",
+			highestChange:   Patch,
 			currentVersion:  "0.2.3",
 			expectedVersion: "0.2.4",
 		},
 		{
 			name:            "pre-1.0.0 breaking change is major bump",
-			highestChange:   "major",
+			highestChange:   Major,
 			currentVersion:  "0.2.3",
 			expectedVersion: "1.0.0",
 		},
 		{
 			name:            "prerelease bump with numeric trailer",
-			highestChange:   "minor",
+			highestChange:   Minor,
 			currentVersion:  "1.2.3-beta.1",
 			expectedVersion: "1.2.3-beta.2",
 		},
 		{
 			name:            "prerelease bump without numeric trailer",
-			highestChange:   "patch",
+			highestChange:   Patch,
 			currentVersion:  "1.2.3-beta",
 			expectedVersion: "1.2.3-beta.1",
 		},
 		{
 			name:            "prerelease bump with betaXX format",
-			highestChange:   "major",
+			highestChange:   Major,
 			currentVersion:  "1.2.3-beta21",
 			expectedVersion: "1.2.3-beta22",
 		},
 		{
 			name:            "no bump",
-			highestChange:   "none",
+			highestChange:   None,
 			currentVersion:  "1.2.3",
 			expectedVersion: "1.2.3",
 		},
 	} {
-		t.Run(test.name, func(t *testing.T) {
-			nextVersion, err := DeriveNext(test.highestChange, test.currentVersion)
+		t.Run(tt.name, func(t *testing.T) {
+			nextVersion, err := DeriveNext(tt.highestChange, tt.currentVersion)
 			if err != nil {
 				t.Fatalf("DeriveNext() returned an error: %v", err)
 			}
-			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
+			if diff := cmp.Diff(tt.expectedVersion, nextVersion); diff != "" {
 				t.Errorf("DeriveNext() returned diff (-want +got):\n%s", diff)
 			}
 		})

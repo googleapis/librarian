@@ -90,21 +90,21 @@ func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion, override
 }
 
 // getHighestChange determines the highest-ranking change type from a slice of commits.
-func getHighestChange(commits []*gitrepo.ConventionalCommit) string {
-	highestChange := "none"
+func getHighestChange(commits []*gitrepo.ConventionalCommit) semver.ChangeLevel {
+	highestChange := semver.None
 	for _, commit := range commits {
 		if commit == nil {
 			continue
 		}
 		if commit.IsBreaking {
-			highestChange = "major"
+			highestChange = semver.Major
 			break // Major change has the highest precedence
 		}
-		if commit.Type == "feat" && highestChange != "major" {
-			highestChange = "minor"
+		if commit.Type == "feat" && highestChange != semver.Major {
+			highestChange = semver.Minor
 		}
-		if commit.Type == "fix" && highestChange == "none" {
-			highestChange = "patch"
+		if commit.Type == "fix" && highestChange == semver.None {
+			highestChange = semver.Patch
 		}
 	}
 	return highestChange

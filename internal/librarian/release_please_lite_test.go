@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 func TestShouldExclude(t *testing.T) {
@@ -268,7 +269,7 @@ func TestGetHighestChange(t *testing.T) {
 	for _, test := range []struct {
 		name           string
 		commits        []*gitrepo.ConventionalCommit
-		expectedChange string
+		expectedChange semver.ChangeLevel
 	}{
 		{
 			name: "major change",
@@ -277,7 +278,7 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "feat"},
 				{Type: "fix"},
 			},
-			expectedChange: "major",
+			expectedChange: semver.Major,
 		},
 		{
 			name: "minor change",
@@ -285,14 +286,14 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "feat"},
 				{Type: "fix"},
 			},
-			expectedChange: "minor",
+			expectedChange: semver.Minor,
 		},
 		{
 			name: "patch change",
 			commits: []*gitrepo.ConventionalCommit{
 				{Type: "fix"},
 			},
-			expectedChange: "patch",
+			expectedChange: semver.Patch,
 		},
 		{
 			name: "no change",
@@ -300,12 +301,12 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "docs"},
 				{Type: "chore"},
 			},
-			expectedChange: "none",
+			expectedChange: semver.None,
 		},
 		{
 			name:           "no commits",
 			commits:        []*gitrepo.ConventionalCommit{},
-			expectedChange: "none",
+			expectedChange: semver.None,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
