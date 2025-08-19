@@ -109,6 +109,26 @@ func TestInitRun(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to create output dir",
 		},
+		{
+			name: "failed to get changes from repo",
+			runner: &initRunner{
+				workRoot:        os.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-id",
+						},
+					},
+				},
+				repo: &MockRepository{
+					GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch changelog for library",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := test.runner.run(context.Background())
