@@ -140,11 +140,11 @@ func setReleaseTrigger(state *config.LibrarianState, libraryID, libraryVersion s
 
 // getLibraryChanges gets the changelog for the library with a non-empty libraryID,
 // if provided; or for all libraries if the libraryID is empty since the library
-// was last generated.
+// was last released.
 func getLibraryChanges(repo gitrepo.Repository, state *config.LibrarianState, libraryID string) error {
 	for i, library := range state.Libraries {
 		if libraryID != "" {
-			// Only fetch the changelog for one library.
+			// Only get the changelog for one library.
 			if libraryID != library.ID {
 				continue
 			}
@@ -155,7 +155,7 @@ func getLibraryChanges(repo gitrepo.Repository, state *config.LibrarianState, li
 			state.Libraries[i] = updatedLibrary
 			break
 		}
-		// Fetch changelog for all libraries.
+		// Get changelog for all libraries.
 		updatedLibrary, err := getChangesOf(repo, library)
 		if err != nil {
 			return err
