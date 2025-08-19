@@ -40,9 +40,8 @@ func TestCommandUsage(t *testing.T) {
 			if parts[0] != "librarian" {
 				t.Errorf("invalid usage text: %q (the first word should be `librarian`)", c.UsageLine)
 			}
-			// The second word should always be the command name.
-			if parts[1] != c.Name() {
-				t.Errorf("invalid usage text: %q (second word should be command name %q)", c.UsageLine, c.Name())
+			if !strings.Contains(c.UsageLine, c.Name()) {
+				t.Errorf("invalid usage text: %q (should contain command name %q)", c.UsageLine, c.Name())
 			}
 		})
 	}

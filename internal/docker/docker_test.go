@@ -197,7 +197,7 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s:/repo", repoDir),
 				testImage,
 				string(CommandBuild),
