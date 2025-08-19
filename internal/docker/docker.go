@@ -122,7 +122,7 @@ type ReleaseInitRequest struct {
 	// Cfg is a pointer to the [config.Config] struct, holding general configuration
 	// values parsed from flags or environment variables.
 	Cfg *config.Config
-	// LibrarianConfig is a pointer to the [config.GlobalConfig] struct, holding
+	// LibrarianConfig is a pointer to the [config.LibrarianConfig] struct, holding
 	// global files configuration in a language repository.
 	LibrarianConfig *config.LibrarianConfig
 	// State is a pointer to the [config.LibrarianState] struct, representing
@@ -391,7 +391,7 @@ func setupPartialRepo(request *ReleaseInitRequest) error {
 		return fmt.Errorf("failed to copy librarian dir to %s: %w", dst, err)
 	}
 
-	// Copy global files declared in global config.
+	// Copy global files declared in librarian config.
 	for _, globalFile := range request.LibrarianConfig.GlobalFilesAllowlist {
 		dstPath := filepath.Join(dst, globalFile.Path)
 		srcPath := filepath.Join(src, globalFile.Path)
