@@ -405,6 +405,7 @@ func (r *LocalRepository) Push(branchName string) error {
 	if r.gitPassword != "" {
 		slog.Info("Authenticating with basic auth")
 		auth = &httpAuth.BasicAuth{
+			Username: "cloud-sdk-librarian",
 			Password: r.gitPassword,
 		}
 	}
