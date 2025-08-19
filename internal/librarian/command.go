@@ -47,17 +47,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
 
-	var gitUser *gitrepo.GitUser
-	if cfg.GitHubToken != "" {
-		gitUser = &gitrepo.GitUser{
-			Username:    "cloud-sdk-librarian",
-			Password:    cfg.GitHubToken,
-			DisplayName: "Cloud SDK Librarian",
-			Email:       "cloud-sdk-librarian-robot@google.com",
-		}
-	}
-
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI, gitUser)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +55,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	var sourceRepo gitrepo.Repository
 	var sourceRepoDir string
 	if cfg.CommandName != tagAndReleaseCmdName {
-		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI, gitUser)
+		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +100,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}, nil
 }
 
-func cloneOrOpenRepo(workRoot, repo, ci string, gitUser *gitrepo.GitUser) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
 	}
@@ -122,11 +112,11 @@ func cloneOrOpenRepo(workRoot, repo, ci string, gitUser *gitrepo.GitUser) (*gitr
 		repoName := path.Base(strings.TrimSuffix(repo, "/"))
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-			Dir:        repoPath,
-			MaybeClone: true,
-			RemoteURL:  repo,
-			CI:         ci,
-			User:       gitUser,
+			Dir:         repoPath,
+			MaybeClone:  true,
+			RemoteURL:   repo,
+			CI:          ci,
+			GitPassword: gitPassword,
 		})
 	}
 	// repo is a directory
@@ -135,9 +125,9 @@ func cloneOrOpenRepo(workRoot, repo, ci string, gitUser *gitrepo.GitUser) (*gitr
 		return nil, err
 	}
 	githubRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-		Dir:  absRepoRoot,
-		CI:   ci,
-		User: gitUser,
+		Dir:         absRepoRoot,
+		CI:          ci,
+		GitPassword: gitPassword,
 	})
 	if err != nil {
 		return nil, err
@@ -225,7 +215,7 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
-	slog.Info("Committing", slog.String("message", commitMessage))
+	slog.Info("Committing", "message", commitMessage)
 	if err := r.repo.Commit(commitMessage); err != nil {
 		return err
 	}

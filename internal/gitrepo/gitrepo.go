@@ -45,21 +45,9 @@ type Repository interface {
 
 // LocalRepository represents a git repository.
 type LocalRepository struct {
-	Dir  string
-	repo *git.Repository
-	user *GitUser
-}
-
-// GitUser represents a git user for commits.
-type GitUser struct {
-	// Username is the username used for Basic Authentication.
-	Username string
-	// Password is the password used for Basic Authentication.
-	Password string
-	// DisplayName is the user.name specified for a commit.
-	DisplayName string
-	// Email is the user.email specified for a commit.
-	Email string
+	Dir         string
+	repo        *git.Repository
+	gitPassword string
 }
 
 // Commit represents a git commit.
@@ -80,8 +68,8 @@ type RepositoryOptions struct {
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
-	// GitUser is the metadata used for git commits and pushes.
-	User *GitUser
+	// GitPassword is used for HTTP basic auth.
+	GitPassword string
 }
 
 // NewRepository provides access to a git repository based on the provided options.
@@ -95,7 +83,7 @@ func NewRepository(opts *RepositoryOptions) (*LocalRepository, error) {
 	if err != nil {
 		return repo, err
 	}
-	repo.user = opts.User
+	repo.gitPassword = opts.GitPassword
 	return repo, nil
 }
 
@@ -414,11 +402,10 @@ func (r *LocalRepository) Push(branchName string) error {
 	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
 	slog.Info("Pushing changes", slog.Any("refspec", refSpec))
 	var auth *httpAuth.BasicAuth
-	if r.user != nil {
-		slog.Info("Authenticating with basic auth", slog.String("user", r.user.Username))
+	if r.gitPassword != "" {
+		slog.Info("Authenticating with basic auth")
 		auth = &httpAuth.BasicAuth{
-			Username: r.user.Username,
-			Password: r.user.Password,
+			Password: r.gitPassword,
 		}
 	}
 	if err := r.repo.Push(&git.PushOptions{
