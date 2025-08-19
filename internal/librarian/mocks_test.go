@@ -202,6 +202,8 @@ type MockRepository struct {
 	GetCommitsForPathsSinceTagError error
 	ChangedFilesInCommitValue       []string
 	ChangedFilesInCommitError       error
+	CreateBranchAndCheckoutError    error
+	PushError                       error
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -246,4 +248,18 @@ func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
 		return nil, m.ChangedFilesInCommitError
 	}
 	return m.ChangedFilesInCommitValue, nil
+}
+
+func (m *MockRepository) CreateBranchAndCheckout(name string) error {
+	if m.CreateBranchAndCheckoutError != nil {
+		return m.CreateBranchAndCheckoutError
+	}
+	return nil
+}
+
+func (m *MockRepository) Push(name string) error {
+	if m.PushError != nil {
+		return m.PushError
+	}
+	return nil
 }

@@ -254,7 +254,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 				}
 			}()
 
-			repo, err := cloneOrOpenRepo(workRoot, test.repo, test.ci)
+			repo, err := cloneOrOpenRepo(workRoot, test.repo, test.ci, "")
 			if test.wantErr {
 				if err == nil {
 					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")
@@ -302,22 +302,14 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Happy Path",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				repoDir := newTestGitRepoWithCommit(t, "")
-				// Add remote so FetchGitHubRepoFromRemote succeeds.
-				cmd := exec.Command("git", "remote", "add", "origin", "https://github.com/test-owner/test-repo.git")
-				cmd.Dir = repoDir
-				if err := cmd.Run(); err != nil {
-					t.Fatalf("git remote add: %v", err)
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					RemotesValue: []*git.Remote{remote},
 				}
-				// Add a file to make the repo dirty, so there's something to commit.
-				if err := os.WriteFile(filepath.Join(repoDir, "new-file.txt"), []byte("new content"), 0644); err != nil {
-					t.Fatalf("WriteFile: %v", err)
-				}
-				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
-				if err != nil {
-					t.Fatalf("Failed to create test repo: %v", err)
-				}
-				return repo
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return &mockGitHubClient{
@@ -325,19 +317,6 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			push: true,
-			validatePostTest: func(t *testing.T, repo gitrepo.Repository) {
-				localRepo, ok := repo.(*gitrepo.LocalRepository)
-				if !ok {
-					t.Fatalf("Expected *gitrepo.LocalRepository, got %T", repo)
-				}
-				isClean, err := localRepo.IsClean()
-				if err != nil {
-					t.Fatalf("Failed to check repo status: %v", err)
-				}
-				if !isClean {
-					t.Errorf("Expected repository to be clean after commit, but it's dirty")
-				}
-			},
 		},
 		{
 			name: "No GitHub Remote",
@@ -375,6 +354,30 @@ func TestCommitAndPush(t *testing.T) {
 			expectedErrMsg: "mock add all error",
 		},
 		{
+			name: "Create branch error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:                          t.TempDir(),
+					AddAllStatus:                 status,
+					RemotesValue:                 []*git.Remote{remote},
+					CreateBranchAndCheckoutError: errors.New("create branch error"),
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			push:           true,
+			wantErr:        true,
+			expectedErrMsg: "create branch error",
+		},
+		{
 			name: "Commit error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
@@ -397,6 +400,30 @@ func TestCommitAndPush(t *testing.T) {
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
+		},
+		{
+			name: "Push error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+					PushError:    errors.New("push error"),
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			push:           true,
+			wantErr:        true,
+			expectedErrMsg: "push error",
 		},
 		{
 			name: "Create pull request error",
