@@ -183,9 +183,18 @@ func extractCommitParts(message string) []string {
 	return commitParts
 }
 
-// ParseCommits parses a commit message and returns a slice of ConventionalCommits.
-// It supports commit override gated with BEGIN_COMMIT_OVERRIDE/END_COMMIT_OVERRIDE
-// and nested commits using BEGIN_NESTED_COMMIT and END_NESTED_COMMIT markers.
+// ParseCommits parses a commit message into a slice of ConventionalCommit structs.
+//
+// It supports an override block wrapped in BEGIN_COMMIT_OVERRIDE and
+// END_COMMIT_OVERRIDE. If found, this block takes precedence, and only its
+// content will be parsed.
+//
+// The message can also contain multiple nested commits, each wrapped in
+// BEGIN_NESTED_COMMIT and END_NESTED_COMMIT markers.
+//
+// Malformed override or nested blocks (e.g., with a missing end marker) are
+// ignored. Any commit part that is found but fails to parse as a valid
+// conventional commit is logged and skipped.
 func ParseCommits(message, hashString string) ([]*ConventionalCommit, error) {
 	if strings.TrimSpace(message) == "" {
 		return nil, fmt.Errorf("empty commit message")
