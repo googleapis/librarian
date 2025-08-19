@@ -140,7 +140,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 			message: "feat(foo): another feature for foo",
 		},
 	}
-	repoWithCommits := setupRepoForGetCommits(t, pathAndMessages)
+	repoWithCommits := setupRepoForGetCommits(t, pathAndMessages, []string{"foo-v1.0.0"})
 	for _, test := range []struct {
 		name          string
 		repo          gitrepo.Repository

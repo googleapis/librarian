@@ -15,9 +15,11 @@
 package librarian
 
 import (
+	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -172,11 +174,13 @@ func runGit(t *testing.T, dir string, args ...string) {
 	}
 }
 
-// setupRepoForGetCommits creates an empty gitrepo and creates some commits.
+// setupRepoForGetCommits creates an empty gitrepo and creates some commits and
+// tags.
 //
 // Each commit has a file path and a commit message.
-// Note that pathAndMessages should at least have one element.
-func setupRepoForGetCommits(t *testing.T, pathAndMessages []pathAndMessage) *gitrepo.LocalRepository {
+// Note that pathAndMessages should at least have one element. All tags are created
+// after the first commit.
+func setupRepoForGetCommits(t *testing.T, pathAndMessages []pathAndMessage, tags []string) *gitrepo.LocalRepository {
 	t.Helper()
 	dir := t.TempDir()
 	gitRepo, err := git.PlainInit(dir, false)
@@ -193,7 +197,8 @@ func setupRepoForGetCommits(t *testing.T, pathAndMessages []pathAndMessage) *git
 		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 			t.Fatalf("os.MkdirAll failed: %v", err)
 		}
-		if err := os.WriteFile(fullPath, []byte("content"), 0644); err != nil {
+		content := fmt.Sprintf("content-%d", rand.Intn(10000))
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			t.Fatalf("os.WriteFile failed: %v", err)
 		}
 		if _, err := w.Add(path); err != nil {
@@ -212,8 +217,10 @@ func setupRepoForGetCommits(t *testing.T, pathAndMessages []pathAndMessage) *git
 	if err != nil {
 		t.Fatalf("repo.Head() failed: %v", err)
 	}
-	if _, err := gitRepo.CreateTag("foo-v1.0.0", head.Hash(), nil); err != nil {
-		t.Fatalf("CreateTag failed: %v", err)
+	for _, tag := range tags {
+		if _, err := gitRepo.CreateTag(tag, head.Hash(), nil); err != nil {
+			t.Fatalf("CreateTag failed: %v", err)
+		}
 	}
 
 	for _, pam := range pathAndMessages[1:] {

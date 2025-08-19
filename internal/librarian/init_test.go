@@ -17,7 +17,8 @@ package librarian
 import (
 	"context"
 	"errors"
-	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"os"
 	"strings"
 	"testing"
@@ -257,31 +258,52 @@ func TestSetReleaseTrigger(t *testing.T) {
 func TestGetLibraryChanges(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name       string
-		repo       gitrepo.Repository
-		state      *config.LibrarianState
-		libraryID  string
-		wantState  *config.LibrarianState
-		wantErr    bool
-		wantErrMsg string
+		name            string
+		pathAndMessages []pathAndMessage
+		tags            []string
+		state           *config.LibrarianState
+		libraryID       string
+		want            *config.LibrarianState
+		wantErr         bool
+		wantErrMsg      string
 	}{
 		{
 			name: "get changelogs of all libraries",
-			repo: &MockRepository{
-				GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{},
-				ChangedFilesInCommitValue:       []string{},
+			pathAndMessages: []pathAndMessage{
+				{
+					path:    "non-related/path/example.txt",
+					message: "chore: initial commit",
+				},
+				{
+					path:    "one/path/example.txt",
+					message: "feat: add a config file\n\nThis is the body.\n\nPiperOrigin-RevId: 12345",
+				},
+				{
+					path:    "one/path/example.txt",
+					message: "fix: change a typo",
+				},
+				{
+					path:    "third/path/config.txt",
+					message: "feat: add another config file",
+				},
+			},
+			tags: []string{
+				"one-id-1.2.3",
+				"another-id-2.3.4",
 			},
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-id",
+						ID:      "one-id",
+						Version: "1.2.3",
 						SourceRoots: []string{
-							"one/path/",
+							"one/path",
 							"two/path",
 						},
 					},
 					{
-						ID: "another-id",
+						ID:      "another-id",
+						Version: "2.3.4",
 						SourceRoots: []string{
 							"third/path",
 							"fourth/path",
@@ -289,11 +311,50 @@ func TestGetLibraryChanges(t *testing.T) {
 					},
 				},
 			},
-			wantState: &config.LibrarianState{},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+						Changes: []*config.Change{
+							{
+								Type:    "fix",
+								Subject: "change a typo",
+							},
+							{
+								Type:    "feat",
+								Subject: "add a config file",
+								Body:    "This is the body.",
+								ClNum:   "12345",
+							},
+						},
+					},
+					{
+						ID:      "another-id",
+						Version: "2.3.4",
+						SourceRoots: []string{
+							"third/path",
+							"fourth/path",
+						},
+						Changes: []*config.Change{
+							{
+								Type:    "feat",
+								Subject: "add another config file",
+							},
+						},
+					},
+				},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := getLibraryChanges(test.repo, test.state, test.libraryID)
+			repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
+			err := getLibraryChanges(repo, test.state, test.libraryID)
+
 			if test.wantErr {
 				if err == nil {
 					t.Error("getLibraryChanges() should return error")
@@ -307,6 +368,9 @@ func TestGetLibraryChanges(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("failed to run getLibraryChanges(): %q", err.Error())
+			}
+			if diff := cmp.Diff(test.want, test.state, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
+				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
