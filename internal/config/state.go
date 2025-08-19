@@ -95,7 +95,8 @@ type LibraryState struct {
 	// The commit hash from the API definition repository at which the library was last generated.
 	LastGeneratedCommit string `yaml:"last_generated_commit" json:"last_generated_commit"`
 	// The changes from the language repository since the library was last generated.
-	Changes []*Change `yaml:"changes" json:"changes"`
+	// This field is ignored when writing to state.yaml.
+	Changes []*Change `yaml:"-" json:"changes,omitempty"`
 	// A list of APIs that are part of this library.
 	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
