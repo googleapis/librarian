@@ -41,7 +41,7 @@ var validPermissions = map[string]bool{
 	PermissionReadWrite: true,
 }
 
-// Validate checks that the GlobalConfig is valid.
+// Validate checks that the LibrarianConfig is valid.
 func (g *LibrarianConfig) Validate() error {
 	for i, globalFile := range g.GlobalFilesAllowlist {
 		path, permissions := globalFile.Path, globalFile.Permissions
