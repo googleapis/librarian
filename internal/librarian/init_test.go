@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"github.com/googleapis/librarian/internal/gitrepo"
 	"os"
 	"strings"
 	"testing"
@@ -248,6 +249,64 @@ func TestSetReleaseTrigger(t *testing.T) {
 				if !ok || library.Version != wantVersion {
 					t.Errorf("library %s should set version to %s, got %s", library.ID, test.libraryVersion, library.Version)
 				}
+			}
+		})
+	}
+}
+
+func TestGetLibraryChanges(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		repo       gitrepo.Repository
+		state      *config.LibrarianState
+		libraryID  string
+		wantState  *config.LibrarianState
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "get changelogs of all libraries",
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{},
+				ChangedFilesInCommitValue:       []string{},
+			},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "one-id",
+						SourceRoots: []string{
+							"one/path/",
+							"two/path",
+						},
+					},
+					{
+						ID: "another-id",
+						SourceRoots: []string{
+							"third/path",
+							"fourth/path",
+						},
+					},
+				},
+			},
+			wantState: &config.LibrarianState{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := getLibraryChanges(test.repo, test.state, test.libraryID)
+			if test.wantErr {
+				if err == nil {
+					t.Error("getLibraryChanges() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Errorf("failed to run getLibraryChanges(): %q", err.Error())
 			}
 		})
 	}

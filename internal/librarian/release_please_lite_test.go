@@ -16,13 +16,9 @@ package librarian
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
@@ -120,61 +116,31 @@ func TestFormatTag(t *testing.T) {
 	}
 }
 
-func setupRepoForGetCommits(t *testing.T) *gitrepo.LocalRepository {
-	t.Helper()
-	dir := t.TempDir()
-	gitRepo, err := git.PlainInit(dir, false)
-	if err != nil {
-		t.Fatalf("git.PlainInit failed: %v", err)
-	}
-
-	createAndCommit := func(path, msg string) {
-		w, err := gitRepo.Worktree()
-		if err != nil {
-			t.Fatalf("Worktree() failed: %v", err)
-		}
-		fullPath := filepath.Join(dir, path)
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-			t.Fatalf("os.MkdirAll failed: %v", err)
-		}
-		if err := os.WriteFile(fullPath, []byte("content"), 0644); err != nil {
-			t.Fatalf("os.WriteFile failed: %v", err)
-		}
-		if _, err := w.Add(path); err != nil {
-			t.Fatalf("w.Add failed: %v", err)
-		}
-		_, err = w.Commit(msg, &git.CommitOptions{
-			Author: &object.Signature{Name: "Test", Email: "test@example.com"},
-		})
-		if err != nil {
-			t.Fatalf("w.Commit failed: %v", err)
-		}
-	}
-
-	createAndCommit("foo/a.txt", "feat(foo): initial commit for foo")
-	head, err := gitRepo.Head()
-	if err != nil {
-		t.Fatalf("repo.Head() failed: %v", err)
-	}
-	if _, err := gitRepo.CreateTag("foo-v1.0.0", head.Hash(), nil); err != nil {
-		t.Fatalf("CreateTag failed: %v", err)
-	}
-
-	createAndCommit("bar/a.txt", "feat(bar): initial commit for bar")
-	createAndCommit("foo/b.txt", "fix(foo): a fix for foo")
-	createAndCommit("foo/README.md", "docs(foo): update README")
-	createAndCommit("foo/c.txt", "feat(foo): another feature for foo")
-
-	r, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
-	if err != nil {
-		t.Fatalf("gitrepo.NewRepository failed: %v", err)
-	}
-	return r
-}
-
 func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 	t.Parallel()
-	repoWithCommits := setupRepoForGetCommits(t)
+	pathAndMessages := []pathAndMessage{
+		{
+			path:    "foo/a.txt",
+			message: "feat(foo): initial commit for foo",
+		},
+		{
+			path:    "bar/a.txt",
+			message: "feat(bar): initial commit for bar",
+		},
+		{
+			path:    "foo/b.txt",
+			message: "fix(foo): a fix for foo",
+		},
+		{
+			path:    "foo/README.md",
+			message: "docs(foo): update README",
+		},
+		{
+			path:    "foo/c.txt",
+			message: "feat(foo): another feature for foo",
+		},
+	}
+	repoWithCommits := setupRepoForGetCommits(t, pathAndMessages)
 	for _, test := range []struct {
 		name          string
 		repo          gitrepo.Repository

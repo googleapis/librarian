@@ -15,6 +15,8 @@
 package librarian
 
 import (
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"log"
 	"os"
 	"os/exec"
@@ -168,4 +170,64 @@ func runGit(t *testing.T, dir string, args ...string) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("git %v: %v", args, err)
 	}
+}
+
+// setupRepoForGetCommits creates an empty gitrepo and creates some commits.
+//
+// Each commit has a file path and a commit message.
+// Note that pathAndMessages should at least have one element.
+func setupRepoForGetCommits(t *testing.T, pathAndMessages []pathAndMessage) *gitrepo.LocalRepository {
+	t.Helper()
+	dir := t.TempDir()
+	gitRepo, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("git.PlainInit failed: %v", err)
+	}
+
+	createAndCommit := func(path, msg string) {
+		w, err := gitRepo.Worktree()
+		if err != nil {
+			t.Fatalf("Worktree() failed: %v", err)
+		}
+		fullPath := filepath.Join(dir, path)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatalf("os.MkdirAll failed: %v", err)
+		}
+		if err := os.WriteFile(fullPath, []byte("content"), 0644); err != nil {
+			t.Fatalf("os.WriteFile failed: %v", err)
+		}
+		if _, err := w.Add(path); err != nil {
+			t.Fatalf("w.Add failed: %v", err)
+		}
+		_, err = w.Commit(msg, &git.CommitOptions{
+			Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+		})
+		if err != nil {
+			t.Fatalf("w.Commit failed: %v", err)
+		}
+	}
+
+	createAndCommit(pathAndMessages[0].path, pathAndMessages[0].message)
+	head, err := gitRepo.Head()
+	if err != nil {
+		t.Fatalf("repo.Head() failed: %v", err)
+	}
+	if _, err := gitRepo.CreateTag("foo-v1.0.0", head.Hash(), nil); err != nil {
+		t.Fatalf("CreateTag failed: %v", err)
+	}
+
+	for _, pam := range pathAndMessages[1:] {
+		createAndCommit(pam.path, pam.message)
+	}
+
+	r, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
+	if err != nil {
+		t.Fatalf("gitrepo.NewRepository failed: %v", err)
+	}
+	return r
+}
+
+type pathAndMessage struct {
+	path    string
+	message string
 }
