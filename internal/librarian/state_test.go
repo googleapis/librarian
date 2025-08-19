@@ -197,7 +197,7 @@ func TestParseGlobalConfig(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			path := filepath.Join("../../testdata/test-parse-global-config", test.filename)
-			got, err := parseGlobalConfig(path)
+			got, err := parseLibrarianConfig(path)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("parseGlobalConfig() should return error")

@@ -62,7 +62,7 @@ type initRunner struct {
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
-	globalConfig    *config.LibrarianConfig
+	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
 	workRoot        string
@@ -80,7 +80,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
-		globalConfig:    runner.globalConfig,
+		librarianConfig: runner.librarianConfig,
 		image:           runner.image,
 		ghClient:        runner.ghClient,
 		containerClient: runner.containerClient,

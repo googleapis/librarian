@@ -36,7 +36,7 @@ type commandRunner struct {
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
-	globalConfig    *config.LibrarianConfig
+	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
 	workRoot        string
@@ -66,7 +66,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		return nil, err
 	}
 
-	globalConfig, err := loadGlobalConfig(languageRepo)
+	librarianConfig, err := loadLibrarianConfig(languageRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		repo:            languageRepo,
 		sourceRepo:      sourceRepo,
 		state:           state,
-		globalConfig:    globalConfig,
+		librarianConfig: librarianConfig,
 		image:           image,
 		ghClient:        ghClient,
 		containerClient: container,
