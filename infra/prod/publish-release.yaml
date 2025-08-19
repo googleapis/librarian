@@ -15,7 +15,7 @@
 # Registry (AR) Exit Gate process (go/cloud-sdk-ar-exit-gate-onboarding).
 #
 # This runs the `librarian release tag-and-release` command with a provided repository,
-# secret name, and optional library ID
+# secret name, and optional PR
 steps:
   - name: gcr.io/cloud-builders/git
     id: clone-language-repo
@@ -26,17 +26,9 @@ steps:
       - '--single-branch'
       - '--branch=$_BRANCH'
       - https://github.com/googleapis/$_REPOSITORY
-  - name: gcr.io/cloud-builders/git
-    id: clone-googleapis
-    waitFor: ['-']
-    args:
-      - 'clone'
-      - '--single-branch'
-      - '--branch=master'
-      - https://github.com/googleapis/googleapis
   - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:dac8d6d46eefecde4241c88348315e6162ccd0d39e84db2b98e4da7393f65c29'
     id: publish-release
-    waitFor: ['clone-language-repo', 'clone-googleapis']
+    waitFor: ['clone-language-repo']
     args:
       - 'release tag-and-release'
       - '-repo'
