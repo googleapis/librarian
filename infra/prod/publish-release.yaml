@@ -26,7 +26,7 @@ steps:
       - '--single-branch'
       - '--branch=$_BRANCH'
       - https://github.com/googleapis/$_REPOSITORY
-  - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:dac8d6d46eefecde4241c88348315e6162ccd0d39e84db2b98e4da7393f65c29'
+  - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:95281c46bbb5f899ac47c8bb555631399a3a29fab2e08c206f83d6383297714d'
     id: publish-release
     waitFor: ['clone-language-repo']
     args:
