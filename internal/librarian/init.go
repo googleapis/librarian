@@ -49,7 +49,7 @@ func init() {
 	fs := cmdInit.Flags
 	cfg := cmdInit.Config
 
-	addFlagAPISource(fs, cfg)
+	addFlagCommit(fs, cfg)
 	addFlagPush(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLibrary(fs, cfg)
@@ -60,7 +60,6 @@ func init() {
 type initRunner struct {
 	cfg             *config.Config
 	repo            gitrepo.Repository
-	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
@@ -78,7 +77,6 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		cfg:             runner.cfg,
 		workRoot:        runner.workRoot,
 		repo:            runner.repo,
-		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
 		image:           runner.image,
