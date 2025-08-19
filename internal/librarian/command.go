@@ -36,7 +36,7 @@ type commandRunner struct {
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
-	globalConfig    *config.GlobalConfig
+	globalConfig    *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
 	workRoot        string

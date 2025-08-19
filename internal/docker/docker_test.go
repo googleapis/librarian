@@ -387,10 +387,10 @@ func TestDockerRun(t *testing.T) {
 					Cfg: &config.Config{
 						Repo: repoDir,
 					},
-					State:          state,
-					Output:         testOutput,
-					GlobalConfig:   &config.GlobalConfig{},
-					partialRepoDir: partialRepoDir,
+					State:           state,
+					Output:          testOutput,
+					LibrarianConfig: &config.LibrarianConfig{},
+					partialRepoDir:  partialRepoDir,
 				}
 
 				defer os.RemoveAll(partialRepoDir)
@@ -424,10 +424,10 @@ func TestDockerRun(t *testing.T) {
 					Cfg: &config.Config{
 						Repo: repoDir,
 					},
-					State:          state,
-					partialRepoDir: partialRepoDir,
-					Output:         testOutput,
-					GlobalConfig:   &config.GlobalConfig{},
+					State:           state,
+					partialRepoDir:  partialRepoDir,
+					Output:          testOutput,
+					LibrarianConfig: &config.LibrarianConfig{},
 				}
 				defer os.RemoveAll(partialRepoDir)
 
@@ -470,11 +470,11 @@ func TestDockerRun(t *testing.T) {
 					Cfg: &config.Config{
 						Repo: repoDir,
 					},
-					State:          state,
-					partialRepoDir: partialRepoDir,
-					Output:         testOutput,
-					LibraryID:      testLibraryID,
-					GlobalConfig:   &config.GlobalConfig{},
+					State:           state,
+					partialRepoDir:  partialRepoDir,
+					Output:          testOutput,
+					LibraryID:       testLibraryID,
+					LibrarianConfig: &config.LibrarianConfig{},
 				}
 				defer os.RemoveAll(partialRepoDir)
 
@@ -508,12 +508,12 @@ func TestDockerRun(t *testing.T) {
 					Cfg: &config.Config{
 						Repo: os.TempDir(),
 					},
-					State:          state,
-					partialRepoDir: partialRepoDir,
-					Output:         testOutput,
-					LibraryID:      testLibraryID,
-					LibraryVersion: "1.2.3",
-					GlobalConfig:   &config.GlobalConfig{},
+					State:           state,
+					partialRepoDir:  partialRepoDir,
+					Output:          testOutput,
+					LibraryID:       testLibraryID,
+					LibraryVersion:  "1.2.3",
+					LibrarianConfig: &config.LibrarianConfig{},
 				}
 				defer os.RemoveAll(partialRepoDir)
 
@@ -599,7 +599,7 @@ func TestPartialCopyRepo(t *testing.T) {
 					},
 				},
 				partialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
-				GlobalConfig: &config.GlobalConfig{
+				LibrarianConfig: &config.LibrarianConfig{
 					GlobalFilesAllowlist: []*config.GlobalFile{
 						{
 							Path:        "read/one.txt",
@@ -654,7 +654,7 @@ func TestPartialCopyRepo(t *testing.T) {
 					},
 				},
 				partialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
-				GlobalConfig: &config.GlobalConfig{
+				LibrarianConfig: &config.LibrarianConfig{
 					GlobalFilesAllowlist: []*config.GlobalFile{
 						{
 							Path:        "read/one.txt",
@@ -710,7 +710,7 @@ func TestPartialCopyRepo(t *testing.T) {
 						},
 					},
 				},
-				GlobalConfig: &config.GlobalConfig{
+				LibrarianConfig: &config.LibrarianConfig{
 					GlobalFilesAllowlist: []*config.GlobalFile{},
 				},
 			},
@@ -1192,7 +1192,7 @@ func prepareRepo(t *testing.T, request *ReleaseInitRequest) error {
 		return err
 	}
 	// Create global files.
-	for _, globalFile := range request.GlobalConfig.GlobalFilesAllowlist {
+	for _, globalFile := range request.LibrarianConfig.GlobalFilesAllowlist {
 		filename := filepath.Join(repo, globalFile.Path)
 		if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
 			return err

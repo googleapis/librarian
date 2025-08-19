@@ -46,7 +46,7 @@ func loadRepoState(repo *gitrepo.LocalRepository, source string) (*config.Librar
 	return parseLibrarianState(path, source)
 }
 
-func loadGlobalConfig(repo *gitrepo.LocalRepository) (*config.GlobalConfig, error) {
+func loadGlobalConfig(repo *gitrepo.LocalRepository) (*config.LibrarianConfig, error) {
 	if repo == nil {
 		slog.Info("repo is nil, skipping state loading")
 		return nil, nil
@@ -73,12 +73,12 @@ func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
 	return &s, nil
 }
 
-func parseGlobalConfig(path string) (*config.GlobalConfig, error) {
+func parseGlobalConfig(path string) (*config.LibrarianConfig, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var gc config.GlobalConfig
+	var gc config.LibrarianConfig
 	if err := yaml.Unmarshal(bytes, &gc); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal global config: %w", err)
 	}

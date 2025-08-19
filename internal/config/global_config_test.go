@@ -22,13 +22,13 @@ import (
 func TestGlobalConfig_Validate(t *testing.T) {
 	for _, test := range []struct {
 		name       string
-		config     *GlobalConfig
+		config     *LibrarianConfig
 		wantErr    bool
 		wantErrMsg string
 	}{
 		{
 			name: "valid config",
-			config: &GlobalConfig{
+			config: &LibrarianConfig{
 				GlobalFilesAllowlist: []*GlobalFile{
 					{
 						Path:        "a/path",
@@ -47,7 +47,7 @@ func TestGlobalConfig_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid path in config",
-			config: &GlobalConfig{
+			config: &LibrarianConfig{
 				GlobalFilesAllowlist: []*GlobalFile{
 					{
 						Path:        "a/path",
@@ -64,7 +64,7 @@ func TestGlobalConfig_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid permission in config",
-			config: &GlobalConfig{
+			config: &LibrarianConfig{
 				GlobalFilesAllowlist: []*GlobalFile{
 					{
 						Path:        "a/path",
