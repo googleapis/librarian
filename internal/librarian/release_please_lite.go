@@ -46,6 +46,9 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
+		if conventionalCommit == nil {
+			continue
+		}
 		conventionalCommits = append(conventionalCommits, conventionalCommit)
 	}
 	return conventionalCommits, nil
@@ -93,9 +96,6 @@ func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion, override
 func getHighestChange(commits []*gitrepo.ConventionalCommit) semver.ChangeLevel {
 	highestChange := semver.None
 	for _, commit := range commits {
-		if commit == nil {
-			continue
-		}
 		if commit.IsBreaking {
 			highestChange = semver.Major
 			break // Major change has the highest precedence

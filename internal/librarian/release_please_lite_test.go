@@ -162,6 +162,7 @@ func setupRepoForGetCommits(t *testing.T) *gitrepo.LocalRepository {
 	}
 
 	createAndCommit("bar/a.txt", "feat(bar): initial commit for bar")
+	createAndCommit("foo/d.txt", "non-conventional commit for foo should be ignored")
 	createAndCommit("foo/b.txt", "fix(foo): a fix for foo")
 	createAndCommit("foo/README.md", "docs(foo): update README")
 	createAndCommit("foo/c.txt", "feat(foo): another feature for foo")
@@ -266,6 +267,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 }
 
 func TestGetHighestChange(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name           string
 		commits        []*gitrepo.ConventionalCommit
