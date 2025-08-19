@@ -21,6 +21,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/gitrepo"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -264,6 +266,7 @@ func TestGetLibraryChanges(t *testing.T) {
 		tags            []string
 		state           *config.LibrarianState
 		libraryID       string
+		repo            gitrepo.Repository
 		want            *config.LibrarianState
 		wantErr         bool
 		wantErrMsg      string
@@ -378,6 +381,14 @@ func TestGetLibraryChanges(t *testing.T) {
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
+						ID:      "another-id",
+						Version: "2.3.4",
+						SourceRoots: []string{
+							"third/path",
+							"fourth/path",
+						},
+					},
+					{
 						ID:      "one-id",
 						Version: "1.2.3",
 						SourceRoots: []string{
@@ -385,6 +396,11 @@ func TestGetLibraryChanges(t *testing.T) {
 							"two/path",
 						},
 					},
+				},
+			},
+			libraryID: "one-id",
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
 					{
 						ID:      "another-id",
 						Version: "2.3.4",
@@ -393,11 +409,6 @@ func TestGetLibraryChanges(t *testing.T) {
 							"fourth/path",
 						},
 					},
-				},
-			},
-			libraryID: "one-id",
-			want: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
 					{
 						ID:      "one-id",
 						Version: "1.2.3",
@@ -418,6 +429,13 @@ func TestGetLibraryChanges(t *testing.T) {
 							},
 						},
 					},
+				},
+			},
+		},
+		{
+			name: "failed to get changelogs of one library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
 					{
 						ID:      "another-id",
 						Version: "2.3.4",
@@ -426,13 +444,33 @@ func TestGetLibraryChanges(t *testing.T) {
 							"fourth/path",
 						},
 					},
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+					},
 				},
 			},
+			libraryID: "one-id",
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-			err := getLibraryChanges(repo, test.state, test.libraryID)
+
+			var err error
+			if test.repo != nil {
+				err = getLibraryChanges(test.repo, test.state, test.libraryID)
+			} else {
+				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
+				err = getLibraryChanges(repo, test.state, test.libraryID)
+			}
 
 			if test.wantErr {
 				if err == nil {
