@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -180,7 +179,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		name          string
 		repo          gitrepo.Repository
 		library       *config.LibraryState
-		want          []*conventionalcommits.ConventionalCommit
+		want          []*gitrepo.ConventionalCommit
 		wantErr       bool
 		wantErrPhrase string
 	}{
@@ -194,7 +193,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 				SourceRoots:         []string{"foo"},
 				ReleaseExcludePaths: []string{"foo/README.md"},
 			},
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					Type:        "feat",
 					Scope:       "foo",
@@ -258,7 +257,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
 				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
