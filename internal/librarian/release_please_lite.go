@@ -21,6 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 const defaultTagFormat = "{id}-{version}"
@@ -33,7 +34,7 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}
-	var result []*conventionalcommits.ConventionalCommit
+	var conventionalCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
 		files, err := repo.ChangedFilesInCommit(commit.Hash.String())
 		if err != nil {
@@ -46,9 +47,12 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
-		result = append(result, parsedCommits...)
+		if parsedCommits == nil {
+			continue
+		}
+		conventionalCommits = append(conventionalCommits, parsedCommits...)
 	}
-	return result, nil
+	return conventionalCommits, nil
 }
 
 // shouldExclude determines if a commit should be excluded from a release.
@@ -77,4 +81,38 @@ func formatTag(library *config.LibraryState) string {
 	}
 	r := strings.NewReplacer("{id}", library.ID, "{version}", library.Version)
 	return r.Replace(tagFormat)
+}
+
+// NextVersion calculates the next semantic version based on a slice of conventional commits.
+// If overrideNextVersion is not empty, it is returned as the next version.
+func NextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion, overrideNextVersion string) (string, error) {
+	if overrideNextVersion != "" {
+		return overrideNextVersion, nil
+	}
+	highestChange := getHighestChange(commits)
+	return semver.DeriveNext(highestChange, currentVersion)
+}
+
+// getHighestChange determines the highest-ranking change type from a slice of commits.
+func getHighestChange(commits []*conventionalcommits.ConventionalCommit) semver.ChangeLevel {
+	highestChange := semver.None
+	for _, commit := range commits {
+		var currentChange semver.ChangeLevel
+		switch {
+		case commit.IsNested:
+			// ignore nested commit type for version bump
+			// this allows for always increase minor version for generation PR
+			currentChange = semver.Minor
+		case commit.IsBreaking:
+			currentChange = semver.Major
+		case commit.Type == "feat":
+			currentChange = semver.Minor
+		case commit.Type == "fix":
+			currentChange = semver.Patch
+		}
+		if currentChange > highestChange {
+			highestChange = currentChange
+		}
+	}
+	return highestChange
 }
