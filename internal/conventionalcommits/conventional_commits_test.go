@@ -36,6 +36,7 @@ func TestParseCommits(t *testing.T) {
 				{
 					Type:        "feat",
 					Description: "add new feature",
+					IsNested:    false,
 					Footers:     make(map[string]string),
 					SHA:         "fake-sha",
 				},
@@ -49,6 +50,7 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Scope:       "scope",
 					Description: "add new feature",
+					IsNested:    false,
 					Footers:     make(map[string]string),
 					SHA:         "fake-sha",
 				},
@@ -62,6 +64,7 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					IsBreaking:  true,
+					IsNested:    false,
 					Footers:     make(map[string]string),
 					SHA:         "fake-sha",
 				},
@@ -74,6 +77,7 @@ func TestParseCommits(t *testing.T) {
 				{
 					Type:        "feat",
 					Description: "add new feature",
+					IsNested:    false,
 					Footers:     map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
 					SHA:         "fake-sha",
 				},
@@ -86,6 +90,7 @@ func TestParseCommits(t *testing.T) {
 				{
 					Type:        "feat",
 					Description: "add new feature",
+					IsNested:    false,
 					Footers: map[string]string{
 						"Co-authored-by": "John Doe <john.doe@example.com>",
 						"Reviewed-by":    "Jane Smith <jane.smith@example.com>",
@@ -102,6 +107,7 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "[library-name] add new feature",
 					Body:        "This is the body.\n...",
+					IsNested:    false,
 					IsBreaking:  false,
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "piper_cl_number",
@@ -119,6 +125,7 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					Body:        "",
+					IsNested:    false,
 					IsBreaking:  true,
 					Footers:     map[string]string{"BREAKING CHANGE": "this is a breaking change"},
 					SHA:         "fake-sha",
@@ -133,6 +140,7 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					Body:        "Breaking change: this is a breaking change",
+					IsNested:    false,
 					IsBreaking:  false,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
@@ -147,6 +155,7 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					Body:        "This is the body of the commit message.\nIt can span multiple lines.",
+					IsNested:    false,
 					Footers:     map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
 					SHA:         "fake-sha",
 				},
@@ -160,6 +169,7 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					Body:        "This is the body.",
+					IsNested:    false,
 					IsBreaking:  true,
 					Footers:     map[string]string{"BREAKING CHANGE": "this is a breaking change\nthat spans multiple lines."},
 					SHA:         "fake-sha",
@@ -183,6 +193,7 @@ END_COMMIT_OVERRIDE`,
 					Scope:       "override",
 					Description: "this is the override message",
 					Body:        "This is the body of the override.",
+					IsNested:    false,
 					Footers:     map[string]string{"Reviewed-by": "Jane Doe"},
 					SHA:         "fake-sha",
 				},
@@ -220,6 +231,7 @@ END_NESTED_COMMIT
 					Scope:       "parser",
 					Description: "main feature",
 					Body:        "main commit body",
+					IsNested:    false,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
 				},
@@ -228,6 +240,7 @@ END_NESTED_COMMIT
 					Scope:       "sub",
 					Description: "fix a bug",
 					Body:        "some details for the fix",
+					IsNested:    true,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
 				},
@@ -236,6 +249,7 @@ END_NESTED_COMMIT
 					Scope:       "deps",
 					Description: "update deps",
 					Body:        "",
+					IsNested:    true,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
 				},
@@ -256,6 +270,7 @@ END_NESTED_COMMIT
 					Scope:       "parser",
 					Description: "main feature",
 					Body:        "main commit body",
+					IsNested:    false,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
 				},
@@ -298,12 +313,14 @@ END_COMMIT_OVERRIDE
 					Type:        "feat",
 					Description: "[abc] nested commit 1",
 					Body:        "body of nested commit 1\n...",
+					IsNested:    true,
 					Footers:     map[string]string{"PiperOrigin-RevId": "123456", "Source-link": "fake-link"},
 					SHA:         "fake-sha",
 				},
 				{
 					Type:        "feat",
 					Description: "[abc] nested commit 2",
+					IsNested:    true,
 					Body:        "body of nested commit 2\n...",
 					Footers:     map[string]string{"PiperOrigin-RevId": "654321", "Source-link": "fake-link"},
 					SHA:         "fake-sha",
@@ -330,6 +347,7 @@ END_NESTED_COMMIT`,
 					Scope:       "override",
 					Description: "this is the override message",
 					Body:        "This is the body of the override.",
+					IsNested:    false,
 					Footers:     map[string]string{"Reviewed-by": "Jane Doe"},
 					SHA:         "fake-sha",
 				},
@@ -359,20 +377,22 @@ END_NESTED_COMMIT`,
 }
 
 func TestExtractCommitParts(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name    string
 		message string
-		want    []string
+		want    []commitPart
 	}{
 		{
 			name:    "empty message",
 			message: "",
-			want:    []string(nil),
+			want:    nil,
 		},
 		{
 			name:    "no nested commits",
 			message: "feat: hello world",
-			want:    []string{"feat: hello world"},
+			want: []commitPart{
+				{message: "feat: hello world", isNested: false},
+			},
 		},
 		{
 			name: "only nested commits",
@@ -383,42 +403,37 @@ BEGIN_NESTED_COMMIT
 chore(deps): update deps
 END_NESTED_COMMIT
 `,
-			want: []string{
-				"fix(sub): fix a bug",
-				"chore(deps): update deps",
+			want: []commitPart{
+				{message: "fix(sub): fix a bug", isNested: true},
+				{message: "chore(deps): update deps", isNested: true},
 			},
 		},
 		{
-			name: "empty nested commits",
-			message: `feat(parser): main feature
-BEGIN_NESTED_COMMIT
-END_NESTED_COMMIT
-`,
-			want: []string{"feat(parser): main feature"},
-		},
-		{
-			name: "malformed nested commits",
+			name: "primary and nested commits",
 			message: `feat(parser): main feature
 BEGIN_NESTED_COMMIT
 fix(sub): fix a bug
+END_NESTED_COMMIT
 `,
-			want: []string{"feat(parser): main feature"},
+			want: []commitPart{
+				{message: "feat(parser): main feature", isNested: false},
+				{message: "fix(sub): fix a bug", isNested: true},
+			},
 		},
 		{
-			name: "malformed nested commits - reversed",
+			name: "malformed nested commit without end marker",
 			message: `feat(parser): main feature
-END_NESTED_COMMIT
-fix(sub): fix a bug
 BEGIN_NESTED_COMMIT
-`,
-			want: []string{"feat(parser): main feature\nEND_NESTED_COMMIT\nfix(sub): fix a bug"},
+fix(sub): fix a bug that is never closed`,
+			want: []commitPart{
+				{message: "feat(parser): main feature", isNested: false},
+			},
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := extractCommitParts(tt.message)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("extractCommitParts(%q) returned diff (-want +got):\n%s", tt.message, diff)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := extractCommitParts(test.message)
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(commitPart{})); diff != "" {
+				t.Errorf("extractCommitParts(%q) returned diff (-want +got):\n%s", test.message, diff)
 			}
 		})
 	}
