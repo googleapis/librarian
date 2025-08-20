@@ -139,7 +139,7 @@ func updateLibrary(r *initRunner, state *config.LibrarianState, index int) error
 	}
 
 	setReleaseTrigger(updatedLibrary, r.cfg.LibraryVersion, true)
-	r.state.Libraries[index] = updatedLibrary
+	state.Libraries[index] = updatedLibrary
 
 	return nil
 }

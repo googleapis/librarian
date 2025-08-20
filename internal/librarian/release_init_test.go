@@ -202,20 +202,21 @@ func TestSetReleaseTrigger(t *testing.T) {
 	}
 }
 
-func TestGetChangesOf(t *testing.T) {
+func TestUpdateLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name            string
 		pathAndMessages []pathAndMessage
 		tags            []string
-		library         *config.LibraryState
+		runner          *initRunner
+		state           *config.LibrarianState
 		repo            gitrepo.Repository
 		want            *config.LibraryState
 		wantErr         bool
 		wantErrMsg      string
 	}{
 		{
-			name: "get commit history of a library",
+			name: "update a library",
 			pathAndMessages: []pathAndMessage{
 				{
 					path:    "non-related/path/example.txt",
@@ -229,16 +230,32 @@ func TestGetChangesOf(t *testing.T) {
 					path:    "one/path/example.txt",
 					message: "fix: change a typo",
 				},
+				{
+					path:    "another/path/example.txt",
+					message: "fix: another commit",
+				},
 			},
 			tags: []string{
 				"one-id-1.2.3",
 			},
-			library: &config.LibraryState{
-				ID:      "one-id",
-				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
+			runner: &initRunner{cfg: &config.Config{}},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "another-id",
+						Version: "2.3.4",
+						SourceRoots: []string{
+							"another/path",
+						},
+					},
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+					},
 				},
 			},
 			want: &config.LibraryState{
@@ -260,6 +277,7 @@ func TestGetChangesOf(t *testing.T) {
 						ClNum:   "12345",
 					},
 				},
+				ReleaseTriggered: true,
 			},
 		},
 		{
@@ -282,12 +300,24 @@ func TestGetChangesOf(t *testing.T) {
 				"one-id-1.2.3",
 				"another-id-2.3.4",
 			},
-			library: &config.LibraryState{
-				ID:      "one-id",
-				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
+			runner: &initRunner{cfg: &config.Config{}},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "another-id",
+						Version: "2.3.4",
+						SourceRoots: []string{
+							"another/path",
+						},
+					},
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+					},
 				},
 			},
 			want: &config.LibraryState{
@@ -308,16 +338,29 @@ func TestGetChangesOf(t *testing.T) {
 						Subject: "change a typo",
 					},
 				},
+				ReleaseTriggered: true,
 			},
 		},
 		{
-			name: "failed to get commit history of one library",
-			library: &config.LibraryState{
-				ID:      "another-id",
-				Version: "2.3.4",
-				SourceRoots: []string{
-					"third/path",
-					"fourth/path",
+			name:   "failed to get commit history of one library",
+			runner: &initRunner{cfg: &config.Config{}},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "another-id",
+						Version: "2.3.4",
+						SourceRoots: []string{
+							"another/path",
+						},
+					},
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+					},
 				},
 			},
 			repo: &MockRepository{
@@ -329,12 +372,12 @@ func TestGetChangesOf(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var err error
-			var gotLibrary *config.LibraryState
 			if test.repo != nil {
-				gotLibrary, err = getChangesOf(test.repo, test.library)
+				test.runner.repo = test.repo
+				err = updateLibrary(test.runner, test.state, 1)
 			} else {
-				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				gotLibrary, err = getChangesOf(repo, test.library)
+				test.runner.repo = setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
+				err = updateLibrary(test.runner, test.state, 1)
 			}
 
 			if test.wantErr {
@@ -351,7 +394,7 @@ func TestGetChangesOf(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to run getChangesOf(): %q", err.Error())
 			}
-			if diff := cmp.Diff(test.want, gotLibrary, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
+			if diff := cmp.Diff(test.want, test.state.Libraries[1], cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
