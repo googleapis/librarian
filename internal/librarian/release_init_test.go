@@ -89,8 +89,17 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        os.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg:             &config.Config{},
-				state:           &config.LibrarianState{},
+				cfg: &config.Config{
+					Library: "example-id",
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-id",
+						},
+					},
+				},
+				repo: newTestGitRepo(t),
 			},
 		},
 		{
