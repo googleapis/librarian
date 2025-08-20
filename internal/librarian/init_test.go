@@ -433,6 +433,63 @@ func TestGetLibraryChanges(t *testing.T) {
 			},
 		},
 		{
+			name: "get breaking changes of one library",
+			pathAndMessages: []pathAndMessage{
+				{
+					path:    "non-related/path/example.txt",
+					message: "chore: initial commit",
+				},
+				{
+					path:    "one/path/example.txt",
+					message: "feat!: change a typo",
+				},
+				{
+					path:    "one/path/config.txt",
+					message: "feat: add another config file\n\nThis is the body\n\nBREAKING CHANGE: this is a breaking change",
+				},
+			},
+			tags: []string{
+				"one-id-1.2.3",
+				"another-id-2.3.4",
+			},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+					},
+				},
+			},
+			libraryID: "one-id",
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "one-id",
+						Version: "1.2.3",
+						SourceRoots: []string{
+							"one/path",
+							"two/path",
+						},
+						Changes: []*config.Change{
+							{
+								Type:    "feat!",
+								Subject: "add another config file",
+								Body:    "This is the body",
+							},
+							{
+								Type:    "feat!",
+								Subject: "change a typo",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "failed to get changelogs of one library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{

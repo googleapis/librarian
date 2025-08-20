@@ -28,7 +28,10 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-const KeyClNum = "PiperOrigin-RevId"
+const (
+	KeyBreakingChange = "BREAKING CHANGE"
+	KeyClNum          = "PiperOrigin-RevId"
+)
 
 // cmdInit is the command for the `release init` subcommand.
 var cmdInit = &cli.Command{
@@ -179,8 +182,9 @@ func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*confi
 			clNum = cl
 		}
 
+		changeType := getChangeType(commit)
 		changes = append(changes, &config.Change{
-			Type:       commit.Type,
+			Type:       changeType,
 			Subject:    commit.Description,
 			Body:       commit.Body,
 			ClNum:      clNum,
@@ -191,4 +195,16 @@ func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*confi
 	library.Changes = changes
 
 	return library, nil
+}
+
+// getChangeType gets the type of the commit, adding an escalation mark (!) if
+// it is a breaking change.
+func getChangeType(commit *gitrepo.ConventionalCommit) string {
+	changeType := commit.Type
+	_, ok := commit.Footers[KeyBreakingChange]
+	if commit.IsBreaking || ok {
+		changeType = changeType + "!"
+	}
+
+	return changeType
 }
