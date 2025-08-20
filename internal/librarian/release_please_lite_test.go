@@ -399,7 +399,7 @@ func TestNextVersion(t *testing.T) {
 			wantErr:             true,
 		},
 		{
-			name: "nested commit forces minor bump",
+			name: "breaking change on nested commit results in minor bump",
 			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat", IsBreaking: true, IsNested: true},
 			},
