@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"iter"
 	"log/slog"
+	"os"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/googleapis/gax-go/v2"
+	"github.com/googleapis/librarian/internal/github"
 )
 
 var triggerNameByCommandName = map[string]string{
@@ -33,6 +35,10 @@ var triggerNameByCommandName = map[string]string{
 }
 
 const region = "global"
+
+type GitHubClient interface {
+	FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*github.PullRequest, error)
+}
 
 type wrappedCloudBuildClient struct {
 	client *cloudbuild.Client
@@ -64,10 +70,14 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 	wrappedClient := &wrappedCloudBuildClient{
 		client: c,
 	}
-	return runCommandWithClient(ctx, wrappedClient, command, projectId, push)
+	ghClient, err := github.NewClient(os.Getenv("GITHUB_TOKEN"), &github.Repository{})
+	if err != nil {
+		return fmt.Errorf("error creating github client: %w", err)
+	}
+	return runCommandWithClient(ctx, wrappedClient, ghClient, command, projectId, push)
 }
 
-func runCommandWithClient(ctx context.Context, client CloudBuildClient, command string, projectId string, push bool) error {
+func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool) error {
 	// validate command is allowed
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
@@ -91,9 +101,20 @@ func runCommandWithClient(ctx context.Context, client CloudBuildClient, command 
 			"_GITHUB_TOKEN_SECRET_NAME": repository.SecretName,
 			"_PUSH":                     fmt.Sprintf("%v", push),
 		}
-		err = runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions)
-		if err != nil {
-			slog.Error("Error triggering cloudbuild", slog.Any("err", err))
+		if command == "publish-release" {
+			prs, err := ghClient.FindMergedPullRequestsWithPendingReleaseLabel(ctx, "googleapis", repository.Name)
+			if err != nil {
+				slog.Error("Error finding merged pull requests for publish-release", slog.Any("err", err), slog.String("repository", repository.Name))
+				errs = append(errs, err)
+				continue
+			}
+			if len(prs) == 0 {
+				slog.Info("No pull requests with label 'release:pending' found. Skipping 'publish-release' trigger.", slog.String("repository", repository.Name))
+				continue
+			}
+		}
+		if err := runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions); err != nil {
+			slog.Error("Error triggering cloudbuild", slog.Any("err", err), slog.String("repository", repository.Name))
 			errs = append(errs, err)
 		}
 	}
