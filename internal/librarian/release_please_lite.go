@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -26,13 +27,13 @@ const defaultTagFormat = "{id}-{version}"
 
 // GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file.
-func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*gitrepo.ConventionalCommit, error) {
+func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
 	tag := formatTag(library)
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}
-	var conventionalCommits []*gitrepo.ConventionalCommit
+	var result []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
 		files, err := repo.ChangedFilesInCommit(commit.Hash.String())
 		if err != nil {
@@ -41,13 +42,13 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 		if shouldExclude(files, library.ReleaseExcludePaths) {
 			continue
 		}
-		conventionalCommit, err := gitrepo.ParseCommit(commit.Message, commit.Hash.String())
+		parsedCommits, err := conventionalcommits.ParseCommits(commit.Message, commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
-		conventionalCommits = append(conventionalCommits, conventionalCommit)
+		result = append(result, parsedCommits...)
 	}
-	return conventionalCommits, nil
+	return result, nil
 }
 
 // shouldExclude determines if a commit should be excluded from a release.
