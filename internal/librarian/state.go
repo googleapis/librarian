@@ -158,17 +158,24 @@ func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 	return os.WriteFile(path, bytes, 0644)
 }
 
-// readLibraryState reads the library state from a container response.
+// readLibraryState reads the library state from a container response, if it exists.
+// If the response file does not exist, readLibraryState succeeds but returns a nil pointer.
 //
 // The response file is removed afterwards.
 func readLibraryState(jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
 	defer func() {
-		if err := os.Remove(jsonFilePath); err != nil {
+		if err := os.Remove(jsonFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
 			slog.Warn("fail to remove file", slog.String("name", jsonFilePath), slog.Any("err", err))
 		}
 	}()
 	if err != nil {
+		// If we only failed to read the file because it didn't exist, just succeed
+		// with a nil pointer.
+
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("failed to read response file, path: %s, error: %w", jsonFilePath, err)
 	}
 

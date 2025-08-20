@@ -59,6 +59,25 @@ func TestRunGenerateCommand(t *testing.T) {
 			wantLibraryID:     "some-library",
 			wantGenerateCalls: 1,
 		},
+		{
+			name:     "works with no response",
+			api:      "some/api",
+			repo:     newTestGitRepo(t),
+			ghClient: &mockGitHubClient{},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				noGenerateResponse: true,
+			},
+			wantLibraryID:     "some-library",
+			wantGenerateCalls: 1,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -143,7 +162,7 @@ func TestRunBuildCommand(t *testing.T) {
 			container: &mockContainerClient{
 				noBuildResponse: true,
 			},
-			wantErr: true,
+			wantBuildCalls: 1,
 		},
 		{
 			name:      "build with error response in response",
@@ -271,7 +290,7 @@ func TestRunConfigureCommand(t *testing.T) {
 			},
 			wantConfigureCalls: 1,
 			wantErr:            true,
-			wantErrMsg:         "failed to read response file",
+			wantErrMsg:         "no response file for configure container command",
 		},
 		{
 			name: "configures library without initial version",

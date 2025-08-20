@@ -346,7 +346,7 @@ func TestSaveLibrarianState(t *testing.T) {
 	}
 }
 
-func TestReadConfigureResponseJSON(t *testing.T) {
+func TestReadLibraryState(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name         string
@@ -385,6 +385,10 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 			name:      "invalid file name",
 			wantState: nil,
 		},
+		{
+			name:      "missing file",
+			wantState: nil,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -399,6 +403,18 @@ func TestReadConfigureResponseJSON(t *testing.T) {
 					t.Errorf("got %q, wanted it to contain %q", g, w)
 				}
 
+				return
+			}
+
+			if test.name == "missing file" {
+				filePath := filepath.Join(tempDir, "missing.json")
+				gotState, err := readLibraryState(filePath)
+				if err != nil {
+					t.Fatalf("readLibraryState() unexpected error: %v", err)
+				}
+				if diff := cmp.Diff(test.wantState, gotState); diff != "" {
+					t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
+				}
 				return
 			}
 

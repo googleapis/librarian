@@ -506,6 +506,9 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	if err != nil {
 		return "", err
 	}
+	if libraryState == nil {
+		return "", errors.New("no response file for configure container command")
+	}
 
 	if libraryState.Version == "" {
 		slog.Info("library doesn't receive a version, apply the default version", "id", r.cfg.Library)

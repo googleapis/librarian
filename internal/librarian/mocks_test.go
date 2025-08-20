@@ -103,6 +103,7 @@ type mockContainerClient struct {
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
+	noGenerateResponse  bool
 	noInitVersion       bool
 	wantErrorMsg        bool
 }
@@ -112,8 +113,7 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	if m.noBuildResponse {
 		return m.buildErr
 	}
-	// Write a build-response.json because it is required by generate
-	// command.
+	// Write a build-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, ".librarian"), 0755); err != nil {
 		return err
 	}
@@ -135,8 +135,7 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 		return "", m.configureErr
 	}
 
-	// Write a configure-response.json because it is required by configure
-	// command.
+	// Write a configure-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
 		return "", err
 	}
@@ -158,8 +157,12 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
-	// Write a generate-response.json because it is required by generate
-	// command.
+
+	if m.noGenerateResponse {
+		return m.generateErr
+	}
+
+	// // Write a generate-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
 		return err
 	}
