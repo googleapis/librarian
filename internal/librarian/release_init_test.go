@@ -238,7 +238,11 @@ func TestUpdateLibrary(t *testing.T) {
 			tags: []string{
 				"one-id-1.2.3",
 			},
-			runner: &initRunner{cfg: &config.Config{}},
+			runner: &initRunner{
+				cfg: &config.Config{
+					LibraryVersion: "2.0.0",
+				},
+			},
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -260,7 +264,7 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 			want: &config.LibraryState{
 				ID:      "one-id",
-				Version: "1.2.3",
+				Version: "2.0.0",
 				SourceRoots: []string{
 					"one/path",
 					"two/path",
