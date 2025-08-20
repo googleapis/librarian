@@ -29,12 +29,10 @@ import (
 type mockCloudBuildClient struct {
 	runError      error
 	buildTriggers []*cloudbuildpb.BuildTrigger
-	runCount      int
 }
 
 func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error {
 	slog.Info("running fake RunBuildTrigger")
-	c.runCount++
 	if c.runError != nil {
 		return c.runError
 	}

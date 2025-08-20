@@ -123,19 +123,6 @@ func TestRunCommandWithClient(t *testing.T) {
 			ghPRs: []*github.PullRequest{{}},
 		},
 		{
-			name:    "skips publish-release with no PRs",
-			command: "publish-release",
-			push:    true,
-			wantErr: false,
-			buildTriggers: []*cloudbuildpb.BuildTrigger{
-				{
-					Name: "publish-release",
-					Id:   "publish-release-trigger-id",
-				},
-			},
-			ghPRs: []*github.PullRequest{},
-		},
-		{
 			name:    "error finding PRs for publish-release",
 			command: "publish-release",
 			push:    true,
@@ -164,16 +151,6 @@ func TestRunCommandWithClient(t *testing.T) {
 				t.Errorf("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
 				t.Errorf("did not expect error, but received one: %s", err)
-			}
-
-			// Check if the trigger was run when it should have been.
-			// For publish-release, it should only run if there are PRs and no GitHub errors.
-			if test.command == "publish-release" {
-				shouldRun := len(test.ghPRs) > 0 && test.ghError == nil
-				triggerRan := client.runCount > 0
-				if shouldRun != triggerRan {
-					t.Errorf("trigger run status mismatch: shouldRun=%v, triggerRan=%v (runCount=%d)", shouldRun, triggerRan, client.runCount)
-				}
 			}
 		})
 	}

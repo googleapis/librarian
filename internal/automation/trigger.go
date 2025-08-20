@@ -116,7 +116,7 @@ func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient
 		}
 		err = runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions)
 		if err != nil {
-			slog.Error("Error triggering cloudbuild", slog.Any("err", err), slog.String("repository", repository.Name))
+			slog.Error("Error triggering cloudbuild", slog.Any("err", err))
 			errs = append(errs, err)
 		}
 	}
