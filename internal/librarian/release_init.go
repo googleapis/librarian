@@ -126,7 +126,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		LibraryVersion: r.cfg.LibraryVersion,
 		Output:         outputDir,
 	}
-	return r.containerClient.ReleaseInit(ctx, initRequest)
+
+	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
+		return err
+	}
+
+	return cleanAndCopyLibrary(r.state, r.repo.GetDir(), r.cfg.Library, outputDir)
 }
 
 // updateLibrary updates the library which is the index-th library in the given
