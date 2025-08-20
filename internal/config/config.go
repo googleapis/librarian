@@ -103,6 +103,12 @@ type Config struct {
 	// the tool is executing.
 	CI string
 
+	// CommandName is the name of the command being executed.
+	//
+	// commandName is populated automatically after flag parsing. No user setup is
+	// expected.
+	CommandName string
+
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
 	//
@@ -214,18 +220,12 @@ type Config struct {
 	//
 	// WorkRoot is used by all librarian commands.
 	WorkRoot string
-
-	// commandName is the name of the command being executed.
-	//
-	// commandName is populated automatically after flag parsing. No user setup is
-	// expected.
-	commandName string
 }
 
 // New returns a new Config populated with environment variables.
 func New(cmdName string) *Config {
 	return &Config{
-		commandName: cmdName,
+		CommandName: cmdName,
 		GitHubToken: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
 	}
 }
@@ -244,7 +244,7 @@ func (c *Config) setupUser() error {
 }
 
 func (c *Config) createWorkRoot() error {
-	if c.commandName == versionCmdName {
+	if c.CommandName == versionCmdName {
 		return nil
 	}
 	if c.WorkRoot != "" {
@@ -272,7 +272,7 @@ func (c *Config) createWorkRoot() error {
 }
 
 func (c *Config) deriveRepo() error {
-	if c.commandName == versionCmdName {
+	if c.CommandName == versionCmdName {
 		return nil
 	}
 	if c.Repo != "" {
@@ -313,7 +313,7 @@ func (c *Config) IsValid() (bool, error) {
 		return false, err
 	}
 
-	if c.commandName != versionCmdName && c.Repo == "" {
+	if c.CommandName != versionCmdName && c.Repo == "" {
 		return false, errors.New("language repository not specified or detected")
 	}
 

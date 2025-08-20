@@ -45,6 +45,18 @@ func addFlagLibrary(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Library, "library", "", "The ID of a single library to update")
 }
 
+func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.LibraryVersion, "library-version", "", "the library version to release. Requires the --library flag to be specified.")
+}
+
+func addFlagPR(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.PullRequest, "pr", "", "a pull request to operate on. It should be in the format of a uri https://github.com/{owner}/{repo}/pull/{number}. If not specified, will search for all merged pull requests with the label `release:pending` in the last 30 days.")
+}
+
+func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
+	fs.BoolVar(&cfg.Push, "push", false, "whether to push the generated code")
+}
+
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "",
 		`Code repository where the generated code will reside.
@@ -57,12 +69,4 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.WorkRoot, "output", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
-}
-
-func addFlagPR(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.PullRequest, "pr", "", "a pull request to operate on. It should be in the format of a uri https://github.com/{owner}/{repo}/pull/{number}. If not specified, will search for all merged pull requests with the label `release:pending` in the last 30 days.")
-}
-
-func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
-	fs.BoolVar(&cfg.Push, "push", false, "whether to push the generated code")
 }

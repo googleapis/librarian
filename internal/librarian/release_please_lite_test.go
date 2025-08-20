@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/semver"
 )
@@ -181,7 +182,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		name          string
 		repo          gitrepo.Repository
 		library       *config.LibraryState
-		want          []*gitrepo.ConventionalCommit
+		want          []*conventionalcommits.ConventionalCommit
 		wantErr       bool
 		wantErrPhrase string
 	}{
@@ -195,7 +196,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 				SourceRoots:         []string{"foo"},
 				ReleaseExcludePaths: []string{"foo/README.md"},
 			},
-			want: []*gitrepo.ConventionalCommit{
+			want: []*conventionalcommits.ConventionalCommit{
 				{
 					Type:        "feat",
 					Scope:       "foo",
@@ -259,7 +260,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
 				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -270,12 +271,12 @@ func TestGetHighestChange(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name           string
-		commits        []*gitrepo.ConventionalCommit
+		commits        []*conventionalcommits.ConventionalCommit
 		expectedChange semver.ChangeLevel
 	}{
 		{
 			name: "major change",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat", IsBreaking: true},
 				{Type: "feat"},
 				{Type: "fix"},
@@ -284,7 +285,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "minor change",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat"},
 				{Type: "fix"},
 			},
@@ -292,14 +293,14 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "patch change",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "fix"},
 			},
 			expectedChange: semver.Patch,
 		},
 		{
 			name: "no change",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "docs"},
 				{Type: "chore"},
 			},
@@ -307,12 +308,12 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name:           "no commits",
-			commits:        []*gitrepo.ConventionalCommit{},
+			commits:        []*conventionalcommits.ConventionalCommit{},
 			expectedChange: semver.None,
 		},
 		{
 			name: "nested commit forces minor bump",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "fix"},
 				{Type: "feat", IsNested: true},
 			},
@@ -320,7 +321,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "nested commit with breaking change forces minor bump",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat", IsBreaking: true, IsNested: true},
 				{Type: "feat"},
 			},
@@ -328,7 +329,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "major change and nested commit",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat", IsBreaking: true},
 				{Type: "fix", IsNested: true},
 			},
@@ -336,7 +337,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "nested commit before major change",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "fix", IsNested: true},
 				{Type: "feat", IsBreaking: true},
 			},
@@ -344,7 +345,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "nested commit with only fixes forces minor bump",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "fix"},
 				{Type: "fix", IsNested: true},
 			},
@@ -364,7 +365,7 @@ func TestNextVersion(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name                string
-		commits             []*gitrepo.ConventionalCommit
+		commits             []*conventionalcommits.ConventionalCommit
 		currentVersion      string
 		overrideNextVersion string
 		wantVersion         string
@@ -372,7 +373,7 @@ func TestNextVersion(t *testing.T) {
 	}{
 		{
 			name:                "with override version",
-			commits:             []*gitrepo.ConventionalCommit{},
+			commits:             []*conventionalcommits.ConventionalCommit{},
 			currentVersion:      "1.0.0",
 			overrideNextVersion: "2.0.0",
 			wantVersion:         "2.0.0",
@@ -380,7 +381,7 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "without override version",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat"},
 			},
 			currentVersion:      "1.0.0",
@@ -390,7 +391,7 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "derive next returns error",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat"},
 			},
 			currentVersion:      "invalid-version",
@@ -400,7 +401,7 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "breaking change on nested commit results in minor bump",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat", IsBreaking: true, IsNested: true},
 			},
 			currentVersion:      "1.2.3",
@@ -410,7 +411,7 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "major change before nested commit results in major bump",
-			commits: []*gitrepo.ConventionalCommit{
+			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat", IsBreaking: true},
 				{Type: "fix", IsNested: true},
 			},

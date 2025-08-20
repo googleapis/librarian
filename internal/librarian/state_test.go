@@ -164,6 +164,61 @@ func TestFindServiceConfigIn(t *testing.T) {
 	}
 }
 
+func TestParseGlobalConfig(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		filename   string
+		want       *config.LibrarianConfig
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:     "valid global config",
+			filename: "successful-parsing-config.yaml",
+			want: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "a/path",
+						Permissions: "read-only",
+					},
+					{
+						Path:        "another/path",
+						Permissions: "read-write",
+					},
+				},
+			},
+		},
+		{
+			name:       "invalid global config",
+			filename:   "invalid-global-config.yaml",
+			wantErr:    true,
+			wantErrMsg: "invalid global config",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			path := filepath.Join("../../testdata/test-parse-global-config", test.filename)
+			got, err := parseLibrarianConfig(path)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("parseGlobalConfig() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("parseGlobalConfig() failed: %v", err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("saveLibrarianState() mismatch (-want +got): %s", diff)
+			}
+		})
+	}
+}
+
 func TestPopulateServiceConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string

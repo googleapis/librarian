@@ -197,7 +197,7 @@ func TestDockerRun(t *testing.T) {
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian:ro", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s:/repo", repoDir),
 				testImage,
 				string(CommandBuild),
@@ -383,14 +383,14 @@ func TestDockerRun(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				releaseInitRequest := &ReleaseRequest{
+				releaseInitRequest := &ReleaseInitRequest{
 					Cfg: &config.Config{
 						Repo: repoDir,
 					},
-					State:          state,
-					Output:         testOutput,
-					GlobalConfig:   &config.GlobalConfig{},
-					partialRepoDir: partialRepoDir,
+					State:           state,
+					Output:          testOutput,
+					LibrarianConfig: &config.LibrarianConfig{},
+					partialRepoDir:  partialRepoDir,
 				}
 
 				defer os.RemoveAll(partialRepoDir)
@@ -420,14 +420,14 @@ func TestDockerRun(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				releaseInitRequest := &ReleaseRequest{
+				releaseInitRequest := &ReleaseInitRequest{
 					Cfg: &config.Config{
 						Repo: repoDir,
 					},
-					State:          state,
-					partialRepoDir: partialRepoDir,
-					Output:         testOutput,
-					GlobalConfig:   &config.GlobalConfig{},
+					State:           state,
+					partialRepoDir:  partialRepoDir,
+					Output:          testOutput,
+					LibrarianConfig: &config.LibrarianConfig{},
 				}
 				defer os.RemoveAll(partialRepoDir)
 
@@ -442,7 +442,7 @@ func TestDockerRun(t *testing.T) {
 				Image: mockImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				releaseInitRequest := &ReleaseRequest{
+				releaseInitRequest := &ReleaseInitRequest{
 					Cfg: &config.Config{
 						Repo: os.TempDir(),
 					},
@@ -466,15 +466,15 @@ func TestDockerRun(t *testing.T) {
 				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
 				}
-				releaseInitRequest := &ReleaseRequest{
+				releaseInitRequest := &ReleaseInitRequest{
 					Cfg: &config.Config{
 						Repo: repoDir,
 					},
-					State:          state,
-					partialRepoDir: partialRepoDir,
-					Output:         testOutput,
-					LibraryID:      testLibraryID,
-					GlobalConfig:   &config.GlobalConfig{},
+					State:           state,
+					partialRepoDir:  partialRepoDir,
+					Output:          testOutput,
+					LibraryID:       testLibraryID,
+					LibrarianConfig: &config.LibrarianConfig{},
 				}
 				defer os.RemoveAll(partialRepoDir)
 
@@ -504,16 +504,16 @@ func TestDockerRun(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				releaseInitRequest := &ReleaseRequest{
+				releaseInitRequest := &ReleaseInitRequest{
 					Cfg: &config.Config{
 						Repo: os.TempDir(),
 					},
-					State:          state,
-					partialRepoDir: partialRepoDir,
-					Output:         testOutput,
-					LibraryID:      testLibraryID,
-					LibraryVersion: "1.2.3",
-					GlobalConfig:   &config.GlobalConfig{},
+					State:           state,
+					partialRepoDir:  partialRepoDir,
+					Output:          testOutput,
+					LibraryID:       testLibraryID,
+					LibraryVersion:  "1.2.3",
+					LibrarianConfig: &config.LibrarianConfig{},
 				}
 				defer os.RemoveAll(partialRepoDir)
 
@@ -568,7 +568,7 @@ func TestPartialCopyRepo(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name          string
-		request       *ReleaseRequest
+		request       *ReleaseInitRequest
 		includedFiles []string
 		excludedFiles []string
 		wantErr       bool
@@ -576,7 +576,7 @@ func TestPartialCopyRepo(t *testing.T) {
 	}{
 		{
 			name: "copy all libraries and required files to partial repo",
-			request: &ReleaseRequest{
+			request: &ReleaseInitRequest{
 				Cfg: &config.Config{
 					Repo: filepath.Join(os.TempDir(), "repo"),
 				},
@@ -599,7 +599,7 @@ func TestPartialCopyRepo(t *testing.T) {
 					},
 				},
 				partialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
-				GlobalConfig: &config.GlobalConfig{
+				LibrarianConfig: &config.LibrarianConfig{
 					GlobalFilesAllowlist: []*config.GlobalFile{
 						{
 							Path:        "read/one.txt",
@@ -630,7 +630,7 @@ func TestPartialCopyRepo(t *testing.T) {
 		},
 		{
 			name: "copy one library and required files to partial repo",
-			request: &ReleaseRequest{
+			request: &ReleaseInitRequest{
 				Cfg: &config.Config{
 					Repo: filepath.Join(os.TempDir(), "repo"),
 				},
@@ -654,7 +654,7 @@ func TestPartialCopyRepo(t *testing.T) {
 					},
 				},
 				partialRepoDir: filepath.Join(os.TempDir(), "partial-repo"),
-				GlobalConfig: &config.GlobalConfig{
+				LibrarianConfig: &config.LibrarianConfig{
 					GlobalFilesAllowlist: []*config.GlobalFile{
 						{
 							Path:        "read/one.txt",
@@ -686,7 +686,7 @@ func TestPartialCopyRepo(t *testing.T) {
 		},
 		{
 			name: "copy one library with empty initial directory",
-			request: &ReleaseRequest{
+			request: &ReleaseInitRequest{
 				Cfg: &config.Config{
 					Repo:     filepath.Join(os.TempDir(), "repo"),
 					WorkRoot: filepath.Join(os.TempDir(), time.Now().String()),
@@ -710,7 +710,7 @@ func TestPartialCopyRepo(t *testing.T) {
 						},
 					},
 				},
-				GlobalConfig: &config.GlobalConfig{
+				LibrarianConfig: &config.LibrarianConfig{
 					GlobalFilesAllowlist: []*config.GlobalFile{},
 				},
 			},
@@ -726,7 +726,7 @@ func TestPartialCopyRepo(t *testing.T) {
 		},
 		{
 			name: "invalid partial repo dir",
-			request: &ReleaseRequest{
+			request: &ReleaseInitRequest{
 				Cfg: &config.Config{
 					Repo: os.TempDir(),
 				},
@@ -737,7 +737,7 @@ func TestPartialCopyRepo(t *testing.T) {
 		},
 		{
 			name: "invalid source repo dir",
-			request: &ReleaseRequest{
+			request: &ReleaseInitRequest{
 				Cfg: &config.Config{
 					Repo: "/non-existent-path",
 				},
@@ -1167,7 +1167,7 @@ func TestDocker_runCommand(t *testing.T) {
 	}
 }
 
-func prepareRepo(t *testing.T, request *ReleaseRequest) error {
+func prepareRepo(t *testing.T, request *ReleaseInitRequest) error {
 	t.Helper()
 	emptyFilename := "empty.txt"
 	repo := request.Cfg.Repo
@@ -1192,7 +1192,7 @@ func prepareRepo(t *testing.T, request *ReleaseRequest) error {
 		return err
 	}
 	// Create global files.
-	for _, globalFile := range request.GlobalConfig.GlobalFilesAllowlist {
+	for _, globalFile := range request.LibrarianConfig.GlobalFilesAllowlist {
 		filename := filepath.Join(repo, globalFile.Path)
 		if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
 			return err

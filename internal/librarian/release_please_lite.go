@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/semver"
 )
@@ -27,13 +28,13 @@ const defaultTagFormat = "{id}-{version}"
 
 // GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file.
-func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*gitrepo.ConventionalCommit, error) {
+func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
 	tag := formatTag(library)
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}
-	var conventionalCommits []*gitrepo.ConventionalCommit
+	var conventionalCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
 		files, err := repo.ChangedFilesInCommit(commit.Hash.String())
 		if err != nil {
@@ -42,14 +43,14 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 		if shouldExclude(files, library.ReleaseExcludePaths) {
 			continue
 		}
-		conventionalCommit, err := gitrepo.ParseCommit(commit.Message, commit.Hash.String())
+		parsedCommits, err := conventionalcommits.ParseCommits(commit.Message, commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
-		if conventionalCommit == nil {
+		if parsedCommits == nil {
 			continue
 		}
-		conventionalCommits = append(conventionalCommits, conventionalCommit)
+		conventionalCommits = append(conventionalCommits, parsedCommits...)
 	}
 	return conventionalCommits, nil
 }
@@ -84,7 +85,7 @@ func formatTag(library *config.LibraryState) string {
 
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
 // If overrideNextVersion is not empty, it is returned as the next version.
-func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion, overrideNextVersion string) (string, error) {
+func NextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion, overrideNextVersion string) (string, error) {
 	if overrideNextVersion != "" {
 		return overrideNextVersion, nil
 	}
@@ -93,7 +94,7 @@ func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion, override
 }
 
 // getHighestChange determines the highest-ranking change type from a slice of commits.
-func getHighestChange(commits []*gitrepo.ConventionalCommit) semver.ChangeLevel {
+func getHighestChange(commits []*conventionalcommits.ConventionalCommit) semver.ChangeLevel {
 	highestChange := semver.None
 	for _, commit := range commits {
 		var currentChange semver.ChangeLevel

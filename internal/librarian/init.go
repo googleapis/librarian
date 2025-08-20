@@ -16,8 +16,12 @@ package librarian
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+
+	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -26,7 +30,7 @@ import (
 
 // cmdInit is the command for the `release init` subcommand.
 var cmdInit = &cli.Command{
-	Short:     "release init initiates a release by creating a release pull request.",
+	Short:     "init initiates a release by creating a release pull request.",
 	UsageLine: "librarian release init [arguments]",
 	Long: `The release init command is the primary entry point for initiating a release.
 It orchestrates the process of parsing commits, determining new versions, generating
@@ -45,9 +49,11 @@ func init() {
 	fs := cmdInit.Flags
 	cfg := cmdInit.Config
 
+	addFlagAPISource(fs, cfg)
 	addFlagPush(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLibrary(fs, cfg)
+	addFlagLibraryVersion(fs, cfg)
 	addFlagRepo(fs, cfg)
 }
 
@@ -56,6 +62,7 @@ type initRunner struct {
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
+	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
 	workRoot        string
@@ -73,6 +80,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
+		librarianConfig: runner.librarianConfig,
 		image:           runner.image,
 		ghClient:        runner.ghClient,
 		containerClient: runner.containerClient,
@@ -80,5 +88,47 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 }
 
 func (r *initRunner) run(ctx context.Context) error {
-	return errors.New("not implemented")
+	outputDir := filepath.Join(r.workRoot, "output")
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output dir: %s", outputDir)
+	}
+	slog.Info("Initiating a release", "dir", outputDir)
+	return r.runInitCommand(ctx, outputDir)
+}
+
+func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
+	setReleaseTrigger(r.state, r.cfg.Library, r.cfg.LibraryVersion, true)
+	initRequest := &docker.ReleaseInitRequest{
+		Cfg:            r.cfg,
+		State:          r.state,
+		LibraryID:      r.cfg.Library,
+		LibraryVersion: r.cfg.LibraryVersion,
+		Output:         outputDir,
+	}
+	return r.containerClient.ReleaseInit(ctx, initRequest)
+}
+
+// setReleaseTrigger sets the release trigger for the library with a non-empty
+// libraryID and override the version, if provided; or for all libraries if
+// the libraryID is empty.
+func setReleaseTrigger(state *config.LibrarianState, libraryID, libraryVersion string, trigger bool) {
+	for _, library := range state.Libraries {
+		if libraryID != "" {
+			// Only set the trigger for one library.
+			if libraryID != library.ID {
+				// Set other libraries with an opposite value.
+				library.ReleaseTriggered = !trigger
+				continue
+			}
+
+			if libraryVersion != "" {
+				library.Version = libraryVersion
+			}
+			library.ReleaseTriggered = trigger
+
+			break
+		}
+		// Set the trigger for all libraries.
+		library.ReleaseTriggered = trigger
+	}
 }
