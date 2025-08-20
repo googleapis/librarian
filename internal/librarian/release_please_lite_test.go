@@ -310,6 +310,46 @@ func TestGetHighestChange(t *testing.T) {
 			commits:        []*gitrepo.ConventionalCommit{},
 			expectedChange: semver.None,
 		},
+		{
+			name: "nested commit forces minor bump",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "fix"},
+				{Type: "feat", IsNested: true},
+			},
+			expectedChange: semver.Minor,
+		},
+		{
+			name: "nested commit with breaking change forces minor bump",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "feat", IsBreaking: true, IsNested: true},
+				{Type: "feat"},
+			},
+			expectedChange: semver.Minor,
+		},
+		{
+			name: "major change and nested commit",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "feat", IsBreaking: true},
+				{Type: "fix", IsNested: true},
+			},
+			expectedChange: semver.Major,
+		},
+		{
+			name: "nested commit before major change",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "fix", IsNested: true},
+				{Type: "feat", IsBreaking: true},
+			},
+			expectedChange: semver.Major,
+		},
+		{
+			name: "nested commit with only fixes forces minor bump",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "fix"},
+				{Type: "fix", IsNested: true},
+			},
+			expectedChange: semver.Minor,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			highestChange := getHighestChange(test.commits)
@@ -357,6 +397,27 @@ func TestNextVersion(t *testing.T) {
 			overrideNextVersion: "",
 			wantVersion:         "",
 			wantErr:             true,
+		},
+		{
+			name: "nested commit forces minor bump",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "feat", IsBreaking: true, IsNested: true},
+			},
+			currentVersion:      "1.2.3",
+			overrideNextVersion: "",
+			wantVersion:         "1.3.0",
+			wantErr:             false,
+		},
+		{
+			name: "major change before nested commit results in major bump",
+			commits: []*gitrepo.ConventionalCommit{
+				{Type: "feat", IsBreaking: true},
+				{Type: "fix", IsNested: true},
+			},
+			currentVersion:      "1.2.3",
+			overrideNextVersion: "",
+			wantVersion:         "2.0.0",
+			wantErr:             false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

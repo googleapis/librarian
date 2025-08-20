@@ -36,6 +36,8 @@ type ConventionalCommit struct {
 	Footers map[string]string
 	// IsBreaking indicates if the commit introduces a breaking change.
 	IsBreaking bool
+	// IsNested indicates if the commit is a nested commit.
+	IsNested bool
 	// SHA is the full commit hash.
 	SHA string
 }

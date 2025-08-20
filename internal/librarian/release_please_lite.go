@@ -96,6 +96,12 @@ func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion, override
 func getHighestChange(commits []*gitrepo.ConventionalCommit) semver.ChangeLevel {
 	highestChange := semver.None
 	for _, commit := range commits {
+		if commit.IsNested {
+			// ignore nested commit type for version bump
+			// always increase minor version for generation PR
+			highestChange = semver.Minor
+			continue
+		}
 		if commit.IsBreaking {
 			highestChange = semver.Major
 			break // Major change has the highest precedence
