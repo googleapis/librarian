@@ -36,6 +36,7 @@ var triggerNameByCommandName = map[string]string{
 
 const region = "global"
 
+// GitHubClient handles communication with the GitHub API.
 type GitHubClient interface {
 	FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*github.PullRequest, error)
 }
@@ -113,7 +114,8 @@ func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient
 				continue
 			}
 		}
-		if err := runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions); err != nil {
+		err = runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions)
+		if err != nil {
 			slog.Error("Error triggering cloudbuild", slog.Any("err", err), slog.String("repository", repository.Name))
 			errs = append(errs, err)
 		}
