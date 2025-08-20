@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	KeyBreakingChange = "BREAKING CHANGE"
-	KeyClNum          = "PiperOrigin-RevId"
+	KeyClNum = "PiperOrigin-RevId"
 )
 
 // cmdInit is the command for the `release init` subcommand.
@@ -201,8 +200,7 @@ func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*confi
 // it is a breaking change.
 func getChangeType(commit *gitrepo.ConventionalCommit) string {
 	changeType := commit.Type
-	_, ok := commit.Footers[KeyBreakingChange]
-	if commit.IsBreaking || ok {
+	if commit.IsBreaking {
 		changeType = changeType + "!"
 	}
 
