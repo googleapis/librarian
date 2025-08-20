@@ -98,10 +98,23 @@ func (r *initRunner) run(ctx context.Context) error {
 }
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
-	setReleaseTrigger(r.state, r.cfg.Library, r.cfg.LibraryVersion, true)
+	for i, library := range r.state.Libraries {
+		if r.cfg.Library != "" {
+			if r.cfg.Library != library.ID {
+				continue
+			}
+			// Only update one library with the given library ID.
+			if err := updateLibrary(r, r.state, i); err != nil {
+				return err
+			}
 
-	if err := getLibraryChanges(r.repo, r.state, r.cfg.Library); err != nil {
-		return fmt.Errorf("failed to fetch changelog for library, %s, from repo, %s: %w", r.cfg.Library, r.repo.GetDir(), err)
+			break
+		}
+
+		// Update all libraries.
+		if err := updateLibrary(r, r.state, i); err != nil {
+			return err
+		}
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
@@ -114,60 +127,31 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	return r.containerClient.ReleaseInit(ctx, initRequest)
 }
 
-// setReleaseTrigger sets the release trigger for the library with a non-empty
-// libraryID and override the version, if provided; or for all libraries if
-// the libraryID is empty.
-func setReleaseTrigger(state *config.LibrarianState, libraryID, libraryVersion string, trigger bool) {
-	for _, library := range state.Libraries {
-		if libraryID != "" {
-			// Only set the trigger for one library.
-			if libraryID != library.ID {
-				// Set other libraries with an opposite value.
-				library.ReleaseTriggered = !trigger
-				continue
-			}
-
-			if libraryVersion != "" {
-				library.Version = libraryVersion
-			}
-			library.ReleaseTriggered = trigger
-
-			break
-		}
-		// Set the trigger for all libraries.
-		library.ReleaseTriggered = trigger
+// updateLibrary updates the library which is the index-th library in the given
+// [config.LibrarianState].
+func updateLibrary(r *initRunner, state *config.LibrarianState, index int) error {
+	library := state.Libraries[index]
+	updatedLibrary, err := getChangesOf(r.repo, library)
+	if err != nil {
+		return err
 	}
-}
 
-// getLibraryChanges gets the changelog for the library with a non-empty libraryID,
-// if provided; or for all libraries if the libraryID is empty since the library
-// was last released.
-func getLibraryChanges(repo gitrepo.Repository, state *config.LibrarianState, libraryID string) error {
-	for i, library := range state.Libraries {
-		if libraryID != "" {
-			// Only get the changelog for one library.
-			if libraryID != library.ID {
-				continue
-			}
-			updatedLibrary, err := getChangesOf(repo, library)
-			if err != nil {
-				return err
-			}
-			state.Libraries[i] = updatedLibrary
-			break
-		}
-		// Get changelog for all libraries.
-		updatedLibrary, err := getChangesOf(repo, library)
-		if err != nil {
-			return err
-		}
-		state.Libraries[i] = updatedLibrary
-	}
+	setReleaseTrigger(updatedLibrary, r.cfg.LibraryVersion, true)
+	r.state.Libraries[index] = updatedLibrary
 
 	return nil
 }
 
-// getChangesOf gets changelogs of the given library.
+// setReleaseTrigger sets the release trigger for the given library and
+// overrides the version, if provided.
+func setReleaseTrigger(library *config.LibraryState, libraryVersion string, trigger bool) {
+	if libraryVersion != "" {
+		library.Version = libraryVersion
+	}
+	library.ReleaseTriggered = trigger
+}
+
+// getChangesOf gets commit history of the given library.
 func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*config.LibraryState, error) {
 	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
 	if err != nil {
