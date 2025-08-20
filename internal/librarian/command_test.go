@@ -275,6 +275,84 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 	}
 }
 
+func TestCleanAndCopyLibrary(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		libraryID   string
+		state       *config.LibrarianState
+		repo        gitrepo.Repository
+		outputDir   string
+		setup       func(t *testing.T, outputDir string)
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:      "library not found",
+			libraryID: "non-existent-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
+			},
+			repo:    newTestGitRepo(t),
+			wantErr: true,
+		},
+		{
+			name:      "clean fails",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "some-library",
+						RemoveRegex: []string{"["}, // Invalid regex
+					},
+				},
+			},
+			repo:    newTestGitRepo(t),
+			wantErr: true,
+		},
+		{
+			name:      "copy fails on symlink",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
+			},
+			repo: newTestGitRepo(t),
+			setup: func(t *testing.T, outputDir string) {
+				// Create a symlink in the output directory to trigger an error.
+				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
+					t.Fatalf("os.Symlink() = %v", err)
+				}
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outputDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, outputDir)
+			}
+			err := cleanAndCopyLibrary(test.state, test.repo.GetDir(), test.libraryID, outputDir)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestCommitAndPush(t *testing.T) {
 	for _, test := range []struct {
 		name             string

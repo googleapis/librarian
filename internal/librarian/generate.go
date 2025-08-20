@@ -236,29 +236,11 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		return "", err
 	}
 
-	if err := r.cleanAndCopyLibrary(libraryID, outputDir); err != nil {
+	if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), libraryID, outputDir); err != nil {
 		return "", err
 	}
 
 	return libraryID, nil
-}
-
-func (r *generateRunner) cleanAndCopyLibrary(libraryID, outputDir string) error {
-	library := findLibraryByID(r.state, libraryID)
-	if library == nil {
-		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
-	}
-	slog.Info("Clean destinations and copy generated results for library", "id", libraryID)
-	if err := clean(r.repo.GetDir(), library.RemoveRegex, library.PreserveRegex); err != nil {
-		return err
-	}
-	// os.CopyFS in Go1.24 returns error when copying from a symbolic link
-	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
-	if err := os.CopyFS(r.repo.GetDir(), os.DirFS(outputDir)); err != nil {
-		return err
-	}
-	slog.Info("Library updated", "id", libraryID)
-	return nil
 }
 
 // runBuildCommand orchestrates the building of an API library using a containerized
