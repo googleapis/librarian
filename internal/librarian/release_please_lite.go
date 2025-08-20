@@ -101,7 +101,7 @@ func getHighestChange(commits []*conventionalcommits.ConventionalCommit) semver.
 		switch {
 		case commit.IsNested:
 			// ignore nested commit type for version bump
-			// always increase minor version for generation PR
+			// this allows for always increase minor version for generation PR
 			currentChange = semver.Minor
 		case commit.IsBreaking:
 			currentChange = semver.Major

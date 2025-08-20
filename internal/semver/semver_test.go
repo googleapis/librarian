@@ -8,7 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES, CONDITIONS OF ANY KIND, either express or implied.
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -163,7 +163,7 @@ func TestVersion_String(t *testing.T) {
 }
 
 func TestDeriveNext(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name            string
 		highestChange   ChangeLevel
 		currentVersion  string
@@ -230,12 +230,12 @@ func TestDeriveNext(t *testing.T) {
 			expectedVersion: "1.2.3",
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			nextVersion, err := DeriveNext(tt.highestChange, tt.currentVersion)
+		t.Run(test.name, func(t *testing.T) {
+			nextVersion, err := DeriveNext(test.highestChange, test.currentVersion)
 			if err != nil {
 				t.Fatalf("DeriveNext() returned an error: %v", err)
 			}
-			if diff := cmp.Diff(tt.expectedVersion, nextVersion); diff != "" {
+			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
 				t.Errorf("DeriveNext() returned diff (-want +got):\n%s", diff)
 			}
 		})

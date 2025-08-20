@@ -8,7 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES, OR CONDITIONS OF ANY KIND, either express or implied.
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -29,7 +29,7 @@ import (
 
 func TestShouldExclude(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name         string
 		files        []string
 		excludePaths []string
@@ -66,10 +66,10 @@ func TestShouldExclude(t *testing.T) {
 			want:         true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got := shouldExclude(tc.files, tc.excludePaths)
-			if got != tc.want {
-				t.Errorf("shouldExclude(%v, %v) = %v, want %v", tc.files, tc.excludePaths, got, tc.want)
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldExclude(test.files, test.excludePaths)
+			if got != test.want {
+				t.Errorf("shouldExclude(%v, %v) = %v, want %v", test.files, test.excludePaths, got, test.want)
 			}
 		})
 	}
@@ -77,7 +77,7 @@ func TestShouldExclude(t *testing.T) {
 
 func TestFormatTag(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name    string
 		library *config.LibraryState
 		want    string
@@ -109,10 +109,10 @@ func TestFormatTag(t *testing.T) {
 			want: "v1.2.3",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got := formatTag(tc.library)
-			if got != tc.want {
-				t.Errorf("formatTag() = %q, want %q", got, tc.want)
+		t.Run(test.name, func(t *testing.T) {
+			got := formatTag(test.library)
+			if got != test.want {
+				t.Errorf("formatTag() = %q, want %q", got, test.want)
 			}
 		})
 	}
