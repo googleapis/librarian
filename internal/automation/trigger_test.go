@@ -123,6 +123,19 @@ func TestRunCommandWithClient(t *testing.T) {
 			ghPRs: []*github.PullRequest{{}},
 		},
 		{
+			name:    "skips publish-release with no PRs",
+			command: "publish-release",
+			push:    true,
+			wantErr: false,
+			buildTriggers: []*cloudbuildpb.BuildTrigger{
+				{
+					Name: "publish-release",
+					Id:   "publish-release-trigger-id",
+				},
+			},
+			ghPRs: []*github.PullRequest{},
+		},
+		{
 			name:    "error finding PRs for publish-release",
 			command: "publish-release",
 			push:    true,
