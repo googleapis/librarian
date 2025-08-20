@@ -255,13 +255,6 @@ func hasLabel(pr *PullRequest, labelName string) bool {
 	return false
 }
 
-func isMerged(pr *PullRequest) bool {
-	if pr == nil || pr.Merged == nil {
-		return false
-	}
-	return true
-}
-
 // FindMergedPullRequestsWithPendingReleaseLabel finds all merged pull requests with the "release:pending" label.
 func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*PullRequest, error) {
 	var allPRs []*PullRequest

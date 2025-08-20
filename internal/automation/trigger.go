@@ -70,7 +70,7 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 	wrappedClient := &wrappedCloudBuildClient{
 		client: c,
 	}
-	ghClient, err := github.NewClient(os.Getenv("GITHUB_TOKEN"), &github.Repository{})
+	ghClient, err := github.NewClient(os.Getenv("LIBRARIAN_GITHUB_TOKEN"), &github.Repository{})
 	if err != nil {
 		return fmt.Errorf("error creating github client: %w", err)
 	}
