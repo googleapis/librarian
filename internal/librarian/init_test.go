@@ -132,7 +132,7 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to fetch changelog for library",
+			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
