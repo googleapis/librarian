@@ -21,6 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
+
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/cli"
@@ -182,7 +184,7 @@ func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*confi
 
 // getChangeType gets the type of the commit, adding an escalation mark (!) if
 // it is a breaking change.
-func getChangeType(commit *gitrepo.ConventionalCommit) string {
+func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
 	changeType := commit.Type
 	if commit.IsBreaking {
 		changeType = changeType + "!"
