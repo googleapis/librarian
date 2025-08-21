@@ -550,15 +550,11 @@ func TestCommitAndPush(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
-			r := &generateRunner{
-				cfg: &config.Config{
-					Push: test.push,
-				},
-				repo:     repo,
-				ghClient: client,
+			localConfig := &config.Config{
+				Push: test.push,
 			}
 
-			err := commitAndPush(context.Background(), r, "")
+			err := commitAndPush(context.Background(), localConfig, repo, client, "")
 
 			if test.wantErr {
 				if err == nil {

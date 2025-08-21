@@ -216,18 +216,18 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string) error {
-	if !r.cfg.Push {
+func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage string) error {
+	if !cfg.Push {
 		slog.Info("Push flag is not specified, skipping")
 		return nil
 	}
 	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(r.repo)
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
 		return err
 	}
 
-	status, err := r.repo.AddAll()
+	status, err := repo.AddAll()
 	if err != nil {
 		return err
 	}
@@ -239,17 +239,17 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	slog.Info("Creating branch", slog.String("branch", branch))
-	if err := r.repo.CreateBranchAndCheckout(branch); err != nil {
+	if err := repo.CreateBranchAndCheckout(branch); err != nil {
 		return err
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	slog.Info("Committing", "message", commitMessage)
-	if err := r.repo.Commit(commitMessage); err != nil {
+	if err := repo.Commit(commitMessage); err != nil {
 		return err
 	}
 
-	if err := r.repo.Push(branch); err != nil {
+	if err := repo.Push(branch); err != nil {
 		return err
 	}
 
@@ -257,7 +257,7 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 	titlePrefix := "Librarian pull request"
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	if _, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
+	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil

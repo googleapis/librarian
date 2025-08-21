@@ -149,7 +149,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
 		return err
 	}
-	if err := commitAndPush(ctx, r, prBody); err != nil {
+	if err := commitAndPush(ctx, r.cfg, r.repo, r.ghClient, prBody); err != nil {
 		return err
 	}
 	return nil
