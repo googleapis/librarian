@@ -192,6 +192,8 @@ func formatTimestamp(t time.Time) string {
 	return t.Format(yyyyMMddHHmmss)
 }
 
+// cleanAndCopyLibrary cleans the files of the given library in repoDir and copies
+// the new files from outputDir.
 func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outputDir string) error {
 	library := findLibraryByID(state, libraryID)
 	if library == nil {
