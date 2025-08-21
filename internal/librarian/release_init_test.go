@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -81,13 +82,14 @@ func TestInitRun(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		runner     *initRunner
+		files      map[string]string
 		wantErr    bool
 		wantErrMsg string
 	}{
 		{
-			name: "run docker command",
+			name: "run release init command",
 			runner: &initRunner{
-				workRoot:        os.TempDir(),
+				workRoot:        filepath.Join(t.TempDir(), "work-root"),
 				containerClient: &mockContainerClient{},
 				cfg: &config.Config{
 					Library: "example-id",
@@ -96,10 +98,21 @@ func TestInitRun(t *testing.T) {
 					Libraries: []*config.LibraryState{
 						{
 							ID: "example-id",
+							SourceRoots: []string{
+								"dir1",
+								"dir2",
+							},
 						},
 					},
 				},
-				repo: newTestGitRepo(t),
+				repo: &MockRepository{
+					Dir: filepath.Join(t.TempDir(), "repo"),
+				},
+			},
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.txt": "",
 			},
 		},
 		{
@@ -111,6 +124,9 @@ func TestInitRun(t *testing.T) {
 				},
 				cfg:   &config.Config{},
 				state: &config.LibrarianState{},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
 			},
 			wantErr:    true,
 			wantErrMsg: "simulated init error",
@@ -119,6 +135,9 @@ func TestInitRun(t *testing.T) {
 			name: "invalid work root",
 			runner: &initRunner{
 				workRoot: "/invalid/path",
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create output dir",
@@ -137,6 +156,7 @@ func TestInitRun(t *testing.T) {
 					},
 				},
 				repo: &MockRepository{
+					Dir:                             t.TempDir(),
 					GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
 				},
 			},
@@ -145,6 +165,18 @@ func TestInitRun(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			// Setup library files before running the command.
+			repoDir := test.runner.repo.GetDir()
+			for path, content := range test.files {
+				fullPath := filepath.Join(repoDir, path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+					t.Fatalf("os.WriteFile() = %v", err)
+				}
+			}
+
 			err := test.runner.run(context.Background())
 			if test.wantErr {
 				if err == nil {
