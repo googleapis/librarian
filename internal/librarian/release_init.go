@@ -150,7 +150,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 	}
 
-	return nil
+	return cleanAndCopyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir)
 }
 
 // updateLibrary updates the library which is the index-th library in the given

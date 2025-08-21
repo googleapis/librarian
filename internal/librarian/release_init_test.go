@@ -108,6 +108,7 @@ func TestInitRun(t *testing.T) {
 				repo: &MockRepository{
 					Dir: filepath.Join(t.TempDir(), "repo"),
 				},
+				librarianConfig: &config.LibrarianConfig{},
 			},
 			files: map[string]string{
 				"file1.txt":      "",
