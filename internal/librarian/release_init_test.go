@@ -87,7 +87,7 @@ func TestInitRun(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name: "run release init command",
+			name: "run release init command for one library",
 			runner: &initRunner{
 				workRoot:        filepath.Join(t.TempDir(), "work-root"),
 				containerClient: &mockContainerClient{},
@@ -96,6 +96,13 @@ func TestInitRun(t *testing.T) {
 				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
+						{
+							ID: "another-example-id",
+							SourceRoots: []string{
+								"dir3",
+								"dir4",
+							},
+						},
 						{
 							ID: "example-id",
 							SourceRoots: []string{
@@ -114,6 +121,43 @@ func TestInitRun(t *testing.T) {
 				"file1.txt":      "",
 				"dir1/file2.txt": "",
 				"dir2/file3.txt": "",
+			},
+		},
+		{
+			name: "run release init command for all libraries",
+			runner: &initRunner{
+				workRoot:        filepath.Join(t.TempDir(), "work-root"),
+				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "another-example-id",
+							SourceRoots: []string{
+								"dir3",
+								"dir4",
+							},
+						},
+						{
+							ID: "example-id",
+							SourceRoots: []string{
+								"dir1",
+								"dir2",
+							},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: filepath.Join(t.TempDir(), "repo"),
+				},
+				librarianConfig: &config.LibrarianConfig{},
+			},
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.txt": "",
+				"dir3/file3.txt": "",
+				"dir4/file4.txt": "",
 			},
 		},
 		{
