@@ -131,7 +131,26 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return err
 	}
 
-	return cleanAndCopyLibrary(r.state, r.repo.GetDir(), r.cfg.Library, outputDir)
+	for _, library := range r.state.Libraries {
+		if r.cfg.Library != "" {
+			if r.cfg.Library != library.ID {
+				continue
+			}
+			// Only copy one library to repository.
+			if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		// Copy all libraries to repository.
+		if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // updateLibrary updates the library which is the index-th library in the given
