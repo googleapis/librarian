@@ -216,3 +216,23 @@ func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
 
 	return changeType
 }
+
+func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, repoDir, outputDir string) error {
+	for _, globalFile := range cfg.GlobalFilesAllowlist {
+		if globalFile.Permissions == config.PermissionReadOnly {
+			continue
+		}
+
+		dst := filepath.Join(repoDir, globalFile.Path)
+		if err := os.Remove(dst); err != nil {
+			return fmt.Errorf("failed to remove global file, %s: %w", dst, err)
+		}
+
+		src := filepath.Join(outputDir, globalFile.Path)
+		if err := os.CopyFS(filepath.Dir(dst), os.DirFS(filepath.Dir(src))); err != nil {
+			return fmt.Errorf("failed to copy global file %s to %s: %w", src, dst, err)
+		}
+	}
+
+	return nil
+}
