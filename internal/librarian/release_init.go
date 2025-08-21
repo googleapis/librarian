@@ -217,6 +217,8 @@ func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
 	return changeType
 }
 
+// cleanAndCopyGlobalAllowlist cleans the global files in repoDir, excluding
+// read-only files and copies global files from outputDir.
 func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, repoDir, outputDir string) error {
 	for _, globalFile := range cfg.GlobalFilesAllowlist {
 		if globalFile.Permissions == config.PermissionReadOnly {
