@@ -96,7 +96,19 @@ func (r *initRunner) run(ctx context.Context) error {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
 	slog.Info("Initiating a release", "dir", outputDir)
-	return r.runInitCommand(ctx, outputDir)
+	if err := r.runInitCommand(ctx, outputDir); err != nil {
+		return err
+	}
+
+	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
+		return err
+	}
+
+	if err := commitAndPush(ctx, r.cfg, r.repo, r.ghClient, ""); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
