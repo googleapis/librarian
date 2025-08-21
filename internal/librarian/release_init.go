@@ -21,11 +21,17 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
+
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
+)
+
+const (
+	KeyClNum = "PiperOrigin-RevId"
 )
 
 // cmdInit is the command for the `release init` subcommand.
@@ -49,7 +55,6 @@ func init() {
 	fs := cmdInit.Flags
 	cfg := cmdInit.Config
 
-	addFlagAPISource(fs, cfg)
 	addFlagPush(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLibrary(fs, cfg)
@@ -60,7 +65,6 @@ func init() {
 type initRunner struct {
 	cfg             *config.Config
 	repo            gitrepo.Repository
-	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
@@ -78,7 +82,6 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		cfg:             runner.cfg,
 		workRoot:        runner.workRoot,
 		repo:            runner.repo,
-		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
 		image:           runner.image,
@@ -97,7 +100,25 @@ func (r *initRunner) run(ctx context.Context) error {
 }
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
-	setReleaseTrigger(r.state, r.cfg.Library, r.cfg.LibraryVersion, true)
+	for i, library := range r.state.Libraries {
+		if r.cfg.Library != "" {
+			if r.cfg.Library != library.ID {
+				continue
+			}
+			// Only update one library with the given library ID.
+			if err := updateLibrary(r, r.state, i); err != nil {
+				return err
+			}
+
+			break
+		}
+
+		// Update all libraries.
+		if err := updateLibrary(r, r.state, i); err != nil {
+			return err
+		}
+	}
+
 	initRequest := &docker.ReleaseInitRequest{
 		Cfg:            r.cfg,
 		State:          r.state,
@@ -108,27 +129,66 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	return r.containerClient.ReleaseInit(ctx, initRequest)
 }
 
-// setReleaseTrigger sets the release trigger for the library with a non-empty
-// libraryID and override the version, if provided; or for all libraries if
-// the libraryID is empty.
-func setReleaseTrigger(state *config.LibrarianState, libraryID, libraryVersion string, trigger bool) {
-	for _, library := range state.Libraries {
-		if libraryID != "" {
-			// Only set the trigger for one library.
-			if libraryID != library.ID {
-				// Set other libraries with an opposite value.
-				library.ReleaseTriggered = !trigger
-				continue
-			}
-
-			if libraryVersion != "" {
-				library.Version = libraryVersion
-			}
-			library.ReleaseTriggered = trigger
-
-			break
-		}
-		// Set the trigger for all libraries.
-		library.ReleaseTriggered = trigger
+// updateLibrary updates the library which is the index-th library in the given
+// [config.LibrarianState].
+func updateLibrary(r *initRunner, state *config.LibrarianState, index int) error {
+	library := state.Libraries[index]
+	updatedLibrary, err := getChangesOf(r.repo, library)
+	if err != nil {
+		return err
 	}
+
+	setReleaseTrigger(updatedLibrary, r.cfg.LibraryVersion, true)
+	state.Libraries[index] = updatedLibrary
+
+	return nil
+}
+
+// setReleaseTrigger sets the release trigger for the given library and
+// overrides the version, if provided.
+func setReleaseTrigger(library *config.LibraryState, libraryVersion string, trigger bool) {
+	if libraryVersion != "" {
+		library.Version = libraryVersion
+	}
+	library.ReleaseTriggered = trigger
+}
+
+// getChangesOf gets commit history of the given library.
+func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*config.LibraryState, error) {
+	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+	}
+
+	changes := make([]*config.Change, 0)
+	for _, commit := range commits {
+		clNum := ""
+		if cl, ok := commit.Footers[KeyClNum]; ok {
+			clNum = cl
+		}
+
+		changeType := getChangeType(commit)
+		changes = append(changes, &config.Change{
+			Type:       changeType,
+			Subject:    commit.Description,
+			Body:       commit.Body,
+			ClNum:      clNum,
+			CommitHash: commit.SHA,
+		})
+	}
+
+	library.Changes = changes
+
+	return library, nil
+}
+
+// getChangeType gets the type of the commit, adding an escalation mark (!) if
+// it is a breaking change.
+func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
+	changeType := commit.Type
+	if commit.IsBreaking {
+		changeType = changeType + "!"
+	}
+
+	return changeType
 }
