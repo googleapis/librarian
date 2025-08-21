@@ -93,6 +93,7 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{},
 				cfg: &config.Config{
 					Library: "example-id",
+					Push:    false,
 				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
@@ -128,7 +129,9 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        filepath.Join(t.TempDir(), "work-root"),
 				containerClient: &mockContainerClient{},
-				cfg:             &config.Config{},
+				cfg: &config.Config{
+					Push: false,
+				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -220,6 +223,15 @@ func TestInitRun(t *testing.T) {
 				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 					t.Fatalf("os.WriteFile() = %v", err)
 				}
+			}
+
+			// Create the librarian state file.
+			stateFile := filepath.Join(repoDir, ".librarian/state.yaml")
+			if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
+				t.Fatalf("os.MkdirAll() = %v", err)
+			}
+			if err := os.WriteFile(stateFile, []byte{}, 0644); err != nil {
+				t.Fatalf("os.WriteFile() = %v", err)
 			}
 
 			err := test.runner.run(context.Background())
