@@ -209,7 +209,30 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to fetch conventional commits for library",
+			wantErrMsg: "failed to commit and push",
+		},
+		{
+			name: "failed to commit and push",
+			runner: &initRunner{
+				workRoot:        os.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Push: true,
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-id",
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				librarianConfig: &config.LibrarianConfig{},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to commit and push",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
