@@ -200,9 +200,9 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 	if library == nil {
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
-	
+
 	if err := clean(repoDir, library.RemoveRegex, library.PreserveRegex); err != nil {
-		return err
+		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
 	}
 
 	return copyOneLibrary(repoDir, outputDir, library)
