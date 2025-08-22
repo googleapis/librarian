@@ -35,6 +35,7 @@ steps:
   - name: 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-prod/librarian@sha256:fd5a83ab38e775ccf7f8431f97050c12c1cad2490d5ca8f80a456e9f87fc88e1'
     id: stage-release
     waitFor: ['clone-language-repo', 'clone-googleapis']
+    dir: tmp
     args:
       - 'release init'
       - '-repo'
@@ -43,6 +44,9 @@ steps:
       - $_LIBRARY_ID
       - '-api-source'
       - '/workspace/googleapis'
+      - '-output'
+      - /workspace/tmp
+      - '-push=$_PUSH'
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
 tags: ['stage-release-$_REPOSITORY']
 availableSecrets:
