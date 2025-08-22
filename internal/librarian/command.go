@@ -199,15 +199,77 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 	if library == nil {
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
+	// os.CopyFS in Go1.24 returns error when copying from a symbolic link
+	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
+	fmt.Println("current output")
+	// Print out the contents of outputDir
+	fmt.Println("Contents of outputDir:")
+	walkErr := filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println("Error accessing path:", err)
+			return nil
+		}
+		rel, relErr := filepath.Rel(outputDir, path)
+		if relErr != nil {
+			fmt.Println("Error accessing path:", err)
+			return nil
+		}
+		fmt.Println(rel)
+		fmt.Println("Error accessing path:", err)
+		return nil
+	})
+	if walkErr != nil {
+		slog.Warn("Failed to list outputDir contents", "err", walkErr)
+	}
+	if err := os.CopyFS(repoDir, os.DirFS(outputDir)); err != nil {
+		return err
+	}
+
 	slog.Info("Clean destinations and copy generated results for library", "id", libraryID)
 	if err := clean(repoDir, library.RemoveRegex, library.PreserveRegex); err != nil {
 		return err
 	}
 	// os.CopyFS in Go1.24 returns error when copying from a symbolic link
 	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
+	fmt.Println("Copying files from", outputDir, "to", repoDir)
+	// Print out the contents of outputDir
+	fmt.Println("Contents of outputDir:")
+	walkErr = filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println("Error accessing path:", err)
+			return nil
+		}
+		rel, relErr := filepath.Rel(outputDir, path)
+		if relErr != nil {
+			fmt.Println("Error accessing path:", err)
+			return nil
+		}
+		fmt.Println(rel)
+		fmt.Println("Error accessing path:", err)
+		return nil
+	})
+	if walkErr != nil {
+		slog.Warn("Failed to list outputDir contents", "err", walkErr)
+	}
 	if err := os.CopyFS(repoDir, os.DirFS(outputDir)); err != nil {
 		return err
 	}
+	fmt.Println("Contents of repoDir:")
+	walkErr = filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println("Error accessing path:", err)
+			return nil
+		}
+		rel, relErr := filepath.Rel(outputDir, path)
+		if relErr != nil {
+			fmt.Println("Error accessing path:", err)
+			return nil
+		}
+		fmt.Println(rel)
+		fmt.Println("Error accessing path:", err)
+		return nil
+	})
+
 	slog.Info("Library updated", "id", libraryID)
 	return nil
 }
