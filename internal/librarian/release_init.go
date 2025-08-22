@@ -70,6 +70,7 @@ type initRunner struct {
 	ghClient        GitHubClient
 	containerClient ContainerClient
 	workRoot        string
+	partialRepo     string
 	image           string
 }
 
@@ -82,6 +83,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		cfg:             runner.cfg,
 		workRoot:        runner.workRoot,
 		repo:            runner.repo,
+		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
 		image:           runner.image,
@@ -100,6 +102,12 @@ func (r *initRunner) run(ctx context.Context) error {
 }
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
+	dst := r.partialRepo
+	src := r.repo.GetDir()
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %w", err)
+	}
+
 	for i, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
@@ -107,6 +115,9 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 			}
 			// Only update one library with the given library ID.
 			if err := updateLibrary(r, r.state, i); err != nil {
+				return err
+			}
+			if err := copyOneLibrary(dst, src, library); err != nil {
 				return err
 			}
 
@@ -117,6 +128,17 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		if err := updateLibrary(r, r.state, i); err != nil {
 			return err
 		}
+		if err := copyOneLibrary(dst, src, library); err != nil {
+			return err
+		}
+	}
+
+	if err := copyLibrarianDir(dst, src); err != nil {
+		return err
+	}
+
+	if err := copyGlobalAllowlist(dst, src, r.librarianConfig); err != nil {
+		return err
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
@@ -125,6 +147,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		LibraryID:      r.cfg.Library,
 		LibraryVersion: r.cfg.LibraryVersion,
 		Output:         outputDir,
+		PartialRepoDir: dst,
 	}
 
 	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
@@ -233,6 +256,24 @@ func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, repoDir, outputDir
 		src := filepath.Join(outputDir, globalFile.Path)
 		if err := os.CopyFS(filepath.Dir(dst), os.DirFS(filepath.Dir(src))); err != nil {
 			return fmt.Errorf("failed to copy global file %s to %s: %w", src, dst, err)
+		}
+	}
+
+	return nil
+}
+
+func copyLibrarianDir(dst, src string) error {
+	return os.CopyFS(
+		filepath.Join(dst, config.LibrarianDir),
+		os.DirFS(filepath.Join(src, config.LibrarianDir)))
+}
+
+func copyGlobalAllowlist(dst, src string, cfg *config.LibrarianConfig) error {
+	for _, globalFile := range cfg.GlobalFilesAllowlist {
+		dstPath := filepath.Join(dst, globalFile.Path)
+		srcPath := filepath.Join(src, globalFile.Path)
+		if err := copyFile(dstPath, srcPath); err != nil {
+			return err
 		}
 	}
 
