@@ -23,6 +23,7 @@ steps:
       - './cmd/automation'
       - '--project=$PROJECT_ID'
       - '--command=publish-release'
+    secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
 tags: ['publish-release-dispatcher']
 availableSecrets:
   secretManager:
