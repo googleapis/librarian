@@ -18,11 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/googleapis/librarian/internal/docker"
@@ -203,23 +206,50 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
 	fmt.Println("current output")
 	// Print out the contents of outputDir
-	fmt.Println("Contents of outputDir:")
-	walkErr := filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
+	fmt.Printf("Contents of outputDir: %s\n", outputDir)
+	entries, err := os.ReadDir(outputDir)
+	if err != nil {
+		fmt.Printf("Error reading directory: %s", err)
+	}
+	// Iterate over the entries and print their names
+	fmt.Printf("Contents of %s:\n", outputDir)
+	for _, entry := range entries {
+		fmt.Println(entry.Name())
+		info, err := entry.Info()
 		if err != nil {
-			fmt.Println("Error accessing path:", err)
-			return nil
+			log.Printf("Error getting file info for %s: %v", entry.Name(), err)
+			continue
 		}
-		rel, relErr := filepath.Rel(outputDir, path)
-		if relErr != nil {
-			fmt.Println("Error accessing path:", err)
-			return nil
+
+		// Get permission string
+		perms := info.Mode().String()
+
+		// Get owner and group ID (platform-specific)
+		var owner, group string
+		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+			owner = fmt.Sprintf("%d", stat.Uid)
+			group = fmt.Sprintf("%d", stat.Gid)
+
+			// Look up username and group name for a more readable output
+			user, err := user.LookupId(owner)
+			if err == nil {
+				owner = user.Username
+			}
+		} else {
+			// Fallback for non-Unix systems
+			owner = "unknown"
+			group = "unknown"
 		}
-		fmt.Println(rel)
-		fmt.Println("Error accessing path:", err)
-		return nil
-	})
-	if walkErr != nil {
-		slog.Warn("Failed to list outputDir contents", "err", walkErr)
+
+		// Print the formatted output
+		fmt.Printf("%s\t%s\t%s\t%d\t%s\t%s\n",
+			perms,
+			owner,
+			group,
+			info.Size(),
+			info.ModTime().Format("Jan _2 15:04"),
+			filepath.Base(info.Name()),
+		)
 	}
 	if err := os.CopyFS(repoDir, os.DirFS(outputDir)); err != nil {
 		return err
@@ -233,42 +263,18 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
 	fmt.Println("Copying files from", outputDir, "to", repoDir)
 	// Print out the contents of outputDir
-	fmt.Println("Contents of outputDir:")
-	walkErr = filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Println("Error accessing path:", err)
-			return nil
-		}
-		rel, relErr := filepath.Rel(outputDir, path)
-		if relErr != nil {
-			fmt.Println("Error accessing path:", err)
-			return nil
-		}
-		fmt.Println(rel)
-		fmt.Println("Error accessing path:", err)
-		return nil
-	})
-	if walkErr != nil {
-		slog.Warn("Failed to list outputDir contents", "err", walkErr)
+	fmt.Println("current repoDir")
+	// Print out the contents of outputDir
+	fmt.Printf("Contents of outpurepodirtDir: %s\n", repoDir)
+	entries, err = os.ReadDir(repoDir)
+	if err != nil {
+		fmt.Printf("Error reading directory: %s", err)
 	}
-	if err := os.CopyFS(repoDir, os.DirFS(outputDir)); err != nil {
-		return err
+	// Iterate over the entries and print their names
+	fmt.Printf("Contents of %s:\n", repoDir)
+	for _, entry := range entries {
+		fmt.Println(entry.Name())
 	}
-	fmt.Println("Contents of repoDir:")
-	walkErr = filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Println("Error accessing path:", err)
-			return nil
-		}
-		rel, relErr := filepath.Rel(outputDir, path)
-		if relErr != nil {
-			fmt.Println("Error accessing path:", err)
-			return nil
-		}
-		fmt.Println(rel)
-		fmt.Println("Error accessing path:", err)
-		return nil
-	})
 
 	slog.Info("Library updated", "id", libraryID)
 	return nil
