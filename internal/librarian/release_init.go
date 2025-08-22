@@ -101,11 +101,11 @@ func (r *initRunner) run(ctx context.Context) error {
 	}
 
 	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
-		return err
+		return fmt.Errorf("failed to save librarian state to %s: %w", r.repo.GetDir(), err)
 	}
 
 	if err := commitAndPush(ctx, r.cfg, r.repo, r.ghClient, ""); err != nil {
-		return err
+		return fmt.Errorf("failed to commit and push: %w", err)
 	}
 
 	return nil
