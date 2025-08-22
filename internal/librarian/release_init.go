@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -221,6 +222,9 @@ func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
 // cleanAndCopyGlobalAllowlist cleans the files listed in global allowlist in
 // repoDir, excluding read-only files and copies global files from outputDir.
 func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, repoDir, outputDir string) error {
+	if cfg == nil {
+		return errors.New("librarian config is not setup")
+	}
 	for _, globalFile := range cfg.GlobalFilesAllowlist {
 		if globalFile.Permissions == config.PermissionReadOnly {
 			continue

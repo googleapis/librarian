@@ -124,6 +124,44 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
+			name: "librarian config is not setup",
+			runner: &initRunner{
+				workRoot:        filepath.Join(t.TempDir(), "work-root"),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Library: "example-id",
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "another-example-id",
+							SourceRoots: []string{
+								"dir3",
+								"dir4",
+							},
+						},
+						{
+							ID: "example-id",
+							SourceRoots: []string{
+								"dir1",
+								"dir2",
+							},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: filepath.Join(t.TempDir(), "repo"),
+				},
+			},
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.txt": "",
+			},
+			wantErr:    true,
+			wantErrMsg: "librarian config is not setup",
+		},
+		{
 			name: "run release init command for all libraries",
 			runner: &initRunner{
 				workRoot:        filepath.Join(t.TempDir(), "work-root"),
