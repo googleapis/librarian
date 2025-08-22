@@ -191,7 +191,7 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed to create output dir",
 		},
 		{
-			name: "failed to get changes from repo",
+			name: "failed to update a library",
 			runner: &initRunner{
 				workRoot:        os.TempDir(),
 				containerClient: &mockContainerClient{},
@@ -209,7 +209,7 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to commit and push",
+			wantErrMsg: "failed to update library",
 		},
 		{
 			name: "failed to commit and push",
