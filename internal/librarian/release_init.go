@@ -55,6 +55,7 @@ func init() {
 	fs := cmdInit.Flags
 	cfg := cmdInit.Config
 
+	addFlagAPISource(fs, cfg)
 	addFlagPush(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLibrary(fs, cfg)
@@ -120,11 +121,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
-		Cfg:            r.cfg,
-		State:          r.state,
-		LibraryID:      r.cfg.Library,
-		LibraryVersion: r.cfg.LibraryVersion,
-		Output:         outputDir,
+		Cfg:             r.cfg,
+		State:           r.state,
+		LibrarianConfig: r.librarianConfig,
+		LibraryID:       r.cfg.Library,
+		LibraryVersion:  r.cfg.LibraryVersion,
+		Output:          outputDir,
 	}
 
 	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
