@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path"
@@ -199,16 +200,24 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 	if library == nil {
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
-	slog.Info("Clean destinations and copy generated results for library", "id", libraryID)
+	
 	if err := clean(repoDir, library.RemoveRegex, library.PreserveRegex); err != nil {
 		return err
 	}
-	// os.CopyFS in Go1.24 returns error when copying from a symbolic link
-	// https://github.com/golang/go/blob/9d828e80fa1f3cc52de60428cae446b35b576de8/src/os/dir.go#L143-L144
-	if err := os.CopyFS(repoDir, os.DirFS(outputDir)); err != nil {
-		return err
+
+	return copyOneLibrary(repoDir, outputDir, library)
+}
+
+func copyOneLibrary(dst, src string, library *config.LibraryState) error {
+	slog.Info("Copying library", "id", library.ID, "destination", dst, "source", src)
+	for _, srcRoot := range library.SourceRoots {
+		dstPath := filepath.Join(dst, srcRoot)
+		srcPath := filepath.Join(src, srcRoot)
+		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dstPath, err)
+		}
 	}
-	slog.Info("Library updated", "id", libraryID)
+
 	return nil
 }
 
@@ -261,4 +270,26 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil
+}
+
+func copyFile(dst, src string) (err error) {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %q: %w", src, err)
+	}
+	defer sourceFile.Close()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %s", src)
+	}
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %s", dst)
+	}
+	defer destinationFile.Close()
+
+	_, err = io.Copy(destinationFile, sourceFile)
+
+	return err
 }
