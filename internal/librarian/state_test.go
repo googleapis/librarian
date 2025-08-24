@@ -418,22 +418,6 @@ func TestReadLibraryState(t *testing.T) {
 				return
 			}
 
-			if test.name == "invalid content loader" {
-				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
-				if err := copyFileInTest(dst, test.jsonFilePath); err != nil {
-					t.Error(err)
-				}
-				_, err := readLibraryState(dst)
-				if err == nil {
-					t.Errorf("readLibraryState() expected an error but got nil")
-				}
-
-				if g, w := err.Error(), "failed to load file"; !strings.Contains(g, w) {
-					t.Errorf("got %q, wanted it to contain %q", g, w)
-				}
-				return
-			}
-
 			// The response file is removed by the readLibraryState() function,
 			// so we create a copy and read from it.
 			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
