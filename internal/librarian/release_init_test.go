@@ -187,6 +187,7 @@ func TestInitRun(t *testing.T) {
 					Dir: filepath.Join(t.TempDir(), "repo"),
 				},
 				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{
 				"file1.txt":      "",
@@ -199,7 +200,7 @@ func TestInitRun(t *testing.T) {
 		{
 			name: "docker command returns error",
 			runner: &initRunner{
-				workRoot: os.TempDir(),
+				workRoot: t.TempDir(),
 				containerClient: &mockContainerClient{
 					initErr: errors.New("simulated init error"),
 				},
@@ -208,6 +209,8 @@ func TestInitRun(t *testing.T) {
 				repo: &MockRepository{
 					Dir: t.TempDir(),
 				},
+				partialRepo:     t.TempDir(),
+				librarianConfig: &config.LibrarianConfig{},
 			},
 			wantErr:    true,
 			wantErrMsg: "simulated init error",
@@ -226,7 +229,7 @@ func TestInitRun(t *testing.T) {
 		{
 			name: "failed to get changes from repo",
 			runner: &initRunner{
-				workRoot:        os.TempDir(),
+				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
 				cfg:             &config.Config{},
 				state: &config.LibrarianState{
@@ -240,6 +243,7 @@ func TestInitRun(t *testing.T) {
 					Dir:                             t.TempDir(),
 					GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
 				},
+				partialRepo: t.TempDir(),
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch conventional commits for library",
@@ -256,6 +260,10 @@ func TestInitRun(t *testing.T) {
 				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 					t.Fatalf("os.WriteFile() = %v", err)
 				}
+			}
+			librarianDir := filepath.Join(repoDir, ".librarian")
+			if err := os.MkdirAll(librarianDir, 0755); err != nil {
+				t.Fatalf("os.MkdirAll() = %v", err)
 			}
 
 			err := test.runner.run(context.Background())
