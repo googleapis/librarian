@@ -120,6 +120,7 @@ func TestInitRun(t *testing.T) {
 					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{
 				"file1.txt":      "",
