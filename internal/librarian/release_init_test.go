@@ -151,12 +151,17 @@ func TestInitRun(t *testing.T) {
 								"dir1",
 								"dir2",
 							},
+							RemoveRegex: []string{
+								"dir1",
+								"dir2",
+							},
 						},
 					},
 				},
 				repo: &MockRepository{
-					Dir: filepath.Join(t.TempDir(), "repo"),
+					Dir: t.TempDir(),
 				},
+				partialRepo: t.TempDir(),
 			},
 			files: map[string]string{
 				"file1.txt":      "",

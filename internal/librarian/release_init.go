@@ -274,6 +274,11 @@ func copyLibrarianDir(dst, src string) error {
 }
 
 func copyGlobalAllowlist(dst, src string, cfg *config.LibrarianConfig) error {
+	if cfg == nil {
+		slog.Info("librarian config is not setup, skip copying global allowlist")
+		return nil
+	}
+
 	for _, globalFile := range cfg.GlobalFilesAllowlist {
 		dstPath := filepath.Join(dst, globalFile.Path)
 		srcPath := filepath.Join(src, globalFile.Path)
