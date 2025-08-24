@@ -18,12 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestNew(t *testing.T) {
