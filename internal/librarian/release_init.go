@@ -103,10 +103,10 @@ func (r *initRunner) run(ctx context.Context) error {
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
 	dst := r.partialRepo
-	src := r.repo.GetDir()
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
+	src := r.repo.GetDir()
 
 	for i, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
@@ -134,11 +134,11 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	if err := copyLibrarianDir(dst, src); err != nil {
-		return err
+		return fmt.Errorf("failed to copy librarian dir from %s to %s: %w", src, dst, err)
 	}
 
 	if err := copyGlobalAllowlist(dst, src, r.librarianConfig); err != nil {
-		return err
+		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
