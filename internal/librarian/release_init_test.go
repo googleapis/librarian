@@ -89,7 +89,7 @@ func TestInitRun(t *testing.T) {
 		{
 			name: "run release init command for one library",
 			runner: &initRunner{
-				workRoot:        filepath.Join(t.TempDir(), "work-root"),
+				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
 				cfg: &config.Config{
 					Library: "example-id",
@@ -109,24 +109,28 @@ func TestInitRun(t *testing.T) {
 								"dir1",
 								"dir2",
 							},
+							RemoveRegex: []string{
+								"dir1",
+								"dir2",
+							},
 						},
 					},
 				},
 				repo: &MockRepository{
-					Dir: filepath.Join(t.TempDir(), "repo"),
+					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
 			},
 			files: map[string]string{
 				"file1.txt":      "",
-				"dir1/file2.txt": "",
-				"dir2/file3.txt": "",
+				"dir1/file1.txt": "",
+				"dir2/file2.txt": "",
 			},
 		},
 		{
 			name: "run release init command without librarian config",
 			runner: &initRunner{
-				workRoot:        filepath.Join(t.TempDir(), "work-root"),
+				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
 				cfg: &config.Config{
 					Library: "example-id",
@@ -155,14 +159,14 @@ func TestInitRun(t *testing.T) {
 			},
 			files: map[string]string{
 				"file1.txt":      "",
-				"dir1/file2.txt": "",
-				"dir2/file3.txt": "",
+				"dir1/file1.txt": "",
+				"dir2/file2.txt": "",
 			},
 		},
 		{
 			name: "run release init command for all libraries",
 			runner: &initRunner{
-				workRoot:        filepath.Join(t.TempDir(), "work-root"),
+				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
 				cfg:             &config.Config{},
 				state: &config.LibrarianState{
@@ -173,6 +177,10 @@ func TestInitRun(t *testing.T) {
 								"dir3",
 								"dir4",
 							},
+							RemoveRegex: []string{
+								"dir3",
+								"dir4",
+							},
 						},
 						{
 							ID: "example-id",
@@ -180,19 +188,23 @@ func TestInitRun(t *testing.T) {
 								"dir1",
 								"dir2",
 							},
+							RemoveRegex: []string{
+								"dir1",
+								"dir2",
+							},
 						},
 					},
 				},
 				repo: &MockRepository{
-					Dir: filepath.Join(t.TempDir(), "repo"),
+					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{
 				"file1.txt":      "",
-				"dir1/file2.txt": "",
-				"dir2/file3.txt": "",
+				"dir1/file1.txt": "",
+				"dir2/file2.txt": "",
 				"dir3/file3.txt": "",
 				"dir4/file4.txt": "",
 			},
@@ -252,13 +264,18 @@ func TestInitRun(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Setup library files before running the command.
 			repoDir := test.runner.repo.GetDir()
+			outputDir := filepath.Join(test.runner.workRoot, "output")
 			for path, content := range test.files {
-				fullPath := filepath.Join(repoDir, path)
-				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-					t.Fatalf("os.MkdirAll() = %v", err)
-				}
-				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
-					t.Fatalf("os.WriteFile() = %v", err)
+				// Create files in repoDir and outputDir because the run() function
+				// will copy files from outputDir to repoDir.
+				for _, dir := range []string{repoDir, outputDir} {
+					fullPath := filepath.Join(dir, path)
+					if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
 				}
 			}
 			librarianDir := filepath.Join(repoDir, ".librarian")
@@ -279,7 +296,7 @@ func TestInitRun(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Errorf("run() got nil runner, want non-nil")
+				t.Errorf("run() failed: %s", err.Error())
 			}
 		})
 	}
