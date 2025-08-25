@@ -79,6 +79,15 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 }
 
 func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool) error {
+	config, err := loadRepositoriesConfig()
+	if err != nil {
+		slog.Error("error loading repositories config", slog.Any("err", err))
+		return err
+	}
+	return runCommandWithConfig(ctx, client, ghClient, command, projectId, push, build, config)
+}
+
+func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, config *RepositoriesConfig) error {
 	// validate command is allowed
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
@@ -87,18 +96,19 @@ func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient
 
 	errs := make([]error, 0)
 
-	config, err := loadRepositoriesConfig()
-	if err != nil {
-		slog.Error("error loading repositories config", slog.Any("err", err))
-		return err
-	}
-
 	repositories := config.RepositoriesForCommand(command)
 	for _, repository := range repositories {
-		slog.Debug("running command", slog.String("command", command), slog.String("repository", repository.Name))
+		slog.Debug("running command", "command", command, "repository", repository.Name)
+
+		gitUrl, err := repository.GitURL()
+		if err != nil {
+			slog.Error("repository has no configured git url", slog.Any("repository", repository))
+			return err
+		}
 
 		substitutions := map[string]string{
 			"_REPOSITORY":               repository.Name,
+			"_FULL_REPOSITORY":          gitUrl,
 			"_GITHUB_TOKEN_SECRET_NAME": repository.SecretName,
 			"_PUSH":                     fmt.Sprintf("%v", push),
 		}

@@ -176,3 +176,83 @@ func TestRunCommandWithClient(t *testing.T) {
 		})
 	}
 }
+
+func TestRunCommandWithConfig(t *testing.T) {
+	var buildTriggers = []*cloudbuildpb.BuildTrigger{
+		{
+			Name: "generate",
+			Id:   "generate-trigger-id",
+		},
+		{
+			Name: "prepare-release",
+			Id:   "prepare-release-trigger-id",
+		},
+	}
+	for _, test := range []struct {
+		name     string
+		command  string
+		config   *RepositoriesConfig
+		want     string
+		runError error
+		wantErr  bool
+		ghPRs    []*github.PullRequest
+		ghError  error
+	}{
+		{
+			name:    "runs generate trigger with name",
+			command: "generate",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"generate"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "runs generate trigger with full name",
+			command: "generate",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "https://github.com/googleapis/google-cloud-python",
+						SupportedCommands: []string{"generate"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "runs generate trigger without name",
+			command: "generate",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						SupportedCommands: []string{"generate"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			client := &mockCloudBuildClient{
+				runError:      test.runError,
+				buildTriggers: buildTriggers,
+			}
+			ghClient := &mockGitHubClient{
+				prs: test.ghPRs,
+				err: test.ghError,
+			}
+			err := runCommandWithConfig(ctx, client, ghClient, test.command, "some-project", true, true, test.config)
+			if test.wantErr && err == nil {
+				t.Errorf("expected error, but did not return one")
+			} else if !test.wantErr && err != nil {
+				t.Errorf("did not expect error, but received one: %s", err)
+			}
+		})
+	}
+}
