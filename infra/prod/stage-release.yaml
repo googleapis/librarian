@@ -37,7 +37,8 @@ steps:
     waitFor: ['clone-language-repo', 'clone-googleapis']
     dir: tmp
     args:
-      - 'release init'
+      - 'release'
+      - 'init'
       - '-repo'
       - '/workspace/$_REPOSITORY'
       - '-library'
