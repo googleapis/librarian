@@ -62,7 +62,7 @@ func (c *wrappedCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cl
 }
 
 // RunCommand triggers a command for each registered repository that supports it.
-func RunCommand(ctx context.Context, command string, projectId string, push bool) error {
+func RunCommand(ctx context.Context, command string, projectId string, push bool, build bool) error {
 	c, err := cloudbuild.NewClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error creating cloudbuild client: %w", err)
@@ -75,10 +75,10 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 	if err != nil {
 		return fmt.Errorf("error creating github client: %w", err)
 	}
-	return runCommandWithClient(ctx, wrappedClient, ghClient, command, projectId, push)
+	return runCommandWithClient(ctx, wrappedClient, ghClient, command, projectId, push, build)
 }
 
-func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool) error {
+func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool) error {
 	// validate command is allowed
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
@@ -113,6 +113,9 @@ func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient
 				slog.Info("No pull requests with label 'release:pending' found. Skipping 'publish-release' trigger.", slog.String("repository", repository.Name))
 				continue
 			}
+		} else if command == "generate" {
+			// only pass _BUILD to generate trigger
+			substitutions["_BUILD"] = fmt.Sprintf("%v", build)
 		}
 		err = runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions)
 		if err != nil {

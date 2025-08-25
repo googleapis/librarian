@@ -61,6 +61,7 @@ steps:
       - '-output'
       - /workspace/tmp
       - '-push=$_PUSH'
+      - '-build=$_BUILD'
     secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
 tags: ['generate-$_REPOSITORY']
 availableSecrets:

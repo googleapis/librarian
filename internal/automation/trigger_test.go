@@ -37,6 +37,7 @@ func TestRunCommandWithClient(t *testing.T) {
 		name          string
 		command       string
 		push          bool
+		build         bool
 		want          string
 		runError      error
 		wantErr       bool
@@ -48,6 +49,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			name:    "runs generate trigger",
 			command: "generate",
 			push:    true,
+			build:   false,
 			wantErr: false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -64,6 +66,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			name:    "runs prepare-release trigger",
 			command: "stage-release",
 			push:    true,
+			build:   false,
 			wantErr: false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -80,6 +83,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			name:    "invalid command",
 			command: "invalid-command",
 			push:    true,
+			build:   false,
 			wantErr: true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -96,6 +100,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			name:     "error triggering",
 			command:  "generate",
 			push:     true,
+			build:    false,
 			runError: fmt.Errorf("some-error"),
 			wantErr:  true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
@@ -113,6 +118,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			name:    "runs publish-release trigger",
 			command: "publish-release",
 			push:    true,
+			build:   false,
 			wantErr: false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -126,6 +132,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			name:    "skips publish-release with no PRs",
 			command: "publish-release",
 			push:    true,
+			build:   false,
 			wantErr: false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -139,6 +146,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			name:    "error finding PRs for publish-release",
 			command: "publish-release",
 			push:    true,
+			build:   false,
 			wantErr: true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
@@ -159,7 +167,7 @@ func TestRunCommandWithClient(t *testing.T) {
 				prs: test.ghPRs,
 				err: test.ghError,
 			}
-			err := runCommandWithClient(ctx, client, ghClient, test.command, "some-project", test.push)
+			err := runCommandWithClient(ctx, client, ghClient, test.command, "some-project", test.push, test.build)
 			if test.wantErr && err == nil {
 				t.Errorf("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
