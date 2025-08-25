@@ -102,15 +102,16 @@ type mockContainerClient struct {
 	generateCalls       int
 	buildCalls          int
 	configureCalls      int
-	releaseCalls        int
+	initCalls           int
 	generateErr         error
 	buildErr            error
 	configureErr        error
-	releaseErr          error
+	initErr             error
 	failGenerateForID   string
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
+	noGenerateResponse  bool
 	noInitVersion       bool
 	wantErrorMsg        bool
 }
@@ -120,8 +121,7 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	if m.noBuildResponse {
 		return m.buildErr
 	}
-	// Write a build-response.json because it is required by generate
-	// command.
+	// Write a build-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, ".librarian"), 0755); err != nil {
 		return err
 	}
@@ -143,8 +143,7 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 		return "", m.configureErr
 	}
 
-	// Write a configure-response.json because it is required by configure
-	// command.
+	// Write a configure-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
 		return "", err
 	}
@@ -166,8 +165,12 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
-	// Write a generate-response.json because it is required by generate
-	// command.
+
+	if m.noGenerateResponse {
+		return m.generateErr
+	}
+
+	// // Write a generate-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
 		return err
 	}
@@ -190,9 +193,9 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	return m.generateErr
 }
 
-func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseRequest) error {
-	m.releaseCalls++
-	return m.releaseErr
+func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error {
+	m.initCalls++
+	return m.initErr
 }
 
 type MockRepository struct {
@@ -210,6 +213,8 @@ type MockRepository struct {
 	GetCommitsForPathsSinceTagError error
 	ChangedFilesInCommitValue       []string
 	ChangedFilesInCommitError       error
+	CreateBranchAndCheckoutError    error
+	PushError                       error
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -254,4 +259,18 @@ func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
 		return nil, m.ChangedFilesInCommitError
 	}
 	return m.ChangedFilesInCommitValue, nil
+}
+
+func (m *MockRepository) CreateBranchAndCheckout(name string) error {
+	if m.CreateBranchAndCheckoutError != nil {
+		return m.CreateBranchAndCheckoutError
+	}
+	return nil
+}
+
+func (m *MockRepository) Push(name string) error {
+	if m.PushError != nil {
+		return m.PushError
+	}
+	return nil
 }

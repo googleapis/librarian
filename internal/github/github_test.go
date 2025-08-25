@@ -934,3 +934,72 @@ func TestCreateIssueComment(t *testing.T) {
 		})
 	}
 }
+
+func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name          string
+		handler       http.HandlerFunc
+		wantPRs       []*PullRequest
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{
+			name: "Success with single page",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Get("state") != "closed" {
+					t.Errorf("unexpected state: got %q", r.URL.Query().Get("state"))
+				}
+				pr1 := github.PullRequest{Number: github.Ptr(1), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
+				pr2 := github.PullRequest{Number: github.Ptr(2), Labels: []*github.Label{{Name: github.Ptr("other-label")}}}
+				pr3 := github.PullRequest{Number: github.Ptr(4), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
+				prs := []*github.PullRequest{&pr1, &pr2, &pr3}
+				b, err := json.Marshal(prs)
+				if err != nil {
+					t.Fatalf("json.Marshal() failed: %v", err)
+				}
+				fmt.Fprint(w, string(b))
+			},
+			wantPRs: []*PullRequest{
+				{Number: github.Ptr(4), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
+			},
+		},
+		{
+			name: "API error",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			wantErr:       true,
+			wantErrSubstr: "500",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(test.handler)
+			defer server.Close()
+
+			repo := &Repository{Owner: "owner", Name: "repo"}
+			client, err := newClientWithHTTP("fake-token", repo, server.Client())
+			if err != nil {
+				t.Fatalf("newClientWithHTTP() error = %v", err)
+			}
+			client.BaseURL, _ = url.Parse(server.URL + "/")
+
+			prs, err := client.FindMergedPullRequestsWithPendingReleaseLabel(context.Background(), "owner", "repo")
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("FindMergedPullRequestsWithPendingReleaseLabel() err = nil, want error containing %q", test.wantErrSubstr)
+				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("FindMergedPullRequestsWithPendingReleaseLabel() err = %v, want error containing %q", err, test.wantErrSubstr)
+				}
+			} else if err != nil {
+				t.Errorf("FindMergedPullRequestsWithPendingReleaseLabel() err = %v, want nil", err)
+			}
+
+			if diff := cmp.Diff(test.wantPRs, prs); diff != "" {
+				t.Errorf("FindMergedPullRequestsWithPendingReleaseLabel() prs mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

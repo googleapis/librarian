@@ -16,22 +16,20 @@ package librarian
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 func TestShouldExclude(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name         string
 		files        []string
 		excludePaths []string
@@ -68,10 +66,10 @@ func TestShouldExclude(t *testing.T) {
 			want:         true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got := shouldExclude(tc.files, tc.excludePaths)
-			if got != tc.want {
-				t.Errorf("shouldExclude(%v, %v) = %v, want %v", tc.files, tc.excludePaths, got, tc.want)
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldExclude(test.files, test.excludePaths)
+			if got != test.want {
+				t.Errorf("shouldExclude(%v, %v) = %v, want %v", test.files, test.excludePaths, got, test.want)
 			}
 		})
 	}
@@ -79,7 +77,7 @@ func TestShouldExclude(t *testing.T) {
 
 func TestFormatTag(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name    string
 		library *config.LibraryState
 		want    string
@@ -111,75 +109,45 @@ func TestFormatTag(t *testing.T) {
 			want: "v1.2.3",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got := formatTag(tc.library, "")
-			if got != tc.want {
-				t.Errorf("formatTag() = %q, want %q", got, tc.want)
+		t.Run(test.name, func(t *testing.T) {
+			got := formatTag(test.library, "")
+			if got != test.want {
+				t.Errorf("formatTag() = %q, want %q", got, test.want)
 			}
 		})
 	}
 }
 
-func setupRepoForGetCommits(t *testing.T) *gitrepo.LocalRepository {
-	t.Helper()
-	dir := t.TempDir()
-	gitRepo, err := git.PlainInit(dir, false)
-	if err != nil {
-		t.Fatalf("git.PlainInit failed: %v", err)
-	}
-
-	createAndCommit := func(path, msg string) {
-		w, err := gitRepo.Worktree()
-		if err != nil {
-			t.Fatalf("Worktree() failed: %v", err)
-		}
-		fullPath := filepath.Join(dir, path)
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-			t.Fatalf("os.MkdirAll failed: %v", err)
-		}
-		if err := os.WriteFile(fullPath, []byte("content"), 0644); err != nil {
-			t.Fatalf("os.WriteFile failed: %v", err)
-		}
-		if _, err := w.Add(path); err != nil {
-			t.Fatalf("w.Add failed: %v", err)
-		}
-		_, err = w.Commit(msg, &git.CommitOptions{
-			Author: &object.Signature{Name: "Test", Email: "test@example.com"},
-		})
-		if err != nil {
-			t.Fatalf("w.Commit failed: %v", err)
-		}
-	}
-
-	createAndCommit("foo/a.txt", "feat(foo): initial commit for foo")
-	head, err := gitRepo.Head()
-	if err != nil {
-		t.Fatalf("repo.Head() failed: %v", err)
-	}
-	if _, err := gitRepo.CreateTag("foo-v1.0.0", head.Hash(), nil); err != nil {
-		t.Fatalf("CreateTag failed: %v", err)
-	}
-
-	createAndCommit("bar/a.txt", "feat(bar): initial commit for bar")
-	createAndCommit("foo/b.txt", "fix(foo): a fix for foo")
-	createAndCommit("foo/README.md", "docs(foo): update README")
-	createAndCommit("foo/c.txt", "feat(foo): another feature for foo")
-
-	r, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
-	if err != nil {
-		t.Fatalf("gitrepo.NewRepository failed: %v", err)
-	}
-	return r
-}
-
 func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 	t.Parallel()
-	repoWithCommits := setupRepoForGetCommits(t)
+	pathAndMessages := []pathAndMessage{
+		{
+			path:    "foo/a.txt",
+			message: "feat(foo): initial commit for foo",
+		},
+		{
+			path:    "bar/a.txt",
+			message: "feat(bar): initial commit for bar",
+		},
+		{
+			path:    "foo/b.txt",
+			message: "fix(foo): a fix for foo",
+		},
+		{
+			path:    "foo/README.md",
+			message: "docs(foo): update README",
+		},
+		{
+			path:    "foo/c.txt",
+			message: "feat(foo): another feature for foo",
+		},
+	}
+	repoWithCommits := setupRepoForGetCommits(t, pathAndMessages, []string{"foo-v1.0.0"})
 	for _, test := range []struct {
 		name          string
 		repo          gitrepo.Repository
 		library       *config.LibraryState
-		want          []*gitrepo.ConventionalCommit
+		want          []*conventionalcommits.ConventionalCommit
 		wantErr       bool
 		wantErrPhrase string
 	}{
@@ -193,7 +161,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 				SourceRoots:         []string{"foo"},
 				ReleaseExcludePaths: []string{"foo/README.md"},
 			},
-			want: []*gitrepo.ConventionalCommit{
+			want: []*conventionalcommits.ConventionalCommit{
 				{
 					Type:        "feat",
 					Scope:       "foo",
@@ -257,8 +225,175 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "Body", "IsBreaking")); diff != "" {
 				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetHighestChange(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name           string
+		commits        []*conventionalcommits.ConventionalCommit
+		expectedChange semver.ChangeLevel
+	}{
+		{
+			name: "major change",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat", IsBreaking: true},
+				{Type: "feat"},
+				{Type: "fix"},
+			},
+			expectedChange: semver.Major,
+		},
+		{
+			name: "minor change",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+				{Type: "fix"},
+			},
+			expectedChange: semver.Minor,
+		},
+		{
+			name: "patch change",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "fix"},
+			},
+			expectedChange: semver.Patch,
+		},
+		{
+			name: "no change",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "docs"},
+				{Type: "chore"},
+			},
+			expectedChange: semver.None,
+		},
+		{
+			name:           "no commits",
+			commits:        []*conventionalcommits.ConventionalCommit{},
+			expectedChange: semver.None,
+		},
+		{
+			name: "nested commit forces minor bump",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "fix"},
+				{Type: "feat", IsNested: true},
+			},
+			expectedChange: semver.Minor,
+		},
+		{
+			name: "nested commit with breaking change forces minor bump",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat", IsBreaking: true, IsNested: true},
+				{Type: "feat"},
+			},
+			expectedChange: semver.Minor,
+		},
+		{
+			name: "major change and nested commit",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat", IsBreaking: true},
+				{Type: "fix", IsNested: true},
+			},
+			expectedChange: semver.Major,
+		},
+		{
+			name: "nested commit before major change",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "fix", IsNested: true},
+				{Type: "feat", IsBreaking: true},
+			},
+			expectedChange: semver.Major,
+		},
+		{
+			name: "nested commit with only fixes forces minor bump",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "fix"},
+				{Type: "fix", IsNested: true},
+			},
+			expectedChange: semver.Minor,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			highestChange := getHighestChange(test.commits)
+			if diff := cmp.Diff(test.expectedChange, highestChange); diff != "" {
+				t.Errorf("getHighestChange() returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNextVersion(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name                string
+		commits             []*conventionalcommits.ConventionalCommit
+		currentVersion      string
+		overrideNextVersion string
+		wantVersion         string
+		wantErr             bool
+	}{
+		{
+			name:                "with override version",
+			commits:             []*conventionalcommits.ConventionalCommit{},
+			currentVersion:      "1.0.0",
+			overrideNextVersion: "2.0.0",
+			wantVersion:         "2.0.0",
+			wantErr:             false,
+		},
+		{
+			name: "without override version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			currentVersion:      "1.0.0",
+			overrideNextVersion: "",
+			wantVersion:         "1.1.0",
+			wantErr:             false,
+		},
+		{
+			name: "derive next returns error",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			currentVersion:      "invalid-version",
+			overrideNextVersion: "",
+			wantVersion:         "",
+			wantErr:             true,
+		},
+		{
+			name: "breaking change on nested commit results in minor bump",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat", IsBreaking: true, IsNested: true},
+			},
+			currentVersion:      "1.2.3",
+			overrideNextVersion: "",
+			wantVersion:         "1.3.0",
+			wantErr:             false,
+		},
+		{
+			name: "major change before nested commit results in major bump",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat", IsBreaking: true},
+				{Type: "fix", IsNested: true},
+			},
+			currentVersion:      "1.2.3",
+			overrideNextVersion: "",
+			wantVersion:         "2.0.0",
+			wantErr:             false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotVersion, err := NextVersion(test.commits, test.currentVersion, test.overrideNextVersion)
+			if (err != nil) != test.wantErr {
+				t.Errorf("NextVersion() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if gotVersion != test.wantVersion {
+				t.Errorf("NextVersion() = %v, want %v", gotVersion, test.wantVersion)
 			}
 		})
 	}

@@ -24,8 +24,8 @@ const (
 	PermissionReadWrite = "read-write"
 )
 
-// GlobalConfig defines the contract for the config.yaml file.
-type GlobalConfig struct {
+// LibrarianConfig defines the contract for the config.yaml file.
+type LibrarianConfig struct {
 	GlobalFilesAllowlist []*GlobalFile `yaml:"global_files_allowlist"`
 }
 
@@ -41,8 +41,8 @@ var validPermissions = map[string]bool{
 	PermissionReadWrite: true,
 }
 
-// Validate checks that the GlobalConfig is valid.
-func (g *GlobalConfig) Validate() error {
+// Validate checks that the LibrarianConfig is valid.
+func (g *LibrarianConfig) Validate() error {
 	for i, globalFile := range g.GlobalFilesAllowlist {
 		path, permissions := globalFile.Path, globalFile.Permissions
 		if !isValidDirPath(path) {

@@ -119,8 +119,10 @@ func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, e
 // which must have a GitHub HTTPS URL. We assume a base branch of "main".
 func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, title, body string) (*PullRequestMetadata, error) {
 	if body == "" {
+		slog.Warn("Provided PR body is empty, setting default.")
 		body = "Regenerated all changed APIs. See individual commits for details."
 	}
+	slog.Info("Creating PR", "branch", remoteBranch, "title", title, "body", body)
 	newPR := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &remoteBranch,
@@ -241,4 +243,41 @@ func (c *Client) CreateIssueComment(ctx context.Context, number int, comment str
 		Body: &comment,
 	})
 	return err
+}
+
+// hasLabel checks if a pull request has a given label.
+func hasLabel(pr *PullRequest, labelName string) bool {
+	for _, l := range pr.Labels {
+		if l.GetName() == labelName {
+			return true
+		}
+	}
+	return false
+}
+
+// FindMergedPullRequestsWithPendingReleaseLabel finds all merged pull requests with the "release:pending" label.
+func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*PullRequest, error) {
+	var allPRs []*PullRequest
+	opt := &github.PullRequestListOptions{
+		State: "closed",
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
+	}
+	for {
+		prs, resp, err := c.PullRequests.List(ctx, owner, repo, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, pr := range prs {
+			if pr.GetMerged() && hasLabel(pr, "release:pending") {
+				allPRs = append(allPRs, pr)
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+	return allPRs, nil
 }

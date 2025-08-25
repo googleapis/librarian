@@ -15,11 +15,16 @@
 package librarian
 
 import (
+	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -115,9 +120,9 @@ func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 		t.Fatalf("os.WriteFile: %v", err)
 	}
 	if writeState {
-		// Create a state.yaml file.
-		stateDir := filepath.Join(dir, config.LibrarianDir)
-		if err := os.MkdirAll(stateDir, 0755); err != nil {
+		// Create a state.yaml and config.yaml file in .librarian dir.
+		librarianDir := filepath.Join(dir, config.LibrarianDir)
+		if err := os.MkdirAll(librarianDir, 0755); err != nil {
 			t.Fatalf("os.MkdirAll: %v", err)
 		}
 
@@ -142,8 +147,12 @@ func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 		if err != nil {
 			t.Fatalf("yaml.Marshal() = %v", err)
 		}
-		stateFile := filepath.Join(stateDir, "state.yaml")
+		stateFile := filepath.Join(librarianDir, "state.yaml")
 		if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
+			t.Fatalf("os.WriteFile: %v", err)
+		}
+		configFile := filepath.Join(librarianDir, "config.yaml")
+		if err := os.WriteFile(configFile, []byte{}, 0644); err != nil {
 			t.Fatalf("os.WriteFile: %v", err)
 		}
 	}
@@ -164,4 +173,69 @@ func runGit(t *testing.T, dir string, args ...string) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("git %v: %v", args, err)
 	}
+}
+
+// setupRepoForGetCommits creates an empty gitrepo and creates some commits and
+// tags.
+//
+// Each commit has a file path and a commit message.
+// Note that pathAndMessages should at least have one element. All tags are created
+// after the first commit.
+func setupRepoForGetCommits(t *testing.T, pathAndMessages []pathAndMessage, tags []string) *gitrepo.LocalRepository {
+	t.Helper()
+	dir := t.TempDir()
+	gitRepo, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("git.PlainInit failed: %v", err)
+	}
+
+	createAndCommit := func(path, msg string) {
+		w, err := gitRepo.Worktree()
+		if err != nil {
+			t.Fatalf("Worktree() failed: %v", err)
+		}
+		fullPath := filepath.Join(dir, path)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+			t.Fatalf("os.MkdirAll failed: %v", err)
+		}
+		content := fmt.Sprintf("content-%d", rand.Intn(10000))
+		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+			t.Fatalf("os.WriteFile failed: %v", err)
+		}
+		if _, err := w.Add(path); err != nil {
+			t.Fatalf("w.Add failed: %v", err)
+		}
+		_, err = w.Commit(msg, &git.CommitOptions{
+			Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+		})
+		if err != nil {
+			t.Fatalf("w.Commit failed: %v", err)
+		}
+	}
+
+	createAndCommit(pathAndMessages[0].path, pathAndMessages[0].message)
+	head, err := gitRepo.Head()
+	if err != nil {
+		t.Fatalf("repo.Head() failed: %v", err)
+	}
+	for _, tag := range tags {
+		if _, err := gitRepo.CreateTag(tag, head.Hash(), nil); err != nil {
+			t.Fatalf("CreateTag failed: %v", err)
+		}
+	}
+
+	for _, pam := range pathAndMessages[1:] {
+		createAndCommit(pam.path, pam.message)
+	}
+
+	r, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
+	if err != nil {
+		t.Fatalf("gitrepo.NewRepository failed: %v", err)
+	}
+	return r
+}
+
+type pathAndMessage struct {
+	path    string
+	message string
 }

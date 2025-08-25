@@ -18,7 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -36,6 +38,7 @@ type commandRunner struct {
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
+	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
 	workRoot        string
@@ -46,7 +49,8 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI)
+
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +58,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	var sourceRepo gitrepo.Repository
 	var sourceRepoDir string
 	if cfg.CommandName != tagAndReleaseCmdName {
-		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI)
+		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
 		}
@@ -64,6 +68,12 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	librarianConfig, err := loadLibrarianConfig(languageRepo)
+	if err != nil {
+		return nil, err
+	}
+
 	image := deriveImage(cfg.Image, state)
 
 	var gitRepo *github.Repository
@@ -93,13 +103,14 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		repo:            languageRepo,
 		sourceRepo:      sourceRepo,
 		state:           state,
+		librarianConfig: librarianConfig,
 		image:           image,
 		ghClient:        ghClient,
 		containerClient: container,
 	}, nil
 }
 
-func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
 	}
@@ -111,10 +122,11 @@ func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error
 		repoName := path.Base(strings.TrimSuffix(repo, "/"))
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-			Dir:        repoPath,
-			MaybeClone: true,
-			RemoteURL:  repo,
-			CI:         ci,
+			Dir:         repoPath,
+			MaybeClone:  true,
+			RemoteURL:   repo,
+			CI:          ci,
+			GitPassword: gitPassword,
 		})
 	}
 	// repo is a directory
@@ -123,8 +135,9 @@ func cloneOrOpenRepo(workRoot, repo, ci string) (*gitrepo.LocalRepository, error
 		return nil, err
 	}
 	githubRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-		Dir: absRepoRoot,
-		CI:  ci,
+		Dir:         absRepoRoot,
+		CI:          ci,
+		GitPassword: gitPassword,
 	})
 	if err != nil {
 		return nil, err
@@ -180,22 +193,51 @@ func formatTimestamp(t time.Time) string {
 	return t.Format(yyyyMMddHHmmss)
 }
 
+// cleanAndCopyLibrary cleans the files of the given library in repoDir and copies
+// the new files from outputDir.
+func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outputDir string) error {
+	library := findLibraryByID(state, libraryID)
+	if library == nil {
+		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
+	}
+
+	if err := clean(repoDir, library.RemoveRegex, library.PreserveRegex); err != nil {
+		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
+	}
+
+	return copyLibrary(repoDir, outputDir, library)
+}
+
+// copyLibrary copies library file from src to dst.
+func copyLibrary(dst, src string, library *config.LibraryState) error {
+	slog.Info("Copying library", "id", library.ID, "destination", dst, "source", src)
+	for _, srcRoot := range library.SourceRoots {
+		dstPath := filepath.Join(dst, srcRoot)
+		srcPath := filepath.Join(src, srcRoot)
+		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dstPath, err)
+		}
+	}
+
+	return nil
+}
+
 // commitAndPush creates a commit and push request to GitHub for the generated
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string) error {
-	if !r.cfg.Push {
+func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage string) error {
+	if !cfg.Push {
 		slog.Info("Push flag is not specified, skipping")
 		return nil
 	}
 	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(r.repo)
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
 		return err
 	}
 
-	status, err := r.repo.AddAll()
+	status, err := repo.AddAll()
 	if err != nil {
 		return err
 	}
@@ -204,19 +246,51 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 		return nil
 	}
 
+	datetimeNow := formatTimestamp(time.Now())
+	branch := fmt.Sprintf("librarian-%s", datetimeNow)
+	slog.Info("Creating branch", slog.String("branch", branch))
+	if err := repo.CreateBranchAndCheckout(branch); err != nil {
+		return err
+	}
+
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
-	if err := r.repo.Commit(commitMessage); err != nil {
+	slog.Info("Committing", "message", commitMessage)
+	if err := repo.Commit(commitMessage); err != nil {
+		return err
+	}
+
+	if err := repo.Push(branch); err != nil {
 		return err
 	}
 
 	// Create a new branch, set title and message for the PR.
-	datetimeNow := formatTimestamp(time.Now())
 	titlePrefix := "Librarian pull request"
-	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
-
-	if _, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
+	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
+	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil
+}
+
+func copyFile(dst, src string) (err error) {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %q: %w", src, err)
+	}
+	defer sourceFile.Close()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %s", src)
+	}
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %s", dst)
+	}
+	defer destinationFile.Close()
+
+	_, err = io.Copy(destinationFile, sourceFile)
+
+	return err
 }

@@ -12,19 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This runs the `librarian release init` command with a provided repository,
-# secret name, and optional library ID
+# This runs the `librarian release tag-and-release` command with a provided repository,
+# secret name, and optional PR
 steps:
   - name: golang:1.24.4
-    id: stage-release-dispatcher
+    id: publish-release-dispatcher
     entrypoint: go
     args:
       - 'run'
       - './cmd/automation'
       - '--project=$PROJECT_ID'
-      - '--command=stage-release'
-      - '--push=$_PUSH'
-tags: ['stage-release-dispatcher']
+      - '--command=publish-release'
+    secretEnv: ['LIBRARIAN_GITHUB_TOKEN']
+tags: ['publish-release-dispatcher']
 availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/$_GITHUB_TOKEN_SECRET_NAME/versions/latest
+      env: 'LIBRARIAN_GITHUB_TOKEN'
 options:
   logging: CLOUD_LOGGING_ONLY
