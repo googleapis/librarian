@@ -266,6 +266,18 @@ func TestInitRun(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to fetch conventional commits for library",
 		},
+		{
+			name: "failed to make partial repo",
+			runner: &initRunner{
+				workRoot: t.TempDir(),
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				partialRepo: "/invalid/path",
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to make directory",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// Setup library files before running the command.
