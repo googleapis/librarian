@@ -55,6 +55,14 @@ func CrossReference(model *API) error {
 		for _, m := range s.Methods {
 			m.Model = model
 			m.Service = s
+			source, ok := model.State.ServiceByID[m.SourceServiceID]
+			if ok {
+				m.SourceService = source
+			} else {
+				// Default to the regular service. OpenAPI does not define the
+				// services for mixins.
+				m.SourceService = s
+			}
 		}
 	}
 	return nil

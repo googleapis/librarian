@@ -66,11 +66,12 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 	}
 
 	checkMethod(t, service, "GetLocation", &api.Method{
-		Documentation: "Provides the [Locations][google.cloud.location.Locations] service functionality in this service.",
-		Name:          "GetLocation",
-		ID:            ".test.TestService.GetLocation",
-		InputTypeID:   ".google.cloud.location.GetLocationRequest",
-		OutputTypeID:  ".google.cloud.location.Location",
+		Documentation:   "Provides the [Locations][google.cloud.location.Locations] service functionality in this service.",
+		Name:            "GetLocation",
+		ID:              ".test.TestService.GetLocation",
+		SourceServiceID: ".google.cloud.location.Locations",
+		InputTypeID:     ".google.cloud.location.GetLocationRequest",
+		OutputTypeID:    ".google.cloud.location.Location",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
@@ -133,11 +134,12 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 		t.Fatal("Cannot find .test.TestService.GetIamPolicy")
 	}
 	checkMethod(t, service, "GetIamPolicy", &api.Method{
-		Documentation: "Provides the [IAMPolicy][google.iam.v1.IAMPolicy] service functionality in this service.",
-		Name:          "GetIamPolicy",
-		ID:            ".test.TestService.GetIamPolicy",
-		InputTypeID:   ".google.iam.v1.GetIamPolicyRequest",
-		OutputTypeID:  ".google.iam.v1.Policy",
+		Documentation:   "Provides the [IAMPolicy][google.iam.v1.IAMPolicy] service functionality in this service.",
+		Name:            "GetIamPolicy",
+		ID:              ".test.TestService.GetIamPolicy",
+		SourceServiceID: ".google.iam.v1.IAMPolicy",
+		InputTypeID:     ".google.iam.v1.GetIamPolicyRequest",
+		OutputTypeID:    ".google.iam.v1.Policy",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
@@ -206,11 +208,12 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 	}
 
 	checkMethod(t, service, "GetOperation", &api.Method{
-		Documentation: "Custom docs.",
-		Name:          "GetOperation",
-		ID:            ".test.TestService.GetOperation",
-		InputTypeID:   ".google.longrunning.GetOperationRequest",
-		OutputTypeID:  ".google.longrunning.Operation",
+		Documentation:   "Custom docs.",
+		Name:            "GetOperation",
+		ID:              ".test.TestService.GetOperation",
+		SourceServiceID: ".google.longrunning.Operations",
+		InputTypeID:     ".google.longrunning.GetOperationRequest",
+		OutputTypeID:    ".google.longrunning.Operation",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
@@ -289,12 +292,13 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 	}
 
 	checkMethod(t, service, "CancelOperation", &api.Method{
-		Documentation: "Custom docs.",
-		Name:          "CancelOperation",
-		ID:            ".test.TestService.CancelOperation",
-		InputTypeID:   ".google.longrunning.CancelOperationRequest",
-		OutputTypeID:  ".google.protobuf.Empty",
-		ReturnsEmpty:  true,
+		Documentation:   "Custom docs.",
+		Name:            "CancelOperation",
+		ID:              ".test.TestService.CancelOperation",
+		SourceServiceID: ".google.longrunning.Operations",
+		InputTypeID:     ".google.longrunning.CancelOperationRequest",
+		OutputTypeID:    ".google.protobuf.Empty",
+		ReturnsEmpty:    true,
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
@@ -371,11 +375,12 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 	}
 
 	checkMethod(t, service, "GetOperation", &api.Method{
-		Documentation: "Source file docs.",
-		Name:          "GetOperation",
-		ID:            ".test.LroService.GetOperation",
-		InputTypeID:   ".google.longrunning.GetOperationRequest",
-		OutputTypeID:  ".google.longrunning.Operation",
+		Documentation:   "Source file docs.",
+		Name:            "GetOperation",
+		ID:              ".test.LroService.GetOperation",
+		SourceServiceID: ".test.LroService",
+		InputTypeID:     ".google.longrunning.GetOperationRequest",
+		OutputTypeID:    ".google.longrunning.Operation",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{

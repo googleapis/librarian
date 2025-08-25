@@ -242,6 +242,12 @@ type Method struct {
 	// Service is the service this method belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Service *Service
+	// `SourceService` is the original service this method belongs to. For most
+	// methods `SourceService` and `Service` are the same. For mixins, the
+	// source service is the mixin, such as longrunning.Operations.
+	SourceService *Service
+	// `SourceServiceID` is the original service ID for this method.
+	SourceServiceID string
 	// Codec contains language specific annotations.
 	Codec any
 }

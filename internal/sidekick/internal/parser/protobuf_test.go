@@ -446,11 +446,12 @@ func TestProtobuf_Comments(t *testing.T) {
 		DefaultHost:   "test.googleapis.com",
 		Methods: []*api.Method{
 			{
-				Name:          "Create",
-				ID:            ".test.Service.Create",
-				Documentation: "Some RPC.\n\nIt does not do much.",
-				InputTypeID:   ".test.Request",
-				OutputTypeID:  ".test.Response",
+				Name:            "Create",
+				ID:              ".test.Service.Create",
+				SourceServiceID: ".test.Service",
+				Documentation:   "Some RPC.\n\nIt does not do much.",
+				InputTypeID:     ".test.Request",
+				OutputTypeID:    ".test.Response",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -838,11 +839,12 @@ func TestProtobuf_Service(t *testing.T) {
 		DefaultHost:   "test.googleapis.com",
 		Methods: []*api.Method{
 			{
-				Name:          "GetFoo",
-				ID:            ".test.TestService.GetFoo",
-				Documentation: "Gets a Foo resource.",
-				InputTypeID:   ".test.GetFooRequest",
-				OutputTypeID:  ".test.Foo",
+				Name:            "GetFoo",
+				ID:              ".test.TestService.GetFoo",
+				SourceServiceID: ".test.TestService",
+				Documentation:   "Gets a Foo resource.",
+				InputTypeID:     ".test.GetFooRequest",
+				OutputTypeID:    ".test.Foo",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -861,11 +863,12 @@ func TestProtobuf_Service(t *testing.T) {
 				},
 			},
 			{
-				Name:          "CreateFoo",
-				ID:            ".test.TestService.CreateFoo",
-				Documentation: "Creates a new Foo resource.",
-				InputTypeID:   ".test.CreateFooRequest",
-				OutputTypeID:  ".test.Foo",
+				Name:            "CreateFoo",
+				ID:              ".test.TestService.CreateFoo",
+				SourceServiceID: ".test.TestService",
+				Documentation:   "Creates a new Foo resource.",
+				InputTypeID:     ".test.CreateFooRequest",
+				OutputTypeID:    ".test.Foo",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -883,11 +886,12 @@ func TestProtobuf_Service(t *testing.T) {
 				},
 			},
 			{
-				Name:          "DeleteFoo",
-				ID:            ".test.TestService.DeleteFoo",
-				Documentation: "Deletes a Foo resource.",
-				InputTypeID:   ".test.DeleteFooRequest",
-				OutputTypeID:  ".google.protobuf.Empty",
+				Name:            "DeleteFoo",
+				ID:              ".test.TestService.DeleteFoo",
+				SourceServiceID: ".test.TestService",
+				Documentation:   "Deletes a Foo resource.",
+				InputTypeID:     ".test.DeleteFooRequest",
+				OutputTypeID:    ".google.protobuf.Empty",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -908,6 +912,7 @@ func TestProtobuf_Service(t *testing.T) {
 			{
 				Name:                "UploadFoos",
 				ID:                  ".test.TestService.UploadFoos",
+				SourceServiceID:     ".test.TestService",
 				Documentation:       "A client-side streaming RPC.",
 				InputTypeID:         ".test.CreateFooRequest",
 				OutputTypeID:        ".test.Foo",
@@ -915,11 +920,12 @@ func TestProtobuf_Service(t *testing.T) {
 				ClientSideStreaming: true,
 			},
 			{
-				Name:          "DownloadFoos",
-				ID:            ".test.TestService.DownloadFoos",
-				Documentation: "A server-side streaming RPC.",
-				InputTypeID:   ".test.GetFooRequest",
-				OutputTypeID:  ".test.Foo",
+				Name:            "DownloadFoos",
+				ID:              ".test.TestService.DownloadFoos",
+				SourceServiceID: ".test.TestService",
+				Documentation:   "A server-side streaming RPC.",
+				InputTypeID:     ".test.GetFooRequest",
+				OutputTypeID:    ".test.Foo",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -942,6 +948,7 @@ func TestProtobuf_Service(t *testing.T) {
 			{
 				Name:                "ChatLike",
 				ID:                  ".test.TestService.ChatLike",
+				SourceServiceID:     ".test.TestService",
 				Documentation:       "A bidi streaming RPC.",
 				InputTypeID:         ".test.Foo",
 				OutputTypeID:        ".test.Foo",
@@ -968,11 +975,12 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 		DefaultHost:   "test.googleapis.com",
 		Methods: []*api.Method{
 			{
-				Name:          "CreateFoo",
-				ID:            ".test.TestService.CreateFoo",
-				Documentation: "Creates a new `Foo` resource. `Foo`s are containers for `Bar`s.\n\nShows how a `body: \"${field}\"` option works.",
-				InputTypeID:   ".test.CreateFooRequest",
-				OutputTypeID:  ".test.Foo",
+				Name:            "CreateFoo",
+				ID:              ".test.TestService.CreateFoo",
+				SourceServiceID: ".test.TestService",
+				Documentation:   "Creates a new `Foo` resource. `Foo`s are containers for `Bar`s.\n\nShows how a `body: \"${field}\"` option works.",
+				InputTypeID:     ".test.CreateFooRequest",
+				OutputTypeID:    ".test.Foo",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -990,11 +998,12 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 				},
 			},
 			{
-				Name:          "AddBar",
-				ID:            ".test.TestService.AddBar",
-				Documentation: "Add a Bar resource.\n\nShows how a `body: \"*\"` option works.",
-				InputTypeID:   ".test.AddBarRequest",
-				OutputTypeID:  ".test.Bar",
+				Name:            "AddBar",
+				ID:              ".test.TestService.AddBar",
+				SourceServiceID: ".test.TestService",
+				Documentation:   "Add a Bar resource.\n\nShows how a `body: \"*\"` option works.",
+				InputTypeID:     ".test.AddBarRequest",
+				OutputTypeID:    ".test.Bar",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1081,10 +1090,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 		Package:     "test",
 		Methods: []*api.Method{
 			{
-				Name:         "ListFoo",
-				ID:           ".test.TestService.ListFoo",
-				InputTypeID:  ".test.ListFooRequest",
-				OutputTypeID: ".test.ListFooResponse",
+				Name:            "ListFoo",
+				ID:              ".test.TestService.ListFoo",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooRequest",
+				OutputTypeID:    ".test.ListFooResponse",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1108,10 +1118,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 				},
 			},
 			{
-				Name:         "ListFooWithMaxResultsInt32",
-				ID:           ".test.TestService.ListFooWithMaxResultsInt32",
-				InputTypeID:  ".test.ListFooMaxResultsInt32Request",
-				OutputTypeID: ".test.ListFooResponse",
+				Name:            "ListFooWithMaxResultsInt32",
+				ID:              ".test.TestService.ListFooWithMaxResultsInt32",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooMaxResultsInt32Request",
+				OutputTypeID:    ".test.ListFooResponse",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1135,10 +1146,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 				},
 			},
 			{
-				Name:         "ListFooWithMaxResultsUInt32",
-				ID:           ".test.TestService.ListFooWithMaxResultsUInt32",
-				InputTypeID:  ".test.ListFooMaxResultsUInt32Request",
-				OutputTypeID: ".test.ListFooResponse",
+				Name:            "ListFooWithMaxResultsUInt32",
+				ID:              ".test.TestService.ListFooWithMaxResultsUInt32",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooMaxResultsUInt32Request",
+				OutputTypeID:    ".test.ListFooResponse",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1162,10 +1174,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 				},
 			},
 			{
-				Name:         "ListFooMissingNextPageToken",
-				ID:           ".test.TestService.ListFooMissingNextPageToken",
-				InputTypeID:  ".test.ListFooRequest",
-				OutputTypeID: ".test.ListFooMissingNextPageTokenResponse",
+				Name:            "ListFooMissingNextPageToken",
+				ID:              ".test.TestService.ListFooMissingNextPageToken",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooRequest",
+				OutputTypeID:    ".test.ListFooMissingNextPageTokenResponse",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1182,10 +1195,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 				},
 			},
 			{
-				Name:         "ListFooMissingPageSize",
-				ID:           ".test.TestService.ListFooMissingPageSize",
-				InputTypeID:  ".test.ListFooMissingPageSizeRequest",
-				OutputTypeID: ".test.ListFooResponse",
+				Name:            "ListFooMissingPageSize",
+				ID:              ".test.TestService.ListFooMissingPageSize",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooMissingPageSizeRequest",
+				OutputTypeID:    ".test.ListFooResponse",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1202,10 +1216,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 				},
 			},
 			{
-				Name:         "ListFooMissingPageToken",
-				ID:           ".test.TestService.ListFooMissingPageToken",
-				InputTypeID:  ".test.ListFooMissingPageTokenRequest",
-				OutputTypeID: ".test.ListFooResponse",
+				Name:            "ListFooMissingPageToken",
+				ID:              ".test.TestService.ListFooMissingPageToken",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooMissingPageTokenRequest",
+				OutputTypeID:    ".test.ListFooResponse",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1222,10 +1237,11 @@ func TestProtobuf_Pagination(t *testing.T) {
 				},
 			},
 			{
-				Name:         "ListFooMissingRepeatedItemToken",
-				ID:           ".test.TestService.ListFooMissingRepeatedItemToken",
-				InputTypeID:  ".test.ListFooRequest",
-				OutputTypeID: ".test.ListFooMissingRepeatedItemResponse",
+				Name:            "ListFooMissingRepeatedItemToken",
+				ID:              ".test.TestService.ListFooMissingRepeatedItemToken",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooRequest",
+				OutputTypeID:    ".test.ListFooMissingRepeatedItemResponse",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1342,11 +1358,12 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 		Package:       "test",
 		Methods: []*api.Method{
 			{
-				Documentation: "Creates a new Foo resource.",
-				Name:          "CreateFoo",
-				ID:            ".test.LroService.CreateFoo",
-				InputTypeID:   ".test.CreateFooRequest",
-				OutputTypeID:  ".google.longrunning.Operation",
+				Documentation:   "Creates a new Foo resource.",
+				Name:            "CreateFoo",
+				ID:              ".test.LroService.CreateFoo",
+				SourceServiceID: ".test.LroService",
+				InputTypeID:     ".test.CreateFooRequest",
+				OutputTypeID:    ".google.longrunning.Operation",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1368,11 +1385,12 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 				},
 			},
 			{
-				Documentation: "Creates a new Foo resource.",
-				Name:          "CreateFooWithProgress",
-				ID:            ".test.LroService.CreateFooWithProgress",
-				InputTypeID:   ".test.CreateFooRequest",
-				OutputTypeID:  ".google.longrunning.Operation",
+				Documentation:   "Creates a new Foo resource.",
+				Name:            "CreateFooWithProgress",
+				ID:              ".test.LroService.CreateFooWithProgress",
+				SourceServiceID: ".test.LroService",
+				InputTypeID:     ".test.CreateFooRequest",
+				OutputTypeID:    ".google.longrunning.Operation",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1394,11 +1412,12 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 				},
 			},
 			{
-				Documentation: "Custom docs.",
-				Name:          "GetOperation",
-				ID:            ".test.LroService.GetOperation",
-				InputTypeID:   ".google.longrunning.GetOperationRequest",
-				OutputTypeID:  ".google.longrunning.Operation",
+				Documentation:   "Custom docs.",
+				Name:            "GetOperation",
+				ID:              ".test.LroService.GetOperation",
+				SourceServiceID: ".google.longrunning.Operations",
+				InputTypeID:     ".google.longrunning.GetOperationRequest",
+				OutputTypeID:    ".google.longrunning.Operation",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
@@ -1609,12 +1628,13 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		Deprecated: false,
 		Methods: []*api.Method{
 			{
-				Name:         "RpcA",
-				ID:           ".test.ServiceB.RpcA",
-				Deprecated:   true,
-				InputTypeID:  ".test.Request",
-				OutputTypeID: ".test.Response",
-				PathInfo:     &api.PathInfo{},
+				Name:            "RpcA",
+				ID:              ".test.ServiceB.RpcA",
+				Deprecated:      true,
+				InputTypeID:     ".test.Request",
+				OutputTypeID:    ".test.Response",
+				PathInfo:        &api.PathInfo{},
+				SourceServiceID: ".test.ServiceB",
 			},
 		},
 	})
