@@ -137,7 +137,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return fmt.Errorf("failed to copy librarian dir from %s to %s: %w", src, dst, err)
 	}
 
-	if err := copyGlobalAllowlist(dst, src, r.librarianConfig); err != nil {
+	if err := cleanAndCopyGlobalAllowlist(r.librarianConfig, dst, src); err != nil {
 		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
 	}
 
@@ -242,8 +242,8 @@ func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
 }
 
 // cleanAndCopyGlobalAllowlist cleans the files listed in global allowlist in
-// repoDir, excluding read-only files and copies global files from outputDir.
-func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, repoDir, outputDir string) error {
+// src, excluding read-only files and copies global files from src.
+func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string) error {
 	if cfg == nil {
 		slog.Info("librarian config is not setup, skip copying global allowlist")
 		return nil
@@ -253,14 +253,14 @@ func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, repoDir, outputDir
 			continue
 		}
 
-		dst := filepath.Join(repoDir, globalFile.Path)
-		if err := os.Remove(dst); err != nil {
+		dstPath := filepath.Join(dst, globalFile.Path)
+		if err := os.Remove(dstPath); err != nil {
 			return fmt.Errorf("failed to remove global file, %s: %w", dst, err)
 		}
 
-		src := filepath.Join(outputDir, globalFile.Path)
-		if err := os.CopyFS(filepath.Dir(dst), os.DirFS(filepath.Dir(src))); err != nil {
-			return fmt.Errorf("failed to copy global file %s to %s: %w", src, dst, err)
+		srcPath := filepath.Join(src, globalFile.Path)
+		if err := copyFile(dstPath, srcPath); err != nil {
+			return err
 		}
 	}
 
@@ -271,21 +271,4 @@ func copyLibrarianDir(dst, src string) error {
 	return os.CopyFS(
 		filepath.Join(dst, config.LibrarianDir),
 		os.DirFS(filepath.Join(src, config.LibrarianDir)))
-}
-
-func copyGlobalAllowlist(dst, src string, cfg *config.LibrarianConfig) error {
-	if cfg == nil {
-		slog.Info("librarian config is not setup, skip copying global allowlist")
-		return nil
-	}
-
-	for _, globalFile := range cfg.GlobalFilesAllowlist {
-		dstPath := filepath.Join(dst, globalFile.Path)
-		srcPath := filepath.Join(src, globalFile.Path)
-		if err := copyFile(dstPath, srcPath); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

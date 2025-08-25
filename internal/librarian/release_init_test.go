@@ -664,8 +664,8 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			output := filepath.Join(t.TempDir(), "output")
-			repo := filepath.Join(t.TempDir(), "repo")
+			output := t.TempDir()
+			repo := t.TempDir()
 			for _, oneFile := range test.files {
 				// Create files in repo directory.
 				file := filepath.Join(repo, oneFile)
