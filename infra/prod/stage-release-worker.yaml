@@ -23,6 +23,7 @@ steps:
       - './cmd/automation'
       - '--project=$PROJECT_ID'
       - '--command=stage-release'
+      - '--push=$_PUSH'
 tags: ['stage-release-dispatcher']
 availableSecrets:
 options:

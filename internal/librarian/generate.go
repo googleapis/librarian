@@ -285,6 +285,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 //
 // This logic is ported from owlbot logic: https://github.com/googleapis/repo-automation-bots/blob/12dad68640960290910b660e4325630c9ace494b/packages/owl-bot/src/copy-code.ts#L1027
 func clean(rootDir string, removePatterns, preservePatterns []string) error {
+	slog.Info("cleaning directory", "path", rootDir)
 	finalPathsToRemove, err := deriveFinalPathsToRemove(rootDir, removePatterns, preservePatterns)
 	if err != nil {
 		return err
@@ -297,7 +298,7 @@ func clean(rootDir string, removePatterns, preservePatterns []string) error {
 
 	// Remove files first, then directories.
 	for _, file := range filesToRemove {
-		slog.Info("Removing file", "path", file)
+		slog.Info("removing file", "path", file)
 		if err := os.Remove(filepath.Join(rootDir, file)); err != nil {
 			return err
 		}
@@ -306,7 +307,7 @@ func clean(rootDir string, removePatterns, preservePatterns []string) error {
 	sortDirsByDepth(dirsToRemove)
 
 	for _, dir := range dirsToRemove {
-		slog.Info("Removing directory", "path", dir)
+		slog.Info("removing directory", "path", dir)
 		if err := os.Remove(filepath.Join(rootDir, dir)); err != nil {
 			// It's possible the directory is not empty due to preserved files.
 			slog.Warn("failed to remove directory, it may not be empty", "dir", dir, "err", err)

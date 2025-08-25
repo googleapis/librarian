@@ -297,8 +297,9 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 					},
 				},
 			},
-			repo:    newTestGitRepo(t),
-			wantErr: true,
+			repo:        newTestGitRepo(t),
+			wantErr:     true,
+			errContains: "not found during clean and copy",
 		},
 		{
 			name:      "clean fails",
@@ -311,8 +312,9 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 					},
 				},
 			},
-			repo:    newTestGitRepo(t),
-			wantErr: true,
+			repo:        newTestGitRepo(t),
+			wantErr:     true,
+			errContains: "failed to clean library",
 		},
 		{
 			name:      "copy fails on symlink",
@@ -321,6 +323,9 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				Libraries: []*config.LibraryState{
 					{
 						ID: "some-library",
+						SourceRoots: []string{
+							"symlink",
+						},
 					},
 				},
 			},
@@ -331,7 +336,8 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 					t.Fatalf("os.Symlink() = %v", err)
 				}
 			},
-			wantErr: true,
+			wantErr:     true,
+			errContains: "failed to copy",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -344,10 +350,128 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
 				}
+				if !strings.Contains(err.Error(), test.errContains) {
+					t.Errorf("want: %s, got %s", test.errContains, err.Error())
+				}
+
 				return
 			}
 			if err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestCopyOneLibrary(t *testing.T) {
+	t.Parallel()
+	// Create files in src directory.
+	setup := func(src string, files []string) {
+		for _, relPath := range files {
+			fullPath := filepath.Join(src, relPath)
+			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+				t.Error(err)
+			}
+
+			if _, err := os.Create(fullPath); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+	for _, test := range []struct {
+		name          string
+		dst           string
+		src           string
+		library       *config.LibraryState
+		filesToCreate []string
+		wantFiles     []string
+		skipFiles     []string
+		wantErr       bool
+		wantErrMsg    string
+	}{
+		{
+			name: "copied a library",
+			dst:  filepath.Join(t.TempDir(), "dst"),
+			src:  filepath.Join(t.TempDir(), "src"),
+			library: &config.LibraryState{
+				ID: "example-library",
+				SourceRoots: []string{
+					"a/path",
+					"another/path",
+				},
+			},
+			filesToCreate: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+				"skipped/path/example.txt",
+			},
+			wantFiles: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+			},
+			skipFiles: []string{
+				"skipped/path/example.txt",
+			},
+		},
+		{
+			name: "invalid src",
+			dst:  os.TempDir(),
+			src:  "/invalid-path",
+			library: &config.LibraryState{
+				ID: "example-library",
+				SourceRoots: []string{
+					"a-library/path",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to copy",
+		},
+		{
+			name: "invalid dst",
+			dst:  "/invalid-path",
+			src:  os.TempDir(),
+			library: &config.LibraryState{
+				ID: "example-library",
+				SourceRoots: []string{
+					"a-library/path",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to copy",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if !test.wantErr {
+				setup(test.src, test.filesToCreate)
+			}
+			err := copyLibrary(test.dst, test.src, test.library)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("copyOneLibrary() shoud fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Errorf("failed to run copyOneLibrary(): %s", err.Error())
+			}
+
+			for _, file := range test.wantFiles {
+				fullPath := filepath.Join(test.dst, file)
+				if _, err := os.Stat(fullPath); err != nil {
+					t.Errorf("file %s is not copied to %s", file, test.dst)
+				}
+			}
+
+			for _, file := range test.skipFiles {
+				fullPath := filepath.Join(test.dst, file)
+				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+					t.Errorf("file %s should not be copied to %s", file, test.dst)
+				}
 			}
 		})
 	}
@@ -572,6 +696,69 @@ func TestCommitAndPush(t *testing.T) {
 			if test.validatePostTest != nil {
 				test.validatePostTest(t, repo)
 			}
+		})
+	}
+}
+
+func TestCopyFile(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		dst         string
+		src         string
+		wantSrcFile bool
+		wantErr     bool
+		wantErrMsg  string
+	}{
+		{
+			name:       "invalid src",
+			src:        "/invalid-path/example.txt",
+			wantErr:    true,
+			wantErrMsg: "failed to open file",
+		},
+		{
+			name:        "invalid dst path",
+			src:         filepath.Join(os.TempDir(), "example.txt"),
+			dst:         "/invalid-path/example.txt",
+			wantSrcFile: true,
+			wantErr:     true,
+			wantErrMsg:  "failed to make directory",
+		},
+		{
+			name:        "invalid dst file",
+			src:         filepath.Join(os.TempDir(), "example.txt"),
+			dst:         filepath.Join(os.TempDir(), "example\x00.txt"),
+			wantSrcFile: true,
+			wantErr:     true,
+			wantErrMsg:  "failed to create file",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.wantSrcFile {
+				if err := os.MkdirAll(filepath.Dir(test.src), 0755); err != nil {
+					t.Error(err)
+				}
+				sourceFile, err := os.Create(test.src)
+				if err != nil {
+					t.Error(err)
+				}
+				if err := sourceFile.Close(); err != nil {
+					t.Error(err)
+				}
+			}
+			err := copyFile(test.dst, test.src)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("copyFile() shoud fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
 		})
 	}
 }

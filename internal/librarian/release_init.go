@@ -70,6 +70,7 @@ type initRunner struct {
 	ghClient        GitHubClient
 	containerClient ContainerClient
 	workRoot        string
+	partialRepo     string
 	image           string
 }
 
@@ -82,6 +83,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		cfg:             runner.cfg,
 		workRoot:        runner.workRoot,
 		repo:            runner.repo,
+		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
 		image:           runner.image,
@@ -110,6 +112,12 @@ func (r *initRunner) run(ctx context.Context) error {
 }
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
+	dst := r.partialRepo
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %w", err)
+	}
+	src := r.repo.GetDir()
+
 	for i, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
@@ -117,6 +125,9 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 			}
 			// Only update one library with the given library ID.
 			if err := updateLibrary(r, r.state, i); err != nil {
+				return err
+			}
+			if err := copyLibrary(dst, src, library); err != nil {
 				return err
 			}
 
@@ -127,14 +138,27 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		if err := updateLibrary(r, r.state, i); err != nil {
 			return err
 		}
+		if err := copyLibrary(dst, src, library); err != nil {
+			return err
+		}
+	}
+
+	if err := copyLibrarianDir(dst, src); err != nil {
+		return fmt.Errorf("failed to copy librarian dir from %s to %s: %w", src, dst, err)
+	}
+
+	if err := cleanAndCopyGlobalAllowlist(r.librarianConfig, dst, src); err != nil {
+		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
-		Cfg:            r.cfg,
-		State:          r.state,
-		LibraryID:      r.cfg.Library,
-		LibraryVersion: r.cfg.LibraryVersion,
-		Output:         outputDir,
+		Cfg:             r.cfg,
+		State:           r.state,
+		LibrarianConfig: r.librarianConfig,
+		LibraryID:       r.cfg.Library,
+		LibraryVersion:  r.cfg.LibraryVersion,
+		Output:          outputDir,
+		PartialRepoDir:  dst,
 	}
 
 	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
@@ -228,23 +252,33 @@ func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
 }
 
 // cleanAndCopyGlobalAllowlist cleans the files listed in global allowlist in
-// repoDir, excluding read-only files and copies global files from outputDir.
-func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, repoDir, outputDir string) error {
+// src, excluding read-only files and copies global files from src.
+func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string) error {
+	if cfg == nil {
+		slog.Info("librarian config is not setup, skip copying global allowlist")
+		return nil
+	}
 	for _, globalFile := range cfg.GlobalFilesAllowlist {
 		if globalFile.Permissions == config.PermissionReadOnly {
 			continue
 		}
 
-		dst := filepath.Join(repoDir, globalFile.Path)
-		if err := os.Remove(dst); err != nil {
-			return fmt.Errorf("failed to remove global file, %s: %w", dst, err)
+		dstPath := filepath.Join(dst, globalFile.Path)
+		if err := os.Remove(dstPath); err != nil {
+			return fmt.Errorf("failed to remove global file %s: %w", dstPath, err)
 		}
 
-		src := filepath.Join(outputDir, globalFile.Path)
-		if err := os.CopyFS(filepath.Dir(dst), os.DirFS(filepath.Dir(src))); err != nil {
-			return fmt.Errorf("failed to copy global file %s to %s: %w", src, dst, err)
+		srcPath := filepath.Join(src, globalFile.Path)
+		if err := copyFile(dstPath, srcPath); err != nil {
+			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
 		}
 	}
 
 	return nil
+}
+
+func copyLibrarianDir(dst, src string) error {
+	return os.CopyFS(
+		filepath.Join(dst, config.LibrarianDir),
+		os.DirFS(filepath.Join(src, config.LibrarianDir)))
 }

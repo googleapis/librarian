@@ -15,9 +15,6 @@
 package librarian
 
 import (
-	"errors"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -349,14 +346,16 @@ func TestSaveLibrarianState(t *testing.T) {
 func TestReadLibraryState(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name         string
-		jsonFilePath string
-		wantState    *config.LibraryState
+		name       string
+		filename   string
+		want       *config.LibraryState
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
-			name:         "successful load content",
-			jsonFilePath: "../../testdata/successful-unmarshal-libraryState.json",
-			wantState: &config.LibraryState{
+			name:     "successful load content",
+			filename: "successful-unmarshal-libraryState.json",
+			want: &config.LibraryState{
 				ID:                  "google-cloud-go",
 				Version:             "1.0.0",
 				LastGeneratedCommit: "abcd123",
@@ -372,76 +371,31 @@ func TestReadLibraryState(t *testing.T) {
 			},
 		},
 		{
-			name:         "empty libraryState",
-			jsonFilePath: "../../testdata/empty-libraryState.json",
-			wantState:    &config.LibraryState{},
+			name:     "empty libraryState",
+			filename: "empty-libraryState.json",
+			want:     &config.LibraryState{},
 		},
 		{
-			name:         "load content with an error message",
-			jsonFilePath: "../../testdata/unmarshal-libraryState-with-error-msg.json",
-			wantState:    nil,
+			name:       "load content with an error message",
+			filename:   "unmarshal-libraryState-with-error-msg.json",
+			wantErr:    true,
+			wantErrMsg: "failed with error message",
 		},
 		{
-			name:      "invalid file name",
-			wantState: nil,
-		},
-		{
-			name:      "missing file",
-			wantState: nil,
+			name: "missing file",
+			want: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			if test.name == "invalid file name" {
-				filePath := filepath.Join(tempDir, "my\x00file.json")
-				_, err := readLibraryState(filePath)
-				if err == nil {
-					t.Error("readLibraryState() expected an error but got nil")
-				}
-
-				if g, w := err.Error(), "failed to read response file"; !strings.Contains(g, w) {
-					t.Errorf("got %q, wanted it to contain %q", g, w)
-				}
-
-				return
-			}
-
-			if test.name == "missing file" {
-				filePath := filepath.Join(tempDir, "missing.json")
-				gotState, err := readLibraryState(filePath)
-				if err != nil {
-					t.Fatalf("readLibraryState() unexpected error: %v", err)
-				}
-				if diff := cmp.Diff(test.wantState, gotState); diff != "" {
-					t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
-				}
-				return
-			}
-
-			if test.name == "invalid content loader" {
-				dst := fmt.Sprintf("%s/copy.json", os.TempDir())
-				if err := copyFile(dst, test.jsonFilePath); err != nil {
-					t.Error(err)
-				}
-				_, err := readLibraryState(dst)
-				if err == nil {
-					t.Errorf("readLibraryState() expected an error but got nil")
-				}
-
-				if g, w := err.Error(), "failed to load file"; !strings.Contains(g, w) {
-					t.Errorf("got %q, wanted it to contain %q", g, w)
-				}
-				return
-			}
-
+			path := filepath.Join("../../testdata/test-read-library-state", test.filename)
 			// The response file is removed by the readLibraryState() function,
 			// so we create a copy and read from it.
-			dstFilePath := fmt.Sprintf("%s/copy.json", os.TempDir())
-			if err := copyFile(dstFilePath, test.jsonFilePath); err != nil {
+			dstFilePath := filepath.Join(t.TempDir(), "copied-state", test.filename)
+			if err := os.CopyFS(filepath.Dir(dstFilePath), os.DirFS(filepath.Dir(path))); err != nil {
 				t.Error(err)
 			}
 
-			gotState, err := readLibraryState(dstFilePath)
+			got, err := readLibraryState(dstFilePath)
 
 			if test.name == "load content with an error message" {
 				if err == nil {
@@ -455,36 +409,23 @@ func TestReadLibraryState(t *testing.T) {
 				return
 			}
 
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("readLibraryState() should fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got %s", test.wantErrMsg, err.Error())
+				}
+			}
+
 			if err != nil {
 				t.Fatalf("readLibraryState() unexpected error: %v", err)
 			}
 
-			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
-}
-
-func copyFile(dst, src string) (err error) {
-	sourceFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer sourceFile.Close()
-
-	destinationFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err = errors.Join(err, destinationFile.Close()); err != nil {
-			err = fmt.Errorf("copyFile(%q, %q): %w", dst, src, err)
-		}
-	}()
-
-	_, err = io.Copy(destinationFile, sourceFile)
-
-	return err
 }

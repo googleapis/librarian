@@ -19,7 +19,6 @@ package librarian
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,9 +33,7 @@ import (
 
 func TestRunGenerate(t *testing.T) {
 	const (
-		repo                = "repo"
 		initialRepoStateDir = "testdata/e2e/generate/repo_init"
-		APISourceRepo       = "apisource"
 		localAPISource      = "testdata/e2e/generate/api_root"
 	)
 	t.Parallel()
@@ -56,9 +53,9 @@ func TestRunGenerate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			workRoot := filepath.Join(t.TempDir())
-			repo := filepath.Join(workRoot, repo)
-			APISourceRepo := filepath.Join(workRoot, APISourceRepo)
+			workRoot := t.TempDir()
+			repo := t.TempDir()
+			APISourceRepo := t.TempDir()
 			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("languageRepo prepare test error = %v", err)
 			}
@@ -104,9 +101,8 @@ func TestRunConfigure(t *testing.T) {
 	const (
 		localRepoDir        = "testdata/e2e/configure/repo"
 		initialRepoStateDir = "testdata/e2e/configure/repo_init"
-		repo                = "repo"
-		APISourceRepo       = "apisource"
 	)
+	t.Parallel()
 	for _, test := range []struct {
 		name         string
 		api          string
@@ -132,10 +128,9 @@ func TestRunConfigure(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			workRoot := filepath.Join(os.TempDir(), fmt.Sprintf("rand-%d", rand.Intn(1000)))
-			repo := filepath.Join(workRoot, repo)
-			APISourceRepo := filepath.Join(workRoot, APISourceRepo)
+			workRoot := t.TempDir()
+			repo := t.TempDir()
+			APISourceRepo := t.TempDir()
 			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
