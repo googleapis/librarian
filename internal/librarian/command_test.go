@@ -523,8 +523,11 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "No GitHub Remote",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
+					AddAllStatus: status,
 					RemotesValue: []*git.Remote{}, // No remotes
 				}
 			},
