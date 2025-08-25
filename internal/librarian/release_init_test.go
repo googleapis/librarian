@@ -455,6 +455,47 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 		},
 		{
+			name: "update a library without override version",
+			pathAndMessages: []pathAndMessage{
+				{
+					path:    "non-related/path/example.txt",
+					message: "chore: initial commit",
+				},
+				{
+					path:    "one/path/example.txt",
+					message: "feat: add a config file\n\nThis is the body.\n\nPiperOrigin-RevId: 12345",
+				},
+			},
+			tags: []string{
+				"one-id-1.2.3",
+			},
+			libraryVersion:  "2.0.0",
+			overrideVersion: false,
+			library: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+				SourceRoots: []string{
+					"one/path",
+				},
+			},
+			want: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+				SourceRoots: []string{
+					"one/path",
+				},
+				Changes: []*config.Change{
+					{
+						Type:    "feat",
+						Subject: "add a config file",
+						Body:    "This is the body.",
+						ClNum:   "12345",
+					},
+				},
+				ReleaseTriggered: true,
+			},
+		},
+		{
 			name: "get breaking changes of one library",
 			pathAndMessages: []pathAndMessage{
 				{
