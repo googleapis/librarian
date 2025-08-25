@@ -227,14 +227,9 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
 func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage string) error {
-	if !cfg.Push {
-		slog.Info("Push flag is not specified, skipping")
+	if !cfg.Push && !cfg.Commit {
+		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
-	}
-	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
-	if err != nil {
-		return err
 	}
 
 	status, err := repo.AddAll()
@@ -260,6 +255,17 @@ func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Reposit
 	}
 
 	if err := repo.Push(branch); err != nil {
+		return err
+	}
+
+	if !cfg.Push {
+		slog.Info("Push flag is not specified, skipping pull request creation")
+		return nil
+	}
+
+	// Ensure we have a GitHub repository
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
+	if err != nil {
 		return err
 	}
 
