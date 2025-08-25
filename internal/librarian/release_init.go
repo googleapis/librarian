@@ -255,12 +255,12 @@ func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string) e
 
 		dstPath := filepath.Join(dst, globalFile.Path)
 		if err := os.Remove(dstPath); err != nil {
-			return fmt.Errorf("failed to remove global file, %s: %w", dst, err)
+			return fmt.Errorf("failed to remove global file %s: %w", dstPath, err)
 		}
 
 		srcPath := filepath.Join(src, globalFile.Path)
 		if err := copyFile(dstPath, srcPath); err != nil {
-			return err
+			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
 		}
 	}
 
