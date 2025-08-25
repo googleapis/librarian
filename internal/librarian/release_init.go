@@ -125,9 +125,11 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 				continue
 			}
 			// Only update one library with the given library ID.
-			if err := updateLibrary(r, r.state, i); err != nil {
+			updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion, true)
+			if err != nil {
 				return err
 			}
+			r.state.Libraries[i] = updatedLibrary
 			if err := copyLibrary(dst, src, library); err != nil {
 				return err
 			}
@@ -136,9 +138,13 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Update all libraries.
-		if err := updateLibrary(r, r.state, i); err != nil {
+		// Do not override library version because it can only be allowed to override
+		// when library flag is specified.
+		updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion, false)
+		if err != nil {
 			return err
 		}
+		r.state.Libraries[i] = updatedLibrary
 		if err := copyLibrary(dst, src, library); err != nil {
 			return err
 		}
@@ -190,26 +196,18 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 // updateLibrary updates the library which is the index-th library in the given
 // [config.LibrarianState].
-func updateLibrary(r *initRunner, state *config.LibrarianState, index int) error {
-	library := state.Libraries[index]
-	updatedLibrary, err := getChangesOf(r.repo, library)
+func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string, overrideVersion bool) (*config.LibraryState, error) {
+	updatedLibrary, err := getChangesOf(repo, library)
 	if err != nil {
-		return fmt.Errorf("failed to update library, %s: %w", library.ID, err)
+		return nil, fmt.Errorf("failed to update library, %s: %w", library.ID, err)
 	}
 
-	setReleaseTrigger(updatedLibrary, r.cfg.LibraryVersion, true)
-	state.Libraries[index] = updatedLibrary
-
-	return nil
-}
-
-// setReleaseTrigger sets the release trigger for the given library and
-// overrides the version, if provided.
-func setReleaseTrigger(library *config.LibraryState, libraryVersion string, trigger bool) {
-	if libraryVersion != "" {
-		library.Version = libraryVersion
+	if overrideVersion && libraryVersion != "" {
+		updatedLibrary.Version = libraryVersion
 	}
-	library.ReleaseTriggered = trigger
+	updatedLibrary.ReleaseTriggered = true
+
+	return updatedLibrary, nil
 }
 
 // getChangesOf gets commit history of the given library.
