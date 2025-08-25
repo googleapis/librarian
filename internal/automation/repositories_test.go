@@ -153,7 +153,7 @@ func TestParseRepositoriesConfig(t *testing.T) {
 			name: "valid state with full name",
 			content: `repositories:
   - name: google-cloud-python
-	  name: https://github.com/some-org/google-cloud-python
+    full-name: https://github.com/some-org/google-cloud-python
     github-token-secret-name: google-cloud-python-github-token
     supported-commands:
       - generate

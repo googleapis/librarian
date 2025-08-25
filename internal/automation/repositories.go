@@ -45,6 +45,7 @@ type RepositoriesConfig struct {
 	Repositories []*RepositoryConfig `yaml:"repositories"`
 }
 
+// GitURL returns the full git url to clone.
 func (c *RepositoryConfig) GitURL() (string, error) {
 	if c.FullName == "" {
 		if c.Name == "" {
