@@ -245,7 +245,31 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed to create output dir",
 		},
 		{
-			name: "failed to get changes from repo",
+			name: "failed to get changes from repo when releasing one library",
+			runner: &initRunner{
+				workRoot:        t.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Library: "example-id",
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-id",
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir:                             t.TempDir(),
+					GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
+				},
+				partialRepo: t.TempDir(),
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch conventional commits for library",
+		},
+		{
+			name: "failed to get changes from repo when releasing multiple libraries",
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
