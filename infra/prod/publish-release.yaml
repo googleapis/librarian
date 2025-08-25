@@ -25,7 +25,7 @@ steps:
       - '--depth=1'
       - '--single-branch'
       - '--branch=$_BRANCH'
-      - https://github.com/googleapis/$_REPOSITORY
+      - $_FULL_REPOSITORY
   - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
     id: publish-release
     waitFor: ['clone-language-repo']
