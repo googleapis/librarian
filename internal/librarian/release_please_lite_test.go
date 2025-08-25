@@ -112,7 +112,7 @@ func TestFormatTag(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got := formatTag(tc.library)
+			got := formatTag(tc.library, "")
 			if got != tc.want {
 				t.Errorf("formatTag() = %q, want %q", got, tc.want)
 			}

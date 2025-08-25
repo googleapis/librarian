@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +34,8 @@ import (
 const (
 	pullRequestSegments  = 5
 	tagAndReleaseCmdName = "tag-and-release"
+	releasePendingLabel  = "release:pending"
+	releaseDoneLabel     = "release:done"
 )
 
 var (
@@ -135,7 +138,7 @@ func (r *tagAndReleaseRunner) determinePullRequestsToProcess(ctx context.Context
 
 	slog.Info("searching for pull requests to tag and release")
 	thirtyDaysAgo := time.Now().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
-	query := fmt.Sprintf("label:release:pending merged:>=%s", thirtyDaysAgo)
+	query := fmt.Sprintf("label:%s merged:>=%s", releasePendingLabel, thirtyDaysAgo)
 	prs, err := r.ghClient.SearchPullRequests(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search pull requests: %w", err)
@@ -143,14 +146,31 @@ func (r *tagAndReleaseRunner) determinePullRequestsToProcess(ctx context.Context
 	return prs, nil
 }
 
-func (r *tagAndReleaseRunner) processPullRequest(_ context.Context, p *github.PullRequest) error {
+func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.PullRequest) error {
 	slog.Info("processing pull request", "pr", p.GetNumber())
-	// hack to make CI happy until we impl
-	// TODO(https://github.com/googleapis/librarian/issues/1009)
-	if p.GetNumber() != 0 {
-		return fmt.Errorf("skipping pull request %d", p.GetNumber())
+	releases := parsePullRequestBody(p.GetBody())
+	if len(releases) == 0 {
+		slog.Warn("no release details found in pull request body, skipping")
+		return nil
 	}
-	return nil
+	for _, release := range releases {
+		slog.Info("creating release", "library", release.Library, "version", release.Version)
+		commitish := p.GetMergeCommitSHA()
+
+		lib := r.state.LibraryByID(release.Library)
+		if lib == nil {
+			return fmt.Errorf("library %s not found", release.Library)
+		}
+
+		// Create the release.
+		tagName := formatTag(lib, release.Version)
+		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
+		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitish); err != nil {
+			return fmt.Errorf("failed to create release: %w", err)
+		}
+
+	}
+	return r.replacePendingLabel(ctx, p)
 }
 
 // libraryRelease holds the parsed information from a pull request body.
@@ -187,4 +207,20 @@ func parsePullRequestBody(body string) []libraryRelease {
 	}
 
 	return parsedBodies
+}
+
+// replacePendingLabel is a helper function that replaces the `release:pending` label with `release:done`.
+func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github.PullRequest) error {
+	var currentLabels []string
+	for _, label := range p.Labels {
+		currentLabels = append(currentLabels, label.GetName())
+	}
+	currentLabels = slices.DeleteFunc(currentLabels, func(s string) bool {
+		return s == releasePendingLabel
+	})
+	currentLabels = append(currentLabels, releaseDoneLabel)
+	if err := r.ghClient.ReplaceLabels(ctx, p.GetNumber(), currentLabels); err != nil {
+		return fmt.Errorf("failed to replace labels: %w", err)
+	}
+	return nil
 }

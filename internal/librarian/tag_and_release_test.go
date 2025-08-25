@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	gh "github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 )
@@ -337,5 +338,205 @@ some content
 				t.Errorf("ParsePullRequestBody() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestProcessPullRequest(t *testing.T) {
+	prBody := `<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>`
+	prNumber := 123
+	mergeCommitSHA := "abcdef"
+	prWithRelease := &github.PullRequest{
+		Body:           &prBody,
+		Number:         &prNumber,
+		MergeCommitSHA: &mergeCommitSHA,
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+	}
+	body := "no release details"
+	prWithoutRelease := &github.PullRequest{
+		Body:           &body,
+		Number:         &prNumber,
+		MergeCommitSHA: &mergeCommitSHA,
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+	}
+	state := &config.LibrarianState{
+		Libraries: []*config.LibraryState{
+			{
+				ID: "google-cloud-storage",
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name                   string
+		pr                     *github.PullRequest
+		ghClient               *mockGitHubClient
+		state                  *config.LibrarianState
+		wantErrMsg             string
+		wantCreateReleaseCalls int
+		wantReplaceLabelsCalls int
+	}{
+		{
+			name:                   "happy path",
+			pr:                     prWithRelease,
+			ghClient:               &mockGitHubClient{},
+			state:                  state,
+			wantCreateReleaseCalls: 1,
+			wantReplaceLabelsCalls: 1,
+		},
+		{
+			name:     "no release details",
+			pr:       prWithoutRelease,
+			ghClient: &mockGitHubClient{},
+			state:    state,
+		},
+		{
+			name:       "library not found",
+			pr:         prWithRelease,
+			ghClient:   &mockGitHubClient{},
+			state:      &config.LibrarianState{},
+			wantErrMsg: "library google-cloud-storage not found",
+		},
+		{
+			name: "create release fails",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				createReleaseErr: errors.New("create release error"),
+			},
+			state:                  state,
+			wantErrMsg:             "failed to create release",
+			wantCreateReleaseCalls: 1,
+		},
+		{
+			name: "replace labels fails",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				replaceLabelsErr: errors.New("replace labels error"),
+			},
+			state:                  state,
+			wantErrMsg:             "failed to replace labels",
+			wantCreateReleaseCalls: 1,
+			wantReplaceLabelsCalls: 1,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			r := &tagAndReleaseRunner{
+				ghClient: test.ghClient,
+				state:    test.state,
+			}
+			err := r.processPullRequest(context.Background(), test.pr)
+			if err != nil {
+				if test.wantErrMsg == "" {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Fatalf("got %q, want contains %q", err, test.wantErrMsg)
+				}
+			} else if test.wantErrMsg != "" {
+				t.Fatalf("expected error containing %q, got nil", test.wantErrMsg)
+			}
+
+			if test.ghClient.createReleaseCalls != test.wantCreateReleaseCalls {
+				t.Errorf("createReleaseCalls = %v, want %v", test.ghClient.createReleaseCalls, test.wantCreateReleaseCalls)
+			}
+			if test.ghClient.replaceLabelsCalls != test.wantReplaceLabelsCalls {
+				t.Errorf("replaceLabelsCalls = %v, want %v", test.ghClient.replaceLabelsCalls, test.wantReplaceLabelsCalls)
+			}
+		})
+	}
+}
+
+func TestReplacePendingLabel(t *testing.T) {
+	prWithPending := &github.PullRequest{
+		Number: gh.Ptr(123),
+		Labels: []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}, {Name: gh.Ptr("label1")}},
+	}
+	prWithoutPending := &github.PullRequest{
+		Number: gh.Ptr(123),
+		Labels: []*gh.Label{{Name: gh.Ptr("label1")}},
+	}
+
+	for _, test := range []struct {
+		name       string
+		pr         *github.PullRequest
+		ghClient   *mockGitHubClient
+		wantErrMsg string
+	}{
+		{
+			name:     "with pending label",
+			pr:       prWithPending,
+			ghClient: &mockGitHubClient{},
+		},
+		{
+			name:     "without pending label",
+			pr:       prWithoutPending,
+			ghClient: &mockGitHubClient{},
+		},
+		{
+			name: "replace labels fails",
+			pr:   prWithPending,
+			ghClient: &mockGitHubClient{
+				replaceLabelsErr: errors.New("replace labels error"),
+			},
+			wantErrMsg: "failed to replace labels",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			r := &tagAndReleaseRunner{
+				ghClient: test.ghClient,
+			}
+			err := r.replacePendingLabel(context.Background(), test.pr)
+			if err != nil {
+				if test.wantErrMsg == "" {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Fatalf("got %q, want contains %q", err, test.wantErrMsg)
+				}
+				return
+			} else if test.wantErrMsg != "" {
+				t.Fatalf("expected error containing %q, got nil", test.wantErrMsg)
+			}
+		})
+	}
+}
+
+func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
+	pr1 := &github.PullRequest{
+		Body:           gh.Ptr(`<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>`),
+		Number:         gh.Ptr(123),
+		MergeCommitSHA: gh.Ptr("abc123"),
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+	}
+	// This one will fail because the library details are not parsable.
+	pr2 := &github.PullRequest{
+		Body:           gh.Ptr(`<details><summary>unknown-library: v1.0.0</summary>release notes</details>`),
+		Number:         gh.Ptr(456),
+		MergeCommitSHA: gh.Ptr("xyz456"),
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+	}
+	ghClient := &mockGitHubClient{
+		pullRequests: []*github.PullRequest{pr1, pr2},
+	}
+
+	r := &tagAndReleaseRunner{
+		cfg:      &config.Config{},
+		ghClient: ghClient,
+		state: &config.LibrarianState{
+			Libraries: []*config.LibraryState{
+				{
+					ID: "google-cloud-storage",
+				},
+			},
+		},
+	}
+	err := r.run(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "failed to process some pull requests") {
+		t.Fatalf("expected error 'failed to process some pull requests', got %v", err)
+	}
+	if ghClient.createReleaseCalls != 1 {
+		t.Errorf("createReleaseCalls = %v, want 1", ghClient.createReleaseCalls)
+	}
+	if ghClient.replaceLabelsCalls != 1 {
+		t.Errorf("replaceLabelsCalls = %v, want 1", ghClient.replaceLabelsCalls)
 	}
 }
