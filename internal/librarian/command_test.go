@@ -444,7 +444,7 @@ func TestCopyOneLibrary(t *testing.T) {
 			if !test.wantErr {
 				setup(test.src, test.filesToCreate)
 			}
-			err := copyOneLibrary(test.dst, test.src, test.library)
+			err := copyLibrary(test.dst, test.src, test.library)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("copyOneLibrary() shoud fail")

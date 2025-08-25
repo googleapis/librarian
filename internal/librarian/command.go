@@ -205,10 +205,11 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
 	}
 
-	return copyOneLibrary(repoDir, outputDir, library)
+	return copyLibrary(repoDir, outputDir, library)
 }
 
-func copyOneLibrary(dst, src string, library *config.LibraryState) error {
+// copyLibrary copies library file from src to dst.
+func copyLibrary(dst, src string, library *config.LibraryState) error {
 	slog.Info("Copying library", "id", library.ID, "destination", dst, "source", src)
 	for _, srcRoot := range library.SourceRoots {
 		dstPath := filepath.Join(dst, srcRoot)

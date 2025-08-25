@@ -117,7 +117,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 			if err := updateLibrary(r, r.state, i); err != nil {
 				return err
 			}
-			if err := copyOneLibrary(dst, src, library); err != nil {
+			if err := copyLibrary(dst, src, library); err != nil {
 				return err
 			}
 
@@ -128,7 +128,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		if err := updateLibrary(r, r.state, i); err != nil {
 			return err
 		}
-		if err := copyOneLibrary(dst, src, library); err != nil {
+		if err := copyLibrary(dst, src, library); err != nil {
 			return err
 		}
 	}
