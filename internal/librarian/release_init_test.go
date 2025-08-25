@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"github.com/go-git/go-git/v5"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,6 +80,8 @@ func TestNewInitRunner(t *testing.T) {
 
 func TestInitRun(t *testing.T) {
 	t.Parallel()
+	gitStatus := make(git.Status)
+	gitStatus["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 	for _, test := range []struct {
 		name       string
 		runner     *initRunner
@@ -308,7 +311,9 @@ func TestInitRun(t *testing.T) {
 					},
 				},
 				repo: &MockRepository{
-					Dir: t.TempDir(),
+					Dir:          t.TempDir(),
+					AddAllStatus: gitStatus,
+					RemotesValue: []*git.Remote{}, // No remotes
 				},
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
