@@ -55,6 +55,7 @@ func init() {
 	fs := cmdInit.Flags
 	cfg := cmdInit.Config
 
+	addFlagCommit(fs, cfg)
 	addFlagPush(fs, cfg)
 	addFlagImage(fs, cfg)
 	addFlagLibrary(fs, cfg)

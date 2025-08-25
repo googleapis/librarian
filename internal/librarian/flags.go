@@ -32,6 +32,10 @@ func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
 }
 
+func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
+	fs.BoolVar(&cfg.Commit, "commit", false, "whether to create a commit for a release")
+}
+
 func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 	defaultValue := ""
 	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue, "a mount point from Docker host and within the Docker. The format is {host-dir}:{local-dir}.")
