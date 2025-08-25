@@ -80,11 +80,13 @@ func TestNewInitRunner(t *testing.T) {
 func TestInitRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name       string
-		runner     *initRunner
-		files      map[string]string
-		wantErr    bool
-		wantErrMsg string
+		name        string
+		runner      *initRunner
+		files       map[string]string
+		outputFiles map[string]string
+		wantFiles   map[string]string
+		wantErr     bool
+		wantErrMsg  string
 	}{
 		{
 			name: "run release init command for one library",
@@ -126,6 +128,41 @@ func TestInitRun(t *testing.T) {
 				"file1.txt":      "",
 				"dir1/file1.txt": "",
 				"dir2/file2.txt": "",
+			},
+		},
+		{
+			name: "run release init command should not remove existing files",
+			runner: &initRunner{
+				workRoot:        filepath.Join(t.TempDir(), "work-root"),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Library: "example-id",
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-id",
+							SourceRoots: []string{
+								"dir1",
+							},
+							RemoveRegex: []string{"dir1/.*"},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: filepath.Join(t.TempDir(), "repo"),
+				},
+				librarianConfig: &config.LibrarianConfig{},
+			},
+			files: map[string]string{
+				"dir1/should_keep.txt": "content",
+			},
+			outputFiles: map[string]string{
+				"dir1/new_file.txt": "new content",
+			},
+			wantFiles: map[string]string{
+				"dir1/should_keep.txt": "content",
+				"dir1/new_file.txt":    "new content",
 			},
 		},
 		{
@@ -325,6 +362,22 @@ func TestInitRun(t *testing.T) {
 				t.Fatalf("os.MkdirAll() = %v", err)
 			}
 
+			outputDir := filepath.Join(test.runner.workRoot, "output")
+			if test.outputFiles != nil {
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("os.MkdirAll() for output = %v", err)
+				}
+				for path, content := range test.outputFiles {
+					fullPath := filepath.Join(outputDir, path)
+					if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() for output file = %v", err)
+					}
+					if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+						t.Fatalf("os.WriteFile() for output file = %v", err)
+					}
+				}
+			}
+
 			err := test.runner.run(context.Background())
 			if test.wantErr {
 				if err == nil {
@@ -339,6 +392,19 @@ func TestInitRun(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("run() failed: %s", err.Error())
+			}
+
+			if test.wantFiles != nil {
+				for path, wantContent := range test.wantFiles {
+					fullPath := filepath.Join(repoDir, path)
+					gotContent, err := os.ReadFile(fullPath)
+					if err != nil {
+						t.Errorf("os.ReadFile(%q) got error: %v", fullPath, err)
+					}
+					if string(gotContent) != wantContent {
+						t.Errorf("content of %q is %q, want %q", path, string(gotContent), wantContent)
+					}
+				}
 			}
 		})
 	}

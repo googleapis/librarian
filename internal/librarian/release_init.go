@@ -161,7 +161,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 				continue
 			}
 			// Only copy one library to repository.
-			if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
+			if err := copyLibrary(r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
 				return err
 			}
 
@@ -169,7 +169,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Copy all libraries to repository.
-		if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
+		if err := copyLibrary(r.repo.GetDir(), library.ID, outputDir); err != nil {
 			return err
 		}
 	}
