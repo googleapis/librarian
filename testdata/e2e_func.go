@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -68,8 +69,13 @@ func doGenerate(args []string) error {
 		return err
 	}
 
-	if _, err := readGenerateRequest(filepath.Join(request.librarianDir, generateRequest)); err != nil {
+	library, err := readGenerateRequest(filepath.Join(request.librarianDir, generateRequest))
+	if err != nil {
 		return err
+	}
+
+	if err := generateLibrary(library, request.outputDir); err != nil {
+		return fmt.Errorf("failed to generate library %s: %w", library.ID, err)
 	}
 
 	return writeGenerateResponse(request)
@@ -229,6 +235,22 @@ func populateAdditionalFields(library *libraryState) {
 	for _, oneAPI := range library.APIs {
 		oneAPI.Status = "existing"
 	}
+}
+
+// generateLibrary creates files in sourceDir.
+func generateLibrary(library *libraryState, outputDir string) error {
+	for _, src := range library.SourceRoots {
+		srcPath := filepath.Join(outputDir, src)
+		if err := os.MkdirAll(srcPath, 0755); err != nil {
+			return err
+		}
+		if _, err := os.Create(filepath.Join(srcPath, "example.txt")); err != nil {
+			return err
+		}
+		log.Print("create file in " + srcPath)
+	}
+
+	return nil
 }
 
 type configureOption struct {
