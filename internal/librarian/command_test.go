@@ -479,16 +479,16 @@ func TestCopyOneLibrary(t *testing.T) {
 
 func TestCommitAndPush(t *testing.T) {
 	for _, test := range []struct {
-		name             string
-		setupMockRepo    func(t *testing.T) gitrepo.Repository
-		setupMockClient  func(t *testing.T) GitHubClient
-		push             bool
-		wantErr          bool
-		expectedErrMsg   string
-		validatePostTest func(t *testing.T, repo gitrepo.Repository)
+		name            string
+		setupMockRepo   func(t *testing.T) gitrepo.Repository
+		setupMockClient func(t *testing.T) GitHubClient
+		commit          bool
+		push            bool
+		wantErr         bool
+		expectedErrMsg  string
 	}{
 		{
-			name: "Push flag not specified",
+			name: "Push flag and Commit flag are not specified",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				repoDir := newTestGitRepoWithCommit(t, "")
 				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
@@ -502,14 +502,39 @@ func TestCommitAndPush(t *testing.T) {
 			},
 		},
 		{
-			name: "Happy Path",
+			name: "create a commit",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				})
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{
+					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
+				}
+			},
+			commit: true,
+		},
+		{
+			name: "create a pull request",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
 					RemotesValue: []*git.Remote{remote},
 				}
 			},
@@ -678,7 +703,8 @@ func TestCommitAndPush(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
 			localConfig := &config.Config{
-				Push: test.push,
+				Push:   test.push,
+				Commit: test.commit,
 			}
 
 			err := commitAndPush(context.Background(), localConfig, repo, client, "")
@@ -694,10 +720,6 @@ func TestCommitAndPush(t *testing.T) {
 			if err != nil {
 				t.Errorf("%s: commitAndPush() returned unexpected error: %v", test.name, err)
 				return
-			}
-
-			if test.validatePostTest != nil {
-				test.validatePostTest(t, repo)
 			}
 		})
 	}
