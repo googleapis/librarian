@@ -17,11 +17,12 @@ package librarian
 import (
 	"context"
 	"errors"
-	"github.com/go-git/go-git/v5"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/go-git/go-git/v5"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
 
