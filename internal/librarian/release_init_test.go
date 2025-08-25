@@ -385,61 +385,15 @@ func TestInitRun(t *testing.T) {
 	}
 }
 
-func TestSetReleaseTrigger(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name           string
-		library        *config.LibraryState
-		libraryID      string
-		libraryVersion string
-		trigger        bool
-		want           *config.LibraryState
-	}{
-		{
-			name: "set trigger for a library",
-			library: &config.LibraryState{
-				ID:      "one-example-id",
-				Version: "1.0.0",
-			},
-			trigger: true,
-			want: &config.LibraryState{
-				ID:               "one-example-id",
-				Version:          "1.0.0",
-				ReleaseTriggered: true,
-			},
-		},
-		{
-			name: "set trigger for one library and override version",
-			library: &config.LibraryState{
-				ID:      "one-example-id",
-				Version: "1.0.0",
-			},
-			trigger:        true,
-			libraryVersion: "2.0.0",
-			want: &config.LibraryState{
-				ID:               "one-example-id",
-				Version:          "2.0.0",
-				ReleaseTriggered: true,
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			setReleaseTrigger(test.library, test.libraryVersion, test.trigger)
-			if diff := cmp.Diff(test.want, test.library); diff != "" {
-				t.Errorf("state mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestUpdateLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name            string
 		pathAndMessages []pathAndMessage
 		tags            []string
-		runner          *initRunner
-		state           *config.LibrarianState
+		libraryVersion  string
+		overrideVersion bool
+		library         *config.LibraryState
 		repo            gitrepo.Repository
 		want            *config.LibraryState
 		wantErr         bool
@@ -468,28 +422,14 @@ func TestUpdateLibrary(t *testing.T) {
 			tags: []string{
 				"one-id-1.2.3",
 			},
-			runner: &initRunner{
-				cfg: &config.Config{
-					LibraryVersion: "2.0.0",
-				},
-			},
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID:      "another-id",
-						Version: "2.3.4",
-						SourceRoots: []string{
-							"another/path",
-						},
-					},
-					{
-						ID:      "one-id",
-						Version: "1.2.3",
-						SourceRoots: []string{
-							"one/path",
-							"two/path",
-						},
-					},
+			libraryVersion:  "2.0.0",
+			overrideVersion: true,
+			library: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+				SourceRoots: []string{
+					"one/path",
+					"two/path",
 				},
 			},
 			want: &config.LibraryState{
@@ -532,26 +472,13 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 			tags: []string{
 				"one-id-1.2.3",
-				"another-id-2.3.4",
 			},
-			runner: &initRunner{cfg: &config.Config{}},
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID:      "another-id",
-						Version: "2.3.4",
-						SourceRoots: []string{
-							"another/path",
-						},
-					},
-					{
-						ID:      "one-id",
-						Version: "1.2.3",
-						SourceRoots: []string{
-							"one/path",
-							"two/path",
-						},
-					},
+			library: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+				SourceRoots: []string{
+					"one/path",
+					"two/path",
 				},
 			},
 			want: &config.LibraryState{
@@ -576,25 +503,13 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name:   "failed to get commit history of one library",
-			runner: &initRunner{cfg: &config.Config{}},
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID:      "another-id",
-						Version: "2.3.4",
-						SourceRoots: []string{
-							"another/path",
-						},
-					},
-					{
-						ID:      "one-id",
-						Version: "1.2.3",
-						SourceRoots: []string{
-							"one/path",
-							"two/path",
-						},
-					},
+			name: "failed to get commit history of one library",
+			library: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+				SourceRoots: []string{
+					"one/path",
+					"two/path",
 				},
 			},
 			repo: &MockRepository{
@@ -606,12 +521,12 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var err error
+			var updated *config.LibraryState
 			if test.repo != nil {
-				test.runner.repo = test.repo
-				err = updateLibrary(test.runner, test.state, 1)
+				updated, err = updateLibrary(test.repo, test.library, test.libraryVersion, test.overrideVersion)
 			} else {
-				test.runner.repo = setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				err = updateLibrary(test.runner, test.state, 1)
+				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
+				updated, err = updateLibrary(repo, test.library, test.libraryVersion, test.overrideVersion)
 			}
 
 			if test.wantErr {
@@ -625,10 +540,11 @@ func TestUpdateLibrary(t *testing.T) {
 
 				return
 			}
+
 			if err != nil {
 				t.Errorf("failed to run getChangesOf(): %q", err.Error())
 			}
-			if diff := cmp.Diff(test.want, test.state.Libraries[1], cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
+			if diff := cmp.Diff(test.want, updated, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
