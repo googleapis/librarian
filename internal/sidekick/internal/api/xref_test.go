@@ -87,13 +87,25 @@ func TestCrossReferenceMethod(t *testing.T) {
 		InputTypeID:  ".test.Request",
 		OutputTypeID: ".test.Response",
 	}
+	mixinMethod := &Method{
+		Name:            "GetOperation",
+		ID:              ".test.Service.GetOperation",
+		SourceServiceID: ".google.longrunning.Operations",
+		InputTypeID:     ".test.Request",
+		OutputTypeID:    ".test.Response",
+	}
 	service := &Service{
 		Name:    "Service",
 		ID:      ".test.Service",
-		Methods: []*Method{method},
+		Methods: []*Method{method, mixinMethod},
+	}
+	mixinService := &Service{
+		Name:    "Operations",
+		ID:      ".google.longrunning.Operations",
+		Methods: []*Method{},
 	}
 
-	model := NewTestAPI([]*Message{request, response}, []*Enum{}, []*Service{service})
+	model := NewTestAPI([]*Message{request, response}, []*Enum{}, []*Service{service, mixinService})
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

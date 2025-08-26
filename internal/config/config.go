@@ -109,6 +109,12 @@ type Config struct {
 	// expected.
 	CommandName string
 
+	// Commit determines whether to creat a commit for the release but not create
+	// a pull request.
+	//
+	// This flag is ignored if Push is set to true.
+	Commit bool
+
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
 	//

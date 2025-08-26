@@ -17,6 +17,8 @@ package config
 import (
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestLibrarianState_Validate(t *testing.T) {
@@ -198,7 +200,7 @@ func TestLibrary_Validate(t *testing.T) {
 				ID:            "a/b",
 				SourceRoots:   []string{"src/a"},
 				APIs:          []*API{{Path: "a/b/v1"}},
-				PreserveRegex: []string{".*\\.txt"},
+				PreserveRegex: []string{`. * \\.txt`},
 			},
 		},
 		{
@@ -218,7 +220,7 @@ func TestLibrary_Validate(t *testing.T) {
 				ID:          "a/b",
 				SourceRoots: []string{"src/a"},
 				APIs:        []*API{{Path: "a/b/v1"}},
-				RemoveRegex: []string{".*\\.log"},
+				RemoveRegex: []string{`. * \\.log`},
 			},
 		},
 		{
@@ -404,6 +406,42 @@ func TestIsValidImage(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if got := isValidImage(test.image); got != test.want {
 				t.Errorf("isValidImage(%q) = %v, want %v", test.image, got, test.want)
+			}
+		})
+	}
+}
+
+func TestLibraryState_LibraryByID(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		libraries []*LibraryState
+		id        string
+		want      *LibraryState
+	}{
+		{
+			name: "found",
+			libraries: []*LibraryState{
+				{ID: "foo"},
+				{ID: "bar"},
+			},
+			id:   "foo",
+			want: &LibraryState{ID: "foo"},
+		},
+		{
+			name: "not found",
+			libraries: []*LibraryState{
+				{ID: "foo"},
+				{ID: "bar"},
+			},
+			id:   "baz",
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			state := &LibrarianState{Libraries: test.libraries}
+			got := state.LibraryByID(test.id)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("LibraryState.LibraryByID() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

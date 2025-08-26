@@ -244,3 +244,40 @@ func (c *Client) CreateIssueComment(ctx context.Context, number int, comment str
 	})
 	return err
 }
+
+// hasLabel checks if a pull request has a given label.
+func hasLabel(pr *PullRequest, labelName string) bool {
+	for _, l := range pr.Labels {
+		if l.GetName() == labelName {
+			return true
+		}
+	}
+	return false
+}
+
+// FindMergedPullRequestsWithPendingReleaseLabel finds all merged pull requests with the "release:pending" label.
+func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*PullRequest, error) {
+	var allPRs []*PullRequest
+	opt := &github.PullRequestListOptions{
+		State: "closed",
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
+	}
+	for {
+		prs, resp, err := c.PullRequests.List(ctx, owner, repo, opt)
+		if err != nil {
+			return nil, err
+		}
+		for _, pr := range prs {
+			if pr.GetMerged() && hasLabel(pr, "release:pending") {
+				allPRs = append(allPRs, pr)
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+	return allPRs, nil
+}

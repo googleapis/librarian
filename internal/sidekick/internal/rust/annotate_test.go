@@ -174,7 +174,7 @@ func TestServiceAnnotations(t *testing.T) {
 	// Codec.
 	serviceAnn := service.Codec.(*serviceAnnotations)
 	wantMethodList := []*api.Method{method, emptyMethod}
-	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreFields(api.Method{}, "Model", "Service")); diff != "" {
+	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreFields(api.Method{}, "Model", "Service", "SourceService")); diff != "" {
 		t.Errorf("mismatch in method list (-want, +got)\n:%s", diff)
 	}
 

@@ -107,11 +107,11 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         );
         let extensions = {
             let mut e = tonic::Extensions::new();
-            e.insert(tonic::GrpcMethod::new("{{Service.Package}}.{{Service.Name}}", "{{Name}}"));
+            e.insert(tonic::GrpcMethod::new("{{SourceService.Package}}.{{SourceService.Name}}", "{{Name}}"));
             e
         };
         let path = http::uri::PathAndQuery::from_static(
-            "/{{Service.Package}}.{{Service.Name}}/{{Name}}"
+            "/{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}"
         );
         {{!
         AIP-4222 says:

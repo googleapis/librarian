@@ -24,6 +24,7 @@ steps:
       - '--project=$PROJECT_ID'
       - '--command=generate'
       - '--push=$_PUSH'
+      - '--build=$_BUILD'
 tags: ['generate-dispatcher']
 availableSecrets:
 options:

@@ -98,7 +98,7 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 	if err != nil {
 		return "", "", fmt.Errorf("failed to fetch github repo from remote: %w", err)
 	}
-	previousTag := formatTag(library.TagFormat, library.ID, library.Version)
+	previousTag := formatTag(library, "")
 	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get conventional commits for library %s: %w", library.ID, err)
@@ -107,7 +107,7 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get next version for library %s: %w", library.ID, err)
 	}
-	newTag := formatTag(library.TagFormat, library.ID, newVersion)
+	newTag := formatTag(library, newVersion)
 
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
 	for _, commit := range commits {

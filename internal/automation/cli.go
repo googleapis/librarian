@@ -29,7 +29,7 @@ func Run(args []string) error {
 		return err
 	}
 
-	err = RunCommand(ctx, options.Command, options.ProjectId, options.Push)
+	err = RunCommand(ctx, options.Command, options.ProjectId, options.Push, options.Build)
 	if err != nil {
 		slog.Error("Error running command", slog.Any("err", err))
 		return err
@@ -41,6 +41,7 @@ type runOptions struct {
 	Command   string
 	ProjectId string
 	Push      bool
+	Build     bool
 }
 
 func parseFlags(args []string) (*runOptions, error) {
@@ -48,6 +49,7 @@ func parseFlags(args []string) (*runOptions, error) {
 	projectId := flagSet.String("project", "cloud-sdk-librarian-prod", "GCP project ID")
 	command := flagSet.String("command", "generate", "The librarian command to run")
 	push := flagSet.Bool("push", true, "The _PUSH flag (true/false) to Librarian CLI's -push option")
+	build := flagSet.Bool("build", true, "The _BUILD flag (true/false) to Librarian CLI's -build option")
 	err := flagSet.Parse(args)
 	if err != nil {
 		return nil, err
@@ -56,5 +58,6 @@ func parseFlags(args []string) (*runOptions, error) {
 		ProjectId: *projectId,
 		Command:   *command,
 		Push:      *push,
+		Build:     *build,
 	}, nil
 }

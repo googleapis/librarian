@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -135,10 +134,10 @@ type ReleaseInitRequest struct {
 	// Output specifies the empty output directory into which the command should
 	// generate code.
 	Output string
-	// partialRepoDir is the local root directory of language repository contains
+	// PartialRepoDir is the local root directory of language repository contains
 	// files that make up libraries and global files.
 	// This is the directory that container can access.
-	partialRepoDir string
+	PartialRepoDir string
 }
 
 // New constructs a Docker instance which will invoke the specified
@@ -253,7 +252,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 
 // ReleaseInit initiates a release for a given language repository.
 func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
-	requestFilePath := filepath.Join(request.Cfg.Repo, config.LibrarianDir, config.ReleaseInitRequest)
+	requestFilePath := filepath.Join(request.PartialRepoDir, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return err
 	}
@@ -275,14 +274,10 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		commandArgs = append(commandArgs, fmt.Sprintf("--library-version=%s", request.LibraryVersion))
 	}
 
-	if err := setupPartialRepo(request); err != nil {
-		return err
-	}
-
-	librarianDir := filepath.Join(request.partialRepoDir, config.LibrarianDir)
+	librarianDir := filepath.Join(request.PartialRepoDir, config.LibrarianDir)
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian", librarianDir),
-		fmt.Sprintf("%s:/repo:ro", request.partialRepoDir), // readonly volume
+		fmt.Sprintf("%s:/repo:ro", request.PartialRepoDir), // readonly volume
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
@@ -344,96 +339,6 @@ func (c *Docker) runCommand(cmdName string, args ...string) error {
 	slog.Info(strings.Repeat("-", 80))
 	err := cmd.Run()
 	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
-	return err
-}
-
-// setupPartialRepo copies the following files from the [config.Config.Repo] to
-// partialRepoDir in the given ReleaseInitRequest:
-//
-// 1. all directories that make up all libraries, or one library, if the library
-// ID is specified.
-//
-// 2. the .librarian directory.
-//
-// 3. global files declared in config.yaml.
-func setupPartialRepo(request *ReleaseInitRequest) error {
-	if request.partialRepoDir == "" {
-		request.partialRepoDir = filepath.Join(request.Cfg.WorkRoot, "release-init")
-	}
-	dst := request.partialRepoDir
-	src := request.Cfg.Repo
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return fmt.Errorf("failed to make directory: %w", err)
-	}
-
-	for _, library := range request.State.Libraries {
-		// Only copy files that make up one library.
-		if request.LibraryID != "" {
-			if library.ID == request.LibraryID {
-				if err := copyOneLibrary(dst, src, library); err != nil {
-					return err
-				}
-				break
-			}
-			continue
-		}
-
-		// Copy all files make up all libraries.
-		if err := copyOneLibrary(dst, src, library); err != nil {
-			return err
-		}
-	}
-
-	// Copy the .librarian directory.
-	if err := os.CopyFS(
-		filepath.Join(dst, config.LibrarianDir),
-		os.DirFS(filepath.Join(src, config.LibrarianDir))); err != nil {
-		return fmt.Errorf("failed to copy librarian dir to %s: %w", dst, err)
-	}
-
-	// Copy global files declared in librarian config.
-	for _, globalFile := range request.LibrarianConfig.GlobalFilesAllowlist {
-		dstPath := filepath.Join(dst, globalFile.Path)
-		srcPath := filepath.Join(src, globalFile.Path)
-		if err := copyFile(dstPath, srcPath); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func copyOneLibrary(dst, src string, library *config.LibraryState) error {
-	for _, srcRoot := range library.SourceRoots {
-		dstPath := filepath.Join(dst, srcRoot)
-		srcPath := filepath.Join(src, srcRoot)
-		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
-			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dstPath, err)
-		}
-	}
-
-	return nil
-}
-
-func copyFile(dst, src string) (err error) {
-	sourceFile, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("failed to open file: %q: %w", src, err)
-	}
-	defer sourceFile.Close()
-
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return fmt.Errorf("failed to make directory: %s", src)
-	}
-
-	destinationFile, err := os.Create(dst)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %s", dst)
-	}
-	defer destinationFile.Close()
-
-	_, err = io.Copy(destinationFile, sourceFile)
-
 	return err
 }
 

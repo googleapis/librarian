@@ -18,7 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -191,22 +193,46 @@ func formatTimestamp(t time.Time) string {
 	return t.Format(yyyyMMddHHmmss)
 }
 
+// cleanAndCopyLibrary cleans the files of the given library in repoDir and copies
+// the new files from outputDir.
+func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outputDir string) error {
+	library := findLibraryByID(state, libraryID)
+	if library == nil {
+		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
+	}
+
+	if err := clean(repoDir, library.RemoveRegex, library.PreserveRegex); err != nil {
+		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
+	}
+
+	return copyLibrary(repoDir, outputDir, library)
+}
+
+// copyLibrary copies library file from src to dst.
+func copyLibrary(dst, src string, library *config.LibraryState) error {
+	slog.Info("Copying library", "id", library.ID, "destination", dst, "source", src)
+	for _, srcRoot := range library.SourceRoots {
+		dstPath := filepath.Join(dst, srcRoot)
+		srcPath := filepath.Join(src, srcRoot)
+		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dstPath, err)
+		}
+	}
+
+	return nil
+}
+
 // commitAndPush creates a commit and push request to GitHub for the generated
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string) error {
-	if !r.cfg.Push {
-		slog.Info("Push flag is not specified, skipping")
+func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage string) error {
+	if !cfg.Push && !cfg.Commit {
+		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
 	}
-	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(r.repo)
-	if err != nil {
-		return err
-	}
 
-	status, err := r.repo.AddAll()
+	status, err := repo.AddAll()
 	if err != nil {
 		return err
 	}
@@ -218,17 +244,28 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	slog.Info("Creating branch", slog.String("branch", branch))
-	if err := r.repo.CreateBranchAndCheckout(branch); err != nil {
+	if err := repo.CreateBranchAndCheckout(branch); err != nil {
 		return err
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	slog.Info("Committing", "message", commitMessage)
-	if err := r.repo.Commit(commitMessage); err != nil {
+	if err := repo.Commit(commitMessage); err != nil {
 		return err
 	}
 
-	if err := r.repo.Push(branch); err != nil {
+	if err := repo.Push(branch); err != nil {
+		return err
+	}
+
+	if !cfg.Push {
+		slog.Info("Push flag is not specified, skipping pull request creation")
+		return nil
+	}
+
+	// Ensure we have a GitHub repository
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
+	if err != nil {
 		return err
 	}
 
@@ -236,8 +273,30 @@ func commitAndPush(ctx context.Context, r *generateRunner, commitMessage string)
 	titlePrefix := "Librarian pull request"
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	if _, err = r.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
+	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil
+}
+
+func copyFile(dst, src string) (err error) {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %q: %w", src, err)
+	}
+	defer sourceFile.Close()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return fmt.Errorf("failed to make directory: %s", src)
+	}
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %s", dst)
+	}
+	defer destinationFile.Close()
+
+	_, err = io.Copy(destinationFile, sourceFile)
+
+	return err
 }

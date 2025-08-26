@@ -39,16 +39,19 @@ type mockGitHubClient struct {
 	replaceLabelsCalls      int
 	searchPullRequestsCalls int
 	getPullRequestCalls     int
+	createReleaseCalls      int
 	createPullRequestErr    error
 	addLabelsToIssuesErr    error
 	getLabelsErr            error
 	replaceLabelsErr        error
 	searchPullRequestsErr   error
 	getPullRequestErr       error
+	createReleaseErr        error
 	createdPR               *github.PullRequestMetadata
 	labels                  []string
 	pullRequests            []*github.PullRequest
 	pullRequest             *github.PullRequest
+	createdRelease          *github.RepositoryRelease
 }
 
 func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) ([]byte, error) {
@@ -88,6 +91,11 @@ func (m *mockGitHubClient) GetPullRequest(ctx context.Context, number int) (*git
 	return m.pullRequest, m.getPullRequestErr
 }
 
+func (m *mockGitHubClient) CreateRelease(ctx context.Context, tagName, releaseName, body, commitish string) (*github.RepositoryRelease, error) {
+	m.createReleaseCalls++
+	return m.createdRelease, m.createReleaseErr
+}
+
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
@@ -103,6 +111,7 @@ type mockContainerClient struct {
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
+	noGenerateResponse  bool
 	noInitVersion       bool
 	wantErrorMsg        bool
 }
@@ -112,8 +121,7 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	if m.noBuildResponse {
 		return m.buildErr
 	}
-	// Write a build-response.json because it is required by generate
-	// command.
+	// Write a build-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, ".librarian"), 0755); err != nil {
 		return err
 	}
@@ -135,8 +143,7 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 		return "", m.configureErr
 	}
 
-	// Write a configure-response.json because it is required by configure
-	// command.
+	// Write a configure-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
 		return "", err
 	}
@@ -158,8 +165,12 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
-	// Write a generate-response.json because it is required by generate
-	// command.
+
+	if m.noGenerateResponse {
+		return m.generateErr
+	}
+
+	// // Write a generate-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
 		return err
 	}

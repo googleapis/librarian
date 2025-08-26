@@ -67,6 +67,16 @@ func (s *LibrarianState) ImageRefAndTag() (ref string, tag string) {
 	return parseImage(s.Image)
 }
 
+// LibraryByID returns the library with the given ID, or nil if not found.
+func (s *LibrarianState) LibraryByID(id string) *LibraryState {
+	for _, lib := range s.Libraries {
+		if lib.ID == id {
+			return lib
+		}
+	}
+	return nil
+}
+
 // parseImage splits an image string into its reference and tag.
 // It correctly handles port numbers in the reference.
 // If no tag is found, the tag part is an empty string.

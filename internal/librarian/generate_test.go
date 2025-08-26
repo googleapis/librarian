@@ -59,6 +59,25 @@ func TestRunGenerateCommand(t *testing.T) {
 			wantLibraryID:     "some-library",
 			wantGenerateCalls: 1,
 		},
+		{
+			name:     "works with no response",
+			api:      "some/api",
+			repo:     newTestGitRepo(t),
+			ghClient: &mockGitHubClient{},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				noGenerateResponse: true,
+			},
+			wantLibraryID:     "some-library",
+			wantGenerateCalls: 1,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -143,7 +162,7 @@ func TestRunBuildCommand(t *testing.T) {
 			container: &mockContainerClient{
 				noBuildResponse: true,
 			},
-			wantErr: true,
+			wantBuildCalls: 1,
 		},
 		{
 			name:      "build with error response in response",
@@ -271,7 +290,7 @@ func TestRunConfigureCommand(t *testing.T) {
 			},
 			wantConfigureCalls: 1,
 			wantErr:            true,
-			wantErrMsg:         "failed to read response file",
+			wantErrMsg:         "no response file for configure container command",
 		},
 		{
 			name: "configures library without initial version",
@@ -1518,89 +1537,6 @@ func TestCompileRegexps(t *testing.T) {
 				if len(regexps) != len(tc.patterns) {
 					t.Errorf("compileRegexps() len = %d, want %d", len(regexps), len(tc.patterns))
 				}
-			}
-		})
-	}
-}
-
-func TestCleanAndCopyLibrary(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name        string
-		libraryID   string
-		state       *config.LibrarianState
-		repo        gitrepo.Repository
-		outputDir   string
-		setup       func(t *testing.T, r *generateRunner, outputDir string)
-		wantErr     bool
-		errContains string
-	}{
-		{
-			name:      "library not found",
-			libraryID: "non-existent-library",
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID: "some-library",
-					},
-				},
-			},
-			repo:    newTestGitRepo(t),
-			wantErr: true,
-		},
-		{
-			name:      "clean fails",
-			libraryID: "some-library",
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID:          "some-library",
-						RemoveRegex: []string{"["}, // Invalid regex
-					},
-				},
-			},
-			repo:    newTestGitRepo(t),
-			wantErr: true,
-		},
-		{
-			name:      "copy fails on symlink",
-			libraryID: "some-library",
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID: "some-library",
-					},
-				},
-			},
-			repo: newTestGitRepo(t),
-			setup: func(t *testing.T, r *generateRunner, outputDir string) {
-				// Create a symlink in the output directory to trigger an error.
-				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
-					t.Fatalf("os.Symlink() = %v", err)
-				}
-			},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			r := &generateRunner{
-				state: test.state,
-				repo:  test.repo,
-			}
-			outputDir := t.TempDir()
-			if test.setup != nil {
-				test.setup(t, r, outputDir)
-			}
-			err := r.cleanAndCopyLibrary(test.libraryID, outputDir)
-			if test.wantErr {
-				if err == nil {
-					t.Errorf("%s should return error", test.name)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
 			}
 		})
 	}
