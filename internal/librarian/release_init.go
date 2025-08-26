@@ -119,17 +119,15 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 	src := r.repo.GetDir()
 
-	for i, library := range r.state.Libraries {
+	for _, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
 				continue
 			}
 			// Only update one library with the given library ID.
-			updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion)
-			if err != nil {
+			if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 				return err
 			}
-			r.state.Libraries[i] = updatedLibrary
 			if err := copyLibrary(dst, src, library); err != nil {
 				return err
 			}
@@ -138,11 +136,9 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Update all libraries.
-		updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion)
-		if err != nil {
+		if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 			return err
 		}
-		r.state.Libraries[i] = updatedLibrary
 		if err := copyLibrary(dst, src, library); err != nil {
 			return err
 		}
@@ -199,25 +195,10 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 // 2. Override the library version if libraryVersion is not empty.
 //
 // 3. Set the library's release trigger to true.
-func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string) (*config.LibraryState, error) {
-	updatedLibrary, err := getChangesOf(repo, library)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update library, %s: %w", library.ID, err)
-	}
-
-	if libraryVersion != "" {
-		updatedLibrary.Version = libraryVersion
-	}
-	updatedLibrary.ReleaseTriggered = true
-
-	return updatedLibrary, nil
-}
-
-// getChangesOf gets commit history of the given library.
-func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*config.LibraryState, error) {
+func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string) error {
 	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
 	changes := make([]*config.Change, 0)
@@ -236,10 +217,19 @@ func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*confi
 			CommitHash: commit.SHA,
 		})
 	}
+	if len(changes) == 0 {
+		// Don't update the library at all
+		return nil
+	}
 
+	nextVersion, err := NextVersion(commits, library.Version, libraryVersion)
+	if err != nil {
+		return err
+	}
 	library.Changes = changes
-
-	return library, nil
+	library.Version = nextVersion
+	library.ReleaseTriggered = true
+	return nil
 }
 
 // getChangeType gets the type of the commit, adding an escalation mark (!) if

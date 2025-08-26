@@ -294,7 +294,7 @@ func TestInitRun(t *testing.T) {
 				partialRepo: t.TempDir(),
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to update library",
+			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 		{
 			name: "failed to commit and push",
@@ -481,7 +481,7 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 			want: &config.LibraryState{
 				ID:      "one-id",
-				Version: "1.2.3",
+				Version: "2.0.0",
 				SourceRoots: []string{
 					"one/path",
 					"two/path",
@@ -519,12 +519,11 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var err error
-			var updated *config.LibraryState
 			if test.repo != nil {
-				updated, err = updateLibrary(test.repo, test.library, test.libraryVersion)
+				err = updateLibrary(test.repo, test.library, test.libraryVersion)
 			} else {
 				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				updated, err = updateLibrary(repo, test.library, test.libraryVersion)
+				err = updateLibrary(repo, test.library, test.libraryVersion)
 			}
 
 			if test.wantErr {
@@ -542,7 +541,7 @@ func TestUpdateLibrary(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to run getChangesOf(): %q", err.Error())
 			}
-			if diff := cmp.Diff(test.want, updated, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
+			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
