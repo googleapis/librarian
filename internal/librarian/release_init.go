@@ -194,6 +194,13 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	return cleanAndCopyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir)
 }
 
+// updateLibrary updates the given library in the following way:
+//
+// 1. Get the library's commit history in the given git repository.
+//
+// 2. Override the library version if overrideVersion is true.
+//
+// 3. Set the library's release trigger to true.
 func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string, overrideVersion bool) (*config.LibraryState, error) {
 	updatedLibrary, err := getChangesOf(repo, library)
 	if err != nil {
