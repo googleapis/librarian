@@ -175,7 +175,15 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 		libraryID = configuredLibraryID
 	}
 
-	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, outputDir)
+	// For each library, create a separate output directory. This avoids
+	// libraries interfering with each other, and makes it easier to see what
+	// was generated for each library when debugging.
+	libraryOutputDir := filepath.Join(outputDir, libraryID)
+	if err := os.Mkdir(libraryOutputDir, 0755); err != nil {
+		return err
+	}
+
+	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, libraryOutputDir)
 	if err != nil {
 		return err
 	}
