@@ -489,7 +489,6 @@ func TestDockerRun(t *testing.T) {
 				"--librarian=/librarian",
 				"--repo=/repo",
 				"--output=/output",
-				fmt.Sprintf("--library=%s", testLibraryID),
 			},
 		},
 		{
@@ -528,8 +527,6 @@ func TestDockerRun(t *testing.T) {
 				"--librarian=/librarian",
 				"--repo=/repo",
 				"--output=/output",
-				fmt.Sprintf("--library=%s", testLibraryID),
-				"--library-version=1.2.3",
 			},
 		},
 	} {
