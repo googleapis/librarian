@@ -469,6 +469,7 @@ func TestUpdateLibrary(t *testing.T) {
 			tags: []string{
 				"one-id-1.2.3",
 			},
+			// this version is not set because overrideVersion is false.
 			libraryVersion:  "2.0.0",
 			overrideVersion: false,
 			library: &config.LibraryState{
