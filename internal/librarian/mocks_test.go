@@ -212,7 +212,7 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 
 	libraryStr := "{}"
 	if m.wantErrorMsg {
-		libraryStr = "{error: simulated error message}"
+		libraryStr = fmt.Sprintf("{\"id\":\"%s\",\"error\": \"simulated error message\"}", request.LibraryID)
 	}
 	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), []byte(libraryStr), 0755); err != nil {
 		return err
