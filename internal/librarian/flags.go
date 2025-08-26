@@ -46,7 +46,7 @@ func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
 }
 
 func addFlagLibrary(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Library, "library", "", "The ID of a single library to update")
+	fs.StringVar(&cfg.Library, "library", "", "The ID of a single library to update. This is repo-specific and defined in the state.yaml")
 }
 
 func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
