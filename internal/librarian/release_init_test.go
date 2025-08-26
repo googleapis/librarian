@@ -392,7 +392,6 @@ func TestUpdateLibrary(t *testing.T) {
 		pathAndMessages []pathAndMessage
 		tags            []string
 		libraryVersion  string
-		overrideVersion bool
 		library         *config.LibraryState
 		repo            gitrepo.Repository
 		want            *config.LibraryState
@@ -422,8 +421,7 @@ func TestUpdateLibrary(t *testing.T) {
 			tags: []string{
 				"one-id-1.2.3",
 			},
-			libraryVersion:  "2.0.0",
-			overrideVersion: true,
+			libraryVersion: "2.0.0",
 			library: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
@@ -444,48 +442,6 @@ func TestUpdateLibrary(t *testing.T) {
 						Type:    "fix",
 						Subject: "change a typo",
 					},
-					{
-						Type:    "feat",
-						Subject: "add a config file",
-						Body:    "This is the body.",
-						ClNum:   "12345",
-					},
-				},
-				ReleaseTriggered: true,
-			},
-		},
-		{
-			name: "update a library without override version",
-			pathAndMessages: []pathAndMessage{
-				{
-					path:    "non-related/path/example.txt",
-					message: "chore: initial commit",
-				},
-				{
-					path:    "one/path/example.txt",
-					message: "feat: add a config file\n\nThis is the body.\n\nPiperOrigin-RevId: 12345",
-				},
-			},
-			tags: []string{
-				"one-id-1.2.3",
-			},
-			// this version is not set because overrideVersion is false.
-			libraryVersion:  "2.0.0",
-			overrideVersion: false,
-			library: &config.LibraryState{
-				ID:      "one-id",
-				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-				},
-			},
-			want: &config.LibraryState{
-				ID:      "one-id",
-				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-				},
-				Changes: []*config.Change{
 					{
 						Type:    "feat",
 						Subject: "add a config file",
@@ -565,10 +521,10 @@ func TestUpdateLibrary(t *testing.T) {
 			var err error
 			var updated *config.LibraryState
 			if test.repo != nil {
-				updated, err = updateLibrary(test.repo, test.library, test.libraryVersion, test.overrideVersion)
+				updated, err = updateLibrary(test.repo, test.library, test.libraryVersion)
 			} else {
 				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				updated, err = updateLibrary(repo, test.library, test.libraryVersion, test.overrideVersion)
+				updated, err = updateLibrary(repo, test.library, test.libraryVersion)
 			}
 
 			if test.wantErr {

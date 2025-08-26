@@ -125,7 +125,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 				continue
 			}
 			// Only update one library with the given library ID.
-			updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion, true)
+			updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion)
 			if err != nil {
 				return err
 			}
@@ -140,7 +140,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		// Update all libraries.
 		// Do not override library version because it can only be allowed to override
 		// when library flag is specified.
-		updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion, false)
+		updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion)
 		if err != nil {
 			return err
 		}
@@ -198,16 +198,16 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 //
 // 1. Get the library's commit history in the given git repository.
 //
-// 2. Override the library version if overrideVersion is true.
+// 2. Override the library version if libraryVersion is not empty.
 //
 // 3. Set the library's release trigger to true.
-func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string, overrideVersion bool) (*config.LibraryState, error) {
+func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string) (*config.LibraryState, error) {
 	updatedLibrary, err := getChangesOf(repo, library)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update library, %s: %w", library.ID, err)
 	}
 
-	if overrideVersion && libraryVersion != "" {
+	if libraryVersion != "" {
 		updatedLibrary.Version = libraryVersion
 	}
 	updatedLibrary.ReleaseTriggered = true
