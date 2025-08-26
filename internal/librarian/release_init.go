@@ -194,8 +194,6 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	return cleanAndCopyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir)
 }
 
-// updateLibrary updates the library which is the index-th library in the given
-// [config.LibrarianState].
 func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string, overrideVersion bool) (*config.LibraryState, error) {
 	updatedLibrary, err := getChangesOf(repo, library)
 	if err != nil {
