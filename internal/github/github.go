@@ -261,7 +261,6 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 	opt := &github.PullRequestListOptions{
 		State: "closed",
 		ListOptions: github.ListOptions{
-			Page:    5,
 			PerPage: 100,
 		},
 	}
@@ -275,7 +274,7 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 				allPRs = append(allPRs, pr)
 			}
 		}
-		if resp.NextPage == 0 {
+		if resp.NextPage == 0 || len(allPRs) >= 10 {
 			break
 		}
 		opt.Page = resp.NextPage
