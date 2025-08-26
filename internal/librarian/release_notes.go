@@ -53,16 +53,26 @@ var (
 		"docs",
 	}
 
-	releaseNotesTemplate = template.Must(
-		template.New("release_notes.md.tmpl").Funcs(template.FuncMap{
-			"shortSHA": func(sha string) string {
-				if len(sha) < 7 {
-					return sha
-				}
-				return sha[:7]
-			},
-		}).ParseFiles("templates/release_notes.md.tmpl"),
-	)
+	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{
+		"shortSHA": func(sha string) string {
+			if len(sha) < 7 {
+				return sha
+			}
+			return sha[:7]
+		},
+	}).Parse(`## [{{.NewVersion}}]({{"https://github.com/"}}{{.Repo.Owner}}/{{.Repo.Name}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
+{{- range .CommitTypes -}}
+{{- if .Commits -}}
+{{- if .Heading}}
+
+### {{.Heading}}
+{{end}}
+
+{{- range .Commits -}}
+* {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$.Repo.Owner}}/{{$.Repo.Name}}/commit/{{.SHA}}))
+{{- end -}}
+{{- end -}}
+{{- end -}}`))
 )
 
 // FormatReleaseNotes generates the body for a release pull request.
