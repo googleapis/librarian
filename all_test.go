@@ -48,6 +48,7 @@ var ignoredExts = map[string]bool{
 	".md":         true,
 	".yml":        true,
 	".yaml":       true,
+	".tmpl":       true,
 }
 
 var ignoredDirs = []string{

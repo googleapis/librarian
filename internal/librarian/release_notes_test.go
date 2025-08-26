@@ -23,21 +23,25 @@ import (
 	gitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestFormatReleaseNotes(t *testing.T) {
+	t.Parallel()
+
 	today := time.Now().Format("2006-01-02")
 	hash1 := plumbing.NewHash("1234567890abcdef")
 	hash2 := plumbing.NewHash("fedcba0987654321")
-	for _, test := range []struct {
-		name  string
-		state *config.LibrarianState
-		repo  gitrepo.Repository
+	librarianVersion := cli.Version()
 
-		librarianVersion string
-		wantReleaseNote  string
+	for _, test := range []struct {
+		name            string
+		state           *config.LibrarianState
+		repo            gitrepo.Repository
+		wantReleaseNote string
+		wantErr         bool
 	}{
 		{
 			name: "single library release",
@@ -69,9 +73,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 					},
 				},
 			},
-
-			librarianVersion: "v1.2.3",
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: v1.2.3
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
 
 <details><summary>my-library: 1.1.0</summary>
@@ -86,7 +88,7 @@ Language Image: go:1.21
 
 </details>
 `,
-				today),
+				librarianVersion, today),
 		},
 		{
 			name: "multiple library releases",
@@ -120,8 +122,7 @@ Language Image: go:1.21
 					hash2.String(): {"path/to/another/file"},
 				},
 			},
-			librarianVersion: "v1.2.3",
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: v1.2.3
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
 
 <details><summary>lib-a: 1.1.0</summary>
@@ -141,7 +142,7 @@ Language Image: go:1.21
 
 </details>
 `,
-				today, today),
+				librarianVersion, today, today),
 		},
 		{
 			name: "release with ignored commit types",
@@ -168,8 +169,7 @@ Language Image: go:1.21
 					hash2.String(): {"path/to/another/file"},
 				},
 			},
-			librarianVersion: "v1.2.3",
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: v1.2.3
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
 
 <details><summary>my-library: 1.1.0</summary>
@@ -181,7 +181,7 @@ Language Image: go:1.21
 
 </details>
 `,
-				today),
+				librarianVersion, today),
 		},
 		{
 			name: "no releases",
@@ -189,17 +189,40 @@ Language Image: go:1.21
 				Image:     "go:1.21",
 				Libraries: []*config.LibraryState{},
 			},
-			repo:             &MockRepository{},
-			librarianVersion: "v1.2.3",
-			wantReleaseNote: `Librarian Version: v1.2.3
-Language Image: go:1.21
-
-
-`,
+			repo:            &MockRepository{},
+			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21\n\n", librarianVersion),
+		},
+		{
+			name: "error getting commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:               "my-library",
+						Version:          "1.0.0",
+						ReleaseTriggered: true,
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesValue:                    []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitsForPathsSinceTagError: fmt.Errorf("git error"),
+			},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := FormatReleaseNotes(test.repo, test.state, test.librarianVersion)
+			t.Parallel()
+			got, err := FormatReleaseNotes(test.repo, test.state)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.wantReleaseNote, got); diff != "" {
 				t.Errorf("FormatReleaseNotes() mismatch (-want +got):\n%s", diff)
 			}

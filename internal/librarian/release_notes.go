@@ -8,7 +8,7 @@
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES, OR CONDITIONS OF ANY KIND, either express or implied.
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -18,10 +18,10 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"slices"
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
@@ -44,6 +44,7 @@ var (
 	}
 
 	// commitTypeOrder is the order in which commit types should appear in release notes.
+	// Only these listed are included in release notes.
 	commitTypeOrder = []string{
 		"feat",
 		"fix",
@@ -52,63 +53,43 @@ var (
 		"docs",
 	}
 
-	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{
-		"shortSHA": func(sha string) string {
-			if len(sha) < 7 {
-				return sha
-			}
-			return sha[:7]
-		},
-	}).Parse(`## [{{.NewVersion}}]({{"https://github.com/"}}{{.Repo.Owner}}/{{.Repo.Name}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
-{{- range .CommitTypes -}}
-{{- if .Commits -}}
-{{- if .Heading}}
-
-### {{.Heading}}
-{{end}}
-
-{{- range .Commits -}}
-* {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$.Repo.Owner}}/{{$.Repo.Name}}/commit/{{.SHA}}))
-{{- end -}}
-{{- end -}}
-{{- end -}}`))
+	releaseNotesTemplate = template.Must(
+		template.New("release_notes.md.tmpl").Funcs(template.FuncMap{
+			"shortSHA": func(sha string) string {
+				if len(sha) < 7 {
+					return sha
+				}
+				return sha[:7]
+			},
+		}).ParseFiles("templates/release_notes.md.tmpl"),
+	)
 )
 
 // FormatReleaseNotes generates the body for a release pull request.
-func FormatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState, librarianVersion string) string {
+func FormatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
 	var body bytes.Buffer
-	if librarianVersion != "" {
-		fmt.Fprintf(&body, "Librarian Version: %s\n", librarianVersion)
-	}
 
+	librarianVersion := cli.Version()
+	fmt.Fprintf(&body, "Librarian Version: %s\n", librarianVersion)
 	fmt.Fprintf(&body, "Language Image: %s\n\n", state.Image)
-	libraryIDs := make([]string, 0, len(state.Libraries))
-	for _, library := range state.Libraries {
-		libraryIDs = append(libraryIDs, library.ID)
-	}
-	slices.Sort(libraryIDs)
 
-	for i, libraryID := range libraryIDs {
-		library := findLibraryByID(state, libraryID)
+	for _, library := range state.Libraries {
 		if !library.ReleaseTriggered {
 			continue
 		}
 
 		notes, newVersion, err := formatLibraryReleaseNotes(repo, library)
 		if err != nil {
-			fmt.Fprintf(&body, "Error generating release notes for %s: %v\n", library.ID, err)
-			continue
+			return "", fmt.Errorf("failed to format release notes for library %s: %w", library.ID, err)
 		}
 		fmt.Fprintf(&body, "<details><summary>%s: %s</summary>\n\n", library.ID, newVersion)
 
 		body.WriteString(notes)
 		body.WriteString("\n\n</details>")
-		if i < len(libraryIDs)-1 {
-			body.WriteString("\n")
-		}
+
+		body.WriteString("\n")
 	}
-	body.WriteString("\n")
-	return body.String()
+	return body.String(), nil
 }
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.

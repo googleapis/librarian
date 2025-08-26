@@ -1,0 +1,13 @@
+## [{{.NewVersion}}]({{"https://github.com/"}}{{.Repo.Owner}}/{{.Repo.Name}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
+{{- range .CommitTypes -}}
+{{- if .Commits -}}
+{{- if .Heading}}
+
+### {{.Heading}}
+{{end}}
+
+{{- range .Commits -}}
+* {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$.Repo.Owner}}/{{$.Repo.Name}}/commit/{{.SHA}}))
+{{- end -}}
+{{- end -}}
+{{- end -}}
