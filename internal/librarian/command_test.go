@@ -771,8 +771,8 @@ func TestCopyLibraryFiles(t *testing.T) {
 			wantErrMsg: "not found",
 		},
 		{
-			name:      "source root not found",
 			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			name:      "one source root empty",
 			outputDir: filepath.Join(t.TempDir(), "src"),
 			libraryID: "example-library",
 			state: &config.LibrarianState{
@@ -795,7 +795,6 @@ func TestCopyLibraryFiles(t *testing.T) {
 			},
 			skipFiles: []string{
 				"skipped/path/example.txt",
-				"another/path/example.txt",
 			},
 		},
 	} {

@@ -234,8 +234,12 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 }
 
 func getDirectoryFilesnames(dir string) ([]string, error) {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return nil, nil
+	if _, err := os.Stat(dir); err != nil {
+		// Skip dirs that don't exist
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
 	}
 
 	var fileNames []string
