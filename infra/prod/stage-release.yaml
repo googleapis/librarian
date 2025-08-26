@@ -43,8 +43,6 @@ steps:
       - '/workspace/$_REPOSITORY'
       - '-library'
       - $_LIBRARY_ID
-      - '-api-source'
-      - '/workspace/googleapis'
       - '-output'
       - /workspace/tmp
       - '-push=$_PUSH'
