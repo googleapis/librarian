@@ -200,21 +200,23 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 
 type MockRepository struct {
 	gitrepo.Repository
-	Dir                             string
-	IsCleanValue                    bool
-	IsCleanError                    error
-	AddAllStatus                    git.Status
-	AddAllError                     error
-	CommitError                     error
-	RemotesValue                    []*git.Remote
-	RemotesError                    error
-	CommitCalls                     int
-	GetCommitsForPathsSinceTagValue []*gitrepo.Commit
-	GetCommitsForPathsSinceTagError error
-	ChangedFilesInCommitValue       []string
-	ChangedFilesInCommitError       error
-	CreateBranchAndCheckoutError    error
-	PushError                       error
+	Dir                                 string
+	IsCleanValue                        bool
+	IsCleanError                        error
+	AddAllStatus                        git.Status
+	AddAllError                         error
+	CommitError                         error
+	RemotesValue                        []*git.Remote
+	RemotesError                        error
+	CommitCalls                         int
+	GetCommitsForPathsSinceTagValue     []*gitrepo.Commit
+	GetCommitsForPathsSinceTagError     error
+	GetCommitsForPathsSinceLastGenValue []*gitrepo.Commit
+	GetCommitsForPathsSinceLastGenError error
+	ChangedFilesInCommitValue           []string
+	ChangedFilesInCommitError           error
+	CreateBranchAndCheckoutError        error
+	PushError                           error
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -252,6 +254,13 @@ func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName stri
 		return nil, m.GetCommitsForPathsSinceTagError
 	}
 	return m.GetCommitsForPathsSinceTagValue, nil
+}
+
+func (m *MockRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*gitrepo.Commit, error) {
+	if m.GetCommitsForPathsSinceLastGenError != nil {
+		return nil, m.GetCommitsForPathsSinceLastGenError
+	}
+	return m.GetCommitsForPathsSinceLastGenValue, nil
 }
 
 func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
