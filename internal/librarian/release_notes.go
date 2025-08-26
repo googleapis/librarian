@@ -18,11 +18,14 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/conventionalcommits"
+	"github.com/googleapis/librarian/internal/github"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 var (
@@ -40,7 +43,7 @@ var (
 		"ci":       "Continuous Integration",
 	}
 
-	// The order in which commit types should appear in release notes.
+	// commitTypeOrder is the order in which commit types should appear in release notes.
 	commitTypeOrder = []string{
 		"feat",
 		"fix",
@@ -56,7 +59,7 @@ var (
 			}
 			return sha[:7]
 		},
-	}).Parse(`## [{{.NewVersion}}]({{"https://github.com/"}}{{.RepoOwner}}/{{.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
+	}).Parse(`## [{{.NewVersion}}]({{"https://github.com/"}}{{.Repo.Owner}}/{{.Repo.Name}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
 {{- range .CommitTypes -}}
 {{- if .Commits -}}
 {{- if .Heading}}
@@ -65,53 +68,66 @@ var (
 {{end}}
 
 {{- range .Commits -}}
-* {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$.RepoOwner}}/{{$.RepoName}}/commit/{{.SHA}}))
+* {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$.Repo.Owner}}/{{$.Repo.Name}}/commit/{{.SHA}}))
 {{- end -}}
 {{- end -}}
 {{- end -}}`))
 )
 
-// LibraryRelease holds information for a single library's release.
-type LibraryRelease struct {
-	PreviousTag string
-	NewTag      string
-	NewVersion  string
-	Commits     []*conventionalcommits.ConventionalCommit
-}
-
 // FormatReleaseNotes generates the body for a release pull request.
-func FormatReleaseNotes(releases map[string]*LibraryRelease, repoOwner, repoName, librarianVersion, languageImage string) string {
+func FormatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState, librarianVersion string) string {
 	var body bytes.Buffer
 	if librarianVersion != "" {
 		fmt.Fprintf(&body, "Librarian Version: %s\n", librarianVersion)
 	}
-	if languageImage != "" {
-		fmt.Fprintf(&body, "Language Image: %s\n\n", languageImage)
-	}
 
-	// Sort library names for consistent output
-	libraryNames := make([]string, 0, len(releases))
-	for name := range releases {
-		libraryNames = append(libraryNames, name)
+	fmt.Fprintf(&body, "Language Image: %s\n\n", state.Image)
+	libraryIDs := make([]string, 0, len(state.Libraries))
+	for _, library := range state.Libraries {
+		libraryIDs = append(libraryIDs, library.ID)
 	}
-	sort.Strings(libraryNames)
+	slices.Sort(libraryIDs)
 
-	for i, name := range libraryNames {
-		release := releases[name]
-		fmt.Fprintf(&body, "<details><summary>%s: %s</summary>\n\n", name, release.NewVersion)
-		notes := formatLibraryReleaseNotes(release.Commits, release.PreviousTag, release.NewTag, release.NewVersion, repoOwner, repoName)
+	for i, libraryID := range libraryIDs {
+		library := findLibraryByID(state, libraryID)
+		if !library.ReleaseTriggered {
+			continue
+		}
+
+		notes, newVersion, err := formatLibraryReleaseNotes(repo, library)
+		if err != nil {
+			fmt.Fprintf(&body, "Error generating release notes for %s: %v\n", library.ID, err)
+			continue
+		}
+		fmt.Fprintf(&body, "<details><summary>%s: %s</summary>\n\n", library.ID, newVersion)
+
 		body.WriteString(notes)
 		body.WriteString("\n\n</details>")
-		if i < len(libraryNames)-1 {
+		if i < len(libraryIDs)-1 {
 			body.WriteString("\n")
 		}
 	}
-
+	body.WriteString("\n")
 	return body.String()
 }
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
-func formatLibraryReleaseNotes(commits []*conventionalcommits.ConventionalCommit, previousTag, newTag, newVersion, repoOwner, repoName string) string {
+func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState) (string, string, error) {
+	ghRepo, err := github.FetchGitHubRepoFromRemote(repo)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to fetch github repo from remote: %w", err)
+	}
+	previousTag := formatTag(library.TagFormat, library.ID, library.Version)
+	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get conventional commits for library %s: %w", library.ID, err)
+	}
+	newVersion, err := NextVersion(commits, library.Version, "")
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get next version for library %s: %w", library.ID, err)
+	}
+	newTag := formatTag(library.TagFormat, library.ID, newVersion)
+
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
 	for _, commit := range commits {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
@@ -138,23 +154,21 @@ func formatLibraryReleaseNotes(commits []*conventionalcommits.ConventionalCommit
 		NewVersion  string
 		PreviousTag string
 		NewTag      string
-		RepoOwner   string
-		RepoName    string
+		Repo        *github.Repository
 		Date        string
 		CommitTypes []commitType
 	}{
 		NewVersion:  newVersion,
 		PreviousTag: previousTag,
 		NewTag:      newTag,
-		RepoOwner:   repoOwner,
-		RepoName:    repoName,
+		Repo:        ghRepo,
 		Date:        time.Now().Format("2006-01-02"),
 		CommitTypes: commitTypes,
 	}
 	if err := releaseNotesTemplate.Execute(&out, data); err != nil {
 		// This should not happen, as the template is valid and the data is structured correctly.
-		return fmt.Sprintf("Error executing template: %v", err)
+		return "", "", fmt.Errorf("error executing template: %v", err)
 	}
 
-	return strings.TrimSpace(out.String())
+	return strings.TrimSpace(out.String()), newVersion, nil
 }

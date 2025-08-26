@@ -19,148 +19,188 @@ import (
 	"testing"
 	"time"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
+	"github.com/go-git/go-git/v5"
+	gitconfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestFormatReleaseNotes(t *testing.T) {
 	today := time.Now().Format("2006-01-02")
-
-	tests := []struct {
-		name      string
-		releases  map[string]*LibraryRelease
-		repoOwner string
-		repoName  string
+	hash1 := plumbing.NewHash("1234567890abcdef")
+	hash2 := plumbing.NewHash("fedcba0987654321")
+	for _, test := range []struct {
+		name  string
+		state *config.LibrarianState
+		repo  gitrepo.Repository
 
 		librarianVersion string
-		languageImage    string
 		wantReleaseNote  string
 	}{
 		{
 			name: "single library release",
-			releases: map[string]*LibraryRelease{
-				"my-library": {
-					PreviousTag: "my-library-v1.0.0",
-					NewTag:      "my-library-v1.1.0",
-					NewVersion:  "1.1.0",
-					Commits: []*conventionalcommits.ConventionalCommit{
-						{Type: "feat", Description: "new feature", SHA: "1234567890abcdef"},
-						{Type: "fix", Description: "a bug fix", SHA: "fedcba0987654321"},
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:               "my-library",
+						Version:          "1.0.0",
+						ReleaseTriggered: true,
 					},
 				},
 			},
-			repoOwner: "owner",
-			repoName:  "repo",
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+					"my-library-1.0.0": {
+						{Message: "feat: new feature", Hash: hash1},
+						{Message: "fix: a bug fix", Hash: hash2},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash1.String(): {
+						"path/to/file",
+						"path/to/another/file",
+					},
+					hash2.String(): {
+						"path/to/file",
+					},
+				},
+			},
 
 			librarianVersion: "v1.2.3",
-			languageImage:    "go:1.21",
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: v1.2.3
 Language Image: go:1.21
 
 <details><summary>my-library: 1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/my-library-v1.0.0...my-library-v1.1.0) (%s)
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 ### Features
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
 
 ### Bug Fixes
-* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321))
+* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
 
-</details>`, today),
+</details>
+`,
+				today),
 		},
 		{
 			name: "multiple library releases",
-			releases: map[string]*LibraryRelease{
-				"lib-b": {
-					PreviousTag: "lib-b-v2.0.0",
-					NewTag:      "lib-b-v2.0.1",
-					NewVersion:  "2.0.1",
-					Commits: []*conventionalcommits.ConventionalCommit{
-						{Type: "fix", Description: "fix for b", SHA: "bbbbbbbb"},
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:               "lib-a",
+						Version:          "1.0.0",
+						ReleaseTriggered: true,
 					},
-				},
-				"lib-a": {
-					PreviousTag: "lib-a-v1.0.0",
-					NewTag:      "lib-a-v1.1.0",
-					NewVersion:  "1.1.0",
-					Commits: []*conventionalcommits.ConventionalCommit{
-						{Type: "feat", Description: "feature for a", SHA: "aaaaaaaa"},
+					{
+						ID:               "lib-b",
+						Version:          "2.0.0",
+						ReleaseTriggered: true,
 					},
 				},
 			},
-			repoOwner: "owner",
-			repoName:  "repo",
-
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+					"lib-a-1.0.0": {
+						{Message: "feat: feature for a", Hash: hash1},
+					},
+					"lib-b-2.0.0": {
+						{Message: "fix: fix for b", Hash: hash2},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash1.String(): {"path/to/file"},
+					hash2.String(): {"path/to/another/file"},
+				},
+			},
 			librarianVersion: "v1.2.3",
-			languageImage:    "go:1.21",
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: v1.2.3
 Language Image: go:1.21
 
 <details><summary>lib-a: 1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/lib-a-v1.0.0...lib-a-v1.1.0) (%s)
+## [1.1.0](https://github.com/owner/repo/compare/lib-a-1.0.0...lib-a-1.1.0) (%s)
 
 ### Features
-* feature for a ([aaaaaaa](https://github.com/owner/repo/commit/aaaaaaaa))
+* feature for a ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
 
 </details>
 <details><summary>lib-b: 2.0.1</summary>
 
-## [2.0.1](https://github.com/owner/repo/compare/lib-b-v2.0.0...lib-b-v2.0.1) (%s)
+## [2.0.1](https://github.com/owner/repo/compare/lib-b-2.0.0...lib-b-2.0.1) (%s)
 
 ### Bug Fixes
-* fix for b ([bbbbbbb](https://github.com/owner/repo/commit/bbbbbbbb))
+* fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
 
-</details>`, today, today),
+</details>
+`,
+				today, today),
 		},
 		{
 			name: "release with ignored commit types",
-			releases: map[string]*LibraryRelease{
-				"my-library": {
-					PreviousTag: "my-library-v1.0.0",
-					NewTag:      "my-library-v1.1.0",
-					NewVersion:  "1.1.0",
-					Commits: []*conventionalcommits.ConventionalCommit{
-						{Type: "feat", Description: "new feature", SHA: "1234567890abcdef"},
-						{Type: "ci", Description: "a ci change", SHA: "fedcba0987654321"},
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:               "my-library",
+						Version:          "1.0.0",
+						ReleaseTriggered: true,
 					},
 				},
 			},
-			repoOwner: "owner",
-			repoName:  "repo",
-
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+					"my-library-1.0.0": {
+						{Message: "feat: new feature", Hash: hash1},
+						{Message: "ci: a ci change", Hash: hash2},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash1.String(): {"path/to/file"},
+					hash2.String(): {"path/to/another/file"},
+				},
+			},
 			librarianVersion: "v1.2.3",
-			languageImage:    "go:1.21",
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: v1.2.3
 Language Image: go:1.21
 
 <details><summary>my-library: 1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/my-library-v1.0.0...my-library-v1.1.0) (%s)
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 ### Features
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
 
-</details>`, today),
+</details>
+`,
+				today),
 		},
 		{
-			name:      "no releases",
-			releases:  map[string]*LibraryRelease{},
-			repoOwner: "owner",
-			repoName:  "repo",
-
+			name: "no releases",
+			state: &config.LibrarianState{
+				Image:     "go:1.21",
+				Libraries: []*config.LibraryState{},
+			},
+			repo:             &MockRepository{},
 			librarianVersion: "v1.2.3",
-			languageImage:    "go:1.21",
-			wantReleaseNote:  "Librarian Version: v1.2.3\nLanguage Image: go:1.21\n\n",
-		},
-	}
+			wantReleaseNote: `Librarian Version: v1.2.3
+Language Image: go:1.21
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := FormatReleaseNotes(tt.releases, tt.repoOwner, tt.repoName, tt.librarianVersion, tt.languageImage)
-			if diff := cmp.Diff(tt.wantReleaseNote, got); diff != "" {
+
+`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := FormatReleaseNotes(test.repo, test.state, test.librarianVersion)
+			if diff := cmp.Diff(test.wantReleaseNote, got); diff != "" {
 				t.Errorf("FormatReleaseNotes() mismatch (-want +got):\n%s", diff)
 			}
 		})
