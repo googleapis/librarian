@@ -30,7 +30,8 @@ steps:
     id: publish-release
     waitFor: ['clone-language-repo']
     args:
-      - 'release tag-and-release'
+      - 'release'
+      - 'tag-and-release'
       - '-repo'
       - '/workspace/$_REPOSITORY'
       - '-pr'
