@@ -179,7 +179,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	// libraries interfering with each other, and makes it easier to see what
 	// was generated for each library when debugging.
 	libraryOutputDir := filepath.Join(outputDir, libraryID)
-	if err := os.Mkdir(libraryOutputDir, 0755); err != nil {
+	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
 		return err
 	}
 

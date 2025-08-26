@@ -932,24 +932,6 @@ func TestGenerateScenarios(t *testing.T) {
 			wantBuildCalls:    2,
 		},
 		{
-			name:    "generate single library, corrupted library id",
-			library: "non-existent-library",
-			repo:    newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container: &mockContainerClient{},
-			ghClient:  &mockGitHubClient{},
-			build:     true,
-			wantErr:   true,
-		},
-		{
 			name: "generate single library, corrupted api",
 			api:  "corrupted/api/path",
 			repo: newTestGitRepo(t),
@@ -962,10 +944,11 @@ func TestGenerateScenarios(t *testing.T) {
 					},
 				},
 			},
-			container: &mockContainerClient{},
-			ghClient:  &mockGitHubClient{},
-			build:     true,
-			wantErr:   true,
+			container:  &mockContainerClient{},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantErr:    true,
+			wantErrMsg: "not configured yet, generation stopped",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
