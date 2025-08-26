@@ -397,31 +397,34 @@ func TestNewGenerateRunner(t *testing.T) {
 		{
 			name: "valid config",
 			cfg: &config.Config{
-				API:       "some/api",
-				APISource: newTestGitRepo(t).GetDir(),
-				Repo:      newTestGitRepo(t).GetDir(),
-				WorkRoot:  t.TempDir(),
-				Image:     "gcr.io/test/test-image",
+				API:         "some/api",
+				APISource:   newTestGitRepo(t).GetDir(),
+				Repo:        newTestGitRepo(t).GetDir(),
+				WorkRoot:    t.TempDir(),
+				Image:       "gcr.io/test/test-image",
+				CommandName: generateCmdName,
 			},
 		},
 		{
 			name: "invalid api source",
 			cfg: &config.Config{
-				API:       "some/api",
-				APISource: t.TempDir(), // Not a git repo
-				Repo:      newTestGitRepo(t).GetDir(),
-				WorkRoot:  t.TempDir(),
-				Image:     "gcr.io/test/test-image",
+				API:         "some/api",
+				APISource:   t.TempDir(), // Not a git repo
+				Repo:        newTestGitRepo(t).GetDir(),
+				WorkRoot:    t.TempDir(),
+				Image:       "gcr.io/test/test-image",
+				CommandName: generateCmdName,
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing image",
 			cfg: &config.Config{
-				API:       "some/api",
-				APISource: t.TempDir(),
-				Repo:      "https://github.com/googleapis/librarian.git",
-				WorkRoot:  t.TempDir(),
+				API:         "some/api",
+				APISource:   t.TempDir(),
+				Repo:        "https://github.com/googleapis/librarian.git",
+				WorkRoot:    t.TempDir(),
+				CommandName: generateCmdName,
 			},
 			wantErr: true,
 		},
@@ -434,37 +437,41 @@ func TestNewGenerateRunner(t *testing.T) {
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
 				GitHubToken: "gh-token",
+				CommandName: generateCmdName,
 			},
 		},
 		{
 			name: "empty API source",
 			cfg: &config.Config{
-				API:       "some/api",
-				APISource: "", // This will trigger the clone of googleapis
-				Repo:      newTestGitRepo(t).GetDir(),
-				WorkRoot:  t.TempDir(),
-				Image:     "gcr.io/test/test-image",
+				API:         "some/api",
+				APISource:   "", // This will trigger the clone of googleapis
+				Repo:        newTestGitRepo(t).GetDir(),
+				WorkRoot:    t.TempDir(),
+				Image:       "gcr.io/test/test-image",
+				CommandName: generateCmdName,
 			},
 		},
 		{
 			name: "clone googleapis fails",
 			cfg: &config.Config{
-				API:       "some/api",
-				APISource: "", // This will trigger the clone of googleapis
-				Repo:      newTestGitRepo(t).GetDir(),
-				WorkRoot:  t.TempDir(),
-				Image:     "gcr.io/test/test-image",
+				API:         "some/api",
+				APISource:   "", // This will trigger the clone of googleapis
+				Repo:        newTestGitRepo(t).GetDir(),
+				WorkRoot:    t.TempDir(),
+				Image:       "gcr.io/test/test-image",
+				CommandName: generateCmdName,
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid config with local repo",
 			cfg: &config.Config{
-				API:       "some/api",
-				APISource: newTestGitRepo(t).GetDir(),
-				Repo:      newTestGitRepo(t).GetDir(),
-				WorkRoot:  t.TempDir(),
-				Image:     "gcr.io/test/test-image",
+				API:         "some/api",
+				APISource:   newTestGitRepo(t).GetDir(),
+				Repo:        newTestGitRepo(t).GetDir(),
+				WorkRoot:    t.TempDir(),
+				Image:       "gcr.io/test/test-image",
+				CommandName: generateCmdName,
 			},
 		},
 	} {

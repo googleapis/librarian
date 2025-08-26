@@ -57,7 +57,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	var sourceRepo gitrepo.Repository
 	var sourceRepoDir string
-	if cfg.CommandName != tagAndReleaseCmdName {
+	if cfg.CommandName == generateCmdName {
 		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err

@@ -32,6 +32,10 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+const (
+	generateCmdName = "generate"
+)
+
 var cmdGenerate = &cli.Command{
 	Short:     "generate generates client library code for a single API",
 	UsageLine: "librarian generate -source=<api-root> -api=<api-path> [flags]",
