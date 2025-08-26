@@ -35,6 +35,7 @@ var availableCommands = map[string]bool{
 // RepositoryConfig represents a single registered librarian GitHub repository.
 type RepositoryConfig struct {
 	Name              string   `yaml:"name"`
+	FullName          string   `yaml:"full-name"`
 	SecretName        string   `yaml:"github-token-secret-name"`
 	SupportedCommands []string `yaml:"supported-commands"`
 }
@@ -44,10 +45,21 @@ type RepositoriesConfig struct {
 	Repositories []*RepositoryConfig `yaml:"repositories"`
 }
 
+// GitURL returns the full git url to clone.
+func (c *RepositoryConfig) GitURL() (string, error) {
+	if c.FullName == "" {
+		if c.Name == "" {
+			return "", fmt.Errorf("name or full name is required")
+		}
+		return fmt.Sprintf("https://github.com/googleapis/%s", c.Name), nil
+	}
+	return c.FullName, nil
+}
+
 // Validate checks the the RepositoryConfig is valid.
 func (c *RepositoryConfig) Validate() error {
-	if c.Name == "" {
-		return fmt.Errorf("name is required")
+	if c.FullName == "" && c.Name == "" {
+		return fmt.Errorf("name or full name is required")
 	}
 	if c.SecretName == "" {
 		return fmt.Errorf("secret name is required")

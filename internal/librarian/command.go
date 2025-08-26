@@ -209,6 +209,60 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 	return copyLibrary(repoDir, outputDir, library)
 }
 
+func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string) error {
+	library := findLibraryByID(state, libraryID)
+	if library == nil {
+		return fmt.Errorf("library %q not found", libraryID)
+	}
+	slog.Info("Copying library files", "id", library.ID, "destination", dest, "source", src)
+	for _, srcRoot := range library.SourceRoots {
+		dstPath := filepath.Join(dest, srcRoot)
+		srcPath := filepath.Join(src, srcRoot)
+		files, err := getDirectoryFilesnames(srcPath)
+		if err != nil {
+			return err
+		}
+		for _, file := range files {
+			slog.Info("Copying file", "file", file)
+			srcFile := filepath.Join(srcPath, file)
+			dstFile := filepath.Join(dstPath, file)
+			if err := copyFile(dstFile, srcFile); err != nil {
+				return fmt.Errorf("failed to copy file %q for library %s: %w", srcFile, library.ID, err)
+			}
+		}
+	}
+	return nil
+}
+
+func getDirectoryFilesnames(dir string) ([]string, error) {
+	if _, err := os.Stat(dir); err != nil {
+		// Skip dirs that don't exist
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var fileNames []string
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			relativePath, err := filepath.Rel(dir, path)
+			if err != nil {
+				return err
+			}
+			fileNames = append(fileNames, relativePath)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return fileNames, nil
+}
+
 // copyLibrary copies library file from src to dst.
 func copyLibrary(dst, src string, library *config.LibraryState) error {
 	slog.Info("Copying library", "id", library.ID, "destination", dst, "source", src)
@@ -223,7 +277,7 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	return nil
 }
 
-func updateChanges(library *config.LibraryState, commits []*conventionalcommits.ConventionalCommit) *config.LibraryState {
+func updateLibraryChanges(library *config.LibraryState, commits []*conventionalcommits.ConventionalCommit) {
 	changes := make([]*config.Change, 0)
 	for _, commit := range commits {
 		clNum := ""
@@ -242,8 +296,6 @@ func updateChanges(library *config.LibraryState, commits []*conventionalcommits.
 	}
 
 	library.Changes = changes
-
-	return library
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated

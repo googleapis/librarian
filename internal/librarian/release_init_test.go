@@ -294,7 +294,7 @@ func TestInitRun(t *testing.T) {
 				partialRepo: t.TempDir(),
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to update library",
+			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 		{
 			name: "failed to commit and push",
@@ -481,7 +481,7 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 			want: &config.LibraryState{
 				ID:      "one-id",
-				Version: "1.2.3",
+				Version: "2.0.0",
 				SourceRoots: []string{
 					"one/path",
 					"two/path",
@@ -519,12 +519,11 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var err error
-			var updated *config.LibraryState
 			if test.repo != nil {
-				updated, err = updateLibrary(test.repo, test.library, test.libraryVersion)
+				err = updateLibrary(test.repo, test.library, test.libraryVersion)
 			} else {
 				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				updated, err = updateLibrary(repo, test.library, test.libraryVersion)
+				err = updateLibrary(repo, test.library, test.libraryVersion)
 			}
 
 			if test.wantErr {
@@ -542,14 +541,14 @@ func TestUpdateLibrary(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to run getChangesOf(): %q", err.Error())
 			}
-			if diff := cmp.Diff(test.want, updated, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
+			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
+func TestCopyGlobalAllowlist(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name              string
@@ -560,6 +559,7 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 		doNotCreateOutput bool // do not create files in output dir.
 		wantErr           bool
 		wantErrMsg        string
+		copyReadOnly      bool
 	}{
 		{
 			name: "copied all global allowlist",
@@ -634,7 +634,7 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 				"ignored/path/example.txt",
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to remove global file",
+			wantErrMsg: "failed to open file",
 		},
 		{
 			name: "output doesn't have the global file",
@@ -652,6 +652,34 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 			doNotCreateOutput: true,
 			wantErr:           true,
 			wantErrMsg:        "failed to copy global file",
+		},
+		{
+			name:         "copies read-only files",
+			copyReadOnly: true,
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			copied: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+			},
+			skipped: []string{
+				"ignored/path/example.txt",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -687,7 +715,7 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 				}
 			}
 
-			err := cleanAndCopyGlobalAllowlist(test.cfg, repo, output)
+			err := copyGlobalAllowlist(test.cfg, repo, output, test.copyReadOnly)
 
 			if test.wantErr {
 				if err == nil {

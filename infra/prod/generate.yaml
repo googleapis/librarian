@@ -21,7 +21,7 @@ steps:
     args:
       - 'clone'
       - '--depth=1'
-      - https://github.com/$_ORGANIZATION/$_REPOSITORY
+      - $_FULL_REPOSITORY
   - name: gcr.io/cloud-builders/git
     id: configure-language-repo-name
     waitFor: ['clone-language-repo']

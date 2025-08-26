@@ -40,6 +40,19 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid full name",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						FullName:          "https://github.com/googleapis/google-cloud-foo",
+						SecretName:        "google-cloud-foo-github-token",
+						SupportedCommands: []string{"generate", "stage-release", "publish-release"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "missing name",
 			config: &RepositoriesConfig{
 				Repositories: []*RepositoryConfig{
@@ -137,6 +150,27 @@ func TestParseRepositoriesConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "valid state with full name",
+			content: `repositories:
+  - name: google-cloud-python
+    full-name: https://github.com/some-org/google-cloud-python
+    github-token-secret-name: google-cloud-python-github-token
+    supported-commands:
+      - generate
+      - stage-release
+`,
+			want: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						FullName:          "https://github.com/some-org/google-cloud-python",
+						SecretName:        "google-cloud-python-github-token",
+						SupportedCommands: []string{"generate", "stage-release"},
+					},
+				},
+			},
+		},
+		{
 			name: "invalid yaml",
 			content: `repositories:
   - name: google-cloud-python
@@ -220,6 +254,58 @@ func TestRepositoriesForCommand(t *testing.T) {
 				names = append(names, r.Name)
 			}
 			if diff := cmp.Diff(test.want, names); diff != "" {
+				t.Errorf("parseRepositoriesConfig() mismatch (-want +got): %s", diff)
+			}
+		})
+	}
+}
+
+func TestRepositoryGitUrl(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		repository *RepositoryConfig
+		want       string
+		wantError  bool
+	}{
+		{
+			name: "sets default organization",
+			repository: &RepositoryConfig{
+				Name: "google-cloud-python",
+			},
+			want: "https://github.com/googleapis/google-cloud-python",
+		},
+		{
+			name: "reads full name",
+			repository: &RepositoryConfig{
+				FullName: "https://github.com/some-org/google-cloud-python",
+			},
+			want: "https://github.com/some-org/google-cloud-python",
+		},
+		{
+			name: "prefers full name",
+			repository: &RepositoryConfig{
+				Name:     "google-cloud-python",
+				FullName: "https://github.com/some-org/google-cloud-python",
+			},
+			want: "https://github.com/some-org/google-cloud-python",
+		},
+		{
+			name: "missing name",
+			repository: &RepositoryConfig{
+				Name:     "google-cloud-python",
+				FullName: "https://github.com/some-org/google-cloud-python",
+			},
+			want:      "https://github.com/some-org/google-cloud-python",
+			wantError: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := test.repository.GitURL()
+			if err != nil && test.wantError {
+				t.Errorf("expected to return error")
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("parseRepositoriesConfig() mismatch (-want +got): %s", diff)
 			}
 		})

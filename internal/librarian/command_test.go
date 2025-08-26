@@ -725,6 +725,141 @@ func TestCommitAndPush(t *testing.T) {
 	}
 }
 
+func TestCopyLibraryFiles(t *testing.T) {
+	t.Parallel()
+	setup := func(src string, files []string) {
+		for _, relPath := range files {
+			fullPath := filepath.Join(src, relPath)
+			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+				t.Error(err)
+			}
+
+			if _, err := os.Create(fullPath); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+	for _, test := range []struct {
+		name          string
+		repoDir       string
+		outputDir     string
+		libraryID     string
+		state         *config.LibrarianState
+		filesToCreate []string
+		wantFiles     []string
+		skipFiles     []string
+		wantErr       bool
+		wantErrMsg    string
+	}{
+		{
+			name:      "copy library files",
+			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			outputDir: filepath.Join(t.TempDir(), "src"),
+			libraryID: "example-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			},
+			filesToCreate: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+				"skipped/path/example.txt",
+			},
+			wantFiles: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+			},
+			skipFiles: []string{
+				"skipped/path/example.txt",
+			},
+		},
+		{
+			name:      "library not found",
+			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			outputDir: filepath.Join(t.TempDir(), "src"),
+			libraryID: "non-existent-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "not found",
+		},
+		{
+			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			name:      "one source root empty",
+			outputDir: filepath.Join(t.TempDir(), "src"),
+			libraryID: "example-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			},
+			filesToCreate: []string{
+				"a/path/example.txt",
+				"skipped/path/example.txt",
+			},
+			wantFiles: []string{
+				"a/path/example.txt",
+			},
+			skipFiles: []string{
+				"skipped/path/example.txt",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if !test.wantErr {
+				setup(test.outputDir, test.filesToCreate)
+			}
+			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("copyLibraryFiles() shoud fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Errorf("failed to run copyLibraryFiles(): %s", err.Error())
+			}
+
+			for _, file := range test.wantFiles {
+				fullPath := filepath.Join(test.repoDir, file)
+				if _, err := os.Stat(fullPath); err != nil {
+					t.Errorf("file %s is not copied to %s", file, test.repoDir)
+				}
+			}
+
+			for _, file := range test.skipFiles {
+				fullPath := filepath.Join(test.repoDir, file)
+				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+					t.Errorf("file %s should not be copied to %s", file, test.repoDir)
+				}
+			}
+		})
+	}
+}
+
 func TestCopyFile(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

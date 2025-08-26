@@ -119,17 +119,15 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 	src := r.repo.GetDir()
 
-	for i, library := range r.state.Libraries {
+	for _, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
 				continue
 			}
 			// Only update one library with the given library ID.
-			updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion)
-			if err != nil {
+			if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 				return err
 			}
-			r.state.Libraries[i] = updatedLibrary
 			if err := copyLibrary(dst, src, library); err != nil {
 				return err
 			}
@@ -138,11 +136,9 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Update all libraries.
-		updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion)
-		if err != nil {
+		if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 			return err
 		}
-		r.state.Libraries[i] = updatedLibrary
 		if err := copyLibrary(dst, src, library); err != nil {
 			return err
 		}
@@ -152,7 +148,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return fmt.Errorf("failed to copy librarian dir from %s to %s: %w", src, dst, err)
 	}
 
-	if err := cleanAndCopyGlobalAllowlist(r.librarianConfig, dst, src); err != nil {
+	if err := copyGlobalAllowlist(r.librarianConfig, dst, src, true); err != nil {
 		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
 	}
 
@@ -176,7 +172,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 				continue
 			}
 			// Only copy one library to repository.
-			if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
+			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
 				return err
 			}
 
@@ -184,12 +180,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Copy all libraries to repository.
-		if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
+		if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
 			return err
 		}
 	}
 
-	return cleanAndCopyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir)
+	return copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false)
 }
 
 // updateLibrary updates the given library in the following way:
@@ -199,31 +195,27 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 // 2. Override the library version if libraryVersion is not empty.
 //
 // 3. Set the library's release trigger to true.
-func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string) (*config.LibraryState, error) {
-	updatedLibrary, err := updateReleaseChanges(repo, library)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update library, %s: %w", library.ID, err)
-	}
-
-	if libraryVersion != "" {
-		updatedLibrary.Version = libraryVersion
-	}
-	updatedLibrary.ReleaseTriggered = true
-
-	return updatedLibrary, nil
-}
-
-// updateReleaseChanges updates commit history of the given library since the
-// last release.
-func updateReleaseChanges(repo gitrepo.Repository, library *config.LibraryState) (*config.LibraryState, error) {
+func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string) error {
 	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
-	library = updateChanges(library, commits)
+	updateLibraryChanges(library, commits)
+	if len(library.Changes) == 0 {
+		// Don't update the library at all
+		return nil
+	}
 
-	return library, nil
+	nextVersion, err := NextVersion(commits, library.Version, libraryVersion)
+	if err != nil {
+		return err
+	}
+
+	library.Version = nextVersion
+	library.ReleaseTriggered = true
+
+	return nil
 }
 
 // getChangeType gets the type of the commit, adding an escalation mark (!) if
@@ -237,29 +229,26 @@ func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
 	return changeType
 }
 
-// cleanAndCopyGlobalAllowlist cleans the files listed in global allowlist in
-// src, excluding read-only files and copies global files from src.
-func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string) error {
+// copyGlobalAllowlist copies files in the global file allowlist excluding
+//
+//	read-only files and copies global files from src.
+func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadOnly bool) error {
 	if cfg == nil {
 		slog.Info("librarian config is not setup, skip copying global allowlist")
 		return nil
 	}
+	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
 	for _, globalFile := range cfg.GlobalFilesAllowlist {
-		if globalFile.Permissions == config.PermissionReadOnly {
+		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
+			slog.Debug("skipping read-only file", "path", globalFile.Path)
 			continue
 		}
-
-		dstPath := filepath.Join(dst, globalFile.Path)
-		if err := os.Remove(dstPath); err != nil {
-			return fmt.Errorf("failed to remove global file %s: %w", dstPath, err)
-		}
-
 		srcPath := filepath.Join(src, globalFile.Path)
+		dstPath := filepath.Join(dst, globalFile.Path)
 		if err := copyFile(dstPath, srcPath); err != nil {
 			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
 		}
 	}
-
 	return nil
 }
 
