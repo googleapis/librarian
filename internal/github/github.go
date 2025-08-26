@@ -261,6 +261,7 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 	opt := &github.PullRequestListOptions{
 		State: "closed",
 		ListOptions: github.ListOptions{
+			Page:    5,
 			PerPage: 100,
 		},
 	}
