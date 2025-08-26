@@ -138,8 +138,6 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Update all libraries.
-		// Do not override library version because it can only be allowed to override
-		// when library flag is specified.
 		updatedLibrary, err := updateLibrary(r.repo, library, r.cfg.LibraryVersion)
 		if err != nil {
 			return err
