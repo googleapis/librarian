@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"io"
 	"log/slog"
 	"os"
@@ -220,6 +221,29 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	}
 
 	return nil
+}
+
+func updateChanges(library *config.LibraryState, commits []*conventionalcommits.ConventionalCommit) *config.LibraryState {
+	changes := make([]*config.Change, 0)
+	for _, commit := range commits {
+		clNum := ""
+		if cl, ok := commit.Footers[KeyClNum]; ok {
+			clNum = cl
+		}
+
+		changeType := getChangeType(commit)
+		changes = append(changes, &config.Change{
+			Type:       changeType,
+			Subject:    commit.Description,
+			Body:       commit.Body,
+			ClNum:      clNum,
+			CommitHash: commit.SHA,
+		})
+	}
+
+	library.Changes = changes
+
+	return library
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated

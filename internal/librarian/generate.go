@@ -180,6 +180,10 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 		return err
 	}
 
+	if err := r.updateChangesSinceLastGeneration(generatedLibraryID); err != nil {
+		return err
+	}
+
 	if err := r.runBuildCommand(ctx, generatedLibraryID); err != nil {
 		return err
 	}
@@ -191,6 +195,21 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 
 func (r *generateRunner) needsConfigure() bool {
 	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
+}
+
+func (r *generateRunner) updateChangesSinceLastGeneration(libraryID string) error {
+	for i, library := range r.state.Libraries {
+		if library.ID == libraryID {
+			commits, err := GetConventionalCommitsSinceLastGeneration(r.repo, library)
+			if err != nil {
+				return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+			}
+			r.state.Libraries[i] = updateChanges(library, commits)
+			break
+		}
+	}
+
+	return nil
 }
 
 func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error {

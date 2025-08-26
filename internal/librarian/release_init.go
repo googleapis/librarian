@@ -200,7 +200,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 //
 // 3. Set the library's release trigger to true.
 func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string) (*config.LibraryState, error) {
-	updatedLibrary, err := getChangesOf(repo, library)
+	updatedLibrary, err := updateReleaseChanges(repo, library)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update library, %s: %w", library.ID, err)
 	}
@@ -213,31 +213,15 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 	return updatedLibrary, nil
 }
 
-// getChangesOf gets commit history of the given library.
-func getChangesOf(repo gitrepo.Repository, library *config.LibraryState) (*config.LibraryState, error) {
+// updateReleaseChanges updates commit history of the given library since the
+// last release.
+func updateReleaseChanges(repo gitrepo.Repository, library *config.LibraryState) (*config.LibraryState, error) {
 	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
-	changes := make([]*config.Change, 0)
-	for _, commit := range commits {
-		clNum := ""
-		if cl, ok := commit.Footers[KeyClNum]; ok {
-			clNum = cl
-		}
-
-		changeType := getChangeType(commit)
-		changes = append(changes, &config.Change{
-			Type:       changeType,
-			Subject:    commit.Description,
-			Body:       commit.Body,
-			ClNum:      clNum,
-			CommitHash: commit.SHA,
-		})
-	}
-
-	library.Changes = changes
+	library = updateChanges(library, commits)
 
 	return library, nil
 }
