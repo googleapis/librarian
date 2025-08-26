@@ -24,17 +24,9 @@ steps:
       - 'clone'
       - '--depth=1'
       - $_FULL_REPOSITORY
-  - name: gcr.io/cloud-builders/git
-    id: clone-googleapis
-    waitFor: ['-']
-    args:
-      - 'clone'
-      - '--single-branch'
-      - '--branch=master'
-      - https://github.com/googleapis/googleapis
   - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
     id: stage-release
-    waitFor: ['clone-language-repo', 'clone-googleapis']
+    waitFor: ['clone-language-repo']
     dir: tmp
     args:
       - 'release'
@@ -43,8 +35,6 @@ steps:
       - '/workspace/$_REPOSITORY'
       - '-library'
       - $_LIBRARY_ID
-      - '-api-source'
-      - '/workspace/googleapis'
       - '-output'
       - /workspace/tmp
       - '-push=$_PUSH'
