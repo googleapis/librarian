@@ -629,7 +629,7 @@ func TestUpdateLibrary(t *testing.T) {
 	}
 }
 
-func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
+func TestCopyGlobalAllowlist(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name              string
@@ -640,6 +640,7 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 		doNotCreateOutput bool // do not create files in output dir.
 		wantErr           bool
 		wantErrMsg        string
+		copyReadOnly      bool
 	}{
 		{
 			name: "copied all global allowlist",
@@ -714,7 +715,7 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 				"ignored/path/example.txt",
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to remove global file",
+			wantErrMsg: "failed to open file",
 		},
 		{
 			name: "output doesn't have the global file",
@@ -732,6 +733,34 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 			doNotCreateOutput: true,
 			wantErr:           true,
 			wantErrMsg:        "failed to copy global file",
+		},
+		{
+			name:         "copies read-only files",
+			copyReadOnly: true,
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			copied: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+			},
+			skipped: []string{
+				"ignored/path/example.txt",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -767,7 +796,7 @@ func TestCleanAndCopyGlobalAllowlist(t *testing.T) {
 				}
 			}
 
-			err := cleanAndCopyGlobalAllowlist(test.cfg, repo, output)
+			err := copyGlobalAllowlist(test.cfg, repo, output, test.copyReadOnly)
 
 			if test.wantErr {
 				if err == nil {

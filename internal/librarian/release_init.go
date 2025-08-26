@@ -147,7 +147,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return fmt.Errorf("failed to copy librarian dir from %s to %s: %w", src, dst, err)
 	}
 
-	if err := cleanAndCopyGlobalAllowlist(r.librarianConfig, dst, src); err != nil {
+	if err := copyGlobalAllowlist(r.librarianConfig, dst, src, true); err != nil {
 		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
 	}
 
@@ -171,7 +171,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 				continue
 			}
 			// Only copy one library to repository.
-			if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
+			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
 				return err
 			}
 
@@ -179,12 +179,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Copy all libraries to repository.
-		if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
+		if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
 			return err
 		}
 	}
 
-	return cleanAndCopyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir)
+	return copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false)
 }
 
 // updateLibrary updates the library which is the index-th library in the given
@@ -251,29 +251,26 @@ func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
 	return changeType
 }
 
-// cleanAndCopyGlobalAllowlist cleans the files listed in global allowlist in
-// src, excluding read-only files and copies global files from src.
-func cleanAndCopyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string) error {
+// copyGlobalAllowlist copies files in the global file allowlist excluding
+//
+//	read-only files and copies global files from src.
+func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadOnly bool) error {
 	if cfg == nil {
 		slog.Info("librarian config is not setup, skip copying global allowlist")
 		return nil
 	}
+	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
 	for _, globalFile := range cfg.GlobalFilesAllowlist {
-		if globalFile.Permissions == config.PermissionReadOnly {
+		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
+			slog.Debug("skipping read-only file", "path", globalFile.Path)
 			continue
 		}
-
-		dstPath := filepath.Join(dst, globalFile.Path)
-		if err := os.Remove(dstPath); err != nil {
-			return fmt.Errorf("failed to remove global file %s: %w", dstPath, err)
-		}
-
 		srcPath := filepath.Join(src, globalFile.Path)
+		dstPath := filepath.Join(dst, globalFile.Path)
 		if err := copyFile(dstPath, srcPath); err != nil {
 			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
 		}
 	}
-
 	return nil
 }
 
