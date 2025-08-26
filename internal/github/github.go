@@ -270,7 +270,7 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 			return nil, err
 		}
 		for _, pr := range prs {
-			if pr.GetMerged() && hasLabel(pr, "release:pending") {
+			if (pr.GetMerged() || pr.GetMergeCommitSHA() != "") && hasLabel(pr, "release:pending") {
 				allPRs = append(allPRs, pr)
 			}
 		}

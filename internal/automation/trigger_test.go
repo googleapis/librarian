@@ -126,7 +126,7 @@ func TestRunCommandWithClient(t *testing.T) {
 					Id:   "publish-release-trigger-id",
 				},
 			},
-			ghPRs: []*github.PullRequest{{}},
+			ghPRs: []*github.PullRequest{{HTMLURL: github.Ptr("https://github.com/googleapis/librarian/pull/1")}},
 		},
 		{
 			name:    "skips publish-release with no PRs",

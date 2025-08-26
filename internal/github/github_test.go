@@ -952,7 +952,7 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 				}
 				pr1 := github.PullRequest{Number: github.Ptr(1), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
 				pr2 := github.PullRequest{Number: github.Ptr(2), Labels: []*github.Label{{Name: github.Ptr("other-label")}}}
-				pr3 := github.PullRequest{Number: github.Ptr(4), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
+				pr3 := github.PullRequest{Number: github.Ptr(4), MergeCommitSHA: github.Ptr("sha123"), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
 				prs := []*github.PullRequest{&pr1, &pr2, &pr3}
 				b, err := json.Marshal(prs)
 				if err != nil {
@@ -961,7 +961,7 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 				fmt.Fprint(w, string(b))
 			},
 			wantPRs: []*PullRequest{
-				{Number: github.Ptr(4), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
+				{Number: github.Ptr(4), MergeCommitSHA: github.Ptr("sha123"), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
 			},
 		},
 		{
