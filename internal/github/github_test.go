@@ -950,10 +950,11 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 				if r.URL.Query().Get("state") != "closed" {
 					t.Errorf("unexpected state: got %q", r.URL.Query().Get("state"))
 				}
+				pr0 := github.PullRequest{Number: github.Ptr(0), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/0"), MergeCommitSHA: github.Ptr("sha456"), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
 				pr1 := github.PullRequest{Number: github.Ptr(1), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
 				pr2 := github.PullRequest{Number: github.Ptr(2), Labels: []*github.Label{{Name: github.Ptr("other-label")}}}
-				pr3 := github.PullRequest{Number: github.Ptr(4), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
-				prs := []*github.PullRequest{&pr1, &pr2, &pr3}
+				pr3 := github.PullRequest{Number: github.Ptr(3), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/3"), MergeCommitSHA: github.Ptr("sha123"), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
+				prs := []*github.PullRequest{&pr0, &pr1, &pr2, &pr3}
 				b, err := json.Marshal(prs)
 				if err != nil {
 					t.Fatalf("json.Marshal() failed: %v", err)
@@ -961,7 +962,8 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 				fmt.Fprint(w, string(b))
 			},
 			wantPRs: []*PullRequest{
-				{Number: github.Ptr(4), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
+				{Number: github.Ptr(0), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/0"), MergeCommitSHA: github.Ptr("sha456"), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
+				{Number: github.Ptr(3), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/3"), MergeCommitSHA: github.Ptr("sha123"), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
 			},
 		},
 		{

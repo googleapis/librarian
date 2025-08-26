@@ -26,11 +26,12 @@ steps:
       - '--single-branch'
       - '--branch=$_BRANCH'
       - $_FULL_REPOSITORY
-  - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+  - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian'
     id: publish-release
     waitFor: ['clone-language-repo']
     args:
-      - 'release tag-and-release'
+      - 'release'
+      - 'tag-and-release'
       - '-repo'
       - '/workspace/$_REPOSITORY'
       - '-pr'

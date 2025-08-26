@@ -122,6 +122,8 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 			if len(prs) == 0 {
 				slog.Info("No pull requests with label 'release:pending' found. Skipping 'publish-release' trigger.", slog.String("repository", repository.Name))
 				continue
+			} else {
+				substitutions["_PR"] = fmt.Sprintf("%v", prs[0].GetHTMLURL())
 			}
 		} else if command == "generate" {
 			// only pass _BUILD to generate trigger

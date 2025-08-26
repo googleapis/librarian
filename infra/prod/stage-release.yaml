@@ -24,7 +24,7 @@ steps:
       - 'clone'
       - '--depth=1'
       - $_FULL_REPOSITORY
-  - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+  - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian'
     id: stage-release
     waitFor: ['clone-language-repo']
     dir: tmp
