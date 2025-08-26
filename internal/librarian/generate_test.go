@@ -758,17 +758,25 @@ func TestGenerateScenarios(t *testing.T) {
 		ghClient           GitHubClient
 		build              bool
 		wantErr            bool
+		wantErrMsg         string
 		wantGenerateCalls  int
 		wantBuildCalls     int
 		wantConfigureCalls int
 	}{
 		{
-			name:               "generate single library including initial configuration",
-			api:                "some/api",
-			library:            "some-library",
-			repo:               newTestGitRepo(t),
-			state:              &config.LibrarianState{Image: "gcr.io/test/image:v1.2.3"},
-			container:          &mockContainerClient{},
+			name:    "generate single library including initial configuration",
+			api:     "some/api",
+			library: "some-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+				configureLibraryPaths: []string{
+					"src/a",
+				},
+			},
 			ghClient:           &mockGitHubClient{},
 			build:              true,
 			wantGenerateCalls:  1,
@@ -785,10 +793,15 @@ func TestGenerateScenarios(t *testing.T) {
 					{
 						ID:   "some-library",
 						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
 					},
 				},
 			},
-			container:          &mockContainerClient{},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
 			ghClient:           &mockGitHubClient{},
 			build:              true,
 			wantGenerateCalls:  1,
@@ -805,10 +818,15 @@ func TestGenerateScenarios(t *testing.T) {
 					{
 						ID:   "some-library",
 						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
 					},
 				},
 			},
-			container:          &mockContainerClient{},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
 			ghClient:           &mockGitHubClient{},
 			build:              true,
 			wantGenerateCalls:  1,
@@ -826,10 +844,15 @@ func TestGenerateScenarios(t *testing.T) {
 					{
 						ID:   "some-library",
 						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
 					},
 				},
 			},
-			container:          &mockContainerClient{},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
 			ghClient:           &mockGitHubClient{},
 			build:              true,
 			wantGenerateCalls:  1,
@@ -849,10 +872,11 @@ func TestGenerateScenarios(t *testing.T) {
 					},
 				},
 			},
-			container: &mockContainerClient{},
-			ghClient:  &mockGitHubClient{},
-			build:     true,
-			wantErr:   true,
+			container:  &mockContainerClient{},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantErr:    true,
+			wantErrMsg: "not configured yet, generation stopped",
 		},
 		{
 			name:    "generate single existing library with error message in response",
@@ -875,6 +899,7 @@ func TestGenerateScenarios(t *testing.T) {
 			wantGenerateCalls:  1,
 			wantConfigureCalls: 0,
 			wantErr:            true,
+			wantErrMsg:         "failed with error message",
 		},
 		{
 			name: "generate all libraries configured in state",
@@ -882,11 +907,25 @@ func TestGenerateScenarios(t *testing.T) {
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
-					{ID: "library1", APIs: []*config.API{{Path: "some/api1"}}},
-					{ID: "library2", APIs: []*config.API{{Path: "some/api2"}}},
+					{
+						ID:   "library1",
+						APIs: []*config.API{{Path: "some/api1"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+					},
+					{
+						ID:   "library2",
+						APIs: []*config.API{{Path: "some/api2"}},
+						SourceRoots: []string{
+							"src/b",
+						},
+					},
 				},
 			},
-			container:         &mockContainerClient{},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
 			ghClient:          &mockGitHubClient{},
 			build:             true,
 			wantGenerateCalls: 2,
@@ -963,6 +1002,11 @@ func TestGenerateScenarios(t *testing.T) {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
 				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
+				}
+
 				return
 			}
 			if err != nil {

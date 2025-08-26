@@ -17,15 +17,14 @@ package librarian
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 // mockGitHubClient is a mock implementation of the GitHubClient interface for testing.
@@ -99,21 +98,23 @@ func (m *mockGitHubClient) CreateRelease(ctx context.Context, tagName, releaseNa
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
-	generateCalls       int
-	buildCalls          int
-	configureCalls      int
-	initCalls           int
-	generateErr         error
-	buildErr            error
-	configureErr        error
-	initErr             error
-	failGenerateForID   string
-	requestLibraryID    string
-	noBuildResponse     bool
-	noConfigureResponse bool
-	noGenerateResponse  bool
-	noInitVersion       bool
-	wantErrorMsg        bool
+	generateCalls         int
+	buildCalls            int
+	configureCalls        int
+	initCalls             int
+	generateErr           error
+	buildErr              error
+	configureErr          error
+	initErr               error
+	failGenerateForID     string
+	requestLibraryID      string
+	noBuildResponse       bool
+	noConfigureResponse   bool
+	noGenerateResponse    bool
+	noInitVersion         bool
+	wantErrorMsg          bool
+	wantLibraryGen        bool
+	configureLibraryPaths []string
 }
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
@@ -147,19 +148,53 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
 		return "", err
 	}
+	for _, library := range request.State.Libraries {
+		needConfigure := false
+		for _, oneApi := range library.APIs {
+			if oneApi.Status == "new" {
+				needConfigure = true
+			}
+		}
 
-	var libraryBuilder strings.Builder
-	libraryBuilder.WriteString(fmt.Sprintf("{\"id\":\"%s\"", request.State.Libraries[0].ID))
-	if !m.noInitVersion {
-		libraryBuilder.WriteString(",\"version\": \"0.1.0\"")
+		if !needConfigure {
+			continue
+		}
+
+		var libraryBuilder strings.Builder
+		libraryBuilder.WriteString(fmt.Sprintf("{\"id\":\"%s\"", library.ID))
+		if !m.noInitVersion {
+			libraryBuilder.WriteString(",\"version\": \"0.1.0\"")
+		}
+		// Configure source root and remove regex.
+		if len(m.configureLibraryPaths) != 0 {
+			libraryBuilder.WriteString(",\"source_roots\":[")
+			for i, path := range m.configureLibraryPaths {
+				libraryBuilder.WriteString(fmt.Sprintf("\"%s\"", path))
+				if i != len(m.configureLibraryPaths)-1 {
+					libraryBuilder.WriteString(",")
+				}
+			}
+			libraryBuilder.WriteString("]")
+
+			libraryBuilder.WriteString(",\"preserve_regex\":[")
+			for i, path := range m.configureLibraryPaths {
+				libraryBuilder.WriteString(fmt.Sprintf("\"%s\"", path))
+				if i != len(m.configureLibraryPaths)-1 {
+					libraryBuilder.WriteString(",")
+				}
+			}
+			libraryBuilder.WriteString("]")
+		}
+
+		if m.wantErrorMsg {
+			libraryBuilder.WriteString(",\"error\": \"simulated error message\"")
+		}
+		libraryBuilder.WriteString("}")
+		if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryBuilder.String()), 0755); err != nil {
+			return "", err
+		}
 	}
-	if m.wantErrorMsg {
-		libraryBuilder.WriteString(",\"error\": \"simulated error message\"")
-	}
-	libraryBuilder.WriteString("}")
-	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryBuilder.String()), 0755); err != nil {
-		return "", err
-	}
+
 	return "", m.configureErr
 }
 
@@ -190,6 +225,24 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 		return nil
 	}
 	m.requestLibraryID = request.LibraryID
+	if m.wantLibraryGen {
+		for _, library := range request.State.Libraries {
+			if request.LibraryID != library.ID {
+				continue
+			}
+
+			for _, src := range library.SourceRoots {
+				srcPath := filepath.Join(request.Output, src)
+				if err := os.MkdirAll(srcPath, 0755); err != nil {
+					return err
+				}
+				if _, err := os.Create(filepath.Join(srcPath, "example.txt")); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return m.generateErr
 }
 
