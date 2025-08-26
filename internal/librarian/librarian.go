@@ -55,12 +55,11 @@ func Run(ctx context.Context, arg ...string) error {
 		CmdLibrarian.Flags.Usage()
 		return fmt.Errorf("command not specified")
 	}
-	cmd, err := CmdLibrarian.Lookup(arg[0])
+	cmd, arg, err := lookupCommand(CmdLibrarian, arg)
 	if err != nil {
-		CmdLibrarian.Flags.Usage()
 		return err
 	}
-	if err := cmd.Parse(arg[1:]); err != nil {
+	if err := cmd.Parse(arg); err != nil {
 		// We expect that if cmd.Parse fails, it will already
 		// have printed out a command-specific usage error,
 		// so we don't need to display the general usage.
@@ -74,6 +73,24 @@ func Run(ctx context.Context, arg ...string) error {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
 	return cmd.Run(ctx, cmd.Config)
+}
+
+// lookupCommand recursively looks up the command specified by the given arguments.
+// It returns the command, the remaining arguments, and an error if the command
+// is not found.
+func lookupCommand(cmd *cli.Command, args []string) (*cli.Command, []string, error) {
+	if len(args) == 0 {
+		return cmd, nil, nil
+	}
+	subcommand, err := cmd.Lookup(args[0])
+	if err != nil {
+		cmd.Flags.Usage()
+		return nil, nil, err
+	}
+	if len(subcommand.Commands) > 0 {
+		return lookupCommand(subcommand, args[1:])
+	}
+	return subcommand, args[1:], nil
 }
 
 // GitHubClient is an abstraction over the GitHub client.

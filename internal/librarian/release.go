@@ -27,7 +27,7 @@ var cmdRelease = &cli.Command{
 
 func init() {
 	cmdRelease.Init()
-	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
+	cmdRelease.Commands = append(cmdRelease.Commands,
 		cmdInit,
 		cmdTagAndRelease,
 	)

@@ -26,6 +26,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
@@ -238,4 +239,114 @@ func setupRepoForGetCommits(t *testing.T, pathAndMessages []pathAndMessage, tags
 type pathAndMessage struct {
 	path    string
 	message string
+}
+
+func TestLookupCommand(t *testing.T) {
+	sub1sub1 := &cli.Command{
+		Short:     "sub1sub1 does something",
+		UsageLine: "sub1sub1",
+		Long:      "sub1sub1 does something",
+	}
+	sub1 := &cli.Command{
+		Short:     "sub1 does something",
+		UsageLine: "sub1",
+		Long:      "sub1 does something",
+		Commands:  []*cli.Command{sub1sub1},
+	}
+	sub2 := &cli.Command{
+		Short:     "sub2 does something",
+		UsageLine: "sub2",
+		Long:      "sub2 does something",
+	}
+	root := &cli.Command{
+		Short:     "root does something",
+		UsageLine: "root",
+		Long:      "root does something",
+		Commands: []*cli.Command{
+			sub1,
+			sub2,
+		},
+	}
+	root.Init()
+	sub1.Init()
+	sub2.Init()
+	sub1sub1.Init()
+
+	testCases := []struct {
+		name     string
+		cmd      *cli.Command
+		args     []string
+		wantCmd  *cli.Command
+		wantArgs []string
+		wantErr  bool
+	}{
+		{
+			name:    "no args",
+			cmd:     root,
+			args:    []string{},
+			wantCmd: root,
+		},
+		{
+			name:    "find sub1",
+			cmd:     root,
+			args:    []string{"sub1"},
+			wantCmd: sub1,
+		},
+		{
+			name:     "find sub2",
+			cmd:      root,
+			args:     []string{"sub2"},
+			wantCmd:  sub2,
+			wantArgs: []string{},
+		},
+		{
+			name:     "find sub1sub1",
+			cmd:      root,
+			args:     []string{"sub1", "sub1sub1"},
+			wantCmd:  sub1sub1,
+			wantArgs: []string{},
+		},
+		{
+			name:     "find sub1sub1 with args",
+			cmd:      root,
+			args:     []string{"sub1", "sub1sub1", "arg1"},
+			wantCmd:  sub1sub1,
+			wantArgs: []string{"arg1"},
+		},
+		{
+			name:    "unknown command",
+			cmd:     root,
+			args:    []string{"unknown"},
+			wantErr: true,
+		},
+		{
+			name:    "unknown subcommand",
+			cmd:     root,
+			args:    []string{"sub1", "unknown"},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotCmd, gotArgs, err := lookupCommand(tc.cmd, tc.args)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("lookupCommand() error = %v, wantErr %v", err, tc.wantErr)
+				return
+			}
+			if gotCmd != tc.wantCmd {
+				var gotName, wantName string
+				if gotCmd != nil {
+					gotName = gotCmd.Name()
+				}
+				if tc.wantCmd != nil {
+					wantName = tc.wantCmd.Name()
+				}
+				t.Errorf("lookupCommand() gotCmd.Name() = %q, want %q", gotName, wantName)
+			}
+			if diff := cmp.Diff(tc.wantArgs, gotArgs); diff != "" {
+				t.Errorf("lookupCommand() args mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }
