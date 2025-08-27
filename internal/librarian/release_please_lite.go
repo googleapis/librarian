@@ -59,7 +59,7 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 		if shouldExclude(files, library.ReleaseExcludePaths) {
 			continue
 		}
-		parsedCommits, err := conventionalcommits.ParseCommits(commit.Message, commit.Hash.String())
+		parsedCommits, err := conventionalcommits.ParseCommits(commit.Message, commit.Hash.String(), commit.When)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
@@ -72,7 +72,7 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 }
 
 // shouldExclude determines if a commit should be excluded from a release.
-// It returns true if all files in the commit match one of the exclude paths.
+// It returns true if all files in the commit match one of exclude paths.
 func shouldExclude(files, excludePaths []string) bool {
 	for _, file := range files {
 		excluded := false

@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -55,6 +56,7 @@ type LocalRepository struct {
 type Commit struct {
 	Hash    plumbing.Hash
 	Message string
+	When    time.Time
 }
 
 // RepositoryOptions are used to configure a [LocalRepository].
@@ -304,6 +306,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 				commits = append(commits, &Commit{
 					Hash:    commit.Hash,
 					Message: commit.Message,
+					When:    commit.Author.When,
 				})
 				return nil
 			}

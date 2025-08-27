@@ -17,11 +17,13 @@ package conventionalcommits
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
 
 func TestParseCommits(t *testing.T) {
+	now := time.Now()
 	tests := []struct {
 		name          string
 		message       string
@@ -39,6 +41,7 @@ func TestParseCommits(t *testing.T) {
 					IsNested:    false,
 					Footers:     make(map[string]string),
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -53,6 +56,7 @@ func TestParseCommits(t *testing.T) {
 					IsNested:    false,
 					Footers:     make(map[string]string),
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -67,6 +71,7 @@ func TestParseCommits(t *testing.T) {
 					IsNested:    false,
 					Footers:     make(map[string]string),
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -80,6 +85,7 @@ func TestParseCommits(t *testing.T) {
 					IsNested:    false,
 					Footers:     map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -95,7 +101,8 @@ func TestParseCommits(t *testing.T) {
 						"Co-authored-by": "John Doe <john.doe@example.com>",
 						"Reviewed-by":    "Jane Smith <jane.smith@example.com>",
 					},
-					SHA: "fake-sha",
+					SHA:  "fake-sha",
+					When: now,
 				},
 			},
 		},
@@ -113,7 +120,8 @@ func TestParseCommits(t *testing.T) {
 						"PiperOrigin-RevId": "piper_cl_number",
 						"Source-Link":       "[googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})",
 					},
-					SHA: "fake-sha",
+					SHA:  "fake-sha",
+					When: now,
 				},
 			},
 		},
@@ -129,6 +137,7 @@ func TestParseCommits(t *testing.T) {
 					IsBreaking:  true,
 					Footers:     map[string]string{"BREAKING CHANGE": "this is a breaking change"},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -144,6 +153,7 @@ func TestParseCommits(t *testing.T) {
 					IsBreaking:  false,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -158,6 +168,7 @@ func TestParseCommits(t *testing.T) {
 					IsNested:    false,
 					Footers:     map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -173,6 +184,7 @@ func TestParseCommits(t *testing.T) {
 					IsBreaking:  true,
 					Footers:     map[string]string{"BREAKING CHANGE": "this is a breaking change\nthat spans multiple lines."},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -196,6 +208,7 @@ END_COMMIT_OVERRIDE`,
 					IsNested:    false,
 					Footers:     map[string]string{"Reviewed-by": "Jane Doe"},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -234,6 +247,7 @@ END_NESTED_COMMIT
 					IsNested:    false,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 				{
 					Type:        "fix",
@@ -243,6 +257,7 @@ END_NESTED_COMMIT
 					IsNested:    true,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 				{
 					Type:        "chore",
@@ -252,6 +267,7 @@ END_NESTED_COMMIT
 					IsNested:    true,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -273,6 +289,7 @@ END_NESTED_COMMIT
 					IsNested:    false,
 					Footers:     map[string]string{},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -316,6 +333,7 @@ END_COMMIT_OVERRIDE
 					IsNested:    true,
 					Footers:     map[string]string{"PiperOrigin-RevId": "123456", "Source-link": "fake-link"},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 				{
 					Type:        "feat",
@@ -324,6 +342,7 @@ END_COMMIT_OVERRIDE
 					Body:        "body of nested commit 2\n...",
 					Footers:     map[string]string{"PiperOrigin-RevId": "654321", "Source-link": "fake-link"},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
@@ -350,13 +369,14 @@ END_NESTED_COMMIT`,
 					IsNested:    false,
 					Footers:     map[string]string{"Reviewed-by": "Jane Doe"},
 					SHA:         "fake-sha",
+					When:        now,
 				},
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := ParseCommits(test.message, "fake-sha")
+			got, err := ParseCommits(test.message, "fake-sha", now)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)

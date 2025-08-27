@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"sort"
 	"strings"
 	"time"
 
@@ -26,6 +27,10 @@ import (
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+)
+
+const (
+	keyClNum = "PiperOrigin-RevId"
 )
 
 var (
@@ -53,13 +58,15 @@ var (
 		"docs",
 	}
 
+	shortSHA = func(sha string) string {
+		if len(sha) < 7 {
+			return sha
+		}
+		return sha[:7]
+	}
+
 	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{
-		"shortSHA": func(sha string) string {
-			if len(sha) < 7 {
-				return sha
-			}
-			return sha[:7]
-		},
+		"shortSHA": shortSHA,
 	}).Parse(`## [{{.NewVersion}}]({{"https://github.com/"}}{{.Repo.Owner}}/{{.Repo.Name}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
 {{- range .Sections -}}
 {{- if .Commits -}}
@@ -73,7 +80,74 @@ var (
 {{- end -}}
 {{- end -}}
 {{- end -}}`))
+
+	bodyPrefix = `
+This pull request is generated with proto changes between
+[googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+(exclusive) and
+[googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s
+
+BEGIN_COMMIT_OVERRIDE`
+	commitTemplate = `
+BEGIN_NESTED_COMMIT
+%s: [%s] {%s}
+%s
+
+PiperOrigin-RevId: %s
+
+Source-link: [googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+END_NESTED_COMMIT`
 )
+
+func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
+	allCommits := make([]*conventionalcommits.ConventionalCommit, 10)
+	for _, library := range state.Libraries {
+		commits, err := GetConventionalCommitsSinceLastGeneration(repo, library)
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+		}
+		allCommits = append(allCommits, commits...)
+	}
+	// Sort the slice by commit time in reverse order.
+	sort.Slice(allCommits, func(i, j int) bool {
+		return allCommits[i].When.After(allCommits[j].When)
+	})
+	startSHA := allCommits[len(allCommits)-1].SHA
+	endSHA := allCommits[0].SHA
+	librarianVersion := cli.Version()
+	var builder strings.Builder
+	builder.WriteString(
+		fmt.Sprintf(
+			bodyPrefix,
+			shortSHA(startSHA),
+			startSHA,
+			shortSHA(endSHA),
+			endSHA,
+			librarianVersion,
+			state.Image,
+		),
+	)
+	for _, commit := range allCommits {
+		builder.WriteString(
+			fmt.Sprintf(
+				commitTemplate,
+				commit.Type,
+				"",
+				commit.Description,
+				commit.Body,
+				commit.Footers[keyClNum],
+				shortSHA(commit.SHA),
+				commit.SHA,
+			),
+		)
+	}
+	builder.WriteString("END_COMMIT_OVERRIDE")
+	return builder.String(), nil
+}
 
 // FormatReleaseNotes generates the body for a release pull request.
 func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {

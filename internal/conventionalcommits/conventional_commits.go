@@ -19,6 +19,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // ConventionalCommit represents a parsed conventional commit message.
@@ -40,6 +41,8 @@ type ConventionalCommit struct {
 	IsNested bool
 	// SHA is the full commit hash.
 	SHA string
+	// When is the timestamp of the commit.
+	When time.Time
 }
 
 const breakingChangeKey = "BREAKING CHANGE"
@@ -209,7 +212,7 @@ func extractCommitParts(message string) []commitPart {
 // Malformed override or nested blocks (e.g., with a missing end marker) are
 // ignored. Any commit part that is found but fails to parse as a valid
 // conventional commit is logged and skipped.
-func ParseCommits(message, hashString string) ([]*ConventionalCommit, error) {
+func ParseCommits(message, hashString string, when time.Time) ([]*ConventionalCommit, error) {
 	if strings.TrimSpace(message) == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
@@ -218,7 +221,7 @@ func ParseCommits(message, hashString string) ([]*ConventionalCommit, error) {
 	var commits []*ConventionalCommit
 
 	for _, part := range extractCommitParts(message) {
-		c, err := parseSimpleCommit(part, hashString)
+		c, err := parseSimpleCommit(part, hashString, when)
 		if err != nil {
 			slog.Warn("failed to parse commit part", "commit", part.message, "error", err)
 			continue
@@ -234,7 +237,7 @@ func ParseCommits(message, hashString string) ([]*ConventionalCommit, error) {
 
 // parseSimpleCommit parses a simple commit message and returns a ConventionalCommit.
 // A simple commit message is commit that does not include override or nested commits.
-func parseSimpleCommit(commitPart commitPart, hashString string) (*ConventionalCommit, error) {
+func parseSimpleCommit(commitPart commitPart, hashString string, when time.Time) (*ConventionalCommit, error) {
 	trimmedMessage := strings.TrimSpace(commitPart.message)
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")
@@ -260,5 +263,6 @@ func parseSimpleCommit(commitPart commitPart, hashString string) (*ConventionalC
 		IsBreaking:  header.IsBreaking || footerIsBreaking,
 		IsNested:    commitPart.isNested,
 		SHA:         hashString,
+		When:        when,
 	}, nil
 }
