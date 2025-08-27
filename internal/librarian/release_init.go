@@ -203,7 +203,7 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 
 	library.Changes = updateLibraryChanges(commits)
 	if len(library.Changes) == 0 {
-		// Don't update the library at all
+		slog.Info("Skip releasing library since no eligible change is found", "library", library.ID)
 		return nil
 	}
 
