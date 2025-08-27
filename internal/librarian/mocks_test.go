@@ -123,6 +123,9 @@ type mockContainerClient struct {
 	// to be generated in source roots.
 	wantLibraryGen bool
 	// Set this value if you want the configure-response
+	// has library api paths.
+	configureAPIPaths []string
+	// Set this value if you want the configure-response
 	// has library source roots and remove regex.
 	configureLibraryPaths []string
 }
@@ -174,6 +177,19 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 		libraryBuilder.WriteString(fmt.Sprintf("{\"id\":\"%s\"", library.ID))
 		if !m.noInitVersion {
 			libraryBuilder.WriteString(",\"version\": \"0.1.0\"")
+		}
+		// Configure api path.
+		if len(m.configureAPIPaths) != 0 {
+			libraryBuilder.WriteString(",\"apis\":[")
+			for i, path := range m.configureAPIPaths {
+				libraryBuilder.WriteString("{\"path\":")
+				libraryBuilder.WriteString(fmt.Sprintf("\"%s\"", path))
+				libraryBuilder.WriteString("}")
+				if i != len(m.configureAPIPaths)-1 {
+					libraryBuilder.WriteString(",")
+				}
+			}
+			libraryBuilder.WriteString("]")
 		}
 		// Configure source root and remove regex.
 		if len(m.configureLibraryPaths) != 0 {

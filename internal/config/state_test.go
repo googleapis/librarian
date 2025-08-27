@@ -112,6 +112,14 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "valid library with no APIs",
+			library: &LibraryState{
+				ID:          "a/b",
+				SourceRoots: []string{"src/a", "src/b"},
+			},
+			wantErr: false,
+		},
+		{
 			name:       "missing id",
 			library:    &LibraryState{},
 			wantErr:    true,
@@ -145,15 +153,6 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "source_roots cannot be empty",
-		},
-		{
-			name: "missing apis",
-			library: &LibraryState{
-				ID:          "a/b",
-				SourceRoots: []string{"src/a", "src/b"},
-			},
-			wantErr:    true,
-			wantErrMsg: "apis cannot be empty",
 		},
 		{
 			name: "valid version without v prefix",
