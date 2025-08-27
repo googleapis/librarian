@@ -556,9 +556,6 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			container: &mockContainerClient{
 				wantLibraryGen: true,
-				configureAPIPaths: []string{
-					"api/source/path",
-				},
 				configureLibraryPaths: []string{
 					"src/a",
 				},

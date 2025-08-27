@@ -16,16 +16,15 @@ package librarian
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"os"
+	"path/filepath"
 )
 
 // mockGitHubClient is a mock implementation of the GitHubClient interface for testing.
@@ -123,9 +122,6 @@ type mockContainerClient struct {
 	// to be generated in source roots.
 	wantLibraryGen bool
 	// Set this value if you want the configure-response
-	// has library api paths.
-	configureAPIPaths []string
-	// Set this value if you want the configure-response
 	// has library source roots and remove regex.
 	configureLibraryPaths []string
 }
@@ -173,50 +169,29 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 			continue
 		}
 
-		var libraryBuilder strings.Builder
-		libraryBuilder.WriteString(fmt.Sprintf("{\"id\":\"%s\"", library.ID))
 		if !m.noInitVersion {
-			libraryBuilder.WriteString(",\"version\": \"0.1.0\"")
+			library.Version = "0.1.0"
 		}
-		// Configure api path.
-		if len(m.configureAPIPaths) != 0 {
-			libraryBuilder.WriteString(",\"apis\":[")
-			for i, path := range m.configureAPIPaths {
-				libraryBuilder.WriteString("{\"path\":")
-				libraryBuilder.WriteString(fmt.Sprintf("\"%s\"", path))
-				libraryBuilder.WriteString("}")
-				if i != len(m.configureAPIPaths)-1 {
-					libraryBuilder.WriteString(",")
-				}
-			}
-			libraryBuilder.WriteString("]")
-		}
+
 		// Configure source root and remove regex.
 		if len(m.configureLibraryPaths) != 0 {
-			libraryBuilder.WriteString(",\"source_roots\":[")
-			for i, path := range m.configureLibraryPaths {
-				libraryBuilder.WriteString(fmt.Sprintf("\"%s\"", path))
-				if i != len(m.configureLibraryPaths)-1 {
-					libraryBuilder.WriteString(",")
-				}
-			}
-			libraryBuilder.WriteString("]")
+			library.SourceRoots = make([]string, len(m.configureLibraryPaths))
+			copy(library.SourceRoots, m.configureLibraryPaths)
 
-			libraryBuilder.WriteString(",\"preserve_regex\":[")
-			for i, path := range m.configureLibraryPaths {
-				libraryBuilder.WriteString(fmt.Sprintf("\"%s\"", path))
-				if i != len(m.configureLibraryPaths)-1 {
-					libraryBuilder.WriteString(",")
-				}
-			}
-			libraryBuilder.WriteString("]")
+			library.RemoveRegex = make([]string, len(m.configureLibraryPaths))
+			copy(library.RemoveRegex, m.configureLibraryPaths)
 		}
 
 		if m.wantErrorMsg {
-			libraryBuilder.WriteString(",\"error\": \"simulated error message\"")
+			library.ErrorMessage = "simulated error message"
 		}
-		libraryBuilder.WriteString("}")
-		if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryBuilder.String()), 0755); err != nil {
+
+		b, err := json.Marshal(library)
+		if err != nil {
+			return "", err
+		}
+
+		if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), b, 0755); err != nil {
 			return "", err
 		}
 	}
