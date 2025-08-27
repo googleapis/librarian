@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -212,11 +211,17 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 		return err
 	}
 
-	libraryStr := "{}"
+	library := &config.LibraryState{}
+	library.ID = request.LibraryID
 	if m.wantErrorMsg {
-		libraryStr = fmt.Sprintf("{\"id\":\"%s\",\"error\": \"simulated error message\"}", request.LibraryID)
+		library.ErrorMessage = "simulated error message"
 	}
-	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), []byte(libraryStr), 0755); err != nil {
+	b, err := json.MarshalIndent(library, "", " ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), b, 0755); err != nil {
 		return err
 	}
 
