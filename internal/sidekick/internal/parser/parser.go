@@ -16,7 +16,6 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
@@ -65,18 +64,4 @@ func CreateModel(config *config.Config) (*api.API, error) {
 		model.Description = description
 	}
 	return model, nil
-}
-
-func splitApiName(name string) (string, string) {
-	li := strings.LastIndex(name, ".")
-	if li == -1 {
-		return "", name
-	}
-	return name[:li], name[li+1:]
-}
-
-func wellKnownMixin(apiName string) bool {
-	return strings.HasPrefix(apiName, "google.cloud.location.Location") ||
-		strings.HasPrefix(apiName, "google.longrunning.Operations") ||
-		strings.HasPrefix(apiName, "google.iam.v1.IAMPolicy")
 }
