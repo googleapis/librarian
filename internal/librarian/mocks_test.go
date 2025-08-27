@@ -98,22 +98,31 @@ func (m *mockGitHubClient) CreateRelease(ctx context.Context, tagName, releaseNa
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
-	generateCalls         int
-	buildCalls            int
-	configureCalls        int
-	initCalls             int
-	generateErr           error
-	buildErr              error
-	configureErr          error
-	initErr               error
-	failGenerateForID     string
-	requestLibraryID      string
-	noBuildResponse       bool
-	noConfigureResponse   bool
-	noGenerateResponse    bool
-	noInitVersion         bool
-	wantErrorMsg          bool
-	wantLibraryGen        bool
+	generateCalls  int
+	buildCalls     int
+	configureCalls int
+	initCalls      int
+	generateErr    error
+	buildErr       error
+	configureErr   error
+	initErr        error
+	// Set this value if you want an error when
+	// generate a library with a specific id.
+	failGenerateForID string
+	// Set this value if you want an error when
+	// generate a library with a specific id.
+	generateErrForID    error
+	requestLibraryID    string
+	noBuildResponse     bool
+	noConfigureResponse bool
+	noGenerateResponse  bool
+	noInitVersion       bool
+	wantErrorMsg        bool
+	// Set this value if you want library files
+	// to be generated in source roots.
+	wantLibraryGen bool
+	// Set this value if you want the configure-response
+	// has library source roots and remove regex.
 	configureLibraryPaths []string
 }
 
@@ -217,13 +226,13 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), []byte(libraryStr), 0755); err != nil {
 		return err
 	}
+
 	if m.failGenerateForID != "" {
 		if request.LibraryID == m.failGenerateForID {
-			return m.generateErr
+			return m.generateErrForID
 		}
-		m.requestLibraryID = request.LibraryID
-		return nil
 	}
+
 	m.requestLibraryID = request.LibraryID
 	if m.wantLibraryGen {
 		for _, library := range request.State.Libraries {
