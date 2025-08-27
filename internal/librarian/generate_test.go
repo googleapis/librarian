@@ -928,6 +928,24 @@ func TestGenerateScenarios(t *testing.T) {
 			build:     true,
 			wantErr:   true,
 		},
+		{
+			name: "generate skips libraries with no APIs",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			ghClient:           &mockGitHubClient{},
+			build:              true,
+			wantGenerateCalls:  0,
+			wantBuildCalls:     0,
+			wantConfigureCalls: 0,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

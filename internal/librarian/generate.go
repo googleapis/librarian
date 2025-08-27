@@ -175,6 +175,17 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 		libraryID = configuredLibraryID
 	}
 
+	// At this point, we should have a library in the state.
+	libraryState := findLibraryByID(r.state, libraryID)
+	if libraryState == nil {
+		return fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
+	}
+
+	if len(libraryState.APIs) == 0 {
+		slog.Info("library has no APIs; skipping generation", "library", libraryID)
+		return nil
+	}
+
 	// For each library, create a separate output directory. This avoids
 	// libraries interfering with each other, and makes it easier to see what
 	// was generated for each library when debugging.
@@ -221,9 +232,6 @@ func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error 
 // If successful, it returns the ID of the generated library; otherwise, it
 // returns an empty string and an error.
 func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outputDir string) (string, error) {
-	if findLibraryByID(r.state, libraryID) == nil {
-		return "", fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
-	}
 	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
 	if err != nil {
 		return "", err

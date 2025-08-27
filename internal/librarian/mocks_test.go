@@ -150,6 +150,7 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 
 	var libraryBuilder strings.Builder
 	libraryBuilder.WriteString(fmt.Sprintf("{\"id\":\"%s\"", request.State.Libraries[0].ID))
+	libraryBuilder.WriteString(fmt.Sprintf(",\"apis\":[{\"path\":\"%s\"}]", request.State.Libraries[0].APIs[0].Path))
 	if !m.noInitVersion {
 		libraryBuilder.WriteString(",\"version\": \"0.1.0\"")
 	}
