@@ -278,7 +278,7 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	return nil
 }
 
-func updateLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
+func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
 	changes := make([]*config.Change, 0)
 	for _, commit := range commits {
 		clNum := ""

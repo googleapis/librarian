@@ -201,7 +201,7 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
-	library.Changes = updateLibraryChanges(commits)
+	library.Changes = coerceLibraryChanges(commits)
 	if len(library.Changes) == 0 {
 		slog.Info("Skip releasing library since no eligible change is found", "library", library.ID)
 		return nil
