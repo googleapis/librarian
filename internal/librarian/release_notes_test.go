@@ -216,7 +216,7 @@ Language Image: go:1.21
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := FormatReleaseNotes(test.repo, test.state)
+			got, err := formatReleaseNotes(test.repo, test.state)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)

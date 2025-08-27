@@ -76,7 +76,7 @@ var (
 )
 
 // FormatReleaseNotes generates the body for a release pull request.
-func FormatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
+func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
 	var body bytes.Buffer
 
 	librarianVersion := cli.Version()

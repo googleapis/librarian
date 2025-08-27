@@ -707,7 +707,7 @@ func TestCommitAndPush(t *testing.T) {
 				Commit: test.commit,
 			}
 
-			err := commitAndPush(context.Background(), localConfig, repo, client, "", "")
+			err := commitAndPush(context.Background(), localConfig, repo, client, "")
 
 			if test.wantErr {
 				if err == nil {

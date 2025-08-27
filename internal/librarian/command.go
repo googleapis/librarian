@@ -303,7 +303,7 @@ func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage, prBody string) error {
+func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage string) error {
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
@@ -350,7 +350,7 @@ func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Reposit
 	titlePrefix := "Librarian pull request"
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, prBody); err != nil {
+	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil
