@@ -223,7 +223,7 @@ func (r *generateRunner) updateChangesSinceLastGeneration(libraryID string) erro
 			if err != nil {
 				return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 			}
-			updateLibraryChanges(library, commits)
+			library.Changes = updateLibraryChanges(commits)
 			break
 		}
 	}

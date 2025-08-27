@@ -201,7 +201,7 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
-	updateLibraryChanges(library, commits)
+	library.Changes = updateLibraryChanges(commits)
 	if len(library.Changes) == 0 {
 		// Don't update the library at all
 		return nil

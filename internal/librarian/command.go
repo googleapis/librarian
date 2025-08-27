@@ -278,7 +278,7 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	return nil
 }
 
-func updateLibraryChanges(library *config.LibraryState, commits []*conventionalcommits.ConventionalCommit) {
+func updateLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
 	changes := make([]*config.Change, 0)
 	for _, commit := range commits {
 		clNum := ""
@@ -296,7 +296,7 @@ func updateLibraryChanges(library *config.LibraryState, commits []*conventionalc
 		})
 	}
 
-	library.Changes = changes
+	return changes
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated
