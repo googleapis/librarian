@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,6 +43,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 		repo            gitrepo.Repository
 		wantReleaseNote string
 		wantErr         bool
+		wantErrPhrase   string
 	}{
 		{
 			name: "single library release",
@@ -208,7 +210,8 @@ Language Image: go:1.21
 				RemotesValue:                    []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
 				GetCommitsForPathsSinceTagError: fmt.Errorf("git error"),
 			},
-			wantErr: true,
+			wantErr:       true,
+			wantErrPhrase: "failed to format release notes",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -217,6 +220,9 @@ Language Image: go:1.21
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("FormatReleaseNotes() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
 				}
 				return
 			}

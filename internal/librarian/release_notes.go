@@ -61,7 +61,7 @@ var (
 			return sha[:7]
 		},
 	}).Parse(`## [{{.NewVersion}}]({{"https://github.com/"}}{{.Repo.Owner}}/{{.Repo.Name}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
-{{- range .CommitTypes -}}
+{{- range .Sections -}}
 {{- if .Commits -}}
 {{- if .Heading}}
 
@@ -103,6 +103,7 @@ func FormatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (
 }
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
+// It returns the generated release notes and the new version string.
 func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState) (string, string, error) {
 	ghRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
@@ -124,19 +125,20 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
 
-	type commitType struct {
+	type releaseNoteSection struct {
 		Heading string
 		Commits []*conventionalcommits.ConventionalCommit
 	}
-	var commitTypes []commitType
+	var sections []releaseNoteSection
+	// Group commits by type, according to commitTypeOrder, to be used in the release notes.
 	for _, ct := range commitTypeOrder {
-		if displayName, ok := commitTypeToHeading[ct]; ok {
-			if typedCommits, ok := commitsByType[ct]; ok {
-				commitTypes = append(commitTypes, commitType{
-					Heading: displayName,
-					Commits: typedCommits,
-				})
-			}
+		displayName, headingOK := commitTypeToHeading[ct]
+		typedCommits, commitsOK := commitsByType[ct]
+		if headingOK && commitsOK {
+			sections = append(sections, releaseNoteSection{
+				Heading: displayName,
+				Commits: typedCommits,
+			})
 		}
 	}
 
@@ -147,14 +149,14 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 		NewTag      string
 		Repo        *github.Repository
 		Date        string
-		CommitTypes []commitType
+		Sections    []releaseNoteSection
 	}{
 		NewVersion:  newVersion,
 		PreviousTag: previousTag,
 		NewTag:      newTag,
 		Repo:        ghRepo,
 		Date:        time.Now().Format("2006-01-02"),
-		CommitTypes: commitTypes,
+		Sections:    sections,
 	}
 	if err := releaseNotesTemplate.Execute(&out, data); err != nil {
 		// This should not happen, as the template is valid and the data is structured correctly.
