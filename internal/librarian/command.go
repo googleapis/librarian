@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"io"
 	"log/slog"
 	"os"
@@ -26,6 +25,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/googleapis/librarian/internal/docker"
 

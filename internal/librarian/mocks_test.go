@@ -17,14 +17,15 @@ package librarian
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 // mockGitHubClient is a mock implementation of the GitHubClient interface for testing.
