@@ -97,6 +97,105 @@ func TestRunGenerate(t *testing.T) {
 	}
 }
 
+func TestCleanAndCopy(t *testing.T) {
+	const (
+		localAPISource = "testdata/e2e/generate/api_root"
+		apiToGenerate  = "google/cloud/pubsub/v1"
+	)
+	// create a temp directory for writing files, so we don't have to create testdata files.
+	repoInitDir := t.TempDir()
+	// create a file that should be removed.
+	if err := os.WriteFile(filepath.Join(repoInitDir, "file_to_remove.txt"), []byte("remove me"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// create a directory with 2 files, on of them should be preserved.
+	if err := os.MkdirAll(filepath.Join(repoInitDir, "sub"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repoInitDir, "sub", "file_to_preserve.txt"), []byte("preserve me"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repoInitDir, "sub", "file_to_remove_in_sub.txt"), []byte("remove me"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// create a state file with remove and preserve regex.
+	state := &config.LibrarianState{
+		Image: "test-image:latest",
+		Libraries: []*config.LibraryState{
+			{
+				ID:      "go-google-cloud-pubsub-v1",
+				Version: "v1.0.0",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/pubsub/v1",
+					},
+				},
+				SourceRoots: []string{"cloud.google.com/go/pubsub"},
+				RemoveRegex: []string{
+					"file_to_remove.txt",
+					"^sub/.*.txt",
+				},
+				PreserveRegex: []string{
+					"sub/file_to_preserve.txt",
+				},
+			},
+		},
+	}
+	stateBytes, err := yaml.Marshal(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repoInitDir, ".librarian"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repoInitDir, ".librarian", "state.yaml"), stateBytes, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	workRoot := t.TempDir()
+	repo := t.TempDir()
+	APISourceRepo := t.TempDir()
+	if err := initRepo(t, repo, repoInitDir); err != nil {
+		t.Fatalf("languageRepo prepare test error = %v", err)
+	}
+	if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
+		t.Fatalf("APISouceRepo prepare test error = %v", err)
+	}
+
+	cmd := exec.Command(
+		"go",
+		"run",
+		"github.com/googleapis/librarian/cmd/librarian",
+		"generate",
+		fmt.Sprintf("--api=%s", apiToGenerate),
+		fmt.Sprintf("--output=%s", workRoot),
+		fmt.Sprintf("--repo=%s", repo),
+		fmt.Sprintf("--api-source=%s", APISourceRepo),
+	)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("librarian generate command error = %v", err)
+	}
+
+	// check that the file to remove is gone.
+	if _, err := os.Stat(filepath.Join(repo, "file_to_remove.txt")); !os.IsNotExist(err) {
+		t.Errorf("file_to_remove.txt should have been removed")
+	}
+	// check that the file to preserve is still there.
+	if _, err := os.Stat(filepath.Join(repo, "sub", "file_to_preserve.txt")); os.IsNotExist(err) {
+		t.Errorf("sub/file_to_preserve.txt should have been preserved")
+	}
+	// check that the file to remove is gone.
+	if _, err := os.Stat(filepath.Join(repo, "sub", "file_to_remove_in_sub.txt")); !os.IsNotExist(err) {
+		t.Errorf("sub/file_to_remove_in_sub.txt should have been removed")
+	}
+	// check that the new files are copied. The fake generator creates a file called "example.txt".
+	if _, err := os.Stat(filepath.Join(repo, "cloud.google.com/go/pubsub", "example.txt")); os.IsNotExist(err) {
+		t.Errorf("example.txt should have been copied")
+	}
+}
+
 func TestRunConfigure(t *testing.T) {
 	const (
 		localRepoDir        = "testdata/e2e/configure/repo"
