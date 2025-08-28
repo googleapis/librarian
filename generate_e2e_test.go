@@ -107,8 +107,6 @@ func TestCleanAndCopy(t *testing.T) {
 
 	// within the source root, create a file to be removed,
 	// then create a sub dir with 2 files, on of them should be preserved.
-	if err := os.MkdirAll(filepath.Join(repoInitDir, "sub"), 0755); err != nil {
-
 	pubsubDir := filepath.Join(repoInitDir, "pubsub")
 	if err := os.MkdirAll(filepath.Join(pubsubDir, "sub"), 0755); err != nil {
 		t.Fatal(err)
