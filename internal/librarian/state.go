@@ -146,7 +146,7 @@ func findServiceConfigIn(path string) (string, error) {
 		}
 	}
 
-	// No service config present: assume it's proto-only.
+	slog.Info("No service config found; assuming proto-only package", "path", path)
 	return "", nil
 }
 

@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -750,6 +751,7 @@ func TestGenerateScenarios(t *testing.T) {
 			build:             true,
 			wantGenerateCalls: 1,
 			wantErr:           true,
+			wantErrMsg:        "failed to make output directory",
 		},
 		{
 			name: "generate error",
@@ -871,6 +873,17 @@ func TestGenerateScenarios(t *testing.T) {
 			data := []byte("type: google.api.Service")
 			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
+			}
+
+			// Create a symlink in the output directory to trigger an error.
+			if test.name == "symlink in output" {
+				outputDir := filepath.Join(r.workRoot, "output")
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
+					t.Fatalf("os.Symlink() = %v", err)
+				}
 			}
 
 			err := r.run(context.Background())
@@ -1464,6 +1477,142 @@ func TestCompileRegexps(t *testing.T) {
 				if len(regexps) != len(tc.patterns) {
 					t.Errorf("compileRegexps() len = %d, want %d", len(regexps), len(tc.patterns))
 				}
+			}
+		})
+	}
+}
+
+func TestUpdateChangesSinceLastGeneration(t *testing.T) {
+	t.Parallel()
+	hash1 := plumbing.NewHash("1234567")
+	hash2 := plumbing.NewHash("abcdefg")
+	for _, test := range []struct {
+		name       string
+		libraryID  string
+		libraries  []*config.LibraryState
+		repo       gitrepo.Repository
+		want       *config.LibraryState
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:      "update changes in a library",
+			libraryID: "another-id",
+			libraries: []*config.LibraryState{
+				{
+					ID: "example-d",
+				},
+				{
+					ID:                  "another-id",
+					LastGeneratedCommit: "fake-sha",
+					APIs: []*config.API{
+						{
+							Path: "api/one/path",
+						},
+						{
+							Path: "api/another/path",
+						},
+					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenByPath: map[string][]*gitrepo.Commit{
+					"api/one/path": {
+						{
+							Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
+							Hash:    hash1,
+						},
+					},
+					"api/another/path": {
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash1.String(): {
+						"api/one/path/file.txt",
+						"api/another/path/example.txt",
+					},
+					hash2.String(): {
+						"api/one/path/another-file.txt",
+						"api/another/path/another-example.txt",
+					},
+				},
+			},
+			want: &config.LibraryState{
+				ID:                  "another-id",
+				LastGeneratedCommit: "fake-sha",
+				APIs: []*config.API{
+					{
+						Path: "api/one/path",
+					},
+					{
+						Path: "api/another/path",
+					},
+				},
+				Changes: []*config.Change{
+					{
+						Type:       "feat",
+						Subject:    "new feature",
+						Body:       "This is body.",
+						ClNum:      "98765",
+						CommitHash: hash1.String(),
+					},
+					{
+						Type:       "fix",
+						Subject:    "a bug fix",
+						Body:       "This is another body.",
+						ClNum:      "573342",
+						CommitHash: hash2.String(),
+					},
+				},
+			},
+		},
+		{
+			name:      "failed to get conventional commits",
+			libraryID: "another-id",
+			libraries: []*config.LibraryState{
+				{
+					ID: "example-d",
+				},
+				{
+					ID: "another-id",
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch conventional commits for library",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &generateRunner{
+				sourceRepo: test.repo,
+				state: &config.LibrarianState{
+					Libraries: test.libraries,
+				},
+			}
+			err := runner.updateChangesSinceLastGeneration(test.libraryID)
+			if test.wantErr {
+				if err == nil {
+					t.Error("updateChangesSinceLastGeneration() should fail")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("updateChangesSinceLastGeneration() failed: %q", err)
+			}
+
+			if diff := cmp.Diff(test.want, runner.state.Libraries[1]); diff != "" {
+				t.Errorf("updateChangesSinceLastGeneration() dirs mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

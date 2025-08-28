@@ -126,7 +126,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 func (r *generateRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
@@ -219,7 +219,7 @@ func (r *generateRunner) needsConfigure() bool {
 func (r *generateRunner) updateChangesSinceLastGeneration(libraryID string) error {
 	for _, library := range r.state.Libraries {
 		if library.ID == libraryID {
-			commits, err := GetConventionalCommitsSinceLastGeneration(r.repo, library)
+			commits, err := GetConventionalCommitsSinceLastGeneration(r.sourceRepo, library)
 			if err != nil {
 				return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 			}

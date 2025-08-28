@@ -274,6 +274,7 @@ type MockRepository struct {
 	GetCommitsForPathsSinceTagError        error
 	GetCommitsForPathsSinceLastGenValue    []*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByCommit map[string][]*gitrepo.Commit
+	GetCommitsForPathsSinceLastGenByPath   map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenError    error
 	ChangedFilesInCommitValue              []string
 	ChangedFilesInCommitValueByHash        map[string][]string
@@ -328,10 +329,22 @@ func (m *MockRepository) GetCommitsForPathsSinceCommit(paths []string, sinceComm
 	if m.GetCommitsForPathsSinceLastGenError != nil {
 		return nil, m.GetCommitsForPathsSinceLastGenError
 	}
+
 	if m.GetCommitsForPathsSinceLastGenByCommit != nil {
 		if commits, ok := m.GetCommitsForPathsSinceLastGenByCommit[sinceCommit]; ok {
 			return commits, nil
 		}
+	}
+
+	if m.GetCommitsForPathsSinceLastGenByPath != nil {
+		allCommits := make([]*gitrepo.Commit, 0)
+		for _, path := range paths {
+			if commits, ok := m.GetCommitsForPathsSinceLastGenByPath[path]; ok {
+				allCommits = append(allCommits, commits...)
+			}
+		}
+
+		return allCommits, nil
 	}
 	return m.GetCommitsForPathsSinceLastGenValue, nil
 }
