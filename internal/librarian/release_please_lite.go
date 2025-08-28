@@ -39,9 +39,14 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 }
 
 // GetConventionalCommitsSinceLastGeneration returns all conventional commits for
-// the given library since the last generation.
+// all API paths in given library since the last generation.
 func GetConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
-	commits, err := repo.GetCommitsForPathsSinceCommit(library.SourceRoots, library.LastGeneratedCommit)
+	apiPaths := make([]string, 0)
+	for _, oneAPI := range library.APIs {
+		apiPaths = append(apiPaths, oneAPI.Path)
+	}
+
+	commits, err := repo.GetCommitsForPathsSinceCommit(apiPaths, library.LastGeneratedCommit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}
