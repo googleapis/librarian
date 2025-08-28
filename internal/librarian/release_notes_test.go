@@ -151,6 +151,58 @@ END_COMMIT_OVERRIDE`,
 	}
 }
 
+func TestFindLatestCommit(t *testing.T) {
+	t.Parallel()
+
+	//today := time.Now()
+	//hash1 := plumbing.NewHash("1234567890abcdef")
+	//hash2 := plumbing.NewHash("fedcba0987654321")
+	for _, test := range []struct {
+		name          string
+		state         *config.LibrarianState
+		repo          gitrepo.Repository
+		want          string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "failed to find last generated commit",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "one-library",
+						LastGeneratedCommit: "1234567890",
+					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitError: errors.New("simulated error"),
+			},
+			wantErr:       true,
+			wantErrPhrase: "can't find last generated commit for",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findLatestCommit(test.repo, test.state)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("findLatestCommit() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findLatestCommit() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFormatReleaseNotes(t *testing.T) {
 	t.Parallel()
 
