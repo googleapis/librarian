@@ -1532,7 +1532,7 @@ func TestUpdateChangesSinceLastGeneration(t *testing.T) {
 				},
 				ChangedFilesInCommitValueByHash: map[string][]string{
 					hash1.String(): {
-						"api/one//path/file.txt",
+						"api/one/path/file.txt",
 						"api/another/path/example.txt",
 					},
 					hash2.String(): {
