@@ -103,6 +103,7 @@ END_NESTED_COMMIT
 `
 )
 
+// formatGenerationPRBody creates the body of a generation pull request.
 func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
 	allCommits := make([]*conventionalcommits.ConventionalCommit, 0)
 	for _, library := range state.Libraries {
@@ -149,7 +150,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	return builder.String(), nil
 }
 
-// FormatReleaseNotes generates the body for a release pull request.
+// formatReleaseNotes generates the body for a release pull request.
 func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
 	var body bytes.Buffer
 
