@@ -162,9 +162,6 @@ func (l *LibraryState) Validate() error {
 			return fmt.Errorf("last_generated_commit must be 40 characters")
 		}
 	}
-	if len(l.APIs) == 0 {
-		return fmt.Errorf("apis cannot be empty")
-	}
 	for i, a := range l.APIs {
 		if err := a.Validate(); err != nil {
 			return fmt.Errorf("invalid api at index %d: %w", i, err)

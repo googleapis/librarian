@@ -34,6 +34,22 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}
+
+	return convertToConventionalCommits(repo, library, commits)
+}
+
+// GetConventionalCommitsSinceLastGeneration returns all conventional commits for
+// the given library since the last generation.
+func GetConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
+	commits, err := repo.GetCommitsForPathsSinceCommit(library.SourceRoots, library.LastGeneratedCommit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
+	}
+
+	return convertToConventionalCommits(repo, library, commits)
+}
+
+func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit) ([]*conventionalcommits.ConventionalCommit, error) {
 	var conventionalCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
 		files, err := repo.ChangedFilesInCommit(commit.Hash.String())

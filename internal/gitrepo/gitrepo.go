@@ -39,6 +39,7 @@ type Repository interface {
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
+	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
 	Push(branchName string) error
 }

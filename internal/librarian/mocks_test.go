@@ -16,10 +16,9 @@ package librarian
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/config"
@@ -99,21 +98,32 @@ func (m *mockGitHubClient) CreateRelease(ctx context.Context, tagName, releaseNa
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
-	generateCalls       int
-	buildCalls          int
-	configureCalls      int
-	initCalls           int
-	generateErr         error
-	buildErr            error
-	configureErr        error
-	initErr             error
-	failGenerateForID   string
+	generateCalls  int
+	buildCalls     int
+	configureCalls int
+	initCalls      int
+	generateErr    error
+	buildErr       error
+	configureErr   error
+	initErr        error
+	// Set this value if you want an error when
+	// generate a library with a specific id.
+	failGenerateForID string
+	// Set this value if you want an error when
+	// generate a library with a specific id.
+	generateErrForID    error
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
 	noGenerateResponse  bool
 	noInitVersion       bool
 	wantErrorMsg        bool
+	// Set this value if you want library files
+	// to be generated in source roots.
+	wantLibraryGen bool
+	// Set this value if you want the configure-response
+	// has library source roots and remove regex.
+	configureLibraryPaths []string
 }
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
@@ -147,19 +157,45 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, config.LibrarianDir), 0755); err != nil {
 		return "", err
 	}
+	for _, library := range request.State.Libraries {
+		needConfigure := false
+		for _, oneApi := range library.APIs {
+			if oneApi.Status == "new" {
+				needConfigure = true
+			}
+		}
 
-	var libraryBuilder strings.Builder
-	libraryBuilder.WriteString(fmt.Sprintf("{\"id\":\"%s\"", request.State.Libraries[0].ID))
-	if !m.noInitVersion {
-		libraryBuilder.WriteString(",\"version\": \"0.1.0\"")
+		if !needConfigure {
+			continue
+		}
+
+		if !m.noInitVersion {
+			library.Version = "0.1.0"
+		}
+
+		// Configure source root and remove regex.
+		if len(m.configureLibraryPaths) != 0 {
+			library.SourceRoots = make([]string, len(m.configureLibraryPaths))
+			copy(library.SourceRoots, m.configureLibraryPaths)
+
+			library.RemoveRegex = make([]string, len(m.configureLibraryPaths))
+			copy(library.RemoveRegex, m.configureLibraryPaths)
+		}
+
+		if m.wantErrorMsg {
+			library.ErrorMessage = "simulated error message"
+		}
+
+		b, err := json.Marshal(library)
+		if err != nil {
+			return "", err
+		}
+
+		if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), b, 0755); err != nil {
+			return "", err
+		}
 	}
-	if m.wantErrorMsg {
-		libraryBuilder.WriteString(",\"error\": \"simulated error message\"")
-	}
-	libraryBuilder.WriteString("}")
-	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureResponse), []byte(libraryBuilder.String()), 0755); err != nil {
-		return "", err
-	}
+
 	return "", m.configureErr
 }
 
@@ -175,21 +211,45 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 		return err
 	}
 
-	libraryStr := "{}"
+	library := &config.LibraryState{}
+	library.ID = request.LibraryID
 	if m.wantErrorMsg {
-		libraryStr = "{error: simulated error message}"
+		library.ErrorMessage = "simulated error message"
 	}
-	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), []byte(libraryStr), 0755); err != nil {
+	b, err := json.MarshalIndent(library, "", " ")
+	if err != nil {
 		return err
 	}
+
+	if err := os.WriteFile(filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateResponse), b, 0755); err != nil {
+		return err
+	}
+
 	if m.failGenerateForID != "" {
 		if request.LibraryID == m.failGenerateForID {
-			return m.generateErr
+			return m.generateErrForID
 		}
-		m.requestLibraryID = request.LibraryID
-		return nil
 	}
+
 	m.requestLibraryID = request.LibraryID
+	if m.wantLibraryGen {
+		for _, library := range request.State.Libraries {
+			if request.LibraryID != library.ID {
+				continue
+			}
+
+			for _, src := range library.SourceRoots {
+				srcPath := filepath.Join(request.Output, src)
+				if err := os.MkdirAll(srcPath, 0755); err != nil {
+					return err
+				}
+				if _, err := os.Create(filepath.Join(srcPath, "example.txt")); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return m.generateErr
 }
 
@@ -200,21 +260,25 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 
 type MockRepository struct {
 	gitrepo.Repository
-	Dir                             string
-	IsCleanValue                    bool
-	IsCleanError                    error
-	AddAllStatus                    git.Status
-	AddAllError                     error
-	CommitError                     error
-	RemotesValue                    []*git.Remote
-	RemotesError                    error
-	CommitCalls                     int
-	GetCommitsForPathsSinceTagValue []*gitrepo.Commit
-	GetCommitsForPathsSinceTagError error
-	ChangedFilesInCommitValue       []string
-	ChangedFilesInCommitError       error
-	CreateBranchAndCheckoutError    error
-	PushError                       error
+	Dir                                  string
+	IsCleanValue                         bool
+	IsCleanError                         error
+	AddAllStatus                         git.Status
+	AddAllError                          error
+	CommitError                          error
+	RemotesValue                         []*git.Remote
+	RemotesError                         error
+	CommitCalls                          int
+	GetCommitsForPathsSinceTagValue      []*gitrepo.Commit
+	GetCommitsForPathsSinceTagValueByTag map[string][]*gitrepo.Commit
+	GetCommitsForPathsSinceTagError      error
+	GetCommitsForPathsSinceLastGenValue  []*gitrepo.Commit
+	GetCommitsForPathsSinceLastGenError  error
+	ChangedFilesInCommitValue            []string
+	ChangedFilesInCommitValueByHash      map[string][]string
+	ChangedFilesInCommitError            error
+	CreateBranchAndCheckoutError         error
+	PushError                            error
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -251,12 +315,29 @@ func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName stri
 	if m.GetCommitsForPathsSinceTagError != nil {
 		return nil, m.GetCommitsForPathsSinceTagError
 	}
+	if m.GetCommitsForPathsSinceTagValueByTag != nil {
+		if commits, ok := m.GetCommitsForPathsSinceTagValueByTag[tagName]; ok {
+			return commits, nil
+		}
+	}
 	return m.GetCommitsForPathsSinceTagValue, nil
+}
+
+func (m *MockRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*gitrepo.Commit, error) {
+	if m.GetCommitsForPathsSinceLastGenError != nil {
+		return nil, m.GetCommitsForPathsSinceLastGenError
+	}
+	return m.GetCommitsForPathsSinceLastGenValue, nil
 }
 
 func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
 	if m.ChangedFilesInCommitError != nil {
 		return nil, m.ChangedFilesInCommitError
+	}
+	if m.ChangedFilesInCommitValueByHash != nil {
+		if files, ok := m.ChangedFilesInCommitValueByHash[hash]; ok {
+			return files, nil
+		}
 	}
 	return m.ChangedFilesInCommitValue, nil
 }

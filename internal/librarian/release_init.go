@@ -201,24 +201,9 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
-	changes := make([]*config.Change, 0)
-	for _, commit := range commits {
-		clNum := ""
-		if cl, ok := commit.Footers[KeyClNum]; ok {
-			clNum = cl
-		}
-
-		changeType := getChangeType(commit)
-		changes = append(changes, &config.Change{
-			Type:       changeType,
-			Subject:    commit.Description,
-			Body:       commit.Body,
-			ClNum:      clNum,
-			CommitHash: commit.SHA,
-		})
-	}
-	if len(changes) == 0 {
-		// Don't update the library at all
+	library.Changes = coerceLibraryChanges(commits)
+	if len(library.Changes) == 0 {
+		slog.Info("Skip releasing library since no eligible change is found", "library", library.ID)
 		return nil
 	}
 
@@ -226,9 +211,10 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 	if err != nil {
 		return err
 	}
-	library.Changes = changes
+
 	library.Version = nextVersion
 	library.ReleaseTriggered = true
+
 	return nil
 }
 
