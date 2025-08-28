@@ -21,7 +21,7 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     waitFor: ['-']
-    args: 
+    args:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
