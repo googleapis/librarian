@@ -115,6 +115,10 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 		allCommits = append(allCommits, commits...)
 	}
 
+	if len(allCommits) == 0 {
+		return "No commit is found since last generation", nil
+	}
+
 	startCommit, err := findLatestCommit(repo, state)
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
