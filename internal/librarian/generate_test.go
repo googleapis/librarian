@@ -1571,7 +1571,7 @@ func TestUpdateChangesSinceLastGeneration(t *testing.T) {
 			},
 		},
 		{
-			name:      "failed to get conventional commits",
+			name:      "empty last generated commit",
 			libraryID: "another-id",
 			libraries: []*config.LibraryState{
 				{
@@ -1579,6 +1579,44 @@ func TestUpdateChangesSinceLastGeneration(t *testing.T) {
 				},
 				{
 					ID: "another-id",
+					APIs: []*config.API{
+						{
+							Path: "api/one/path",
+						},
+						{
+							Path: "api/another/path",
+						},
+					},
+				},
+			},
+			repo: &MockRepository{
+				// Set this error to verify the function under test will not
+				// fetch the commits.
+				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
+			},
+			want: &config.LibraryState{
+				ID: "another-id",
+				APIs: []*config.API{
+					{
+						Path: "api/one/path",
+					},
+					{
+						Path: "api/another/path",
+					},
+				},
+				Changes: []*config.Change{},
+			},
+		},
+		{
+			name:      "failed to get conventional commits",
+			libraryID: "another-id",
+			libraries: []*config.LibraryState{
+				{
+					ID: "example-d",
+				},
+				{
+					ID:                  "another-id",
+					LastGeneratedCommit: "fake-sha",
 				},
 			},
 			repo: &MockRepository{

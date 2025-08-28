@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -41,6 +42,10 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 // GetConventionalCommitsSinceLastGeneration returns all conventional commits for
 // all API paths in given library since the last generation.
 func GetConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
+	if library.LastGeneratedCommit == "" {
+		slog.Info("the last generation commit is empty, skip fetching conventional commits", "library", library.ID)
+		return make([]*conventionalcommits.ConventionalCommit, 0), nil
+	}
 	apiPaths := make([]string, 0)
 	for _, oneAPI := range library.APIs {
 		apiPaths = append(apiPaths, oneAPI.Path)
