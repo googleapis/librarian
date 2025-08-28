@@ -54,6 +54,7 @@ var ignoredDirs = []string{
 	".git",
 	".idea",
 	".vscode",
+	"infra",
 	"testdata",
 }
 
