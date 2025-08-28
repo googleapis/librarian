@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -203,7 +204,18 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
 
-	if err := clean(repoDir, library.RemoveRegex, library.PreserveRegex); err != nil {
+	removePatterns := library.RemoveRegex
+	if len(removePatterns) == 0 {
+		slog.Info("remove_regex not provided, defaulting to source_roots")
+		removePatterns = make([]string, len(library.SourceRoots))
+		// For each SourceRoot, create a regex pattern to match the source root
+		// directory itself, and any file or subdirectory within it.
+		for i, root := range library.SourceRoots {
+			removePatterns[i] = fmt.Sprintf("^%s(/.*)?$", regexp.QuoteMeta(root))
+		}
+	}
+
+	if err := clean(repoDir, removePatterns, library.PreserveRegex); err != nil {
 		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
 	}
 

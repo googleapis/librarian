@@ -121,22 +121,16 @@ func TestFindServiceConfigIn(t *testing.T) {
 			want: "service_config.yaml",
 		},
 		{
-			name:    "non existed source path",
-			path:    filepath.Join("..", "..", "testdata", "non-existed-path"),
+			name:    "non-existent source path",
+			path:    filepath.Join("..", "..", "testdata", "non-existent-path"),
 			want:    "",
 			wantErr: true,
 		},
 		{
-			name:    "non service config in a source path",
+			name:    "no service config in a source path",
 			path:    filepath.Join("..", "..", "testdata", "no_service_config"),
 			want:    "",
-			wantErr: true,
-		},
-		{
-			name:    "simulated load error",
-			path:    filepath.Join("..", "..", "testdata", "no_service_config"),
-			want:    "",
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name:    "invalid yaml",

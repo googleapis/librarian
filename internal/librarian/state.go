@@ -146,7 +146,8 @@ func findServiceConfigIn(path string) (string, error) {
 		}
 	}
 
-	return "", errors.New("could not find service config in " + path)
+	// No service config present: assume it's proto-only.
+	return "", nil
 }
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {

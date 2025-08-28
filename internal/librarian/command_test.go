@@ -278,14 +278,16 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 func TestCleanAndCopyLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name        string
-		libraryID   string
-		state       *config.LibrarianState
-		repo        gitrepo.Repository
-		outputDir   string
-		setup       func(t *testing.T, outputDir string)
-		wantErr     bool
-		errContains string
+		name         string
+		libraryID    string
+		state        *config.LibrarianState
+		repo         gitrepo.Repository
+		outputDir    string
+		setup        func(t *testing.T, repoDir, outputDir string)
+		wantErr      bool
+		errContains  string
+		shouldCopy   []string
+		shouldDelete []string
 	}{
 		{
 			name:      "library not found",
@@ -330,7 +332,7 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				},
 			},
 			repo: newTestGitRepo(t),
-			setup: func(t *testing.T, outputDir string) {
+			setup: func(t *testing.T, repoDir, outputDir string) {
 				// Create a symlink in the output directory to trigger an error.
 				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
 					t.Fatalf("os.Symlink() = %v", err)
@@ -339,13 +341,59 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 			wantErr:     true,
 			errContains: "failed to copy",
 		},
+		{
+			name:      "empty RemoveRegex defaults to source root",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "some-library",
+						SourceRoots: []string{"a/path"},
+					},
+				},
+			},
+			repo: newTestGitRepo(t),
+			setup: func(t *testing.T, repoDir, outputDir string) {
+				// Create a stale file in the repo directory to test cleaning.
+				staleFile := filepath.Join(repoDir, "a/path/stale.txt")
+				if err := os.MkdirAll(filepath.Dir(staleFile), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(staleFile); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create generated files in the output directory.
+				filesToCreate := []string{
+					"a/path/new_generated_file_to_copy.txt",
+					"skipped/path/example.txt",
+				}
+				for _, relPath := range filesToCreate {
+					fullPath := filepath.Join(outputDir, relPath)
+					if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+						t.Fatal(err)
+					}
+					if _, err := os.Create(fullPath); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			shouldCopy: []string{
+				"a/path/new_generated_file_to_copy.txt",
+			},
+			shouldDelete: []string{
+				"skipped/path/example.txt",
+				"a/path/stale.txt",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			repoDir := test.repo.GetDir()
 			outputDir := t.TempDir()
 			if test.setup != nil {
-				test.setup(t, outputDir)
+				test.setup(t, repoDir, outputDir)
 			}
-			err := cleanAndCopyLibrary(test.state, test.repo.GetDir(), test.libraryID, outputDir)
+			err := cleanAndCopyLibrary(test.state, repoDir, test.libraryID, outputDir)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -358,6 +406,20 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			for _, file := range test.shouldCopy {
+				fullPath := filepath.Join(repoDir, file)
+				if _, err := os.Stat(fullPath); err != nil {
+					t.Errorf("file %s is not copied to %s", file, repoDir)
+				}
+			}
+
+			for _, file := range test.shouldDelete {
+				fullPath := filepath.Join(repoDir, file)
+				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+					t.Errorf("file %s should not be copied to %s", file, repoDir)
+				}
 			}
 		})
 	}
