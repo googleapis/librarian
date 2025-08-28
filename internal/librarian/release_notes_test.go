@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -111,9 +112,25 @@ END_NESTED_COMMIT
 END_COMMIT_OVERRIDE`,
 				librarianVersion, "go:1.21"),
 		},
+		{
+			name: "failed to get conventional commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "one-library",
+						LastGeneratedCommit: "1234567890",
+					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
+			},
+			wantErr:       true,
+			wantErrPhrase: "failed to fetch conventional commits for library",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got, err := formatGenerationPRBody(test.repo, test.state)
 			if test.wantErr {
 				if err == nil {
