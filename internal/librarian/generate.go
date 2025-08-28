@@ -219,7 +219,7 @@ func (r *generateRunner) needsConfigure() bool {
 func (r *generateRunner) updateChangesSinceLastGeneration(libraryID string) error {
 	for _, library := range r.state.Libraries {
 		if library.ID == libraryID {
-			commits, err := GetConventionalCommitsSinceLastGeneration(r.repo, library)
+			commits, err := GetConventionalCommitsSinceLastGeneration(r.sourceRepo, library)
 			if err != nil {
 				return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 			}
