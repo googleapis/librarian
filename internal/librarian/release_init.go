@@ -61,6 +61,7 @@ func init() {
 	addFlagLibrary(fs, cfg)
 	addFlagLibraryVersion(fs, cfg)
 	addFlagRepo(fs, cfg)
+	addFlagWorkRoot(fs, cfg)
 }
 
 type initRunner struct {
