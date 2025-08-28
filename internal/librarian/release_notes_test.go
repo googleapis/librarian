@@ -29,6 +29,111 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+func TestFormatGenerationPRBody(t *testing.T) {
+	t.Parallel()
+
+	today := time.Now()
+	hash1 := plumbing.NewHash("1234567890abcdef")
+	hash2 := plumbing.NewHash("fedcba0987654321")
+	librarianVersion := cli.Version()
+
+	for _, test := range []struct {
+		name          string
+		state         *config.LibrarianState
+		repo          gitrepo.Repository
+		want          string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "single library generation",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "one-library",
+						LastGeneratedCommit: "1234567890",
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234567890": {
+						{
+							Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
+							Hash:    hash1,
+							When:    today,
+						},
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash1.String(): {
+						"path/to/file",
+						"path/to/another/file",
+					},
+					hash2.String(): {
+						"path/to/file",
+					},
+				},
+			},
+			want: fmt.Sprintf(`This pull request is generated with proto changes between
+[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890abcdef000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s
+
+BEGIN_COMMIT_OVERRIDE
+BEGIN_NESTED_COMMIT
+fix: [one-library] a bug fix
+This is another body.
+
+PiperOrigin-RevId: 573342
+
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+END_NESTED_COMMIT
+BEGIN_NESTED_COMMIT
+feat: [one-library] new feature
+This is body.
+
+PiperOrigin-RevId: 98765
+
+Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890abcdef000000000000000000000000)
+END_NESTED_COMMIT
+END_COMMIT_OVERRIDE`,
+				librarianVersion, "go:1.21"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := formatGenerationPRBody(test.repo, test.state)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("formatGenerationPRBody() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("formatGenerationPRBody() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFormatReleaseNotes(t *testing.T) {
 	t.Parallel()
 
@@ -222,7 +327,7 @@ Language Image: go:1.21
 					t.Errorf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("FormatReleaseNotes() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+					t.Errorf("formatReleaseNotes() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
 				}
 				return
 			}
@@ -230,7 +335,7 @@ Language Image: go:1.21
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantReleaseNote, got); diff != "" {
-				t.Errorf("FormatReleaseNotes() mismatch (-want +got):\n%s", diff)
+				t.Errorf("formatReleaseNotes() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

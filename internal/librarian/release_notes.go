@@ -81,8 +81,7 @@ var (
 {{- end -}}
 {{- end -}}`))
 
-	bodyPrefix = `
-This pull request is generated with proto changes between
+	bodyPrefix = `This pull request is generated with proto changes between
 [googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
 (exclusive) and
 [googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
@@ -91,20 +90,21 @@ This pull request is generated with proto changes between
 Librarian Version: %s
 Language Image: %s
 
-BEGIN_COMMIT_OVERRIDE`
-	commitTemplate = `
-BEGIN_NESTED_COMMIT
-%s: [%s] {%s}
+BEGIN_COMMIT_OVERRIDE
+`
+	commitTemplate = `BEGIN_NESTED_COMMIT
+%s: [%s] %s
 %s
 
 PiperOrigin-RevId: %s
 
 Source-link: [googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
-END_NESTED_COMMIT`
+END_NESTED_COMMIT
+`
 )
 
 func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
-	allCommits := make([]*conventionalcommits.ConventionalCommit, 10)
+	allCommits := make([]*conventionalcommits.ConventionalCommit, 0)
 	for _, library := range state.Libraries {
 		commits, err := GetConventionalCommitsSinceLastGeneration(repo, library)
 		if err != nil {
@@ -136,7 +136,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 			fmt.Sprintf(
 				commitTemplate,
 				commit.Type,
-				"",
+				commit.LibraryID,
 				commit.Description,
 				commit.Body,
 				commit.Footers[keyClNum],
