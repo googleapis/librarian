@@ -750,6 +750,7 @@ func TestGenerateScenarios(t *testing.T) {
 			build:             true,
 			wantGenerateCalls: 1,
 			wantErr:           true,
+			wantErrMsg:        "failed to make output directory",
 		},
 		{
 			name: "generate error",
@@ -871,6 +872,17 @@ func TestGenerateScenarios(t *testing.T) {
 			data := []byte("type: google.api.Service")
 			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
+			}
+
+			// Create a symlink in the output directory to trigger an error.
+			if test.name == "symlink in output" {
+				outputDir := filepath.Join(r.workRoot, "output")
+				if err := os.MkdirAll(outputDir, 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
+					t.Fatalf("os.Symlink() = %v", err)
+				}
 			}
 
 			err := r.run(context.Background())
