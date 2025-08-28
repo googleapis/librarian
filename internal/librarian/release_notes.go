@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -148,6 +149,33 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	}
 	builder.WriteString("END_COMMIT_OVERRIDE")
 	return builder.String(), nil
+}
+
+// findLatestCommit returns the latest commit among the last generated commit
+// of all the libraries.
+// A libray is skipped if the last generated commit is empty.
+//
+// Note that it is possible that the returned commit is nil.
+func findLatestCommit(repo gitrepo.Repository, state *config.LibrarianState) (*gitrepo.Commit, error) {
+	latest := time.UnixMilli(0) // the earliest timestamp.
+	var res *gitrepo.Commit
+	for _, library := range state.Libraries {
+		commitHash := library.LastGeneratedCommit
+		if commitHash == "" {
+			slog.Info("skip getting last generated commit", "library", library.ID)
+			continue
+		}
+		commit, err := repo.GetCommit(commitHash)
+		if err != nil {
+			return nil, fmt.Errorf("can't find last generated commit for %s: %w", library.ID, err)
+		}
+		if latest.Before(commit.When) {
+			latest = commit.When
+			res = commit
+		}
+	}
+
+	return res, nil
 }
 
 // formatReleaseNotes generates the body for a release pull request.
