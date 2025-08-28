@@ -39,6 +39,7 @@ type Repository interface {
 	GetDir() string
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
+	GetCommit(commitHash string) (*Commit, error)
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
@@ -225,6 +226,20 @@ func (r *LocalRepository) GetDir() string {
 	return r.Dir
 }
 
+// GetCommit returns a commit for the given commit hash.
+func (r *LocalRepository) GetCommit(commitHash string) (*Commit, error) {
+	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Commit{
+		Hash:    commit.Hash,
+		Message: commit.Message,
+		When:    commit.Author.When,
+	}, nil
+}
+
 // GetCommitsForPathsSinceTag returns all commits since tagName that contains
 // files in paths.
 //
@@ -409,7 +424,7 @@ func (r *LocalRepository) Push(branchName string) error {
 	if r.gitPassword != "" {
 		slog.Info("Authenticating with basic auth")
 		auth = &httpAuth.BasicAuth{
-			// GitHub authentication needs the username set to a non-empty value, but
+			// GitHub's authentication needs the username set to a non-empty value, but
 			// it does not need to match the token
 			Username: "cloud-sdk-librarian",
 			Password: r.gitPassword,
