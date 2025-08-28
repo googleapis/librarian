@@ -1,0 +1,8 @@
+image: gcr.io/chingor-test/librarian-release:latest
+libraries:
+- id: librarian
+  version: 0.1.1
+  last_generated_commit: 97a83d76a09a7f6dcab43675c87bdfeb5bcf1cb5
+  source_roots:
+    - "internal"
+  tag_format: "v{version}"
