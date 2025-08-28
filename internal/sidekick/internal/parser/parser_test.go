@@ -19,18 +19,56 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
 var (
-	testdataDir, _ = filepath.Abs("../../testdata")
+	testdataDir, _            = filepath.Abs("../../testdata")
+	discoSourceFile           = path.Join(testdataDir, "disco/compute.v1.json")
+	secretManagerYamlRelative = "google/cloud/secretmanager/v1/secretmanager_v1.yaml"
+	secretManagerYamlFullPath = path.Join(testdataDir, "googleapis", secretManagerYamlRelative)
 )
+
+func TestCreateModelDisco(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "disco",
+			ServiceConfig:       secretManagerYamlFullPath,
+			SpecificationSource: discoSourceFile,
+		},
+	}
+	got, err := CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantName := "secretmanager"
+	wantTitle := "Secret Manager API"
+	wantDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
+	wantPackageName := "google.cloud.secretmanager.v1"
+	if got.Name != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	}
+	if got.Title != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	}
+	if diff := cmp.Diff(got.Description, wantDescription); diff != "" {
+		t.Errorf("description mismatch (-want, +got):\n%s", diff)
+	}
+	if got.PackageName != wantPackageName {
+		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName)
+	}
+	wantMessage := ".google.cloud.secretmanager.v1.ZoneSetPolicyRequest"
+	if _, ok := got.State.MessageByID[wantMessage]; !ok {
+		t.Errorf("missing message %s in MessageByID index", wantMessage)
+	}
+}
 
 func TestCreateModelOpenAPI(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
-			ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+			ServiceConfig:       secretManagerYamlFullPath,
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
 	}
@@ -50,7 +88,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			ServiceConfig:       secretManagerYamlRelative,
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
@@ -73,7 +111,7 @@ func TestCreateModelOverrides(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			ServiceConfig:       secretManagerYamlRelative,
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
@@ -108,7 +146,7 @@ func TestCreateModelNone(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "none",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			ServiceConfig:       secretManagerYamlRelative,
 			SpecificationSource: "none",
 		},
 		Source: map[string]string{
@@ -124,5 +162,44 @@ func TestCreateModelNone(t *testing.T) {
 	}
 	if model != nil {
 		t.Errorf("expected `nil` model with source format == none")
+	}
+}
+
+func TestCreateModelUnknown(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "--unknown--",
+			ServiceConfig:       secretManagerYamlRelative,
+			SpecificationSource: "none",
+		},
+		Source: map[string]string{
+			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"name-override":        "Name Override",
+			"title-override":       "Title Override",
+			"description-override": "Description Override",
+		},
+	}
+	if got, err := CreateModel(cfg); err == nil {
+		t.Errorf("expected error with unknown specification format, got=%v", got)
+	}
+}
+
+func TestCreateModelBadParse(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "openapi",
+			ServiceConfig:       secretManagerYamlRelative,
+			// Note the mismatch between the format and the file contents.
+			SpecificationSource: discoSourceFile,
+		},
+		Source: map[string]string{
+			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"name-override":        "Name Override",
+			"title-override":       "Title Override",
+			"description-override": "Description Override",
+		},
+	}
+	if got, err := CreateModel(cfg); err == nil {
+		t.Errorf("expected error with bad specification, got=%v", got)
 	}
 }

@@ -28,6 +28,8 @@ func CreateModel(config *config.Config) (*api.API, error) {
 	var err error
 	var model *api.API
 	switch config.General.SpecificationFormat {
+	case "disco":
+		model, err = ParseDisco(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
 	case "openapi":
 		model, err = ParseOpenAPI(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
 	case "protobuf":
