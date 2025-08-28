@@ -269,6 +269,8 @@ type MockRepository struct {
 	RemotesValue                           []*git.Remote
 	RemotesError                           error
 	CommitCalls                            int
+	GetCommitError                         error
+	GetCommitValue                         *gitrepo.Commit
 	GetCommitsForPathsSinceTagValue        []*gitrepo.Commit
 	GetCommitsForPathsSinceTagValueByTag   map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceTagError        error
@@ -311,6 +313,14 @@ func (m *MockRepository) Remotes() ([]*git.Remote, error) {
 
 func (m *MockRepository) GetDir() string {
 	return m.Dir
+}
+
+func (m *MockRepository) GetCommit(commitHash string) (*gitrepo.Commit, error) {
+	if m.GetCommitError != nil {
+		return nil, m.GetCommitError
+	}
+
+	return m.GetCommitValue, nil
 }
 
 func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*gitrepo.Commit, error) {
