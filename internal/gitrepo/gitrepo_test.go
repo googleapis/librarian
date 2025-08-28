@@ -15,13 +15,14 @@
 package gitrepo
 
 import (
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/go-git/go-git/v5"
 	goGitConfig "github.com/go-git/go-git/v5/config"
