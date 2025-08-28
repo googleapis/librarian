@@ -59,7 +59,7 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 		if shouldExclude(files, library.ReleaseExcludePaths) {
 			continue
 		}
-		parsedCommits, err := conventionalcommits.ParseCommits(commit.Message, commit.Hash.String(), commit.When)
+		parsedCommits, err := conventionalcommits.ParseCommits(commit, library.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}

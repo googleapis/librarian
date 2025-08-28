@@ -15,6 +15,8 @@
 package conventionalcommits
 
 import (
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/googleapis/librarian/internal/gitrepo"
 	"strings"
 	"testing"
 	"time"
@@ -24,6 +26,7 @@ import (
 
 func TestParseCommits(t *testing.T) {
 	now := time.Now()
+	sha := plumbing.NewHash("fake-sha")
 	tests := []struct {
 		name          string
 		message       string
@@ -38,9 +41,10 @@ func TestParseCommits(t *testing.T) {
 				{
 					Type:        "feat",
 					Description: "add new feature",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers:     make(map[string]string),
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -53,9 +57,10 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Scope:       "scope",
 					Description: "add new feature",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers:     make(map[string]string),
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -67,10 +72,11 @@ func TestParseCommits(t *testing.T) {
 				{
 					Type:        "feat",
 					Description: "add new feature",
+					LibraryID:   "example-id",
 					IsBreaking:  true,
 					IsNested:    false,
 					Footers:     make(map[string]string),
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -82,9 +88,10 @@ func TestParseCommits(t *testing.T) {
 				{
 					Type:        "feat",
 					Description: "add new feature",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers:     map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -96,12 +103,13 @@ func TestParseCommits(t *testing.T) {
 				{
 					Type:        "feat",
 					Description: "add new feature",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers: map[string]string{
 						"Co-authored-by": "John Doe <john.doe@example.com>",
 						"Reviewed-by":    "Jane Smith <jane.smith@example.com>",
 					},
-					SHA:  "fake-sha",
+					SHA:  sha.String(),
 					When: now,
 				},
 			},
@@ -114,13 +122,14 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "[library-name] add new feature",
 					Body:        "This is the body.\n...",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					IsBreaking:  false,
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "piper_cl_number",
 						"Source-Link":       "[googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})",
 					},
-					SHA:  "fake-sha",
+					SHA:  sha.String(),
 					When: now,
 				},
 			},
@@ -133,10 +142,11 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					Body:        "",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					IsBreaking:  true,
 					Footers:     map[string]string{"BREAKING CHANGE": "this is a breaking change"},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -149,10 +159,11 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					Body:        "Breaking change: this is a breaking change",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					IsBreaking:  false,
 					Footers:     map[string]string{},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -165,9 +176,10 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					Body:        "This is the body of the commit message.\nIt can span multiple lines.",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers:     map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -180,10 +192,11 @@ func TestParseCommits(t *testing.T) {
 					Type:        "feat",
 					Description: "add new feature",
 					Body:        "This is the body.",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					IsBreaking:  true,
 					Footers:     map[string]string{"BREAKING CHANGE": "this is a breaking change\nthat spans multiple lines."},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -205,9 +218,10 @@ END_COMMIT_OVERRIDE`,
 					Scope:       "override",
 					Description: "this is the override message",
 					Body:        "This is the body of the override.",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers:     map[string]string{"Reviewed-by": "Jane Doe"},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -244,9 +258,10 @@ END_NESTED_COMMIT
 					Scope:       "parser",
 					Description: "main feature",
 					Body:        "main commit body",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers:     map[string]string{},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 				{
@@ -254,9 +269,10 @@ END_NESTED_COMMIT
 					Scope:       "sub",
 					Description: "fix a bug",
 					Body:        "some details for the fix",
+					LibraryID:   "example-id",
 					IsNested:    true,
 					Footers:     map[string]string{},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 				{
@@ -264,9 +280,10 @@ END_NESTED_COMMIT
 					Scope:       "deps",
 					Description: "update deps",
 					Body:        "",
+					LibraryID:   "example-id",
 					IsNested:    true,
 					Footers:     map[string]string{},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -286,9 +303,10 @@ END_NESTED_COMMIT
 					Scope:       "parser",
 					Description: "main feature",
 					Body:        "main commit body",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers:     map[string]string{},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -330,9 +348,10 @@ END_COMMIT_OVERRIDE
 					Type:        "feat",
 					Description: "[abc] nested commit 1",
 					Body:        "body of nested commit 1\n...",
+					LibraryID:   "example-id",
 					IsNested:    true,
 					Footers:     map[string]string{"PiperOrigin-RevId": "123456", "Source-link": "fake-link"},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 				{
@@ -340,8 +359,9 @@ END_COMMIT_OVERRIDE
 					Description: "[abc] nested commit 2",
 					IsNested:    true,
 					Body:        "body of nested commit 2\n...",
+					LibraryID:   "example-id",
 					Footers:     map[string]string{"PiperOrigin-RevId": "654321", "Source-link": "fake-link"},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -366,9 +386,10 @@ END_NESTED_COMMIT`,
 					Scope:       "override",
 					Description: "this is the override message",
 					Body:        "This is the body of the override.",
+					LibraryID:   "example-id",
 					IsNested:    false,
 					Footers:     map[string]string{"Reviewed-by": "Jane Doe"},
-					SHA:         "fake-sha",
+					SHA:         sha.String(),
 					When:        now,
 				},
 			},
@@ -376,7 +397,12 @@ END_NESTED_COMMIT`,
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := ParseCommits(test.message, "fake-sha", now)
+			commit := &gitrepo.Commit{
+				Message: test.message,
+				Hash:    plumbing.NewHash("fake-sha"),
+				When:    now,
+			}
+			got, err := ParseCommits(commit, "example-id")
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
