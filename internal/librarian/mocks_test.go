@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -270,7 +271,7 @@ type MockRepository struct {
 	RemotesError                           error
 	CommitCalls                            int
 	GetCommitError                         error
-	GetCommitValue                         *gitrepo.Commit
+	GetCommitByHash                        map[string]*gitrepo.Commit
 	GetCommitsForPathsSinceTagValue        []*gitrepo.Commit
 	GetCommitsForPathsSinceTagValueByTag   map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceTagError        error
@@ -320,7 +321,13 @@ func (m *MockRepository) GetCommit(commitHash string) (*gitrepo.Commit, error) {
 		return nil, m.GetCommitError
 	}
 
-	return m.GetCommitValue, nil
+	if m.GetCommitByHash != nil {
+		if commit, ok := m.GetCommitByHash[commitHash]; ok {
+			return commit, nil
+		}
+	}
+
+	return nil, errors.New("should not reach here")
 }
 
 func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*gitrepo.Commit, error) {

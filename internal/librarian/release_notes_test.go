@@ -154,17 +154,61 @@ END_COMMIT_OVERRIDE`,
 func TestFindLatestCommit(t *testing.T) {
 	t.Parallel()
 
-	//today := time.Now()
-	//hash1 := plumbing.NewHash("1234567890abcdef")
-	//hash2 := plumbing.NewHash("fedcba0987654321")
+	today := time.Now()
+	hash1 := plumbing.NewHash("1234567890abcdef")
+	hash2 := plumbing.NewHash("fedcba0987654321")
+	hash3 := plumbing.NewHash("ghfgsfgshfsdf232")
 	for _, test := range []struct {
 		name          string
 		state         *config.LibrarianState
 		repo          gitrepo.Repository
-		want          string
+		want          *gitrepo.Commit
 		wantErr       bool
 		wantErrPhrase string
 	}{
+		{
+			name: "find the last generated commit",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "one-library",
+						LastGeneratedCommit: hash1.String(),
+					},
+					{
+						ID:                  "another-library",
+						LastGeneratedCommit: hash2.String(),
+					},
+					{
+						ID:                  "yet-another-library",
+						LastGeneratedCommit: hash3.String(),
+					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitByHash: map[string]*gitrepo.Commit{
+					hash1.String(): {
+						Hash:    hash1,
+						Message: "this is a message",
+						When:    today.Add(time.Hour),
+					},
+					hash2.String(): {
+						Hash:    hash2,
+						Message: "this is another message",
+						When:    today.Add(2 * time.Hour).Add(time.Minute),
+					},
+					hash3.String(): {
+						Hash:    hash3,
+						Message: "yet another message",
+						When:    today.Add(2 * time.Hour),
+					},
+				},
+			},
+			want: &gitrepo.Commit{
+				Hash:    hash2,
+				Message: "this is another message",
+				When:    today.Add(2 * time.Hour).Add(time.Minute),
+			},
+		},
 		{
 			name: "failed to find last generated commit",
 			state: &config.LibrarianState{
