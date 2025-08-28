@@ -1615,7 +1615,8 @@ func TestUpdateChangesSinceLastGeneration(t *testing.T) {
 					ID: "example-d",
 				},
 				{
-					ID: "another-id",
+					ID:                  "another-id",
+					LastGeneratedCommit: "fake-sha",
 				},
 			},
 			repo: &MockRepository{
