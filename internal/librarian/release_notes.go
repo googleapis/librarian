@@ -114,11 +114,20 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 		}
 		allCommits = append(allCommits, commits...)
 	}
+
+	startCommit, err := findLatestCommit(repo, state)
+	if err != nil {
+		return "", fmt.Errorf("failed to find the start commit: %w", err)
+	}
+	startSHA := "place holder"
+	if startCommit != nil {
+		startSHA = startCommit.Hash.String()
+	}
+
 	// Sort the slice by commit time in reverse order.
 	sort.Slice(allCommits, func(i, j int) bool {
 		return allCommits[i].When.After(allCommits[j].When)
 	})
-	startSHA := allCommits[len(allCommits)-1].SHA
 	endSHA := allCommits[0].SHA
 	librarianVersion := cli.Version()
 	var builder strings.Builder
@@ -173,6 +182,10 @@ func findLatestCommit(repo gitrepo.Repository, state *config.LibrarianState) (*g
 			latest = commit.When
 			res = commit
 		}
+	}
+
+	if res == nil {
+		slog.Warn("no library has non-empty last generated commit")
 	}
 
 	return res, nil

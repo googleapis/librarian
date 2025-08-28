@@ -59,6 +59,12 @@ func TestFormatGenerationPRBody(t *testing.T) {
 			},
 			repo: &MockRepository{
 				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitByHash: map[string]*gitrepo.Commit{
+					"1234567890": {
+						Hash: plumbing.NewHash("1234567890"),
+						When: time.UnixMilli(200),
+					},
+				},
 				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
 					"1234567890": {
 						{
@@ -84,7 +90,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				},
 			},
 			want: fmt.Sprintf(`This pull request is generated with proto changes between
-[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890abcdef000000000000000000000000)
+[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
 (exclusive) and
 [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 (inclusive).
