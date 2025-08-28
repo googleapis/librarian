@@ -104,20 +104,33 @@ func TestCleanAndCopy(t *testing.T) {
 	)
 	// create a temp directory for writing files, so we don't have to create testdata files.
 	repoInitDir := t.TempDir()
-	// create a file that should be removed.
-	if err := os.WriteFile(filepath.Join(repoInitDir, "file_to_remove.txt"), []byte("remove me"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	// create a directory with 2 files, on of them should be preserved.
+
+	// within the source root, create a file to be removed,
+	// then create a sub dir with 2 files, on of them should be preserved.
 	if err := os.MkdirAll(filepath.Join(repoInitDir, "sub"), 0755); err != nil {
+
+	pubsubDir := filepath.Join(repoInitDir, "pubsub")
+	if err := os.MkdirAll(filepath.Join(pubsubDir, "sub"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(repoInitDir, "sub", "file_to_preserve.txt"), []byte("preserve me"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(pubsubDir, "file_to_remove.txt"), []byte("remove me"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(repoInitDir, "sub", "file_to_remove_in_sub.txt"), []byte("remove me"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(pubsubDir, "sub", "file_to_preserve.txt"), []byte("preserve me"), 0644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(pubsubDir, "sub", "another_file_to_remove.txt"), []byte("remove me"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a file outside the source root to ensure it's not touched.
+	otherDir := filepath.Join(repoInitDir, "other_dir")
+	if err := os.MkdirAll(otherDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(otherDir, "file_to_keep.txt"), []byte("keep me"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	// create a state file with remove and preserve regex.
 	state := &config.LibrarianState{
 		Image: "test-image:latest",
@@ -130,13 +143,13 @@ func TestCleanAndCopy(t *testing.T) {
 						Path: "google/cloud/pubsub/v1",
 					},
 				},
-				SourceRoots: []string{"cloud.google.com/go/pubsub"},
+				SourceRoots: []string{"pubsub"},
 				RemoveRegex: []string{
-					"file_to_remove.txt",
-					"^sub/.*.txt",
+					"pubsub/file_to_remove.txt",
+					"^pubsub/sub/.*.txt",
 				},
 				PreserveRegex: []string{
-					"sub/file_to_preserve.txt",
+					"pubsub/sub/file_to_preserve.txt",
 				},
 			},
 		},
@@ -178,21 +191,25 @@ func TestCleanAndCopy(t *testing.T) {
 		t.Fatalf("librarian generate command error = %v", err)
 	}
 
-	// check that the file to remove is gone.
-	if _, err := os.Stat(filepath.Join(repo, "file_to_remove.txt")); !os.IsNotExist(err) {
-		t.Errorf("file_to_remove.txt should have been removed")
+	// Check that the file to remove is gone.
+	if _, err := os.Stat(filepath.Join(repo, "pubsub", "file_to_remove.txt")); !os.IsNotExist(err) {
+		t.Errorf("pubsub/file_to_remove.txt should have been removed")
 	}
-	// check that the file to preserve is still there.
-	if _, err := os.Stat(filepath.Join(repo, "sub", "file_to_preserve.txt")); os.IsNotExist(err) {
-		t.Errorf("sub/file_to_preserve.txt should have been preserved")
+	// Check that the other file to remove is gone.
+	if _, err := os.Stat(filepath.Join(repo, "pubsub", "sub", "another_file_to_remove.txt")); !os.IsNotExist(err) {
+		t.Errorf("pubsub/sub/another_file_to_remove.txt should have been removed")
 	}
-	// check that the file to remove is gone.
-	if _, err := os.Stat(filepath.Join(repo, "sub", "file_to_remove_in_sub.txt")); !os.IsNotExist(err) {
-		t.Errorf("sub/file_to_remove_in_sub.txt should have been removed")
+	// Check that the file to preserve is still there.
+	if _, err := os.Stat(filepath.Join(repo, "pubsub", "sub", "file_to_preserve.txt")); os.IsNotExist(err) {
+		t.Errorf("pubsub/sub/file_to_preserve.txt should have been preserved")
+	}
+	// Check that the file outside the source root is still there.
+	if _, err := os.Stat(filepath.Join(repo, "other_dir", "file_to_keep.txt")); os.IsNotExist(err) {
+		t.Errorf("other_dir/file_to_keep.txt should have been preserved")
 	}
 	// check that the new files are copied. The fake generator creates a file called "example.txt".
-	if _, err := os.Stat(filepath.Join(repo, "cloud.google.com/go/pubsub", "example.txt")); os.IsNotExist(err) {
-		t.Errorf("example.txt should have been copied")
+	if _, err := os.Stat(filepath.Join(repo, "pubsub", "example.txt")); os.IsNotExist(err) {
+		t.Errorf("pubsub/example.txt should have been copied")
 	}
 }
 
