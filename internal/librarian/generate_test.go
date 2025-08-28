@@ -17,16 +17,17 @@ package librarian
 import (
 	"context"
 	"errors"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/gitrepo"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestRunGenerateCommand(t *testing.T) {
