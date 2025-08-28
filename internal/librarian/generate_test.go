@@ -1480,3 +1480,57 @@ func TestCompileRegexps(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateChangesSinceLastGeneration(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		libraryID  string
+		libraries  []*config.LibraryState
+		repo       gitrepo.Repository
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:      "failed to get conventional commits",
+			libraryID: "another-id",
+			libraries: []*config.LibraryState{
+				{
+					ID: "example-d",
+				},
+				{
+					ID: "another-id",
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch conventional commits for library",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &generateRunner{
+				sourceRepo: test.repo,
+				state: &config.LibrarianState{
+					Libraries: test.libraries,
+				},
+			}
+			err := runner.updateChangesSinceLastGeneration(test.libraryID)
+			if test.wantErr {
+				if err == nil {
+					t.Error("updateChangesSinceLastGeneration() should fail")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("updateChangesSinceLastGeneration() failed: %q", err)
+			}
+		})
+	}
+}
