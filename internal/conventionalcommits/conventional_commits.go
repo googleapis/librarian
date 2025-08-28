@@ -16,11 +16,12 @@ package conventionalcommits
 
 import (
 	"fmt"
-	"github.com/googleapis/librarian/internal/gitrepo"
 	"log/slog"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 // ConventionalCommit represents a parsed conventional commit message.
