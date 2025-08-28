@@ -1536,7 +1536,7 @@ func TestUpdateChangesSinceLastGeneration(t *testing.T) {
 						"api/another/path/example.txt",
 					},
 					hash2.String(): {
-						"api/one//path/another-file.txt",
+						"api/one/path/another-file.txt",
 						"api/another/path/another-example.txt",
 					},
 				},
