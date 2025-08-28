@@ -190,12 +190,16 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	// libraries interfering with each other, and makes it easier to see what
 	// was generated for each library when debugging.
 	libraryOutputDir := filepath.Join(outputDir, libraryID)
-	if err := os.Mkdir(libraryOutputDir, 0755); err != nil {
+	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
 		return err
 	}
 
 	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, libraryOutputDir)
 	if err != nil {
+		return err
+	}
+
+	if err := r.updateChangesSinceLastGeneration(generatedLibraryID); err != nil {
 		return err
 	}
 
@@ -210,6 +214,21 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 
 func (r *generateRunner) needsConfigure() bool {
 	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
+}
+
+func (r *generateRunner) updateChangesSinceLastGeneration(libraryID string) error {
+	for _, library := range r.state.Libraries {
+		if library.ID == libraryID {
+			commits, err := GetConventionalCommitsSinceLastGeneration(r.repo, library)
+			if err != nil {
+				return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+			}
+			library.Changes = coerceLibraryChanges(commits)
+			break
+		}
+	}
+
+	return nil
 }
 
 func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error {

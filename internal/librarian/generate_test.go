@@ -529,26 +529,194 @@ func TestNewGenerateRunner(t *testing.T) {
 	}
 }
 
-func TestGenerateRun(t *testing.T) {
+func TestGenerateScenarios(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name                  string
-		api                   string
-		library               string
-		repo                  gitrepo.Repository
-		state                 *config.LibrarianState
-		container             *mockContainerClient
-		ghClient              GitHubClient
-		build                 bool
-		wantErr               bool
-		wantGenerateCalls     int
-		wantGenerateLibraryID string
-		wantBuildCalls        int
-		wantConfigureCalls    int
+		name               string
+		api                string
+		library            string
+		repo               gitrepo.Repository
+		state              *config.LibrarianState
+		container          *mockContainerClient
+		ghClient           GitHubClient
+		build              bool
+		wantErr            bool
+		wantErrMsg         string
+		wantGenerateCalls  int
+		wantBuildCalls     int
+		wantConfigureCalls int
 	}{
 		{
-			name: "re-generation with API",
+			name:    "generate single library including initial configuration",
+			api:     "some/api",
+			library: "some-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+				configureLibraryPaths: []string{
+					"src/a",
+				},
+			},
+			ghClient:           &mockGitHubClient{},
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 1,
+		},
+		{
+			name:    "generate single existing library by library id",
+			library: "some-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:           &mockGitHubClient{},
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 0,
+		},
+		{
+			name: "generate single existing library by api",
 			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:           &mockGitHubClient{},
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 0,
+		},
+		{
+			name:    "generate single existing library with library id and api",
+			api:     "some/api",
+			library: "some-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:           &mockGitHubClient{},
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 0,
+		},
+		{
+			name:    "generate single existing library with invalid library id should fail",
+			library: "some-not-configured-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container:  &mockContainerClient{},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantErr:    true,
+			wantErrMsg: "not configured yet, generation stopped",
+		},
+		{
+			name:    "generate single existing library with error message in response",
+			api:     "some/api",
+			library: "some-library",
+			repo:    newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				wantErrorMsg: true,
+			},
+			ghClient:           &mockGitHubClient{},
+			wantGenerateCalls:  1,
+			wantConfigureCalls: 0,
+			wantErr:            true,
+			wantErrMsg:         "failed with error message",
+		},
+		{
+			name: "generate all libraries configured in state",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "library1",
+						APIs: []*config.API{{Path: "some/api1"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+					},
+					{
+						ID:   "library2",
+						APIs: []*config.API{{Path: "some/api2"}},
+						SourceRoots: []string{
+							"src/b",
+						},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:          &mockGitHubClient{},
+			build:             true,
+			wantGenerateCalls: 2,
+			wantBuildCalls:    2,
+		},
+		{
+			name: "generate single library, corrupted api",
+			api:  "corrupted/api/path",
 			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
@@ -559,56 +727,11 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container:             &mockContainerClient{},
-			ghClient:              &mockGitHubClient{},
-			build:                 true,
-			wantGenerateCalls:     1,
-			wantGenerateLibraryID: "some-library",
-			wantBuildCalls:        1,
-			wantConfigureCalls:    0,
-		},
-		{
-			name:    "re-generation with library",
-			library: "some-library",
-			repo:    newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container:             &mockContainerClient{},
-			ghClient:              &mockGitHubClient{},
-			build:                 true,
-			wantGenerateCalls:     1,
-			wantGenerateLibraryID: "some-library",
-			wantBuildCalls:        1,
-			wantConfigureCalls:    0,
-		},
-		{
-			name:    "re-generation of library with both library and api",
-			library: "some-library",
-			api:     "some/api",
-			repo:    newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container:             &mockContainerClient{},
-			ghClient:              &mockGitHubClient{},
-			build:                 true,
-			wantGenerateCalls:     1,
-			wantGenerateLibraryID: "some-library",
-			wantBuildCalls:        1,
-			wantConfigureCalls:    0,
+			container:  &mockContainerClient{},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantErr:    true,
+			wantErrMsg: "not configured yet, generation stopped",
 		},
 		{
 			name: "symlink in output",
@@ -641,10 +764,11 @@ func TestGenerateRun(t *testing.T) {
 					},
 				},
 			},
-			container: &mockContainerClient{generateErr: errors.New("generate error")},
-			ghClient:  &mockGitHubClient{},
-			build:     true,
-			wantErr:   true,
+			container:  &mockContainerClient{generateErr: errors.New("generate error")},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantErr:    true,
+			wantErrMsg: "generate error",
 		},
 		{
 			name: "build error",
@@ -656,13 +780,20 @@ func TestGenerateRun(t *testing.T) {
 					{
 						ID:   "some-library",
 						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
 					},
 				},
 			},
-			container: &mockContainerClient{buildErr: errors.New("build error")},
-			ghClient:  &mockGitHubClient{},
-			build:     true,
-			wantErr:   true,
+			container: &mockContainerClient{
+				buildErr:       errors.New("build error"),
+				wantLibraryGen: true,
+			},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantErr:    true,
+			wantErrMsg: "build error",
 		},
 		{
 			name: "generate all, partial failure does not halt execution",
@@ -673,260 +804,28 @@ func TestGenerateRun(t *testing.T) {
 					{
 						ID:   "lib1",
 						APIs: []*config.API{{Path: "some/api1"}},
+						SourceRoots: []string{
+							"src/a",
+						},
 					},
 					{
 						ID:   "lib2",
 						APIs: []*config.API{{Path: "some/api2"}},
+						SourceRoots: []string{
+							"src/b",
+						},
 					},
 				},
 			},
 			container: &mockContainerClient{
+				wantLibraryGen:    true,
 				failGenerateForID: "lib1",
-				generateErr:       errors.New("generate error"),
+				generateErrForID:  errors.New("generate error"),
 			},
 			ghClient:          &mockGitHubClient{},
 			build:             true,
 			wantGenerateCalls: 2,
 			wantBuildCalls:    1,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			r := &generateRunner{
-				cfg: &config.Config{
-					API:       test.api,
-					Library:   test.library,
-					APISource: t.TempDir(),
-					Build:     test.build,
-				},
-				repo:            test.repo,
-				sourceRepo:      newTestGitRepo(t),
-				state:           test.state,
-				containerClient: test.container,
-				ghClient:        test.ghClient,
-				workRoot:        t.TempDir(),
-			}
-
-			// Create a symlink in the output directory to trigger an error.
-			if test.name == "symlink in output" {
-				outputDir := filepath.Join(r.workRoot, "output")
-				if err := os.MkdirAll(outputDir, 0755); err != nil {
-					t.Fatalf("os.MkdirAll() = %v", err)
-				}
-				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
-					t.Fatalf("os.Symlink() = %v", err)
-				}
-			}
-
-			err := r.run(context.Background())
-			if test.wantErr {
-				if err == nil {
-					t.Errorf("%s should return error", test.name)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
-				t.Errorf("run() generateCalls mismatch (-want +got):%s", diff)
-			}
-			if test.wantGenerateLibraryID != "" {
-				if diff := cmp.Diff(test.wantGenerateLibraryID, test.container.requestLibraryID); diff != "" {
-					t.Errorf("run() generateLibraryID mismatch (-want +got):%s", diff)
-				}
-			}
-			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
-				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
-			}
-			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
-				t.Errorf("run() configureCalls mismatch (-want +got):%s", diff)
-			}
-		})
-	}
-}
-
-func TestGenerateScenarios(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name               string
-		api                string
-		library            string
-		repo               gitrepo.Repository
-		state              *config.LibrarianState
-		container          *mockContainerClient
-		ghClient           GitHubClient
-		build              bool
-		wantErr            bool
-		wantGenerateCalls  int
-		wantBuildCalls     int
-		wantConfigureCalls int
-	}{
-		{
-			name:               "generate single library including initial configuration",
-			api:                "some/api",
-			library:            "some-library",
-			repo:               newTestGitRepo(t),
-			state:              &config.LibrarianState{Image: "gcr.io/test/image:v1.2.3"},
-			container:          &mockContainerClient{},
-			ghClient:           &mockGitHubClient{},
-			build:              true,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-			wantConfigureCalls: 1,
-		},
-		{
-			name:    "generate single existing library by library id",
-			library: "some-library",
-			repo:    newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container:          &mockContainerClient{},
-			ghClient:           &mockGitHubClient{},
-			build:              true,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-			wantConfigureCalls: 0,
-		},
-		{
-			name: "generate single existing library by api",
-			api:  "some/api",
-			repo: newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container:          &mockContainerClient{},
-			ghClient:           &mockGitHubClient{},
-			build:              true,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-			wantConfigureCalls: 0,
-		},
-		{
-			name:    "generate single existing library with library id and api",
-			api:     "some/api",
-			library: "some-library",
-			repo:    newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container:          &mockContainerClient{},
-			ghClient:           &mockGitHubClient{},
-			build:              true,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-			wantConfigureCalls: 0,
-		},
-		{
-			name:    "generate single existing library with invalid library id should fail",
-			library: "some-not-configured-library",
-			repo:    newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container: &mockContainerClient{},
-			ghClient:  &mockGitHubClient{},
-			build:     true,
-			wantErr:   true,
-		},
-		{
-			name:    "generate single existing library with error message in response",
-			api:     "some/api",
-			library: "some-library",
-			repo:    newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container: &mockContainerClient{
-				wantErrorMsg: true,
-			},
-			ghClient:           &mockGitHubClient{},
-			wantGenerateCalls:  1,
-			wantConfigureCalls: 0,
-			wantErr:            true,
-		},
-		{
-			name: "generate all libraries configured in state",
-			repo: newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{ID: "library1", APIs: []*config.API{{Path: "some/api1"}}},
-					{ID: "library2", APIs: []*config.API{{Path: "some/api2"}}},
-				},
-			},
-			container:         &mockContainerClient{},
-			ghClient:          &mockGitHubClient{},
-			build:             true,
-			wantGenerateCalls: 2,
-			wantBuildCalls:    2,
-		},
-		{
-			name:    "generate single library, corrupted library id",
-			library: "non-existent-library",
-			repo:    newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container: &mockContainerClient{},
-			ghClient:  &mockGitHubClient{},
-			build:     true,
-			wantErr:   true,
-		},
-		{
-			name: "generate single library, corrupted api",
-			api:  "corrupted/api/path",
-			repo: newTestGitRepo(t),
-			state: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:   "some-library",
-						APIs: []*config.API{{Path: "some/api"}},
-					},
-				},
-			},
-			container: &mockContainerClient{},
-			ghClient:  &mockGitHubClient{},
-			build:     true,
-			wantErr:   true,
 		},
 		{
 			name: "generate skips libraries with no APIs",
@@ -948,8 +847,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
 			cfg := &config.Config{
 				API:       test.api,
 				Library:   test.library,
@@ -981,6 +878,11 @@ func TestGenerateScenarios(t *testing.T) {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
 				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
+				}
+
 				return
 			}
 			if err != nil {

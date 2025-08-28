@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
+
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -274,6 +276,27 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	}
 
 	return nil
+}
+
+func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
+	changes := make([]*config.Change, 0)
+	for _, commit := range commits {
+		clNum := ""
+		if cl, ok := commit.Footers[KeyClNum]; ok {
+			clNum = cl
+		}
+
+		changeType := getChangeType(commit)
+		changes = append(changes, &config.Change{
+			Type:       changeType,
+			Subject:    commit.Description,
+			Body:       commit.Body,
+			ClNum:      clNum,
+			CommitHash: commit.SHA,
+		})
+	}
+
+	return changes
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated
