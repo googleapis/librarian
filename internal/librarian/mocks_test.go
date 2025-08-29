@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -260,26 +261,29 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 
 type MockRepository struct {
 	gitrepo.Repository
-	Dir                                  string
-	IsCleanValue                         bool
-	IsCleanError                         error
-	AddAllStatus                         git.Status
-	AddAllError                          error
-	CommitError                          error
-	RemotesValue                         []*git.Remote
-	RemotesError                         error
-	CommitCalls                          int
-	GetCommitsForPathsSinceTagValue      []*gitrepo.Commit
-	GetCommitsForPathsSinceTagValueByTag map[string][]*gitrepo.Commit
-	GetCommitsForPathsSinceTagError      error
-	GetCommitsForPathsSinceLastGenValue  []*gitrepo.Commit
-	GetCommitsForPathsSinceLastGenByPath map[string][]*gitrepo.Commit
-	GetCommitsForPathsSinceLastGenError  error
-	ChangedFilesInCommitValue            []string
-	ChangedFilesInCommitValueByHash      map[string][]string
-	ChangedFilesInCommitError            error
-	CreateBranchAndCheckoutError         error
-	PushError                            error
+	Dir                                    string
+	IsCleanValue                           bool
+	IsCleanError                           error
+	AddAllStatus                           git.Status
+	AddAllError                            error
+	CommitError                            error
+	RemotesValue                           []*git.Remote
+	RemotesError                           error
+	CommitCalls                            int
+	GetCommitError                         error
+	GetCommitByHash                        map[string]*gitrepo.Commit
+	GetCommitsForPathsSinceTagValue        []*gitrepo.Commit
+	GetCommitsForPathsSinceTagValueByTag   map[string][]*gitrepo.Commit
+	GetCommitsForPathsSinceTagError        error
+	GetCommitsForPathsSinceLastGenValue    []*gitrepo.Commit
+	GetCommitsForPathsSinceLastGenByCommit map[string][]*gitrepo.Commit
+	GetCommitsForPathsSinceLastGenByPath   map[string][]*gitrepo.Commit
+	GetCommitsForPathsSinceLastGenError    error
+	ChangedFilesInCommitValue              []string
+	ChangedFilesInCommitValueByHash        map[string][]string
+	ChangedFilesInCommitError              error
+	CreateBranchAndCheckoutError           error
+	PushError                              error
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -312,6 +316,20 @@ func (m *MockRepository) GetDir() string {
 	return m.Dir
 }
 
+func (m *MockRepository) GetCommit(commitHash string) (*gitrepo.Commit, error) {
+	if m.GetCommitError != nil {
+		return nil, m.GetCommitError
+	}
+
+	if m.GetCommitByHash != nil {
+		if commit, ok := m.GetCommitByHash[commitHash]; ok {
+			return commit, nil
+		}
+	}
+
+	return nil, errors.New("should not reach here")
+}
+
 func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*gitrepo.Commit, error) {
 	if m.GetCommitsForPathsSinceTagError != nil {
 		return nil, m.GetCommitsForPathsSinceTagError
@@ -328,6 +346,13 @@ func (m *MockRepository) GetCommitsForPathsSinceCommit(paths []string, sinceComm
 	if m.GetCommitsForPathsSinceLastGenError != nil {
 		return nil, m.GetCommitsForPathsSinceLastGenError
 	}
+
+	if m.GetCommitsForPathsSinceLastGenByCommit != nil {
+		if commits, ok := m.GetCommitsForPathsSinceLastGenByCommit[sinceCommit]; ok {
+			return commits, nil
+		}
+	}
+
 	if m.GetCommitsForPathsSinceLastGenByPath != nil {
 		allCommits := make([]*gitrepo.Commit, 0)
 		for _, path := range paths {

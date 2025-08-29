@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log/slog"
+	"sort"
 	"strings"
 	"time"
 
@@ -26,6 +28,10 @@ import (
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+)
+
+const (
+	keyClNum = "PiperOrigin-RevId"
 )
 
 var (
@@ -53,13 +59,15 @@ var (
 		"docs",
 	}
 
+	shortSHA = func(sha string) string {
+		if len(sha) < 7 {
+			return sha
+		}
+		return sha[:7]
+	}
+
 	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{
-		"shortSHA": func(sha string) string {
-			if len(sha) < 7 {
-				return sha
-			}
-			return sha[:7]
-		},
+		"shortSHA": shortSHA,
 	}).Parse(`## [{{.NewVersion}}]({{"https://github.com/"}}{{.Repo.Owner}}/{{.Repo.Name}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
 {{- range .Sections -}}
 {{- if .Commits -}}
@@ -73,10 +81,122 @@ var (
 {{- end -}}
 {{- end -}}
 {{- end -}}`))
+
+	bodyPrefix = `This pull request is generated with proto changes between
+[googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+(exclusive) and
+[googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s
+
+BEGIN_COMMIT_OVERRIDE
+`
+	commitTemplate = `BEGIN_NESTED_COMMIT
+%s: [%s] %s
+%s
+
+PiperOrigin-RevId: %s
+
+Source-link: [googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+END_NESTED_COMMIT
+`
 )
 
-// FormatReleaseNotes generates the body for a release pull request.
-func FormatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
+// formatGenerationPRBody creates the body of a generation pull request.
+func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
+	allCommits := make([]*conventionalcommits.ConventionalCommit, 0)
+	for _, library := range state.Libraries {
+		commits, err := GetConventionalCommitsSinceLastGeneration(repo, library)
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+		}
+		allCommits = append(allCommits, commits...)
+	}
+
+	if len(allCommits) == 0 {
+		return "No commit is found since last generation", nil
+	}
+
+	startCommit, err := findLatestCommit(repo, state)
+	if err != nil {
+		return "", fmt.Errorf("failed to find the start commit: %w", err)
+	}
+	startSHA := "place holder"
+	if startCommit != nil {
+		startSHA = startCommit.Hash.String()
+	}
+
+	// Sort the slice by commit time in reverse order.
+	sort.Slice(allCommits, func(i, j int) bool {
+		return allCommits[i].When.After(allCommits[j].When)
+	})
+	endSHA := allCommits[0].SHA
+	librarianVersion := cli.Version()
+	var builder strings.Builder
+	builder.WriteString(
+		fmt.Sprintf(
+			bodyPrefix,
+			shortSHA(startSHA),
+			startSHA,
+			shortSHA(endSHA),
+			endSHA,
+			librarianVersion,
+			state.Image,
+		),
+	)
+	for _, commit := range allCommits {
+		builder.WriteString(
+			fmt.Sprintf(
+				commitTemplate,
+				commit.Type,
+				commit.LibraryID,
+				commit.Description,
+				commit.Body,
+				commit.Footers[keyClNum],
+				shortSHA(commit.SHA),
+				commit.SHA,
+			),
+		)
+	}
+	builder.WriteString("END_COMMIT_OVERRIDE")
+	return builder.String(), nil
+}
+
+// findLatestCommit returns the latest commit among the last generated commit
+// of all the libraries.
+// A libray is skipped if the last generated commit is empty.
+//
+// Note that it is possible that the returned commit is nil.
+func findLatestCommit(repo gitrepo.Repository, state *config.LibrarianState) (*gitrepo.Commit, error) {
+	latest := time.UnixMilli(0) // the earliest timestamp.
+	var res *gitrepo.Commit
+	for _, library := range state.Libraries {
+		commitHash := library.LastGeneratedCommit
+		if commitHash == "" {
+			slog.Info("skip getting last generated commit", "library", library.ID)
+			continue
+		}
+		commit, err := repo.GetCommit(commitHash)
+		if err != nil {
+			return nil, fmt.Errorf("can't find last generated commit for %s: %w", library.ID, err)
+		}
+		if latest.Before(commit.When) {
+			latest = commit.When
+			res = commit
+		}
+	}
+
+	if res == nil {
+		slog.Warn("no library has non-empty last generated commit")
+	}
+
+	return res, nil
+}
+
+// formatReleaseNotes generates the body for a release pull request.
+func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
 	var body bytes.Buffer
 
 	librarianVersion := cli.Version()
