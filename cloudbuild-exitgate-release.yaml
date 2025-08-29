@@ -23,8 +23,10 @@ steps:
     waitFor: ['-']
     args:
       - 'build'
+      - '-f'
+      - 'infra/container/Dockerfile'
       - '-t'
-      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-release'
       - '.'
 images:
-  - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+  - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-release'
