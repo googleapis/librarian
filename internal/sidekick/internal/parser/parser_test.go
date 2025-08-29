@@ -58,6 +58,8 @@ func TestCreateModelDisco(t *testing.T) {
 	if got.PackageName != wantPackageName {
 		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName)
 	}
+	// This is strange, but we want to verify the package name override from
+	// the service config YAML applies to the message IDs too.
 	wantMessage := ".google.cloud.secretmanager.v1.ZoneSetPolicyRequest"
 	if _, ok := got.State.MessageByID[wantMessage]; !ok {
 		t.Errorf("missing message %s in MessageByID index", wantMessage)
