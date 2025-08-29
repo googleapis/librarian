@@ -82,6 +82,10 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		result.State.MessageByID[id] = message
 	}
 
+	for _, resource := range doc.Resources {
+		addServiceRecursive(result, resource)
+	}
+
 	return result, nil
 }
 
