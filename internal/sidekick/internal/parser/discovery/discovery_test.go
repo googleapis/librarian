@@ -114,6 +114,13 @@ func TestBadParse(t *testing.T) {
 		{"schema must be object", `{"schemas": {"MustBeObject": {"type": "string"}}}`},
 		{"property with unknown schema", `{"schemas": {"BadProperty": {"type": "object", "properties": {"bad": {"type": "unknown"}}}}}`},
 		{"schema is ref", `{"schemas": {"CannotBeRef": {"$ref": "AnotherSchema"}}}`},
+		{"method cannot parse", `{"methods": {"idShouldBeString": {"id": 123}}}`},
+		{"method parameter cannot parse", `{"methods": {"badParameter": {"parameters": {"locationShouldBeString": {"location": 123}}}}}`},
+		{"method with bad request", `{"methods": {"badRequest": {"request": {"$ref": "notThere"}}}}`},
+		{"method with bad response", `{"methods": {"badResponse": {"response": {"$ref": "notThere"}}}}`},
+		{"resource cannot parse", `{"resources": {"childShouldBeMap": {"resources": 123}}}`},
+		{"resource with bad method", `{"resources": {"badResource": {"methods": {"badResponse": {"response": {"$ref": "notThere"}}}}}}`},
+		{"resource with bad child", `{"resources": {"badResource": {"resources": {"badChild": {"methods": {"badResponse": {"response": {"$ref": "notThere"}}}}}}}}`},
 	} {
 		contents := []byte(test.Contents)
 		if _, err := NewAPI(nil, contents); err == nil {

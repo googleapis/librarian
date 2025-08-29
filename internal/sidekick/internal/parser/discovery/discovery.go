@@ -407,8 +407,6 @@ type method struct {
 	MediaUpload           *mediaUpload
 	SupportsMediaDownload bool
 	APIVersion            string
-
-	JSONMap map[string]interface{} `json:"-"`
 }
 
 type mediaUpload struct {
@@ -438,10 +436,7 @@ func (m *method) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, (*T)(m)); err != nil {
 		return err
 	}
-	// Keep the unmarshalled map around, because the generator
-	// outputs it as a comment after the method body.
-	// TODO(jba): make this unnecessary.
-	return json.Unmarshal(data, &m.JSONMap)
+	return nil
 }
 
 type parameterList []*parameter
