@@ -59,8 +59,8 @@ func makeScalarField(messageID string, input *property) (*api.Field, error) {
 		Documentation: input.Schema.Description,
 		Typez:         typez,
 		TypezID:       typezID,
-		// TODO(coryan) - deprecated fields?
-		// TODO(coryan) - optional fields?
+		// TODO(#1850) - deprecated fields?
+		// TODO(#1850) - optional fields?
 	}, nil
 }
 
