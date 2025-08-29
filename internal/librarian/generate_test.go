@@ -830,6 +830,32 @@ func TestGenerateScenarios(t *testing.T) {
 			wantBuildCalls:    1,
 		},
 		{
+			name: "generate all, all fail should report error",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "lib1",
+						APIs: []*config.API{{Path: "some/api1"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				failGenerateForID: "lib1",
+				generateErrForID:  errors.New("generate error"),
+			},
+			ghClient:          &mockGitHubClient{},
+			build:             true,
+			wantErr:           true,
+			wantErrMsg:        "all 1 libraries failed to generate",
+			wantGenerateCalls: 1,
+			wantBuildCalls:    0,
+		},
+		{
 			name: "generate skips libraries with no APIs",
 			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
