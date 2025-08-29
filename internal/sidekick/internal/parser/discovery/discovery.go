@@ -48,7 +48,6 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 
 	// Discovery docs do not define a service name or package name. The service
 	// config may provide one.
-	serviceName := "Service"
 	packageName := ""
 	if serviceConfig != nil {
 		result.Name = strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")
@@ -58,7 +57,7 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		}
 		names := svcconfig.ExtractPackageName(serviceConfig)
 		if names != nil {
-			packageName, serviceName = names.PackageName, names.ServiceName
+			packageName, _ = names.PackageName, names.ServiceName
 			result.PackageName = packageName
 		}
 	}
@@ -78,7 +77,6 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		result.State.MessageByID[id] = message
 	}
 
-	_ = serviceName // TODO(#1850) - use this thing.
 	return result, nil
 }
 
