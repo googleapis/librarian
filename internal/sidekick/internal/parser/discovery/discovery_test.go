@@ -132,7 +132,6 @@ func TestBadParse(t *testing.T) {
 		if _, err := NewAPI(nil, contents); err == nil {
 			t.Fatalf("expected error for %s input", test.Name)
 		}
-
 	}
 }
 
@@ -176,6 +175,20 @@ func TestMessage(t *testing.T) {
 		},
 	}
 	apitest.CheckMessage(t, got, want)
+}
+
+func TestMessageErrors(t *testing.T) {
+	for _, test := range []struct {
+		Name     string
+		Contents string
+	}{
+		{"bad message field", `{"schemas": {"withBadField": {"type": "object", "properties": {"badFormat": {"type": "string", "format": "--bad--"}}}}}`},
+	} {
+		contents := []byte(test.Contents)
+		if _, err := NewAPI(nil, contents); err == nil {
+			t.Fatalf("expected error for %s input", test.Name)
+		}
+	}
 }
 
 func PublicCaDisco(t *testing.T, sc *serviceconfig.Service) (*api.API, error) {
