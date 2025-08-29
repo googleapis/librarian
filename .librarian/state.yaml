@@ -1,4 +1,4 @@
-image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-release-container:latest
+image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-release-container@sha256:50dd9b59bcf4f55178f9a35dcd4f81a8db20609da386357fa05a457a8da3b4e9
 libraries:
   - id: librarian
     version: 0.1.1
