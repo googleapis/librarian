@@ -286,7 +286,7 @@ func TestFindLatestCommit(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := findLatestCommit(test.repo, test.state)
+			got, err := findLatestGenerationCommit(test.repo, test.state)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)

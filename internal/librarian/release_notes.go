@@ -119,7 +119,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 		return "No commit is found since last generation", nil
 	}
 
-	startCommit, err := findLatestCommit(repo, state)
+	startCommit, err := findLatestGenerationCommit(repo, state)
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
 	}
@@ -165,12 +165,12 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	return builder.String(), nil
 }
 
-// findLatestCommit returns the latest commit among the last generated commit
-// of all the libraries.
+// findLatestGenerationCommit returns the latest commit among the last generated
+// commit of all the libraries.
 // A libray is skipped if the last generated commit is empty.
 //
 // Note that it is possible that the returned commit is nil.
-func findLatestCommit(repo gitrepo.Repository, state *config.LibrarianState) (*gitrepo.Commit, error) {
+func findLatestGenerationCommit(repo gitrepo.Repository, state *config.LibrarianState) (*gitrepo.Commit, error) {
 	latest := time.UnixMilli(0) // the earliest timestamp.
 	var res *gitrepo.Commit
 	for _, library := range state.Libraries {
