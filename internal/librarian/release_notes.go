@@ -128,7 +128,8 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 		startSHA = startCommit.Hash.String()
 	}
 
-	// Sort the slice by commit time in reverse order.
+	// Sort the slice by commit time in reverse order,
+	// so that the latest commit appears first.
 	sort.Slice(allCommits, func(i, j int) bool {
 		return allCommits[i].When.After(allCommits[j].When)
 	})
