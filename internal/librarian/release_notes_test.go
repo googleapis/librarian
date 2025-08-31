@@ -119,6 +119,15 @@ END_COMMIT_OVERRIDE`,
 				librarianVersion, "go:1.21"),
 		},
 		{
+			name: "no conventional commits since last generation",
+			state: &config.LibrarianState{
+				Image:     "go:1.21",
+				Libraries: []*config.LibraryState{{ID: "one-library"}},
+			},
+			repo: &MockRepository{},
+			want: "No commit is found since last generation",
+		},
+		{
 			name: "failed to get conventional commits",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
