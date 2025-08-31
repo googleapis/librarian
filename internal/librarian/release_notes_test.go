@@ -197,6 +197,9 @@ func TestFindLatestCommit(t *testing.T) {
 						ID:                  "yet-another-library",
 						LastGeneratedCommit: hash3.String(),
 					},
+					{
+						ID: "skipped-library",
+					},
 				},
 			},
 			repo: &MockRepository{
