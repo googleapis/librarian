@@ -60,7 +60,7 @@ var cmdTagAndRelease = &cli.Command{
 func init() {
 	cmdTagAndRelease.Init()
 	fs := cmdTagAndRelease.Flags
-	cfg := cmdGenerate.Config
+	cfg := cmdTagAndRelease.Config
 
 	addFlagRepo(fs, cfg)
 	addFlagPR(fs, cfg)

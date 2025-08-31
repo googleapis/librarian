@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/types/known/apipb"
@@ -65,7 +66,7 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 		t.Fatal("Cannot find .test.TestService.GetLocation")
 	}
 
-	checkMethod(t, service, "GetLocation", &api.Method{
+	apitest.CheckMethod(t, service, "GetLocation", &api.Method{
 		Documentation:   "Provides the [Locations][google.cloud.location.Locations] service functionality in this service.",
 		Name:            "GetLocation",
 		ID:              ".test.TestService.GetLocation",
@@ -133,7 +134,7 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 	if _, ok := test.State.MethodByID[".test.TestService.GetIamPolicy"]; !ok {
 		t.Fatal("Cannot find .test.TestService.GetIamPolicy")
 	}
-	checkMethod(t, service, "GetIamPolicy", &api.Method{
+	apitest.CheckMethod(t, service, "GetIamPolicy", &api.Method{
 		Documentation:   "Provides the [IAMPolicy][google.iam.v1.IAMPolicy] service functionality in this service.",
 		Name:            "GetIamPolicy",
 		ID:              ".test.TestService.GetIamPolicy",
@@ -207,7 +208,7 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 		t.Fatal("Cannot find .test.TestService.GetOperation")
 	}
 
-	checkMethod(t, service, "GetOperation", &api.Method{
+	apitest.CheckMethod(t, service, "GetOperation", &api.Method{
 		Documentation:   "Custom docs.",
 		Name:            "GetOperation",
 		ID:              ".test.TestService.GetOperation",
@@ -291,7 +292,7 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 		t.Fatal("Cannot find .test.TestService.GetOperation")
 	}
 
-	checkMethod(t, service, "CancelOperation", &api.Method{
+	apitest.CheckMethod(t, service, "CancelOperation", &api.Method{
 		Documentation:   "Custom docs.",
 		Name:            "CancelOperation",
 		ID:              ".test.TestService.CancelOperation",
@@ -318,7 +319,7 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 	if !ok {
 		t.Fatal("Cannot find .google.protobuf.Empty")
 	}
-	checkMessage(t, got, &api.Message{
+	apitest.CheckMessage(t, got, &api.Message{
 		Name:    "Empty",
 		ID:      ".google.protobuf.Empty",
 		Package: "google.protobuf",
@@ -374,7 +375,7 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 		t.Fatal("Cannot find .test.LroService.GetOperation")
 	}
 
-	checkMethod(t, service, "GetOperation", &api.Method{
+	apitest.CheckMethod(t, service, "GetOperation", &api.Method{
 		Documentation:   "Source file docs.",
 		Name:            "GetOperation",
 		ID:              ".test.LroService.GetOperation",

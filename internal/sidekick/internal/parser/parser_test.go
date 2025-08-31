@@ -20,20 +20,57 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
 var (
-	testdataDir, _ = filepath.Abs("../../testdata")
+	testdataDir, _            = filepath.Abs("../../testdata")
+	discoSourceFile           = path.Join(testdataDir, "disco/compute.v1.json")
+	secretManagerYamlRelative = "google/cloud/secretmanager/v1/secretmanager_v1.yaml"
+	secretManagerYamlFullPath = path.Join(testdataDir, "googleapis", secretManagerYamlRelative)
 )
+
+func TestCreateModelDisco(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "disco",
+			ServiceConfig:       secretManagerYamlFullPath,
+			SpecificationSource: discoSourceFile,
+		},
+	}
+	got, err := CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantName := "secretmanager"
+	wantTitle := "Secret Manager API"
+	wantDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
+	wantPackageName := "google.cloud.secretmanager.v1"
+	if got.Name != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	}
+	if got.Title != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	}
+	if diff := cmp.Diff(got.Description, wantDescription); diff != "" {
+		t.Errorf("description mismatch (-want, +got):\n%s", diff)
+	}
+	if got.PackageName != wantPackageName {
+		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName)
+	}
+	// This is strange, but we want to verify the package name override from
+	// the service config YAML applies to the message IDs too.
+	wantMessage := ".google.cloud.secretmanager.v1.ZoneSetPolicyRequest"
+	if _, ok := got.State.MessageByID[wantMessage]; !ok {
+		t.Errorf("missing message %s in MessageByID index", wantMessage)
+	}
+}
 
 func TestCreateModelOpenAPI(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
-			ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+			ServiceConfig:       secretManagerYamlFullPath,
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
 	}
@@ -53,7 +90,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			ServiceConfig:       secretManagerYamlRelative,
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
@@ -76,7 +113,7 @@ func TestCreateModelOverrides(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			ServiceConfig:       secretManagerYamlRelative,
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
@@ -111,7 +148,7 @@ func TestCreateModelNone(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "none",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			ServiceConfig:       secretManagerYamlRelative,
 			SpecificationSource: "none",
 		},
 		Source: map[string]string{
@@ -130,59 +167,41 @@ func TestCreateModelNone(t *testing.T) {
 	}
 }
 
-func checkMessage(t *testing.T, got *api.Message, want *api.Message) {
-	t.Helper()
-	// Checking Parent, Messages, Fields, and OneOfs requires special handling.
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages")); diff != "" {
-		t.Errorf("message attributes mismatch (-want +got):\n%s", diff)
+func TestCreateModelUnknown(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "--unknown--",
+			ServiceConfig:       secretManagerYamlRelative,
+			SpecificationSource: "none",
+		},
+		Source: map[string]string{
+			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"name-override":        "Name Override",
+			"title-override":       "Title Override",
+			"description-override": "Description Override",
+		},
 	}
-	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Fields, got.Fields, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("field mismatch (-want, +got):\n%s", diff)
-	}
-	// Ignore parent because types are cyclic
-	if diff := cmp.Diff(want.OneOfs, got.OneOfs, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("oneofs mismatch (-want, +got):\n%s", diff)
-	}
-}
-
-func checkEnum(t *testing.T, got api.Enum, want api.Enum) {
-	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Enum{}, "Values", "UniqueNumberValues", "Parent")); diff != "" {
-		t.Errorf("mismatched service attributes (-want, +got):\n%s", diff)
-	}
-	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Values, got.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
-		t.Errorf("method mismatch (-want, +got):\n%s", diff)
+	if got, err := CreateModel(cfg); err == nil {
+		t.Errorf("expected error with unknown specification format, got=%v", got)
 	}
 }
 
-func checkService(t *testing.T, got *api.Service, want *api.Service) {
-	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
-		t.Errorf("mismatched service attributes (-want, +got):\n%s", diff)
+func TestCreateModelBadParse(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "openapi",
+			ServiceConfig:       secretManagerYamlRelative,
+			// Note the mismatch between the format and the file contents.
+			SpecificationSource: discoSourceFile,
+		},
+		Source: map[string]string{
+			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"name-override":        "Name Override",
+			"title-override":       "Title Override",
+			"description-override": "Description Override",
+		},
 	}
-	less := func(a, b *api.Method) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Methods, got.Methods, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("method mismatch (-want, +got):\n%s", diff)
-	}
-}
-
-func checkMethod(t *testing.T, service *api.Service, name string, want *api.Method) {
-	t.Helper()
-	findMethod := func(name string) (*api.Method, bool) {
-		for _, method := range service.Methods {
-			if method.Name == name {
-				return method, true
-			}
-		}
-		return nil, false
-	}
-	got, ok := findMethod(name)
-	if !ok {
-		t.Errorf("missing method %s", name)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched data for method %s (-want, +got):\n%s", name, diff)
+	if got, err := CreateModel(cfg); err == nil {
+		t.Errorf("expected error with bad specification, got=%v", got)
 	}
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
@@ -69,7 +70,7 @@ func TestProtobuf_Scalar(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Fake",
 		Package:       "test",
 		ID:            ".test.Fake",
@@ -191,7 +192,7 @@ func TestProtobuf_ScalarArray(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Fake",
 		Package:       "test",
 		ID:            ".test.Fake",
@@ -240,7 +241,7 @@ func TestProtobuf_ScalarOptional(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API", "Fake")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Fake",
 		Package:       "test",
 		ID:            ".test.Fake",
@@ -294,7 +295,7 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.LocalMessage")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "LocalMessage",
 		Package:       "test",
 		ID:            ".test.LocalMessage",
@@ -340,7 +341,7 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find enum %s in API State", ".test.LocalEnum")
 	}
-	checkEnum(t, *enum, api.Enum{
+	apitest.CheckEnum(t, *enum, api.Enum{
 		Name:          "LocalEnum",
 		ID:            ".test.LocalEnum",
 		Package:       "test",
@@ -375,7 +376,7 @@ func TestProtobuf_Comments(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Request",
 		Package:       "test",
 		ID:            ".test.Request",
@@ -395,7 +396,7 @@ func TestProtobuf_Comments(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Response.nested")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Nested",
 		Package:       "test",
 		ID:            ".test.Response.Nested",
@@ -415,7 +416,7 @@ func TestProtobuf_Comments(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Response.Status")
 	}
-	checkEnum(t, *e, api.Enum{
+	apitest.CheckEnum(t, *e, api.Enum{
 		Name:          "Status",
 		ID:            ".test.Response.Status",
 		Package:       "test",
@@ -438,7 +439,7 @@ func TestProtobuf_Comments(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.Service")
 	}
-	checkService(t, service, &api.Service{
+	apitest.CheckService(t, service, &api.Service{
 		Name:          "Service",
 		ID:            ".test.Service",
 		Package:       "test",
@@ -531,7 +532,7 @@ func TestProtobuf_OneOfs(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Fake",
 		Package:       "test",
 		ID:            ".test.Fake",
@@ -603,7 +604,7 @@ func TestProtobuf_ObjectFields(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:    "Fake",
 		Package: "test",
 		ID:      ".test.Fake",
@@ -637,7 +638,7 @@ func TestProtobuf_WellKnownTypeFields(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:    "Fake",
 		Package: "test",
 		ID:      ".test.Fake",
@@ -701,7 +702,7 @@ func TestProtobuf_JsonName(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Request",
 		Package:       "test",
 		ID:            ".test.Request",
@@ -736,7 +737,7 @@ func TestProtobuf_MapFields(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:    "Fake",
 		Package: "test",
 		ID:      ".test.Fake",
@@ -768,7 +769,7 @@ func TestProtobuf_MapFields(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake.SingularMapEntry")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:    "SingularMapEntry",
 		Package: "test",
 		ID:      ".test.Fake.SingularMapEntry",
@@ -797,7 +798,7 @@ func TestProtobuf_MapFields(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake.EnumValueEntry")
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:    "EnumValueEntry",
 		Package: "test",
 		ID:      ".test.Fake.EnumValueEntry",
@@ -831,7 +832,7 @@ func TestProtobuf_Service(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	checkService(t, service, &api.Service{
+	apitest.CheckService(t, service, &api.Service{
 		Name:          "TestService",
 		Package:       "test",
 		ID:            ".test.TestService",
@@ -967,7 +968,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	checkService(t, service, &api.Service{
+	apitest.CheckService(t, service, &api.Service{
 		Name:          "TestService",
 		Package:       "test",
 		ID:            ".test.TestService",
@@ -1033,7 +1034,7 @@ func TestProtobuf_Enum(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Code")
 	}
-	checkEnum(t, *e, api.Enum{
+	apitest.CheckEnum(t, *e, api.Enum{
 		Name:          "Code",
 		ID:            ".test.Code",
 		Package:       "test",
@@ -1083,7 +1084,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	checkService(t, service, &api.Service{
+	apitest.CheckService(t, service, &api.Service{
 		Name:        "TestService",
 		ID:          ".test.TestService",
 		DefaultHost: "test.googleapis.com",
@@ -1265,7 +1266,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 		t.Errorf("missing message (ListFooResponse) in MessageByID index")
 		return
 	}
-	checkMessage(t, resp, &api.Message{
+	apitest.CheckMessage(t, resp, &api.Message{
 		Name:    "ListFooResponse",
 		ID:      ".test.ListFooResponse",
 		Package: "test",
@@ -1350,7 +1351,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.LroService")
 	}
-	checkService(t, service, &api.Service{
+	apitest.CheckService(t, service, &api.Service{
 		Documentation: "A service to unit test the protobuf translator.",
 		DefaultHost:   "test.googleapis.com",
 		Name:          "LroService",
@@ -1508,7 +1509,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		AutoPopulated: true,
 		Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_OPTIONAL, api.FIELD_BEHAVIOR_INPUT_ONLY},
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "CreateFooRequest",
 		Package:       "test",
 		ID:            ".test.CreateFooRequest",
@@ -1610,7 +1611,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceA")
 	}
-	checkService(t, s, &api.Service{
+	apitest.CheckService(t, s, &api.Service{
 		Name:       "ServiceA",
 		ID:         ".test.ServiceA",
 		Package:    "test",
@@ -1621,7 +1622,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceB")
 	}
-	checkService(t, s, &api.Service{
+	apitest.CheckService(t, s, &api.Service{
 		Name:       "ServiceB",
 		ID:         ".test.ServiceB",
 		Package:    "test",
@@ -1643,7 +1644,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.Request")
 	}
-	checkMessage(t, m, &api.Message{
+	apitest.CheckMessage(t, m, &api.Message{
 		Name:       "Request",
 		ID:         ".test.Request",
 		Package:    "test",
@@ -1669,7 +1670,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.Response")
 	}
-	checkMessage(t, m, &api.Message{
+	apitest.CheckMessage(t, m, &api.Message{
 		Name:       "Response",
 		ID:         ".test.Response",
 		Package:    "test",
@@ -1680,7 +1681,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.EnumA")
 	}
-	checkEnum(t, *e, api.Enum{
+	apitest.CheckEnum(t, *e, api.Enum{
 		Name:       "EnumA",
 		ID:         ".test.EnumA",
 		Package:    "test",
@@ -1697,7 +1698,7 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.EnumB")
 	}
-	checkEnum(t, *e, api.Enum{
+	apitest.CheckEnum(t, *e, api.Enum{
 		Name:    "EnumB",
 		ID:      ".test.EnumB",
 		Package: "test",

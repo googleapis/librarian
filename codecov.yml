@@ -19,5 +19,8 @@ coverage:
         threshold: 0% # Allow 0% drop from the target; any drop below target will fail
         if_ci_failed: error # Set the CI status to 'error' if coverage conditions are not met
 ignore:
+  # test packages do not need code coverage
+  - internal/sidekick/internal/api/apitest
   - internal/sidekick/internal/sample
+  # Running tests for this would require installing the Rust toolchain.
   - internal/sidekick/internal/rust_prost

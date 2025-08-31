@@ -20,6 +20,11 @@
 # published to the 'images-prod' repository.
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian', '.']
+    waitFor: ['-']
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+      - '.'
 images:
   - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'

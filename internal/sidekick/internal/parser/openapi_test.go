@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
@@ -73,7 +74,7 @@ func TestOpenAPI_AllOf(t *testing.T) {
 		t.Errorf("missing message in MessageByID index")
 		return
 	}
-	checkMessage(t, message, want)
+	apitest.CheckMessage(t, message, want)
 }
 
 func TestOpenAPI_BasicTypes(t *testing.T) {
@@ -123,7 +124,7 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 		t.Errorf("missing message in MessageByID index")
 		return
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Fake",
 		ID:            "..Fake",
 		Documentation: "A test message.",
@@ -255,7 +256,7 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 		t.Errorf("missing message in MessageByID index")
 		return
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "Fake",
 		ID:            "..Fake",
 		Documentation: "A test message.",
@@ -365,7 +366,7 @@ func TestOpenAPI_SimpleObject(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	checkMessage(t, test.Messages[0], &api.Message{
+	apitest.CheckMessage(t, test.Messages[0], &api.Message{
 		Name:          "Fake",
 		ID:            "..Fake",
 		Documentation: "A test message.",
@@ -412,7 +413,7 @@ func TestOpenAPI_Any(t *testing.T) {
 		t.Errorf("Error in makeAPI() %q", err)
 	}
 
-	checkMessage(t, test.Messages[0], &api.Message{
+	apitest.CheckMessage(t, test.Messages[0], &api.Message{
 		Name:          "Fake",
 		ID:            "..Fake",
 		Documentation: "A test message.",
@@ -445,7 +446,7 @@ func TestOpenAPI_MapString(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	checkMessage(t, test.Messages[0], &api.Message{
+	apitest.CheckMessage(t, test.Messages[0], &api.Message{
 		Name:          "Fake",
 		ID:            "..Fake",
 		Documentation: "A test message.",
@@ -497,7 +498,7 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 		t.Errorf("Error in makeAPI() %q", err)
 	}
 
-	checkMessage(t, test.Messages[0], &api.Message{
+	apitest.CheckMessage(t, test.Messages[0], &api.Message{
 		Name:          "Fake",
 		ID:            "..Fake",
 		Documentation: "A test message.",
@@ -541,7 +542,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("missing message (Location) in MessageByID index")
 		return
 	}
-	checkMessage(t, location, &api.Message{
+	apitest.CheckMessage(t, location, &api.Message{
 		Documentation: "A resource that represents a Google Cloud location.",
 		Name:          "Location",
 		ID:            "..Location",
@@ -595,7 +596,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("missing message (ListLocationsResponse) in MessageByID index")
 		return
 	}
-	checkMessage(t, listLocationsResponse, &api.Message{
+	apitest.CheckMessage(t, listLocationsResponse, &api.Message{
 		Documentation: "The response message for Locations.ListLocations.",
 		Name:          "ListLocationsResponse",
 		ID:            "..ListLocationsResponse",
@@ -644,7 +645,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("missing message (ListLocationsRequest) in MessageByID index")
 		return
 	}
-	checkMessage(t, listLocationsRequest, &api.Message{
+	apitest.CheckMessage(t, listLocationsRequest, &api.Message{
 		Name:          "ListLocationsRequest",
 		ID:            "..ListLocationsRequest",
 		Documentation: "The request message for ListLocations.",
@@ -698,7 +699,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("missing message (SecretPayload) in MessageByID index")
 		return
 	}
-	checkMessage(t, got, sp)
+	apitest.CheckMessage(t, got, sp)
 
 	service, ok := test.State.ServiceByID["..Service"]
 	if !ok {
@@ -714,7 +715,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		t.Errorf("mismatched service attributes (-want, +got):\n%s", diff)
 	}
 
-	checkMethod(t, service, "ListLocations", &api.Method{
+	apitest.CheckMethod(t, service, "ListLocations", &api.Method{
 		Name:          "ListLocations",
 		ID:            "..Service.ListLocations",
 		Documentation: "Lists information about the supported locations for this service.",
@@ -749,10 +750,10 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 	})
 
 	cs := sample.MethodCreate()
-	checkMethod(t, service, cs.Name, cs)
+	apitest.CheckMethod(t, service, cs.Name, cs)
 
 	asv := sample.MethodAddSecretVersion()
-	checkMethod(t, service, asv.Name, asv)
+	apitest.CheckMethod(t, service, asv.Name, asv)
 }
 
 func TestOpenAPI_MakeApiWithServiceConfig(t *testing.T) {
@@ -819,7 +820,7 @@ func TestOpenAPI_SyntheticMessageWithExistingRequest(t *testing.T) {
 		t.Errorf("missing message (%s) in MessageByID index", id)
 		return
 	}
-	checkMessage(t, setIamPolicyRequest, &api.Message{
+	apitest.CheckMessage(t, setIamPolicyRequest, &api.Message{
 		Name:          "SetIamPolicyRequest",
 		ID:            "..SetIamPolicyRequest",
 		Documentation: "Request message for `SetIamPolicy` method.",
@@ -890,7 +891,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		t.Errorf("missing service (Service) in ServiceByID index")
 		return
 	}
-	checkService(t, service, &api.Service{
+	apitest.CheckService(t, service, &api.Service{
 		Name: "Service",
 		ID:   "..Service",
 		Methods: []*api.Method{
@@ -929,7 +930,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 		t.Errorf("missing message (ListFoosResponse) in MessageByID index")
 		return
 	}
-	checkMessage(t, resp, &api.Message{
+	apitest.CheckMessage(t, resp, &api.Message{
 		Name: "ListFoosResponse",
 		ID:   "..ListFoosResponse",
 		Fields: []*api.Field{
@@ -1032,7 +1033,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		Optional:      true,
 		AutoPopulated: true,
 	}
-	checkMessage(t, message, &api.Message{
+	apitest.CheckMessage(t, message, &api.Message{
 		Name:          "CreateFooRequest",
 		ID:            ".test.CreateFooRequest",
 		Package:       "test",
@@ -1120,7 +1121,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		t.Errorf("cannot find service %s in model", "..Service.ListFoos")
 		return
 	}
-	checkMethod(t, service, "RpcA", &api.Method{
+	apitest.CheckMethod(t, service, "RpcA", &api.Method{
 		Name:         "RpcA",
 		ID:           "..Service.RpcA",
 		InputTypeID:  "..RpcARequest",
@@ -1141,7 +1142,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		},
 	})
 
-	checkMethod(t, service, "RpcB", &api.Method{
+	apitest.CheckMethod(t, service, "RpcB", &api.Method{
 		Name:         "RpcB",
 		ID:           "..Service.RpcB",
 		Deprecated:   true,
@@ -1168,7 +1169,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		t.Errorf("cannot find message %s", "..Response")
 		return
 	}
-	checkMessage(t, response, &api.Message{
+	apitest.CheckMessage(t, response, &api.Message{
 		Name: "Response",
 		ID:   "..Response",
 		Fields: []*api.Field{
@@ -1195,7 +1196,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		t.Errorf("cannot find message %s", "..DeprecatedMessage")
 		return
 	}
-	checkMessage(t, deprecatedMessage, &api.Message{
+	apitest.CheckMessage(t, deprecatedMessage, &api.Message{
 		Name:       "DeprecatedMessage",
 		ID:         "..DeprecatedMessage",
 		Deprecated: true,
