@@ -119,6 +119,47 @@ END_COMMIT_OVERRIDE`,
 				librarianVersion, "go:1.21"),
 		},
 		{
+			name: "single library generation",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "one-library",
+						LastGeneratedCommit: "1234567890",
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesValue:   []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitError: errors.New("simulated get commit error"),
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234567890": {
+						{
+							Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
+							Hash:    hash1,
+							When:    today,
+						},
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash1.String(): {
+						"path/to/file",
+						"path/to/another/file",
+					},
+					hash2.String(): {
+						"path/to/file",
+					},
+				},
+			},
+			wantErr:       true,
+			wantErrPhrase: "failed to find the start commit",
+		},
+		{
 			name: "no conventional commits since last generation",
 			state: &config.LibrarianState{
 				Image:     "go:1.21",
