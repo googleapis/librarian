@@ -123,10 +123,10 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
 	}
-	startSHA := "place holder"
-	if startCommit != nil {
-		startSHA = startCommit.Hash.String()
-	}
+	// Even though startCommit might be nil, it shouldn't happen in production
+	// because this function will return early if no conventional commit is found
+	// since last generation.
+	startSHA := startCommit.Hash.String()
 
 	// Sort the slice by commit time in reverse order,
 	// so that the latest commit appears first.
