@@ -62,10 +62,12 @@ type RepositoryOptions struct {
 	// Dir is the directory where the repository will reside locally. Required.
 	Dir string
 	// MaybeClone will try to clone the repository if it does not exist locally.
-	// If set to true, RemoteURL must also be set. Optional.
+	// If set to true, RemoteURL and RemoteBranch must also be set. Optional.
 	MaybeClone bool
-	// RemoteURL is the URL of the remote repository to clone from. Required if Clone is not CloneOptionNone.
+	// RemoteURL is the URL of the remote repository to clone from. Required if MaybeClone is set to true.
 	RemoteURL string
+	// RemoteBranch is the remote branch to clone. Required if MaybeClone is set to true.
+	RemoteBranch string
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
@@ -105,8 +107,11 @@ func newRepositoryWithoutUser(opts *RepositoryOptions) (*LocalRepository, error)
 		if opts.RemoteURL == "" {
 			return nil, fmt.Errorf("gitrepo: remote URL is required when cloning")
 		}
+		if opts.RemoteBranch == "" {
+			return nil, fmt.Errorf("gitrepo: remote branch is required when cloning")
+		}
 		slog.Info("Repository not found, executing clone")
-		return clone(opts.Dir, opts.RemoteURL, opts.CI)
+		return clone(opts.Dir, opts.RemoteURL, opts.RemoteBranch, opts.CI)
 	}
 	return nil, fmt.Errorf("failed to check for repository at %q: %w", opts.Dir, err)
 }
@@ -124,11 +129,11 @@ func open(dir string) (*LocalRepository, error) {
 	}, nil
 }
 
-func clone(dir, url, ci string) (*LocalRepository, error) {
+func clone(dir, url, branch, ci string) (*LocalRepository, error) {
 	slog.Info("Cloning repository", "url", url, "dir", dir)
 	options := &git.CloneOptions{
 		URL:           url,
-		ReferenceName: plumbing.HEAD,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 		Tags:          git.AllTags,
 		// .NET uses submodules for conformance tests.

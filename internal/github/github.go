@@ -117,7 +117,7 @@ func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, e
 // CreatePullRequest creates a pull request in the remote repo.
 // At the moment this requires a single remote to be configured,
 // which must have a GitHub HTTPS URL. We assume a base branch of "main".
-func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, title, body string) (*PullRequestMetadata, error) {
+func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, baseBranch, title, body string) (*PullRequestMetadata, error) {
 	if body == "" {
 		slog.Warn("Provided PR body is empty, setting default.")
 		body = "Regenerated all changed APIs. See individual commits for details."
@@ -126,7 +126,7 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 	newPR := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &remoteBranch,
-		Base:                github.Ptr("main"),
+		Base:                &baseBranch,
 		Body:                github.Ptr(body),
 		MaintainerCanModify: github.Ptr(true),
 	}
