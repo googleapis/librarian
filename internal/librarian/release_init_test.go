@@ -362,7 +362,6 @@ func TestInitRun(t *testing.T) {
 			files: map[string]string{
 				"dir1/file1.txt": "hello",
 			},
-			wantErr: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
