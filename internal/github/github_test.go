@@ -278,7 +278,7 @@ func TestParseURL(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := ParseURL(test.remoteURL)
+			repo, err := ParseHTTPRemote(test.remoteURL)
 
 			if test.wantErr {
 				if err == nil {
@@ -292,6 +292,65 @@ func TestParseURL(t *testing.T) {
 				}
 				if diff := cmp.Diff(test.wantRepo, repo); diff != "" {
 					t.Errorf("ParseURL() repo mismatch (-want +got): %s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestParseSSHRemote(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name          string
+		remote        string
+		wantRepo      *Repository
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{
+			name:     "Valid SSH URL with .git",
+			remote:   "git@github.com:owner/repo.git",
+			wantRepo: &Repository{Owner: "owner", Name: "repo"},
+		},
+		{
+			name:     "Valid SSH URL without .git",
+			remote:   "git@github.com:owner/repo",
+			wantRepo: &Repository{Owner: "owner", Name: "repo"},
+		},
+		{
+			name:          "Invalid remote, no git@ prefix",
+			remote:        "https://github.com/owner/repo.git",
+			wantErr:       true,
+			wantErrSubstr: "not a GitHub remote",
+		},
+		{
+			name:          "Invalid remote, no colon",
+			remote:        "git@github.com-owner/repo.git",
+			wantErr:       true,
+			wantErrSubstr: "not a GitHub remote",
+		},
+		{
+			name:          "Invalid remote, no slash",
+			remote:        "git@github.com:owner-repo.git",
+			wantErr:       true,
+			wantErrSubstr: "not a GitHub remote",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, err := ParseSSHRemote(test.remote)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("ParseSSHRemote() err = nil, want error containing %q", test.wantErrSubstr)
+				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("ParseSSHRemote() err = %v, want error containing %q", err, test.wantErrSubstr)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ParseSSHRemote() err = %v, want nil", err)
+				}
+				if diff := cmp.Diff(test.wantRepo, repo); diff != "" {
+					t.Errorf("ParseSSHRemote() repo mismatch (-want +got): %s", diff)
 				}
 			}
 		})

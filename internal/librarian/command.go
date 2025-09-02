@@ -78,7 +78,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	var gitRepo *github.Repository
 	if isURL(cfg.Repo) {
-		gitRepo, err = github.ParseURL(cfg.Repo)
+		gitRepo, err = github.ParseHTTPRemote(cfg.Repo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repo url: %w", err)
 		}

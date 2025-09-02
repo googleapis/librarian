@@ -86,9 +86,9 @@ type PullRequestMetadata struct {
 	Number int
 }
 
-// ParseURL parses a GitHub URL (anything to do with a repository) to determine
+// ParseHTTPRemote parses a GitHub URL (anything to do with a repository) to determine
 // the GitHub repo details (owner and name).
-func ParseURL(remoteURL string) (*Repository, error) {
+func ParseHTTPRemote(remoteURL string) (*Repository, error) {
 	if !strings.HasPrefix(remoteURL, "https://github.com/") {
 		return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remoteURL)
 	}
@@ -97,6 +97,25 @@ func ParseURL(remoteURL string) (*Repository, error) {
 	organization := pathParts[0]
 	repoName := pathParts[1]
 	repoName = strings.TrimSuffix(repoName, ".git")
+	return &Repository{Owner: organization, Name: repoName}, nil
+}
+
+// ParseSSHRemote parses a GitHub SSH URL to determine the GitHub repo details (owner and name).
+// For example, "git@github.com:owner/repo.git" would return owner and repo.
+func ParseSSHRemote(remote string) (*Repository, error) {
+	if !strings.HasPrefix(remote, "git@") {
+		return nil, fmt.Errorf("remote %q is not a GitHub remote", remote)
+	}
+	pathParts := strings.Split(remote, ":")
+	if len(pathParts) != 2 {
+		return nil, fmt.Errorf("remote %q is not a GitHub remote", remote)
+	}
+	orgRepo := strings.Split(pathParts[1], "/")
+	if len(orgRepo) != 2 {
+		return nil, fmt.Errorf("remote %q is not a GitHub remote", remote)
+	}
+	organization := orgRepo[0]
+	repoName := strings.TrimSuffix(orgRepo[1], ".git")
 	return &Repository{Owner: organization, Name: repoName}, nil
 }
 
@@ -181,11 +200,15 @@ func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
 	for _, remote := range remotes {
 		if remote.Config().Name == "origin" {
 			urls := remote.Config().URLs
-			if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
-				return ParseURL(urls[0])
+			if len(urls) > 0 {
+				if strings.HasPrefix(urls[0], "https://github.com/") {
+					return ParseHTTPRemote(urls[0])
+				} else if strings.HasPrefix(urls[0], "git@") {
+					return ParseSSHRemote(urls[0])
+				}
+				// If 'origin' exists but is not a GitHub remote, we stop.
+				break
 			}
-			// If 'origin' exists but is not a GitHub remote, we stop.
-			break
 		}
 	}
 
