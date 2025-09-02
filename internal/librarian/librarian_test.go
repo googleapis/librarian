@@ -291,7 +291,7 @@ func TestLookupCommand(t *testing.T) {
 			cmd:      root,
 			args:     []string{"sub1"},
 			wantCmd:  sub1,
-			wantArgs: []string{},
+			wantArgs: nil,
 		},
 		{
 			name:     "find sub2",

@@ -80,7 +80,7 @@ func Run(ctx context.Context, arg ...string) error {
 // is not found.
 func lookupCommand(cmd *cli.Command, args []string) (*cli.Command, []string, error) {
 	if len(args) == 0 {
-		return cmd, []string{}, nil
+		return cmd, nil, nil
 	}
 	subcommand, err := cmd.Lookup(args[0])
 	if err != nil {
@@ -88,13 +88,11 @@ func lookupCommand(cmd *cli.Command, args []string) (*cli.Command, []string, err
 		return nil, nil, err
 	}
 	if len(subcommand.Commands) > 0 {
-		// If a command has subcommands, check if the next argument first is a flag
-		// before matching with potential subcommands. Otherwise, librarian will always
-		// assume that the next argument is a subcommand. If a flag is found, the subsequent
-		// arguments are assumed to be flags.
-		if len(args) > 1 && args[1][0] != '-' {
-			return lookupCommand(subcommand, args[1:])
+		// If next argument is a flag, stop parsing for subcommands
+		if len(args) > 1 && args[1][0] == '-' {
+			return subcommand, args[1:], nil
 		}
+		return lookupCommand(subcommand, args[1:])
 	}
 	return subcommand, args[1:], nil
 }
