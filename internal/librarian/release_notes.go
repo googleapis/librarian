@@ -82,7 +82,7 @@ var (
 {{- end -}}
 {{- end -}}`))
 
-	genBodyTemplate = template.Must(template.New("commit").Funcs(template.FuncMap{
+	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
 	}).Parse(`This pull request is generated with proto changes between
 [googleapis/googleapis@{{shortSHA .StartSHA}}](https://github.com/googleapis/googleapis/commit/{{.StartSHA}})
