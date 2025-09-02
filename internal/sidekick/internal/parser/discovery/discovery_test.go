@@ -191,6 +191,20 @@ func TestMessageErrors(t *testing.T) {
 	}
 }
 
+func TestServiceErrors(t *testing.T) {
+	for _, test := range []struct {
+		Name     string
+		Contents string
+	}{
+		{"bad method", `{"resources": {"withBadMethod": {"methods": {"uploadNotSupported": { "mediaUpload": {} }}}}}`},
+	} {
+		contents := []byte(test.Contents)
+		if got, err := NewAPI(nil, contents); err == nil {
+			t.Fatalf("expected error for %s input, got=%v", test.Name, got)
+		}
+	}
+}
+
 func PublicCaDisco(t *testing.T, sc *serviceconfig.Service) (*api.API, error) {
 	t.Helper()
 	contents, err := os.ReadFile("../../../testdata/disco/publicca.v1.json")

@@ -40,6 +40,49 @@ func TestService(t *testing.T) {
 		ID:            id,
 		Package:       "",
 		Documentation: "Service for the `externalAccountKeys` resource.",
+		Methods: []*api.Method{
+			{
+				ID:            "..externalAccountKeys.create",
+				Name:          "create",
+				Documentation: "Creates a new ExternalAccountKey bound to the project.",
+				InputTypeID:   "..ExternalAccountKey",
+				OutputTypeID:  "..ExternalAccountKey",
+			},
+		},
 	}
 	apitest.CheckService(t, got, want)
+}
+
+func TestServiceTopLevelMethodErrors(t *testing.T) {
+	model, err := PublicCaDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := resource{
+		Methods: []*method{
+			{MediaUpload: &mediaUpload{}},
+		},
+	}
+	if err := addServiceRecursive(model, &input); err == nil {
+		t.Errorf("expected error in addServiceRecursive invalid top-level method, got=%v", model.Services)
+	}
+}
+
+func TestServiceChildMethodErrors(t *testing.T) {
+	model, err := PublicCaDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := resource{
+		Resources: []*resource{
+			{
+				Methods: []*method{
+					{MediaUpload: &mediaUpload{}},
+				},
+			},
+		},
+	}
+	if err := addServiceRecursive(model, &input); err == nil {
+		t.Errorf("expected error in addServiceRecursive invalid child method, got=%v", model.Services)
+	}
 }
