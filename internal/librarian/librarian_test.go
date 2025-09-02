@@ -15,12 +15,14 @@
 package librarian
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
@@ -39,6 +41,44 @@ import (
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func TestParentCommands(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		command    string
+		wantErr    bool
+		wantErrMsg string // Expected substring in the error
+	}{
+		{
+			name:       "release no subcommand",
+			command:    "release",
+			wantErr:    true,
+			wantErrMsg: `command "release" requires a subcommand`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := Run(ctx, test.command)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("Run(ctx, %q) got nil, want error containing %q", test.command, test.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("Run(ctx, %q) got error %q, want error containing %q", test.command, err.Error(), test.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Run(ctx, %q) got error %v, want nil", test.command, err)
+			}
+		})
 	}
 }
 

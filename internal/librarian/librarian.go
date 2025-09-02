@@ -59,6 +59,14 @@ func Run(ctx context.Context, arg ...string) error {
 	if err != nil {
 		return err
 	}
+
+	// If a command is just a container for subcommands, it won't have a
+	// Run function. In that case, display its usage instructions.
+	if cmd.Run == nil {
+		cmd.Flags.Usage()
+		return fmt.Errorf("command %q requires a subcommand", cmd.Name())
+	}
+
 	if err := cmd.Parse(arg); err != nil {
 		// We expect that if cmd.Parse fails, it will already
 		// have printed out a command-specific usage error,
