@@ -86,13 +86,19 @@ type PullRequestMetadata struct {
 	Number int
 }
 
-// ParseHTTPRemote parses a GitHub URL (anything to do with a repository) to determine
+// ParseRemote parses a GitHub remote (anything to do with a repository) to determine
 // the GitHub repo details (owner and name).
-func ParseHTTPRemote(remoteURL string) (*Repository, error) {
-	if !strings.HasPrefix(remoteURL, "https://github.com/") {
-		return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remoteURL)
+func ParseRemote(remote string) (*Repository, error) {
+	if strings.HasPrefix(remote, "https://github.com/") {
+		return parseHTTPRemote(remote)
+	} else if strings.HasPrefix(remote, "git@") {
+		return parseSSHRemote(remote)
 	}
-	remotePath := remoteURL[len("https://github.com/"):]
+	return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remote)
+}
+
+func parseHTTPRemote(remote string) (*Repository, error) {
+	remotePath := remote[len("https://github.com/"):]
 	pathParts := strings.Split(remotePath, "/")
 	organization := pathParts[0]
 	repoName := pathParts[1]
@@ -100,12 +106,7 @@ func ParseHTTPRemote(remoteURL string) (*Repository, error) {
 	return &Repository{Owner: organization, Name: repoName}, nil
 }
 
-// ParseSSHRemote parses a GitHub SSH URL to determine the GitHub repo details (owner and name).
-// For example, "git@github.com:owner/repo.git" would return owner and repo.
-func ParseSSHRemote(remote string) (*Repository, error) {
-	if !strings.HasPrefix(remote, "git@") {
-		return nil, fmt.Errorf("remote %q is not a GitHub remote", remote)
-	}
+func parseSSHRemote(remote string) (*Repository, error) {
 	pathParts := strings.Split(remote, ":")
 	if len(pathParts) != 2 {
 		return nil, fmt.Errorf("remote %q is not a GitHub remote", remote)
@@ -201,13 +202,7 @@ func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
 		if remote.Config().Name == "origin" {
 			urls := remote.Config().URLs
 			if len(urls) > 0 {
-				if strings.HasPrefix(urls[0], "https://github.com/") {
-					return ParseHTTPRemote(urls[0])
-				} else if strings.HasPrefix(urls[0], "git@") {
-					return ParseSSHRemote(urls[0])
-				}
-				// If 'origin' exists but is not a GitHub remote, we stop.
-				break
+				return ParseRemote(urls[0])
 			}
 		}
 	}

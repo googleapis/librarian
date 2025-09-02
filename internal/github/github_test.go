@@ -182,7 +182,7 @@ func TestFetchGitHubRepoFromRemote(t *testing.T) {
 				"origin": {"https://gitlab.com/owner/repo.git"},
 			},
 			wantErr:       true,
-			wantErrSubstr: "could not find an 'origin' remote",
+			wantErrSubstr: "is not a GitHub remote",
 		},
 		{
 			name: "upstream is GitHub, but no origin",
@@ -208,7 +208,7 @@ func TestFetchGitHubRepoFromRemote(t *testing.T) {
 				"upstream": {"https://github.com/gh-owner/gh-repo.git"},
 			},
 			wantErr:       true,
-			wantErrSubstr: "could not find an 'origin' remote",
+			wantErrSubstr: "is not a GitHub remote",
 		},
 		{
 			name: "origin has multiple URLs, first is GitHub",
@@ -278,7 +278,7 @@ func TestParseURL(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := ParseHTTPRemote(test.remoteURL)
+			repo, err := ParseRemote(test.remoteURL)
 
 			if test.wantErr {
 				if err == nil {
@@ -338,7 +338,7 @@ func TestParseSSHRemote(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := ParseSSHRemote(test.remote)
+			repo, err := parseSSHRemote(test.remote)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("ParseSSHRemote() err = nil, want error containing %q", test.wantErrSubstr)
