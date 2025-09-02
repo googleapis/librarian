@@ -83,7 +83,9 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 	}
 
 	for _, resource := range doc.Resources {
-		addServiceRecursive(result, resource)
+		if err := addServiceRecursive(result, resource); err != nil {
+			return nil, err
+		}
 	}
 
 	return result, nil

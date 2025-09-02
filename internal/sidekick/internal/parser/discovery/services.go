@@ -20,17 +20,27 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
-func addServiceRecursive(model *api.API, resource *resource) {
+func addServiceRecursive(model *api.API, resource *resource) error {
 	if len(resource.Methods) != 0 {
-		addService(model, resource)
+		if err := addService(model, resource); err != nil {
+			return err
+		}
 	}
 	for _, child := range resource.Resources {
-		addServiceRecursive(model, child)
+		if err := addServiceRecursive(model, child); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func addService(model *api.API, resource *resource) {
+func addService(model *api.API, resource *resource) error {
 	id := fmt.Sprintf(".%s.%s", model.PackageName, resource.Name)
+	methods, err := makeServiceMethods(model, id, resource)
+	if err != nil {
+		return err
+	}
+
 	var service *api.Service
 	if _, ok := model.State.ServiceByID[id]; !ok {
 		service = &api.Service{
@@ -38,10 +48,10 @@ func addService(model *api.API, resource *resource) {
 			Name:          resource.Name,
 			Package:       model.PackageName,
 			Documentation: fmt.Sprintf("Service for the `%s` resource.", resource.Name),
+			Methods:       methods,
 		}
 		model.Services = append(model.Services, service)
 		model.State.ServiceByID[id] = service
 	}
-	// TODO(#1850) - add the methods, if the service already exists then merge
-	//     the methods.
+	return nil
 }
