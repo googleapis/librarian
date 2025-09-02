@@ -45,7 +45,74 @@ func TestFormatGenerationPRBody(t *testing.T) {
 		want          string
 		wantErr       bool
 		wantErrPhrase string
-	}{
+	}{{
+		// This test verifies that only changed libraries appear in the pull request
+		// body.
+		name: "multiple libraries generation",
+		state: &config.LibrarianState{
+			Image: "go:1.21",
+			Libraries: []*config.LibraryState{
+				{
+					ID:                  "one-library",
+					LastGeneratedCommit: "1234567890",
+				},
+				{
+					ID:                  "another-library",
+					LastGeneratedCommit: "abcdefg",
+				},
+			},
+		},
+		repo: &MockRepository{
+			RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+			GetCommitByHash: map[string]*gitrepo.Commit{
+				"1234567890": {
+					Hash: plumbing.NewHash("1234567890"),
+					When: time.UnixMilli(200),
+				},
+				"abcdefg": {
+					Hash: plumbing.NewHash("abcdefg"),
+					When: time.UnixMilli(300),
+				},
+			},
+			GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+				"1234567890": {
+					{
+						Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+						Hash:    hash2,
+						When:    today.Add(time.Hour),
+					},
+				},
+				"abcdefg": {}, // no new commits since commit "abcdefg".
+			},
+			ChangedFilesInCommitValueByHash: map[string][]string{
+				hash2.String(): {
+					"path/to/file",
+				},
+			},
+		},
+		want: fmt.Sprintf(`This pull request is generated with proto changes between
+[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s
+
+BEGIN_COMMIT_OVERRIDE
+
+BEGIN_NESTED_COMMIT
+fix: [one-library] a bug fix
+This is another body.
+
+PiperOrigin-RevId: 573342
+
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+END_NESTED_COMMIT
+
+END_COMMIT_OVERRIDE`,
+			librarianVersion, "go:1.21"),
+	},
 		{
 			name: "single library generation",
 			state: &config.LibrarianState{
