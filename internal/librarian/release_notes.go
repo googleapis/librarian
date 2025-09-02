@@ -30,10 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-const (
-	keyClNum = "PiperOrigin-RevId"
-)
-
 var (
 	commitTypeToHeading = map[string]string{
 		"feat":     "Features",
@@ -96,12 +92,12 @@ Language Image: {{.ImageVersion}}
 BEGIN_COMMIT_OVERRIDE
 {{ range .Commits }}
 BEGIN_NESTED_COMMIT
-{{.ChangeType}}: [{{.LibraryID}}] {{.Description}}
+{{.Type}}: [{{.LibraryID}}] {{.Description}}
 {{.Body}}
 
-PiperOrigin-RevId: {{.ClNum}}
+PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
 
-Source-link: [googleapis/googleapis@{{shortSHA .CommitSHA}}](https://github.com/googleapis/googleapis/commit/{{.CommitSHA}})
+Source-link: [googleapis/googleapis@{{shortSHA .SHA}}](https://github.com/googleapis/googleapis/commit/{{.SHA}})
 END_NESTED_COMMIT
 {{ end }}
 END_COMMIT_OVERRIDE
@@ -113,16 +109,7 @@ type generationPRBody struct {
 	EndSHA           string
 	LibrarianVersion string
 	ImageVersion     string
-	Commits          []CommitInfo
-}
-
-type CommitInfo struct {
-	ChangeType  string
-	LibraryID   string
-	Description string
-	Body        string
-	ClNum       string
-	CommitSHA   string
+	Commits          []*conventionalcommits.ConventionalCommit
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
@@ -156,23 +143,12 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	})
 	endSHA := allCommits[0].SHA
 	librarianVersion := cli.Version()
-	commits := make([]CommitInfo, 0)
-	for _, commit := range allCommits {
-		commits = append(commits, CommitInfo{
-			ChangeType:  commit.Type,
-			LibraryID:   commit.LibraryID,
-			Description: commit.Description,
-			Body:        commit.Body,
-			ClNum:       commit.Footers[keyClNum],
-			CommitSHA:   commit.SHA,
-		})
-	}
 	data := &generationPRBody{
 		StartSHA:         startSHA,
 		EndSHA:           endSHA,
 		LibrarianVersion: librarianVersion,
 		ImageVersion:     state.Image,
-		Commits:          commits,
+		Commits:          allCommits,
 	}
 	var out bytes.Buffer
 	if err := genBodyTemplate.Execute(&out, data); err != nil {
