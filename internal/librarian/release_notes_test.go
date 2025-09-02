@@ -119,7 +119,7 @@ END_COMMIT_OVERRIDE`,
 				librarianVersion, "go:1.21"),
 		},
 		{
-			name: "single library generation",
+			name: "no conventional commit is found since last generation",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
