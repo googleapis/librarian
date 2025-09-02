@@ -82,27 +82,48 @@ var (
 {{- end -}}
 {{- end -}}`))
 
-	bodyPrefix = `This pull request is generated with proto changes between
-[googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+	genBodyTemplate = template.Must(template.New("commit").Funcs(template.FuncMap{
+		"shortSHA": shortSHA,
+	}).Parse(`This pull request is generated with proto changes between
+[googleapis/googleapis@%{{shortSHA .startSHA}}](https://github.com/googleapis/googleapis/commit/{{.startSHA}})
 (exclusive) and
-[googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+[googleapis/googleapis@{{shortSHA .endSHA}}](https://github.com/googleapis/googleapis/commit/{{.endSHA}})
 (inclusive).
 
-Librarian Version: %s
-Language Image: %s
+Librarian Version: {{.librarianVersion}}
+Language Image: {{.imageVersion}}
 
 BEGIN_COMMIT_OVERRIDE
-`
-	commitTemplate = `BEGIN_NESTED_COMMIT
-%s: [%s] %s
-%s
+{{- range .commits -}}
+BEGIN_NESTED_COMMIT
+{{.type}}: {{.libraryID}} {{.description}}
+{{.body}}
 
-PiperOrigin-RevId: %s
+PiperOrigin-RevId: {{.clNum}}
 
-Source-link: [googleapis/googleapis@%s](https://github.com/googleapis/googleapis/commit/%s)
+Source-link: [googleapis/googleapis@{{shortSHA .commitSHA}}](https://github.com/googleapis/googleapis/commit/{{.commitSHA}})
 END_NESTED_COMMIT
-`
+{{- end -}}
+END_COMMIT_OVERRIDE
+`))
 )
+
+type generationPRBody struct {
+	startSHA         string
+	endSHA           string
+	librarianVersion string
+	imageVersion     string
+	commits          []commitInfo
+}
+
+type commitInfo struct {
+	changeType  string
+	libraryID   string
+	description string
+	body        string
+	clNum       string
+	commitSHA   string
+}
 
 // formatGenerationPRBody creates the body of a generation pull request.
 func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
@@ -135,34 +156,30 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	})
 	endSHA := allCommits[0].SHA
 	librarianVersion := cli.Version()
-	var builder strings.Builder
-	builder.WriteString(
-		fmt.Sprintf(
-			bodyPrefix,
-			shortSHA(startSHA),
-			startSHA,
-			shortSHA(endSHA),
-			endSHA,
-			librarianVersion,
-			state.Image,
-		),
-	)
+	commits := make([]commitInfo, 0)
 	for _, commit := range allCommits {
-		builder.WriteString(
-			fmt.Sprintf(
-				commitTemplate,
-				commit.Type,
-				commit.LibraryID,
-				commit.Description,
-				commit.Body,
-				commit.Footers[keyClNum],
-				shortSHA(commit.SHA),
-				commit.SHA,
-			),
-		)
+		commits = append(commits, commitInfo{
+			changeType:  commit.Type,
+			libraryID:   commit.LibraryID,
+			description: commit.Description,
+			body:        commit.Body,
+			clNum:       commit.Footers[keyClNum],
+			commitSHA:   commit.SHA,
+		})
 	}
-	builder.WriteString("END_COMMIT_OVERRIDE")
-	return builder.String(), nil
+	data := &generationPRBody{
+		startSHA:         startSHA,
+		endSHA:           endSHA,
+		librarianVersion: librarianVersion,
+		imageVersion:     state.Image,
+		commits:          commits,
+	}
+	var out bytes.Buffer
+	if err := genBodyTemplate.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+
+	return strings.TrimSpace(out.String()), nil
 }
 
 // findLatestGenerationCommit returns the latest commit among the last generated
