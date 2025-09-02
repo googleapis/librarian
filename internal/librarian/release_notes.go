@@ -85,44 +85,44 @@ var (
 	genBodyTemplate = template.Must(template.New("commit").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
 	}).Parse(`This pull request is generated with proto changes between
-[googleapis/googleapis@%{{shortSHA .startSHA}}](https://github.com/googleapis/googleapis/commit/{{.startSHA}})
+[googleapis/googleapis@{{shortSHA .StartSHA}}](https://github.com/googleapis/googleapis/commit/{{.StartSHA}})
 (exclusive) and
-[googleapis/googleapis@{{shortSHA .endSHA}}](https://github.com/googleapis/googleapis/commit/{{.endSHA}})
+[googleapis/googleapis@{{shortSHA .EndSHA}}](https://github.com/googleapis/googleapis/commit/{{.EndSHA}})
 (inclusive).
 
-Librarian Version: {{.librarianVersion}}
-Language Image: {{.imageVersion}}
+Librarian Version: {{.LibrarianVersion}}
+Language Image: {{.ImageVersion}}
 
 BEGIN_COMMIT_OVERRIDE
-{{- range .commits -}}
+{{ range .Commits }}
 BEGIN_NESTED_COMMIT
-{{.type}}: {{.libraryID}} {{.description}}
-{{.body}}
+{{.ChangeType}}: [{{.LibraryID}}] {{.Description}}
+{{.Body}}
 
-PiperOrigin-RevId: {{.clNum}}
+PiperOrigin-RevId: {{.ClNum}}
 
-Source-link: [googleapis/googleapis@{{shortSHA .commitSHA}}](https://github.com/googleapis/googleapis/commit/{{.commitSHA}})
+Source-link: [googleapis/googleapis@{{shortSHA .CommitSHA}}](https://github.com/googleapis/googleapis/commit/{{.CommitSHA}})
 END_NESTED_COMMIT
-{{- end -}}
+{{ end }}
 END_COMMIT_OVERRIDE
 `))
 )
 
 type generationPRBody struct {
-	startSHA         string
-	endSHA           string
-	librarianVersion string
-	imageVersion     string
-	commits          []commitInfo
+	StartSHA         string
+	EndSHA           string
+	LibrarianVersion string
+	ImageVersion     string
+	Commits          []CommitInfo
 }
 
-type commitInfo struct {
-	changeType  string
-	libraryID   string
-	description string
-	body        string
-	clNum       string
-	commitSHA   string
+type CommitInfo struct {
+	ChangeType  string
+	LibraryID   string
+	Description string
+	Body        string
+	ClNum       string
+	CommitSHA   string
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
@@ -156,23 +156,23 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	})
 	endSHA := allCommits[0].SHA
 	librarianVersion := cli.Version()
-	commits := make([]commitInfo, 0)
+	commits := make([]CommitInfo, 0)
 	for _, commit := range allCommits {
-		commits = append(commits, commitInfo{
-			changeType:  commit.Type,
-			libraryID:   commit.LibraryID,
-			description: commit.Description,
-			body:        commit.Body,
-			clNum:       commit.Footers[keyClNum],
-			commitSHA:   commit.SHA,
+		commits = append(commits, CommitInfo{
+			ChangeType:  commit.Type,
+			LibraryID:   commit.LibraryID,
+			Description: commit.Description,
+			Body:        commit.Body,
+			ClNum:       commit.Footers[keyClNum],
+			CommitSHA:   commit.SHA,
 		})
 	}
 	data := &generationPRBody{
-		startSHA:         startSHA,
-		endSHA:           endSHA,
-		librarianVersion: librarianVersion,
-		imageVersion:     state.Image,
-		commits:          commits,
+		StartSHA:         startSHA,
+		EndSHA:           endSHA,
+		LibrarianVersion: librarianVersion,
+		ImageVersion:     state.Image,
+		Commits:          commits,
 	}
 	var out bytes.Buffer
 	if err := genBodyTemplate.Execute(&out, data); err != nil {
