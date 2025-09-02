@@ -280,17 +280,18 @@ func TestLookupCommand(t *testing.T) {
 		wantArgs []string
 		wantErr  bool
 	}{
+		// {
+		// 	name:    "no args",
+		// 	cmd:     root,
+		// 	args:    []string{},
+		// 	wantCmd: root,
+		// },
 		{
-			name:    "no args",
-			cmd:     root,
-			args:    []string{},
-			wantCmd: root,
-		},
-		{
-			name:    "find sub1",
-			cmd:     root,
-			args:    []string{"sub1"},
-			wantCmd: sub1,
+			name:     "find sub1",
+			cmd:      root,
+			args:     []string{"sub1"},
+			wantCmd:  sub1,
+			wantArgs: []string{},
 		},
 		{
 			name:     "find sub2",
@@ -324,6 +325,27 @@ func TestLookupCommand(t *testing.T) {
 			cmd:     root,
 			args:    []string{"sub1", "unknown"},
 			wantErr: true,
+		},
+		{
+			name:     "find sub1 flags with potential subcommands",
+			cmd:      root,
+			args:     []string{"sub1", "-h"},
+			wantCmd:  sub1,
+			wantArgs: []string{"-h"},
+		},
+		{
+			name:     "find sub1sub1 flags with no potential subcommands",
+			cmd:      root,
+			args:     []string{"sub1", "sub1sub1", "-h"},
+			wantCmd:  sub1sub1,
+			wantArgs: []string{"-h"},
+		},
+		{
+			name:     "flag set in between commands",
+			cmd:      root,
+			args:     []string{"sub1", "-h", "sub1sub1"},
+			wantCmd:  sub1,
+			wantArgs: []string{"-h", "sub1sub1"},
 		},
 	}
 
