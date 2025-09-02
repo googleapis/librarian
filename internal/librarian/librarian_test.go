@@ -280,12 +280,12 @@ func TestLookupCommand(t *testing.T) {
 		wantArgs []string
 		wantErr  bool
 	}{
-		// {
-		// 	name:    "no args",
-		// 	cmd:     root,
-		// 	args:    []string{},
-		// 	wantCmd: root,
-		// },
+		{
+			name:    "no args",
+			cmd:     root,
+			args:    []string{},
+			wantCmd: root,
+		},
 		{
 			name:     "find sub1",
 			cmd:      root,
