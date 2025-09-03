@@ -46,11 +46,11 @@ const (
 type commitInfo struct {
 	ctx           context.Context
 	cfg           *config.Config
+	state         *config.LibrarianState
 	repo          gitrepo.Repository
 	ghClient      GitHubClient
 	commitMessage string
 	prType        string
-	prBody        string
 }
 
 type commandRunner struct {
@@ -332,12 +332,14 @@ func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage string) error {
+func commitAndPush(info *commitInfo) error {
+	cfg := info.cfg
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
 	}
 
+	repo := info.repo
 	status, err := repo.AddAll()
 	if err != nil {
 		return err
@@ -354,6 +356,7 @@ func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Reposit
 		return err
 	}
 
+	commitMessage := info.commitMessage
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	slog.Info("Committing", "message", commitMessage)
 	if err := repo.Commit(commitMessage); err != nil {
@@ -379,7 +382,19 @@ func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Reposit
 	titlePrefix := "Librarian pull request"
 	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
+	prBody := ""
+	switch info.prType {
+	case generate:
+	case release:
+		prBody, err = FormatReleaseNotes(repo, info.state)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unrecognized pull request type: %s", info.prType)
+	}
+
+	if _, err = info.ghClient.CreatePullRequest(info.ctx, gitHubRepo, branch, title, prBody); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil
