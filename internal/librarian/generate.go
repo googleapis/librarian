@@ -127,7 +127,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
-	prBody := ""
+	additionalMsg := ""
 	if r.cfg.API != "" || r.cfg.Library != "" {
 		libraryID := r.cfg.Library
 		if libraryID == "" {
@@ -136,14 +136,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 		if err := r.generateSingleLibrary(ctx, libraryID, outputDir); err != nil {
 			return err
 		}
-		prBody += fmt.Sprintf("feat: generated %s\n", libraryID)
+		additionalMsg += fmt.Sprintf("feat: generated %s\n", libraryID)
 	} else {
 		failedGenerations := 0
 		for _, library := range r.state.Libraries {
 			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
 				// TODO(https://github.com/googleapis/librarian/issues/983): record failure and report in PR body when applicable
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
-				prBody += fmt.Sprintf("%s failed to generate\n", library.ID)
+				additionalMsg += fmt.Sprintf("%s failed to generate\n", library.ID)
 				failedGenerations++
 			}
 		}
@@ -155,7 +155,17 @@ func (r *generateRunner) run(ctx context.Context) error {
 	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
 		return err
 	}
-	if err := commitAndPush(ctx, r.cfg, r.repo, r.ghClient, prBody); err != nil {
+
+	commitInfo := &commitInfo{
+		cfg:               r.cfg,
+		state:             r.state,
+		repo:              r.repo,
+		ghClient:          r.ghClient,
+		additionalMessage: additionalMsg,
+		commitMessage:     "",
+		prType:            generate,
+	}
+	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return err
 	}
 	return nil

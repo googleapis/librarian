@@ -105,9 +105,15 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
-	// TODO: https://github.com/googleapis/librarian/issues/1697
-	// Add commit message after this issue is resolved.
-	if err := commitAndPush(ctx, r.cfg, r.repo, r.ghClient, ""); err != nil {
+	commitInfo := &commitInfo{
+		cfg:           r.cfg,
+		state:         r.state,
+		repo:          r.repo,
+		ghClient:      r.ghClient,
+		commitMessage: "",
+		prType:        release,
+	}
+	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
 	}
 

@@ -335,12 +335,14 @@ func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage string) error {
+func commitAndPush(ctx context.Context, info *commitInfo) error {
+	cfg := info.cfg
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
 	}
 
+	repo := info.repo
 	status, err := repo.AddAll()
 	if err != nil {
 		return err
@@ -358,6 +360,7 @@ func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Reposit
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
+	commitMessage := info.commitMessage
 	slog.Info("Committing", "message", commitMessage)
 	if err := repo.Commit(commitMessage); err != nil {
 		return err
@@ -378,14 +381,29 @@ func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Reposit
 		return err
 	}
 
-	// Create a new branch, set title and message for the PR.
-	titlePrefix := "Librarian pull request"
-	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
+	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
+	prBody, err := createPRBody(info)
+	if err != nil {
+		return err
+	}
+
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage); err != nil {
+	if _, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
+
 	return nil
+}
+
+func createPRBody(info *commitInfo) (string, error) {
+	switch info.prType {
+	case generate:
+		return formatGenerationPRBody(info.repo, info.state)
+	case release:
+		return formatReleaseNotes(info.repo, info.state)
+	default:
+		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
+	}
 }
 
 func copyFile(dst, src string) (err error) {

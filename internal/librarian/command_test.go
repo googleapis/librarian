@@ -1313,8 +1313,15 @@ func TestCommitAndPush(t *testing.T) {
 				Push:   test.push,
 				Commit: test.commit,
 			}
-
-			err := commitAndPush(context.Background(), localConfig, repo, client, "")
+			commitInfo := &commitInfo{
+				cfg:           localConfig,
+				state:         nil,
+				repo:          repo,
+				ghClient:      client,
+				commitMessage: "",
+				prType:        generate,
+			}
+			err := commitAndPush(context.Background(), commitInfo)
 
 			if test.wantErr {
 				if err == nil {
