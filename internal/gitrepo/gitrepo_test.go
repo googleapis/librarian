@@ -19,6 +19,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/go-git/go-git/v5"
 	goGitConfig "github.com/go-git/go-git/v5/config"
@@ -587,6 +591,92 @@ func TestRemotes(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.setupRemotes, gotRemotes); diff != "" {
 				t.Errorf("Remotes() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetCommit(t *testing.T) {
+	t.Parallel()
+	setup := func(t *testing.T, dir string) string {
+		gitRepo, err := git.PlainInit(dir, false)
+		if err != nil {
+			t.Fatalf("git.PlainInit failed: %v", err)
+		}
+		w, err := gitRepo.Worktree()
+		if err != nil {
+			t.Fatalf("Worktree() failed: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Add("README.md"); err != nil {
+			t.Fatal(err)
+		}
+		commitHash, err := w.Commit("initial commit", &git.CommitOptions{
+			Author: &object.Signature{
+				Name:  "Test",
+				Email: "test@example.com",
+				When:  time.Now(),
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return commitHash.String()
+	}
+
+	for _, test := range []struct {
+		name       string
+		commitHash string
+		want       *Commit
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "get a commit",
+			want: &Commit{
+				Message: "initial commit",
+			},
+		},
+		{
+			name:       "failed to get a commit",
+			commitHash: "wrong-sha",
+			wantErr:    true,
+			wantErrMsg: "object not found",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			commitHash := setup(t, dir)
+			if test.commitHash != "" {
+				commitHash = test.commitHash
+			}
+
+			repo, err := NewRepository(&RepositoryOptions{Dir: dir})
+			if err != nil {
+				t.Error(err)
+			}
+
+			got, err := repo.GetCommit(commitHash)
+			if test.wantErr {
+				if err == nil {
+					t.Error("GetCommit() should fail")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("GetCommit() failed: %v", err)
+			}
+
+			test.want.Hash = plumbing.NewHash(commitHash)
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(Commit{}, "When")); diff != "" {
+				t.Errorf("GetDir() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
