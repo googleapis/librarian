@@ -1089,6 +1089,7 @@ func TestCommitAndPush(t *testing.T) {
 		name            string
 		setupMockRepo   func(t *testing.T) gitrepo.Repository
 		setupMockClient func(t *testing.T) GitHubClient
+		state           *config.LibrarianState
 		commit          bool
 		push            bool
 		wantErr         bool
@@ -1150,7 +1151,8 @@ func TestCommitAndPush(t *testing.T) {
 					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 				}
 			},
-			push: true,
+			state: &config.LibrarianState{},
+			push:  true,
 		},
 		{
 			name: "No GitHub Remote",
@@ -1283,6 +1285,7 @@ func TestCommitAndPush(t *testing.T) {
 					createPullRequestErr: errors.New("create pull request error"),
 				}
 			},
+			state:          &config.LibrarianState{},
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request",
@@ -1315,7 +1318,7 @@ func TestCommitAndPush(t *testing.T) {
 			}
 			commitInfo := &commitInfo{
 				cfg:           localConfig,
-				state:         nil,
+				state:         test.state,
 				repo:          repo,
 				ghClient:      client,
 				commitMessage: "",
