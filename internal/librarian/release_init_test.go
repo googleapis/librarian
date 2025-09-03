@@ -334,6 +334,35 @@ func TestInitRun(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to make directory",
 		},
+		{
+			name: "run release init command with symbolic link",
+			runner: &initRunner{
+				workRoot:        t.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Library: "example-id",
+					Push:    false,
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-id",
+							SourceRoots: []string{
+								"dir1",
+							},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+			files: map[string]string{
+				"dir1/file1.txt": "hello",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// Setup library files before running the command.
@@ -350,6 +379,13 @@ func TestInitRun(t *testing.T) {
 					if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 						t.Fatalf("os.WriteFile() = %v", err)
 					}
+				}
+			}
+			// Create a symbolic link for the test case with symbolic links.
+			if test.name == "run release init command with symbolic link" {
+				if err := os.Symlink(filepath.Join(repoDir, "dir1/file1.txt"),
+					filepath.Join(repoDir, "dir1/symlink.txt")); err != nil {
+					t.Fatalf("os.Symlink() = %v", err)
 				}
 			}
 			librarianDir := filepath.Join(repoDir, ".librarian")
