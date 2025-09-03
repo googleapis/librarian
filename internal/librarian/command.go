@@ -38,6 +38,21 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+const (
+	generate = "generate"
+	release  = "release"
+)
+
+type commitInfo struct {
+	ctx           context.Context
+	cfg           *config.Config
+	repo          gitrepo.Repository
+	ghClient      GitHubClient
+	commitMessage string
+	prType        string
+	prBody        string
+}
+
 type commandRunner struct {
 	cfg             *config.Config
 	repo            gitrepo.Repository
