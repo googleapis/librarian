@@ -98,12 +98,11 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 
 func (r *initRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
-	var err error
-	if err = os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
 	slog.Info("Initiating a release", "dir", outputDir)
-	if err = r.runInitCommand(ctx, outputDir); err != nil {
+	if err := r.runInitCommand(ctx, outputDir); err != nil {
 		return err
 	}
 
@@ -116,12 +115,14 @@ func (r *initRunner) run(ctx context.Context) error {
 		prType:        release,
 	}
 	var prMetadata *github.PullRequestMetadata
+	var err error
 	if prMetadata, err = commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
 	}
 
 	// Newly created PRs from the `release init` command should have a
-	// `release:pending` Github tab to be tracked for release
+	// `release:pending` Github tab to be tracked for release. Only add
+	// labels if a PR has been successfully created on Github.
 	if prMetadata != nil {
 		prInfo := &prInfo{
 			repo:       r.repo,
