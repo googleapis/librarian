@@ -71,6 +71,10 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 			directory is configured as a language repository.`)
 }
 
+func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Branch, "branch", "main", "remote branch to use with the code repository for cloning and pull requests.")
+}
+
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.WorkRoot, "output", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
 }

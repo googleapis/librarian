@@ -303,6 +303,7 @@ func TestCreatePullRequest(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		remoteBranch  string
+		remoteBase    string
 		title         string
 		body          string
 		handler       http.HandlerFunc
@@ -313,6 +314,7 @@ func TestCreatePullRequest(t *testing.T) {
 		{
 			name:         "Success with provided body",
 			remoteBranch: "feature-branch",
+			remoteBase:   "base-branch",
 			title:        "New Feature",
 			body:         "This is a new feature.",
 			handler: func(w http.ResponseWriter, r *http.Request) {
@@ -335,8 +337,8 @@ func TestCreatePullRequest(t *testing.T) {
 				if *newPR.Head != "feature-branch" {
 					t.Errorf("unexpected head: got %q, want %q", *newPR.Head, "feature-branch")
 				}
-				if *newPR.Base != "main" {
-					t.Errorf("unexpected base: got %q, want %q", *newPR.Base, "main")
+				if *newPR.Base != "base-branch" {
+					t.Errorf("unexpected base: got %q, want %q", *newPR.Base, "base-branch")
 				}
 				fmt.Fprint(w, `{"number": 1, "html_url": "https://github.com/owner/repo/pull/1"}`)
 			},
@@ -345,6 +347,7 @@ func TestCreatePullRequest(t *testing.T) {
 		{
 			name:         "Success with empty body",
 			remoteBranch: "another-branch",
+			remoteBase:   "main",
 			title:        "Another PR",
 			body:         "",
 			handler: func(w http.ResponseWriter, r *http.Request) {
@@ -363,6 +366,7 @@ func TestCreatePullRequest(t *testing.T) {
 		{
 			name:          "GitHub API error",
 			remoteBranch:  "error-branch",
+			remoteBase:    "main",
 			title:         "Error PR",
 			body:          "This will fail.",
 			handler:       func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) },
@@ -382,7 +386,7 @@ func TestCreatePullRequest(t *testing.T) {
 			}
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			metadata, err := client.CreatePullRequest(context.Background(), repo, test.remoteBranch, test.title, test.body)
+			metadata, err := client.CreatePullRequest(context.Background(), repo, test.remoteBranch, test.remoteBase, test.title, test.body)
 
 			if test.wantErr {
 				if err == nil {

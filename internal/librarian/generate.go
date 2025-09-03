@@ -82,6 +82,7 @@ func init() {
 	addFlagImage(fs, cfg)
 	addFlagLibrary(fs, cfg)
 	addFlagRepo(fs, cfg)
+	addFlagBranch(fs, cfg)
 	addFlagWorkRoot(fs, cfg)
 	addFlagPush(fs, cfg)
 }

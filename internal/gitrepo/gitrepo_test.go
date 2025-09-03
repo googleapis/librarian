@@ -90,9 +90,10 @@ func TestNewRepository(t *testing.T) {
 		{
 			name: "clone maybe",
 			opts: &RepositoryOptions{
-				Dir:        filepath.Join(tmpDir, "clone-maybe"),
-				MaybeClone: true,
-				RemoteURL:  remoteDir,
+				Dir:          filepath.Join(tmpDir, "clone-maybe"),
+				MaybeClone:   true,
+				RemoteURL:    remoteDir,
+				RemoteBranch: "master",
 			},
 			wantDir: filepath.Join(tmpDir, "clone-maybe"),
 		},
@@ -108,8 +109,18 @@ func TestNewRepository(t *testing.T) {
 		{
 			name: "clone maybe no remote url",
 			opts: &RepositoryOptions{
+				Dir:          filepath.Join(tmpDir, "clone-maybe-no-remote"),
+				MaybeClone:   true,
+				RemoteBranch: "main",
+			},
+			wantErr: true,
+		},
+		{
+			name: "clone maybe no remote branch",
+			opts: &RepositoryOptions{
 				Dir:        filepath.Join(tmpDir, "clone-maybe-no-remote"),
 				MaybeClone: true,
+				RemoteURL:  remoteDir,
 			},
 			wantErr: true,
 		},

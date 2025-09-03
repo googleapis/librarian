@@ -96,7 +96,7 @@ func lookupCommand(cmd *cli.Command, args []string) (*cli.Command, []string, err
 // GitHubClient is an abstraction over the GitHub client.
 type GitHubClient interface {
 	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
-	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, title, body string) (*github.PullRequestMetadata, error)
+	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error)
 	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
 	GetLabels(ctx context.Context, number int) ([]string, error)
 	ReplaceLabels(ctx context.Context, number int, labels []string) error
