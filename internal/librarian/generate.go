@@ -127,23 +127,31 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 	slog.Info("Code will be generated", "dir", outputDir)
 
+	idToCommits := make(map[string]string, 0)
 	additionalMsg := ""
 	if r.cfg.API != "" || r.cfg.Library != "" {
 		libraryID := r.cfg.Library
 		if libraryID == "" {
 			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
 		}
-		if err := r.generateSingleLibrary(ctx, libraryID, outputDir); err != nil {
+		oldCommit, err := r.generateSingleLibrary(ctx, libraryID, outputDir)
+		if err != nil {
 			return err
 		}
+		idToCommits[libraryID] = oldCommit
 		additionalMsg += fmt.Sprintf("feat: generated %s\n", libraryID)
 	} else {
 		failedGenerations := 0
 		for _, library := range r.state.Libraries {
-			if err := r.generateSingleLibrary(ctx, library.ID, outputDir); err != nil {
+			oldCommit, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
+			if err != nil {
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
 				additionalMsg += fmt.Sprintf("%s failed to generate\n", library.ID)
 				failedGenerations++
+			} else {
+				// Only add the mapping if library generation is successful so that
+				// failed library will not appear in generation PR body.
+				idToCommits[library.ID] = oldCommit
 			}
 		}
 		if failedGenerations > 0 && failedGenerations == len(r.state.Libraries) {
@@ -160,6 +168,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		state:             r.state,
 		repo:              r.repo,
 		ghClient:          r.ghClient,
+		idToCommits:       idToCommits,
 		additionalMessage: additionalMsg,
 		commitMessage:     "",
 		prType:            generate,
@@ -175,13 +184,16 @@ func (r *generateRunner) run(ctx context.Context) error {
 // It can either configure a new library if the API and library both are specified
 // and library not configured in state.yaml yet, or regenerate an existing library
 // if a libraryID is provided.
+//
 // After ensuring the library is configured, it runs the generation and build commands.
-func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) error {
+//
+// Returns the last generated commit *before* the generation and error, if any.
+func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.cfg.Library)
 		configuredLibraryID, err := r.runConfigureCommand(ctx)
 		if err != nil {
-			return err
+			return "", err
 		}
 		libraryID = configuredLibraryID
 	}
@@ -189,12 +201,13 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	// At this point, we should have a library in the state.
 	libraryState := findLibraryByID(r.state, libraryID)
 	if libraryState == nil {
-		return fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
+		return "", fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
 	}
+	lastGenCommit := libraryState.LastGeneratedCommit
 
 	if len(libraryState.APIs) == 0 {
 		slog.Info("library has no APIs; skipping generation", "library", libraryID)
-		return nil
+		return "", nil
 	}
 
 	// For each library, create a separate output directory. This avoids
@@ -202,44 +215,27 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	// was generated for each library when debugging.
 	libraryOutputDir := filepath.Join(outputDir, libraryID)
 	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
-		return err
+		return "", err
 	}
 
 	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, libraryOutputDir)
 	if err != nil {
-		return err
-	}
-
-	if err := r.updateChangesSinceLastGeneration(generatedLibraryID); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := r.runBuildCommand(ctx, generatedLibraryID); err != nil {
-		return err
+		return "", err
 	}
+
 	if err := r.updateLastGeneratedCommitState(generatedLibraryID); err != nil {
-		return err
+		return "", err
 	}
-	return nil
+
+	return lastGenCommit, nil
 }
 
 func (r *generateRunner) needsConfigure() bool {
 	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
-}
-
-func (r *generateRunner) updateChangesSinceLastGeneration(libraryID string) error {
-	for _, library := range r.state.Libraries {
-		if library.ID == libraryID {
-			commits, err := GetConventionalCommitsSinceLastGeneration(r.sourceRepo, library)
-			if err != nil {
-				return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
-			}
-			library.Changes = coerceLibraryChanges(commits)
-			break
-		}
-	}
-
-	return nil
 }
 
 func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error {

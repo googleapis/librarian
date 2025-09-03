@@ -29,8 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -48,6 +46,7 @@ type commitInfo struct {
 	state             *config.LibrarianState
 	repo              gitrepo.Repository
 	ghClient          GitHubClient
+	idToCommits       map[string]string
 	additionalMessage string
 	commitMessage     string
 	prType            string
@@ -251,7 +250,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 	for _, srcRoot := range library.SourceRoots {
 		dstPath := filepath.Join(dest, srcRoot)
 		srcPath := filepath.Join(src, srcRoot)
-		files, err := getDirectoryFilesnames(srcPath)
+		files, err := getDirectoryFilenames(srcPath)
 		if err != nil {
 			return err
 		}
@@ -267,7 +266,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 	return nil
 }
 
-func getDirectoryFilesnames(dir string) ([]string, error) {
+func getDirectoryFilenames(dir string) ([]string, error) {
 	if _, err := os.Stat(dir); err != nil {
 		// Skip dirs that don't exist
 		if os.IsNotExist(err) {
@@ -308,27 +307,6 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	}
 
 	return nil
-}
-
-func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
-	changes := make([]*config.Change, 0)
-	for _, commit := range commits {
-		clNum := ""
-		if cl, ok := commit.Footers[KeyClNum]; ok {
-			clNum = cl
-		}
-
-		changeType := getChangeType(commit)
-		changes = append(changes, &config.Change{
-			Type:       changeType,
-			Subject:    commit.Description,
-			Body:       commit.Body,
-			ClNum:      clNum,
-			CommitHash: commit.SHA,
-		})
-	}
-
-	return changes
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated
@@ -396,7 +374,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 func createPRBody(info *commitInfo) (string, error) {
 	switch info.prType {
 	case generate:
-		return formatGenerationPRBody(info.repo, info.state)
+		return formatGenerationPRBody(info.repo, info.state, info.idToCommits)
 	case release:
 		return formatReleaseNotes(info.repo, info.state)
 	default:

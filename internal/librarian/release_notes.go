@@ -113,10 +113,11 @@ type generationPRBody struct {
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
-func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
+func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string) (string, error) {
 	allCommits := make([]*conventionalcommits.ConventionalCommit, 0)
 	for _, library := range state.Libraries {
-		commits, err := GetConventionalCommitsSinceLastGeneration(repo, library)
+		lastGenCommit := idToCommits[library.ID]
+		commits, err := getConventionalCommitsSinceLastGeneration(repo, library, lastGenCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 		}
