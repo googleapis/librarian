@@ -170,7 +170,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		ghClient:          r.ghClient,
 		idToCommits:       idToCommits,
 		additionalMessage: additionalMsg,
-		commitMessage:     "",
+		commitMessage:     "chore: generate libraries",
 		prType:            generate,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
