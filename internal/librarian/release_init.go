@@ -130,7 +130,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		// `release:pending` Github tab to be tracked for release
 		if err := r.ghClient.AddLabelsToIssue(ctx, gitHubRepo, prMetadata.Number, []string{"release:pending"}); err != nil {
 			return fmt.Errorf("unable to add `release:pending` label to newly created pull request: %w", err)
-		}	
+		}
 	}
 
 	return nil
