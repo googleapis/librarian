@@ -332,14 +332,11 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
-	slog.Info("Creating branch", slog.String("branch", branch))
 	if err := repo.CreateBranchAndCheckout(branch); err != nil {
 		return err
 	}
 
-	commitMessage := info.commitMessage
-	slog.Info("Committing", "message", commitMessage)
-	if err := repo.Commit(commitMessage); err != nil {
+	if err := repo.Commit(info.commitMessage); err != nil {
 		return err
 	}
 
