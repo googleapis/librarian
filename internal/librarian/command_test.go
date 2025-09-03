@@ -1339,6 +1339,102 @@ func TestCommitAndPush(t *testing.T) {
 	}
 }
 
+func TestAddLabelsToPullRequest(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		setupMockRepo   func(t *testing.T) gitrepo.Repository
+		setupMockClient func(t *testing.T) GitHubClient
+		prMetadata      github.PullRequestMetadata
+		labels          []string
+		wantErr         bool
+		expectedErrMsg  string
+	}{
+		{
+			name: "No GitHub Remote",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				return &MockRepository{
+					RemotesValue: []*git.Remote{}, // No remotes
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			wantErr:        true,
+			expectedErrMsg: "could not find an 'origin' remote",
+		},
+		{
+			name: "Add All Labels",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				return &MockRepository{
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{
+					addLabelsToIssuesCalls: 3,
+				}
+			},
+			prMetadata: github.PullRequestMetadata{
+				Number: 7,
+			},
+			labels: []string{"release:pending", "1234", "label1234"},
+		},
+		{
+			name: "Failed to add labels",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				return &MockRepository{
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{
+					addLabelsToIssuesErr: errors.New("Can't add labels"),
+				}
+			},
+			prMetadata: github.PullRequestMetadata{
+				Number: 7,
+			},
+			labels:         []string{"release:pending", "1234", "label1234"},
+			wantErr:        true,
+			expectedErrMsg: "unable to add labels to newly created pull request",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := test.setupMockRepo(t)
+			client := test.setupMockClient(t)
+			prMetadata := test.prMetadata
+			prInfo := &prInfo{
+				repo:       repo,
+				ghClient:   client,
+				prMetadata: &prMetadata,
+				labels:     test.labels,
+			}
+			err := addLabelsToPullRequest(context.Background(), prInfo)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("addLabelsToPullRequest() expected error, got nil")
+				} else if test.expectedErrMsg != "" && !strings.Contains(err.Error(), test.expectedErrMsg) {
+					t.Errorf("addLabelsToPullRequest() error = %v, expected to contain: %q", err, test.expectedErrMsg)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("%s: addLabelsToPullRequest() returned unexpected error: %v", test.name, err)
+				return
+			}
+		})
+	}
+}
+
 func TestCopyLibraryFiles(t *testing.T) {
 	t.Parallel()
 	setup := func(src string, files []string) {

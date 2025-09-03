@@ -30,9 +30,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/googleapis/librarian/internal/config"
-
-	gogitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/storage/memory"
 )
 
 func TestNewInitRunner(t *testing.T) {
@@ -126,10 +123,6 @@ func TestInitRun(t *testing.T) {
 				},
 				repo: &MockRepository{
 					Dir: t.TempDir(),
-					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-						Name: "origin",
-						URLs: []string{"https://github.com/googleapis/librarian.git"},
-					})},
 				},
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
@@ -173,10 +166,6 @@ func TestInitRun(t *testing.T) {
 				},
 				repo: &MockRepository{
 					Dir: t.TempDir(),
-					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-						Name: "origin",
-						URLs: []string{"https://github.com/googleapis/librarian.git"},
-					})},
 				},
 				partialRepo: t.TempDir(),
 			},
@@ -220,10 +209,6 @@ func TestInitRun(t *testing.T) {
 				},
 				repo: &MockRepository{
 					Dir: t.TempDir(),
-					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-						Name: "origin",
-						URLs: []string{"https://github.com/googleapis/librarian.git"},
-					})},
 				},
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
@@ -370,10 +355,6 @@ func TestInitRun(t *testing.T) {
 				},
 				repo: &MockRepository{
 					Dir: t.TempDir(),
-					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-						Name: "origin",
-						URLs: []string{"https://github.com/googleapis/librarian.git"},
-					})},
 				},
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),

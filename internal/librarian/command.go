@@ -53,6 +53,13 @@ type commitInfo struct {
 	prType            string
 }
 
+type prInfo struct {
+	repo       gitrepo.Repository
+	ghClient   GitHubClient
+	prMetadata *github.PullRequestMetadata
+	labels     []string
+}
+
 type commandRunner struct {
 	cfg             *config.Config
 	repo            gitrepo.Repository
@@ -387,6 +394,21 @@ func commitAndPush(ctx context.Context, info *commitInfo) (*github.PullRequestMe
 		return nil, fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return prMetadata, nil
+}
+
+func addLabelsToPullRequest(ctx context.Context, prInfo *prInfo) error {
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(prInfo.repo)
+	if err != nil {
+		return err
+	}
+
+	if prInfo.labels != nil {
+		if err := prInfo.ghClient.AddLabelsToIssue(ctx, gitHubRepo, prInfo.prMetadata.Number, prInfo.labels); err != nil {
+			return fmt.Errorf("unable to add labels to newly created pull request: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func copyFile(dst, src string) (err error) {

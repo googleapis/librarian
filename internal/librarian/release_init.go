@@ -107,7 +107,6 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
-	var prMetadata *github.PullRequestMetadata
 	commitInfo := &commitInfo{
 		cfg:           r.cfg,
 		state:         r.state,
@@ -116,20 +115,23 @@ func (r *initRunner) run(ctx context.Context) error {
 		commitMessage: "",
 		prType:        release,
 	}
+	var prMetadata *github.PullRequestMetadata
 	if prMetadata, err = commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
 	}
 
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(r.repo)
-	if err != nil {
-		return fmt.Errorf("unable to add retrieve the github repo to add `release:pending` label: %w", err)
-	}
+	// Newly created PRs from the `release init` command should have a
+	// `release:pending` Github tab to be tracked for release
+	if prMetadata != nil {
+		prInfo := &prInfo{
+			repo:       r.repo,
+			ghClient:   r.ghClient,
+			prMetadata: prMetadata,
+			labels:     []string{"release:pending"},
+		}
 
-	if commitInfo.cfg.Push {
-		// Newly created PRs from the `release init` command must have a
-		// `release:pending` Github tab to be tracked for release
-		if err := r.ghClient.AddLabelsToIssue(ctx, gitHubRepo, prMetadata.Number, []string{"release:pending"}); err != nil {
-			return fmt.Errorf("unable to add `release:pending` label to newly created pull request: %w", err)
+		if err := addLabelsToPullRequest(ctx, prInfo); err != nil {
+			return fmt.Errorf("failed to add label to PR: %w", err)
 		}
 	}
 
