@@ -122,7 +122,9 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 		slog.Warn("Provided PR body is empty, setting default.")
 		body = "Regenerated all changed APIs. See individual commits for details."
 	}
-	slog.Info("Creating PR", "branch", remoteBranch, "title", title, "body", body)
+	slog.Info("Creating PR", "branch", remoteBranch, "base", baseBranch, "title", title)
+	// The body may be excessively long, only display in debug mode.
+	slog.Debug("PR body", body)
 	newPR := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &remoteBranch,
