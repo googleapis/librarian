@@ -42,6 +42,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 		name          string
 		state         *config.LibrarianState
 		repo          gitrepo.Repository
+		idToCommits   map[string]string
 		want          string
 		wantErr       bool
 		wantErrPhrase string
@@ -119,8 +120,7 @@ END_COMMIT_OVERRIDE`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: "1234567890",
+						ID: "one-library",
 					},
 				},
 			},
@@ -155,6 +155,9 @@ END_COMMIT_OVERRIDE`,
 						"path/to/file",
 					},
 				},
+			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
 			},
 			want: fmt.Sprintf(`This pull request is generated with proto changes between
 [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
@@ -194,8 +197,9 @@ END_COMMIT_OVERRIDE`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: "1234567890",
+						ID: "one-library",
+						// Intentionally set this value to verify the test can pass.
+						LastGeneratedCommit: "randomCommit",
 					},
 				},
 			},
@@ -226,6 +230,9 @@ END_COMMIT_OVERRIDE`,
 					},
 				},
 			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
 			wantErr:       true,
 			wantErrPhrase: "failed to find the start commit",
 		},
@@ -236,6 +243,9 @@ END_COMMIT_OVERRIDE`,
 				Libraries: []*config.LibraryState{{ID: "one-library"}},
 			},
 			repo: &MockRepository{},
+			idToCommits: map[string]string{
+				"one-library": "",
+			},
 			want: "No commit is found since last generation",
 		},
 		{
@@ -244,20 +254,22 @@ END_COMMIT_OVERRIDE`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: "1234567890",
+						ID: "one-library",
 					},
 				},
 			},
 			repo: &MockRepository{
 				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
 			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
 			wantErr:       true,
 			wantErrPhrase: "failed to fetch conventional commits for library",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatGenerationPRBody(test.repo, test.state)
+			got, err := formatGenerationPRBody(test.repo, test.state, test.idToCommits)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
