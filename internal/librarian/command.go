@@ -382,28 +382,12 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
-	prBody, err := createPRBody(info)
-	if err != nil {
-		return err
-	}
-
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	if _, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody); err != nil {
+	if _, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 
 	return nil
-}
-
-func createPRBody(info *commitInfo) (string, error) {
-	switch info.prType {
-	case generate:
-		return formatGenerationPRBody(info.repo, info.state)
-	case release:
-		return formatReleaseNotes(info.repo, info.state)
-	default:
-		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
-	}
 }
 
 func copyFile(dst, src string) (err error) {
