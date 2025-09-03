@@ -104,8 +104,6 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
-	// TODO: https://github.com/googleapis/librarian/issues/1697
-	// Add commit message after this issue is resolved.
 	commitInfo := &commitInfo{
 		ctx:           ctx,
 		cfg:           r.cfg,

@@ -44,13 +44,14 @@ const (
 )
 
 type commitInfo struct {
-	ctx           context.Context
-	cfg           *config.Config
-	state         *config.LibrarianState
-	repo          gitrepo.Repository
-	ghClient      GitHubClient
-	commitMessage string
-	prType        string
+	ctx               context.Context
+	cfg               *config.Config
+	state             *config.LibrarianState
+	repo              gitrepo.Repository
+	ghClient          GitHubClient
+	additionalMessage string
+	commitMessage     string
+	prType            string
 }
 
 type commandRunner struct {
