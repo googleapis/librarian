@@ -105,7 +105,6 @@ func (r *initRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		ctx:           ctx,
 		cfg:           r.cfg,
 		state:         r.state,
 		repo:          r.repo,
@@ -113,7 +112,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		commitMessage: "",
 		prType:        release,
 	}
-	if err := commitAndPush(commitInfo); err != nil {
+	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
 	}
 

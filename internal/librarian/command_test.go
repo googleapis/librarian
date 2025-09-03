@@ -1314,7 +1314,6 @@ func TestCommitAndPush(t *testing.T) {
 				Commit: test.commit,
 			}
 			commitInfo := &commitInfo{
-				ctx:           context.Background(),
 				cfg:           localConfig,
 				state:         nil,
 				repo:          repo,
@@ -1323,7 +1322,7 @@ func TestCommitAndPush(t *testing.T) {
 				prType:        generate,
 			}
 
-			err := commitAndPush(commitInfo)
+			err := commitAndPush(context.Background(), commitInfo)
 
 			if test.wantErr {
 				if err == nil {

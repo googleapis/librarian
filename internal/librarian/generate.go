@@ -155,7 +155,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return err
 	}
 	commitInfo := &commitInfo{
-		ctx:               ctx,
 		cfg:               r.cfg,
 		state:             r.state,
 		repo:              r.repo,
@@ -164,7 +163,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		commitMessage:     "",
 		prType:            generate,
 	}
-	if err := commitAndPush(commitInfo); err != nil {
+	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return err
 	}
 	return nil

@@ -44,7 +44,6 @@ const (
 )
 
 type commitInfo struct {
-	ctx               context.Context
 	cfg               *config.Config
 	state             *config.LibrarianState
 	repo              gitrepo.Repository
@@ -333,7 +332,7 @@ func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(info *commitInfo) error {
+func commitAndPush(ctx context.Context, info *commitInfo) error {
 	cfg := info.cfg
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
@@ -395,7 +394,7 @@ func commitAndPush(info *commitInfo) error {
 		return fmt.Errorf("unrecognized pull request type: %s", info.prType)
 	}
 
-	if _, err = info.ghClient.CreatePullRequest(info.ctx, gitHubRepo, branch, title, prBody); err != nil {
+	if _, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, prBody); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 	return nil
