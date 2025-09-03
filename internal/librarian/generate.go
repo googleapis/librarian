@@ -125,8 +125,9 @@ func (r *generateRunner) run(ctx context.Context) error {
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
 	}
-	slog.Info("Code will be generated", "dir", outputDir)
-
+	// The last generated commit is changed after library generation,
+	// use this map to keep the mapping from library id to commit sha before the
+	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string, 0)
 	additionalMsg := ""
 	if r.cfg.API != "" || r.cfg.Library != "" {
@@ -275,7 +276,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		Output:    outputDir,
 		RepoDir:   r.repo.GetDir(),
 	}
-	slog.Info("Performing generation for library", "id", libraryID)
+	slog.Info("Performing generation for library", "id", libraryID, "outputDir", outputDir)
 	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
 		return "", err
 	}
