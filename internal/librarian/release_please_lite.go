@@ -47,7 +47,11 @@ func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library 
 		return make([]*conventionalcommits.ConventionalCommit, 0), nil
 	}
 
-	apiPaths := library.GetAPIPaths()
+	apiPaths := make([]string, 0)
+	for _, oneAPI := range library.APIs {
+		apiPaths = append(apiPaths, oneAPI.Path)
+	}
+
 	commits, err := repo.GetCommitsForPathsSinceCommit(apiPaths, lastGenCommit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)

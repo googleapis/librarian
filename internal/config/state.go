@@ -204,16 +204,6 @@ func (l *LibraryState) Validate() error {
 	return nil
 }
 
-// GetAPIPaths returns all api paths of a library.
-func (l *LibraryState) GetAPIPaths() []string {
-	apiPaths := make([]string, 0)
-	for _, oneAPI := range l.APIs {
-		apiPaths = append(apiPaths, oneAPI.Path)
-	}
-
-	return apiPaths
-}
-
 // API represents an API that is part of a library.
 type API struct {
 	// The path to the API, relative to the root of the API definition repository (e.g., "google/storage/v1").
