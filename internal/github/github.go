@@ -124,7 +124,7 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 	}
 	slog.Info("Creating PR", "branch", remoteBranch, "base", baseBranch, "title", title)
 	// The body may be excessively long, only display in debug mode.
-	slog.Debug("PR body", body)
+	slog.Debug("with PR body", "body", body)
 	newPR := &github.NewPullRequest{
 		Title:               &title,
 		Head:                &remoteBranch,
