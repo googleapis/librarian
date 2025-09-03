@@ -226,6 +226,27 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 	return nil
 }
 
+func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
+	changes := make([]*config.Change, 0)
+	for _, commit := range commits {
+		clNum := ""
+		if cl, ok := commit.Footers[KeyClNum]; ok {
+			clNum = cl
+		}
+
+		changeType := getChangeType(commit)
+		changes = append(changes, &config.Change{
+			Type:       changeType,
+			Subject:    commit.Description,
+			Body:       commit.Body,
+			ClNum:      clNum,
+			CommitHash: commit.SHA,
+		})
+	}
+
+	return changes
+}
+
 // getChangeType gets the type of the commit, adding an escalation mark (!) if
 // it is a breaking change.
 func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
