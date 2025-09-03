@@ -331,63 +331,62 @@ func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*
 	return changes
 }
 
-// commitAndPush creates a commit and push request to GitHub for the generated
-// changes.
+// commitAndPush creates a commit and push request to GitHub for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, info *commitInfo) error {
+func commitAndPush(ctx context.Context, info *commitInfo) (*github.PullRequestMetadata, error) {
 	cfg := info.cfg
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
-		return nil
+		return nil, nil
 	}
 
 	repo := info.repo
 	status, err := repo.AddAll()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if status.IsClean() {
 		slog.Info("No changes to commit, skipping commit and push.")
-		return nil
+		return nil, nil
 	}
 
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	slog.Info("Creating branch", slog.String("branch", branch))
 	if err := repo.CreateBranchAndCheckout(branch); err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	commitMessage := info.commitMessage
 	slog.Info("Committing", "message", commitMessage)
 	if err := repo.Commit(commitMessage); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := repo.Push(branch); err != nil {
-		return err
+		return nil, err
 	}
 
 	if !cfg.Push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
-		return nil
+		return nil, nil
 	}
 
 	// Ensure we have a GitHub repository
 	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	if _, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage); err != nil {
-		return fmt.Errorf("failed to create pull request: %w", err)
+	var prMetadata *github.PullRequestMetadata
+	if prMetadata, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage); err != nil {
+		return nil, fmt.Errorf("failed to create pull request: %w", err)
 	}
-
-	return nil
+	return prMetadata, nil
 }
 
 func copyFile(dst, src string) (err error) {

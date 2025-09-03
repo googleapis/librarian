@@ -1321,7 +1321,7 @@ func TestCommitAndPush(t *testing.T) {
 				commitMessage: "",
 				prType:        generate,
 			}
-			err := commitAndPush(context.Background(), commitInfo)
+			_, err := commitAndPush(context.Background(), commitInfo)
 
 			if test.wantErr {
 				if err == nil {

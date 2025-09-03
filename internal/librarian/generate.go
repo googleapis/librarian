@@ -164,7 +164,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		commitMessage:     "",
 		prType:            generate,
 	}
-	if err := commitAndPush(ctx, commitInfo); err != nil {
+	if _, err := commitAndPush(ctx, commitInfo); err != nil {
 		return err
 	}
 	return nil

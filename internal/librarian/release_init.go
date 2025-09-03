@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
+	"github.com/googleapis/librarian/internal/github"
 
 	"github.com/googleapis/librarian/internal/docker"
 
@@ -97,14 +98,16 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 
 func (r *initRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	var err error
+	if err = os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
 	slog.Info("Initiating a release", "dir", outputDir)
-	if err := r.runInitCommand(ctx, outputDir); err != nil {
+	if err = r.runInitCommand(ctx, outputDir); err != nil {
 		return err
 	}
 
+	var prMetadata *github.PullRequestMetadata
 	commitInfo := &commitInfo{
 		cfg:           r.cfg,
 		state:         r.state,
@@ -113,8 +116,19 @@ func (r *initRunner) run(ctx context.Context) error {
 		commitMessage: "",
 		prType:        release,
 	}
-	if err := commitAndPush(ctx, commitInfo); err != nil {
+	if prMetadata, err = commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
+	}
+
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(r.repo)
+	if err != nil {
+		return fmt.Errorf("unable to add retrieve the github repo to add `release:pending` label: %w", err)
+	}
+
+	// Newly created PRs from the `release init` command must have a
+	// `release:pending` Github tab to be tracked for release
+	if err := r.ghClient.AddLabelsToIssue(ctx, gitHubRepo, prMetadata.Number, []string{"release:pending"}); err != nil {
+		return fmt.Errorf("unable to add `release:pending` label to newly created pull request: %w", err)
 	}
 
 	return nil
