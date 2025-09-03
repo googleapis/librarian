@@ -166,7 +166,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	commitInfo := &commitInfo{
 		cfg:               r.cfg,
 		state:             r.state,
-		repo:              r.repo,
+		repo:              r.sourceRepo,
 		ghClient:          r.ghClient,
 		idToCommits:       idToCommits,
 		additionalMessage: additionalMsg,
