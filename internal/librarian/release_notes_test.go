@@ -54,12 +54,10 @@ func TestFormatGenerationPRBody(t *testing.T) {
 			Image: "go:1.21",
 			Libraries: []*config.LibraryState{
 				{
-					ID:                  "one-library",
-					LastGeneratedCommit: "1234567890",
+					ID: "one-library",
 				},
 				{
-					ID:                  "another-library",
-					LastGeneratedCommit: "abcdefg",
+					ID: "another-library",
 				},
 			},
 		},
@@ -90,6 +88,10 @@ func TestFormatGenerationPRBody(t *testing.T) {
 					"path/to/file",
 				},
 			},
+		},
+		idToCommits: map[string]string{
+			"one-library":     "1234567890",
+			"another-library": "abcdefg",
 		},
 		want: fmt.Sprintf(`This pull request is generated with proto changes between
 [googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
