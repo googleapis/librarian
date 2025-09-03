@@ -390,6 +390,17 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	return nil
 }
 
+func createPRBody(info *commitInfo) (string, error) {
+	switch info.prType {
+	case generate:
+		return formatGenerationPRBody(info.repo, info.state)
+	case release:
+		return formatReleaseNotes(info.repo, info.state)
+	default:
+		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
+	}
+}
+
 func copyFile(dst, src string) (err error) {
 	sourceFile, err := os.Open(src)
 	if err != nil {
