@@ -181,11 +181,15 @@ func (r *generateRunner) run(ctx context.Context) error {
 
 // generateSingleLibrary manages the generation of a single client library.
 //
-// It can either configure a new library if the API and library both are specified
-// and library not configured in state.yaml yet, or regenerate an existing library
-// if a libraryID is provided.
+// The single library generation executes as follows:
 //
-// After ensuring the library is configured, it runs the generation and build commands.
+// 1. Configure the library, if the library is not configured in the state.yaml.
+//
+// 2. Generate the library.
+//
+// 3. Build the library.
+//
+// 4. Update the last generated commit.
 //
 // Returns the last generated commit *before* the generation and error, if any.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
