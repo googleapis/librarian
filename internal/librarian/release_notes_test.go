@@ -300,6 +300,7 @@ func TestFindLatestCommit(t *testing.T) {
 		name          string
 		state         *config.LibrarianState
 		repo          gitrepo.Repository
+		idToCommits   map[string]string
 		want          *gitrepo.Commit
 		wantErr       bool
 		wantErrPhrase string
@@ -309,16 +310,13 @@ func TestFindLatestCommit(t *testing.T) {
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: hash1.String(),
+						ID: "one-library",
 					},
 					{
-						ID:                  "another-library",
-						LastGeneratedCommit: hash2.String(),
+						ID: "another-library",
 					},
 					{
-						ID:                  "yet-another-library",
-						LastGeneratedCommit: hash3.String(),
+						ID: "yet-another-library",
 					},
 					{
 						ID: "skipped-library",
@@ -344,6 +342,11 @@ func TestFindLatestCommit(t *testing.T) {
 					},
 				},
 			},
+			idToCommits: map[string]string{
+				"one-library":         hash1.String(),
+				"another-library":     hash2.String(),
+				"yet-another-library": hash3.String(),
+			},
 			want: &gitrepo.Commit{
 				Hash:    hash2,
 				Message: "this is another message",
@@ -355,20 +358,22 @@ func TestFindLatestCommit(t *testing.T) {
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: "1234567890",
+						ID: "one-library",
 					},
 				},
 			},
 			repo: &MockRepository{
 				GetCommitError: errors.New("simulated error"),
 			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
 			wantErr:       true,
 			wantErrPhrase: "can't find last generated commit for",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := findLatestGenerationCommit(test.repo, test.state)
+			got, err := findLatestGenerationCommit(test.repo, test.state, test.idToCommits)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
