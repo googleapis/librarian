@@ -91,7 +91,8 @@ type PullRequestMetadata struct {
 func ParseRemote(remote string) (*Repository, error) {
 	if strings.HasPrefix(remote, "https://github.com/") {
 		return parseHTTPRemote(remote)
-	} else if strings.HasPrefix(remote, "git@") {
+	}
+	if strings.HasPrefix(remote, "git@") {
 		return parseSSHRemote(remote)
 	}
 	return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remote)
