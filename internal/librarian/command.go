@@ -359,7 +359,6 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	commitMessage := info.commitMessage
 	slog.Info("Committing", "message", commitMessage)
 	if err := repo.Commit(commitMessage); err != nil {
