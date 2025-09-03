@@ -43,6 +43,12 @@ const (
 	release  = "release"
 )
 
+// GitHubClientFactory type for creating a GitHubClient.
+type GitHubClientFactory func(token string, repo *github.Repository) (GitHubClient, error)
+
+// ContainerClientFactory type for creating a ContainerClient.
+type ContainerClientFactory func(workRoot, image, userUID, userGID string) (ContainerClient, error)
+
 type commitInfo struct {
 	cfg               *config.Config
 	state             *config.LibrarianState
@@ -67,7 +73,20 @@ type commandRunner struct {
 
 const defaultAPISourceBranch = "master"
 
-func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
+func newCommandRunner(cfg *config.Config, ghClientFactory GitHubClientFactory, containerClientFactory ContainerClientFactory) (*commandRunner, error) {
+	// If no GitHub client factory is provided, use the default one.
+	if ghClientFactory == nil {
+		ghClientFactory = func(token string, repo *github.Repository) (GitHubClient, error) {
+			return github.NewClient(token, repo)
+		}
+	}
+	// If no container client factory is provided, use the default one.
+	if containerClientFactory == nil {
+		containerClientFactory = func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
+			return docker.New(workRoot, image, userUID, userGID)
+		}
+	}
+
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
@@ -110,12 +129,12 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
 		}
 	}
-	ghClient, err := github.NewClient(cfg.GitHubToken, gitRepo)
+	ghClient, err := ghClientFactory(cfg.GitHubToken, gitRepo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 	}
 
-	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	container, err := containerClientFactory(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
 	}
