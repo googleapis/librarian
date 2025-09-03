@@ -204,6 +204,7 @@ func (l *LibraryState) Validate() error {
 	return nil
 }
 
+// GetAPIPaths returns all api paths of a library.
 func (l *LibraryState) GetAPIPaths() []string {
 	apiPaths := make([]string, 0)
 	for _, oneAPI := range l.APIs {
