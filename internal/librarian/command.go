@@ -248,7 +248,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 	for _, srcRoot := range library.SourceRoots {
 		dstPath := filepath.Join(dest, srcRoot)
 		srcPath := filepath.Join(src, srcRoot)
-		files, err := getDirectoryFilesnames(srcPath)
+		files, err := getDirectoryFilenames(srcPath)
 		if err != nil {
 			return err
 		}
@@ -264,7 +264,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 	return nil
 }
 
-func getDirectoryFilesnames(dir string) ([]string, error) {
+func getDirectoryFilenames(dir string) ([]string, error) {
 	if _, err := os.Stat(dir); err != nil {
 		// Skip dirs that don't exist
 		if os.IsNotExist(err) {
