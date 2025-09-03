@@ -386,7 +386,7 @@ func commitAndPush(info *commitInfo) error {
 	switch info.prType {
 	case generate:
 	case release:
-		prBody, err = FormatReleaseNotes(repo, info.state)
+		prBody, err = formatReleaseNotes(repo, info.state)
 		if err != nil {
 			return err
 		}
