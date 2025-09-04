@@ -124,7 +124,7 @@ type generationPRBody struct {
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
 func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
-	allCommits := make([]*conventionalcommits.ConventionalCommit, 0)
+	var allCommits []*conventionalcommits.ConventionalCommit
 	for _, library := range state.Libraries {
 		lastGenCommit, ok := idToCommits[library.ID]
 		if !ok {
