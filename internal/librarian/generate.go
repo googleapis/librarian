@@ -129,7 +129,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string, 0)
-	failedLibraries := make([]string, 0)
+	var failedLibraries []string
 	if r.cfg.API != "" || r.cfg.Library != "" {
 		libraryID := r.cfg.Library
 		if libraryID == "" {
