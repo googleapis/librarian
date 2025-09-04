@@ -110,7 +110,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		state:         r.state,
 		repo:          r.repo,
 		ghClient:      r.ghClient,
-		commitMessage: "",
+		commitMessage: "chore: create a release",
 		prType:        release,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
