@@ -534,8 +534,7 @@ Language Image: go:1.21
 ### Bug Fixes
 * a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
 
-</details>
-`,
+</details>`,
 				librarianVersion, today),
 		},
 		{

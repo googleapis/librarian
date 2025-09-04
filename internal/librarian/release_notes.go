@@ -73,14 +73,14 @@ Language Image: {{.ImageVersion}}
 ## [{{.NewVersion}}]({{"https://github.com/"}}{{.RepoOwner}}/{{.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
 {{- range .CommitSections -}}
 {{- if .Commits -}}
-{{ if .Heading}}
+{{- if .Heading }}
 
 ### {{.Heading}}
-{{end}}
+{{ end -}}
 
 {{- range .Commits -}}
 * {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
-{{ end }}
+{{- end }}
 {{- end }}
 {{- end }}
 </details>
