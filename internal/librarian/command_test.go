@@ -1342,6 +1342,42 @@ func TestCommitAndPush(t *testing.T) {
 	}
 }
 
+func TestCreatePRBody(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		prType     string
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:       "invalid src",
+			prType:     "randomType",
+			wantErr:    true,
+			wantErrMsg: "unrecognized pull request type",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			info := &commitInfo{
+				prType: test.prType,
+			}
+			_, err := createPRBody(info)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("createPRBody() shoud fail")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+		})
+	}
+}
+
 func TestCopyLibraryFiles(t *testing.T) {
 	t.Parallel()
 	setup := func(src string, files []string) {
