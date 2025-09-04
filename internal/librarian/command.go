@@ -397,7 +397,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 // Add a list of labels to a single pull request (specified by the PR number). Should only be called
 // on a valid pull request.
-// TODO: Consolidate the params to a potential PullRequestInfo struct
+// TODO: Consolidate the params to a potential PullRequestInfo struct.
 func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequestLabels []string, prMetadata *github.PullRequestMetadata) error {
 	if pullRequestLabels == nil {
 		return nil
