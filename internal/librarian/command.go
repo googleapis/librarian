@@ -377,7 +377,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
 	prBody, err := createPRBody(info)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
 
 	if _, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody); err != nil {

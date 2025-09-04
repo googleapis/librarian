@@ -1090,6 +1090,7 @@ func TestCommitAndPush(t *testing.T) {
 		setupMockRepo   func(t *testing.T) gitrepo.Repository
 		setupMockClient func(t *testing.T) GitHubClient
 		state           *config.LibrarianState
+		prType          string
 		commit          bool
 		push            bool
 		wantErr         bool
@@ -1108,6 +1109,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType: "generate",
 		},
 		{
 			name: "create a commit",
@@ -1129,6 +1131,7 @@ func TestCommitAndPush(t *testing.T) {
 					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 				}
 			},
+			prType: "generate",
 			commit: true,
 		},
 		{
@@ -1151,8 +1154,9 @@ func TestCommitAndPush(t *testing.T) {
 					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 				}
 			},
-			state: &config.LibrarianState{},
-			push:  true,
+			state:  &config.LibrarianState{},
+			prType: "generate",
+			push:   true,
 		},
 		{
 			name: "No GitHub Remote",
@@ -1168,6 +1172,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "could not find an 'origin' remote",
@@ -1188,6 +1193,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "mock add all error",
@@ -1212,6 +1218,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "create branch error",
@@ -1236,6 +1243,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
@@ -1260,9 +1268,35 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "push error",
+		},
+		{
+			name: "Create PR body error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{}
+			},
+			state:          &config.LibrarianState{},
+			prType:         "random",
+			push:           true,
+			wantErr:        true,
+			expectedErrMsg: "failed to create pull request body",
 		},
 		{
 			name: "Create pull request error",
@@ -1286,6 +1320,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:          &config.LibrarianState{},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request",
@@ -1306,7 +1341,8 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			push: true,
+			prType: "generate",
+			push:   true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1322,7 +1358,7 @@ func TestCommitAndPush(t *testing.T) {
 				repo:          repo,
 				ghClient:      client,
 				commitMessage: "",
-				prType:        generate,
+				prType:        test.prType,
 			}
 			err := commitAndPush(context.Background(), commitInfo)
 
@@ -1338,42 +1374,6 @@ func TestCommitAndPush(t *testing.T) {
 				t.Errorf("%s: commitAndPush() returned unexpected error: %v", test.name, err)
 				return
 			}
-		})
-	}
-}
-
-func TestCreatePRBody(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name       string
-		prType     string
-		wantErr    bool
-		wantErrMsg string
-	}{
-		{
-			name:       "invalid src",
-			prType:     "randomType",
-			wantErr:    true,
-			wantErrMsg: "unrecognized pull request type",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			info := &commitInfo{
-				prType: test.prType,
-			}
-			_, err := createPRBody(info)
-			if test.wantErr {
-				if err == nil {
-					t.Errorf("createPRBody() shoud fail")
-				}
-
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
-				}
-
-				return
-			}
-
 		})
 	}
 }
