@@ -1391,7 +1391,7 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 				}
 				return
 			} else {
-				if diff := cmp.Diff(test.mockGithubClient.labels, test.pullRequestLabels); diff != "" {
+				if diff := cmp.Diff(test.pullRequestLabels, test.mockGithubClient.labels); diff != "" {
 					t.Errorf("addLabelsToPullRequest() mismatch (-want +got):\n%s", diff)
 				}
 			}
