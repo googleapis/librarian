@@ -47,55 +47,56 @@ func TestFormatGenerationPRBody(t *testing.T) {
 		want            string
 		wantErr         bool
 		wantErrPhrase   string
-	}{{
-		// This test verifies that only changed libraries appear in the pull request
-		// body.
-		name: "multiple libraries generation",
-		state: &config.LibrarianState{
-			Image: "go:1.21",
-			Libraries: []*config.LibraryState{
-				{
-					ID: "one-library",
-				},
-				{
-					ID: "another-library",
-				},
-			},
-		},
-		repo: &MockRepository{
-			RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-			GetCommitByHash: map[string]*gitrepo.Commit{
-				"1234567890": {
-					Hash: plumbing.NewHash("1234567890"),
-					When: time.UnixMilli(200),
-				},
-				"abcdefg": {
-					Hash: plumbing.NewHash("abcdefg"),
-					When: time.UnixMilli(300),
-				},
-			},
-			GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
-				"1234567890": {
+	}{
+		{
+			// This test verifies that only changed libraries appear in the pull request
+			// body.
+			name: "multiple libraries generation",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
 					{
-						Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
-						Hash:    hash2,
-						When:    today.Add(time.Hour),
+						ID: "one-library",
+					},
+					{
+						ID: "another-library",
 					},
 				},
-				"abcdefg": {}, // no new commits since commit "abcdefg".
 			},
-			ChangedFilesInCommitValueByHash: map[string][]string{
-				hash2.String(): {
-					"path/to/file",
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitByHash: map[string]*gitrepo.Commit{
+					"1234567890": {
+						Hash: plumbing.NewHash("1234567890"),
+						When: time.UnixMilli(200),
+					},
+					"abcdefg": {
+						Hash: plumbing.NewHash("abcdefg"),
+						When: time.UnixMilli(300),
+					},
+				},
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234567890": {
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+					"abcdefg": {}, // no new commits since commit "abcdefg".
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash2.String(): {
+						"path/to/file",
+					},
 				},
 			},
-		},
-		idToCommits: map[string]string{
-			"one-library":     "1234567890",
-			"another-library": "abcdefg",
-		},
-		failedLibraries: []string{},
-		want: fmt.Sprintf(`This pull request is generated with proto changes between
+			idToCommits: map[string]string{
+				"one-library":     "1234567890",
+				"another-library": "abcdefg",
+			},
+			failedLibraries: []string{},
+			want: fmt.Sprintf(`This pull request is generated with proto changes between
 [googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
 (exclusive) and
 [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
@@ -116,8 +117,8 @@ Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googl
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE`,
-			librarianVersion, "go:1.21"),
-	},
+				librarianVersion, "go:1.21"),
+		},
 		{
 			name: "single library generation",
 			state: &config.LibrarianState{
