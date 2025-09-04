@@ -84,7 +84,7 @@ Language Image: {{.ImageVersion}}
 {{- end -}}
 {{- end }}
 </details>
-{{- end }}
+{{ end }}
 `))
 
 	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
