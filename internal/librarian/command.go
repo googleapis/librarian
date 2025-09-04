@@ -383,16 +383,12 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	var pullRequestMetadata *github.PullRequestMetadata
-	if pullRequestMetadata, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage); err != nil {
+	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage)
+	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 
-	if err := addLabelsToPullRequest(ctx, info.ghClient, info.pullRequestLabels, pullRequestMetadata); err != nil {
-		return err
-	}
-
-	return nil
+	return addLabelsToPullRequest(ctx, info.ghClient, info.pullRequestLabels, pullRequestMetadata)
 }
 
 // addLabelsToPullRequest adds a list of labels to a single ticket (specified by the id number).
