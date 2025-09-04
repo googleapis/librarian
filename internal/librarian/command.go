@@ -395,8 +395,8 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	return nil
 }
 
-// Add a list of labels to a single pull request (specified by the PR number). Should only be called
-// on a valid pull request.
+// addLabelsToPullRequest adds a list of labels to a single ticket (specified by the id number).
+// Should only be called on a valid Github ticket (pull request or issue).
 // TODO: Consolidate the params to a potential PullRequestInfo struct.
 func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequestLabels []string, prMetadata *github.PullRequestMetadata) error {
 	if pullRequestLabels == nil {
