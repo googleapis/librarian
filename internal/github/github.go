@@ -86,17 +86,38 @@ type PullRequestMetadata struct {
 	Number int
 }
 
-// ParseURL parses a GitHub URL (anything to do with a repository) to determine
+// ParseRemote parses a GitHub remote (anything to do with a repository) to determine
 // the GitHub repo details (owner and name).
-func ParseURL(remoteURL string) (*Repository, error) {
-	if !strings.HasPrefix(remoteURL, "https://github.com/") {
-		return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remoteURL)
+func ParseRemote(remote string) (*Repository, error) {
+	if strings.HasPrefix(remote, "https://github.com/") {
+		return parseHTTPRemote(remote)
 	}
-	remotePath := remoteURL[len("https://github.com/"):]
+	if strings.HasPrefix(remote, "git@") {
+		return parseSSHRemote(remote)
+	}
+	return nil, fmt.Errorf("remote '%s' is not a GitHub remote", remote)
+}
+
+func parseHTTPRemote(remote string) (*Repository, error) {
+	remotePath := remote[len("https://github.com/"):]
 	pathParts := strings.Split(remotePath, "/")
 	organization := pathParts[0]
 	repoName := pathParts[1]
 	repoName = strings.TrimSuffix(repoName, ".git")
+	return &Repository{Owner: organization, Name: repoName}, nil
+}
+
+func parseSSHRemote(remote string) (*Repository, error) {
+	pathParts := strings.Split(remote, ":")
+	if len(pathParts) != 2 {
+		return nil, fmt.Errorf("remote %q is not a GitHub remote", remote)
+	}
+	orgRepo := strings.Split(pathParts[1], "/")
+	if len(orgRepo) != 2 {
+		return nil, fmt.Errorf("remote %q is not a GitHub remote", remote)
+	}
+	organization := orgRepo[0]
+	repoName := strings.TrimSuffix(orgRepo[1], ".git")
 	return &Repository{Owner: organization, Name: repoName}, nil
 }
 
@@ -183,11 +204,9 @@ func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
 	for _, remote := range remotes {
 		if remote.Config().Name == "origin" {
 			urls := remote.Config().URLs
-			if len(urls) > 0 && strings.HasPrefix(urls[0], "https://github.com/") {
-				return ParseURL(urls[0])
+			if len(urls) > 0 {
+				return ParseRemote(urls[0])
 			}
-			// If 'origin' exists but is not a GitHub remote, we stop.
-			break
 		}
 	}
 

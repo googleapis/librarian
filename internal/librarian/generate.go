@@ -58,9 +58,9 @@ new files into place, according to the configuration in '.librarian/state.yaml'.
 If the '--build' flag is specified, the 'build' command is also executed.
 
 **Output:**
-After generation, if a push configuration is provided (e.g., via the "-push-config" flag), the changes
-are committed to a new branch, and a pull request is created. Otherwise, the changes are left in the
-local working tree for inspection.`,
+After generation, if the "-push" flag is provided, the changes are committed to a new branch, and
+a pull request is created. Otherwise, the changes are left in the local working tree for
+inspection.`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
 		runner, err := newGenerateRunner(cfg)
 		if err != nil {
@@ -154,6 +154,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 				idToCommits[library.ID] = oldCommit
 			}
 		}
+		slog.Info("generation statistics", "all", len(r.state.Libraries), "failures", failedGenerations)
 		if failedGenerations > 0 && failedGenerations == len(r.state.Libraries) {
 			return fmt.Errorf("all %d libraries failed to generate", failedGenerations)
 		}
