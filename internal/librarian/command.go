@@ -371,11 +371,15 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 // addLabelsToPullRequest adds a list of labels to a single pull request (specified by the id number).
 // Should only be called on a valid Github pull request.
+// Passing in `nil` for labels will no-op and an empty list for labels will clear all labels on the PR.
 // TODO: Consolidate the params to a potential PullRequestInfo struct.
 func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequestLabels []string, prMetadata *github.PullRequestMetadata) error {
+	// Do not update if there are aren't labels provided
 	if pullRequestLabels == nil {
 		return nil
 	}
+	// Github API treats Issues and Pull Request the same
+	// https://docs.github.com/en/rest/issues/labels#add-labels-to-an-issue
 	if err := ghClient.AddLabelsToIssue(ctx, prMetadata.Repo, prMetadata.Number, pullRequestLabels); err != nil {
 		return fmt.Errorf("failed to add labels to pull request: %w", err)
 	}
