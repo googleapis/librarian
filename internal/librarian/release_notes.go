@@ -80,11 +80,11 @@ Language Image: {{.ImageVersion}}
 
 {{- range .Commits -}}
 * {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
-{{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}
 {{- end }}
 </details>
-{{ end }}
+{{- end }}
 `))
 
 	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
