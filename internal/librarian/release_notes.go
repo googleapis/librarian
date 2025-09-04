@@ -64,19 +64,28 @@ var (
 
 	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
-	}).Parse(`## [{{.NewVersion}}]({{"https://github.com/"}}{{.Repo.Owner}}/{{.Repo.Name}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
-{{- range .Sections -}}
+	}).Parse(`Librarian Version: {{.LibrarianVersion}}
+Language Image: {{.ImageVersion}}
+{{ range .NoteSections -}}
+{{ $noteSection := . }}
+<details><summary>{{.LibraryID}}: {{.NewVersion}}</summary>
+
+## [{{.NewVersion}}]({{"https://github.com/"}}{{.RepoOwner}}/{{.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
+{{- range .CommitSections -}}
 {{- if .Commits -}}
-{{- if .Heading}}
+{{ if .Heading}}
 
 ### {{.Heading}}
 {{end}}
 
 {{- range .Commits -}}
-* {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$.Repo.Owner}}/{{$.Repo.Name}}/commit/{{.SHA}}))
-{{- end -}}
-{{- end -}}
-{{- end -}}`))
+* {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+{{ end }}
+{{- end }}
+{{- end }}
+</details>
+{{ end }}
+`))
 
 	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
@@ -119,6 +128,28 @@ type generationPRBody struct {
 	ImageVersion     string
 	Commits          []*conventionalcommits.ConventionalCommit
 	FailedLibraries  []string
+}
+
+type releaseNote struct {
+	LibrarianVersion string
+	ImageVersion     string
+	NoteSections     []*releaseNoteSection
+}
+
+type releaseNoteSection struct {
+	RepoOwner      string
+	RepoName       string
+	LibraryID      string
+	PreviousTag    string
+	NewTag         string
+	NewVersion     string
+	Date           string
+	CommitSections []*CommitSection
+}
+
+type CommitSection struct {
+	Heading string
+	Commits []*conventionalcommits.ConventionalCommit
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
@@ -207,46 +238,49 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 
 // formatReleaseNotes generates the body for a release pull request.
 func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
-	var body bytes.Buffer
-
 	librarianVersion := cli.Version()
-	fmt.Fprintf(&body, "Librarian Version: %s\n", librarianVersion)
-	fmt.Fprintf(&body, "Language Image: %s\n\n", state.Image)
-
+	var releaseSections []*releaseNoteSection
 	for _, library := range state.Libraries {
 		if !library.ReleaseTriggered {
 			continue
 		}
 
-		notes, newVersion, err := formatLibraryReleaseNotes(repo, library)
+		section, err := formatLibraryReleaseNotes(repo, library)
 		if err != nil {
 			return "", fmt.Errorf("failed to format release notes for library %s: %w", library.ID, err)
 		}
-		fmt.Fprintf(&body, "<details><summary>%s: %s</summary>\n\n", library.ID, newVersion)
-
-		body.WriteString(notes)
-		body.WriteString("\n\n</details>")
-
-		body.WriteString("\n")
+		releaseSections = append(releaseSections, section)
 	}
-	return body.String(), nil
+
+	data := &releaseNote{
+		LibrarianVersion: librarianVersion,
+		ImageVersion:     state.Image,
+		NoteSections:     releaseSections,
+	}
+
+	var out bytes.Buffer
+	if err := releaseNotesTemplate.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+
+	return strings.TrimSpace(out.String()), nil
 }
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
-func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState) (string, string, error) {
+func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState) (*releaseNoteSection, error) {
 	ghRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to fetch github repo from remote: %w", err)
+		return nil, fmt.Errorf("failed to fetch github repo from remote: %w", err)
 	}
 	previousTag := formatTag(library, "")
 	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get conventional commits for library %s: %w", library.ID, err)
+		return nil, fmt.Errorf("failed to get conventional commits for library %s: %w", library.ID, err)
 	}
 	newVersion, err := NextVersion(commits, library.Version, "")
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get next version for library %s: %w", library.ID, err)
+		return nil, fmt.Errorf("failed to get next version for library %s: %w", library.ID, err)
 	}
 	newTag := formatTag(library, newVersion)
 
@@ -255,43 +289,29 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
 
-	type releaseNoteSection struct {
-		Heading string
-		Commits []*conventionalcommits.ConventionalCommit
-	}
-	var sections []releaseNoteSection
+	var commitSection []*CommitSection
 	// Group commits by type, according to commitTypeOrder, to be used in the release notes.
 	for _, ct := range commitTypeOrder {
 		displayName, headingOK := commitTypeToHeading[ct]
 		typedCommits, commitsOK := commitsByType[ct]
 		if headingOK && commitsOK {
-			sections = append(sections, releaseNoteSection{
+			commitSection = append(commitSection, &CommitSection{
 				Heading: displayName,
 				Commits: typedCommits,
 			})
 		}
 	}
 
-	var out bytes.Buffer
-	data := struct {
-		NewVersion  string
-		PreviousTag string
-		NewTag      string
-		Repo        *github.Repository
-		Date        string
-		Sections    []releaseNoteSection
-	}{
-		NewVersion:  newVersion,
-		PreviousTag: previousTag,
-		NewTag:      newTag,
-		Repo:        ghRepo,
-		Date:        time.Now().Format("2006-01-02"),
-		Sections:    sections,
-	}
-	if err := releaseNotesTemplate.Execute(&out, data); err != nil {
-		// This should not happen, as the template is valid and the data is structured correctly.
-		return "", "", fmt.Errorf("error executing template: %v", err)
+	section := &releaseNoteSection{
+		RepoOwner:      ghRepo.Owner,
+		RepoName:       ghRepo.Name,
+		LibraryID:      library.ID,
+		NewVersion:     newVersion,
+		PreviousTag:    previousTag,
+		NewTag:         newTag,
+		Date:           time.Now().Format("2006-01-02"),
+		CommitSections: commitSection,
 	}
 
-	return strings.TrimSpace(out.String()), newVersion, nil
+	return section, nil
 }
