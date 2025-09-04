@@ -39,13 +39,14 @@ func TestFormatGenerationPRBody(t *testing.T) {
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
-		name          string
-		state         *config.LibrarianState
-		repo          gitrepo.Repository
-		idToCommits   map[string]string
-		want          string
-		wantErr       bool
-		wantErrPhrase string
+		name            string
+		state           *config.LibrarianState
+		repo            gitrepo.Repository
+		idToCommits     map[string]string
+		failedLibraries []string
+		want            string
+		wantErr         bool
+		wantErrPhrase   string
 	}{{
 		// This test verifies that only changed libraries appear in the pull request
 		// body.
@@ -93,6 +94,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 			"one-library":     "1234567890",
 			"another-library": "abcdefg",
 		},
+		failedLibraries: []string{},
 		want: fmt.Sprintf(`This pull request is generated with proto changes between
 [googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
 (exclusive) and
@@ -161,6 +163,7 @@ END_COMMIT_OVERRIDE`,
 			idToCommits: map[string]string{
 				"one-library": "1234567890",
 			},
+			failedLibraries: []string{},
 			want: fmt.Sprintf(`This pull request is generated with proto changes between
 [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
 (exclusive) and
@@ -271,7 +274,7 @@ END_COMMIT_OVERRIDE`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatGenerationPRBody(test.repo, test.state, test.idToCommits)
+			got, err := formatGenerationPRBody(test.repo, test.state, test.idToCommits, test.failedLibraries)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)

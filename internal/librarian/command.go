@@ -42,14 +42,14 @@ const (
 )
 
 type commitInfo struct {
-	cfg               *config.Config
-	state             *config.LibrarianState
-	repo              gitrepo.Repository
-	ghClient          GitHubClient
-	idToCommits       map[string]string
-	additionalMessage string
-	commitMessage     string
-	prType            string
+	cfg             *config.Config
+	state           *config.LibrarianState
+	repo            gitrepo.Repository
+	ghClient        GitHubClient
+	idToCommits     map[string]string
+	failedLibraries []string
+	commitMessage   string
+	prType          string
 }
 
 type commandRunner struct {
@@ -371,7 +371,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 func createPRBody(info *commitInfo) (string, error) {
 	switch info.prType {
 	case generate:
-		return formatGenerationPRBody(info.repo, info.state, info.idToCommits)
+		return formatGenerationPRBody(info.repo, info.state, info.idToCommits, info.failedLibraries)
 	case release:
 		return formatReleaseNotes(info.repo, info.state)
 	default:

@@ -89,6 +89,13 @@ var (
 Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
 
+{{- if .FailedLibraries -}}
+## Generation failed for
+{{ range .FailedLibraries }}
+- {{.}}
+{{end}}
+{{- end }}
+
 BEGIN_COMMIT_OVERRIDE
 {{ range .Commits }}
 BEGIN_NESTED_COMMIT
@@ -110,11 +117,12 @@ type generationPRBody struct {
 	LibrarianVersion string
 	ImageVersion     string
 	Commits          []*conventionalcommits.ConventionalCommit
+	FailedLibraries  []string
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string) (string, error) {
+func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
 	allCommits := make([]*conventionalcommits.ConventionalCommit, 0)
 	for _, library := range state.Libraries {
 		lastGenCommit, ok := idToCommits[library.ID]
@@ -155,6 +163,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 		LibrarianVersion: librarianVersion,
 		ImageVersion:     state.Image,
 		Commits:          allCommits,
+		FailedLibraries:  failedLibraries,
 	}
 	var out bytes.Buffer
 	if err := genBodyTemplate.Execute(&out, data); err != nil {

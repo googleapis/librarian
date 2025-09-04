@@ -129,7 +129,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string, 0)
-	additionalMsg := ""
+	failedLibraries := make([]string, 0)
 	if r.cfg.API != "" || r.cfg.Library != "" {
 		libraryID := r.cfg.Library
 		if libraryID == "" {
@@ -140,14 +140,13 @@ func (r *generateRunner) run(ctx context.Context) error {
 			return err
 		}
 		idToCommits[libraryID] = oldCommit
-		additionalMsg += fmt.Sprintf("feat: generated %s\n", libraryID)
 	} else {
 		failedGenerations := 0
 		for _, library := range r.state.Libraries {
 			oldCommit, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
 			if err != nil {
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
-				additionalMsg += fmt.Sprintf("%s failed to generate\n", library.ID)
+				failedLibraries = append(failedLibraries, library.ID)
 				failedGenerations++
 			} else {
 				// Only add the mapping if library generation is successful so that
@@ -165,14 +164,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		cfg:               r.cfg,
-		state:             r.state,
-		repo:              r.sourceRepo,
-		ghClient:          r.ghClient,
-		idToCommits:       idToCommits,
-		additionalMessage: additionalMsg,
-		commitMessage:     "chore: generate libraries",
-		prType:            generate,
+		cfg:             r.cfg,
+		state:           r.state,
+		repo:            r.sourceRepo,
+		ghClient:        r.ghClient,
+		idToCommits:     idToCommits,
+		failedLibraries: failedLibraries,
+		commitMessage:   "chore: generate libraries",
+		prType:          generate,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return err
@@ -291,6 +290,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		return "", err
 	}
 
+	slog.Info("Generation succeeds", "id", libraryID)
 	return libraryID, nil
 }
 
@@ -315,17 +315,19 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 		LibraryID: libraryID,
 		RepoDir:   r.repo.GetDir(),
 	}
-	slog.Info("Build requested for library", "id", libraryID)
+	slog.Info("Performing build for library", "id", libraryID)
 	if err := r.containerClient.Build(ctx, buildRequest); err != nil {
 		return err
 	}
 
 	// Read the library state from the response.
-	_, err := readLibraryState(
-		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse),
-	)
+	if _, err := readLibraryState(
+		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse)); err != nil {
+		return err
+	}
 
-	return err
+	slog.Info("Build succeeds", "id", libraryID)
+	return nil
 }
 
 // runConfigureCommand executes the container's "configure" command for an API.
