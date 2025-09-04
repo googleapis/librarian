@@ -54,6 +54,7 @@ steps:
       - 'generate'
       - '-repo'
       - '/workspace/$_REPOSITORY'
+      - '-branch=$_BRANCH'
       - '-library'
       - $_LIBRARY_ID
       - '-api-source'

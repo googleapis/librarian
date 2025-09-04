@@ -59,6 +59,14 @@ func Run(ctx context.Context, arg ...string) error {
 	if err != nil {
 		return err
 	}
+
+	// If a command is just a container for subcommands, it won't have a
+	// Run function. In that case, display its usage instructions.
+	if cmd.Run == nil {
+		cmd.Flags.Usage()
+		return fmt.Errorf("command %q requires a subcommand", cmd.Name())
+	}
+
 	if err := cmd.Parse(arg); err != nil {
 		// We expect that if cmd.Parse fails, it will already
 		// have printed out a command-specific usage error,
@@ -86,6 +94,12 @@ func lookupCommand(cmd *cli.Command, args []string) (*cli.Command, []string, err
 	if err != nil {
 		cmd.Flags.Usage()
 		return nil, nil, err
+	}
+	// If the next argument matches a potential flag (first char is `-`), parse the
+	// remaining arguments as flags. Check if argument is a flag before calling
+	// `lookupCommand` again to avoid flags from being treated as subcommands.
+	if len(args) > 1 && args[1][0] == '-' {
+		return subcommand, args[1:], nil
 	}
 	if len(subcommand.Commands) > 0 {
 		return lookupCommand(subcommand, args[1:])

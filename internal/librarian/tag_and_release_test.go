@@ -76,7 +76,7 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 		{
 			name: "with pull request config",
 			cfg: &config.Config{
-				PullRequest: "github.com/googleapis/librarian/pulls/123",
+				PullRequest: "https://github.com/googleapis/librarian/pulls/123",
 			},
 			ghClient: &mockGitHubClient{
 				getPullRequestCalls: 1,
@@ -95,7 +95,7 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 		{
 			name: "invalid pull request number",
 			cfg: &config.Config{
-				PullRequest: "github.com/googleapis/librarian/pulls/abc",
+				PullRequest: "https://github.com/googleapis/librarian/pulls/abc",
 			},
 			ghClient:   &mockGitHubClient{},
 			wantErrMsg: "invalid pull request number",
@@ -103,7 +103,7 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 		{
 			name: "get pull request error",
 			cfg: &config.Config{
-				PullRequest: "github.com/googleapis/librarian/pulls/123",
+				PullRequest: "https://github.com/googleapis/librarian/pulls/123",
 			},
 			ghClient: &mockGitHubClient{
 				getPullRequestCalls: 1,

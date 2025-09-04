@@ -78,7 +78,7 @@ type initRunner struct {
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
-	runner, err := newCommandRunner(cfg)
+	runner, err := newCommandRunner(cfg, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create init runner: %w", err)
 	}
@@ -224,6 +224,27 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 	library.ReleaseTriggered = true
 
 	return nil
+}
+
+func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
+	changes := make([]*config.Change, 0)
+	for _, commit := range commits {
+		clNum := ""
+		if cl, ok := commit.Footers[KeyClNum]; ok {
+			clNum = cl
+		}
+
+		changeType := getChangeType(commit)
+		changes = append(changes, &config.Change{
+			Type:       changeType,
+			Subject:    commit.Description,
+			Body:       commit.Body,
+			ClNum:      clNum,
+			CommitHash: commit.SHA,
+		})
+	}
+
+	return changes
 }
 
 // getChangeType gets the type of the commit, adding an escalation mark (!) if

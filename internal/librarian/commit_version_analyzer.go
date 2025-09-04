@@ -39,21 +39,22 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 	return convertToConventionalCommits(repo, library, commits)
 }
 
-// GetConventionalCommitsSinceLastGeneration returns all conventional commits for
+// getConventionalCommitsSinceLastGeneration returns all conventional commits for
 // all API paths in given library since the last generation.
-func GetConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
-	if library.LastGeneratedCommit == "" {
+func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*conventionalcommits.ConventionalCommit, error) {
+	if lastGenCommit == "" {
 		slog.Info("the last generation commit is empty, skip fetching conventional commits", "library", library.ID)
 		return make([]*conventionalcommits.ConventionalCommit, 0), nil
 	}
+
 	apiPaths := make([]string, 0)
 	for _, oneAPI := range library.APIs {
 		apiPaths = append(apiPaths, oneAPI.Path)
 	}
 
-	commits, err := repo.GetCommitsForPathsSinceCommit(apiPaths, library.LastGeneratedCommit)
+	commits, err := repo.GetCommitsForPathsSinceCommit(apiPaths, lastGenCommit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
+		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)
 	}
 
 	return convertToConventionalCommits(repo, library, commits)

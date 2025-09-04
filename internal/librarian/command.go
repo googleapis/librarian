@@ -29,8 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -43,14 +41,21 @@ const (
 	release  = "release"
 )
 
+// GitHubClientFactory type for creating a GitHubClient.
+type GitHubClientFactory func(token string, repo *github.Repository) (GitHubClient, error)
+
+// ContainerClientFactory type for creating a ContainerClient.
+type ContainerClientFactory func(workRoot, image, userUID, userGID string) (ContainerClient, error)
+
 type commitInfo struct {
-	cfg               *config.Config
-	state             *config.LibrarianState
-	repo              gitrepo.Repository
-	ghClient          GitHubClient
-	additionalMessage string
-	commitMessage     string
-	prType            string
+	cfg             *config.Config
+	state           *config.LibrarianState
+	repo            gitrepo.Repository
+	ghClient        GitHubClient
+	idToCommits     map[string]string
+	failedLibraries []string
+	commitMessage   string
+	prType          string
 }
 
 type commandRunner struct {
@@ -67,7 +72,20 @@ type commandRunner struct {
 
 const defaultAPISourceBranch = "master"
 
-func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
+func newCommandRunner(cfg *config.Config, ghClientFactory GitHubClientFactory, containerClientFactory ContainerClientFactory) (*commandRunner, error) {
+	// If no GitHub client factory is provided, use the default one.
+	if ghClientFactory == nil {
+		ghClientFactory = func(token string, repo *github.Repository) (GitHubClient, error) {
+			return github.NewClient(token, repo)
+		}
+	}
+	// If no container client factory is provided, use the default one.
+	if containerClientFactory == nil {
+		containerClientFactory = func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
+			return docker.New(workRoot, image, userUID, userGID)
+		}
+	}
+
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
@@ -100,7 +118,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	var gitRepo *github.Repository
 	if isURL(cfg.Repo) {
-		gitRepo, err = github.ParseURL(cfg.Repo)
+		gitRepo, err = github.ParseRemote(cfg.Repo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repo url: %w", err)
 		}
@@ -110,12 +128,12 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
 		}
 	}
-	ghClient, err := github.NewClient(cfg.GitHubToken, gitRepo)
+	ghClient, err := ghClientFactory(cfg.GitHubToken, gitRepo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 	}
 
-	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	container, err := containerClientFactory(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
 	}
@@ -310,27 +328,6 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	return nil
 }
 
-func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
-	changes := make([]*config.Change, 0)
-	for _, commit := range commits {
-		clNum := ""
-		if cl, ok := commit.Footers[KeyClNum]; ok {
-			clNum = cl
-		}
-
-		changeType := getChangeType(commit)
-		changes = append(changes, &config.Change{
-			Type:       changeType,
-			Subject:    commit.Description,
-			Body:       commit.Body,
-			ClNum:      clNum,
-			CommitHash: commit.SHA,
-		})
-	}
-
-	return changes
-}
-
 // commitAndPush creates a commit and push request to GitHub for the generated
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
@@ -354,15 +351,11 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
-	slog.Info("Creating branch", slog.String("branch", branch))
 	if err := repo.CreateBranchAndCheckout(branch); err != nil {
 		return err
 	}
 
-	commitMessage := info.commitMessage
-	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
-	slog.Info("Committing", "message", commitMessage)
-	if err := repo.Commit(commitMessage); err != nil {
+	if err := repo.Commit(info.commitMessage); err != nil {
 		return err
 	}
 
@@ -381,26 +374,28 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	// Create a new branch, set title and message for the PR.
-	titlePrefix := "Librarian pull request"
-	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
-	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	prBody := ""
-	switch info.prType {
-	case generate:
-	case release:
-		prBody, err = formatReleaseNotes(repo, info.state)
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unrecognized pull request type: %s", info.prType)
+	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
+	prBody, err := createPRBody(info)
+	if err != nil {
+		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
 
 	if _, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
+
 	return nil
+}
+
+func createPRBody(info *commitInfo) (string, error) {
+	switch info.prType {
+	case generate:
+		return formatGenerationPRBody(info.repo, info.state, info.idToCommits, info.failedLibraries)
+	case release:
+		return formatReleaseNotes(info.repo, info.state)
+	default:
+		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
+	}
 }
 
 func copyFile(dst, src string) (err error) {

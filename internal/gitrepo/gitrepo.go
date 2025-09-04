@@ -174,6 +174,7 @@ func (r *LocalRepository) AddAll() (git.Status, error) {
 // Commit creates a new commit with the provided message and author
 // information.
 func (r *LocalRepository) Commit(msg string) error {
+	slog.Info("Committing", "message", msg)
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -424,7 +425,7 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 func (r *LocalRepository) Push(branchName string) error {
 	// https://stackoverflow.com/a/75727620
 	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
-	slog.Info("Pushing changes", slog.Any("refspec", refSpec))
+	slog.Info("Pushing changes", "branch name", branchName, slog.Any("refspec", refSpec))
 	var auth *httpAuth.BasicAuth
 	if r.gitPassword != "" {
 		slog.Info("Authenticating with basic auth")
