@@ -630,7 +630,7 @@ Language Image: go:1.21
 				Libraries: []*config.LibraryState{},
 			},
 			repo:            &MockRepository{},
-			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21\n\n", librarianVersion),
+			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21", librarianVersion),
 		},
 		{
 			name: "error getting commits",
