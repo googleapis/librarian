@@ -145,10 +145,10 @@ type releaseNoteSection struct {
 	NewTag         string
 	NewVersion     string
 	Date           string
-	CommitSections []*CommitSection
+	CommitSections []*commitSection
 }
 
-type CommitSection struct {
+type commitSection struct {
 	Heading string
 	Commits []*conventionalcommits.ConventionalCommit
 }
@@ -290,13 +290,13 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
 
-	var commitSection []*CommitSection
+	var sections []*commitSection
 	// Group commits by type, according to commitTypeOrder, to be used in the release notes.
 	for _, ct := range commitTypeOrder {
 		displayName, headingOK := commitTypeToHeading[ct]
 		typedCommits, commitsOK := commitsByType[ct]
 		if headingOK && commitsOK {
-			commitSection = append(commitSection, &CommitSection{
+			sections = append(sections, &commitSection{
 				Heading: displayName,
 				Commits: typedCommits,
 			})
@@ -311,7 +311,7 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 		PreviousTag:    previousTag,
 		NewTag:         newTag,
 		Date:           time.Now().Format("2006-01-02"),
-		CommitSections: commitSection,
+		CommitSections: sections,
 	}
 
 	return section, nil
