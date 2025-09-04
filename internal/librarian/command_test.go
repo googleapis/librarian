@@ -1135,7 +1135,7 @@ func TestCommitAndPush(t *testing.T) {
 			commit: true,
 		},
 		{
-			name: "create a pull request",
+			name: "create a generate pull request",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
 					Name: "origin",
@@ -1156,6 +1156,30 @@ func TestCommitAndPush(t *testing.T) {
 			},
 			state:  &config.LibrarianState{},
 			prType: "generate",
+			push:   true,
+		},
+		{
+			name: "create a release pull request",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{
+					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
+				}
+			},
+			state:  &config.LibrarianState{},
+			prType: "release",
 			push:   true,
 		},
 		{
