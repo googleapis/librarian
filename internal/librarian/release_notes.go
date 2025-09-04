@@ -89,11 +89,12 @@ var (
 Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
 
-{{- if .FailedLibraries -}}
+{{- if .FailedLibraries }}
+
 ## Generation failed for
-{{ range .FailedLibraries }}
-- {{.}}
-{{end}}
+{{- range .FailedLibraries }}
+- {{ . }}
+{{- end -}}
 {{- end }}
 
 BEGIN_COMMIT_OVERRIDE
