@@ -41,6 +41,10 @@ const (
 	release  = "release"
 )
 
+var globalPreservePatterns = []string{
+	`^\.librarian/generator-input(/.*)?$`,
+}
+
 // GitHubClientFactory type for creating a GitHubClient.
 type GitHubClientFactory func(token string, repo *github.Repository) (GitHubClient, error)
 
@@ -243,7 +247,6 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 	}
 
 	removePatterns := library.RemoveRegex
-	slog.Info("Cleaning and copying library files", "removePatterns", removePatterns)
 	if len(removePatterns) == 0 {
 		slog.Info("remove_regex not provided, defaulting to source_roots")
 		removePatterns = make([]string, len(library.SourceRoots))
@@ -251,11 +254,14 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		// directory itself, and any file or subdirectory within it.
 		for i, root := range library.SourceRoots {
 			removePatterns[i] = fmt.Sprintf("^%s(/.*)?$", regexp.QuoteMeta(root))
-			slog.Info("Adding source root", "root", root, "pattern", removePatterns[i])
 		}
 	}
 
-	if err := clean(repoDir, removePatterns, library.PreserveRegex); err != nil {
+	// Make sure we never delete the generator-input directory.
+	preservePatterns := append(library.PreserveRegex,
+		globalPreservePatterns...)
+
+	if err := clean(repoDir, removePatterns, preservePatterns); err != nil {
 		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
 	}
 

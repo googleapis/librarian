@@ -388,6 +388,58 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				"a/path/stale.txt",
 			},
 		},
+		{
+			name:      "clean never deletes generator-input directory",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "some-library",
+						SourceRoots: []string{"a/path"},
+						RemoveRegex: []string{"a/path"},
+					},
+				},
+			},
+			repo: newTestGitRepo(t),
+			setup: func(t *testing.T, repoDir, outputDir string) {
+				// Create a file in the repo directory to test cleaning.
+				fileToBeDeleted := filepath.Join(repoDir, "a/path/delete.txt")
+				fileToNotBeDeleted := filepath.Join(repoDir, ".librarian/generator-input/a/path/do-not-delete.txt")
+				if err := os.MkdirAll(filepath.Dir(fileToBeDeleted), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(fileToBeDeleted); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Dir(fileToNotBeDeleted), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(fileToNotBeDeleted); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create generated files in the output directory.
+				filesToCreate := []string{
+					"a/path/new_generated_file_to_copy.txt",
+				}
+				for _, relPath := range filesToCreate {
+					fullPath := filepath.Join(outputDir, relPath)
+					if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+						t.Fatal(err)
+					}
+					if _, err := os.Create(fullPath); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			shouldCopy: []string{
+				".librarian/generator-input/a/path/do-not-delete.txt",
+				"a/path/new_generated_file_to_copy.txt",
+			},
+			shouldDelete: []string{
+				"a/path/delete.txt",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoDir := test.repo.GetDir()
