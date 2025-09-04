@@ -90,14 +90,14 @@ func TestGenerate_DefaultBehavior(t *testing.T) {
 	repo := newTestGitRepoWithState(t, true)
 	repoDir := repo.GetDir()
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Failed to get current dir: %v", err)
-	}
-	if err := os.Chdir(repoDir); err != nil {
-		t.Fatalf("Failed to change to repo dir: %v", err)
-	}
-	defer os.Chdir(origDir)
+	// Setup a dummy API Source repo to prevent cloning googleapis/googleapis
+	apiSourceDir := t.TempDir()
+	runGit(t, apiSourceDir, "init")
+	runGit(t, apiSourceDir, "config", "user.email", "test@example.com")
+	runGit(t, apiSourceDir, "config", "user.name", "Test User")
+	runGit(t, apiSourceDir, "commit", "--allow-empty", "-m", "initial commit")
+
+	t.Chdir(repoDir)
 
 	// 2. Override dependency creation to use mocks
 	mockContainer := &mockContainerClient{
@@ -105,12 +105,11 @@ func TestGenerate_DefaultBehavior(t *testing.T) {
 	}
 	mockGH := &mockGitHubClient{}
 
-	
-
 	// 3. Call librarian.Run
 	cfg := config.New("generate")
 	cfg.WorkRoot = repoDir
 	cfg.Repo = repoDir
+	cfg.APISource = apiSourceDir
 	runner, err := newGenerateRunner(cfg, func(token string, repo *github.Repository) (GitHubClient, error) {
 		return mockGH, nil
 	}, func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
