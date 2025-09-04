@@ -1386,7 +1386,8 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("addLabelsToPullRequest() expected error, got nil")
-				} else if test.expectedErrMsg != "" && !strings.Contains(err.Error(), test.expectedErrMsg) {
+				}
+				if test.expectedErrMsg != "" && !strings.Contains(err.Error(), test.expectedErrMsg) {
 					t.Errorf("addLabelsToPullRequest() error = %v, expected to contain: %q", err, test.expectedErrMsg)
 				}
 				return
