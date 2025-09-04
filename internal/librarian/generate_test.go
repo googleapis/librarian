@@ -504,7 +504,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				}
 			}
 
-			r, err := newGenerateRunner(test.cfg, nil, nil)
+			r, err := newGenerateRunner(test.cfg)
 			if (err != nil) != test.wantErr {
 				t.Errorf("newGenerateRunner() error = %v, wantErr %v", err, test.wantErr)
 			}

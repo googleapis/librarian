@@ -62,7 +62,7 @@ After generation, if the "-push" flag is provided, the changes are committed to 
 a pull request is created. Otherwise, the changes are left in the local working tree for
 inspection.`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
-		runner, err := newGenerateRunner(cfg, nil, nil)
+		runner, err := newGenerateRunner(cfg)
 		if err != nil {
 			return err
 		}
@@ -98,8 +98,8 @@ type generateRunner struct {
 	image           string
 }
 
-func newGenerateRunner(cfg *config.Config, ghClientFactory GitHubClientFactory, containerClientFactory ContainerClientFactory) (*generateRunner, error) {
-	runner, err := newCommandRunner(cfg, ghClientFactory, containerClientFactory)
+func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
 		return nil, err
 	}
