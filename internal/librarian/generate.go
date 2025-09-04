@@ -192,7 +192,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 //
 // 4. Update the last generated commit.
 //
-// Returns the last generated commit *before* the generation and error, if any.
+// Returns the last generated commit before the generation and error, if any.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.cfg.Library)
