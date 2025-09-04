@@ -243,6 +243,7 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 	}
 
 	removePatterns := library.RemoveRegex
+	slog.Info("Cleaning and copying library files", "removePatterns", removePatterns)
 	if len(removePatterns) == 0 {
 		slog.Info("remove_regex not provided, defaulting to source_roots")
 		removePatterns = make([]string, len(library.SourceRoots))
@@ -250,6 +251,7 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		// directory itself, and any file or subdirectory within it.
 		for i, root := range library.SourceRoots {
 			removePatterns[i] = fmt.Sprintf("^%s(/.*)?$", regexp.QuoteMeta(root))
+			slog.Info("Adding source root", "root", root, "pattern", removePatterns[i])
 		}
 	}
 
