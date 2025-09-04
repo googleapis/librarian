@@ -66,7 +66,8 @@ var (
 		"shortSHA": shortSHA,
 	}).Parse(`Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
-{{ range .NoteSections -}}
+
+{{- range .NoteSections -}}
 {{ $noteSection := . }}
 <details><summary>{{.LibraryID}}: {{.NewVersion}}</summary>
 
@@ -76,14 +77,14 @@ Language Image: {{.ImageVersion}}
 {{- if .Heading }}
 
 ### {{.Heading}}
-{{ end -}}
-
+{{ end }}
 {{- range .Commits -}}
 * {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
-{{- end -}}
-{{- end -}}
+{{- end }}
+{{- end }}
 {{- end }}
 </details>
+
 {{ end }}
 `))
 
