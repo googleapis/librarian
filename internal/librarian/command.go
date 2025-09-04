@@ -19,14 +19,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 	"time"
-
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/googleapis/librarian/internal/docker"
 
@@ -34,6 +35,28 @@ import (
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
+
+const (
+	generate = "generate"
+	release  = "release"
+)
+
+// GitHubClientFactory type for creating a GitHubClient.
+type GitHubClientFactory func(token string, repo *github.Repository) (GitHubClient, error)
+
+// ContainerClientFactory type for creating a ContainerClient.
+type ContainerClientFactory func(workRoot, image, userUID, userGID string) (ContainerClient, error)
+
+type commitInfo struct {
+	cfg             *config.Config
+	state           *config.LibrarianState
+	repo            gitrepo.Repository
+	ghClient        GitHubClient
+	idToCommits     map[string]string
+	failedLibraries []string
+	commitMessage   string
+	prType          string
+}
 
 type commandRunner struct {
 	cfg             *config.Config
@@ -47,12 +70,27 @@ type commandRunner struct {
 	image           string
 }
 
-func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
+const defaultAPISourceBranch = "master"
+
+func newCommandRunner(cfg *config.Config, ghClientFactory GitHubClientFactory, containerClientFactory ContainerClientFactory) (*commandRunner, error) {
+	// If no GitHub client factory is provided, use the default one.
+	if ghClientFactory == nil {
+		ghClientFactory = func(token string, repo *github.Repository) (GitHubClient, error) {
+			return github.NewClient(token, repo)
+		}
+	}
+	// If no container client factory is provided, use the default one.
+	if containerClientFactory == nil {
+		containerClientFactory = func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
+			return docker.New(workRoot, image, userUID, userGID)
+		}
+	}
+
 	if cfg.APISource == "" {
 		cfg.APISource = "https://github.com/googleapis/googleapis"
 	}
 
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.CI, cfg.GitHubToken)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +98,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	var sourceRepo gitrepo.Repository
 	var sourceRepoDir string
 	if cfg.CommandName == generateCmdName {
-		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.CI, cfg.GitHubToken)
+		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +118,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	var gitRepo *github.Repository
 	if isURL(cfg.Repo) {
-		gitRepo, err = github.ParseURL(cfg.Repo)
+		gitRepo, err = github.ParseRemote(cfg.Repo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repo url: %w", err)
 		}
@@ -90,12 +128,12 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
 		}
 	}
-	ghClient, err := github.NewClient(cfg.GitHubToken, gitRepo)
+	ghClient, err := ghClientFactory(cfg.GitHubToken, gitRepo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 	}
 
-	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	container, err := containerClientFactory(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +150,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}, nil
 }
 
-func cloneOrOpenRepo(workRoot, repo, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, errors.New("repo must be specified")
 	}
@@ -124,11 +162,12 @@ func cloneOrOpenRepo(workRoot, repo, ci string, gitPassword string) (*gitrepo.Lo
 		repoName := path.Base(strings.TrimSuffix(repo, "/"))
 		repoPath := filepath.Join(workRoot, repoName)
 		return gitrepo.NewRepository(&gitrepo.RepositoryOptions{
-			Dir:         repoPath,
-			MaybeClone:  true,
-			RemoteURL:   repo,
-			CI:          ci,
-			GitPassword: gitPassword,
+			Dir:          repoPath,
+			MaybeClone:   true,
+			RemoteURL:    repo,
+			RemoteBranch: branch,
+			CI:           ci,
+			GitPassword:  gitPassword,
 		})
 	}
 	// repo is a directory
@@ -203,7 +242,18 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
 
-	if err := clean(repoDir, library.RemoveRegex, library.PreserveRegex); err != nil {
+	removePatterns := library.RemoveRegex
+	if len(removePatterns) == 0 {
+		slog.Info("remove_regex not provided, defaulting to source_roots")
+		removePatterns = make([]string, len(library.SourceRoots))
+		// For each SourceRoot, create a regex pattern to match the source root
+		// directory itself, and any file or subdirectory within it.
+		for i, root := range library.SourceRoots {
+			removePatterns[i] = fmt.Sprintf("^%s(/.*)?$", regexp.QuoteMeta(root))
+		}
+	}
+
+	if err := clean(repoDir, removePatterns, library.PreserveRegex); err != nil {
 		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
 	}
 
@@ -219,7 +269,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 	for _, srcRoot := range library.SourceRoots {
 		dstPath := filepath.Join(dest, srcRoot)
 		srcPath := filepath.Join(src, srcRoot)
-		files, err := getDirectoryFilesnames(srcPath)
+		files, err := getDirectoryFilenames(srcPath)
 		if err != nil {
 			return err
 		}
@@ -235,7 +285,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 	return nil
 }
 
-func getDirectoryFilesnames(dir string) ([]string, error) {
+func getDirectoryFilenames(dir string) ([]string, error) {
 	if _, err := os.Stat(dir); err != nil {
 		// Skip dirs that don't exist
 		if os.IsNotExist(err) {
@@ -278,37 +328,18 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	return nil
 }
 
-func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
-	changes := make([]*config.Change, 0)
-	for _, commit := range commits {
-		clNum := ""
-		if cl, ok := commit.Footers[KeyClNum]; ok {
-			clNum = cl
-		}
-
-		changeType := getChangeType(commit)
-		changes = append(changes, &config.Change{
-			Type:       changeType,
-			Subject:    commit.Description,
-			Body:       commit.Body,
-			ClNum:      clNum,
-			CommitHash: commit.SHA,
-		})
-	}
-
-	return changes
-}
-
 // commitAndPush creates a commit and push request to GitHub for the generated
 // changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Repository, ghClient GitHubClient, commitMessage string) error {
+func commitAndPush(ctx context.Context, info *commitInfo) error {
+	cfg := info.cfg
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
 	}
 
+	repo := info.repo
 	status, err := repo.AddAll()
 	if err != nil {
 		return err
@@ -320,14 +351,11 @@ func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Reposit
 
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
-	slog.Info("Creating branch", slog.String("branch", branch))
 	if err := repo.CreateBranchAndCheckout(branch); err != nil {
 		return err
 	}
 
-	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
-	slog.Info("Committing", "message", commitMessage)
-	if err := repo.Commit(commitMessage); err != nil {
+	if err := repo.Commit(info.commitMessage); err != nil {
 		return err
 	}
 
@@ -346,14 +374,28 @@ func commitAndPush(ctx context.Context, cfg *config.Config, repo gitrepo.Reposit
 		return err
 	}
 
-	// Create a new branch, set title and message for the PR.
-	titlePrefix := "Librarian pull request"
-	title := fmt.Sprintf("%s: %s", titlePrefix, datetimeNow)
-	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	if _, err = ghClient.CreatePullRequest(ctx, gitHubRepo, branch, title, commitMessage); err != nil {
+	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
+	prBody, err := createPRBody(info)
+	if err != nil {
+		return fmt.Errorf("failed to create pull request body: %w", err)
+	}
+
+	if _, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
+
 	return nil
+}
+
+func createPRBody(info *commitInfo) (string, error) {
+	switch info.prType {
+	case generate:
+		return formatGenerationPRBody(info.repo, info.state, info.idToCommits, info.failedLibraries)
+	case release:
+		return formatReleaseNotes(info.repo, info.state)
+	default:
+		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
+	}
 }
 
 func copyFile(dst, src string) (err error) {
@@ -376,4 +418,156 @@ func copyFile(dst, src string) (err error) {
 	_, err = io.Copy(destinationFile, sourceFile)
 
 	return err
+}
+
+// clean removes files and directories from a root directory based on remove and preserve patterns.
+//
+// It first determines the paths to remove by applying the removePatterns and then excluding any paths
+// that match the preservePatterns. It then separates the remaining paths into files and directories and
+// removes them, ensuring that directories are removed last.
+//
+// This logic is ported from owlbot logic: https://github.com/googleapis/repo-automation-bots/blob/12dad68640960290910b660e4325630c9ace494b/packages/owl-bot/src/copy-code.ts#L1027
+func clean(rootDir string, removePatterns, preservePatterns []string) error {
+	slog.Info("cleaning directory", "path", rootDir)
+	finalPathsToRemove, err := deriveFinalPathsToRemove(rootDir, removePatterns, preservePatterns)
+	if err != nil {
+		return err
+	}
+
+	filesToRemove, dirsToRemove, err := separateFilesAndDirs(rootDir, finalPathsToRemove)
+	if err != nil {
+		return err
+	}
+
+	// Remove files first, then directories.
+	for _, file := range filesToRemove {
+		slog.Info("removing file", "path", file)
+		if err := os.Remove(filepath.Join(rootDir, file)); err != nil {
+			return err
+		}
+	}
+
+	sortDirsByDepth(dirsToRemove)
+
+	for _, dir := range dirsToRemove {
+		slog.Info("removing directory", "path", dir)
+		if err := os.Remove(filepath.Join(rootDir, dir)); err != nil {
+			// It's possible the directory is not empty due to preserved files.
+			slog.Warn("failed to remove directory, it may not be empty", "dir", dir, "err", err)
+		}
+	}
+
+	return nil
+}
+
+// sortDirsByDepth sorts directories by depth (descending) to remove children first.
+func sortDirsByDepth(dirs []string) {
+	slices.SortFunc(dirs, func(a, b string) int {
+		return strings.Count(b, string(filepath.Separator)) - strings.Count(a, string(filepath.Separator))
+	})
+}
+
+// allPaths walks the directory tree rooted at rootDir and returns a slice of all
+// file and directory paths, relative to rootDir.
+func allPaths(rootDir string) ([]string, error) {
+	var paths []string
+	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return err
+		}
+		paths = append(paths, relPath)
+		return nil
+	})
+	return paths, err
+}
+
+// filterPaths returns a new slice containing only the paths from the input slice
+// that match at least one of the provided regular expressions.
+func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
+	var filtered []string
+	for _, path := range paths {
+		for _, re := range regexps {
+			if re.MatchString(path) {
+				filtered = append(filtered, path)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+// deriveFinalPathsToRemove determines the final set of paths to be removed. It
+// starts with all paths under rootDir, filters them based on removePatterns,
+// and then excludes any paths that match preservePatterns.
+func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns []string) ([]string, error) {
+	removeRegexps, err := compileRegexps(removePatterns)
+	if err != nil {
+		return nil, err
+	}
+	preserveRegexps, err := compileRegexps(preservePatterns)
+	if err != nil {
+		return nil, err
+	}
+
+	allPaths, err := allPaths(rootDir)
+	if err != nil {
+		return nil, err
+	}
+
+	pathsToRemove := filterPaths(allPaths, removeRegexps)
+	pathsToPreserve := filterPaths(pathsToRemove, preserveRegexps)
+
+	// delete pathsToPreserve from pathsToRemove.
+	pathsToDelete := make(map[string]bool)
+	for _, p := range pathsToPreserve {
+		pathsToDelete[p] = true
+	}
+	finalPathsToRemove := slices.DeleteFunc(pathsToRemove, func(path string) bool {
+		return pathsToDelete[path]
+	})
+	return finalPathsToRemove, nil
+}
+
+// separateFilesAndDirs takes a list of paths and categorizes them into files
+// and directories. It uses os.Lstat to avoid following symlinks, treating them
+// as files. Paths that do not exist are silently ignored.
+func separateFilesAndDirs(rootDir string, paths []string) ([]string, []string, error) {
+	var files, dirs []string
+	for _, path := range paths {
+		info, err := os.Lstat(filepath.Join(rootDir, path))
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				// The file or directory may have already been removed.
+				continue
+			}
+			// For any other error (permissions, I/O, etc.)
+			return nil, nil, fmt.Errorf("failed to stat path %q: %w", path, err)
+
+		}
+		if info.IsDir() {
+			dirs = append(dirs, path)
+		} else {
+			files = append(files, path)
+		}
+	}
+	return files, dirs, nil
+}
+
+// compileRegexps takes a slice of string patterns and compiles each one into a
+// regular expression. It returns a slice of compiled regexps or an error if any
+// pattern is invalid.
+func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
+	var regexps []*regexp.Regexp
+	for _, pattern := range patterns {
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex %q: %w", pattern, err)
+		}
+		regexps = append(regexps, re)
+	}
+	return regexps, nil
 }

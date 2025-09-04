@@ -146,7 +146,8 @@ func findServiceConfigIn(path string) (string, error) {
 		}
 	}
 
-	return "", errors.New("could not find service config in " + path)
+	slog.Info("No service config found; assuming proto-only package", "path", path)
+	return "", nil
 }
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {

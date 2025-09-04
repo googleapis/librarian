@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	pullRequestSegments  = 5
+	pullRequestSegments  = 7
 	tagAndReleaseCmdName = "tag-and-release"
 	releasePendingLabel  = "release:pending"
 	releaseDoneLabel     = "release:done"
@@ -60,7 +60,7 @@ var cmdTagAndRelease = &cli.Command{
 func init() {
 	cmdTagAndRelease.Init()
 	fs := cmdTagAndRelease.Flags
-	cfg := cmdGenerate.Config
+	cfg := cmdTagAndRelease.Config
 
 	addFlagRepo(fs, cfg)
 	addFlagPR(fs, cfg)
@@ -74,7 +74,7 @@ type tagAndReleaseRunner struct {
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
-	runner, err := newCommandRunner(cfg)
+	runner, err := newCommandRunner(cfg, nil, nil)
 	if err != nil {
 		return nil, err
 	}

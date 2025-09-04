@@ -1,6 +1,6 @@
 module github.com/googleapis/librarian
 
-go 1.24.4
+go 1.25.0
 
 require (
 	cloud.google.com/go/cloudbuild v1.22.3

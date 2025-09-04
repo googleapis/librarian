@@ -66,7 +66,8 @@ it must have a binary entrypoint that can accept the arguments passed by Librari
 
 A successful container invocation is expected to exit with a code of `0`. Any non-zero exit code will be treated as an
 error and will halt the current workflow. If a container would like to send an error message back to librarian it can do
-so by including a field in the various response files outlined below.
+so by including a field in the various response files outlined below. Additionally any logs sent to stderr/stdout will
+be surfaced to the CLI.
 
 The following sections detail the contracts for each container command.
 
@@ -79,9 +80,8 @@ The container is expected to produce up to two artifacts:
 
 * A `configure-response.json` file, which is derived from the `configure-request.json` and contains language-specific
   details. This response will be committed back to the `state.yaml` file by Librarian.
-* Any "side-configuration" files that the language may need for its libraries. These should be written to the `/input` mount, which corresponds to the `.librarian/generator-input` directory in the language repository.
-
-TODO: Global file edits
+* Any "side-configuration" files that the language may need for its libraries. These should be written to the `/input`
+  mount, which corresponds to the `.librarian/generator-input` directory in the language repository.
 
 **Contract:**
 

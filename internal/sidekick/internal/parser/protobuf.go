@@ -27,6 +27,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/parser/svcconfig"
 	"github.com/googleapis/librarian/internal/sidekick/internal/protobuf"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/proto"
@@ -202,15 +203,10 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		}
 		withLongrunning := requiresLongrunningMixin(req)
 		enabledMixinMethods, mixinFileDesc = loadMixins(serviceConfig, withLongrunning)
-		packageName := ""
-		for _, api := range serviceConfig.Apis {
-			packageName, _ = splitApiName(api.Name)
-			// Keep searching after well-known mixin services.
-			if !wellKnownMixin(api.Name) {
-				break
-			}
+		names := svcconfig.ExtractPackageName(serviceConfig)
+		if names != nil {
+			result.PackageName = names.PackageName
 		}
-		result.PackageName = packageName
 	}
 
 	// First we need to add all the message and enums types to the

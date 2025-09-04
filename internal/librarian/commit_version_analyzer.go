@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -38,12 +39,22 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 	return convertToConventionalCommits(repo, library, commits)
 }
 
-// GetConventionalCommitsSinceLastGeneration returns all conventional commits for
-// the given library since the last generation.
-func GetConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
-	commits, err := repo.GetCommitsForPathsSinceCommit(library.SourceRoots, library.LastGeneratedCommit)
+// getConventionalCommitsSinceLastGeneration returns all conventional commits for
+// all API paths in given library since the last generation.
+func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*conventionalcommits.ConventionalCommit, error) {
+	if lastGenCommit == "" {
+		slog.Info("the last generation commit is empty, skip fetching conventional commits", "library", library.ID)
+		return make([]*conventionalcommits.ConventionalCommit, 0), nil
+	}
+
+	apiPaths := make([]string, 0)
+	for _, oneAPI := range library.APIs {
+		apiPaths = append(apiPaths, oneAPI.Path)
+	}
+
+	commits, err := repo.GetCommitsForPathsSinceCommit(apiPaths, lastGenCommit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
+		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)
 	}
 
 	return convertToConventionalCommits(repo, library, commits)
@@ -59,7 +70,7 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 		if shouldExclude(files, library.ReleaseExcludePaths) {
 			continue
 		}
-		parsedCommits, err := conventionalcommits.ParseCommits(commit.Message, commit.Hash.String())
+		parsedCommits, err := conventionalcommits.ParseCommits(commit, library.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
@@ -72,7 +83,7 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 }
 
 // shouldExclude determines if a commit should be excluded from a release.
-// It returns true if all files in the commit match one of the exclude paths.
+// It returns true if all files in the commit match one of exclude paths.
 func shouldExclude(files, excludePaths []string) bool {
 	for _, file := range files {
 		excluded := false

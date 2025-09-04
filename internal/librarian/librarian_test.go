@@ -15,12 +15,14 @@
 package librarian
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
@@ -28,6 +30,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 
@@ -39,6 +42,90 @@ import (
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func TestParentCommands(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		command    string
+		wantErr    bool
+		wantErrMsg string // Expected substring in the error
+	}{
+		{
+			name:       "release no subcommand",
+			command:    "release",
+			wantErr:    true,
+			wantErrMsg: `command "release" requires a subcommand`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := Run(ctx, test.command)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("Run(ctx, %q) got nil, want error containing %q", test.command, test.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("Run(ctx, %q) got error %q, want error containing %q", test.command, err.Error(), test.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Run(ctx, %q) got error %v, want nil", test.command, err)
+			}
+		})
+	}
+}
+
+func TestGenerate_DefaultBehavior(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. Setup a mock repository with a state file
+	repo := newTestGitRepoWithState(t, true)
+	repoDir := repo.GetDir()
+
+	// Setup a dummy API Source repo to prevent cloning googleapis/googleapis
+	apiSourceDir := t.TempDir()
+	runGit(t, apiSourceDir, "init")
+	runGit(t, apiSourceDir, "config", "user.email", "test@example.com")
+	runGit(t, apiSourceDir, "config", "user.name", "Test User")
+	runGit(t, apiSourceDir, "commit", "--allow-empty", "-m", "initial commit")
+
+	t.Chdir(repoDir)
+
+	// 2. Override dependency creation to use mocks
+	mockContainer := &mockContainerClient{
+		wantLibraryGen: true,
+	}
+	mockGH := &mockGitHubClient{}
+
+	// 3. Call librarian.Run
+	cfg := config.New("generate")
+	cfg.WorkRoot = repoDir
+	cfg.Repo = repoDir
+	cfg.APISource = apiSourceDir
+	runner, err := newGenerateRunner(cfg, func(token string, repo *github.Repository) (GitHubClient, error) {
+		return mockGH, nil
+	}, func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
+		return mockContainer, nil
+	})
+	if err != nil {
+		t.Fatalf("newGenerateRunner() failed: %v", err)
+	}
+	if err := runner.run(ctx); err != nil {
+		t.Fatalf("runner.run() failed: %v", err)
+	}
+
+	// 4. Assertions
+	expectedGenerateCalls := 1
+	if mockContainer.generateCalls != expectedGenerateCalls {
+		t.Errorf("Run(ctx, \"generate\"): got %d generate calls, want %d", mockContainer.generateCalls, expectedGenerateCalls)
 	}
 }
 
@@ -324,6 +411,27 @@ func TestLookupCommand(t *testing.T) {
 			cmd:     root,
 			args:    []string{"sub1", "unknown"},
 			wantErr: true,
+		},
+		{
+			name:     "find sub1 with flag arguments",
+			cmd:      root,
+			args:     []string{"sub1", "-h"},
+			wantCmd:  sub1,
+			wantArgs: []string{"-h"},
+		},
+		{
+			name:     "find sub1sub1 with flag arguments",
+			cmd:      root,
+			args:     []string{"sub1", "sub1sub1", "-h"},
+			wantCmd:  sub1sub1,
+			wantArgs: []string{"-h"},
+		},
+		{
+			name:     "find sub1 with a flag argument in between subcommands",
+			cmd:      root,
+			args:     []string{"sub1", "-h", "sub1sub1"},
+			wantCmd:  sub1,
+			wantArgs: []string{"-h", "sub1sub1"},
 		},
 	}
 

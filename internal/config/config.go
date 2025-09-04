@@ -93,6 +93,12 @@ type Config struct {
 	// APISource is specified with the -api-source flag.
 	APISource string
 
+	// Branch is the remote branch of the language repository to use.
+	// This is the branch which is cloned when Repo is a URL, and also used
+	// as the base reference for any pull requests created by the command.
+	// By default, the branch "main" is used.
+	Branch string
+
 	// Build determines whether to build the generated library, and is only
 	// used in the generate command.
 	//

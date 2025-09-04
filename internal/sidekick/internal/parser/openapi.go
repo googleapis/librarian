@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/httprule"
+	"github.com/googleapis/librarian/internal/sidekick/internal/parser/svcconfig"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -91,14 +92,9 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 	// one. In tests, the service config is typically `nil`.
 	serviceName := "Service"
 	packageName := ""
-	if serviceConfig != nil {
-		for _, api := range serviceConfig.Apis {
-			packageName, serviceName = splitApiName(api.Name)
-			// Keep searching after well-known mixin services.
-			if !wellKnownMixin(api.Name) {
-				break
-			}
-		}
+	names := svcconfig.ExtractPackageName(serviceConfig)
+	if names != nil {
+		serviceName, packageName = names.ServiceName, names.PackageName
 		result.PackageName = packageName
 	}
 

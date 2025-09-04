@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -38,6 +39,7 @@ type Repository interface {
 	GetDir() string
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
+	GetCommit(commitHash string) (*Commit, error)
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
@@ -55,6 +57,7 @@ type LocalRepository struct {
 type Commit struct {
 	Hash    plumbing.Hash
 	Message string
+	When    time.Time
 }
 
 // RepositoryOptions are used to configure a [LocalRepository].
@@ -62,10 +65,12 @@ type RepositoryOptions struct {
 	// Dir is the directory where the repository will reside locally. Required.
 	Dir string
 	// MaybeClone will try to clone the repository if it does not exist locally.
-	// If set to true, RemoteURL must also be set. Optional.
+	// If set to true, RemoteURL and RemoteBranch must also be set. Optional.
 	MaybeClone bool
-	// RemoteURL is the URL of the remote repository to clone from. Required if Clone is not CloneOptionNone.
+	// RemoteURL is the URL of the remote repository to clone from. Required if MaybeClone is set to true.
 	RemoteURL string
+	// RemoteBranch is the remote branch to clone. Required if MaybeClone is set to true.
+	RemoteBranch string
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
@@ -105,8 +110,11 @@ func newRepositoryWithoutUser(opts *RepositoryOptions) (*LocalRepository, error)
 		if opts.RemoteURL == "" {
 			return nil, fmt.Errorf("gitrepo: remote URL is required when cloning")
 		}
+		if opts.RemoteBranch == "" {
+			return nil, fmt.Errorf("gitrepo: remote branch is required when cloning")
+		}
 		slog.Info("Repository not found, executing clone")
-		return clone(opts.Dir, opts.RemoteURL, opts.CI)
+		return clone(opts.Dir, opts.RemoteURL, opts.RemoteBranch, opts.CI)
 	}
 	return nil, fmt.Errorf("failed to check for repository at %q: %w", opts.Dir, err)
 }
@@ -124,11 +132,11 @@ func open(dir string) (*LocalRepository, error) {
 	}, nil
 }
 
-func clone(dir, url, ci string) (*LocalRepository, error) {
+func clone(dir, url, branch, ci string) (*LocalRepository, error) {
 	slog.Info("Cloning repository", "url", url, "dir", dir)
 	options := &git.CloneOptions{
 		URL:           url,
-		ReferenceName: plumbing.HEAD,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 		Tags:          git.AllTags,
 		// .NET uses submodules for conformance tests.
@@ -166,6 +174,7 @@ func (r *LocalRepository) AddAll() (git.Status, error) {
 // Commit creates a new commit with the provided message and author
 // information.
 func (r *LocalRepository) Commit(msg string) error {
+	slog.Info("Committing", "message", msg)
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -221,6 +230,20 @@ func (r *LocalRepository) HeadHash() (string, error) {
 // GetDir returns the directory of the repository.
 func (r *LocalRepository) GetDir() string {
 	return r.Dir
+}
+
+// GetCommit returns a commit for the given commit hash.
+func (r *LocalRepository) GetCommit(commitHash string) (*Commit, error) {
+	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Commit{
+		Hash:    commit.Hash,
+		Message: commit.Message,
+		When:    commit.Author.When,
+	}, nil
 }
 
 // GetCommitsForPathsSinceTag returns all commits since tagName that contains
@@ -304,6 +327,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 				commits = append(commits, &Commit{
 					Hash:    commit.Hash,
 					Message: commit.Message,
+					When:    commit.Author.When,
 				})
 				return nil
 			}
@@ -401,12 +425,12 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 func (r *LocalRepository) Push(branchName string) error {
 	// https://stackoverflow.com/a/75727620
 	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
-	slog.Info("Pushing changes", slog.Any("refspec", refSpec))
+	slog.Info("Pushing changes", "branch name", branchName, slog.Any("refspec", refSpec))
 	var auth *httpAuth.BasicAuth
 	if r.gitPassword != "" {
 		slog.Info("Authenticating with basic auth")
 		auth = &httpAuth.BasicAuth{
-			// GitHub authentication needs the username set to a non-empty value, but
+			// GitHub's authentication needs the username set to a non-empty value, but
 			// it does not need to match the token
 			Username: "cloud-sdk-librarian",
 			Password: r.gitPassword,

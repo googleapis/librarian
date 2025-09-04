@@ -74,6 +74,12 @@ func (m *modelAnnotations) IsGaxiCrate() bool {
 	return m.PackageName == "google-cloud-gax-internal"
 }
 
+// ReleaseLevelIsGA returns true if the ReleaseLevel attribute indicates this
+// is a GA library.
+func (m *modelAnnotations) ReleaseLevelIsGA() bool {
+	return m.ReleaseLevel == "GA"
+}
+
 type serviceAnnotations struct {
 	// The name of the service. The Rust naming conventions requires this to be
 	// in `PascalCase`. Notably, names like `IAM` *must* become `Iam`, but

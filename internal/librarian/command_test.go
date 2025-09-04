@@ -20,6 +20,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 	"testing"
 
@@ -254,7 +256,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 				}
 			}()
 
-			repo, err := cloneOrOpenRepo(workRoot, test.repo, test.ci, "")
+			repo, err := cloneOrOpenRepo(workRoot, test.repo, test.ci, "main", "")
 			if test.wantErr {
 				if err == nil {
 					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")
@@ -278,14 +280,16 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 func TestCleanAndCopyLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name        string
-		libraryID   string
-		state       *config.LibrarianState
-		repo        gitrepo.Repository
-		outputDir   string
-		setup       func(t *testing.T, outputDir string)
-		wantErr     bool
-		errContains string
+		name         string
+		libraryID    string
+		state        *config.LibrarianState
+		repo         gitrepo.Repository
+		outputDir    string
+		setup        func(t *testing.T, repoDir, outputDir string)
+		wantErr      bool
+		errContains  string
+		shouldCopy   []string
+		shouldDelete []string
 	}{
 		{
 			name:      "library not found",
@@ -330,7 +334,7 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				},
 			},
 			repo: newTestGitRepo(t),
-			setup: func(t *testing.T, outputDir string) {
+			setup: func(t *testing.T, repoDir, outputDir string) {
 				// Create a symlink in the output directory to trigger an error.
 				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
 					t.Fatalf("os.Symlink() = %v", err)
@@ -339,13 +343,59 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 			wantErr:     true,
 			errContains: "failed to copy",
 		},
+		{
+			name:      "empty RemoveRegex defaults to source root",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "some-library",
+						SourceRoots: []string{"a/path"},
+					},
+				},
+			},
+			repo: newTestGitRepo(t),
+			setup: func(t *testing.T, repoDir, outputDir string) {
+				// Create a stale file in the repo directory to test cleaning.
+				staleFile := filepath.Join(repoDir, "a/path/stale.txt")
+				if err := os.MkdirAll(filepath.Dir(staleFile), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(staleFile); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create generated files in the output directory.
+				filesToCreate := []string{
+					"a/path/new_generated_file_to_copy.txt",
+					"skipped/path/example.txt",
+				}
+				for _, relPath := range filesToCreate {
+					fullPath := filepath.Join(outputDir, relPath)
+					if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+						t.Fatal(err)
+					}
+					if _, err := os.Create(fullPath); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			shouldCopy: []string{
+				"a/path/new_generated_file_to_copy.txt",
+			},
+			shouldDelete: []string{
+				"skipped/path/example.txt",
+				"a/path/stale.txt",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			repoDir := test.repo.GetDir()
 			outputDir := t.TempDir()
 			if test.setup != nil {
-				test.setup(t, outputDir)
+				test.setup(t, repoDir, outputDir)
 			}
-			err := cleanAndCopyLibrary(test.state, test.repo.GetDir(), test.libraryID, outputDir)
+			err := cleanAndCopyLibrary(test.state, repoDir, test.libraryID, outputDir)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -358,6 +408,20 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			for _, file := range test.shouldCopy {
+				fullPath := filepath.Join(repoDir, file)
+				if _, err := os.Stat(fullPath); err != nil {
+					t.Errorf("file %s is not copied to %s", file, repoDir)
+				}
+			}
+
+			for _, file := range test.shouldDelete {
+				fullPath := filepath.Join(repoDir, file)
+				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+					t.Errorf("file %s should not be copied to %s", file, repoDir)
+				}
 			}
 		})
 	}
@@ -477,11 +541,556 @@ func TestCopyOneLibrary(t *testing.T) {
 	}
 }
 
+func TestClean(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name             string
+		files            map[string]string
+		setup            func(t *testing.T, tmpDir string)
+		symlinks         map[string]string
+		removePatterns   []string
+		preservePatterns []string
+		wantRemaining    []string
+		wantErr          bool
+	}{
+		{
+			name: "remove all",
+			files: map[string]string{
+				"file1.txt": "",
+				"file2.txt": "",
+			},
+			removePatterns: []string{".*\\.txt"},
+			wantRemaining:  []string{"."},
+		},
+		{
+			name: "preserve all",
+			files: map[string]string{
+				"file1.txt": "",
+				"file2.txt": "",
+			},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{".*"},
+			wantRemaining:    []string{".", "file1.txt", "file2.txt"},
+		},
+		{
+			name: "remove some",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
+				"bar/file3.txt": "",
+			},
+			removePatterns: []string{"foo/.*"},
+			wantRemaining:  []string{".", "bar", "bar/file3.txt", "foo"},
+		},
+		{
+			name: "invalid remove pattern",
+			files: map[string]string{
+				"file1.txt": "",
+			},
+			removePatterns: []string{"["}, // Invalid regex
+			wantErr:        true,
+		},
+		{
+			name: "invalid preserve pattern",
+			files: map[string]string{
+				"file1.txt": "",
+			},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{"["}, // Invalid regex
+			wantErr:          true,
+		},
+		{
+			name: "remove symlink",
+			files: map[string]string{
+				"file1.txt": "content",
+			},
+			symlinks: map[string]string{
+				"symlink_to_file1": "file1.txt",
+			},
+			removePatterns: []string{"symlink_to_file1"},
+			wantRemaining:  []string{".", "file1.txt"},
+		},
+		{
+			name: "remove file symlinked to",
+			files: map[string]string{
+				"file1.txt": "content",
+			},
+			symlinks: map[string]string{
+				"symlink_to_file1": "file1.txt",
+			},
+			removePatterns: []string{"file1.txt"},
+			// The symlink should remain, even though it's now broken, because
+			// it was not targeted for removal.
+			wantRemaining: []string{".", "symlink_to_file1"},
+		},
+		{
+			name: "remove directory",
+			files: map[string]string{
+				"dir/file1.txt": "",
+				"dir/file2.txt": "",
+			},
+			removePatterns: []string{"dir"},
+			wantRemaining:  []string{"."},
+		},
+		{
+			name: "preserve file not matching remove pattern",
+			files: map[string]string{
+				"file1.txt": "",
+				"file2.log": "",
+			},
+			removePatterns: []string{".*\\.txt"},
+			wantRemaining:  []string{".", "file2.log"},
+		},
+		{
+			name: "remove file fails on permission error",
+			files: map[string]string{
+				"readonlydir/file.txt": "content",
+			},
+			setup: func(t *testing.T, tmpDir string) {
+				// Make the directory read-only to cause os.Remove to fail.
+				readOnlyDir := filepath.Join(tmpDir, "readonlydir")
+				if err := os.Chmod(readOnlyDir, 0555); err != nil {
+					t.Fatalf("os.Chmod() = %v", err)
+				}
+				// Register a cleanup function to restore permissions so TempDir can be removed.
+				t.Cleanup(func() {
+					_ = os.Chmod(readOnlyDir, 0755)
+				})
+			},
+			removePatterns: []string{"readonlydir/file.txt"},
+			wantRemaining:  []string{".", "readonlydir", "readonlydir/file.txt"},
+			wantErr:        true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			for path, content := range test.files {
+				fullPath := filepath.Join(tmpDir, path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+					t.Fatalf("os.WriteFile() = %v", err)
+				}
+			}
+			for link, target := range test.symlinks {
+				linkPath := filepath.Join(tmpDir, link)
+				if err := os.Symlink(target, linkPath); err != nil {
+					t.Fatalf("os.Symlink() = %v", err)
+				}
+			}
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+			err := clean(tmpDir, test.removePatterns, test.preservePatterns)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			remainingPaths, err := allPaths(tmpDir)
+			if err != nil {
+				t.Fatalf("allPaths() = %v", err)
+			}
+			sort.Strings(test.wantRemaining)
+			sort.Strings(remainingPaths)
+			if diff := cmp.Diff(test.wantRemaining, remainingPaths); diff != "" {
+				t.Errorf("clean() remaining files mismatch (-want +got):%s", diff)
+			}
+
+		})
+	}
+}
+
+func TestSortDirsByDepth(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		dirs []string
+		want []string
+	}{
+		{
+			name: "simple case",
+			dirs: []string{
+				"a/b",
+				"short-dir",
+				"a/b/c",
+				"a",
+			},
+			want: []string{
+				"a/b/c",
+				"a/b",
+				"short-dir",
+				"a",
+			},
+		},
+		{
+			name: "empty",
+			dirs: []string{},
+			want: []string{},
+		},
+		{
+			name: "single dir",
+			dirs: []string{"a"},
+			want: []string{"a"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			sortDirsByDepth(tc.dirs)
+			if diff := cmp.Diff(tc.want, tc.dirs); diff != "" {
+				t.Errorf("sortDirsByDepth() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAllPaths(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		setup       func(t *testing.T, tmpDir string)
+		wantPaths   []string
+		wantErr     bool
+		errorString string
+	}{
+		{
+			name: "success",
+			setup: func(t *testing.T, tmpDir string) {
+				files := []string{
+					"file1.txt",
+					"dir1/file2.txt",
+					"dir1/dir2/file3.txt",
+				}
+				for _, file := range files {
+					path := filepath.Join(tmpDir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+			},
+			wantPaths: []string{
+				".",
+				"dir1",
+				"dir1/dir2",
+				"dir1/dir2/file3.txt",
+				"dir1/file2.txt",
+				"file1.txt",
+			},
+		},
+		{
+			name: "unreadable directory",
+			setup: func(t *testing.T, tmpDir string) {
+				unreadableDir := filepath.Join(tmpDir, "unreadable")
+				if err := os.Mkdir(unreadableDir, 0755); err != nil {
+					t.Fatalf("os.Mkdir() = %v", err)
+				}
+
+				// Make the directory unreadable to trigger an error in filepath.WalkDir.
+				if err := os.Chmod(unreadableDir, 0000); err != nil {
+					t.Fatalf("os.Chmod() = %v", err)
+				}
+				// Schedule cleanup to restore permissions so TempDir can be removed.
+				t.Cleanup(func() {
+					_ = os.Chmod(unreadableDir, 0755)
+				})
+			},
+			wantErr:     true,
+			errorString: "unreadable",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+
+			paths, err := allPaths(tmpDir)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Sort both slices to ensure consistent comparison.
+			sort.Strings(paths)
+			sort.Strings(test.wantPaths)
+
+			if diff := cmp.Diff(test.wantPaths, paths); diff != "" {
+				t.Errorf("allPaths() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFilterPaths(t *testing.T) {
+	t.Parallel()
+	paths := []string{
+		"foo/file1.txt",
+		"foo/file2.log",
+		"bar/file3.txt",
+		"bar/file4.log",
+	}
+	regexps := []*regexp.Regexp{
+		regexp.MustCompile(`^foo/.*\.txt$`),
+		regexp.MustCompile(`^bar/.*`),
+	}
+
+	filtered := filterPaths(paths, regexps)
+
+	wantFiltered := []string{
+		"foo/file1.txt",
+		"bar/file3.txt",
+		"bar/file4.log",
+	}
+
+	sort.Strings(filtered)
+	sort.Strings(wantFiltered)
+
+	if diff := cmp.Diff(wantFiltered, filtered); diff != "" {
+		t.Errorf("filterPaths() mismatch (-want +got):%s", diff)
+	}
+}
+
+func TestDeriveFinalPathsToRemove(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name             string
+		files            map[string]string
+		removePatterns   []string
+		preservePatterns []string
+		wantToRemove     []string
+		wantErr          bool
+	}{
+		{
+			name: "remove all txt files, preserve nothing",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.log": "",
+			},
+			removePatterns:   []string{`.*\.txt`},
+			preservePatterns: []string{},
+			wantToRemove:     []string{"file1.txt", "dir1/file2.txt"},
+		},
+		{
+			name: "remove all files, preserve log files",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.log": "",
+			},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{`.*\.log`},
+			wantToRemove:     []string{".", "dir1", "dir2", "file1.txt", "dir1/file2.txt"},
+		},
+		{
+			name: "remove files in dir1, preserve nothing",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir1/file3.log": "",
+				"dir2/file4.txt": "",
+			},
+			removePatterns:   []string{`dir1/.*`},
+			preservePatterns: []string{},
+			wantToRemove:     []string{"dir1/file2.txt", "dir1/file3.log"},
+		},
+		{
+			name: "remove all, preserve files in dir2",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.txt": "",
+			},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{`dir2/.*`},
+			wantToRemove:     []string{".", "dir1", "dir2", "file1.txt", "dir1/file2.txt"},
+		},
+		{
+			name:             "no files",
+			files:            map[string]string{},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{},
+			wantToRemove:     []string{"."},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			for path, content := range test.files {
+				fullPath := filepath.Join(tmpDir, path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+					t.Fatalf("os.WriteFile() = %v", err)
+				}
+			}
+
+			gotToRemove, err := deriveFinalPathsToRemove(tmpDir, test.removePatterns, test.preservePatterns)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			sort.Strings(gotToRemove)
+			sort.Strings(test.wantToRemove)
+
+			if diff := cmp.Diff(test.wantToRemove, gotToRemove); diff != "" {
+				t.Errorf("deriveFinalPathsToRemove() toRemove mismatch in %s (-want +got):\n%s", test.name, diff)
+			}
+		})
+	}
+}
+
+func TestSeparateFilesAndDirs(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		setup     func(t *testing.T, tmpDir string)
+		paths     []string
+		wantFiles []string
+		wantDirs  []string
+		wantErr   bool
+	}{
+		{
+			name: "mixed files, dirs, and non-existent path",
+			setup: func(t *testing.T, tmpDir string) {
+				files := []string{"file1.txt", "dir1/file2.txt"}
+				dirs := []string{"dir1", "dir2"}
+				for _, file := range files {
+					path := filepath.Join(tmpDir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+				for _, dir := range dirs {
+					if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+				}
+			},
+			paths:     []string{"file1.txt", "dir1/file2.txt", "dir1", "dir2", "non-existent-file"},
+			wantFiles: []string{"file1.txt", "dir1/file2.txt"},
+			wantDirs:  []string{"dir1", "dir2"},
+		},
+		{
+			name:    "stat error",
+			paths:   []string{strings.Repeat("a", 300)},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+
+			gotFiles, gotDirs, err := separateFilesAndDirs(tmpDir, test.paths)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			sort.Strings(gotFiles)
+			sort.Strings(gotDirs)
+			sort.Strings(test.wantFiles)
+			sort.Strings(test.wantDirs)
+
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("separateFilesAndDirs() files mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantDirs, gotDirs); diff != "" {
+				t.Errorf("separateFilesAndDirs() dirs mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCompileRegexps(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name     string
+		patterns []string
+		wantErr  bool
+	}{
+		{
+			name: "valid patterns",
+			patterns: []string{
+				`^foo.*`,
+				`\\.txt$`,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "empty patterns",
+			patterns: []string{},
+			wantErr:  false,
+		},
+		{
+			name: "invalid pattern",
+			patterns: []string{
+				`[`,
+			},
+			wantErr: true,
+		},
+		{
+			name: "mixed valid and invalid patterns",
+			patterns: []string{
+				`^foo.*`,
+				`[`,
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			regexps, err := compileRegexps(tc.patterns)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("compileRegexps() error = %v, wantErr %v", err, tc.wantErr)
+			}
+			if !tc.wantErr {
+				if len(regexps) != len(tc.patterns) {
+					t.Errorf("compileRegexps() len = %d, want %d", len(regexps), len(tc.patterns))
+				}
+			}
+		})
+	}
+}
+
 func TestCommitAndPush(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		setupMockRepo   func(t *testing.T) gitrepo.Repository
 		setupMockClient func(t *testing.T) GitHubClient
+		state           *config.LibrarianState
+		prType          string
 		commit          bool
 		push            bool
 		wantErr         bool
@@ -500,6 +1109,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType: "generate",
 		},
 		{
 			name: "create a commit",
@@ -521,6 +1131,7 @@ func TestCommitAndPush(t *testing.T) {
 					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 				}
 			},
+			prType: "generate",
 			commit: true,
 		},
 		{
@@ -543,7 +1154,9 @@ func TestCommitAndPush(t *testing.T) {
 					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 				}
 			},
-			push: true,
+			state:  &config.LibrarianState{},
+			prType: "generate",
+			push:   true,
 		},
 		{
 			name: "No GitHub Remote",
@@ -559,6 +1172,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "could not find an 'origin' remote",
@@ -579,6 +1193,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "mock add all error",
@@ -603,6 +1218,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "create branch error",
@@ -627,6 +1243,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
@@ -651,9 +1268,35 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "push error",
+		},
+		{
+			name: "Create PR body error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{}
+			},
+			state:          &config.LibrarianState{},
+			prType:         "random",
+			push:           true,
+			wantErr:        true,
+			expectedErrMsg: "failed to create pull request body",
 		},
 		{
 			name: "Create pull request error",
@@ -676,6 +1319,8 @@ func TestCommitAndPush(t *testing.T) {
 					createPullRequestErr: errors.New("create pull request error"),
 				}
 			},
+			state:          &config.LibrarianState{},
+			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request",
@@ -696,7 +1341,8 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			push: true,
+			prType: "generate",
+			push:   true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -706,8 +1352,15 @@ func TestCommitAndPush(t *testing.T) {
 				Push:   test.push,
 				Commit: test.commit,
 			}
-
-			err := commitAndPush(context.Background(), localConfig, repo, client, "")
+			commitInfo := &commitInfo{
+				cfg:           localConfig,
+				state:         test.state,
+				repo:          repo,
+				ghClient:      client,
+				commitMessage: "",
+				prType:        test.prType,
+			}
+			err := commitAndPush(context.Background(), commitInfo)
 
 			if test.wantErr {
 				if err == nil {

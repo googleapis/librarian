@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Start with a Go base image
-FROM golang:1.24.5 AS builder
+FROM golang:1.25.0 AS builder
 
 WORKDIR /app
 
