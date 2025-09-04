@@ -42,7 +42,7 @@ const (
 )
 
 var globalPreservePatterns = []string{
-	`^\.librarian/generator-input(/.*)?$`,
+	`^\.librarian/generator-input(/.*)?$`, // Preserve the generator-input directory and its contents.
 }
 
 // GitHubClientFactory type for creating a GitHubClient.
@@ -257,7 +257,6 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		}
 	}
 
-	// Make sure we never delete the generator-input directory.
 	preservePatterns := append(library.PreserveRegex,
 		globalPreservePatterns...)
 
