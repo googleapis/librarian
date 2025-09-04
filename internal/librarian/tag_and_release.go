@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	pullRequestSegments  = 5
+	pullRequestSegments  = 7
 	tagAndReleaseCmdName = "tag-and-release"
 	releasePendingLabel  = "release:pending"
 	releaseDoneLabel     = "release:done"
