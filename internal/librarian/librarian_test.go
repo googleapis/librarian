@@ -30,6 +30,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 
@@ -79,6 +80,44 @@ func TestParentCommands(t *testing.T) {
 				t.Fatalf("Run(ctx, %q) got error %v, want nil", test.command, err)
 			}
 		})
+	}
+}
+
+func TestGenerate_DefaultBehavior(t *testing.T) {
+	ctx := context.Background()
+
+	// 1. Setup a mock repository with a state file
+	repo := newTestGitRepoWithState(t, true)
+	repoDir := repo.GetDir()
+
+	t.Chdir(repoDir)
+
+	// 2. Override dependency creation to use mocks
+	mockContainer := &mockContainerClient{
+		wantLibraryGen: true,
+	}
+	mockGH := &mockGitHubClient{}
+
+	// 3. Call librarian.Run
+	cfg := config.New("generate")
+	cfg.WorkRoot = repoDir
+	cfg.Repo = repoDir
+	runner, err := newGenerateRunner(cfg, func(token string, repo *github.Repository) (GitHubClient, error) {
+		return mockGH, nil
+	}, func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
+		return mockContainer, nil
+	})
+	if err != nil {
+		t.Fatalf("newGenerateRunner() failed: %v", err)
+	}
+	if err := runner.run(ctx); err != nil {
+		t.Fatalf("runner.run() failed: %v", err)
+	}
+
+	// 4. Assertions
+	expectedGenerateCalls := 1
+	if mockContainer.generateCalls != expectedGenerateCalls {
+		t.Errorf("Run(ctx, \"generate\"): got %d generate calls, want %d", mockContainer.generateCalls, expectedGenerateCalls)
 	}
 }
 
