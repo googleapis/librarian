@@ -68,6 +68,7 @@ func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.R
 
 func (m *mockGitHubClient) AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error {
 	m.addLabelsToIssuesCalls++
+	m.labels = append(m.labels, labels...)
 	return m.addLabelsToIssuesErr
 }
 

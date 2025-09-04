@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
-	"github.com/googleapis/librarian/internal/github"
 
 	"github.com/googleapis/librarian/internal/docker"
 
@@ -113,27 +112,12 @@ func (r *initRunner) run(ctx context.Context) error {
 		ghClient:      r.ghClient,
 		commitMessage: "",
 		prType:        release,
+		// Newly created PRs from the `release init` command should have a
+		// `release:pending` Github tab to be tracked for release.
+		pullRequestLabels: []string{"release:pending"},
 	}
-	var prMetadata *github.PullRequestMetadata
-	var err error
-	if prMetadata, err = commitAndPush(ctx, commitInfo); err != nil {
+	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
-	}
-
-	// Newly created PRs from the `release init` command should have a
-	// `release:pending` Github tab to be tracked for release. Only add
-	// labels if a PR has been successfully created on Github.
-	if prMetadata != nil {
-		prInfo := &prInfo{
-			repo:       r.repo,
-			ghClient:   r.ghClient,
-			prMetadata: prMetadata,
-			labels:     []string{"release:pending"},
-		}
-
-		if err := addLabelsToPullRequest(ctx, prInfo); err != nil {
-			return fmt.Errorf("failed to add label to PR: %w", err)
-		}
 	}
 
 	return nil

@@ -51,13 +51,7 @@ type commitInfo struct {
 	additionalMessage string
 	commitMessage     string
 	prType            string
-}
-
-type prInfo struct {
-	repo       gitrepo.Repository
-	ghClient   GitHubClient
-	prMetadata *github.PullRequestMetadata
-	labels     []string
+	pullRequestLabels []string
 }
 
 type commandRunner struct {
@@ -341,73 +335,76 @@ func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*
 // commitAndPush creates a commit and push request to GitHub for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, info *commitInfo) (*github.PullRequestMetadata, error) {
+func commitAndPush(ctx context.Context, info *commitInfo) error {
 	cfg := info.cfg
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
-		return nil, nil
+		return nil
 	}
 
 	repo := info.repo
 	status, err := repo.AddAll()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if status.IsClean() {
 		slog.Info("No changes to commit, skipping commit and push.")
-		return nil, nil
+		return nil
 	}
 
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	slog.Info("Creating branch", slog.String("branch", branch))
 	if err := repo.CreateBranchAndCheckout(branch); err != nil {
-		return nil, err
+		return err
 	}
 
 	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
 	commitMessage := info.commitMessage
 	slog.Info("Committing", "message", commitMessage)
 	if err := repo.Commit(commitMessage); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := repo.Push(branch); err != nil {
-		return nil, err
+		return err
 	}
 
 	if !cfg.Push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
-		return nil, nil
+		return nil
 	}
 
 	// Ensure we have a GitHub repository
 	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
 	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	var prMetadata *github.PullRequestMetadata
-	if prMetadata, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage); err != nil {
-		return nil, fmt.Errorf("failed to create pull request: %w", err)
+	var pullRequestMetadata *github.PullRequestMetadata
+	if pullRequestMetadata, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage); err != nil {
+		return fmt.Errorf("failed to create pull request: %w", err)
 	}
-	return prMetadata, nil
-}
 
-func addLabelsToPullRequest(ctx context.Context, prInfo *prInfo) error {
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(prInfo.repo)
-	if err != nil {
+	if err := addLabelsToPullRequest(ctx, info.ghClient, info.pullRequestLabels, pullRequestMetadata); err != nil {
 		return err
 	}
 
-	if prInfo.labels != nil {
-		if err := prInfo.ghClient.AddLabelsToIssue(ctx, gitHubRepo, prInfo.prMetadata.Number, prInfo.labels); err != nil {
-			return fmt.Errorf("unable to add labels to newly created pull request: %w", err)
-		}
-	}
+	return nil
+}
 
+// Add a list of labels to a single pull request (specified by the PR number). Should only be called
+// on a valid pull request.
+// TODO: Consolidate the params to a potential PullRequestInfo struct
+func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequestLabels []string, prMetadata *github.PullRequestMetadata) error {
+	if pullRequestLabels == nil {
+		return nil
+	}
+	if err := ghClient.AddLabelsToIssue(ctx, prMetadata.Repo, prMetadata.Number, pullRequestLabels); err != nil {
+		return fmt.Errorf("failed to add labels to pull request: %w", err)
+	}
 	return nil
 }
 
