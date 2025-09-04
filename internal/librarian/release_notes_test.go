@@ -614,16 +614,13 @@ Language Image: go:1.21
 			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
-
 <details><summary>my-library: 1.1.0</summary>
 
 ## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 ### Features
 * new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
-
-</details>
-`,
+</details>`,
 				librarianVersion, today),
 		},
 		{
