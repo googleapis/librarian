@@ -39,58 +39,64 @@ func TestFormatGenerationPRBody(t *testing.T) {
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
-		name          string
-		state         *config.LibrarianState
-		repo          gitrepo.Repository
-		want          string
-		wantErr       bool
-		wantErrPhrase string
-	}{{
-		// This test verifies that only changed libraries appear in the pull request
-		// body.
-		name: "multiple libraries generation",
-		state: &config.LibrarianState{
-			Image: "go:1.21",
-			Libraries: []*config.LibraryState{
-				{
-					ID:                  "one-library",
-					LastGeneratedCommit: "1234567890",
-				},
-				{
-					ID:                  "another-library",
-					LastGeneratedCommit: "abcdefg",
-				},
-			},
-		},
-		repo: &MockRepository{
-			RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-			GetCommitByHash: map[string]*gitrepo.Commit{
-				"1234567890": {
-					Hash: plumbing.NewHash("1234567890"),
-					When: time.UnixMilli(200),
-				},
-				"abcdefg": {
-					Hash: plumbing.NewHash("abcdefg"),
-					When: time.UnixMilli(300),
-				},
-			},
-			GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
-				"1234567890": {
+		name            string
+		state           *config.LibrarianState
+		repo            gitrepo.Repository
+		idToCommits     map[string]string
+		failedLibraries []string
+		want            string
+		wantErr         bool
+		wantErrPhrase   string
+	}{
+		{
+			// This test verifies that only changed libraries appear in the pull request
+			// body.
+			name: "multiple libraries generation",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
 					{
-						Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
-						Hash:    hash2,
-						When:    today.Add(time.Hour),
+						ID: "one-library",
+					},
+					{
+						ID: "another-library",
 					},
 				},
-				"abcdefg": {}, // no new commits since commit "abcdefg".
 			},
-			ChangedFilesInCommitValueByHash: map[string][]string{
-				hash2.String(): {
-					"path/to/file",
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitByHash: map[string]*gitrepo.Commit{
+					"1234567890": {
+						Hash: plumbing.NewHash("1234567890"),
+						When: time.UnixMilli(200),
+					},
+					"abcdefg": {
+						Hash: plumbing.NewHash("abcdefg"),
+						When: time.UnixMilli(300),
+					},
+				},
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234567890": {
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+					"abcdefg": {}, // no new commits since commit "abcdefg".
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash2.String(): {
+						"path/to/file",
+					},
 				},
 			},
-		},
-		want: fmt.Sprintf(`This pull request is generated with proto changes between
+			idToCommits: map[string]string{
+				"one-library":     "1234567890",
+				"another-library": "abcdefg",
+			},
+			failedLibraries: []string{},
+			want: fmt.Sprintf(`This pull request is generated with proto changes between
 [googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
 (exclusive) and
 [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
@@ -111,16 +117,91 @@ Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googl
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE`,
-			librarianVersion, "go:1.21"),
-	},
+				librarianVersion, "go:1.21"),
+		},
+		{
+			name: "multiple libraries generation with failed libraries",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "one-library",
+					},
+					{
+						ID: "another-library",
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				GetCommitByHash: map[string]*gitrepo.Commit{
+					"1234567890": {
+						Hash: plumbing.NewHash("1234567890"),
+						When: time.UnixMilli(200),
+					},
+					"abcdefg": {
+						Hash: plumbing.NewHash("abcdefg"),
+						When: time.UnixMilli(300),
+					},
+				},
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234567890": {
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+					"abcdefg": {}, // no new commits since commit "abcdefg".
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash2.String(): {
+						"path/to/file",
+					},
+				},
+			},
+			idToCommits: map[string]string{
+				"one-library":     "1234567890",
+				"another-library": "abcdefg",
+			},
+			failedLibraries: []string{
+				"failed-library-a",
+				"failed-library-b",
+			},
+			want: fmt.Sprintf(`This pull request is generated with proto changes between
+[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s
+
+## Generation failed for
+- failed-library-a
+- failed-library-b
+
+BEGIN_COMMIT_OVERRIDE
+
+BEGIN_NESTED_COMMIT
+fix: [one-library] a bug fix
+This is another body.
+
+PiperOrigin-RevId: 573342
+
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+END_NESTED_COMMIT
+
+END_COMMIT_OVERRIDE`,
+				librarianVersion, "go:1.21"),
+		},
 		{
 			name: "single library generation",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: "1234567890",
+						ID: "one-library",
 					},
 				},
 			},
@@ -156,6 +237,10 @@ END_COMMIT_OVERRIDE`,
 					},
 				},
 			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
+			failedLibraries: []string{},
 			want: fmt.Sprintf(`This pull request is generated with proto changes between
 [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
 (exclusive) and
@@ -194,8 +279,9 @@ END_COMMIT_OVERRIDE`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: "1234567890",
+						ID: "one-library",
+						// Intentionally set this value to verify the test can pass.
+						LastGeneratedCommit: "randomCommit",
 					},
 				},
 			},
@@ -226,6 +312,9 @@ END_COMMIT_OVERRIDE`,
 					},
 				},
 			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
 			wantErr:       true,
 			wantErrPhrase: "failed to find the start commit",
 		},
@@ -236,6 +325,9 @@ END_COMMIT_OVERRIDE`,
 				Libraries: []*config.LibraryState{{ID: "one-library"}},
 			},
 			repo: &MockRepository{},
+			idToCommits: map[string]string{
+				"one-library": "",
+			},
 			want: "No commit is found since last generation",
 		},
 		{
@@ -244,20 +336,22 @@ END_COMMIT_OVERRIDE`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: "1234567890",
+						ID: "one-library",
 					},
 				},
 			},
 			repo: &MockRepository{
 				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
 			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
 			wantErr:       true,
 			wantErrPhrase: "failed to fetch conventional commits for library",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatGenerationPRBody(test.repo, test.state)
+			got, err := formatGenerationPRBody(test.repo, test.state, test.idToCommits, test.failedLibraries)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -288,6 +382,7 @@ func TestFindLatestCommit(t *testing.T) {
 		name          string
 		state         *config.LibrarianState
 		repo          gitrepo.Repository
+		idToCommits   map[string]string
 		want          *gitrepo.Commit
 		wantErr       bool
 		wantErrPhrase string
@@ -297,16 +392,13 @@ func TestFindLatestCommit(t *testing.T) {
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: hash1.String(),
+						ID: "one-library",
 					},
 					{
-						ID:                  "another-library",
-						LastGeneratedCommit: hash2.String(),
+						ID: "another-library",
 					},
 					{
-						ID:                  "yet-another-library",
-						LastGeneratedCommit: hash3.String(),
+						ID: "yet-another-library",
 					},
 					{
 						ID: "skipped-library",
@@ -332,6 +424,11 @@ func TestFindLatestCommit(t *testing.T) {
 					},
 				},
 			},
+			idToCommits: map[string]string{
+				"one-library":         hash1.String(),
+				"another-library":     hash2.String(),
+				"yet-another-library": hash3.String(),
+			},
 			want: &gitrepo.Commit{
 				Hash:    hash2,
 				Message: "this is another message",
@@ -343,20 +440,22 @@ func TestFindLatestCommit(t *testing.T) {
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:                  "one-library",
-						LastGeneratedCommit: "1234567890",
+						ID: "one-library",
 					},
 				},
 			},
 			repo: &MockRepository{
 				GetCommitError: errors.New("simulated error"),
 			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
 			wantErr:       true,
 			wantErrPhrase: "can't find last generated commit for",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := findLatestGenerationCommit(test.repo, test.state)
+			got, err := findLatestGenerationCommit(test.repo, test.state, test.idToCommits)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)

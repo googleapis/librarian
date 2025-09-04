@@ -29,8 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -48,7 +46,8 @@ type commitInfo struct {
 	state             *config.LibrarianState
 	repo              gitrepo.Repository
 	ghClient          GitHubClient
-	additionalMessage string
+  idToCommits       map[string]string
+  failedLibraries []string
 	commitMessage     string
 	prType            string
 	pullRequestLabels []string
@@ -101,7 +100,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	var gitRepo *github.Repository
 	if isURL(cfg.Repo) {
-		gitRepo, err = github.ParseURL(cfg.Repo)
+		gitRepo, err = github.ParseRemote(cfg.Repo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repo url: %w", err)
 		}
@@ -252,7 +251,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 	for _, srcRoot := range library.SourceRoots {
 		dstPath := filepath.Join(dest, srcRoot)
 		srcPath := filepath.Join(src, srcRoot)
-		files, err := getDirectoryFilesnames(srcPath)
+		files, err := getDirectoryFilenames(srcPath)
 		if err != nil {
 			return err
 		}
@@ -268,7 +267,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 	return nil
 }
 
-func getDirectoryFilesnames(dir string) ([]string, error) {
+func getDirectoryFilenames(dir string) ([]string, error) {
 	if _, err := os.Stat(dir); err != nil {
 		// Skip dirs that don't exist
 		if os.IsNotExist(err) {
@@ -354,15 +353,11 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
-	slog.Info("Creating branch", slog.String("branch", branch))
 	if err := repo.CreateBranchAndCheckout(branch); err != nil {
 		return err
 	}
 
-	// TODO: get correct language for message (https://github.com/googleapis/librarian/issues/885)
-	commitMessage := info.commitMessage
-	slog.Info("Committing", "message", commitMessage)
-	if err := repo.Commit(commitMessage); err != nil {
+	if err := repo.Commit(info.commitMessage); err != nil {
 		return err
 	}
 
@@ -382,9 +377,12 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
-	slog.Info("Creating pull request", slog.String("branch", branch), slog.String("title", title))
-	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, commitMessage)
+	prBody, err := createPRBody(info)
 	if err != nil {
+		return fmt.Errorf("failed to create pull request body: %w", err)
+	}
+
+	if pullRequestMetadata, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 
@@ -402,6 +400,17 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 		return fmt.Errorf("failed to add labels to pull request: %w", err)
 	}
 	return nil
+}
+
+func createPRBody(info *commitInfo) (string, error) {
+	switch info.prType {
+	case generate:
+		return formatGenerationPRBody(info.repo, info.state, info.idToCommits, info.failedLibraries)
+	case release:
+		return formatReleaseNotes(info.repo, info.state)
+	default:
+		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
+	}
 }
 
 func copyFile(dst, src string) (err error) {
