@@ -46,8 +46,8 @@ type commitInfo struct {
 	state             *config.LibrarianState
 	repo              gitrepo.Repository
 	ghClient          GitHubClient
-  idToCommits       map[string]string
-  failedLibraries []string
+	idToCommits       map[string]string
+	failedLibraries   []string
 	commitMessage     string
 	prType            string
 	pullRequestLabels []string
@@ -310,27 +310,6 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 	return nil
 }
 
-func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
-	changes := make([]*config.Change, 0)
-	for _, commit := range commits {
-		clNum := ""
-		if cl, ok := commit.Footers[KeyClNum]; ok {
-			clNum = cl
-		}
-
-		changeType := getChangeType(commit)
-		changes = append(changes, &config.Change{
-			Type:       changeType,
-			Subject:    commit.Description,
-			Body:       commit.Body,
-			ClNum:      clNum,
-			CommitHash: commit.SHA,
-		})
-	}
-
-	return changes
-}
-
 // commitAndPush creates a commit and push request to GitHub for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
@@ -382,7 +361,8 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
 
-	if pullRequestMetadata, err = info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody); err != nil {
+	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody)
+	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 
