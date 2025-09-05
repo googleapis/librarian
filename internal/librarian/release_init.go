@@ -72,13 +72,13 @@ type initRunner struct {
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
-	// The version is changed after updating library, use this map to keep the
+	// The tag is changed after updating library, use this map to keep the
 	// mapping from library id to version before the updating since we need these
 	// commits to create pull request body.
-	idToVersions map[string]string
-	workRoot     string
-	partialRepo  string
-	image        string
+	idToTags    map[string]string
+	workRoot    string
+	partialRepo string
+	image       string
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
@@ -93,7 +93,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		ghClient:        runner.ghClient,
 		containerClient: runner.containerClient,
-		idToVersions:    map[string]string{},
+		idToTags:        map[string]string{},
 		workRoot:        runner.workRoot,
 		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		image:           runner.image,
@@ -115,6 +115,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		state:         r.state,
 		repo:          r.repo,
 		ghClient:      r.ghClient,
+		idToTags:      r.idToTags,
 		commitMessage: "chore: create a release",
 		prType:        release,
 	}
@@ -137,7 +138,8 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 			if r.cfg.Library != library.ID {
 				continue
 			}
-			r.idToVersions[library.ID] = library.Version
+
+			r.idToTags[library.ID] = formatTag(library, "")
 			// Only update one library with the given library ID.
 			if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 				return err
@@ -149,7 +151,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 			break
 		}
 
-		r.idToVersions[library.ID] = library.Version
+		r.idToTags[library.ID] = formatTag(library, "")
 		// Update all libraries.
 		if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 			return err

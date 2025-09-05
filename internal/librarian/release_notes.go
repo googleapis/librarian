@@ -238,7 +238,7 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 }
 
 // formatReleaseNotes generates the body for a release pull request.
-func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
+func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState, idToTags map[string]string) (string, error) {
 	librarianVersion := cli.Version()
 	var releaseSections []*releaseNoteSection
 	for _, library := range state.Libraries {
@@ -246,7 +246,7 @@ func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (
 			continue
 		}
 
-		section, err := formatLibraryReleaseNotes(repo, library)
+		section, err := formatLibraryReleaseNotes(repo, library, idToTags)
 		if err != nil {
 			return "", fmt.Errorf("failed to format release notes for library %s: %w", library.ID, err)
 		}
@@ -269,20 +269,24 @@ func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
-func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState) (*releaseNoteSection, error) {
+func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState, idToTags map[string]string) (*releaseNoteSection, error) {
 	ghRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch github repo from remote: %w", err)
 	}
-	previousTag := formatTag(library, "")
+
+	previousTag, ok := idToTags[library.ID]
+	if !ok {
+		return nil, fmt.Errorf("failed to find previouse release tag for %s", library.ID)
+	}
+
 	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get conventional commits for library %s: %w", library.ID, err)
 	}
-	newVersion, err := NextVersion(commits, library.Version, "")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get next version for library %s: %w", library.ID, err)
-	}
+
+	// The version should already be updated to the next version.
+	newVersion := library.Version
 	newTag := formatTag(library, newVersion)
 
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
