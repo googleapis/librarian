@@ -65,6 +65,11 @@ func init() {
 	addFlagWorkRoot(fs, cfg)
 }
 
+type tagAndCommits struct {
+	commits []*conventionalcommits.ConventionalCommit
+	tag     string
+}
+
 type initRunner struct {
 	cfg             *config.Config
 	repo            gitrepo.Repository
@@ -72,9 +77,15 @@ type initRunner struct {
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
-	workRoot        string
-	partialRepo     string
-	image           string
+	// A mapping from library id to release tag before updating the library
+	// and conventional commits found since the release tag.
+	// The version is changed after updating, so we need to keep the old tag
+	// because it will be used when creating release note.
+	// Also, keeping the commits to avoid double calculation.
+	releaseInfo map[string]tagAndCommits
+	workRoot    string
+	partialRepo string
+	image       string
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
@@ -84,14 +95,15 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	}
 	return &initRunner{
 		cfg:             runner.cfg,
-		workRoot:        runner.workRoot,
 		repo:            runner.repo,
-		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
-		image:           runner.image,
 		ghClient:        runner.ghClient,
 		containerClient: runner.containerClient,
+		releaseInfo:     map[string]tagAndCommits{},
+		workRoot:        runner.workRoot,
+		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
+		image:           runner.image,
 	}, nil
 }
 
@@ -110,6 +122,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		state:         r.state,
 		repo:          r.repo,
 		ghClient:      r.ghClient,
+		releaseInfo:   r.releaseInfo,
 		commitMessage: "chore: create a release",
 		prType:        release,
 		// Newly created PRs from the `release init` command should have a
@@ -128,15 +141,16 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
-	src := r.repo.GetDir()
 
+	src := r.repo.GetDir()
 	for _, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
 				continue
 			}
+
 			// Only update one library with the given library ID.
-			if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
+			if err := r.updateLibrary(library); err != nil {
 				return err
 			}
 			if err := copyLibrary(dst, src, library); err != nil {
@@ -147,7 +161,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Update all libraries.
-		if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
+		if err := r.updateLibrary(library); err != nil {
 			return err
 		}
 		if err := copyLibrary(dst, src, library); err != nil {
@@ -206,10 +220,16 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 // 2. Override the library version if libraryVersion is not empty.
 //
 // 3. Set the library's release trigger to true.
-func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string) error {
-	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
+func (r *initRunner) updateLibrary(library *config.LibraryState) error {
+	tag := formatTag(library, "")
+	commits, err := GetConventionalCommitsSinceTag(r.repo, library, tag)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+	}
+
+	r.releaseInfo[library.ID] = tagAndCommits{
+		commits: commits,
+		tag:     tag,
 	}
 
 	library.Changes = coerceLibraryChanges(commits)
@@ -218,7 +238,7 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 		return nil
 	}
 
-	nextVersion, err := NextVersion(commits, library.Version, libraryVersion)
+	nextVersion, err := NextVersion(commits, library.Version, r.cfg.LibraryVersion)
 	if err != nil {
 		return err
 	}

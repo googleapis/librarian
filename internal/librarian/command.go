@@ -57,10 +57,11 @@ type commitInfo struct {
 	repo              gitrepo.Repository
 	ghClient          GitHubClient
 	idToCommits       map[string]string
+	releaseInfo       map[string]tagAndCommits
 	failedLibraries   []string
+	pullRequestLabels []string
 	commitMessage     string
 	prType            string
-	pullRequestLabels []string
 }
 
 type commandRunner struct {
@@ -400,11 +401,11 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 // Passing in `nil` for labels will no-op and an empty list for labels will clear all labels on the PR.
 // TODO: Consolidate the params to a potential PullRequestInfo struct.
 func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequestLabels []string, prMetadata *github.PullRequestMetadata) error {
-	// Do not update if there are aren't labels provided
+	// Do not update if there aren't labels provided
 	if pullRequestLabels == nil {
 		return nil
 	}
-	// Github API treats Issues and Pull Request the same
+	// GitHub API treats Issues and Pull Request the same
 	// https://docs.github.com/en/rest/issues/labels#add-labels-to-an-issue
 	if err := ghClient.AddLabelsToIssue(ctx, prMetadata.Repo, prMetadata.Number, pullRequestLabels); err != nil {
 		return fmt.Errorf("failed to add labels to pull request: %w", err)
@@ -417,7 +418,7 @@ func createPRBody(info *commitInfo) (string, error) {
 	case generate:
 		return formatGenerationPRBody(info.repo, info.state, info.idToCommits, info.failedLibraries)
 	case release:
-		return formatReleaseNotes(info.repo, info.state)
+		return formatReleaseNotes(info.repo, info.state, info.releaseInfo)
 	default:
 		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
 	}
