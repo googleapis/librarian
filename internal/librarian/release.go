@@ -21,8 +21,10 @@ import (
 // cmdRelease is the command for the `release` subcommand.
 var cmdRelease = &cli.Command{
 	Short:     "release manages releases of libraries.",
-	UsageLine: "librarian release <command> [arguments]",
-	Long:      "Manages releases of libraries.",
+	UsageLine: "librarian release <command> [flags]",
+	Long: `The release command orchestrate the creation of a release pull request.
+The subcommands organize the tasks involed in creating a release: parsing conventional commits, 
+determining the correct semantic version, and generating a changelog.`,
 }
 
 func init() {

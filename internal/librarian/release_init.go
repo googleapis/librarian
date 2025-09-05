@@ -40,7 +40,25 @@ var cmdInit = &cli.Command{
 	UsageLine: "librarian release init [arguments]",
 	Long: `The release init command is the primary entry point for initiating a release.
 It orchestrates the process of parsing commits, determining new versions, generating
-a changelog, and creating a release pull request.`,
+a changelog, and creating a release pull request. Optional flags can be specified to
+override a version for a library or to use a branch.
+
+When releasing a library, the next semantic version is automatically calculated from
+the changes.
+
+**Commit and Push**
+The "-commit" flag will create a commit for the release but not create a pull request.
+The "-push" flag will create a commit and create a pull request with the label 
+'release:pending' for the released changes.
+
+If "-push" and "-commit" are both specified, "-commit" is ignored.
+
+**Use a specific version**
+To override the automatically calculated semantic version, the "-library-version" flag can be
+set with new version. This should be used for special cases (e.g. applying a backported patch 
+or forcing a major version bump). This requires the "-library" flag to be specified.
+
+Example: librarian release init -library your-library-id -library-version 1.0`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
 		runner, err := newInitRunner(cfg)
 		if err != nil {
