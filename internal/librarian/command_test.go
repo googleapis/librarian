@@ -954,7 +954,7 @@ func TestFilterPaths(t *testing.T) {
 		regexp.MustCompile(`^bar/.*`),
 	}
 
-	filtered := filterPaths(paths, regexps)
+	filtered := filterPathsByRegex(paths, regexps)
 
 	wantFiltered := []string{
 		"foo/file1.txt",
