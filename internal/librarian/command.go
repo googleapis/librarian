@@ -322,7 +322,7 @@ func copyLibrary(dst, src string, library *config.LibraryState) error {
 		dstPath := filepath.Join(dst, srcRoot)
 		srcPath := filepath.Join(src, srcRoot)
 		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
-			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dstPath, err)
+			return fmt.Errorf("os.CopyFS failed to copy %s to %s: %w", library.ID, dstPath, err)
 		}
 	}
 
