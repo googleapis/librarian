@@ -17,6 +17,7 @@ package librarian
 import (
 	"errors"
 	"fmt"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"strings"
 	"testing"
 	"time"
@@ -487,7 +488,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 		name            string
 		state           *config.LibrarianState
 		repo            gitrepo.Repository
-		idToTags        map[string]string
+		releaseInfo     map[string]tagAndCommits
 		wantReleaseNote string
 		wantErr         bool
 		wantErrPhrase   string
@@ -498,28 +499,31 @@ func TestFormatReleaseNotes(t *testing.T) {
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:               "my-library",
-						Version:          "1.0.0",
+						ID: "my-library",
+						// this is the NewVersion in the release note.
+						Version:          "1.1.0",
 						ReleaseTriggered: true,
 					},
 				},
 			},
 			repo: &MockRepository{
 				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-				GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
-					"my-library-1.0.0": {
-						{Message: "feat: new feature", Hash: hash1},
-						{Message: "fix: a bug fix", Hash: hash2},
+			},
+			releaseInfo: map[string]tagAndCommits{
+				"my-library": {
+					commits: []*conventionalcommits.ConventionalCommit{
+						{
+							Type:        "feat",
+							Description: "new feature",
+							SHA:         hash1.String(),
+						},
+						{
+							Type:        "fix",
+							Description: "a bug fix",
+							SHA:         hash2.String(),
+						},
 					},
-				},
-				ChangedFilesInCommitValueByHash: map[string][]string{
-					hash1.String(): {
-						"path/to/file",
-						"path/to/another/file",
-					},
-					hash2.String(): {
-						"path/to/file",
-					},
+					tag: "my-library-1.0.0",
 				},
 			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
@@ -542,30 +546,44 @@ Language Image: go:1.21
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:               "lib-a",
-						Version:          "1.0.0",
+						ID: "lib-a",
+						// this is the NewVersion in the release note.
+						Version:          "1.1.0",
 						ReleaseTriggered: true,
 					},
 					{
-						ID:               "lib-b",
-						Version:          "2.0.0",
+						ID: "lib-b",
+						// this is the NewVersion in the release note.
+						Version:          "2.0.1",
 						ReleaseTriggered: true,
 					},
 				},
 			},
 			repo: &MockRepository{
 				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-				GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
-					"lib-a-1.0.0": {
-						{Message: "feat: feature for a", Hash: hash1},
+			},
+			releaseInfo: map[string]tagAndCommits{
+				"lib-a": {
+					commits: []*conventionalcommits.ConventionalCommit{
+						{
+							Type:        "feat",
+							Description: "feature for a",
+							SHA:         hash1.String(),
+						},
 					},
-					"lib-b-2.0.0": {
-						{Message: "fix: fix for b", Hash: hash2},
-					},
+					// this is the PreviousTag in the release note.
+					tag: "lib-a-1.0.0",
 				},
-				ChangedFilesInCommitValueByHash: map[string][]string{
-					hash1.String(): {"path/to/file"},
-					hash2.String(): {"path/to/another/file"},
+				"lib-b": {
+					commits: []*conventionalcommits.ConventionalCommit{
+						{
+							Type:        "fix",
+							Description: "fix for b",
+							SHA:         hash2.String(),
+						},
+					},
+					// this is the PreviousTag in the release note.
+					tag: "lib-b-2.0.0",
 				},
 			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
@@ -594,7 +612,8 @@ Language Image: go:1.21
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:               "my-library",
+						ID: "my-library",
+						// this is the newVersion in the release note.
 						Version:          "1.1.0",
 						ReleaseTriggered: true,
 					},
@@ -602,19 +621,23 @@ Language Image: go:1.21
 			},
 			repo: &MockRepository{
 				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-				GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
-					"my-library-1.0.0": {
-						{Message: "feat: new feature", Hash: hash1},
-						{Message: "ci: a ci change", Hash: hash2},
-					},
-				},
-				ChangedFilesInCommitValueByHash: map[string][]string{
-					hash1.String(): {"path/to/file"},
-					hash2.String(): {"path/to/another/file"},
-				},
 			},
-			idToTags: map[string]string{
-				"my-library": "my-library-1.0.0",
+			releaseInfo: map[string]tagAndCommits{
+				"my-library": {
+					commits: []*conventionalcommits.ConventionalCommit{
+						{
+							Type:        "feat",
+							Description: "new feature",
+							SHA:         hash1.String(),
+						},
+						{
+							Type:        "ci",
+							Description: "a ci change",
+							SHA:         hash2.String(),
+						},
+					},
+					tag: "my-library-1.0.0",
+				},
 			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
@@ -658,7 +681,7 @@ Language Image: go:1.21
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := formatReleaseNotes(test.repo, test.state, test.idToTags)
+			got, err := formatReleaseNotes(test.repo, test.state, test.releaseInfo)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)

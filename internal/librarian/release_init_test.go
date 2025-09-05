@@ -554,12 +554,19 @@ func TestUpdateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			r := &initRunner{
+				cfg: &config.Config{
+					LibraryVersion: test.libraryVersion,
+				},
+				repo: test.repo,
+			}
 			var err error
 			if test.repo != nil {
-				err = updateLibrary(test.repo, test.library, test.libraryVersion)
+				err = r.updateLibrary(test.library)
 			} else {
 				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				err = updateLibrary(repo, test.library, test.libraryVersion)
+				r.repo = repo
+				err = r.updateLibrary(test.library)
 			}
 
 			if test.wantErr {
