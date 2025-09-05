@@ -19,6 +19,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 )
 
 const (
@@ -106,11 +108,13 @@ type LibraryState struct {
 	LastGeneratedCommit string `yaml:"last_generated_commit" json:"last_generated_commit"`
 	// The changes from the language repository since the library was last released.
 	// This field is ignored when writing to state.yaml.
-	Changes []*Change `yaml:"-" json:"changes,omitempty"`
+	Changes []*conventionalcommits.ConventionalCommit `yaml:"-" json:"changes,omitempty"`
 	// A list of APIs that are part of this library.
 	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
 	SourceRoots []string `yaml:"source_roots" json:"source_roots"`
+	// The previous release version, this field is only for bookkeeping.
+	PreviousVersion string `yaml:"-" json:"-"`
 	// A list of regular expressions for files and directories to preserve during the copy and remove process.
 	PreserveRegex []string `yaml:"preserve_regex" json:"preserve_regex"`
 	// A list of regular expressions for files and directories to remove before copying generated code.
@@ -221,20 +225,6 @@ func (a *API) Validate() error {
 		return fmt.Errorf("invalid path: %q", a.Path)
 	}
 	return nil
-}
-
-// Change represents the changelog of a library.
-type Change struct {
-	// The type of the change, should be one of the conventional type.
-	Type string `yaml:"type" json:"type"`
-	// The summary of the change.
-	Subject string `yaml:"subject" json:"subject"`
-	// The body of the change.
-	Body string `yaml:"body" json:"body"`
-	// The Changelist number in piper associated with this change.
-	ClNum string `yaml:"piper_cl_number" json:"piper_cl_number"`
-	// The commit hash in the source repository associated with this change.
-	CommitHash string `yaml:"source_commit_hash" json:"source_commit_hash"`
 }
 
 // invalidPathChars contains characters that are invalid in path components,

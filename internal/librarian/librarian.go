@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package librarian contains the business logic for the Librarian CLI.
-// Implementation details for interacting with other systems (Git, GitHub,
-// Docker etc.) are abstracted into other packages.
 package librarian
 
 import (
@@ -53,7 +50,7 @@ func Run(ctx context.Context, arg ...string) error {
 	}
 	if len(arg) == 0 {
 		CmdLibrarian.Flags.Usage()
-		return fmt.Errorf("command not specified")
+		return nil
 	}
 	cmd, arg, err := lookupCommand(CmdLibrarian, arg)
 	if err != nil {

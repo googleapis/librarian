@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
+
 	"github.com/go-git/go-git/v5"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -467,22 +469,26 @@ func TestUpdateLibrary(t *testing.T) {
 				},
 			},
 			want: &config.LibraryState{
-				ID:      "one-id",
-				Version: "2.0.0",
+				ID:              "one-id",
+				Version:         "2.0.0",
+				PreviousVersion: "1.2.3",
 				SourceRoots: []string{
 					"one/path",
 					"two/path",
 				},
-				Changes: []*config.Change{
+				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:    "fix",
-						Subject: "change a typo",
+						Type:        "fix",
+						Description: "change a typo",
+						LibraryID:   "one-id",
+						Footers:     map[string]string{},
 					},
 					{
-						Type:    "feat",
-						Subject: "add a config file",
-						Body:    "This is the body.",
-						ClNum:   "12345",
+						Type:        "feat",
+						Description: "add a config file",
+						Body:        "This is the body.",
+						LibraryID:   "one-id",
+						Footers:     map[string]string{"PiperOrigin-RevId": "12345"},
 					},
 				},
 				ReleaseTriggered: true,
@@ -516,21 +522,30 @@ func TestUpdateLibrary(t *testing.T) {
 				},
 			},
 			want: &config.LibraryState{
-				ID:      "one-id",
-				Version: "2.0.0",
+				ID:              "one-id",
+				Version:         "2.0.0",
+				PreviousVersion: "1.2.3",
 				SourceRoots: []string{
 					"one/path",
 					"two/path",
 				},
-				Changes: []*config.Change{
+				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:    "feat!",
-						Subject: "add another config file",
-						Body:    "This is the body",
+						Type:        "feat",
+						Description: "add another config file",
+						Body:        "This is the body",
+						LibraryID:   "one-id",
+						Footers: map[string]string{
+							"BREAKING CHANGE": "this is a breaking change",
+						},
+						IsBreaking: true,
 					},
 					{
-						Type:    "feat!",
-						Subject: "change a typo",
+						Type:        "feat",
+						Description: "change a typo",
+						LibraryID:   "one-id",
+						Footers:     map[string]string{},
+						IsBreaking:  true,
 					},
 				},
 				ReleaseTriggered: true,
@@ -554,12 +569,19 @@ func TestUpdateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			r := &initRunner{
+				cfg: &config.Config{
+					LibraryVersion: test.libraryVersion,
+				},
+				repo: test.repo,
+			}
 			var err error
 			if test.repo != nil {
-				err = updateLibrary(test.repo, test.library, test.libraryVersion)
+				err = r.updateLibrary(test.library)
 			} else {
 				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				err = updateLibrary(repo, test.library, test.libraryVersion)
+				r.repo = repo
+				err = r.updateLibrary(test.library)
 			}
 
 			if test.wantErr {
@@ -577,7 +599,7 @@ func TestUpdateLibrary(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to run getChangesOf(): %q", err.Error())
 			}
-			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
+			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "When")); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})

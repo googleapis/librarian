@@ -129,6 +129,7 @@ func findAllDirectories(config *config.Config) ([]string, error) {
 }
 
 func isInPath(dir, path string) bool {
+	path = filepath.FromSlash(path)
 	components := strings.Split(path, string(filepath.Separator))
 	return slices.Contains(components, dir)
 }

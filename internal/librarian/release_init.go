@@ -21,17 +21,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
-)
-
-const (
-	KeyClNum = "PiperOrigin-RevId"
 )
 
 // cmdInit is the command for the `release init` subcommand.
@@ -84,14 +78,14 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	}
 	return &initRunner{
 		cfg:             runner.cfg,
-		workRoot:        runner.workRoot,
 		repo:            runner.repo,
-		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
-		image:           runner.image,
 		ghClient:        runner.ghClient,
 		containerClient: runner.containerClient,
+		workRoot:        runner.workRoot,
+		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
+		image:           runner.image,
 	}, nil
 }
 
@@ -113,7 +107,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		commitMessage: "chore: create a release",
 		prType:        release,
 		// Newly created PRs from the `release init` command should have a
-		// `release:pending` Github tab to be tracked for release.
+		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
@@ -128,15 +122,16 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
-	src := r.repo.GetDir()
 
+	src := r.repo.GetDir()
 	for _, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
 				continue
 			}
+
 			// Only update one library with the given library ID.
-			if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
+			if err := r.updateLibrary(library); err != nil {
 				return err
 			}
 			if err := copyLibrary(dst, src, library); err != nil {
@@ -147,7 +142,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		}
 
 		// Update all libraries.
-		if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
+		if err := r.updateLibrary(library); err != nil {
 			return err
 		}
 		if err := copyLibrary(dst, src, library); err != nil {
@@ -201,24 +196,28 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 // updateLibrary updates the given library in the following way:
 //
-// 1. Get the library's commit history in the given git repository.
+// 1. Update the library's previous version.
 //
-// 2. Override the library version if libraryVersion is not empty.
+// 2. Get the library's commit history in the given git repository.
 //
-// 3. Set the library's release trigger to true.
-func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, libraryVersion string) error {
-	commits, err := GetConventionalCommitsSinceLastRelease(repo, library)
+// 3. Override the library version if libraryVersion is not empty.
+//
+// 4. Set the library's release trigger to true.
+func (r *initRunner) updateLibrary(library *config.LibraryState) error {
+	// Update the previous version, we need this value when creating release note.
+	library.PreviousVersion = library.Version
+	commits, err := GetConventionalCommitsSinceLastRelease(r.repo, library)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
-	library.Changes = coerceLibraryChanges(commits)
+	library.Changes = commits
 	if len(library.Changes) == 0 {
 		slog.Info("Skip releasing library since no eligible change is found", "library", library.ID)
 		return nil
 	}
 
-	nextVersion, err := NextVersion(commits, library.Version, libraryVersion)
+	nextVersion, err := NextVersion(commits, library.Version, r.cfg.LibraryVersion)
 	if err != nil {
 		return err
 	}
@@ -227,38 +226,6 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 	library.ReleaseTriggered = true
 
 	return nil
-}
-
-func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
-	changes := make([]*config.Change, 0)
-	for _, commit := range commits {
-		clNum := ""
-		if cl, ok := commit.Footers[KeyClNum]; ok {
-			clNum = cl
-		}
-
-		changeType := getChangeType(commit)
-		changes = append(changes, &config.Change{
-			Type:       changeType,
-			Subject:    commit.Description,
-			Body:       commit.Body,
-			ClNum:      clNum,
-			CommitHash: commit.SHA,
-		})
-	}
-
-	return changes
-}
-
-// getChangeType gets the type of the commit, adding an escalation mark (!) if
-// it is a breaking change.
-func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
-	changeType := commit.Type
-	if commit.IsBreaking {
-		changeType = changeType + "!"
-	}
-
-	return changeType
 }
 
 // copyGlobalAllowlist copies files in the global file allowlist excluding

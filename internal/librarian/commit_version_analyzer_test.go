@@ -177,7 +177,6 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 					Footers:     make(map[string]string),
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "GetCommitsForPathsSinceTag error",

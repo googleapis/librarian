@@ -15,6 +15,7 @@
 package language
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,11 +27,11 @@ func TestWalkDir(t *testing.T) {
 	want := []GeneratedFile{
 		{
 			TemplatePath: "testTemplates/README.md.mustache",
-			OutputPath:   "/README.md",
+			OutputPath:   filepath.FromSlash("/README.md"),
 		},
 		{
 			TemplatePath: "testTemplates/test001.txt.mustache",
-			OutputPath:   "/test001.txt",
+			OutputPath:   filepath.FromSlash("/test001.txt"),
 		},
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {

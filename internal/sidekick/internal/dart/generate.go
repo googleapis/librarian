@@ -47,6 +47,7 @@ func Generate(model *api.API, outdir string, config *config.Config) error {
 
 func templatesProvider() language.TemplateProvider {
 	return func(name string) (string, error) {
+		name = filepath.ToSlash(name)
 		contents, err := dartTemplates.ReadFile(name)
 		if err != nil {
 			return "", err

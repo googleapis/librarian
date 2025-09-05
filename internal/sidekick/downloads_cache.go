@@ -119,33 +119,30 @@ func downloadAttempt(target, source, expectedSha256 string) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tempFile.Name())
+	defer func() {
+		tempFile.Close()
+		os.Remove(tempFile.Name())
+	}()
+
+	hasher := sha256.New()
+	writer := io.MultiWriter(tempFile, hasher)
 
 	response, err := http.Get(source)
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 	if response.StatusCode >= 300 {
 		return fmt.Errorf("http error in download %s", response.Status)
 	}
 
-	if _, err := io.Copy(tempFile, response.Body); err != nil {
+	if _, err := io.Copy(writer, response.Body); err != nil {
 		return err
 	}
 	if err := tempFile.Close(); err != nil {
 		return err
 	}
-	if err := response.Body.Close(); err != nil {
-		return err
-	}
-	file, err := os.Open(tempFile.Name())
-	if err != nil {
-		return err
-	}
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, file); err != nil {
-		return err
-	}
+
 	got := fmt.Sprintf("%x", hasher.Sum(nil))
 	if expectedSha256 != got {
 		return fmt.Errorf("mismatched hash on download, expected=%s, got=%s", expectedSha256, got)
