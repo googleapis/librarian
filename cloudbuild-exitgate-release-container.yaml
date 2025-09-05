@@ -26,7 +26,7 @@ steps:
       - '-f'
       - 'infra/container/Dockerfile'
       - '-t'
-      - 'us-central1-docker.pkg.dev/ldetmer-sandbox/images-dev/librarian-release-container'
+      - 'us-central1-docker.pkg.dev/ldetmer-sanbox/images-dev/librarian-release-container'
       - '.'
 images:
-  - 'us-central1-docker.pkg.dev/ldetmer-sandbox/images-dev/librarian-release-container'
+  - 'us-central1-docker.pkg.dev/ldetmer-sanbox/images-dev/librarian-release-container'
