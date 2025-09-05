@@ -72,9 +72,13 @@ type initRunner struct {
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
-	workRoot        string
-	partialRepo     string
-	image           string
+	// The version is changed after updating library, use this map to keep the
+	// mapping from library id to version before the updating since we need these
+	// commits to create pull request body.
+	idToVersions map[string]string
+	workRoot     string
+	partialRepo  string
+	image        string
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
@@ -84,14 +88,15 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	}
 	return &initRunner{
 		cfg:             runner.cfg,
-		workRoot:        runner.workRoot,
 		repo:            runner.repo,
-		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
-		image:           runner.image,
 		ghClient:        runner.ghClient,
 		containerClient: runner.containerClient,
+		idToVersions:    map[string]string{},
+		workRoot:        runner.workRoot,
+		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
+		image:           runner.image,
 	}, nil
 }
 
@@ -125,13 +130,14 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
-	src := r.repo.GetDir()
 
+	src := r.repo.GetDir()
 	for _, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
 				continue
 			}
+			r.idToVersions[library.ID] = library.Version
 			// Only update one library with the given library ID.
 			if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 				return err
@@ -143,6 +149,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 			break
 		}
 
+		r.idToVersions[library.ID] = library.Version
 		// Update all libraries.
 		if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 			return err
