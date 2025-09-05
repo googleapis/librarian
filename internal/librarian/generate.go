@@ -34,33 +34,57 @@ const (
 
 var cmdGenerate = &cli.Command{
 	Short:     "generate generates client library code for a single API",
-	UsageLine: "librarian generate -source=<api-root> -api=<api-path> [flags]",
-	Long: `Specify the API repository root and the path within it for the API to generate.
-Optional flags can be specified to use a non-default language repository, and to indicate whether or not
-to build the generated library.
+	UsageLine: "librarian generate [flags]",
+	Long: `The generate command is the primary tool for all code generation
+tasks. It handles both the initial setup of a new library (onboarding) and the
+regeneration of existing ones. Librarian works by delegating language-specific
+tasks to a container, which is configured in the .librarian/state.yaml file.
+Librarian is environment aware and will check if the current directory is the
+root of a librarian repository. If you are not executing in such a directory the
+'--repo' flag must be provided.
 
-The generate command handles both onboarding new libraries and regenerating existing ones.
-The behavior is determined by the provided flags.
+# Onboarding a new library
 
-**Onboarding a new library:**
-To configure and generate a new library, specify both the "-api" and "-library" flags. This process involves:
-1. Running the "configure" command in the language container to set up the repository.
-2. Adding the new library's configuration to the ".librarian/state.yaml" file.
-3. Proceeding with the generation steps below.
+To configure and generate a new library for the first time, you must specify the
+API to be generated and the library it will belong to. Librarian will invoke the
+'configure' command in the language container to set up the repository, add the
+new library's configuration to the '.librarian/state.yaml' file, and then
+proceed with generation.
 
-**Regenerating existing libraries:**
-If only "-api" or "-library" is specified, the command regenerates that single, existing library.
-If neither flag is provided, it regenerates all libraries listed in ".librarian/state.yaml".
+Example:
+  librarian generate --library=secretmanager --api=google/cloud/secretmanager/v1
 
-The generation process for an existing library involves delegating to the language container's 
-'generate' command. After generation, the tool cleans the destination directory and copies the 
-new files into place, according to the configuration in '.librarian/state.yaml'. 
-If the '--build' flag is specified, the 'build' command is also executed.
+# Regenerating existing libraries
 
-**Output:**
-After generation, if the "-push" flag is provided, the changes are committed to a new branch, and
-a pull request is created. Otherwise, the changes are left in the local working tree for
-inspection.`,
+You can regenerate a single, existing library by specifying either the library
+ID or the API path. If no specific library or API is provided, Librarian will
+regenerate all libraries listed in '.librarian/state.yaml'.
+
+Examples:
+  # Regenerate a single library by its ID
+  librarian generate --library=secretmanager
+
+  # Regenerate a single library by its API path
+  librarian generate --api=google/cloud/secretmanager/v1
+
+  # Regenerate all libraries in the repository
+  librarian generate
+
+# Workflow and Options:
+
+The generation process involves delegating to the language container's
+'generate' command. After the code is generated, the tool cleans the destination
+directories and copies the new files into place, according to the configuration
+in '.librarian/state.yaml'.
+
+- If the '--build' flag is specified, the 'build' command is also executed in
+  the container to compile and validate the generated code.
+- If the '--push' flag is provided, the changes are committed to a new branch,
+  and a pull request is created on GitHub. Otherwise, the changes are left in
+  your local working directory for inspection.
+
+Example with build and push:
+  SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
 		runner, err := newGenerateRunner(cfg, nil, nil)
 		if err != nil {
