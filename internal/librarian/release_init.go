@@ -53,7 +53,9 @@ to the configured language-specific container.
 
 By default, 'release init' leaves the changes in your local working directory
 for inspection. Use the '--push' flag to automatically commit the changes to
-a new branch and create a pull request on GitHub.
+a new branch and create a pull request on GitHub. The '--commit' flag may be
+used to create a local commit without creating a pull request; this flag is
+ignored if '--push' is also specified.
 
 Examples:
   # Create a release PR for all libraries with pending changes.
