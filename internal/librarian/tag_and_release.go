@@ -47,7 +47,28 @@ var (
 var cmdTagAndRelease = &cli.Command{
 	Short:     "tag-and-release tags and creates a GitHub release for a merged pull request.",
 	UsageLine: "librarian release tag-and-release [arguments]",
-	Long:      "Tags and creates a GitHub release for a merged pull request.",
+	Long: `The 'tag-and-release' command is the final step in the release
+process. It is designed to be run after a release pull request, created by
+'release init', has been merged.
+
+This command's primary responsibilities are to:
+
+- Create a Git tag for each library version included in the merged pull request.
+- Create a corresponding GitHub Release for each tag, using the release notes
+  from the pull request body.
+- Update the pull request's label from 'release:pending' to 'release:done' to
+  mark the process as complete.
+
+You can target a specific merged pull request using the '--pr' flag. If no pull
+request is specified, the command will automatically search for and process all
+merged pull requests with the 'release:pending' label from the last 30 days.
+
+Examples:
+  # Tag and create a GitHub release for a specific merged PR.
+  librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
+
+  # Find and process all pending merged release PRs in a repository.
+  librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
 		runner, err := newTagAndReleaseRunner(cfg)
 		if err != nil {
