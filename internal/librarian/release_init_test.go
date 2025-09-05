@@ -558,7 +558,8 @@ func TestUpdateLibrary(t *testing.T) {
 				cfg: &config.Config{
 					LibraryVersion: test.libraryVersion,
 				},
-				repo: test.repo,
+				repo:        test.repo,
+				releaseInfo: map[string]tagAndCommits{},
 			}
 			var err error
 			if test.repo != nil {
