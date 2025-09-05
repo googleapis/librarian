@@ -21,6 +21,7 @@ steps:
     args:
       - 'clone'
       - '--depth=1'
+      - '--branch=$_BRANCH'
       - $_FULL_REPOSITORY
   - name: gcr.io/cloud-builders/git
     id: configure-language-repo-name

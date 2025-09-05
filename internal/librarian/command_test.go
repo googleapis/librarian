@@ -388,6 +388,111 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 				"a/path/stale.txt",
 			},
 		},
+		{
+			name:      "clean never deletes generator-input directory",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "some-library",
+						SourceRoots: []string{"a/path"},
+						RemoveRegex: []string{"a/path"},
+					},
+				},
+			},
+			repo: newTestGitRepo(t),
+			setup: func(t *testing.T, repoDir, outputDir string) {
+				// Create a file in the repo directory to test cleaning.
+				fileToBeDeleted := filepath.Join(repoDir, "a/path/delete.txt")
+				fileToNotBeDeleted := filepath.Join(repoDir, ".librarian/generator-input/a/path/do-not-delete.txt")
+				if err := os.MkdirAll(filepath.Dir(fileToBeDeleted), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(fileToBeDeleted); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Dir(fileToNotBeDeleted), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(fileToNotBeDeleted); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create generated files in the output directory.
+				filesToCreate := []string{
+					"a/path/new_generated_file_to_copy.txt",
+				}
+				for _, relPath := range filesToCreate {
+					fullPath := filepath.Join(outputDir, relPath)
+					if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+						t.Fatal(err)
+					}
+					if _, err := os.Create(fullPath); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			shouldCopy: []string{
+				".librarian/generator-input/a/path/do-not-delete.txt",
+				"a/path/new_generated_file_to_copy.txt",
+			},
+			shouldDelete: []string{
+				"a/path/delete.txt",
+			},
+		},
+		{
+			name:      "if same value is present in preserve regex and global preserver regex list there is no conflict",
+			libraryID: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:            "some-library",
+						SourceRoots:   []string{"a/path"},
+						RemoveRegex:   []string{"a/path"},
+						PreserveRegex: globalPreservePatterns,
+					},
+				},
+			},
+			repo: newTestGitRepo(t),
+			setup: func(t *testing.T, repoDir, outputDir string) {
+				// Create a file in the repo directory to test cleaning.
+				fileToBeDeleted := filepath.Join(repoDir, "a/path/delete.txt")
+				fileToNotBeDeleted := filepath.Join(repoDir, ".librarian/generator-input/a/path/do-not-delete.txt")
+				if err := os.MkdirAll(filepath.Dir(fileToBeDeleted), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(fileToBeDeleted); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Dir(fileToNotBeDeleted), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(fileToNotBeDeleted); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create generated files in the output directory.
+				filesToCreate := []string{
+					"a/path/new_generated_file_to_copy.txt",
+				}
+				for _, relPath := range filesToCreate {
+					fullPath := filepath.Join(outputDir, relPath)
+					if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+						t.Fatal(err)
+					}
+					if _, err := os.Create(fullPath); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			shouldCopy: []string{
+				".librarian/generator-input/a/path/do-not-delete.txt",
+				"a/path/new_generated_file_to_copy.txt",
+			},
+			shouldDelete: []string{
+				"a/path/delete.txt",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoDir := test.repo.GetDir()
@@ -1398,6 +1503,69 @@ func TestCommitAndPush(t *testing.T) {
 			if err != nil {
 				t.Errorf("%s: commitAndPush() returned unexpected error: %v", test.name, err)
 				return
+			}
+		})
+	}
+}
+
+func TestAddLabelsToPullRequest(t *testing.T) {
+	for _, test := range []struct {
+		name                  string
+		setupMockRepo         func(t *testing.T) gitrepo.Repository
+		mockGithubClient      *mockGitHubClient
+		prMetadata            github.PullRequestMetadata
+		wantPullRequestLabels []string
+		wantErr               bool
+		expectedErrMsg        string
+	}{
+		{
+			name: "Add All Labels",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				return &MockRepository{}
+			},
+			mockGithubClient: &mockGitHubClient{},
+			prMetadata: github.PullRequestMetadata{
+				Repo:   &github.Repository{Owner: "test-owner", Name: "test-repo"},
+				Number: 7,
+			},
+			wantPullRequestLabels: []string{"release:pending", "1234", "label1234"},
+		},
+		{
+			name: "Failed to add labels",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				return &MockRepository{}
+			},
+			mockGithubClient: &mockGitHubClient{
+				addLabelsToIssuesErr: errors.New("Can't add labels"),
+			},
+			prMetadata: github.PullRequestMetadata{
+				Repo:   &github.Repository{Owner: "test-owner", Name: "test-repo"},
+				Number: 7,
+			},
+			wantPullRequestLabels: []string{"release:pending", "1234", "label1234"},
+			wantErr:               true,
+			expectedErrMsg:        "failed to add labels to pull request",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			client := test.mockGithubClient
+			prMetadata := test.prMetadata
+			err := addLabelsToPullRequest(context.Background(), client, test.wantPullRequestLabels, &prMetadata)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("addLabelsToPullRequest() expected error, got nil")
+				}
+				if test.expectedErrMsg != "" && !strings.Contains(err.Error(), test.expectedErrMsg) {
+					t.Errorf("addLabelsToPullRequest() error = %v, expected to contain: %q", err, test.expectedErrMsg)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("%s: addLabelsToPullRequest() returned unexpected error: %v", test.name, err)
+			}
+			if diff := cmp.Diff(test.wantPullRequestLabels, test.mockGithubClient.labels); diff != "" {
+				t.Errorf("addLabelsToPullRequest() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

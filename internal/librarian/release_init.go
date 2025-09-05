@@ -125,6 +125,9 @@ func (r *initRunner) run(ctx context.Context) error {
 		releaseInfo:   r.releaseInfo,
 		commitMessage: "chore: create a release",
 		prType:        release,
+		// Newly created PRs from the `release init` command should have a
+		// `release:pending` Github tab to be tracked for release.
+		pullRequestLabels: []string{"release:pending"},
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
