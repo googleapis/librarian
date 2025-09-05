@@ -42,7 +42,7 @@ const (
 )
 
 var globalPreservePatterns = []string{
-	`^\.librarian/generator-input(/.*)?$`, // Preserve the generator-input directory and its contents.
+	fmt.Sprintf(`^%s(/.*)?$`, regexp.QuoteMeta(config.GeneratorInputDir)), // Preserve the generator-input directory and its contents.
 }
 
 // GitHubClientFactory type for creating a GitHubClient.
