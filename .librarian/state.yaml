@@ -3,7 +3,7 @@ libraries:
   - id: librarian
     version: 0.1.1
     apis:
-      - path: internal
+      - path: google/cloud/language/v2
     last_generated_commit: 97a83d76a09a7f6dcab43675c87bdfeb5bcf1cb5
     source_roots:
       - "internal"
