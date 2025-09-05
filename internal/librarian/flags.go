@@ -21,60 +21,89 @@ import (
 )
 
 func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.API, "api", "", "path to the API to be configured/generated (e.g., google/cloud/functions/v2)")
+	fs.StringVar(&cfg.API, "api", "",
+		`Relative path to the API to be configured/generated (e.g., google/cloud/functions/v2). 
+Must be specified when generating a new library.`)
 }
 
 func addFlagAPISource(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APISource, "api-source", "", "location of googleapis repository. If undefined, googleapis will be cloned to the output")
+	fs.StringVar(&cfg.APISource, "api-source", "",
+		`The location of an API specification repository.
+Can be a remote URL or a local file path. If not specified, googleapis is the
+default and will be cloned.`)
 }
 
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
-	fs.BoolVar(&cfg.Build, "build", false, "whether to build the generated code")
+	fs.BoolVar(&cfg.Build, "build", false,
+		`If true, Librarian will build each generated library by invoking the
+language-specific container.`)
 }
 
 func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
-	fs.BoolVar(&cfg.Commit, "commit", false, "whether to create a commit for a release")
+	fs.BoolVar(&cfg.Commit, "commit", false,
+		`If true, librarian will create a commit for the release but not create
+a pull request. This flag is ignored if push is set to true.`)
 }
 
 func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 	defaultValue := ""
-	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue, "a mount point from Docker host and within the Docker. The format is {host-dir}:{local-dir}.")
+	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue,
+		`For use when librarian is running in a container. A mapping of a
+directory from the host to the container, in the format
+<host-mount>:<local-mount>.`)
 }
 
 func addFlagImage(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Image, "image", "", "Container image to run for subcommands. Defaults to the image in the pipeline state.")
+	fs.StringVar(&cfg.Image, "image", "",
+		`Language specific image used to invoke code generation and releasing.
+If not specified, the image configured in the state.yaml is used.`)
 }
 
 func addFlagLibrary(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Library, "library", "", "The ID of a single library to update. This is repo-specific and defined in the state.yaml")
+	fs.StringVar(&cfg.Library, "library", "",
+		`The library ID to generate or release (e.g. google-cloud-secretmanager-v1).
+This corresponds to a releasable language unit.`)
 }
 
 func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.LibraryVersion, "library-version", "", "the library version to release. Requires the --library flag to be specified.")
+	fs.StringVar(&cfg.LibraryVersion, "library-version", "",
+		`Overrides the automatic semantic version calculation and forces a specific
+version for a library. Requires the --library flag to be specified.`)
 }
 
 func addFlagPR(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.PullRequest, "pr", "", "a pull request to operate on. It should be in the format of a uri https://github.com/{owner}/{repo}/pull/{number}. If not specified, will search for all merged pull requests with the label `release:pending` in the last 30 days.")
+	fs.StringVar(&cfg.PullRequest, "pr", "",
+		`The URL of a pull request to operate on.
+It should be in the format of https://github.com/{owner}/{repo}/pull/{number}.
+If not specified, will search for all merged pull requests with the label
+"release:pending" in the last 30 days.`)
 }
 
 func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
-	fs.BoolVar(&cfg.Push, "push", false, "whether to push the generated code")
+	fs.BoolVar(&cfg.Push, "push", false,
+		`If true, Librarian will create a commit and a pull request for the changes.
+A GitHub token with push access must be provided via the
+SDK_LIBRARIAN_GITHUB_TOKEN environment variable.`)
 }
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Repo, "repo", "",
-		`Code repository where the generated code will reside.
-Can be a remote in the format of a remote URL such as 
-https://github.com/{owner}/{repo} or a local file path like 
-/path/to/repo. Both absolute and relative paths are supported.
-If not specified, will try to detect if the current working 
-directory is configured as a language repository.`)
+		`Code repository where the generated code will reside. Can be a remote
+in the format of a remote URL such as https://github.com/{owner}/{repo} or a
+local file path like /path/to/repo. Both absolute and relative paths are
+supported. If not specified, will try to detect if the current working directory
+is configured as a language repository.`)
 }
 
 func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Branch, "branch", "main", "remote branch to use with the code repository for cloning and pull requests.")
+	fs.StringVar(&cfg.Branch, "branch", "main",
+		`The branch to use with remote code repositories. This is used to specify
+which branch to clone and which branch to use as the base for a pull
+request.`)
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.WorkRoot, "output", "", "Working directory root. When this is not specified, a working directory will be created in /tmp.")
+	fs.StringVar(&cfg.WorkRoot, "output", "",
+		`Working directory root. When this is not specified, a working directory
+will be created in /tmp.`)
 }
