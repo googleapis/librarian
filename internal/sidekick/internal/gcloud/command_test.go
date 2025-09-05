@@ -49,6 +49,9 @@ func TestCommandYAML(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read file: %v", err)
 			}
+			stringData := strings.ReplaceAll(string(data), "\r\n", "\n")
+			data = []byte(stringData)
+
 			if strings.Contains(string(data), "_PARTIALS_") {
 				return
 			}

@@ -15,6 +15,7 @@
 package language
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,6 +24,9 @@ import (
 func TestWalkDir(t *testing.T) {
 	// It should get the `*.md.mustache` files and skip `partial.mustache`
 	got := WalkTemplatesDir(templates, "testTemplates")
+	for i := range got {
+		got[i].OutputPath = strings.ReplaceAll(got[i].OutputPath, "\\", "/")
+	}
 	want := []GeneratedFile{
 		{
 			TemplatePath: "testTemplates/README.md.mustache",
