@@ -44,6 +44,8 @@ func createTempGitRepo(t *testing.T) string {
 	t.Helper()
 	repoDir := t.TempDir()
 	runGit(t, repoDir, "init")
+	runGit(t, repoDir, "config", "user.email", "test@example.com")
+	runGit(t, repoDir, "config", "user.name", "Test User")
 	return repoDir
 }
 
