@@ -313,43 +313,87 @@ func TestRunConfigure(t *testing.T) {
 	}
 }
 
-func TestRunGenerate_MultipleLibraries(t *testing.T) {
-	const (
-		initialRepoStateDir = "testdata/e2e/generate/multi_repo_init"
-		localAPISource      = "testdata/e2e/generate/api_root"
-	)
-	workRoot := t.TempDir()
-	repo := t.TempDir()
-	APISourceRepo := t.TempDir()
-	if err := initRepo(t, repo, initialRepoStateDir); err != nil {
-		t.Fatalf("languageRepo prepare test error = %v", err)
-	}
-	if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
-		t.Fatalf("APISouceRepo prepare test error = %v", err)
+func TestRunGenerate_MultipleLibraries_TableDriven(t *testing.T) {
+	const localAPISource = "testdata/e2e/generate/api_root"
+
+	tests := []struct {
+		name                string
+		initialRepoStateDir string
+		expectError         bool
+		expectedFiles       []string
+		unexpectedFiles     []string
+	}{
+		{
+			name:                "Multiple libraries generated successfully",
+			initialRepoStateDir: "testdata/e2e/generate/multi_repo_init",
+			expectError:         false,
+			expectedFiles:       []string{"pubsub/example.txt", "future/example.txt"},
+			unexpectedFiles:     []string{},
+		},
+		{
+			name:                "One library fails to generate",
+			initialRepoStateDir: "testdata/e2e/generate/multi_repo_one_fails_init",
+			expectError:         false,
+			expectedFiles:       []string{"pubsub/example.txt"},
+			unexpectedFiles:     []string{"future/example.txt"},
+		},
+		{
+			name:                "All libraries fail to generate",
+			initialRepoStateDir: "testdata/e2e/generate/multi_repo_all_fail_init",
+			expectError:         true,
+			expectedFiles:       []string{},
+			unexpectedFiles:     []string{"future/example.txt", "another-future/example.txt"},
+		},
 	}
 
-	cmd := exec.Command(
-		"go",
-		"run",
-		"github.com/googleapis/librarian/cmd/librarian",
-		"generate",
-		fmt.Sprintf("--output=%s", workRoot),
-		fmt.Sprintf("--repo=%s", repo),
-		fmt.Sprintf("--api-source=%s", APISourceRepo),
-	)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("librarian generate command error = %v", err)
-	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			workRoot := t.TempDir()
+			repo := t.TempDir()
+			APISourceRepo := t.TempDir()
 
-	// Check that the new files are copied for both libraries.
-	// The fake generator creates a file called "example.txt".
-	if _, err := os.Stat(filepath.Join(repo, "pubsub", "example.txt")); os.IsNotExist(err) {
-		t.Errorf("pubsub/example.txt should have been copied")
-	}
-	if _, err := os.Stat(filepath.Join(repo, "future", "example.txt")); os.IsNotExist(err) {
-		t.Errorf("future/example.txt should have been copied")
+			if err := initRepo(t, repo, test.initialRepoStateDir); err != nil {
+				t.Fatalf("languageRepo prepare test error = %v", err)
+			}
+			if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
+				t.Fatalf("APISouceRepo prepare test error = %v", err)
+			}
+
+			cmd := exec.Command(
+				"go",
+				"run",
+				"github.com/googleapis/librarian/cmd/librarian",
+				"generate",
+				fmt.Sprintf("--output=%s", workRoot),
+				fmt.Sprintf("--repo=%s", repo),
+				fmt.Sprintf("--api-source=%s", APISourceRepo),
+			)
+			cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+			err := cmd.Run()
+
+			if test.expectError {
+				if err == nil {
+					t.Fatal("librarian generate command should fail")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("librarian generate command error = %v", err)
+				}
+			}
+
+			for _, f := range test.expectedFiles {
+				if _, err := os.Stat(filepath.Join(repo, f)); os.IsNotExist(err) {
+					t.Errorf("%s should have been copied", f)
+				}
+			}
+
+			for _, f := range test.unexpectedFiles {
+				if _, err := os.Stat(filepath.Join(repo, f)); !os.IsNotExist(err) {
+					t.Errorf("%s should not have been copied", f)
+				}
+			}
+		})
 	}
 }
 
@@ -378,84 +422,5 @@ func runGit(t *testing.T, dir string, args ...string) {
 	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("git %v: %v", args, err)
-	}
-}
-
-func TestRunGenerate_MultipleLibraries_OneFails(t *testing.T) {
-	const (
-		initialRepoStateDir = "testdata/e2e/generate/multi_repo_one_fails_init"
-		localAPISource      = "testdata/e2e/generate/api_root"
-	)
-	workRoot := t.TempDir()
-	repo := t.TempDir()
-	APISourceRepo := t.TempDir()
-	if err := initRepo(t, repo, initialRepoStateDir); err != nil {
-		t.Fatalf("languageRepo prepare test error = %v", err)
-	}
-	if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
-		t.Fatalf("APISouceRepo prepare test error = %v", err)
-	}
-
-	cmd := exec.Command(
-		"go",
-		"run",
-		"github.com/googleapis/librarian/cmd/librarian",
-		"generate",
-		fmt.Sprintf("--output=%s", workRoot),
-		fmt.Sprintf("--repo=%s", repo),
-		fmt.Sprintf("--api-source=%s", APISourceRepo),
-	)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("librarian generate command failed unexpectedly: %v", err)
-	}
-
-	// Check that the successful library was generated.
-	if _, err := os.Stat(filepath.Join(repo, "pubsub", "example.txt")); os.IsNotExist(err) {
-		t.Errorf("pubsub/example.txt should have been copied")
-	}
-	// Check that the failing library was not generated.
-	if _, err := os.Stat(filepath.Join(repo, "future", "example.txt")); !os.IsNotExist(err) {
-		t.Errorf("future/example.txt should not have been copied")
-	}
-}
-
-func TestRunGenerate_MultipleLibraries_AllFail(t *testing.T) {
-	const (
-		initialRepoStateDir = "testdata/e2e/generate/multi_repo_all_fail_init"
-		localAPISource      = "testdata/e2e/generate/api_root"
-	)
-	workRoot := t.TempDir()
-	repo := t.TempDir()
-	APISourceRepo := t.TempDir()
-	if err := initRepo(t, repo, initialRepoStateDir); err != nil {
-		t.Fatalf("languageRepo prepare test error = %v", err)
-	}
-	if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
-		t.Fatalf("APISouceRepo prepare test error = %v", err)
-	}
-
-	cmd := exec.Command(
-		"go",
-		"run",
-		"github.com/googleapis/librarian/cmd/librarian",
-		"generate",
-		fmt.Sprintf("--output=%s", workRoot),
-		fmt.Sprintf("--repo=%s", repo),
-		fmt.Sprintf("--api-source=%s", APISourceRepo),
-	)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err == nil {
-		t.Fatal("librarian generate command should fail")
-	}
-
-	// Check that neither library was generated.
-	if _, err := os.Stat(filepath.Join(repo, "future", "example.txt")); !os.IsNotExist(err) {
-		t.Errorf("future/example.txt should not have been copied")
-	}
-	if _, err := os.Stat(filepath.Join(repo, "another-future", "example.txt")); !os.IsNotExist(err) {
-		t.Errorf("another-future/example.txt should not have been copied")
 	}
 }
