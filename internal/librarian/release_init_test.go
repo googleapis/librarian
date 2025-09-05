@@ -363,6 +363,65 @@ func TestInitRun(t *testing.T) {
 				"dir1/file1.txt": "hello",
 			},
 		},
+		{
+			name: "copy library files returns error",
+			runner: &initRunner{
+				workRoot:        t.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Library: "example-id",
+					Push:    false,
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-id",
+							SourceRoots: []string{
+								"dir1",
+							},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+			files: map[string]string{
+				"dir1/file1.txt": "hello",
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to copy file",
+		},
+		{
+			name: "copy library files returns error (no library id in cfg)",
+			runner: &initRunner{
+				workRoot:        t.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "example-id",
+							SourceRoots: []string{
+								"dir1",
+							},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+			files: map[string]string{
+				"dir1/file1.txt": "hello",
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to copy file",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// Setup library files before running the command.
@@ -379,6 +438,12 @@ func TestInitRun(t *testing.T) {
 					if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 						t.Fatalf("os.WriteFile() = %v", err)
 					}
+				}
+			}
+			if strings.HasPrefix(test.name, "copy library files returns error") {
+				// Make the directory non-writable so that the copy operations fail.
+				if err := os.Chmod(test.runner.partialRepo, 0555); err != nil {
+					t.Fatalf("os.Chmod() = %v", err)
 				}
 			}
 			// Create a symbolic link for the test case with symbolic links.
@@ -670,7 +735,7 @@ func TestCopyGlobalAllowlist(t *testing.T) {
 				"ignored/path/example.txt",
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to open file",
+			wantErrMsg: "failed to lstat file",
 		},
 		{
 			name: "output doesn't have the global file",

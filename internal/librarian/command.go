@@ -265,9 +265,14 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
 	}
 
-	return copyLibrary(repoDir, outputDir, library)
+	return copyLibraryFiles(state, repoDir, libraryID, outputDir)
 }
 
+// copyLibraryFiles copies the files in state.SourceRoots relative to the src folder to the dest
+// folder. It overwrites any existing files.
+// If there's no files in the library's SourceRoots under the src directory, no copy will happen.
+// If a file is being copied to the library's SourceRoots in the dest folder but the folder does
+// not exist, the copy fails.
 func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string) error {
 	library := findLibraryByID(state, libraryID)
 	if library == nil {
@@ -320,20 +325,6 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 		return nil, err
 	}
 	return fileNames, nil
-}
-
-// copyLibrary copies library file from src to dst.
-func copyLibrary(dst, src string, library *config.LibraryState) error {
-	slog.Info("Copying library", "id", library.ID, "destination", dst, "source", src)
-	for _, srcRoot := range library.SourceRoots {
-		dstPath := filepath.Join(dst, srcRoot)
-		srcPath := filepath.Join(src, srcRoot)
-		if err := os.CopyFS(dstPath, os.DirFS(srcPath)); err != nil {
-			return fmt.Errorf("failed to copy %s to %s: %w", library.ID, dstPath, err)
-		}
-	}
-
-	return nil
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated changes.
@@ -424,15 +415,34 @@ func createPRBody(info *commitInfo) (string, error) {
 }
 
 func copyFile(dst, src string) (err error) {
+	lstat, err := os.Lstat(src)
+	if err != nil {
+		return fmt.Errorf("failed to lstat file: %q: %w", src, err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return fmt.Errorf("failed to make directory for %q: %w", dst, err)
+	}
+
+	if lstat.Mode()&os.ModeSymlink == os.ModeSymlink {
+		linkTarget, err := os.Readlink(src)
+		if err != nil {
+			return fmt.Errorf("failed to read link: %q: %w", src, err)
+		}
+		// Remove existing file at dst if it exists. os.Symlink will fail otherwise.
+		if _, err := os.Lstat(dst); err == nil {
+			if err := os.Remove(dst); err != nil {
+				return fmt.Errorf("failed to remove existing file at destination: %q: %w", dst, err)
+			}
+		}
+		return os.Symlink(linkTarget, dst)
+	}
+
 	sourceFile, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %q: %w", src, err)
 	}
 	defer sourceFile.Close()
-
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return fmt.Errorf("failed to make directory: %s", src)
-	}
 
 	destinationFile, err := os.Create(dst)
 	if err != nil {
