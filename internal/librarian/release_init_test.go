@@ -125,6 +125,7 @@ func TestInitRun(t *testing.T) {
 					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
+				releaseInfo:     map[string]tagAndCommits{},
 				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{
@@ -167,6 +168,7 @@ func TestInitRun(t *testing.T) {
 				repo: &MockRepository{
 					Dir: t.TempDir(),
 				},
+				releaseInfo: map[string]tagAndCommits{},
 				partialRepo: t.TempDir(),
 			},
 			files: map[string]string{
@@ -211,6 +213,7 @@ func TestInitRun(t *testing.T) {
 					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
+				releaseInfo:     map[string]tagAndCommits{},
 				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{
@@ -317,6 +320,7 @@ func TestInitRun(t *testing.T) {
 					RemotesValue: []*git.Remote{}, // No remotes
 				},
 				librarianConfig: &config.LibrarianConfig{},
+				releaseInfo:     map[string]tagAndCommits{},
 				partialRepo:     t.TempDir(),
 			},
 			wantErr:    true,
@@ -357,6 +361,7 @@ func TestInitRun(t *testing.T) {
 					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
+				releaseInfo:     map[string]tagAndCommits{},
 				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{

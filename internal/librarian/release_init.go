@@ -220,12 +220,13 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	tag := formatTag(library, "")
 	commits, err := GetConventionalCommitsSinceTag(r.repo, library, tag)
+	if err != nil {
+		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+	}
+
 	r.releaseInfo[library.ID] = tagAndCommits{
 		commits: commits,
 		tag:     tag,
-	}
-	if err != nil {
-		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
 	library.Changes = coerceLibraryChanges(commits)
