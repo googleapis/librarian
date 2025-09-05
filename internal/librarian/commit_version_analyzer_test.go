@@ -157,12 +157,10 @@ func TestGetConventionalCommitsSinceTag(t *testing.T) {
 			repo: repoWithCommits,
 			library: &config.LibraryState{
 				ID:                  "foo",
-				Version:             "1.0.0",
-				TagFormat:           "{id}-v{version}",
 				SourceRoots:         []string{"foo"},
 				ReleaseExcludePaths: []string{"foo/README.md"},
 			},
-			tag: "foo-1.0.0",
+			tag: "foo-v1.0.0",
 			want: []*conventionalcommits.ConventionalCommit{
 				{
 					Type:        "feat",
