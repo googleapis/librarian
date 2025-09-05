@@ -17,10 +17,11 @@ package librarian
 import (
 	"errors"
 	"fmt"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
