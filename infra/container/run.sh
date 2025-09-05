@@ -29,4 +29,3 @@ ls -al /output
 
 echo "writing empty response"
 echo "{}" > /librarian/release-init-response.json
-exit 1
