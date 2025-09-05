@@ -33,34 +33,41 @@ const (
 )
 
 var cmdGenerate = &cli.Command{
-	Short:     "generate generates client library code for a single API",
-	UsageLine: "librarian generate -source=<api-root> -api=<api-path> [flags]",
-	Long: `Specify the API repository root and the path within it for the API to generate.
-Optional flags can be specified to use a non-default language repository, and to indicate whether or not
-to build the generated library.
+	Short:     "generate generate client library code for a repository",
+	UsageLine: "librarian generate [flags]",
+	Long: `The generate command handles both onboarding new libraries and regenerating existing ones.
+Optional flags can be specified to use a non-default language repository and/or to build the generated
+library.
 
-The generate command handles both onboarding new libraries and regenerating existing ones.
-The behavior is determined by the provided flags.
-
-**Onboarding a new library:**
-To configure and generate a new library, specify both the "-api" and "-library" flags. This process involves:
-1. Running the "configure" command in the language container to set up the repository.
-2. Adding the new library's configuration to the ".librarian/state.yaml" file.
-3. Proceeding with the generation steps below.
-
-**Regenerating existing libraries:**
-If only "-api" or "-library" is specified, the command regenerates that single, existing library.
-If neither flag is provided, it regenerates all libraries listed in ".librarian/state.yaml".
-
+**Library generation**
+The default behavior from "librarian generate" is to generate all libraries in '.librarian/state.yaml'.
 The generation process for an existing library involves delegating to the language container's 
 'generate' command. After generation, the tool cleans the destination directory and copies the 
-new files into place, according to the configuration in '.librarian/state.yaml'. 
-If the '--build' flag is specified, the 'build' command is also executed.
+new files according to configurations in '.librarian/state.yaml'. 
 
-**Output:**
-After generation, if the "-push" flag is provided, the changes are committed to a new branch, and
-a pull request is created. Otherwise, the changes are left in the local working tree for
-inspection.`,
+**Regenerating a single library**
+To regeneratea specific library, add the "-library" flag. This value must match library id in
+'.librarian/state.yaml'
+
+Example: librarian generate -library your-library-id
+
+**Onboarding a new library**
+To onboard a new library, add both the "-api" and "-library" flags. These values must match the values in
+'.librarian/state.yaml'
+
+Example: librarian generate -api your-api-id -library your-library-id
+
+**Compilation and testing**
+To verify a successful library generation, add the "-build" flag. This will build/compile the code and
+run any validations (e.g. unit tests).
+
+Example: librarian generate -build
+
+**Output**
+The library is generated to the local working tree. To push the generated library to Github, add the
+"-push" flag. This will commit the changes to a new branch and create a pull request.
+
+Example: librarian generate -push`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
 		runner, err := newGenerateRunner(cfg, nil, nil)
 		if err != nil {
