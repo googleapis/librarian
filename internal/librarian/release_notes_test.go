@@ -487,6 +487,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 		name            string
 		state           *config.LibrarianState
 		repo            gitrepo.Repository
+		idToTags        map[string]string
 		wantReleaseNote string
 		wantErr         bool
 		wantErrPhrase   string
@@ -594,7 +595,7 @@ Language Image: go:1.21
 				Libraries: []*config.LibraryState{
 					{
 						ID:               "my-library",
-						Version:          "1.0.0",
+						Version:          "1.1.0",
 						ReleaseTriggered: true,
 					},
 				},
@@ -611,6 +612,9 @@ Language Image: go:1.21
 					hash1.String(): {"path/to/file"},
 					hash2.String(): {"path/to/another/file"},
 				},
+			},
+			idToTags: map[string]string{
+				"my-library": "my-library-1.0.0",
 			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
@@ -654,7 +658,7 @@ Language Image: go:1.21
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := formatReleaseNotes(test.repo, test.state)
+			got, err := formatReleaseNotes(test.repo, test.state, test.idToTags)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
