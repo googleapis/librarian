@@ -33,8 +33,8 @@ import (
 
 func TestRunGenerate(t *testing.T) {
 	const (
-		initialRepoStateDir = "testdata/e2e/generate/repo_init"
-		localAPISource      = "testdata/e2e/generate/api_root"
+		initialRepoStateDir = "../../testdata/e2e/generate/repo_init"
+		localAPISource      = "../../testdata/e2e/generate/api_root"
 	)
 	t.Parallel()
 	for _, test := range []struct {
@@ -99,7 +99,7 @@ func TestRunGenerate(t *testing.T) {
 
 func TestCleanAndCopy(t *testing.T) {
 	const (
-		localAPISource = "testdata/e2e/generate/api_root"
+		localAPISource = "../../testdata/e2e/generate/api_root"
 		apiToGenerate  = "google/cloud/pubsub/v1"
 	)
 	// create a temp directory for writing files, so we don't have to create testdata files.
@@ -213,8 +213,8 @@ func TestCleanAndCopy(t *testing.T) {
 
 func TestRunConfigure(t *testing.T) {
 	const (
-		localRepoDir        = "testdata/e2e/configure/repo"
-		initialRepoStateDir = "testdata/e2e/configure/repo_init"
+		localRepoDir        = "../../testdata/e2e/configure/repo"
+		initialRepoStateDir = "../../testdata/e2e/configure/repo_init"
 	)
 	t.Parallel()
 	for _, test := range []struct {
@@ -229,15 +229,15 @@ func TestRunConfigure(t *testing.T) {
 			name:         "runs successfully",
 			api:          "google/cloud/new-library-path/v2",
 			library:      "new-library",
-			apiSource:    "testdata/e2e/configure/api_root",
-			updatedState: "testdata/e2e/configure/updated-state.yaml",
+			apiSource:    "../../testdata/e2e/configure/api_root",
+			updatedState: "../../testdata/e2e/configure/updated-state.yaml",
 		},
 		{
 			name:         "failed due to simulated error in configure command",
 			api:          "google/cloud/another-library/v3",
 			library:      "simulate-command-error-id",
-			apiSource:    "testdata/e2e/configure/api_root",
-			updatedState: "testdata/e2e/configure/updated-state.yaml",
+			apiSource:    "../../testdata/e2e/configure/api_root",
+			updatedState: "../../testdata/e2e/configure/updated-state.yaml",
 			wantErr:      true,
 		},
 	} {
@@ -330,13 +330,4 @@ func initRepo(t *testing.T, dir, source string) error {
 
 type genResponse struct {
 	ErrorMessage string `json:"error,omitempty"`
-}
-
-func runGit(t *testing.T, dir string, args ...string) {
-	t.Helper()
-	cmd := exec.Command("git", args...)
-	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("git %v: %v", args, err)
-	}
 }
