@@ -473,11 +473,11 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 		sourceRootAbsPath := filepath.Join(rootDir, sourceRoot)
 		sourceRootPaths, err := findAllDirRelPaths(rootDir, sourceRootAbsPath)
 		if err != nil {
-			slog.Warn("unable to find files to clean for source root", rootDir, sourceRoot)
+			slog.Warn("unable to find source root", "source root", sourceRoot, "error", err)
 			return err
 		}
 		if len(sourceRootPaths) == 0 {
-			slog.Warn("unable to find any files to clean source root", "source root", sourceRoot)
+			slog.Warn("unable to find any files to clean in source root", "source root", sourceRoot)
 			break
 		}
 		paths = append(paths, sourceRootPaths...)
@@ -540,10 +540,10 @@ func findAllDirRelPaths(dir, subDir string) ([]string, error) {
 	if _, err := os.Lstat(subDir); err != nil {
 		// If the subDir does not exist, there are no rel paths
 		if os.IsNotExist(err) {
-			return []string{}, nil
+			return nil, fmt.Errorf("subDir does not exist %s: %w", subDir, err)
 		}
 		// For any other error (permissions, I/O, etc.)
-		return nil, fmt.Errorf("failed to stat path %q: %w", subDir, err)
+		return nil, fmt.Errorf("failed to stat path %s: %w", subDir, err)
 	}
 
 	paths := []string{}

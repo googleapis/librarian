@@ -341,6 +341,11 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 					t.Fatalf("os.Symlink() = %v", err)
 				}
 			},
+<<<<<<< HEAD
+=======
+			wantErr:     true,
+			errContains: "failed to clean library",
+>>>>>>> 1bdbe6b (chore: Fix failing tests)
 		},
 		{
 			name:      "empty RemoveRegex defaults to source root",
