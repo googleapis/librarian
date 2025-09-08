@@ -32,6 +32,9 @@ import (
 //
 // Even in Rust, we may want to skip some files if the crate does not have
 // any services.
+//
+// Files whose output names would do not have an extension (e.g. `enum.mustache`) are
+// assumed to be used internally and are skipped.
 func WalkTemplatesDir(fsys fs.FS, root string) []GeneratedFile {
 	var result []GeneratedFile
 	fs.WalkDir(fsys, root, func(path string, d fs.DirEntry, err error) error {
