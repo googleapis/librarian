@@ -1,5 +1,5 @@
 [![codecov](https://codecov.io/github/googleapis/librarian/graph/badge.svg?token=33d3L7Y0gN)](https://codecov.io/github/googleapis/librarian)
-# Librarian CLI
+# Librarian CLI ldetmer
 
 This repository contains code for a unified command line tool for
 Google Cloud SDK client library configuration, generation and releasing.
