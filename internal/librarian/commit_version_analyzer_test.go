@@ -118,7 +118,7 @@ func TestFormatTag(t *testing.T) {
 	}
 }
 
-func TestGetConventionalCommitsSinceTag(t *testing.T) {
+func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 	t.Parallel()
 	pathAndMessages := []pathAndMessage{
 		{
