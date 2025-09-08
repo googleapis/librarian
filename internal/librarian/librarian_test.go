@@ -231,6 +231,20 @@ func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 			},
 		}
 
+		// Setup each source root directory to be non-empty (one `random_file.txt`)
+		// that can be used to test preserve or remove regex patterns
+		for _, library := range state.Libraries {
+			for _, sourceRoot := range library.SourceRoots {
+				fullPath := filepath.Join(librarianDir, sourceRoot, "random_file.txt")
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(fullPath); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+
 		bytes, err := yaml.Marshal(state)
 		if err != nil {
 			t.Fatalf("yaml.Marshal() = %v", err)
