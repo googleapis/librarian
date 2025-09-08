@@ -466,15 +466,14 @@ func copyFile(dst, src string) (err error) {
 func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []string) error {
 	slog.Info("cleaning directories", "source roots", sourceRoots)
 
-	// paths contains a list of relative paths and not absolute paths from rootDir
-	// because regex patterns apply to source root relative path
-	var paths []string
+	// relPaths contains a list of files in source root's relative paths from rootDir. The
+	// regex patterns for preserve and remove apply to a source root's relative path
+	var relPaths []string
 	for _, sourceRoot := range sourceRoots {
-		sourceRootAbsPath := filepath.Join(rootDir, sourceRoot)
-		// Initial generation of a library does have any source roots. If the source root does not exist,
-		// there is no need to clean it
+		sourceRootPath := filepath.Join(rootDir, sourceRoot)
+		// If a source root does not exist, log a warning and searching the other source roots.
 		// TODO: Consider not calling clean if it's a first time generation
-		if _, err := os.Lstat(sourceRootAbsPath); err != nil {
+		if _, err := os.Lstat(sourceRootPath); err != nil {
 			if os.IsNotExist(err) {
 				slog.Warn("Unable to find source root. It may be an initial generation request", "source root", sourceRoot)
 			} else {
@@ -483,23 +482,25 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 			}
 			continue
 		}
-		sourceRootPaths, err := findAllDirRelPaths(rootDir, sourceRootAbsPath)
+		sourceRootPaths, err := findSubDirRelPaths(rootDir, sourceRootPath)
 		if err != nil {
-			slog.Warn("unable to process source root", "source root", sourceRoot, "error", err)
-			return err
+			// Log a warning and continue processing other source roots. There may be other files
+			// that can be cleaned up.
+			slog.Warn("unable to search for files in a source root", "source root", sourceRoot, "error", err)
+			continue
 		}
 		if len(sourceRootPaths) == 0 {
-			slog.Warn("source root did not contain any files", "source root", sourceRoot)
+			slog.Info("source root does not contain any files", "source root", sourceRoot)
 		}
-		paths = append(paths, sourceRootPaths...)
+		relPaths = append(relPaths, sourceRootPaths...)
 	}
 
-	if len(paths) == 0 {
-		slog.Info("There are no files to clean in the source roots", "source roots", sourceRoots)
+	if len(relPaths) == 0 {
+		slog.Info("There are no files to be cleaned in source roots", "source roots", sourceRoots)
 		return nil
 	}
 
-	pathsToRemove, err := filterPathsForRemoval(paths, removePatterns, preservePatterns)
+	pathsToRemove, err := filterPathsForRemoval(relPaths, removePatterns, preservePatterns)
 	if err != nil {
 		return err
 	}
@@ -539,10 +540,10 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	return nil
 }
 
-// findAllDirRelPaths walks the subDir tree returns a slice of all file and directory paths
+// findSubDirRelPaths walks the subDir tree returns a slice of all file and directory paths
 // relative to the dir. This is repeated for all nested directories. subDir must be under
 // or the same as dir.
-func findAllDirRelPaths(dir, subDir string) ([]string, error) {
+func findSubDirRelPaths(dir, subDir string) ([]string, error) {
 	dirRelPath, err := filepath.Rel(dir, subDir)
 	if err != nil {
 		return nil, fmt.Errorf("cannot establish the relationship between %s and %s: %w", dir, subDir, err)

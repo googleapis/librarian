@@ -625,6 +625,17 @@ func TestClean(t *testing.T) {
 			wantRemaining:  []string{"bar", "bar/file3.txt"},
 		},
 		{
+			name: "no source roots configured",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
+				"foo/file3.txt": "",
+			},
+			sourceRoots:    []string{},
+			removePatterns: []string{"foo"},
+			wantRemaining:  []string{"foo", "foo/file1.txt", "foo/file2.txt", "foo/file3.txt"},
+		},
+		{
 			name: "invalid remove pattern",
 			files: map[string]string{
 				"foo/file1.txt": "",
@@ -795,10 +806,10 @@ func TestClean(t *testing.T) {
 			}
 
 			remainingPaths := []string{}
-			paths, _ := findAllDirRelPaths(tmpDir, tmpDir)
+			paths, _ := findSubDirRelPaths(tmpDir, tmpDir)
 			remainingPaths = append(remainingPaths, paths...)
 			if err != nil {
-				t.Fatalf("findAllPaths() = %v", err)
+				t.Fatalf("findSubDirRelPaths() = %v", err)
 			}
 			sort.Strings(test.wantRemaining)
 			sort.Strings(remainingPaths)
@@ -872,7 +883,7 @@ func TestFindAllDirRelPaths(t *testing.T) {
 				test.setup(t, tmpDir)
 			}
 
-			paths, err := findAllDirRelPaths(tmpDir, tmpDir)
+			paths, err := findSubDirRelPaths(tmpDir, tmpDir)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -998,7 +1009,7 @@ func TestFilterPathsForRemoval(t *testing.T) {
 				}
 			}
 
-			sourceRootPaths, _ := findAllDirRelPaths(tmpDir, tmpDir)
+			sourceRootPaths, _ := findSubDirRelPaths(tmpDir, tmpDir)
 			gotToRemove, err := filterPathsForRemoval(sourceRootPaths, test.removePatterns, test.preservePatterns)
 			if test.wantErr {
 				if err == nil {
