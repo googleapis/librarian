@@ -111,6 +111,8 @@ type LibraryState struct {
 	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
 	SourceRoots []string `yaml:"source_roots" json:"source_roots"`
+	// The previous release version, this field is only for bookkeeping.
+	PreviousVersion string `yaml:"-" json:"-"`
 	// A list of regular expressions for files and directories to preserve during the copy and remove process.
 	PreserveRegex []string `yaml:"preserve_regex" json:"preserve_regex"`
 	// A list of regular expressions for files and directories to remove before copying generated code.
