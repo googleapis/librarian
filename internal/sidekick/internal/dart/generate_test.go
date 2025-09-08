@@ -87,6 +87,9 @@ func TestGeneratedFiles(t *testing.T) {
 		if filepath.Base(fileInfo.OutputPath) == "main.dart" {
 			t.Errorf("expected the main.dart template to be generated as {servicename}.dart")
 		}
+		if filepath.Base(fileInfo.OutputPath) == "LICENSE.txt" {
+			t.Errorf("expected the LICENSE.txt template to be generated as LICENSE")
+		}
 	}
 }
 

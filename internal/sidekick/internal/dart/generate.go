@@ -62,11 +62,18 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 
 	files := language.WalkTemplatesDir(dartTemplates, "templates")
 
-	// Look for and replace 'main.dart' with '{servicename}.dart'
 	for index, fileInfo := range files {
+		// Replace 'main.dart' with '{servicename}.dart'
 		if filepath.Base(fileInfo.TemplatePath) == "main.dart.mustache" {
 			outDir := filepath.Dir(fileInfo.OutputPath)
 			fileInfo.OutputPath = filepath.Join(outDir, mainFileName+".dart")
+
+			files[index] = fileInfo
+		}
+		// Remove the extension from "LICENSE.txt".
+		if filepath.Base(fileInfo.OutputPath) == "LICENSE.txt" {
+			outDir := filepath.Dir(fileInfo.OutputPath)
+			fileInfo.OutputPath = filepath.Join(outDir, "LICENSE")
 
 			files[index] = fileInfo
 		}
