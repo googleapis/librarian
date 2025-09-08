@@ -578,6 +578,7 @@ Language Image: go:1.21
 * new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
 
 * another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+
 </details>`,
 				librarianVersion, today),
 		},
