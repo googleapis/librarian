@@ -179,9 +179,13 @@ func (r *generateRunner) run(ctx context.Context) error {
 				idToCommits[library.ID] = oldCommit
 			}
 		}
+
 		slog.Info("generation statistics", "all", len(r.state.Libraries), "failures", failedGenerations)
 		if failedGenerations > 0 && failedGenerations == len(r.state.Libraries) {
-			return fmt.Errorf("all %d libraries failed to generate", failedGenerations)
+			slog.Info("all libraries failed to generate, will not create a pull request",
+				"num of failed generation",
+				failedGenerations)
+			return nil
 		}
 	}
 
