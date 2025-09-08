@@ -489,7 +489,6 @@ func TestFormatReleaseNotes(t *testing.T) {
 		name            string
 		state           *config.LibrarianState
 		repo            gitrepo.Repository
-		releaseInfo     map[string]tagAndCommits
 		wantReleaseNote string
 		wantErr         bool
 		wantErrPhrase   string
@@ -502,30 +501,26 @@ func TestFormatReleaseNotes(t *testing.T) {
 					{
 						ID: "my-library",
 						// this is the NewVersion in the release note.
-						Version:          "1.1.0",
+						Version:         "1.1.0",
+						PreviousVersion: "1.0.0",
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "feat",
+								Description: "new feature",
+								SHA:         hash1.String(),
+							},
+							{
+								Type:        "fix",
+								Description: "a bug fix",
+								SHA:         hash2.String(),
+							},
+						},
 						ReleaseTriggered: true,
 					},
 				},
 			},
 			repo: &MockRepository{
 				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-			},
-			releaseInfo: map[string]tagAndCommits{
-				"my-library": {
-					commits: []*conventionalcommits.ConventionalCommit{
-						{
-							Type:        "feat",
-							Description: "new feature",
-							SHA:         hash1.String(),
-						},
-						{
-							Type:        "fix",
-							Description: "a bug fix",
-							SHA:         hash2.String(),
-						},
-					},
-					tag: "my-library-1.0.0",
-				},
 			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
@@ -550,42 +545,34 @@ Language Image: go:1.21
 						ID: "lib-a",
 						// this is the NewVersion in the release note.
 						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "feat",
+								Description: "feature for a",
+								SHA:         hash1.String(),
+							},
+						},
 					},
 					{
 						ID: "lib-b",
 						// this is the NewVersion in the release note.
 						Version:          "2.0.1",
+						PreviousVersion:  "2.0.0",
 						ReleaseTriggered: true,
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "fix",
+								Description: "fix for b",
+								SHA:         hash2.String(),
+							},
+						},
 					},
 				},
 			},
 			repo: &MockRepository{
 				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-			},
-			releaseInfo: map[string]tagAndCommits{
-				"lib-a": {
-					commits: []*conventionalcommits.ConventionalCommit{
-						{
-							Type:        "feat",
-							Description: "feature for a",
-							SHA:         hash1.String(),
-						},
-					},
-					// this is the PreviousTag in the release note.
-					tag: "lib-a-1.0.0",
-				},
-				"lib-b": {
-					commits: []*conventionalcommits.ConventionalCommit{
-						{
-							Type:        "fix",
-							Description: "fix for b",
-							SHA:         hash2.String(),
-						},
-					},
-					// this is the PreviousTag in the release note.
-					tag: "lib-b-2.0.0",
-				},
 			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
@@ -616,29 +603,25 @@ Language Image: go:1.21
 						ID: "my-library",
 						// this is the newVersion in the release note.
 						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "feat",
+								Description: "new feature",
+								SHA:         hash1.String(),
+							},
+							{
+								Type:        "ci",
+								Description: "a ci change",
+								SHA:         hash2.String(),
+							},
+						},
 					},
 				},
 			},
 			repo: &MockRepository{
 				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-			},
-			releaseInfo: map[string]tagAndCommits{
-				"my-library": {
-					commits: []*conventionalcommits.ConventionalCommit{
-						{
-							Type:        "feat",
-							Description: "new feature",
-							SHA:         hash1.String(),
-						},
-						{
-							Type:        "ci",
-							Description: "a ci change",
-							SHA:         hash2.String(),
-						},
-					},
-					tag: "my-library-1.0.0",
-				},
 			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
@@ -682,7 +665,7 @@ Language Image: go:1.21
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := formatReleaseNotes(test.repo, test.state, test.releaseInfo)
+			got, err := formatReleaseNotes(test.repo, test.state)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
