@@ -147,7 +147,6 @@ func TestGetConventionalCommitsSinceTag(t *testing.T) {
 		name          string
 		repo          gitrepo.Repository
 		library       *config.LibraryState
-		tag           string
 		want          []*conventionalcommits.ConventionalCommit
 		wantErr       bool
 		wantErrPhrase string
@@ -157,10 +156,11 @@ func TestGetConventionalCommitsSinceTag(t *testing.T) {
 			repo: repoWithCommits,
 			library: &config.LibraryState{
 				ID:                  "foo",
+				Version:             "1.0.0",
+				TagFormat:           "{id}-v{version}",
 				SourceRoots:         []string{"foo"},
 				ReleaseExcludePaths: []string{"foo/README.md"},
 			},
-			tag: "foo-v1.0.0",
 			want: []*conventionalcommits.ConventionalCommit{
 				{
 					Type:        "feat",
@@ -177,7 +177,6 @@ func TestGetConventionalCommitsSinceTag(t *testing.T) {
 					Footers:     make(map[string]string),
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "GetCommitsForPathsSinceTag error",
@@ -214,21 +213,21 @@ func TestGetConventionalCommitsSinceTag(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := GetConventionalCommitsSinceTag(test.repo, test.library, test.tag)
+			got, err := GetConventionalCommitsSinceLastRelease(test.repo, test.library)
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("GetConventionalCommitsSinceTag() should have failed")
+					t.Fatal("GetConventionalCommitsSinceLastRelease() should have failed")
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("GetConventionalCommitsSinceTag() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+					t.Errorf("GetConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("GetConventionalCommitsSinceTag() failed: %v", err)
+				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "Body", "IsBreaking", "When")); diff != "" {
-				t.Errorf("GetConventionalCommitsSinceTag() mismatch (-want +got):\n%s", diff)
+				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
