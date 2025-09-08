@@ -17,11 +17,12 @@ package librarian
 import (
 	"context"
 	"errors"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/go-git/go-git/v5"
 
