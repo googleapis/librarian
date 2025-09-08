@@ -535,16 +535,6 @@ func findAllDirRelPaths(dir, subDir string) ([]string, error) {
 	if strings.HasPrefix(dirRelPath, "..") {
 		return nil, fmt.Errorf("subDir %s is not nested within the dir %s", subDir, dir)
 	}
-	// Rel() doesn't account for symlinks and the potential for symlinks to point
-	// to a non-existent location. Use Lstat() to confirm that the directory exists
-	if _, err := os.Lstat(subDir); err != nil {
-		// If the subDir does not exist, there are no rel paths
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("subDir does not exist %s: %w", subDir, err)
-		}
-		// For any other error (permissions, I/O, etc.)
-		return nil, fmt.Errorf("failed to stat path %s: %w", subDir, err)
-	}
 
 	paths := []string{}
 	err = filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
