@@ -589,7 +589,7 @@ func TestCopyOneLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid foo",
+			name: "invalid src",
 			dst:  os.TempDir(),
 			src:  "/invalid-path",
 			library: &config.LibraryState{
