@@ -595,7 +595,7 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 // filterPathsForRemoval determines the list of paths to be removed. The logic runs as follows:
 // 1. paths that match any removePatterns are marked for removal
 // 2. paths that match the preservePatterns are kept (even if they match removePatterns)
-// Paths that match both are kept as preserve has overrides
+// Paths that match both are kept as preserve has overrides.
 func filterPathsForRemoval(paths, removePatterns, preservePatterns []string) ([]string, error) {
 	removeRegexps, err := compileRegexps(removePatterns)
 	if err != nil {
