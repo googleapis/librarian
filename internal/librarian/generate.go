@@ -59,7 +59,7 @@ Example:
 You can regenerate a single, existing library by specifying either the library
 ID or the API path. If no specific library or API is provided, Librarian will
 regenerate all libraries listed in '.librarian/state.yaml'. If '--library' or
-'--api' is specified the whole library wil be regenerated.
+'--api' is specified the whole library will be regenerated.
 
 Examples:
   # Regenerate a single library by its ID
