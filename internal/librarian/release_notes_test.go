@@ -535,6 +535,7 @@ Language Image: go:1.21
 ### Bug Fixes
 
 * a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+
 </details>`,
 				librarianVersion, today),
 		},
@@ -629,6 +630,7 @@ Language Image: go:1.21
 ### Features
 
 * feature for a ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+
 </details>
 
 
@@ -639,6 +641,7 @@ Language Image: go:1.21
 ### Bug Fixes
 
 * fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+
 </details>`,
 				librarianVersion, today, today),
 		},
@@ -680,6 +683,7 @@ Language Image: go:1.21
 ### Features
 
 * new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+
 </details>`,
 				librarianVersion, today),
 		},
