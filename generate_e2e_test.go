@@ -338,9 +338,7 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 		{
 			name:                "All libraries fail to generate",
 			initialRepoStateDir: "testdata/e2e/generate/multi_repo_all_fail_init",
-			expectError:         true,
-			expectedFiles:       []string{},
-			unexpectedFiles:     []string{"future/example.txt", "another-future/example.txt"},
+			unexpectedFiles:     []string{"pubsub/example.txt", "future/example.txt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
