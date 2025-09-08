@@ -107,7 +107,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		commitMessage: "chore: create a release",
 		prType:        release,
 		// Newly created PRs from the `release init` command should have a
-		// `release:pending` Github tab to be tracked for release.
+		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
@@ -206,8 +206,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
-	tag := formatTag(library, "")
-	commits, err := GetConventionalCommitsSinceTag(r.repo, library, tag)
+	commits, err := GetConventionalCommitsSinceLastRelease(r.repo, library)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
