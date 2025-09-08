@@ -55,11 +55,11 @@ func TestRunGenerate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := t.TempDir()
 			repo := t.TempDir()
-			APISourceRepo := t.TempDir()
+			apiSourceRepo := t.TempDir()
 			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("languageRepo prepare test error = %v", err)
 			}
-			if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
+			if err := initRepo(t, apiSourceRepo, localAPISource); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
@@ -71,7 +71,7 @@ func TestRunGenerate(t *testing.T) {
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--api-source=%s", APISourceRepo),
+				fmt.Sprintf("--api-source=%s", apiSourceRepo),
 			)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
@@ -165,11 +165,11 @@ func TestCleanAndCopy(t *testing.T) {
 
 	workRoot := t.TempDir()
 	repo := t.TempDir()
-	APISourceRepo := t.TempDir()
+	apiSourceRepo := t.TempDir()
 	if err := initRepo(t, repo, repoInitDir); err != nil {
 		t.Fatalf("languageRepo prepare test error = %v", err)
 	}
-	if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
+	if err := initRepo(t, apiSourceRepo, localAPISource); err != nil {
 		t.Fatalf("APISouceRepo prepare test error = %v", err)
 	}
 
@@ -181,7 +181,7 @@ func TestCleanAndCopy(t *testing.T) {
 		fmt.Sprintf("--api=%s", apiToGenerate),
 		fmt.Sprintf("--output=%s", workRoot),
 		fmt.Sprintf("--repo=%s", repo),
-		fmt.Sprintf("--api-source=%s", APISourceRepo),
+		fmt.Sprintf("--api-source=%s", apiSourceRepo),
 	)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
@@ -244,11 +244,11 @@ func TestRunConfigure(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := t.TempDir()
 			repo := t.TempDir()
-			APISourceRepo := t.TempDir()
+			apiSourceRepo := t.TempDir()
 			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
-			if err := initRepo(t, APISourceRepo, test.apiSource); err != nil {
+			if err := initRepo(t, apiSourceRepo, test.apiSource); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
@@ -260,7 +260,7 @@ func TestRunConfigure(t *testing.T) {
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--api-source=%s", APISourceRepo),
+				fmt.Sprintf("--api-source=%s", apiSourceRepo),
 				fmt.Sprintf("--library=%s", test.library),
 			)
 			cmd.Stderr = os.Stderr
@@ -313,10 +313,10 @@ func TestRunConfigure(t *testing.T) {
 	}
 }
 
-func TestRunGenerate_MultipleLibraries_TableDriven(t *testing.T) {
+func TestRunGenerate_MultipleLibraries(t *testing.T) {
 	const localAPISource = "testdata/e2e/generate/api_root"
 
-	tests := []struct {
+	for _, test := range []struct {
 		name                string
 		initialRepoStateDir string
 		expectError         bool
@@ -326,14 +326,12 @@ func TestRunGenerate_MultipleLibraries_TableDriven(t *testing.T) {
 		{
 			name:                "Multiple libraries generated successfully",
 			initialRepoStateDir: "testdata/e2e/generate/multi_repo_init",
-			expectError:         false,
 			expectedFiles:       []string{"pubsub/example.txt", "future/example.txt"},
 			unexpectedFiles:     []string{},
 		},
 		{
 			name:                "One library fails to generate",
 			initialRepoStateDir: "testdata/e2e/generate/multi_repo_one_fails_init",
-			expectError:         false,
 			expectedFiles:       []string{"pubsub/example.txt"},
 			unexpectedFiles:     []string{"future/example.txt"},
 		},
@@ -344,18 +342,16 @@ func TestRunGenerate_MultipleLibraries_TableDriven(t *testing.T) {
 			expectedFiles:       []string{},
 			unexpectedFiles:     []string{"future/example.txt", "another-future/example.txt"},
 		},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := t.TempDir()
 			repo := t.TempDir()
-			APISourceRepo := t.TempDir()
+			apiSourceRepo := t.TempDir()
 
 			if err := initRepo(t, repo, test.initialRepoStateDir); err != nil {
 				t.Fatalf("languageRepo prepare test error = %v", err)
 			}
-			if err := initRepo(t, APISourceRepo, localAPISource); err != nil {
+			if err := initRepo(t, apiSourceRepo, localAPISource); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
@@ -366,7 +362,7 @@ func TestRunGenerate_MultipleLibraries_TableDriven(t *testing.T) {
 				"generate",
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--api-source=%s", APISourceRepo),
+				fmt.Sprintf("--api-source=%s", apiSourceRepo),
 			)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
@@ -376,10 +372,11 @@ func TestRunGenerate_MultipleLibraries_TableDriven(t *testing.T) {
 				if err == nil {
 					t.Fatal("librarian generate command should fail")
 				}
-			} else {
-				if err != nil {
-					t.Fatalf("librarian generate command error = %v", err)
-				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("librarian generate command error = %v", err)
 			}
 
 			for _, f := range test.expectedFiles {
