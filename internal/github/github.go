@@ -228,6 +228,7 @@ func (c *Client) SearchPullRequests(ctx context.Context, query string) ([]*PullR
 	opts := &github.SearchOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
+	query = fmt.Sprintf("repo:%s/%s %s", c.repo.Owner, c.repo.Name, query)
 	for {
 		result, resp, err := c.Search.Issues(ctx, query, opts)
 		if err != nil {
