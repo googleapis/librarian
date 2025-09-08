@@ -656,8 +656,7 @@ Language Image: go:1.21
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue:                    []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
-				GetCommitsForPathsSinceTagError: fmt.Errorf("git error"),
+				RemotesError: errors.New("no remote repo"),
 			},
 			wantErr:       true,
 			wantErrPhrase: "failed to format release notes",
