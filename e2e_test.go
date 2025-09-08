@@ -244,7 +244,20 @@ func TestRunConfigure(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := t.TempDir()
 			repo := t.TempDir()
+<<<<<<< HEAD
 			apiSourceRepo := t.TempDir()
+=======
+			for _, src := range []string{"example-source-path", "example-source-path-2"} {
+				srcPath := filepath.Join(repo, src)
+				if err := os.MkdirAll(srcPath, 0755); err != nil {
+					return err
+				}
+				if _, err := os.Create(filepath.Join(srcPath, "example.txt")); err != nil {
+					return err
+				}
+			}
+			APISourceRepo := t.TempDir()
+>>>>>>> 9d173a2 (chore: Fix e2e tests)
 			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
