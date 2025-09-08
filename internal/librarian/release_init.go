@@ -215,12 +215,16 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 // updateLibrary updates the given library in the following way:
 //
-// 1. Get the library's commit history in the given git repository.
+// 1. Update the library's previous version.
 //
-// 2. Override the library version if libraryVersion is not empty.
+// 2. Get the library's commit history in the given git repository.
 //
-// 3. Set the library's release trigger to true.
+// 3. Override the library version if libraryVersion is not empty.
+//
+// 4. Set the library's release trigger to true.
 func (r *initRunner) updateLibrary(library *config.LibraryState) error {
+	// Update the previous version, we need this value when creating release note.
+	library.PreviousVersion = library.Version
 	tag := formatTag(library, "")
 	commits, err := GetConventionalCommitsSinceTag(r.repo, library, tag)
 	if err != nil {
