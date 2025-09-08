@@ -540,10 +540,10 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 =======
 func TestCopyOneLibrary(t *testing.T) {
 	t.Parallel()
-	// Create files in foo directory.
-	setup := func(foo string, files []string) {
+	// Create files in src directory.
+	setup := func(src string, files []string) {
 		for _, relPath := range files {
-			fullPath := filepath.Join(foo, relPath)
+			fullPath := filepath.Join(src, relPath)
 			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 				t.Error(err)
 			}
@@ -556,7 +556,7 @@ func TestCopyOneLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		dst           string
-		foo           string
+		src           string
 		library       *config.LibraryState
 		filesToCreate []string
 		wantFiles     []string
@@ -567,7 +567,7 @@ func TestCopyOneLibrary(t *testing.T) {
 		{
 			name: "copied a library",
 			dst:  filepath.Join(t.TempDir(), "dst"),
-			foo:  filepath.Join(t.TempDir(), "foo"),
+			src:  filepath.Join(t.TempDir(), "src"),
 			library: &config.LibraryState{
 				ID: "example-library",
 				SourceRoots: []string{
@@ -591,7 +591,7 @@ func TestCopyOneLibrary(t *testing.T) {
 		{
 			name: "invalid foo",
 			dst:  os.TempDir(),
-			foo:  "/invalid-path",
+			src:  "/invalid-path",
 			library: &config.LibraryState{
 				ID: "example-library",
 				SourceRoots: []string{
@@ -604,7 +604,7 @@ func TestCopyOneLibrary(t *testing.T) {
 		{
 			name: "invalid dst",
 			dst:  "/invalid-path",
-			foo:  os.TempDir(),
+			src:  os.TempDir(),
 			library: &config.LibraryState{
 				ID: "example-library",
 				SourceRoots: []string{
@@ -617,9 +617,9 @@ func TestCopyOneLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if !test.wantErr {
-				setup(test.foo, test.filesToCreate)
+				setup(test.src, test.filesToCreate)
 			}
-			err := copyLibrary(test.dst, test.foo, test.library)
+			err := copyLibrary(test.dst, test.src, test.library)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("copyOneLibrary() shoud fail")
@@ -654,7 +654,7 @@ func TestCopyOneLibrary(t *testing.T) {
 
 >>>>>>> b1d7164 (fix: preserve and remove files from sourcesRoot)
 func TestClean(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	for _, test := range []struct {
 		name             string
 		files            map[string]string
@@ -911,11 +911,11 @@ func TestClean(t *testing.T) {
 			}
 
 			remainingPaths := []string{}
-			paths, _ := findAllDirRelPaths(tmpDir, tmpDir)
-			remainingPaths = append(remainingPaths, paths...)
+			paths, err := findAllDirRelPaths(tmpDir, tmpDir)
 			if err != nil {
-				t.Fatalf("findAllPaths() = %v", err)
+				t.Fatalf("findAllDirRelPaths() = %v", err)
 			}
+			remainingPaths = append(remainingPaths, paths...)
 			sort.Strings(test.wantRemaining)
 			sort.Strings(remainingPaths)
 			if diff := cmp.Diff(test.wantRemaining, remainingPaths); diff != "" {
@@ -1040,7 +1040,7 @@ func TestFilterPathsByRegex(t *testing.T) {
 }
 
 func TestFilterPathsForRemoval(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	for _, test := range []struct {
 		name             string
 		files            map[string]string
@@ -1659,9 +1659,9 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 
 func TestCopyLibraryFiles(t *testing.T) {
 	t.Parallel()
-	setup := func(foo string, files []string) {
+	setup := func(src string, files []string) {
 		for _, relPath := range files {
-			fullPath := filepath.Join(foo, relPath)
+			fullPath := filepath.Join(src, relPath)
 			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 				t.Error(err)
 			}
@@ -1709,7 +1709,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		{
 			name:      "copy library files",
 			repoDir:   filepath.Join(t.TempDir(), "dst"),
-			outputDir: filepath.Join(t.TempDir(), "foo"),
+			outputDir: filepath.Join(t.TempDir(), "src"),
 			libraryID: "example-library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -1783,7 +1783,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		{
 			name:      "library not found",
 			repoDir:   filepath.Join(t.TempDir(), "dst"),
-			outputDir: filepath.Join(t.TempDir(), "foo"),
+			outputDir: filepath.Join(t.TempDir(), "src"),
 			libraryID: "non-existent-library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -1798,7 +1798,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		{
 			repoDir:   filepath.Join(t.TempDir(), "dst"),
 			name:      "one source root empty",
-			outputDir: filepath.Join(t.TempDir(), "foo"),
+			outputDir: filepath.Join(t.TempDir(), "src"),
 			libraryID: "example-library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -1872,40 +1872,40 @@ func TestCopyFile(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		dst         string
-		foo         string
-		wantfooFile bool
+		src         string
+		wantSrcFile bool
 		wantErr     bool
 		wantErrMsg  string
 	}{
 		{
-			name:       "invalid foo",
-			foo:        "/invalid-path/example.txt",
+			name:       "invalid src",
+			src:        "/invalid-path/example.txt",
 			wantErr:    true,
 			wantErrMsg: "failed to lstat file",
 		},
 		{
 			name:        "invalid dst path",
-			foo:         filepath.Join(os.TempDir(), "example.txt"),
+			src:         filepath.Join(os.TempDir(), "example.txt"),
 			dst:         "/invalid-path/example.txt",
-			wantfooFile: true,
+			wantSrcFile: true,
 			wantErr:     true,
 			wantErrMsg:  "failed to make directory",
 		},
 		{
 			name:        "invalid dst file",
-			foo:         filepath.Join(os.TempDir(), "example.txt"),
+			src:         filepath.Join(os.TempDir(), "example.txt"),
 			dst:         filepath.Join(os.TempDir(), "example\x00.txt"),
-			wantfooFile: true,
+			wantSrcFile: true,
 			wantErr:     true,
 			wantErrMsg:  "failed to create file",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.wantfooFile {
-				if err := os.MkdirAll(filepath.Dir(test.foo), 0755); err != nil {
+			if test.wantSrcFile {
+				if err := os.MkdirAll(filepath.Dir(test.src), 0755); err != nil {
 					t.Error(err)
 				}
-				sourceFile, err := os.Create(test.foo)
+				sourceFile, err := os.Create(test.src)
 				if err != nil {
 					t.Error(err)
 				}
@@ -1913,7 +1913,7 @@ func TestCopyFile(t *testing.T) {
 					t.Error(err)
 				}
 			}
-			err := copyFile(test.dst, test.foo)
+			err := copyFile(test.dst, test.src)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("copyFile() shoud fail")
