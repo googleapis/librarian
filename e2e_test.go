@@ -253,7 +253,7 @@ func TestRunConfigure(t *testing.T) {
 					return err
 				}
 			}
-			APISourceRepo := t.TempDir()
+			apiSourceRepo := t.TempDir()
 			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
