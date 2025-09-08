@@ -33,7 +33,7 @@ const (
 )
 
 var cmdGenerate = &cli.Command{
-	Short:     "generate generates client library code for a single API",
+	Short:     "generate onboards and generates client library code",
 	UsageLine: "librarian generate [flags]",
 	Long: `The generate command is the primary tool for all code generation
 tasks. It handles both the initial setup of a new library (onboarding) and the
@@ -58,7 +58,8 @@ Example:
 
 You can regenerate a single, existing library by specifying either the library
 ID or the API path. If no specific library or API is provided, Librarian will
-regenerate all libraries listed in '.librarian/state.yaml'.
+regenerate all libraries listed in '.librarian/state.yaml'. If '--library' or
+'--api' is specified the whole library wil be regenerated.
 
 Examples:
   # Regenerate a single library by its ID
