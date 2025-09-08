@@ -278,7 +278,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 }
 
 func TestCleanAndCopyLibrary(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	for _, test := range []struct {
 		name         string
 		libraryID    string
@@ -538,7 +538,7 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 }
 
 func TestClean(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	for _, test := range []struct {
 		name             string
 		files            map[string]string
@@ -924,7 +924,7 @@ func TestFilterPathsByRegex(t *testing.T) {
 }
 
 func TestFilterPathsForRemoval(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	for _, test := range []struct {
 		name             string
 		files            map[string]string

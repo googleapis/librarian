@@ -533,7 +533,6 @@ func TestGenerateScenarios(t *testing.T) {
 		name               string
 		api                string
 		library            string
-		useDefaultRepo     bool
 		state              *config.LibrarianState
 		container          *mockContainerClient
 		ghClient           GitHubClient
@@ -545,10 +544,9 @@ func TestGenerateScenarios(t *testing.T) {
 		wantConfigureCalls int
 	}{
 		{
-			name:           "generate single library including initial configuration",
-			api:            "some/api",
-			library:        "some-library",
-			useDefaultRepo: true,
+			name:    "generate single library including initial configuration",
+			api:     "some/api",
+			library: "some-library",
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 			},
@@ -866,14 +864,8 @@ func TestGenerateScenarios(t *testing.T) {
 				Build:     test.build,
 			}
 
-			// Default Repo only has a source root configured at src/a. Otherwise, construct a
-			// repo with source root from the Librarian state.
-			var repo gitrepo.Repository
-			if test.useDefaultRepo {
-				repo = newTestGitRepo(t)
-			} else {
-				repo = newTestGitRepoWithState(t, test.state, true)
-			}
+			repo := newTestGitRepoWithState(t, test.state, true)
+
 			r := &generateRunner{
 				cfg:             cfg,
 				repo:            repo,

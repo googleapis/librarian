@@ -244,15 +244,6 @@ func TestRunConfigure(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := t.TempDir()
 			repo := t.TempDir()
-			for _, src := range []string{"example-source-path", "example-source-path-2"} {
-				srcPath := filepath.Join(repo, src)
-				if err := os.MkdirAll(srcPath, 0755); err != nil {
-					t.Fatalf("os.MkdirAll() = %v", err)
-				}
-				if _, err := os.Create(filepath.Join(srcPath, "example.txt")); err != nil {
-					t.Fatalf("os.Create() = %v", err)
-				}
-			}
 			apiSourceRepo := t.TempDir()
 			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
