@@ -278,7 +278,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 }
 
 func TestCleanAndCopyLibrary(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	for _, test := range []struct {
 		name         string
 		libraryID    string
@@ -313,7 +313,7 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 					{
 						ID:          "some-library",
 						RemoveRegex: []string{"["}, // Invalid regex
-						SourceRoots: []string{"foo/a"},
+						SourceRoots: []string{"src/a"},
 					},
 				},
 			},

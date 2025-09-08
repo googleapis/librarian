@@ -471,16 +471,32 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	var paths []string
 	for _, sourceRoot := range sourceRoots {
 		sourceRootAbsPath := filepath.Join(rootDir, sourceRoot)
+		// Initial generation of a library does have any source roots. If the source root does not exist,
+		// there is no need to clean it
+		// TODO: Consider not calling clean if it's a first time generation
+		if _, err := os.Lstat(sourceRootAbsPath); err != nil {
+			if os.IsNotExist(err) {
+				slog.Warn("Unable to find source root. It may be an initial generation request", "source root", sourceRoot)
+			} else {
+				// For any other error (permissions, I/O, etc.)
+				slog.Warn("Error trying to clean source root. Ignoring the source root", "source root", sourceRoot, "error", err)
+			}
+			continue
+		}
 		sourceRootPaths, err := findAllDirRelPaths(rootDir, sourceRootAbsPath)
 		if err != nil {
-			slog.Warn("unable to find source root", "source root", sourceRoot, "error", err)
+			slog.Warn("unable to process source root", "source root", sourceRoot, "error", err)
 			return err
 		}
 		if len(sourceRootPaths) == 0 {
-			slog.Warn("unable to find any files to clean in source root", "source root", sourceRoot)
-			break
+			slog.Warn("source root did not contain any files", "source root", sourceRoot)
 		}
 		paths = append(paths, sourceRootPaths...)
+	}
+
+	if len(paths) == 0 {
+		slog.Info("There are no files to clean in the source roots", "source roots", sourceRoots)
+		return nil
 	}
 
 	pathsToRemove, err := filterPathsForRemoval(paths, removePatterns, preservePatterns)
@@ -534,17 +550,6 @@ func findAllDirRelPaths(dir, subDir string) ([]string, error) {
 	// '..' signifies that the subDir exists outside of dir
 	if strings.HasPrefix(dirRelPath, "..") {
 		return nil, fmt.Errorf("subDir %s is not nested within the dir %s", subDir, dir)
-	}
-
-	// Rel() doesn't account for symlinks and the potential for symlinks to point
-	// to a non-existent location. Use Lstat() to confirm that the directory exists
-	if _, err := os.Lstat(subDir); err != nil {
-		// If the subDir does not exist, there are no rel paths
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("subDir does not exist %s: %w", subDir, err)
-		}
-		// For any other error (permissions, I/O, etc.)
-		return nil, fmt.Errorf("failed to stat path %s: %w", subDir, err)
 	}
 
 	paths := []string{}
