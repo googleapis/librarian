@@ -476,11 +476,12 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 		if _, err := os.Lstat(sourceRootPath); err != nil {
 			if os.IsNotExist(err) {
 				slog.Warn("Unable to find source root. It may be an initial generation request", "source root", sourceRoot)
+				continue
 			} else {
 				// For any other error (permissions, I/O, etc.)
-				slog.Warn("Error trying to clean source root. Ignoring the source root", "source root", sourceRoot, "error", err)
+				slog.Error("Error trying to cleaaccessn source root", "source root", sourceRoot, "error", err)
+				return err
 			}
-			continue
 		}
 		sourceRootPaths, err := findSubDirRelPaths(rootDir, sourceRootPath)
 		if err != nil {
@@ -506,12 +507,12 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	}
 
 	// prepend the repoDir to each path to ensure that os.Remove can find the file
-	var absPaths []string
+	var paths []string
 	for _, path := range pathsToRemove {
-		absPaths = append(absPaths, filepath.Join(rootDir, path))
+		paths = append(paths, filepath.Join(rootDir, path))
 	}
 
-	filesToRemove, dirsToRemove, err := separateFilesAndDirs(absPaths)
+	filesToRemove, dirsToRemove, err := separateFilesAndDirs(paths)
 	if err != nil {
 		return err
 	}
@@ -572,7 +573,7 @@ func findSubDirRelPaths(dir, subDir string) ([]string, error) {
 // filterPathsByRegex returns a new slice containing only the paths from the input slice
 // that match at least one of the provided regular expressions.
 func filterPathsByRegex(paths []string, regexps []*regexp.Regexp) []string {
-	filtered := []string{}
+	var filtered []string
 	for _, path := range paths {
 		for _, re := range regexps {
 			if re.MatchString(path) {
