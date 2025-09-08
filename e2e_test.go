@@ -247,10 +247,10 @@ func TestRunConfigure(t *testing.T) {
 			for _, src := range []string{"example-source-path", "example-source-path-2"} {
 				srcPath := filepath.Join(repo, src)
 				if err := os.MkdirAll(srcPath, 0755); err != nil {
-					return err
+					t.Fatalf("os.MkdirAll() = %v", err)
 				}
 				if _, err := os.Create(filepath.Join(srcPath, "example.txt")); err != nil {
-					return err
+					t.Fatalf("os.Create() = %v", err)
 				}
 			}
 			apiSourceRepo := t.TempDir()
