@@ -238,7 +238,7 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 }
 
 // formatReleaseNotes generates the body for a release pull request.
-func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState, releaseInfo map[string]tagAndCommits) (string, error) {
+func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
 	librarianVersion := cli.Version()
 	var releaseSections []*releaseNoteSection
 	for _, library := range state.Libraries {
@@ -246,7 +246,7 @@ func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState, r
 			continue
 		}
 
-		section, err := formatLibraryReleaseNotes(repo, library, releaseInfo)
+		section, err := formatLibraryReleaseNotes(repo, library)
 		if err != nil {
 			return "", fmt.Errorf("failed to format release notes for library %s: %w", library.ID, err)
 		}
@@ -269,20 +269,16 @@ func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState, r
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
-func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState, releaseInfo map[string]tagAndCommits) (*releaseNoteSection, error) {
+func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState) (*releaseNoteSection, error) {
 	ghRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch github repo from remote: %w", err)
 	}
 
-	tac, ok := releaseInfo[library.ID]
-	if !ok {
-		return nil, fmt.Errorf("failed to find previouse release tag and conventional commits for %s", library.ID)
-	}
-
 	// The version should already be updated to the next version.
 	newVersion := library.Version
 	newTag := formatTag(library, newVersion)
+	previousTag := formatTag(library, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
 	for _, commit := range tac.commits {
@@ -307,7 +303,7 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 		RepoName:       ghRepo.Name,
 		LibraryID:      library.ID,
 		NewVersion:     newVersion,
-		PreviousTag:    tac.tag,
+		PreviousTag:    previousTag,
 		NewTag:         newTag,
 		Date:           time.Now().Format("2006-01-02"),
 		CommitSections: sections,

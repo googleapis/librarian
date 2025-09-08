@@ -65,11 +65,6 @@ func init() {
 	addFlagWorkRoot(fs, cfg)
 }
 
-type tagAndCommits struct {
-	commits []*conventionalcommits.ConventionalCommit
-	tag     string
-}
-
 type initRunner struct {
 	cfg             *config.Config
 	repo            gitrepo.Repository
@@ -77,15 +72,9 @@ type initRunner struct {
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
-	// A mapping from library id to release tag before updating the library
-	// and conventional commits found since the release tag.
-	// The version is changed after updating, so we need to keep the old tag
-	// because it will be used when creating release note.
-	// Also, keeping the commits to avoid double calculation.
-	releaseInfo map[string]tagAndCommits
-	workRoot    string
-	partialRepo string
-	image       string
+	workRoot        string
+	partialRepo     string
+	image           string
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
@@ -100,7 +89,6 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		ghClient:        runner.ghClient,
 		containerClient: runner.containerClient,
-		releaseInfo:     map[string]tagAndCommits{},
 		workRoot:        runner.workRoot,
 		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		image:           runner.image,
@@ -122,7 +110,6 @@ func (r *initRunner) run(ctx context.Context) error {
 		state:         r.state,
 		repo:          r.repo,
 		ghClient:      r.ghClient,
-		releaseInfo:   r.releaseInfo,
 		commitMessage: "chore: create a release",
 		prType:        release,
 		// Newly created PRs from the `release init` command should have a
@@ -229,11 +216,6 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	commits, err := GetConventionalCommitsSinceTag(r.repo, library, tag)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
-	}
-
-	r.releaseInfo[library.ID] = tagAndCommits{
-		commits: commits,
-		tag:     tag,
 	}
 
 	library.Changes = coerceLibraryChanges(commits)
