@@ -517,21 +517,30 @@ func TestUpdateLibrary(t *testing.T) {
 				},
 			},
 			want: &config.LibraryState{
-				ID:      "one-id",
-				Version: "2.0.0",
+				ID:              "one-id",
+				Version:         "2.0.0",
+				PreviousVersion: "1.2.3",
 				SourceRoots: []string{
 					"one/path",
 					"two/path",
 				},
 				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:        "feat!",
+						Type:        "feat",
 						Description: "add another config file",
 						Body:        "This is the body",
+						LibraryID:   "one-id",
+						Footers: map[string]string{
+							"BREAKING CHANGE": "this is a breaking change",
+						},
+						IsBreaking: true,
 					},
 					{
-						Type:        "feat!",
+						Type:        "feat",
 						Description: "change a typo",
+						LibraryID:   "one-id",
+						Footers:     map[string]string{},
+						IsBreaking:  true,
 					},
 				},
 				ReleaseTriggered: true,
@@ -585,7 +594,7 @@ func TestUpdateLibrary(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to run getChangesOf(): %q", err.Error())
 			}
-			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA")); diff != "" {
+			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "When")); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
