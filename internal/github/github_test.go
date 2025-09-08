@@ -704,7 +704,7 @@ func TestSearchPullRequests(t *testing.T) {
 			query: "is:pr is:open author:app/dependabot",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(r.URL.Path, "/search/issues") {
-					if r.URL.Query().Get("q") != "is:pr is:open author:app/dependabot" {
+					if r.URL.Query().Get("q") != "repo:owner/repo is:pr is:open author:app/dependabot" {
 						t.Errorf("unexpected query: got %q", r.URL.Query().Get("q"))
 					}
 					fmt.Fprint(w, `{"items": [{"number": 1, "pull_request": {}}]}`)
