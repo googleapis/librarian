@@ -281,7 +281,7 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 	previousTag := formatTag(library, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
-	for _, commit := range tac.commits {
+	for _, commit := range library.Changes {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
 

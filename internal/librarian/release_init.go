@@ -21,8 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/cli"
@@ -218,7 +216,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
-	library.Changes = coerceLibraryChanges(commits)
+	library.Changes = commits
 	if len(library.Changes) == 0 {
 		slog.Info("Skip releasing library since no eligible change is found", "library", library.ID)
 		return nil
@@ -233,38 +231,6 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	library.ReleaseTriggered = true
 
 	return nil
-}
-
-func coerceLibraryChanges(commits []*conventionalcommits.ConventionalCommit) []*config.Change {
-	changes := make([]*config.Change, 0)
-	for _, commit := range commits {
-		clNum := ""
-		if cl, ok := commit.Footers[KeyClNum]; ok {
-			clNum = cl
-		}
-
-		changeType := getChangeType(commit)
-		changes = append(changes, &config.Change{
-			Type:       changeType,
-			Subject:    commit.Description,
-			Body:       commit.Body,
-			ClNum:      clNum,
-			CommitHash: commit.SHA,
-		})
-	}
-
-	return changes
-}
-
-// getChangeType gets the type of the commit, adding an escalation mark (!) if
-// it is a breaking change.
-func getChangeType(commit *conventionalcommits.ConventionalCommit) string {
-	changeType := commit.Type
-	if commit.IsBreaking {
-		changeType = changeType + "!"
-	}
-
-	return changeType
 }
 
 // copyGlobalAllowlist copies files in the global file allowlist excluding

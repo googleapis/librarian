@@ -16,10 +16,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 )
 
 const (
