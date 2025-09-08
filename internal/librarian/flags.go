@@ -83,7 +83,7 @@ func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Push, "push", false,
 		`If true, Librarian will create a commit and a pull request for the changes.
 A GitHub token with push access must be provided via the
-SDK_LIBRARIAN_GITHUB_TOKEN environment variable.`)
+LIBRARIAN_GITHUB_TOKEN environment variable.`)
 }
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {

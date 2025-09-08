@@ -95,7 +95,7 @@ func applyIncludeList(files map[string]bool, sourceDirectory string, options map
 	// Ignore any discovered paths, only the paths from the include list apply.
 	clear(files)
 	for _, p := range strings.Split(list, ",") {
-		files[path.Join(sourceDirectory, p)] = true
+		files[filepath.ToSlash(path.Join(sourceDirectory, p))] = true
 	}
 }
 
@@ -105,6 +105,6 @@ func applyExcludeList(files map[string]bool, sourceDirectory string, options map
 		return
 	}
 	for _, p := range strings.Split(list, ",") {
-		delete(files, path.Join(sourceDirectory, p))
+		delete(files, filepath.ToSlash(path.Join(sourceDirectory, p)))
 	}
 }

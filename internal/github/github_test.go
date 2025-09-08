@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	gogitConfig "github.com/go-git/go-git/v5/config"
@@ -1026,10 +1027,10 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 				if r.URL.Query().Get("state") != "closed" {
 					t.Errorf("unexpected state: got %q", r.URL.Query().Get("state"))
 				}
-				pr0 := github.PullRequest{Number: github.Ptr(0), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/0"), MergeCommitSHA: github.Ptr("sha456"), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
+				pr0 := github.PullRequest{Number: github.Ptr(0), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/0"), MergedAt: &github.Timestamp{Time: time.Date(2025, time.September, 5, 20, 44, 59, 0, time.UTC)}, Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
 				pr1 := github.PullRequest{Number: github.Ptr(1), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
 				pr2 := github.PullRequest{Number: github.Ptr(2), Labels: []*github.Label{{Name: github.Ptr("other-label")}}}
-				pr3 := github.PullRequest{Number: github.Ptr(3), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/3"), MergeCommitSHA: github.Ptr("sha123"), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
+				pr3 := github.PullRequest{Number: github.Ptr(3), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/3"), ClosedAt: &github.Timestamp{Time: time.Date(2025, time.September, 5, 20, 44, 59, 0, time.UTC)}, Labels: []*github.Label{{Name: github.Ptr("release:pending")}}}
 				prs := []*github.PullRequest{&pr0, &pr1, &pr2, &pr3}
 				b, err := json.Marshal(prs)
 				if err != nil {
@@ -1038,8 +1039,7 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 				fmt.Fprint(w, string(b))
 			},
 			wantPRs: []*PullRequest{
-				{Number: github.Ptr(0), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/0"), MergeCommitSHA: github.Ptr("sha456"), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
-				{Number: github.Ptr(3), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/3"), MergeCommitSHA: github.Ptr("sha123"), Merged: github.Ptr(true), Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
+				{Number: github.Ptr(0), HTMLURL: github.Ptr("https://github.com/owner/repo/pull/0"), MergedAt: &github.Timestamp{Time: time.Date(2025, time.September, 5, 20, 44, 59, 0, time.UTC)}, Labels: []*github.Label{{Name: github.Ptr("release:pending")}}},
 			},
 		},
 		{

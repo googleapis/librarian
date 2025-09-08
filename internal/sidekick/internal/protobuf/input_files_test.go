@@ -39,9 +39,12 @@ func TestBasic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for i := range got {
+		got[i] = filepath.ToSlash(got[i])
+	}
 	want := []string{
-		path.Join(testdataDir, source, "resources.proto"),
-		path.Join(testdataDir, source, "service.proto"),
+		filepath.ToSlash(path.Join(testdataDir, source, "resources.proto")),
+		filepath.ToSlash(path.Join(testdataDir, source, "service.proto")),
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
 		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
@@ -71,8 +74,11 @@ func TestIncludeList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for i := range got {
+		got[i] = filepath.ToSlash(got[i])
+	}
 	want := []string{
-		path.Join(testdataDir, source, "resources.proto"),
+		filepath.ToSlash(path.Join(testdataDir, source, "resources.proto")),
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
 		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
@@ -89,8 +95,11 @@ func TestExcludeList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for i := range got {
+		got[i] = filepath.ToSlash(got[i])
+	}
 	want := []string{
-		path.Join(testdataDir, source, "service.proto"),
+		filepath.ToSlash(path.Join(testdataDir, source, "service.proto")),
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
 		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
