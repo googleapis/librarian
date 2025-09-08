@@ -537,6 +537,49 @@ Language Image: go:1.21
 				librarianVersion, today),
 		},
 		{
+			name: "single library with multiple features",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the NewVersion in the release note.
+						Version:         "1.1.0",
+						PreviousVersion: "1.0.0",
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "feat",
+								Description: "new feature",
+								SHA:         hash1.String(),
+							},
+							{
+								Type:        "feat",
+								Description: "another new feature",
+								SHA:         hash2.String(),
+							},
+						},
+						ReleaseTriggered: true,
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+			},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+### Features
+
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+
+* another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+</details>`,
+				librarianVersion, today),
+		},
+		{
 			name: "multiple library releases",
 			state: &config.LibrarianState{
 				Image: "go:1.21",

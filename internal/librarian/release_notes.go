@@ -78,8 +78,9 @@ Language Image: {{.ImageVersion}}
 
 ### {{.Heading}}
 {{ end }}
-{{- range .Commits -}}
+{{- range .Commits }}
 * {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+
 {{- end }}
 {{- end }}
 {{- end }}
