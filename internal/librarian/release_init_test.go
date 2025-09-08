@@ -468,8 +468,9 @@ func TestUpdateLibrary(t *testing.T) {
 				},
 			},
 			want: &config.LibraryState{
-				ID:      "one-id",
-				Version: "2.0.0",
+				ID:              "one-id",
+				Version:         "2.0.0",
+				PreviousVersion: "1.2.3",
 				SourceRoots: []string{
 					"one/path",
 					"two/path",
@@ -478,11 +479,14 @@ func TestUpdateLibrary(t *testing.T) {
 					{
 						Type:        "fix",
 						Description: "change a typo",
+						LibraryID:   "one-id",
+						Footers:     map[string]string{},
 					},
 					{
 						Type:        "feat",
 						Description: "add a config file",
 						Body:        "This is the body.",
+						LibraryID:   "one-id",
 						Footers:     map[string]string{"PiperOrigin-RevId": "12345"},
 					},
 				},
