@@ -57,7 +57,6 @@ type commitInfo struct {
 	repo              gitrepo.Repository
 	ghClient          GitHubClient
 	idToCommits       map[string]string
-	releaseInfo       map[string]tagAndCommits
 	failedLibraries   []string
 	pullRequestLabels []string
 	commitMessage     string
@@ -418,7 +417,7 @@ func createPRBody(info *commitInfo) (string, error) {
 	case generate:
 		return formatGenerationPRBody(info.repo, info.state, info.idToCommits, info.failedLibraries)
 	case release:
-		return formatReleaseNotes(info.repo, info.state, info.releaseInfo)
+		return formatReleaseNotes(info.repo, info.state)
 	default:
 		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
 	}
