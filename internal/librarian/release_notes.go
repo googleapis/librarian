@@ -72,16 +72,12 @@ Language Image: {{.ImageVersion}}
 <details><summary>{{.LibraryID}}: {{.NewVersion}}</summary>
 
 ## [{{.NewVersion}}]({{"https://github.com/"}}{{.RepoOwner}}/{{.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
-{{- range .CommitSections -}}
-{{- if .Commits -}}
-{{- if .Heading }}
-
+{{ range .CommitSections }}
 ### {{.Heading}}
-{{ end }}
-{{- range .Commits -}}
+{{ range .Commits }}
 * {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
-{{- end }}
-{{- end }}
+{{ end }}
+
 {{- end }}
 </details>
 
