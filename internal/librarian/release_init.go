@@ -28,10 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-const (
-	KeyClNum = "PiperOrigin-RevId"
-)
-
 // cmdInit is the command for the `release init` subcommand.
 var cmdInit = &cli.Command{
 	Short:     "init initiates a release by creating a release pull request.",

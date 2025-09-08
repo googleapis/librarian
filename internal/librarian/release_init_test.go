@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"os"
 	"path/filepath"
 	"strings"
@@ -125,7 +126,6 @@ func TestInitRun(t *testing.T) {
 					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
-				releaseInfo:     map[string]tagAndCommits{},
 				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{
@@ -168,7 +168,6 @@ func TestInitRun(t *testing.T) {
 				repo: &MockRepository{
 					Dir: t.TempDir(),
 				},
-				releaseInfo: map[string]tagAndCommits{},
 				partialRepo: t.TempDir(),
 			},
 			files: map[string]string{
@@ -213,7 +212,6 @@ func TestInitRun(t *testing.T) {
 					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
-				releaseInfo:     map[string]tagAndCommits{},
 				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{
@@ -320,7 +318,6 @@ func TestInitRun(t *testing.T) {
 					RemotesValue: []*git.Remote{}, // No remotes
 				},
 				librarianConfig: &config.LibrarianConfig{},
-				releaseInfo:     map[string]tagAndCommits{},
 				partialRepo:     t.TempDir(),
 			},
 			wantErr:    true,
@@ -361,7 +358,6 @@ func TestInitRun(t *testing.T) {
 					Dir: t.TempDir(),
 				},
 				librarianConfig: &config.LibrarianConfig{},
-				releaseInfo:     map[string]tagAndCommits{},
 				partialRepo:     t.TempDir(),
 			},
 			files: map[string]string{
@@ -478,16 +474,16 @@ func TestUpdateLibrary(t *testing.T) {
 					"one/path",
 					"two/path",
 				},
-				Changes: []*config.Change{
+				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:    "fix",
-						Subject: "change a typo",
+						Type:        "fix",
+						Description: "change a typo",
 					},
 					{
-						Type:    "feat",
-						Subject: "add a config file",
-						Body:    "This is the body.",
-						ClNum:   "12345",
+						Type:        "feat",
+						Description: "add a config file",
+						Body:        "This is the body.",
+						Footers:     map[string]string{"PiperOrigin-RevId": "12345"},
 					},
 				},
 				ReleaseTriggered: true,
@@ -527,15 +523,15 @@ func TestUpdateLibrary(t *testing.T) {
 					"one/path",
 					"two/path",
 				},
-				Changes: []*config.Change{
+				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:    "feat!",
-						Subject: "add another config file",
-						Body:    "This is the body",
+						Type:        "feat!",
+						Description: "add another config file",
+						Body:        "This is the body",
 					},
 					{
-						Type:    "feat!",
-						Subject: "change a typo",
+						Type:        "feat!",
+						Description: "change a typo",
 					},
 				},
 				ReleaseTriggered: true,
@@ -563,8 +559,7 @@ func TestUpdateLibrary(t *testing.T) {
 				cfg: &config.Config{
 					LibraryVersion: test.libraryVersion,
 				},
-				repo:        test.repo,
-				releaseInfo: map[string]tagAndCommits{},
+				repo: test.repo,
 			}
 			var err error
 			if test.repo != nil {
@@ -590,7 +585,7 @@ func TestUpdateLibrary(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to run getChangesOf(): %q", err.Error())
 			}
-			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(config.Change{}, "CommitHash")); diff != "" {
+			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA")); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
