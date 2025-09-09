@@ -22,9 +22,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/go-git/go-git/v5"
+	gogitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
 
@@ -299,32 +300,6 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 		{
-			name: "failed to commit and push",
-			runner: &initRunner{
-				workRoot:        os.TempDir(),
-				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Push: true,
-				},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							ID: "example-id",
-						},
-					},
-				},
-				repo: &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: gitStatus,
-					RemotesValue: []*git.Remote{}, // No remotes
-				},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to commit and push",
-		},
-		{
 			name: "failed to make partial repo",
 			runner: &initRunner{
 				workRoot: t.TempDir(),
@@ -423,6 +398,43 @@ func TestInitRun(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to copy file",
+		},
+		{
+			name: "failed to commit and push, error inside commitAndPush()",
+			runner: &initRunner{
+				workRoot:        os.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Push: true,
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							Version: "1.0.0",
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+						Name: "origin",
+						URLs: []string{"https://github.com/googleapis/librarian.git"},
+					})},
+					ChangedFilesInCommitValue: []string{"file.txt"},
+					GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
+						{
+							Message: "feat: a feature",
+						},
+					},
+					// This AddAll is used in commitAndPush(), simulate an error here
+					AddAllError: errors.New("Unable to add all files"),
+				},
+				ghClient:        &mockGitHubClient{},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to commit and push",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

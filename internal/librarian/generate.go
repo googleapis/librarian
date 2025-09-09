@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -196,19 +197,28 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return err
 	}
 
-	commitInfo := &commitInfo{
-		cfg:             r.cfg,
-		state:           r.state,
-		repo:            r.repo,
-		sourceRepo:      r.sourceRepo,
-		ghClient:        r.ghClient,
-		idToCommits:     idToCommits,
-		failedLibraries: failedLibraries,
-		commitMessage:   "chore: generate libraries",
-		prType:          generate,
+	datetimeNow := formatTimestamp(time.Now())
+	branch := fmt.Sprintf("librarian-%s", datetimeNow)
+
+	commitInfo := &CommitInfo{
+		cfg:           r.cfg,
+		state:         r.state,
+		repo:          r.repo,
+		branch:        branch,
+		commitMessage: "chore: generate libraries",
 	}
 
-	return commitAndPush(ctx, commitInfo)
+	prTitle := fmt.Sprintf("Librarian %s pull request: %s", generate, datetimeNow)
+	prBody, err := formatGenerationPRBody(r.repo, r.state, idToCommits, failedLibraries)
+	if err != nil {
+		return nil
+	}
+	prInfo := &PullRequestInfo{
+		ghClient: r.ghClient,
+		title:    prTitle,
+		body:     prBody,
+	}
+	return commitAndPush(ctx, commitInfo, prInfo)
 }
 
 // generateSingleLibrary manages the generation of a single client library.

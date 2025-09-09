@@ -20,8 +20,11 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/semver"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -117,7 +120,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 }
 
 func (r *initRunner) run(ctx context.Context) error {
-	outputDir := r.workRoot
+	outputDir := filepath.Join(r.workRoot, "output")
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
@@ -126,19 +129,42 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
-	commitInfo := &commitInfo{
+	var commits []*conventionalcommits.ConventionalCommit
+	for _, library := range r.state.Libraries {
+		commits = append(commits, library.Changes...)
+	}
+
+	// Only proceed with with the release if there are any releasable units
+	if getHighestChange(commits) == semver.None {
+		return nil
+	}
+
+	datetimeNow := formatTimestamp(time.Now())
+	branch := fmt.Sprintf("librarian-%s", datetimeNow)
+
+	commitInfo := &CommitInfo{
 		cfg:           r.cfg,
 		state:         r.state,
 		repo:          r.repo,
 		sourceRepo:    r.sourceRepo,
-		ghClient:      r.ghClient,
+		branch:        branch,
 		commitMessage: "chore: create a release",
-		prType:        release,
-		// Newly created PRs from the `release init` command should have a
-		// `release:pending` GitHub tab to be tracked for release.
-		pullRequestLabels: []string{"release:pending"},
 	}
-	if err := commitAndPush(ctx, commitInfo); err != nil {
+
+	prTitle := fmt.Sprintf("Librarian %s pull request: %s", release, datetimeNow)
+	prBody, err := formatReleaseNotes(r.repo, r.state)
+	if err != nil {
+		return nil
+	}
+	prInfo := &PullRequestInfo{
+		ghClient: r.ghClient,
+		title:    prTitle,
+		body:     prBody,
+		// Newly created PRs from the  command should have a
+		// `release:pending` GitHub tab to be tracked for release.
+		labels: []string{"release:pending"},
+	}
+	if err := commitAndPush(ctx, commitInfo, prInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
 	}
 
@@ -152,24 +178,13 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	src := r.repo.GetDir()
-	for _, library := range r.state.Libraries {
-		if r.cfg.Library != "" {
-			if r.cfg.Library != library.ID {
-				continue
-			}
-
-			// Only update one library with the given library ID.
-			if err := r.updateLibrary(library); err != nil {
-				return err
-			}
-			if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
-				return err
-			}
-
-			break
-		}
-
-		// Update all libraries.
+	var librariesToRelease []*config.LibraryState
+	if r.cfg.Library != "" {
+		librariesToRelease = append(librariesToRelease, findLibraryByID(r.state, r.cfg.Library))
+	} else {
+		librariesToRelease = append(librariesToRelease, r.state.Libraries...)
+	}
+	for _, library := range librariesToRelease {
 		if err := r.updateLibrary(library); err != nil {
 			return err
 		}
@@ -183,7 +198,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	if err := copyGlobalAllowlist(r.librarianConfig, dst, src, true); err != nil {
-		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
+		return fmt.Errorf("failed to copy global allowlist from %s to %s: %w", src, dst, err)
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
@@ -200,20 +215,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return err
 	}
 
-	for _, library := range r.state.Libraries {
-		if r.cfg.Library != "" {
-			if r.cfg.Library != library.ID {
-				continue
-			}
-			// Only copy one library to repository.
-			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
-				return err
-			}
-
-			break
-		}
-
-		// Copy all libraries to repository.
+	for _, library := range librariesToRelease {
 		if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
 			return err
 		}

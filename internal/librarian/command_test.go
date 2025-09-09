@@ -1311,8 +1311,6 @@ func TestCommitAndPush(t *testing.T) {
 		name            string
 		setupMockRepo   func(t *testing.T) gitrepo.Repository
 		setupMockClient func(t *testing.T) GitHubClient
-		state           *config.LibrarianState
-		prType          string
 		commit          bool
 		push            bool
 		wantErr         bool
@@ -1331,7 +1329,6 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType: "generate",
 		},
 		{
 			name: "create a commit",
@@ -1349,15 +1346,12 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
-				return &mockGitHubClient{
-					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
-				}
+				return &mockGitHubClient{}
 			},
-			prType: "generate",
 			commit: true,
 		},
 		{
-			name: "create a generate pull request",
+			name: "create a pull request",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
 					Name: "origin",
@@ -1376,49 +1370,21 @@ func TestCommitAndPush(t *testing.T) {
 					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 				}
 			},
-			state:  &config.LibrarianState{},
-			prType: "generate",
-			push:   true,
-		},
-		{
-			name: "create a release pull request",
-			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
-				return &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
-				}
-			},
-			setupMockClient: func(t *testing.T) GitHubClient {
-				return &mockGitHubClient{
-					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
-				}
-			},
-			state:  &config.LibrarianState{},
-			prType: "release",
-			push:   true,
+			push: true,
 		},
 		{
 			name: "No GitHub Remote",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{}, // No remotes
+					AddAllStatus: git.Status{
+						"file.txt": &git.FileStatus{Worktree: git.Modified},
+					},
+					RemotesError: errors.New("could not find an 'origin' remote"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "could not find an 'origin' remote",
@@ -1426,20 +1392,13 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "AddAll error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
 				return &MockRepository{
-					Dir:          t.TempDir(),
-					RemotesValue: []*git.Remote{remote},
-					AddAllError:  errors.New("mock add all error"),
+					AddAllError: errors.New("mock add all error"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "mock add all error",
@@ -1447,24 +1406,17 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Create branch error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
 				status := make(git.Status)
 				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:                          t.TempDir(),
 					AddAllStatus:                 status,
-					RemotesValue:                 []*git.Remote{remote},
 					CreateBranchAndCheckoutError: errors.New("create branch error"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "create branch error",
@@ -1472,24 +1424,17 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Commit error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
 				status := make(git.Status)
 				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
 					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
 					CommitError:  errors.New("commit error"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
@@ -1497,55 +1442,23 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Push error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
 				status := make(git.Status)
 				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
 					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
 					PushError:    errors.New("push error"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "push error",
 		},
 		{
-			name: "Create PR body error",
-			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
-				return &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
-				}
-			},
-			setupMockClient: func(t *testing.T) GitHubClient {
-				return &mockGitHubClient{}
-			},
-			state:          &config.LibrarianState{},
-			prType:         "random",
-			push:           true,
-			wantErr:        true,
-			expectedErrMsg: "failed to create pull request body",
-		},
-		{
-			name: "Create pull request error",
+			name: "Create pull request error, Github response",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
 					Name: "origin",
@@ -1565,8 +1478,6 @@ func TestCommitAndPush(t *testing.T) {
 					createPullRequestErr: errors.New("create pull request error"),
 				}
 			},
-			state:          &config.LibrarianState{},
-			prType:         "generate",
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request",
@@ -1574,40 +1485,34 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "No changes to commit",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
 				return &MockRepository{
 					Dir:          t.TempDir(),
 					AddAllStatus: git.Status{}, // Clean status
-					RemotesValue: []*git.Remote{remote},
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType: "generate",
-			push:   true,
+			push: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
-			client := test.setupMockClient(t)
+			ghClient := test.setupMockClient(t)
 			localConfig := &config.Config{
 				Push:   test.push,
 				Commit: test.commit,
 			}
-			commitInfo := &commitInfo{
+			commitInfo := &CommitInfo{
 				cfg:           localConfig,
-				state:         test.state,
 				repo:          repo,
-				ghClient:      client,
 				commitMessage: "",
-				prType:        test.prType,
+			}
+			prInfo := &PullRequestInfo{
+				ghClient: ghClient,
 			}
 
-			err := commitAndPush(context.Background(), commitInfo)
+			err := commitAndPush(context.Background(), commitInfo, prInfo)
 
 			if test.wantErr {
 				if err == nil {
@@ -1627,16 +1532,24 @@ func TestCommitAndPush(t *testing.T) {
 
 func TestAddLabelsToPullRequest(t *testing.T) {
 	for _, test := range []struct {
-		name                  string
-		setupMockRepo         func(t *testing.T) gitrepo.Repository
-		mockGithubClient      *mockGitHubClient
-		prMetadata            github.PullRequestMetadata
-		wantPullRequestLabels []string
-		wantErr               bool
-		expectedErrMsg        string
+		name              string
+		setupMockRepo     func(t *testing.T) gitrepo.Repository
+		mockGithubClient  *mockGitHubClient
+		prMetadata        github.PullRequestMetadata
+		pullRequestLabels []string
+		wantErr           bool
+		expectedErrMsg    string
 	}{
 		{
 			name: "Add All Labels",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				return &MockRepository{}
+			},
+			mockGithubClient:  &mockGitHubClient{},
+			pullRequestLabels: []string{"release:pending", "1234", "label1234"},
+		},
+		{
+			name: "Add no labels",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				return &MockRepository{}
 			},
@@ -1645,7 +1558,7 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 				Repo:   &github.Repository{Owner: "test-owner", Name: "test-repo"},
 				Number: 7,
 			},
-			wantPullRequestLabels: []string{"release:pending", "1234", "label1234"},
+			pullRequestLabels: nil,
 		},
 		{
 			name: "Failed to add labels",
@@ -1655,19 +1568,21 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 			mockGithubClient: &mockGitHubClient{
 				addLabelsToIssuesErr: errors.New("Can't add labels"),
 			},
-			prMetadata: github.PullRequestMetadata{
-				Repo:   &github.Repository{Owner: "test-owner", Name: "test-repo"},
-				Number: 7,
-			},
-			wantPullRequestLabels: []string{"release:pending", "1234", "label1234"},
-			wantErr:               true,
-			expectedErrMsg:        "failed to add labels to pull request",
+			pullRequestLabels: []string{"release:pending", "1234", "label1234"},
+			wantErr:           true,
+			expectedErrMsg:    "failed to add labels to pull request",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			client := test.mockGithubClient
-			prMetadata := test.prMetadata
-			err := addLabelsToPullRequest(context.Background(), client, test.wantPullRequestLabels, &prMetadata)
+			prMetadata := github.PullRequestMetadata{
+				Repo:   &github.Repository{Owner: "test-owner", Name: "test-repo"},
+				Number: 7,
+			}
+			prInfo := &PullRequestInfo{
+				ghClient: test.mockGithubClient,
+				labels:   test.pullRequestLabels,
+			}
+			err := addLabelsToPullRequest(context.Background(), prInfo, &prMetadata)
 
 			if test.wantErr {
 				if err == nil {
@@ -1681,7 +1596,7 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 			if err != nil {
 				t.Errorf("%s: addLabelsToPullRequest() returned unexpected error: %v", test.name, err)
 			}
-			if diff := cmp.Diff(test.wantPullRequestLabels, test.mockGithubClient.labels); diff != "" {
+			if diff := cmp.Diff(test.pullRequestLabels, test.mockGithubClient.labels); diff != "" {
 				t.Errorf("addLabelsToPullRequest() mismatch (-want +got):\n%s", diff)
 			}
 		})

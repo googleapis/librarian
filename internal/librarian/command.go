@@ -51,17 +51,22 @@ type GitHubClientFactory func(token string, repo *github.Repository) (GitHubClie
 // ContainerClientFactory type for creating a ContainerClient.
 type ContainerClientFactory func(workRoot, image, userUID, userGID string) (ContainerClient, error)
 
-type commitInfo struct {
-	cfg               *config.Config
-	state             *config.LibrarianState
-	repo              gitrepo.Repository
-	sourceRepo        gitrepo.Repository
-	ghClient          GitHubClient
-	idToCommits       map[string]string
-	failedLibraries   []string
-	pullRequestLabels []string
-	commitMessage     string
-	prType            string
+// CommitInfo stores the fields used to create a commit locally.
+type CommitInfo struct {
+	cfg           *config.Config
+	state         *config.LibrarianState
+	repo          gitrepo.Repository
+	sourceRepo    gitrepo.Repository
+	branch        string
+	commitMessage string
+}
+
+// PullRequestInfo stores the fields used to create a Github PR.
+type PullRequestInfo struct {
+	ghClient GitHubClient
+	title    string
+	body     string
+	labels   []string
 }
 
 type commandRunner struct {
@@ -330,14 +335,14 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // commitAndPush creates a commit and push request to GitHub for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, info *commitInfo) error {
-	cfg := info.cfg
+func commitAndPush(ctx context.Context, commitInfo *CommitInfo, prInfo *PullRequestInfo) error {
+	cfg := commitInfo.cfg
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
 	}
 
-	repo := info.repo
+	repo := commitInfo.repo
 	status, err := repo.AddAll()
 	if err != nil {
 		return err
@@ -347,17 +352,15 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return nil
 	}
 
-	datetimeNow := formatTimestamp(time.Now())
-	branch := fmt.Sprintf("librarian-%s", datetimeNow)
-	if err := repo.CreateBranchAndCheckout(branch); err != nil {
+	if err := repo.CreateBranchAndCheckout(commitInfo.branch); err != nil {
 		return err
 	}
 
-	if err := repo.Commit(info.commitMessage); err != nil {
+	if err := repo.Commit(commitInfo.commitMessage); err != nil {
 		return err
 	}
 
-	if err := repo.Push(branch); err != nil {
+	if err := repo.Push(commitInfo.branch); err != nil {
 		return err
 	}
 
@@ -372,46 +375,29 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
-	prBody, err := createPRBody(info)
-	if err != nil {
-		return fmt.Errorf("failed to create pull request body: %w", err)
-	}
-
-	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody)
+	pullRequestMetadata, err := prInfo.ghClient.CreatePullRequest(ctx, gitHubRepo, commitInfo.branch, cfg.Branch, prInfo.title, prInfo.body)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 
-	return addLabelsToPullRequest(ctx, info.ghClient, info.pullRequestLabels, pullRequestMetadata)
+	return addLabelsToPullRequest(ctx, prInfo, pullRequestMetadata)
 }
 
 // addLabelsToPullRequest adds a list of labels to a single pull request (specified by the id number).
 // Should only be called on a valid Github pull request.
 // Passing in `nil` for labels will no-op and an empty list for labels will clear all labels on the PR.
 // TODO: Consolidate the params to a potential PullRequestInfo struct.
-func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequestLabels []string, prMetadata *github.PullRequestMetadata) error {
+func addLabelsToPullRequest(ctx context.Context, prInfo *PullRequestInfo, prMetadata *github.PullRequestMetadata) error {
 	// Do not update if there aren't labels provided
-	if pullRequestLabels == nil {
+	if prInfo.labels == nil {
 		return nil
 	}
 	// GitHub API treats Issues and Pull Request the same
 	// https://docs.github.com/en/rest/issues/labels#add-labels-to-an-issue
-	if err := ghClient.AddLabelsToIssue(ctx, prMetadata.Repo, prMetadata.Number, pullRequestLabels); err != nil {
+	if err := prInfo.ghClient.AddLabelsToIssue(ctx, prMetadata.Repo, prMetadata.Number, prInfo.labels); err != nil {
 		return fmt.Errorf("failed to add labels to pull request: %w", err)
 	}
 	return nil
-}
-
-func createPRBody(info *commitInfo) (string, error) {
-	switch info.prType {
-	case generate:
-		return formatGenerationPRBody(info.sourceRepo, info.state, info.idToCommits, info.failedLibraries)
-	case release:
-		return formatReleaseNotes(info.repo, info.state)
-	default:
-		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
-	}
 }
 
 func copyFile(dst, src string) (err error) {
