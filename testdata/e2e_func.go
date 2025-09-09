@@ -38,6 +38,10 @@ func main() {
 		if err := doGenerate(os.Args[2:]); err != nil {
 			log.Fatal(err)
 		}
+	case "release-init":
+		if err := doReleaseInit(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
 	default:
 		log.Fatal("unrecognized command: ", os.Args[1])
 	}
@@ -79,6 +83,66 @@ func doGenerate(args []string) error {
 	}
 
 	return writeGenerateResponse(request)
+}
+
+func doReleaseInit(args []string) error {
+	request, err := parseReleaseInitRequest(args)
+	if err != nil {
+		return err
+	}
+	if err := validateLibrarianDir(request.librarianDir, "release-init-request.json"); err != nil {
+		// The request file is not created for release-init, so we don't validate it.
+		// return err
+	}
+
+	// The release-init command in the fake image doesn't need to do anything,
+	// as the e2e test only checks if the command is called correctly.
+	// We just need to create an empty response file.
+	return writeReleaseInitResponse(request)
+}
+
+type releaseInitOption struct {
+	librarianDir string
+	repoDir      string
+	outputDir    string
+}
+
+func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
+	option := &releaseInitOption{}
+	for _, arg := range args {
+		opt, _ := strings.CutPrefix(arg, "--")
+		strs := strings.Split(opt, "=")
+		switch strs[0] {
+		case "librarian":
+			option.librarianDir = strs[1]
+		case "repo":
+			option.repoDir = strs[1]
+		case "output":
+			option.outputDir = strs[1]
+		default:
+			return nil, errors.New("unrecognized option: " + opt)
+		}
+	}
+	return option, nil
+}
+
+func writeReleaseInitResponse(option *releaseInitOption) error {
+	jsonFilePath := filepath.Join(option.librarianDir, "release-init-response.json")
+	jsonFile, err := os.Create(jsonFilePath)
+	if err != nil {
+		return err
+	}
+	defer jsonFile.Close()
+
+	dataMap := map[string]string{}
+	data, err := json.MarshalIndent(dataMap, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = jsonFile.Write(data)
+	log.Print("write release init response to " + jsonFilePath)
+
+	return err
 }
 
 func parseConfigureRequest(args []string) (*configureOption, error) {

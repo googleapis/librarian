@@ -325,7 +325,14 @@ func TestReleaseInit(t *testing.T) {
 		if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 			t.Fatalf("prepare test error = %v", err)
 		}
-		runGit(t, repo, "tag", "go-google-cloud-pubsub-v1-v1.0.0")
+		runGit(t, repo, "tag", "go-google-cloud-pubsub-v1-1.0.0")
+		// Add a new commit to simulate a change.
+		newFilePath := filepath.Join(repo, "google-cloud-pubsub/v1", "new-file.txt")
+		if err := os.WriteFile(newFilePath, []byte("new file"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		runGit(t, repo, "add", newFilePath)
+		runGit(t, repo, "commit", "-m", "feat: add new feature")
 
 		cmd := exec.Command(
 			"go",
@@ -336,6 +343,11 @@ func TestReleaseInit(t *testing.T) {
 			fmt.Sprintf("--repo=%s", repo),
 			fmt.Sprintf("--library=%s", libraryID),
 		)
+		t.Logf("repo: %s", repo)
+		t.Logf("initialRepoStateDir: %s", initialRepoStateDir)
+		t.Logf("updatedState: %s", updatedState)
+		t.Logf("libraryID: %s", libraryID)
+		t.Logf("cmd: %s", cmd.String())
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 		err := cmd.Run()
