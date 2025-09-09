@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -93,6 +95,34 @@ func doReleaseInit(args []string) error {
 	if err := validateLibrarianDir(request.librarianDir, "release-init-request.json"); err != nil {
 		// The request file is not created for release-init, so we don't validate it.
 		// return err
+	}
+
+	// Read the state.yaml file.
+	stateFilePath := filepath.Join(request.repoDir, ".librarian", "state.yaml")
+	stateBytes, err := os.ReadFile(stateFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read state.yaml: %w", err)
+	}
+	var state librarianState
+	if err := yaml.Unmarshal(stateBytes, &state); err != nil {
+		return fmt.Errorf("failed to unmarshal state.yaml: %w", err)
+	}
+
+	// Update the version of the library.
+	for _, library := range state.Libraries {
+		if library.ID == request.libraryID {
+			library.Version = request.libraryVersion
+			break
+		}
+	}
+
+	// Write the updated state back to state.yaml.
+	updatedStateBytes, err := yaml.Marshal(state)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated state: %w", err)
+	}
+	if err := os.WriteFile(stateFilePath, updatedStateBytes, 0644); err != nil {
+		return fmt.Errorf("failed to write updated state.yaml: %w", err)
 	}
 
 	// The release-init command in the fake image doesn't need to do anything,

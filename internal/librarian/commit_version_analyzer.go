@@ -31,6 +31,7 @@ const defaultTagFormat = "{id}-{version}"
 // version specified in the state file.
 func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
 	tag := formatTag(library, "")
+	slog.Info("Getting commits since tag", "tag", tag)
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)

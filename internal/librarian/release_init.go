@@ -211,6 +211,10 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
+	slog.Info("Found commits", "count", len(commits))
+	for _, c := range commits {
+		slog.Info("commit", "message", c.Description)
+	}
 
 	library.Changes = coerceLibraryChanges(commits)
 	if len(library.Changes) == 0 {
@@ -222,6 +226,7 @@ func updateLibrary(repo gitrepo.Repository, library *config.LibraryState, librar
 	if err != nil {
 		return err
 	}
+	slog.Info("Next version", "version", nextVersion)
 
 	library.Version = nextVersion
 	library.ReleaseTriggered = true

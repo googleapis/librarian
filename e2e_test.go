@@ -333,6 +333,7 @@ func TestReleaseInit(t *testing.T) {
 		}
 		runGit(t, repo, "add", newFilePath)
 		runGit(t, repo, "commit", "-m", "feat: add new feature")
+		runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
 
 		cmd := exec.Command(
 			"go",
@@ -343,11 +344,6 @@ func TestReleaseInit(t *testing.T) {
 			fmt.Sprintf("--repo=%s", repo),
 			fmt.Sprintf("--library=%s", libraryID),
 		)
-		t.Logf("repo: %s", repo)
-		t.Logf("initialRepoStateDir: %s", initialRepoStateDir)
-		t.Logf("updatedState: %s", updatedState)
-		t.Logf("libraryID: %s", libraryID)
-		t.Logf("cmd: %s", cmd.String())
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 		err := cmd.Run()
