@@ -25,7 +25,7 @@ Usage:
 
 The commands are:
 
-	generate                   generates client library code for a single API
+	generate                   onboards and generates client library code
 	release                    manages releases of libraries.
 	version                    prints the version information
 */
