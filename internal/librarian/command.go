@@ -456,7 +456,7 @@ func copyFile(dst, src string) (err error) {
 
 // clean removes files and directories from source roots based on remove and preserve patterns.
 // Limit the possible files when cleaning to those in source roots (not rootDir) as regex patterns
-// for preserve and remove should *only* impact source root files.
+// for preserve and remove should ONLY impact source root files.
 //
 // It first determines the paths to remove by applying the removePatterns and then excluding any paths
 // that match the preservePatterns. It then separates the remaining paths into files and directories and
@@ -477,11 +477,10 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 			if os.IsNotExist(err) {
 				slog.Warn("Unable to find source root. It may be an initial generation request", "source root", sourceRoot)
 				continue
-			} else {
-				// For any other error (permissions, I/O, etc.)
-				slog.Error("Error trying to clean source root", "source root", sourceRoot, "error", err)
-				return err
 			}
+			// For any other error (permissions, I/O, etc.)
+			slog.Error("Error trying to clean source root", "source root", sourceRoot, "error", err)
+			return err
 		}
 		sourceRootPaths, err := findSubDirRelPaths(rootDir, sourceRootPath)
 		if err != nil {
@@ -551,7 +550,7 @@ func findSubDirRelPaths(dir, subDir string) ([]string, error) {
 	}
 	// '..' signifies that the subDir exists outside of dir
 	if strings.HasPrefix(dirRelPath, "..") {
-		return nil, fmt.Errorf("subDir %s is not nested within the dir %s", subDir, dir)
+		return nil, fmt.Errorf("subDir is not nested within the dir: %s, %s", subDir, dir)
 	}
 
 	paths := []string{}

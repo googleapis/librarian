@@ -712,6 +712,14 @@ func TestClean(t *testing.T) {
 			wantErr:        true,
 		},
 		{
+			name:             "source roots are empty",
+			files:            map[string]string{},
+			sourceRoots:      []string{"foo", "bar", "baz"},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{".*"},
+			wantRemaining:    []string{},
+		},
+		{
 			name: "multiple source roots, keep all",
 			files: map[string]string{
 				"foo/file1.txt": "",
@@ -734,7 +742,7 @@ func TestClean(t *testing.T) {
 			wantRemaining:  []string{},
 		},
 		{
-			name: "remove regex outside of source roots",
+			name: "remove regex references outside of source roots",
 			files: map[string]string{
 				"foo/file1.txt":     "",
 				"bar/file2.log":     "",
@@ -746,14 +754,15 @@ func TestClean(t *testing.T) {
 			wantRemaining:  []string{"foo", "foo/file1.txt", "bar", "bar/file2.log", "private", "private/file1.txt"},
 		},
 		{
-			name: "preserve regex outside of source roots",
+			name: "preserve regex references outside of source roots",
 			files: map[string]string{
 				"foo/file1.txt":           "",
 				"foo/file2.log":           "",
 				"private/file1.txt":       "",
 				"other_private/file2.txt": "",
 			},
-			sourceRoots:    []string{"foo"},
+			sourceRoots: []string{"foo"},
+			// Remove everything from source roots
 			removePatterns: []string{".*"},
 			// Regex outside of sourceRoots should effectively no-op
 			preservePatterns: []string{"private"},
@@ -821,25 +830,33 @@ func TestClean(t *testing.T) {
 	}
 }
 
-func TestFindAllDirRelPaths(t *testing.T) {
+func TestFindSubDirRelPaths(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name        string
-		setup       func(t *testing.T, tmpDir string)
-		wantPaths   []string
-		wantErr     bool
-		errorString string
+		name           string
+		getRootDirPath func(dir string) string
+		getSubDirPath  func(dir string) string
+		setup          func(t *testing.T, dir string)
+		wantPaths      []string
+		wantErr        bool
+		errorString    string
 	}{
 		{
 			name: "success",
-			setup: func(t *testing.T, tmpDir string) {
+			getRootDirPath: func(dir string) string {
+				return dir
+			},
+			getSubDirPath: func(dir string) string {
+				return dir
+			},
+			setup: func(t *testing.T, dir string) {
 				files := []string{
-					"file1.txt",
+					"dir1/file1.txt",
 					"dir1/file2.txt",
 					"dir1/dir2/file3.txt",
 				}
 				for _, file := range files {
-					path := filepath.Join(tmpDir, file)
+					path := filepath.Join(dir, file)
 					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 						t.Fatalf("os.MkdirAll() = %v", err)
 					}
@@ -852,12 +869,99 @@ func TestFindAllDirRelPaths(t *testing.T) {
 				"dir1",
 				"dir1/dir2",
 				"dir1/dir2/file3.txt",
+				"dir1/file1.txt",
 				"dir1/file2.txt",
-				"file1.txt",
 			},
 		},
 		{
+			name: "dir and subDir are the same",
+			getRootDirPath: func(dir string) string {
+				return dir
+			},
+			getSubDirPath: func(dir string) string {
+				return dir
+			},
+			setup: func(t *testing.T, dir string) {
+				files := []string{
+					"dir1/file1.txt",
+					"dir1/file2.txt",
+				}
+				for _, file := range files {
+					path := filepath.Join(dir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+			},
+			wantPaths: []string{
+				"dir1",
+				"dir1/file1.txt",
+				"dir1/file2.txt",
+			},
+		},
+		{
+			name: "dir and subDir's relationship cannot be established",
+			getRootDirPath: func(dir string) string {
+				return filepath.Join(dir, "dir1")
+			},
+			getSubDirPath: func(dir string) string {
+				return "./doesnotexist"
+			},
+			setup: func(t *testing.T, dir string) {
+				files := []string{
+					"dir1/file1.txt",
+					"dir1/file2.txt",
+				}
+				for _, file := range files {
+					path := filepath.Join(dir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+			},
+			wantErr:     true,
+			errorString: "cannot establish the relationship between",
+		},
+		{
+			name: "dir and subDir are not nested",
+			getRootDirPath: func(dir string) string {
+				return filepath.Join(dir, "dir/dir1")
+			},
+			getSubDirPath: func(dir string) string {
+				return filepath.Join(dir, "dir/dir2")
+			},
+			setup: func(t *testing.T, dir string) {
+				files := []string{
+					"dir/dir1/file1.txt",
+					"dir/dir2/file2.txt",
+				}
+				for _, file := range files {
+					path := filepath.Join(dir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+			},
+			wantErr:     true,
+			errorString: "subDir is not nested within the dir",
+		},
+		{
 			name: "unreadable directory",
+			getRootDirPath: func(dir string) string {
+				return dir
+			},
+			getSubDirPath: func(dir string) string {
+				return dir
+			},
 			setup: func(t *testing.T, tmpDir string) {
 				unreadableDir := filepath.Join(tmpDir, "unreadable")
 				if err := os.Mkdir(unreadableDir, 0755); err != nil {
@@ -883,10 +987,16 @@ func TestFindAllDirRelPaths(t *testing.T) {
 				test.setup(t, tmpDir)
 			}
 
-			paths, err := findSubDirRelPaths(tmpDir, tmpDir)
+			rootDirPath := test.getRootDirPath(tmpDir)
+			subDirPath := test.getSubDirPath(tmpDir)
+
+			paths, err := findSubDirRelPaths(rootDirPath, subDirPath)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.errorString) {
+					t.Errorf("runConfigureCommand() err = %v, want error containing %q", err, test.errorString)
 				}
 				return
 			}
@@ -899,7 +1009,7 @@ func TestFindAllDirRelPaths(t *testing.T) {
 			sort.Strings(test.wantPaths)
 
 			if diff := cmp.Diff(test.wantPaths, paths); diff != "" {
-				t.Errorf("findAllDirRelPaths() mismatch (-want +got):\n%s", diff)
+				t.Errorf("findSubDirRelPaths() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
