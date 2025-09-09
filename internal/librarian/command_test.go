@@ -712,7 +712,8 @@ func TestClean(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name:             "source roots are empty",
+			name: "directories of source roots are empty",
+			// There are no files in any of the source roots
 			files:            map[string]string{},
 			sourceRoots:      []string{"foo", "bar", "baz"},
 			removePatterns:   []string{".*"},
