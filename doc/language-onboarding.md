@@ -69,6 +69,10 @@ error and will halt the current workflow. If a container would like to send an e
 so by including a field in the various response files outlined below. Additionally any logs sent to stderr/stdout will
 be surfaced to the CLI.
 
+Additionally, Librarian specifies a user and group ID when executing the language-specific container. This means that
+the container **MUST** be able to run as an arbitrary user (the caller of Librarian's user). Any commands used will
+need to be executable by any user ID within the container.
+
 The following sections detail the contracts for each container command.
 
 ### `configure`
