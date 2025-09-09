@@ -994,7 +994,32 @@ func TestFilterPathsForRemoval(t *testing.T) {
 			files:            map[string]string{},
 			removePatterns:   []string{".*"},
 			preservePatterns: []string{},
-			wantToRemove:     []string{},
+			// Effectively an empty array, but cmp.Diff expect a nil slice instead of empty slice
+			wantToRemove: nil,
+		},
+		{
+			name: "no matching files to remove",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.txt": "",
+			},
+			removePatterns:   []string{"random_dir/.*"},
+			preservePatterns: []string{},
+			// Effectively an empty array, but cmp.Diff expect a nil slice instead of empty slice
+			wantToRemove: nil,
+		},
+		{
+			name:           "remove pattern has invalid regex",
+			files:          map[string]string{},
+			removePatterns: []string{"["},
+			wantErr:        true,
+		},
+		{
+			name:             "preserve pattern has invalid regex",
+			files:            map[string]string{},
+			preservePatterns: []string{"["},
+			wantErr:          true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

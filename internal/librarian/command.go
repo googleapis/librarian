@@ -479,7 +479,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 				continue
 			} else {
 				// For any other error (permissions, I/O, etc.)
-				slog.Error("Error trying to cleaaccessn source root", "source root", sourceRoot, "error", err)
+				slog.Error("Error trying to clean source root", "source root", sourceRoot, "error", err)
 				return err
 			}
 		}
@@ -506,7 +506,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 		return err
 	}
 
-	// prepend the repoDir to each path to ensure that os.Remove can find the file
+	// prepend the rootDir to each path to ensure that os.Remove can find the file
 	var paths []string
 	for _, path := range pathsToRemove {
 		paths = append(paths, filepath.Join(rootDir, path))
