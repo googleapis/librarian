@@ -24,9 +24,16 @@ Usage:
 	librarian <command> [arguments]
 
 The commands are:
+  generate                   onboards and generates client library code
+  release                    manages releases of libraries.
+  version                    prints the version information
 
+
+<<<<<<< HEAD
 	generate                   onboards and generates client library code
 	release                    manages releases of libraries.
 	version                    prints the version information
+=======
+>>>>>>> 9b2ba56 (chore: Fix godocs)
 */
 package librarian
