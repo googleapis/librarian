@@ -258,10 +258,9 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		}
 	}
 
-	preservePatterns := append(library.PreserveRegex,
-		globalPreservePatterns...)
+	preservePatterns := append(library.PreserveRegex, globalPreservePatterns...)
 
-	if err := clean(repoDir, removePatterns, preservePatterns); err != nil {
+	if err := clean(repoDir, library.SourceRoots, removePatterns, preservePatterns); err != nil {
 		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
 	}
 
@@ -455,21 +454,64 @@ func copyFile(dst, src string) (err error) {
 	return err
 }
 
-// clean removes files and directories from a root directory based on remove and preserve patterns.
+// clean removes files and directories from source roots based on remove and preserve patterns.
+// Limit the possible files when cleaning to those in source roots (not rootDir) as regex patterns
+// for preserve and remove should ONLY impact source root files.
 //
 // It first determines the paths to remove by applying the removePatterns and then excluding any paths
 // that match the preservePatterns. It then separates the remaining paths into files and directories and
 // removes them, ensuring that directories are removed last.
 //
 // This logic is ported from owlbot logic: https://github.com/googleapis/repo-automation-bots/blob/12dad68640960290910b660e4325630c9ace494b/packages/owl-bot/src/copy-code.ts#L1027
-func clean(rootDir string, removePatterns, preservePatterns []string) error {
-	slog.Info("cleaning directory", "path", rootDir)
-	finalPathsToRemove, err := deriveFinalPathsToRemove(rootDir, removePatterns, preservePatterns)
+func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []string) error {
+	slog.Info("cleaning directories", "source roots", sourceRoots)
+
+	// relPaths contains a list of files in source root's relative paths from rootDir. The
+	// regex patterns for preserve and remove apply to a source root's relative path
+	var relPaths []string
+	for _, sourceRoot := range sourceRoots {
+		sourceRootPath := filepath.Join(rootDir, sourceRoot)
+		// If a source root does not exist, log a warning and searching the other source roots.
+		// TODO: Consider not calling clean if it's a first time generation
+		if _, err := os.Lstat(sourceRootPath); err != nil {
+			if os.IsNotExist(err) {
+				slog.Warn("Unable to find source root. It may be an initial generation request", "source root", sourceRoot)
+				continue
+			}
+			// For any other error (permissions, I/O, etc.)
+			slog.Error("Error trying to clean source root", "source root", sourceRoot, "error", err)
+			return err
+		}
+		sourceRootPaths, err := findSubDirRelPaths(rootDir, sourceRootPath)
+		if err != nil {
+			// Log a warning and continue processing other source roots. There may be other files
+			// that can be cleaned up.
+			slog.Warn("unable to search for files in a source root", "source root", sourceRoot, "error", err)
+			continue
+		}
+		if len(sourceRootPaths) == 0 {
+			slog.Info("source root does not contain any files", "source root", sourceRoot)
+		}
+		relPaths = append(relPaths, sourceRootPaths...)
+	}
+
+	if len(relPaths) == 0 {
+		slog.Info("There are no files to be cleaned in source roots", "source roots", sourceRoots)
+		return nil
+	}
+
+	pathsToRemove, err := filterPathsForRemoval(relPaths, removePatterns, preservePatterns)
 	if err != nil {
 		return err
 	}
 
-	filesToRemove, dirsToRemove, err := separateFilesAndDirs(rootDir, finalPathsToRemove)
+	// prepend the rootDir to each path to ensure that os.Remove can find the file
+	var paths []string
+	for _, path := range pathsToRemove {
+		paths = append(paths, filepath.Join(rootDir, path))
+	}
+
+	filesToRemove, dirsToRemove, err := separateFilesAndDirs(paths)
 	if err != nil {
 		return err
 	}
@@ -477,16 +519,19 @@ func clean(rootDir string, removePatterns, preservePatterns []string) error {
 	// Remove files first, then directories.
 	for _, file := range filesToRemove {
 		slog.Info("removing file", "path", file)
-		if err := os.Remove(filepath.Join(rootDir, file)); err != nil {
+		if err := os.Remove(file); err != nil {
 			return err
 		}
 	}
 
-	sortDirsByDepth(dirsToRemove)
+	// Sort to remove the child directories first
+	slices.SortFunc(dirsToRemove, func(a, b string) int {
+		return strings.Count(b, string(filepath.Separator)) - strings.Count(a, string(filepath.Separator))
+	})
 
 	for _, dir := range dirsToRemove {
 		slog.Info("removing directory", "path", dir)
-		if err := os.Remove(filepath.Join(rootDir, dir)); err != nil {
+		if err := os.Remove(dir); err != nil {
 			// It's possible the directory is not empty due to preserved files.
 			slog.Warn("failed to remove directory, it may not be empty", "dir", dir, "err", err)
 		}
@@ -495,34 +540,38 @@ func clean(rootDir string, removePatterns, preservePatterns []string) error {
 	return nil
 }
 
-// sortDirsByDepth sorts directories by depth (descending) to remove children first.
-func sortDirsByDepth(dirs []string) {
-	slices.SortFunc(dirs, func(a, b string) int {
-		return strings.Count(b, string(filepath.Separator)) - strings.Count(a, string(filepath.Separator))
-	})
-}
+// findSubDirRelPaths walks the subDir tree returns a slice of all file and directory paths
+// relative to the dir. This is repeated for all nested directories. subDir must be under
+// or the same as dir.
+func findSubDirRelPaths(dir, subDir string) ([]string, error) {
+	dirRelPath, err := filepath.Rel(dir, subDir)
+	if err != nil {
+		return nil, fmt.Errorf("cannot establish the relationship between %s and %s: %w", dir, subDir, err)
+	}
+	// '..' signifies that the subDir exists outside of dir
+	if strings.HasPrefix(dirRelPath, "..") {
+		return nil, fmt.Errorf("subDir is not nested within the dir: %s, %s", subDir, dir)
+	}
 
-// allPaths walks the directory tree rooted at rootDir and returns a slice of all
-// file and directory paths, relative to rootDir.
-func allPaths(rootDir string) ([]string, error) {
-	var paths []string
-	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+	paths := []string{}
+	err = filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		relPath, err := filepath.Rel(rootDir, path)
-		if err != nil {
-			return err
+		// error is ignored as we have confirmed that subDir is child or equal to rootDir
+		relPath, _ := filepath.Rel(dir, path)
+		// Special case when subDir is equal to dir. Drop the "." as it references itself
+		if relPath != "." {
+			paths = append(paths, relPath)
 		}
-		paths = append(paths, relPath)
 		return nil
 	})
 	return paths, err
 }
 
-// filterPaths returns a new slice containing only the paths from the input slice
+// filterPathsByRegex returns a new slice containing only the paths from the input slice
 // that match at least one of the provided regular expressions.
-func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
+func filterPathsByRegex(paths []string, regexps []*regexp.Regexp) []string {
 	var filtered []string
 	for _, path := range paths {
 		for _, re := range regexps {
@@ -533,63 +582,6 @@ func filterPaths(paths []string, regexps []*regexp.Regexp) []string {
 		}
 	}
 	return filtered
-}
-
-// deriveFinalPathsToRemove determines the final set of paths to be removed. It
-// starts with all paths under rootDir, filters them based on removePatterns,
-// and then excludes any paths that match preservePatterns.
-func deriveFinalPathsToRemove(rootDir string, removePatterns, preservePatterns []string) ([]string, error) {
-	removeRegexps, err := compileRegexps(removePatterns)
-	if err != nil {
-		return nil, err
-	}
-	preserveRegexps, err := compileRegexps(preservePatterns)
-	if err != nil {
-		return nil, err
-	}
-
-	allPaths, err := allPaths(rootDir)
-	if err != nil {
-		return nil, err
-	}
-
-	pathsToRemove := filterPaths(allPaths, removeRegexps)
-	pathsToPreserve := filterPaths(pathsToRemove, preserveRegexps)
-
-	// delete pathsToPreserve from pathsToRemove.
-	pathsToDelete := make(map[string]bool)
-	for _, p := range pathsToPreserve {
-		pathsToDelete[p] = true
-	}
-	finalPathsToRemove := slices.DeleteFunc(pathsToRemove, func(path string) bool {
-		return pathsToDelete[path]
-	})
-	return finalPathsToRemove, nil
-}
-
-// separateFilesAndDirs takes a list of paths and categorizes them into files
-// and directories. It uses os.Lstat to avoid following symlinks, treating them
-// as files. Paths that do not exist are silently ignored.
-func separateFilesAndDirs(rootDir string, paths []string) ([]string, []string, error) {
-	var files, dirs []string
-	for _, path := range paths {
-		info, err := os.Lstat(filepath.Join(rootDir, path))
-		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				// The file or directory may have already been removed.
-				continue
-			}
-			// For any other error (permissions, I/O, etc.)
-			return nil, nil, fmt.Errorf("failed to stat path %q: %w", path, err)
-
-		}
-		if info.IsDir() {
-			dirs = append(dirs, path)
-		} else {
-			files = append(files, path)
-		}
-	}
-	return files, dirs, nil
 }
 
 // compileRegexps takes a slice of string patterns and compiles each one into a
@@ -605,4 +597,58 @@ func compileRegexps(patterns []string) ([]*regexp.Regexp, error) {
 		regexps = append(regexps, re)
 	}
 	return regexps, nil
+}
+
+// filterPathsForRemoval determines the list of paths to be removed. The logic runs as follows:
+// 1. paths that match any removePatterns are marked for removal
+// 2. paths that match the preservePatterns are kept (even if they match removePatterns)
+// Paths that match both are kept as preserve has overrides.
+func filterPathsForRemoval(paths, removePatterns, preservePatterns []string) ([]string, error) {
+	removeRegexps, err := compileRegexps(removePatterns)
+	if err != nil {
+		return nil, err
+	}
+	preserveRegexps, err := compileRegexps(preservePatterns)
+	if err != nil {
+		return nil, err
+	}
+
+	pathsToRemove := filterPathsByRegex(paths, removeRegexps)
+	pathsToPreserve := filterPathsByRegex(pathsToRemove, preserveRegexps)
+
+	// map for a quick lookup for any preserve paths
+	preserveMap := make(map[string]bool)
+	for _, p := range pathsToPreserve {
+		preserveMap[p] = true
+	}
+	finalPathsToRemove := slices.DeleteFunc(pathsToRemove, func(path string) bool {
+		return preserveMap[path]
+	})
+	return finalPathsToRemove, nil
+}
+
+// separateFilesAndDirs takes a list of paths and categorizes them into files
+// and directories. It uses os.Lstat to avoid following symlinks, treating them
+// as files. Paths that do not exist are silently ignored.
+func separateFilesAndDirs(paths []string) ([]string, []string, error) {
+	var filePaths, dirPaths []string
+	for _, path := range paths {
+		info, err := os.Lstat(path)
+		if err != nil {
+			// The file or directory may have already been removed.
+			if errors.Is(err, os.ErrNotExist) {
+				slog.Warn("unable to find path", "path", path)
+				continue
+			}
+			// For any other error (permissions, I/O, etc.)
+			return nil, nil, fmt.Errorf("failed to stat path %q: %w", path, err)
+
+		}
+		if info.IsDir() {
+			dirPaths = append(dirPaths, path)
+		} else {
+			filePaths = append(filePaths, path)
+		}
+	}
+	return filePaths, dirPaths, nil
 }

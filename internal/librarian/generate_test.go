@@ -533,7 +533,6 @@ func TestGenerateScenarios(t *testing.T) {
 		name               string
 		api                string
 		library            string
-		repo               gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
 		ghClient           GitHubClient
@@ -548,7 +547,6 @@ func TestGenerateScenarios(t *testing.T) {
 			name:    "generate single library including initial configuration",
 			api:     "some/api",
 			library: "some-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 			},
@@ -567,7 +565,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name:    "generate single existing library by library id",
 			library: "some-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -592,7 +589,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "generate single existing library by api",
 			api:  "some/api",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -618,7 +614,6 @@ func TestGenerateScenarios(t *testing.T) {
 			name:    "generate single existing library with library id and api",
 			api:     "some/api",
 			library: "some-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -643,7 +638,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name:    "generate single existing library with invalid library id should fail",
 			library: "some-not-configured-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -663,7 +657,6 @@ func TestGenerateScenarios(t *testing.T) {
 			name:    "generate single existing library with error message in response",
 			api:     "some/api",
 			library: "some-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -684,7 +677,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 		{
 			name: "generate all libraries configured in state",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -715,7 +707,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "generate single library, corrupted api",
 			api:  "corrupted/api/path",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -734,7 +725,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "symlink in output",
 			api:  "some/api",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -753,7 +743,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "generate error",
 			api:  "some/api",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -772,7 +761,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "build error",
 			api:  "some/api",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -796,7 +784,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 		{
 			name: "generate all, partial failure does not halt execution",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -828,7 +815,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 		{
 			name: "generate all, all fail should report error",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -854,7 +840,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 		{
 			name: "generate skips libraries with no APIs",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -879,9 +864,11 @@ func TestGenerateScenarios(t *testing.T) {
 				Build:     test.build,
 			}
 
+			repo := newTestGitRepoWithState(t, test.state, true)
+
 			r := &generateRunner{
 				cfg:             cfg,
-				repo:            test.repo,
+				repo:            repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
 				containerClient: test.container,

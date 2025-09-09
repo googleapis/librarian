@@ -306,13 +306,14 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 			errContains: "not found during clean and copy",
 		},
 		{
-			name:      "clean fails",
+			name:      "clean fails due to invalid regex",
 			libraryID: "some-library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
 						ID:          "some-library",
 						RemoveRegex: []string{"["}, // Invalid regex
+						SourceRoots: []string{"src/a"},
 					},
 				},
 			},
@@ -336,8 +337,14 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 			repo: newTestGitRepo(t),
 			setup: func(t *testing.T, repoDir, outputDir string) {
 				// Create a symlink in the output directory
-				if err := os.Symlink("target", filepath.Join(outputDir, "symlink")); err != nil {
+				if err := os.MkdirAll(filepath.Join(outputDir, "target"), 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.Symlink(filepath.Join(outputDir, "target"), filepath.Join(repoDir, "symlink")); err != nil {
 					t.Fatalf("os.Symlink() = %v", err)
+				}
+				if _, err := os.Create(filepath.Join(repoDir, "symlink", "example.txt")); err != nil {
+					t.Fatalf("os.Create() = %v", err)
 				}
 			},
 		},
@@ -537,53 +544,112 @@ func TestClean(t *testing.T) {
 		files            map[string]string
 		setup            func(t *testing.T, tmpDir string)
 		symlinks         map[string]string
+		sourceRoots      []string
 		removePatterns   []string
 		preservePatterns []string
 		wantRemaining    []string
 		wantErr          bool
 	}{
 		{
-			name: "remove all",
+			name: "remove everything",
 			files: map[string]string{
-				"file1.txt": "",
-				"file2.txt": "",
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
 			},
-			removePatterns: []string{".*\\.txt"},
-			wantRemaining:  []string{"."},
+			sourceRoots:    []string{"foo"},
+			removePatterns: []string{".*"},
+			wantRemaining:  []string{},
+		},
+		{
+			name: "remove all files in a folder",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
+			},
+			sourceRoots:    []string{"foo"},
+			removePatterns: []string{"foo/.*"},
+			wantRemaining:  []string{"foo"},
+		},
+		{
+			name: "remove folder",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
+			},
+			sourceRoots:    []string{"foo"},
+			removePatterns: []string{"foo"},
+			wantRemaining:  []string{},
 		},
 		{
 			name: "preserve all",
 			files: map[string]string{
-				"file1.txt": "",
-				"file2.txt": "",
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
 			},
+			sourceRoots:      []string{"foo"},
 			removePatterns:   []string{".*"},
 			preservePatterns: []string{".*"},
-			wantRemaining:    []string{".", "file1.txt", "file2.txt"},
+			wantRemaining:    []string{"foo", "foo/file1.txt", "foo/file2.txt"},
 		},
 		{
-			name: "remove some",
+			name: "preserve all files in a folder",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
+			},
+			sourceRoots:      []string{"foo"},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{"foo/.*"},
+			wantRemaining:    []string{"foo", "foo/file1.txt", "foo/file2.txt"},
+		},
+		{
+			name: "preserve folder",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
+			},
+			sourceRoots:      []string{"foo"},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{"foo"},
+			wantRemaining:    []string{"foo", "foo/file1.txt", "foo/file2.txt"},
+		},
+		{
+			name: "remove specific folder",
 			files: map[string]string{
 				"foo/file1.txt": "",
 				"foo/file2.txt": "",
 				"bar/file3.txt": "",
 			},
-			removePatterns: []string{"foo/.*"},
-			wantRemaining:  []string{".", "bar", "bar/file3.txt", "foo"},
+			sourceRoots:    []string{"foo", "bar"},
+			removePatterns: []string{"foo"},
+			wantRemaining:  []string{"bar", "bar/file3.txt"},
+		},
+		{
+			name: "no source roots configured",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"foo/file2.txt": "",
+				"foo/file3.txt": "",
+			},
+			sourceRoots:    []string{},
+			removePatterns: []string{"foo"},
+			wantRemaining:  []string{"foo", "foo/file1.txt", "foo/file2.txt", "foo/file3.txt"},
 		},
 		{
 			name: "invalid remove pattern",
 			files: map[string]string{
-				"file1.txt": "",
+				"foo/file1.txt": "",
 			},
+			sourceRoots:    []string{"foo/"},
 			removePatterns: []string{"["}, // Invalid regex
 			wantErr:        true,
 		},
 		{
 			name: "invalid preserve pattern",
 			files: map[string]string{
-				"file1.txt": "",
+				"foo/file1.txt": "",
 			},
+			sourceRoots:      []string{"foo"},
 			removePatterns:   []string{".*"},
 			preservePatterns: []string{"["}, // Invalid regex
 			wantErr:          true,
@@ -591,44 +657,38 @@ func TestClean(t *testing.T) {
 		{
 			name: "remove symlink",
 			files: map[string]string{
-				"file1.txt": "content",
+				"foo/file1.txt": "content",
 			},
 			symlinks: map[string]string{
-				"symlink_to_file1": "file1.txt",
+				"foo/symlink_to_file1": "foo/file1.txt",
 			},
-			removePatterns: []string{"symlink_to_file1"},
-			wantRemaining:  []string{".", "file1.txt"},
+			sourceRoots:    []string{"foo"},
+			removePatterns: []string{"foo/symlink_to_file1"},
+			wantRemaining:  []string{"foo", "foo/file1.txt"},
 		},
 		{
 			name: "remove file symlinked to",
 			files: map[string]string{
-				"file1.txt": "content",
+				"foo/file1.txt": "content",
 			},
 			symlinks: map[string]string{
-				"symlink_to_file1": "file1.txt",
+				"foo/symlink_to_file1": "foo/file1.txt",
 			},
-			removePatterns: []string{"file1.txt"},
+			sourceRoots:    []string{"foo"},
+			removePatterns: []string{".*/file1.txt"},
 			// The symlink should remain, even though it's now broken, because
 			// it was not targeted for removal.
-			wantRemaining: []string{".", "symlink_to_file1"},
-		},
-		{
-			name: "remove directory",
-			files: map[string]string{
-				"dir/file1.txt": "",
-				"dir/file2.txt": "",
-			},
-			removePatterns: []string{"dir"},
-			wantRemaining:  []string{"."},
+			wantRemaining: []string{"foo", "foo/symlink_to_file1"},
 		},
 		{
 			name: "preserve file not matching remove pattern",
 			files: map[string]string{
-				"file1.txt": "",
-				"file2.log": "",
+				"foo/file1.txt": "",
+				"foo/file2.log": "",
 			},
+			sourceRoots:    []string{"foo"},
 			removePatterns: []string{".*\\.txt"},
-			wantRemaining:  []string{".", "file2.log"},
+			wantRemaining:  []string{"foo", "foo/file2.log"},
 		},
 		{
 			name: "remove file fails on permission error",
@@ -646,13 +706,85 @@ func TestClean(t *testing.T) {
 					_ = os.Chmod(readOnlyDir, 0755)
 				})
 			},
+			sourceRoots:    []string{"readonlydir"},
 			removePatterns: []string{"readonlydir/file.txt"},
-			wantRemaining:  []string{".", "readonlydir", "readonlydir/file.txt"},
+			wantRemaining:  []string{"readonlydir", "readonlydir/file.txt"},
 			wantErr:        true,
+		},
+		{
+			name: "directories of source roots are empty",
+			// There are no files in any of the source roots
+			files:            map[string]string{},
+			sourceRoots:      []string{"foo", "bar", "baz"},
+			removePatterns:   []string{".*"},
+			preservePatterns: []string{".*"},
+			wantRemaining:    []string{},
+		},
+		{
+			name: "multiple source roots, keep all",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"bar/file2.log": "",
+				"baz/file3.md":  "",
+			},
+			sourceRoots:      []string{"foo", "bar", "baz"},
+			preservePatterns: []string{".*"},
+			wantRemaining:    []string{"foo", "foo/file1.txt", "bar", "bar/file2.log", "baz", "baz/file3.md"},
+		},
+		{
+			name: "multiple source roots, remove all",
+			files: map[string]string{
+				"foo/file1.txt": "",
+				"bar/file2.log": "",
+				"baz/file3.md":  "",
+			},
+			sourceRoots:    []string{"foo", "bar", "baz"},
+			removePatterns: []string{".*"},
+			wantRemaining:  []string{},
+		},
+		{
+			name: "remove regex references outside of source roots",
+			files: map[string]string{
+				"foo/file1.txt":     "",
+				"bar/file2.log":     "",
+				"private/file1.txt": "",
+			},
+			sourceRoots: []string{"foo", "bar"},
+			// Regex outside of sourceRoots should effectively no-op
+			removePatterns: []string{"private"},
+			wantRemaining:  []string{"foo", "foo/file1.txt", "bar", "bar/file2.log", "private", "private/file1.txt"},
+		},
+		{
+			name: "preserve regex references outside of source roots",
+			files: map[string]string{
+				"foo/file1.txt":           "",
+				"foo/file2.log":           "",
+				"private/file1.txt":       "",
+				"other_private/file2.txt": "",
+			},
+			sourceRoots: []string{"foo"},
+			// Remove everything from source roots
+			removePatterns: []string{".*"},
+			// Regex outside of sourceRoots should effectively no-op
+			preservePatterns: []string{"private"},
+			wantRemaining:    []string{"private", "private/file1.txt", "other_private", "other_private/file2.txt"},
+		},
+		{
+			name: "preserve and remove regex outside of source roots",
+			files: map[string]string{
+				"foo/file1.txt":           "",
+				"foo/file2.log":           "",
+				"private/file1.txt":       "",
+				"other_private/file2.txt": "",
+			},
+			sourceRoots: []string{"foo"},
+			// Regex outside of sourceRoots should effectively no-op
+			removePatterns:   []string{"private"},
+			preservePatterns: []string{"private"},
+			wantRemaining:    []string{"foo", "foo/file1.txt", "foo/file2.log", "private", "private/file1.txt", "other_private", "other_private/file2.txt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			tmpDir := t.TempDir()
 			for path, content := range test.files {
 				fullPath := filepath.Join(tmpDir, path)
@@ -672,7 +804,7 @@ func TestClean(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, tmpDir)
 			}
-			err := clean(tmpDir, test.removePatterns, test.preservePatterns)
+			err := clean(tmpDir, test.sourceRoots, test.removePatterns, test.preservePatterns)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -683,9 +815,11 @@ func TestClean(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			remainingPaths, err := allPaths(tmpDir)
+			remainingPaths := []string{}
+			paths, _ := findSubDirRelPaths(tmpDir, tmpDir)
+			remainingPaths = append(remainingPaths, paths...)
 			if err != nil {
-				t.Fatalf("allPaths() = %v", err)
+				t.Fatalf("findSubDirRelPaths() = %v", err)
 			}
 			sort.Strings(test.wantRemaining)
 			sort.Strings(remainingPaths)
@@ -697,68 +831,33 @@ func TestClean(t *testing.T) {
 	}
 }
 
-func TestSortDirsByDepth(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		name string
-		dirs []string
-		want []string
-	}{
-		{
-			name: "simple case",
-			dirs: []string{
-				"a/b",
-				"short-dir",
-				"a/b/c",
-				"a",
-			},
-			want: []string{
-				"a/b/c",
-				"a/b",
-				"short-dir",
-				"a",
-			},
-		},
-		{
-			name: "empty",
-			dirs: []string{},
-			want: []string{},
-		},
-		{
-			name: "single dir",
-			dirs: []string{"a"},
-			want: []string{"a"},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			sortDirsByDepth(tc.dirs)
-			if diff := cmp.Diff(tc.want, tc.dirs); diff != "" {
-				t.Errorf("sortDirsByDepth() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestAllPaths(t *testing.T) {
+func TestFindSubDirRelPaths(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name        string
-		setup       func(t *testing.T, tmpDir string)
-		wantPaths   []string
-		wantErr     bool
-		errorString string
+		name           string
+		getRootDirPath func(dir string) string
+		getSubDirPath  func(dir string) string
+		setup          func(t *testing.T, dir string)
+		wantPaths      []string
+		wantErr        bool
+		errorString    string
 	}{
 		{
 			name: "success",
-			setup: func(t *testing.T, tmpDir string) {
+			getRootDirPath: func(dir string) string {
+				return dir
+			},
+			getSubDirPath: func(dir string) string {
+				return dir
+			},
+			setup: func(t *testing.T, dir string) {
 				files := []string{
-					"file1.txt",
+					"dir1/file1.txt",
 					"dir1/file2.txt",
 					"dir1/dir2/file3.txt",
 				}
 				for _, file := range files {
-					path := filepath.Join(tmpDir, file)
+					path := filepath.Join(dir, file)
 					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 						t.Fatalf("os.MkdirAll() = %v", err)
 					}
@@ -768,16 +867,102 @@ func TestAllPaths(t *testing.T) {
 				}
 			},
 			wantPaths: []string{
-				".",
 				"dir1",
 				"dir1/dir2",
 				"dir1/dir2/file3.txt",
+				"dir1/file1.txt",
 				"dir1/file2.txt",
-				"file1.txt",
 			},
 		},
 		{
+			name: "dir and subDir are the same",
+			getRootDirPath: func(dir string) string {
+				return dir
+			},
+			getSubDirPath: func(dir string) string {
+				return dir
+			},
+			setup: func(t *testing.T, dir string) {
+				files := []string{
+					"dir1/file1.txt",
+					"dir1/file2.txt",
+				}
+				for _, file := range files {
+					path := filepath.Join(dir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+			},
+			wantPaths: []string{
+				"dir1",
+				"dir1/file1.txt",
+				"dir1/file2.txt",
+			},
+		},
+		{
+			name: "dir and subDir's relationship cannot be established",
+			getRootDirPath: func(dir string) string {
+				return filepath.Join(dir, "dir1")
+			},
+			getSubDirPath: func(dir string) string {
+				return "./doesnotexist"
+			},
+			setup: func(t *testing.T, dir string) {
+				files := []string{
+					"dir1/file1.txt",
+					"dir1/file2.txt",
+				}
+				for _, file := range files {
+					path := filepath.Join(dir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+			},
+			wantErr:     true,
+			errorString: "cannot establish the relationship between",
+		},
+		{
+			name: "dir and subDir are not nested",
+			getRootDirPath: func(dir string) string {
+				return filepath.Join(dir, "dir/dir1")
+			},
+			getSubDirPath: func(dir string) string {
+				return filepath.Join(dir, "dir/dir2")
+			},
+			setup: func(t *testing.T, dir string) {
+				files := []string{
+					"dir/dir1/file1.txt",
+					"dir/dir2/file2.txt",
+				}
+				for _, file := range files {
+					path := filepath.Join(dir, file)
+					if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+						t.Fatalf("os.MkdirAll() = %v", err)
+					}
+					if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+						t.Fatalf("os.WriteFile() = %v", err)
+					}
+				}
+			},
+			wantErr:     true,
+			errorString: "subDir is not nested within the dir",
+		},
+		{
 			name: "unreadable directory",
+			getRootDirPath: func(dir string) string {
+				return dir
+			},
+			getSubDirPath: func(dir string) string {
+				return dir
+			},
 			setup: func(t *testing.T, tmpDir string) {
 				unreadableDir := filepath.Join(tmpDir, "unreadable")
 				if err := os.Mkdir(unreadableDir, 0755); err != nil {
@@ -803,10 +988,16 @@ func TestAllPaths(t *testing.T) {
 				test.setup(t, tmpDir)
 			}
 
-			paths, err := allPaths(tmpDir)
+			rootDirPath := test.getRootDirPath(tmpDir)
+			subDirPath := test.getSubDirPath(tmpDir)
+
+			paths, err := findSubDirRelPaths(rootDirPath, subDirPath)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.errorString) {
+					t.Errorf("runConfigureCommand() err = %v, want error containing %q", err, test.errorString)
 				}
 				return
 			}
@@ -819,13 +1010,13 @@ func TestAllPaths(t *testing.T) {
 			sort.Strings(test.wantPaths)
 
 			if diff := cmp.Diff(test.wantPaths, paths); diff != "" {
-				t.Errorf("allPaths() mismatch (-want +got):\n%s", diff)
+				t.Errorf("findSubDirRelPaths() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestFilterPaths(t *testing.T) {
+func TestFilterPathsByRegex(t *testing.T) {
 	t.Parallel()
 	paths := []string{
 		"foo/file1.txt",
@@ -838,7 +1029,7 @@ func TestFilterPaths(t *testing.T) {
 		regexp.MustCompile(`^bar/.*`),
 	}
 
-	filtered := filterPaths(paths, regexps)
+	filtered := filterPathsByRegex(paths, regexps)
 
 	wantFiltered := []string{
 		"foo/file1.txt",
@@ -850,11 +1041,11 @@ func TestFilterPaths(t *testing.T) {
 	sort.Strings(wantFiltered)
 
 	if diff := cmp.Diff(wantFiltered, filtered); diff != "" {
-		t.Errorf("filterPaths() mismatch (-want +got):%s", diff)
+		t.Errorf("filterPathsByRegex() mismatch (-want +got):%s", diff)
 	}
 }
 
-func TestDeriveFinalPathsToRemove(t *testing.T) {
+func TestFilterPathsForRemoval(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name             string
@@ -884,7 +1075,7 @@ func TestDeriveFinalPathsToRemove(t *testing.T) {
 			},
 			removePatterns:   []string{".*"},
 			preservePatterns: []string{`.*\.log`},
-			wantToRemove:     []string{".", "dir1", "dir2", "file1.txt", "dir1/file2.txt"},
+			wantToRemove:     []string{"dir1", "dir2", "file1.txt", "dir1/file2.txt"},
 		},
 		{
 			name: "remove files in dir1, preserve nothing",
@@ -907,14 +1098,39 @@ func TestDeriveFinalPathsToRemove(t *testing.T) {
 			},
 			removePatterns:   []string{".*"},
 			preservePatterns: []string{`dir2/.*`},
-			wantToRemove:     []string{".", "dir1", "dir2", "file1.txt", "dir1/file2.txt"},
+			wantToRemove:     []string{"dir1", "dir2", "file1.txt", "dir1/file2.txt"},
 		},
 		{
 			name:             "no files",
 			files:            map[string]string{},
 			removePatterns:   []string{".*"},
 			preservePatterns: []string{},
-			wantToRemove:     []string{"."},
+			// Effectively an empty array, but cmp.Diff expect a nil slice instead of empty slice
+			wantToRemove: nil,
+		},
+		{
+			name: "no matching files to remove",
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file2.txt": "",
+				"dir2/file3.txt": "",
+			},
+			removePatterns:   []string{"random_dir/.*"},
+			preservePatterns: []string{},
+			// Effectively an empty array, but cmp.Diff expect a nil slice instead of empty slice
+			wantToRemove: nil,
+		},
+		{
+			name:           "remove pattern has invalid regex",
+			files:          map[string]string{},
+			removePatterns: []string{"["},
+			wantErr:        true,
+		},
+		{
+			name:             "preserve pattern has invalid regex",
+			files:            map[string]string{},
+			preservePatterns: []string{"["},
+			wantErr:          true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -929,7 +1145,8 @@ func TestDeriveFinalPathsToRemove(t *testing.T) {
 				}
 			}
 
-			gotToRemove, err := deriveFinalPathsToRemove(tmpDir, test.removePatterns, test.preservePatterns)
+			sourceRootPaths, _ := findSubDirRelPaths(tmpDir, tmpDir)
+			gotToRemove, err := filterPathsForRemoval(sourceRootPaths, test.removePatterns, test.preservePatterns)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -944,7 +1161,7 @@ func TestDeriveFinalPathsToRemove(t *testing.T) {
 			sort.Strings(test.wantToRemove)
 
 			if diff := cmp.Diff(test.wantToRemove, gotToRemove); diff != "" {
-				t.Errorf("deriveFinalPathsToRemove() toRemove mismatch in %s (-want +got):\n%s", test.name, diff)
+				t.Errorf("filterPathsForRemoval() toRemove mismatch in %s (-want +got):\n%s", test.name, diff)
 			}
 		})
 	}
@@ -996,7 +1213,11 @@ func TestSeparateFilesAndDirs(t *testing.T) {
 				test.setup(t, tmpDir)
 			}
 
-			gotFiles, gotDirs, err := separateFilesAndDirs(tmpDir, test.paths)
+			var paths []string
+			for _, path := range test.paths {
+				paths = append(paths, filepath.Join(tmpDir, path))
+			}
+			gotFiles, gotDirs, err := separateFilesAndDirs(paths)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -1007,15 +1228,27 @@ func TestSeparateFilesAndDirs(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			sort.Strings(gotFiles)
-			sort.Strings(gotDirs)
+			var gotFilesRelPath []string
+			for _, gotFile := range gotFiles {
+				relPath, _ := filepath.Rel(tmpDir, gotFile)
+				gotFilesRelPath = append(gotFilesRelPath, relPath)
+			}
+
+			var gotDirsRelPath []string
+			for _, gotDir := range gotDirs {
+				relPath, _ := filepath.Rel(tmpDir, gotDir)
+				gotDirsRelPath = append(gotDirsRelPath, relPath)
+			}
+
+			sort.Strings(gotFilesRelPath)
+			sort.Strings(gotDirsRelPath)
 			sort.Strings(test.wantFiles)
 			sort.Strings(test.wantDirs)
 
-			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+			if diff := cmp.Diff(test.wantFiles, gotFilesRelPath); diff != "" {
 				t.Errorf("separateFilesAndDirs() files mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(test.wantDirs, gotDirs); diff != "" {
+			if diff := cmp.Diff(test.wantDirs, gotDirsRelPath); diff != "" {
 				t.Errorf("separateFilesAndDirs() dirs mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -1457,9 +1690,9 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 
 func TestCopyLibraryFiles(t *testing.T) {
 	t.Parallel()
-	setup := func(src string, files []string) {
+	setup := func(foo string, files []string) {
 		for _, relPath := range files {
-			fullPath := filepath.Join(src, relPath)
+			fullPath := filepath.Join(foo, relPath)
 			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 				t.Error(err)
 			}
@@ -1507,7 +1740,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		{
 			name:      "copy library files",
 			repoDir:   filepath.Join(t.TempDir(), "dst"),
-			outputDir: filepath.Join(t.TempDir(), "src"),
+			outputDir: filepath.Join(t.TempDir(), "foo"),
 			libraryID: "example-library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -1581,7 +1814,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		{
 			name:      "library not found",
 			repoDir:   filepath.Join(t.TempDir(), "dst"),
-			outputDir: filepath.Join(t.TempDir(), "src"),
+			outputDir: filepath.Join(t.TempDir(), "foo"),
 			libraryID: "non-existent-library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -1596,7 +1829,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		{
 			repoDir:   filepath.Join(t.TempDir(), "dst"),
 			name:      "one source root empty",
-			outputDir: filepath.Join(t.TempDir(), "src"),
+			outputDir: filepath.Join(t.TempDir(), "foo"),
 			libraryID: "example-library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -1670,40 +1903,40 @@ func TestCopyFile(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		dst         string
-		src         string
-		wantSrcFile bool
+		foo         string
+		wantfooFile bool
 		wantErr     bool
 		wantErrMsg  string
 	}{
 		{
-			name:       "invalid src",
-			src:        "/invalid-path/example.txt",
+			name:       "invalid foo",
+			foo:        "/invalid-path/example.txt",
 			wantErr:    true,
 			wantErrMsg: "failed to lstat file",
 		},
 		{
 			name:        "invalid dst path",
-			src:         filepath.Join(os.TempDir(), "example.txt"),
+			foo:         filepath.Join(os.TempDir(), "example.txt"),
 			dst:         "/invalid-path/example.txt",
-			wantSrcFile: true,
+			wantfooFile: true,
 			wantErr:     true,
 			wantErrMsg:  "failed to make directory",
 		},
 		{
 			name:        "invalid dst file",
-			src:         filepath.Join(os.TempDir(), "example.txt"),
+			foo:         filepath.Join(os.TempDir(), "example.txt"),
 			dst:         filepath.Join(os.TempDir(), "example\x00.txt"),
-			wantSrcFile: true,
+			wantfooFile: true,
 			wantErr:     true,
 			wantErrMsg:  "failed to create file",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.wantSrcFile {
-				if err := os.MkdirAll(filepath.Dir(test.src), 0755); err != nil {
+			if test.wantfooFile {
+				if err := os.MkdirAll(filepath.Dir(test.foo), 0755); err != nil {
 					t.Error(err)
 				}
-				sourceFile, err := os.Create(test.src)
+				sourceFile, err := os.Create(test.foo)
 				if err != nil {
 					t.Error(err)
 				}
@@ -1711,7 +1944,7 @@ func TestCopyFile(t *testing.T) {
 					t.Error(err)
 				}
 			}
-			err := copyFile(test.dst, test.src)
+			err := copyFile(test.dst, test.foo)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("copyFile() shoud fail")

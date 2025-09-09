@@ -87,7 +87,7 @@ func TestGenerate_DefaultBehavior(t *testing.T) {
 	ctx := context.Background()
 
 	// 1. Setup a mock repository with a state file
-	repo := newTestGitRepoWithState(t, true)
+	repo := newTestGitRepo(t)
 	repoDir := repo.GetDir()
 
 	// Setup a dummy API Source repo to prevent cloning googleapis/googleapis
@@ -193,11 +193,27 @@ func TestIsURL(t *testing.T) {
 // newTestGitRepo creates a new git repository in a temporary directory.
 func newTestGitRepo(t *testing.T) gitrepo.Repository {
 	t.Helper()
-	return newTestGitRepoWithState(t, true)
+	defaultState := &config.LibrarianState{
+		Image: "some/image:v1.2.3",
+		Libraries: []*config.LibraryState{
+			{
+				ID: "some-library",
+				APIs: []*config.API{
+					{
+						Path:          "some/api",
+						ServiceConfig: "api_config.yaml",
+						Status:        config.StatusExisting,
+					},
+				},
+				SourceRoots: []string{"src/a"},
+			},
+		},
+	}
+	return newTestGitRepoWithState(t, defaultState, true)
 }
 
 // newTestGitRepo creates a new git repository in a temporary directory.
-func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
+func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState, writeState bool) gitrepo.Repository {
 	t.Helper()
 	dir := t.TempDir()
 	remoteURL := "https://github.com/googleapis/librarian.git"
@@ -214,21 +230,18 @@ func newTestGitRepoWithState(t *testing.T, writeState bool) gitrepo.Repository {
 			t.Fatalf("os.MkdirAll: %v", err)
 		}
 
-		state := &config.LibrarianState{
-			Image: "some/image:v1.2.3",
-			Libraries: []*config.LibraryState{
-				{
-					ID: "some-library",
-					APIs: []*config.API{
-						{
-							Path:          "some/api",
-							ServiceConfig: "api_config.yaml",
-							Status:        config.StatusExisting,
-						},
-					},
-					SourceRoots: []string{"src/a"},
-				},
-			},
+		// Setup each source root directory to be non-empty (one `random_file.txt`)
+		// that can be used to test preserve or remove regex patterns
+		for _, library := range state.Libraries {
+			for _, sourceRoot := range library.SourceRoots {
+				fullPath := filepath.Join(dir, sourceRoot, "random_file.txt")
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := os.Create(fullPath); err != nil {
+					t.Fatal(err)
+				}
+			}
 		}
 
 		bytes, err := yaml.Marshal(state)
