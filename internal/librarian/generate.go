@@ -193,6 +193,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		cfg:             r.cfg,
 		state:           r.state,
 		repo:            r.repo,
+		sourceRepo:      r.sourceRepo,
 		ghClient:        r.ghClient,
 		idToCommits:     idToCommits,
 		failedLibraries: failedLibraries,

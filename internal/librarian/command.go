@@ -55,6 +55,7 @@ type commitInfo struct {
 	cfg               *config.Config
 	state             *config.LibrarianState
 	repo              gitrepo.Repository
+	sourceRepo        gitrepo.Repository
 	ghClient          GitHubClient
 	idToCommits       map[string]string
 	failedLibraries   []string
@@ -405,7 +406,7 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 func createPRBody(info *commitInfo) (string, error) {
 	switch info.prType {
 	case generate:
-		return formatGenerationPRBody(info.repo, info.state, info.idToCommits, info.failedLibraries)
+		return formatGenerationPRBody(info.sourceRepo, info.state, info.idToCommits, info.failedLibraries)
 	case release:
 		return formatReleaseNotes(info.repo, info.state)
 	default:

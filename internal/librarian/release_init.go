@@ -87,6 +87,7 @@ func init() {
 type initRunner struct {
 	cfg             *config.Config
 	repo            gitrepo.Repository
+	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
@@ -104,6 +105,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	return &initRunner{
 		cfg:             runner.cfg,
 		repo:            runner.repo,
+		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
 		ghClient:        runner.ghClient,
@@ -128,6 +130,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		cfg:           r.cfg,
 		state:         r.state,
 		repo:          r.repo,
+		sourceRepo:    r.sourceRepo,
 		ghClient:      r.ghClient,
 		commitMessage: "chore: create a release",
 		prType:        release,
