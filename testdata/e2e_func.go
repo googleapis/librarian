@@ -92,6 +92,7 @@ func doReleaseInit(args []string) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("doReleaseInit received outputDir: %s", request.outputDir)
 	if err := validateLibrarianDir(request.librarianDir, "release-init-request.json"); err != nil {
 		// The request file is not created for release-init, so we don't validate it.
 		// return err
@@ -99,6 +100,7 @@ func doReleaseInit(args []string) error {
 
 	// Read the state.yaml file.
 	stateFilePath := filepath.Join(request.repoDir, ".librarian", "state.yaml")
+	log.Printf("Reading state file from: %s", stateFilePath)
 	stateBytes, err := os.ReadFile(stateFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read state.yaml: %w", err)
@@ -116,18 +118,23 @@ func doReleaseInit(args []string) error {
 		}
 	}
 
-	// Write the updated state back to state.yaml.
 	updatedStateBytes, err := yaml.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal updated state: %w", err)
 	}
-	if err := os.WriteFile(stateFilePath, updatedStateBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write updated state.yaml: %w", err)
+	
+	outputStateDir := filepath.Join(request.outputDir, ".librarian")
+	if err := os.MkdirAll(outputStateDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-
-	// The release-init command in the fake image doesn't need to do anything,
-	// as the e2e test only checks if the command is called correctly.
-	// We just need to create an empty response file.
+	
+	outputStatePath := filepath.Join(outputStateDir, "state.yaml")
+	if err := os.WriteFile(outputStatePath, updatedStateBytes, 0644); err != nil {
+		return fmt.Errorf("failed to write updated state.yaml to output: %w", err)
+	}
+	
+	log.Print("Wrote updated state.yaml to " + outputStatePath)
+	
 	return writeReleaseInitResponse(request)
 }
 
@@ -135,6 +142,8 @@ type releaseInitOption struct {
 	librarianDir string
 	repoDir      string
 	outputDir    string
+	libraryID      string
+	libraryVersion string
 }
 
 func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
@@ -149,6 +158,10 @@ func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
 			option.repoDir = strs[1]
 		case "output":
 			option.outputDir = strs[1]
+		case "library-id":
+			option.libraryID = strs[1]
+		case "library-version":
+			option.libraryVersion = strs[1]
 		default:
 			return nil, errors.New("unrecognized option: " + opt)
 		}

@@ -322,6 +322,11 @@ func TestReleaseInit(t *testing.T) {
 	t.Parallel()
 	t.Run("runs successfully", func(t *testing.T) {
 		repo := t.TempDir()
+		outputDir := filepath.Join(t.TempDir(), "output")
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			t.Fatal(err)
+	    	}
+
 		if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 			t.Fatalf("prepare test error = %v", err)
 		}
@@ -343,6 +348,7 @@ func TestReleaseInit(t *testing.T) {
 			"init",
 			fmt.Sprintf("--repo=%s", repo),
 			fmt.Sprintf("--library=%s", libraryID),
+			fmt.Sprintf("--output=%s", outputDir),
 		)
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
@@ -352,9 +358,10 @@ func TestReleaseInit(t *testing.T) {
 		}
 
 		// Verify the file content
-		gotBytes, err := os.ReadFile(filepath.Join(repo, ".librarian", "state.yaml"))
+		t.Logf("Checking for output file in: %s", filepath.Join(outputDir, ".librarian", "state.yaml"))
+		gotBytes, err := os.ReadFile(filepath.Join(outputDir, ".librarian", "state.yaml"))
 		if err != nil {
-			t.Fatalf("Failed to read configure response file: %v", err)
+			t.Fatalf("Failed to read updated state.yaml from output directory: %v", err)
 		}
 		wantBytes, readErr := os.ReadFile(updatedState)
 		if readErr != nil {
