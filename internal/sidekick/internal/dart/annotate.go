@@ -251,7 +251,12 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			protoPackage := keys[1]
 			annotate.packagePrefixes[protoPackage] = definition
 		case strings.HasPrefix(key, "package:"):
-			// 'package:http' = '^1.3.0'
+			// Version constraints for a package.
+			//
+			// Expressed as: 'package:<package name>' = '<version constraint>'
+			// For example: 'package:http' = '^1.3.0'
+			//
+			// If the package is needed as a dependency, then this constract is used.
 			annotate.dependencyConstraints[strings.TrimPrefix(key, "package:")] = definition
 		}
 	}
@@ -343,7 +348,7 @@ func calculateRequiredFields(model *api.API) map[string]*api.Field {
 
 // calculateDependencies calculates package dependencies based on `package:` imports.
 func calculateDependencies(imports map[string]string, constaints map[string]string) []packageDependency {
-	deps := make([]packageDependency, 0)
+	deps := []packageDependency{}
 
 	for _, imp := range imports {
 		if name, hadPrefix := strings.CutPrefix(imp, "package:"); hadPrefix {
