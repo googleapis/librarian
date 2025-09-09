@@ -19,6 +19,7 @@ const (
 	inputDir               = "input"
 	librarian              = "librarian"
 	outputDir              = "output"
+	repoDir                = "repo"
 	simulateCommandErrorID = "simulate-command-error-id"
 	source                 = "source"
 )
@@ -91,6 +92,8 @@ func parseConfigureRequest(args []string) (*configureOption, error) {
 			configureOption.inputDir = strs[1]
 		case librarian:
 			configureOption.librarianDir = strs[1]
+		case repoDir:
+			configureOption.repoDir = strs[1]
 		case source:
 			configureOption.sourceDir = strs[1]
 		default:
@@ -256,6 +259,7 @@ func generateLibrary(library *libraryState, outputDir string) error {
 type configureOption struct {
 	inputDir     string
 	librarianDir string
+	repoDir      string
 	sourceDir    string
 }
 
