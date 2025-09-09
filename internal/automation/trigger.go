@@ -21,6 +21,7 @@ import (
 	"iter"
 	"log/slog"
 	"os"
+	"strings"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
@@ -113,7 +114,9 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 			"_PUSH":                     fmt.Sprintf("%v", push),
 		}
 		if command == "publish-release" {
-			prs, err := ghClient.FindMergedPullRequestsWithPendingReleaseLabel(ctx, "googleapis", repository.Name)
+			parts := strings.Split(gitUrl, "/")
+			repositoryOwner := parts[len(parts)-2]
+			prs, err := ghClient.FindMergedPullRequestsWithPendingReleaseLabel(ctx, repositoryOwner, repository.Name)
 			if err != nil {
 				slog.Error("Error finding merged pull requests for publish-release", slog.Any("err", err), slog.String("repository", repository.Name))
 				errs = append(errs, err)

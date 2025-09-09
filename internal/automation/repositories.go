@@ -45,7 +45,8 @@ type RepositoriesConfig struct {
 	Repositories []*RepositoryConfig `yaml:"repositories"`
 }
 
-// GitURL returns the full git url to clone.
+// GitURL returns the full git url to clone. If full name is not available,
+// it defaults to "https://github.com/googleapis/<name>".
 func (c *RepositoryConfig) GitURL() (string, error) {
 	if c.FullName == "" {
 		if c.Name == "" {
