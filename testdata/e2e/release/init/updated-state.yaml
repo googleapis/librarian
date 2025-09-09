@@ -1,0 +1,12 @@
+image: test-image:latest
+libraries:
+- id: go-google-cloud-pubsub-v1
+  version: 1.1.0
+  apis:
+  - path: google/cloud/pubsub/v1
+  source_roots:
+  - google-cloud-pubsub/v1
+  release:
+    release-level: minor
+    release-version: 1.1.0
+
