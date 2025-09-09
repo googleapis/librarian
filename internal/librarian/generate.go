@@ -204,10 +204,8 @@ func (r *generateRunner) run(ctx context.Context) error {
 		commitMessage:   "chore: generate libraries",
 		prType:          generate,
 	}
-	if err := commitAndPush(ctx, commitInfo); err != nil {
-		return err
-	}
-	return nil
+
+	return commitAndPush(ctx, commitInfo)
 }
 
 // generateSingleLibrary manages the generation of a single client library.
