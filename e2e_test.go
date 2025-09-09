@@ -301,7 +301,7 @@ func TestRunConfigure(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(wantState, gotState, cmpopts.IgnoreFields(config.LibraryState{}, "LastGeneratedCommit")); diff != "" {
-				t.Fatalf("Generated yaml mismatch (-want +got):\n%s", diff)
+				t.Fatalf("Generated yaml mismatch (-want +got): %s", diff)
 			}
 			for _, lib := range gotState.Libraries {
 				if lib.ID == test.library && lib.LastGeneratedCommit == "" {
@@ -311,6 +311,60 @@ func TestRunConfigure(t *testing.T) {
 
 		})
 	}
+}
+
+func TestReleaseInit(t *testing.T) {
+	const (
+		initialRepoStateDir = "testdata/e2e/release/init/repo_init"
+		updatedState        = "testdata/e2e/release/init/updated-state.yaml"
+		libraryID           = "go-google-cloud-pubsub-v1"
+	)
+	t.Parallel()
+	t.Run("runs successfully", func(t *testing.T) {
+		repo := t.TempDir()
+		if err := initRepo(t, repo, initialRepoStateDir); err != nil {
+			t.Fatalf("prepare test error = %v", err)
+		}
+		runGit(t, repo, "tag", "go-google-cloud-pubsub-v1-v1.0.0")
+
+		cmd := exec.Command(
+			"go",
+			"run",
+			"github.com/googleapis/librarian/cmd/librarian",
+			"release",
+			"init",
+			fmt.Sprintf("--repo=%s", repo),
+			fmt.Sprintf("--library=%s", libraryID),
+		)
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+		err := cmd.Run()
+		if err != nil {
+			t.Fatalf("Failed to run release init: %v", err)
+		}
+
+		// Verify the file content
+		gotBytes, err := os.ReadFile(filepath.Join(repo, ".librarian", "state.yaml"))
+		if err != nil {
+			t.Fatalf("Failed to read configure response file: %v", err)
+		}
+		wantBytes, readErr := os.ReadFile(updatedState)
+		if readErr != nil {
+			t.Fatalf("Failed to read expected state for comparison: %v", readErr)
+		}
+		var gotState *config.LibrarianState
+		if err := yaml.Unmarshal(gotBytes, &gotState); err != nil {
+			t.Fatalf("Failed to unmarshal configure response file: %v", err)
+		}
+		var wantState *config.LibrarianState
+		if err := yaml.Unmarshal(wantBytes, &wantState); err != nil {
+			t.Fatalf("Failed to unmarshal expected state: %v", err)
+		}
+
+		if diff := cmp.Diff(wantState, gotState); diff != "" {
+			t.Fatalf("Generated yaml mismatch (-want +got): %s", diff)
+		}
+	})
 }
 
 // initRepo initiates a git repo in the given directory, copy
