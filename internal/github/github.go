@@ -311,3 +311,16 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 	}
 	return allPRs, nil
 }
+
+// CreateTag creates a lightweight tag in the repository at the given commit SHA.
+// This does NOT create a release, just the tag.
+func (c *Client) CreateTag(ctx context.Context, tagName, commitSHA string) error {
+	slog.Info("Creating tag", "tag", tagName, "commit", commitSHA)
+	ref := "refs/tags/" + tagName
+	tagRef := &github.Reference{
+		Ref:    github.String(ref),
+		Object: &github.GitObject{SHA: github.String(commitSHA), Type: github.String("commit")},
+	}
+	_, _, err := c.Git.CreateRef(ctx, c.repo.Owner, c.repo.Name, tagRef)
+	return err
+}

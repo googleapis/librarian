@@ -191,6 +191,15 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		}
 
 	}
+	//TODO: remove this logic
+	// Add a tag to the merge commit: "release-please-{pr number}"
+	commitish := p.GetMergeCommitSHA()
+	tagName := fmt.Sprintf("release-please-%d", p.GetNumber())
+	slog.Info("creating tag for pull request", "tag", tagName, "commit", commitish)
+	if err := r.ghClient.CreateTag(ctx, tagName, commitish); err != nil {
+		return fmt.Errorf("failed to create tag %s: %w", tagName, err)
+	}
+
 	return r.replacePendingLabel(ctx, p)
 }
 
