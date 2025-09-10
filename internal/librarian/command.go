@@ -51,18 +51,17 @@ type GitHubClientFactory func(token string, repo *github.Repository) (GitHubClie
 // ContainerClientFactory type for creating a ContainerClient.
 type ContainerClientFactory func(workRoot, image, userUID, userGID string) (ContainerClient, error)
 
-// CommitInfo stores the fields used to create a commit locally.
-type CommitInfo struct {
+// commitInfo stores the fields used to create a commit locally.
+type commitInfo struct {
 	cfg           *config.Config
 	state         *config.LibrarianState
 	repo          gitrepo.Repository
-	sourceRepo    gitrepo.Repository
 	branch        string
 	commitMessage string
 }
 
-// PullRequestInfo stores the fields used to create a Github PR.
-type PullRequestInfo struct {
+// pullRequestInfo stores the fields used to create a Github PR.
+type pullRequestInfo struct {
 	ghClient GitHubClient
 	title    string
 	body     string
@@ -335,7 +334,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // commitAndPush creates a commit and push request to GitHub for the generated changes.
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
-func commitAndPush(ctx context.Context, commitInfo *CommitInfo, prInfo *PullRequestInfo) error {
+func commitAndPush(ctx context.Context, commitInfo *commitInfo, prInfo *pullRequestInfo) error {
 	cfg := commitInfo.cfg
 	if !cfg.Push && !cfg.Commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
@@ -387,7 +386,7 @@ func commitAndPush(ctx context.Context, commitInfo *CommitInfo, prInfo *PullRequ
 // Should only be called on a valid Github pull request.
 // Passing in `nil` for labels will no-op and an empty list for labels will clear all labels on the PR.
 // TODO: Consolidate the params to a potential PullRequestInfo struct.
-func addLabelsToPullRequest(ctx context.Context, prInfo *PullRequestInfo, prMetadata *github.PullRequestMetadata) error {
+func addLabelsToPullRequest(ctx context.Context, prInfo *pullRequestInfo, prMetadata *github.PullRequestMetadata) error {
 	// Do not update if there aren't labels provided
 	if prInfo.labels == nil {
 		return nil

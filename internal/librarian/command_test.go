@@ -1503,12 +1503,12 @@ func TestCommitAndPush(t *testing.T) {
 				Push:   test.push,
 				Commit: test.commit,
 			}
-			commitInfo := &CommitInfo{
+			commitInfo := &commitInfo{
 				cfg:           localConfig,
 				repo:          repo,
 				commitMessage: "",
 			}
-			prInfo := &PullRequestInfo{
+			prInfo := &pullRequestInfo{
 				ghClient: ghClient,
 			}
 
@@ -1578,7 +1578,7 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 				Repo:   &github.Repository{Owner: "test-owner", Name: "test-repo"},
 				Number: 7,
 			}
-			prInfo := &PullRequestInfo{
+			prInfo := &pullRequestInfo{
 				ghClient: test.mockGithubClient,
 				labels:   test.pullRequestLabels,
 			}

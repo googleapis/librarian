@@ -120,7 +120,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 }
 
 func (r *initRunner) run(ctx context.Context) error {
-	outputDir := filepath.Join(r.workRoot, "output")
+	outputDir := r.workRoot
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
@@ -136,17 +136,17 @@ func (r *initRunner) run(ctx context.Context) error {
 
 	// Only proceed with with the release if there are any releasable units
 	if getHighestChange(commits) == semver.None {
+		slog.Warn("Not proceeding with the release as there are no releasable units. No PR will be generated.")
 		return nil
 	}
 
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 
-	commitInfo := &CommitInfo{
+	commitInfo := &commitInfo{
 		cfg:           r.cfg,
 		state:         r.state,
 		repo:          r.repo,
-		sourceRepo:    r.sourceRepo,
 		branch:        branch,
 		commitMessage: "chore: create a release",
 	}
@@ -156,7 +156,7 @@ func (r *initRunner) run(ctx context.Context) error {
 	if err != nil {
 		return nil
 	}
-	prInfo := &PullRequestInfo{
+	prInfo := &pullRequestInfo{
 		ghClient: r.ghClient,
 		title:    prTitle,
 		body:     prBody,
