@@ -42,6 +42,7 @@ var cmdInit = &cli.Command{
 It orchestrates the process of parsing commits, determining new versions, generating
 a changelog, and creating a release pull request.`,
 	Run: func(ctx context.Context, cfg *config.Config) error {
+		slog.Info("cmdInit Run called", "config", fmt.Sprintf("%+v", cfg))
 		runner, err := newInitRunner(cfg)
 		if err != nil {
 			return err
@@ -78,6 +79,7 @@ type initRunner struct {
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
+	slog.Info("newInitRunner called", "config", fmt.Sprintf("%+v", cfg))
 	runner, err := newCommandRunner(cfg, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create init runner: %w", err)
@@ -96,7 +98,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 }
 
 func (r *initRunner) run(ctx context.Context) error {
-	outputDir := filepath.Join(r.workRoot, "output")
+	outputDir := r.workRoot
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
@@ -125,12 +127,15 @@ func (r *initRunner) run(ctx context.Context) error {
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
 	dst := r.partialRepo
+	slog.Info("runInitCommand started", "outputDir", outputDir, "dst", dst)
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
 	src := r.repo.GetDir()
+	slog.Info("runInitCommand repo source directory", "src", src)
 
 	for _, library := range r.state.Libraries {
+		slog.Info("runInitCommand processing library", "id", library.ID, "cfg.Library", r.cfg.Library)
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
 				continue
@@ -146,6 +151,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 			break
 		}
 
+		slog.Info("runInitCommand updating all libraries (current)", "id", library.ID)
 		// Update all libraries.
 		if err := updateLibrary(r.repo, library, r.cfg.LibraryVersion); err != nil {
 			return err
@@ -172,16 +178,20 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		Output:          outputDir,
 		PartialRepoDir:  dst,
 	}
+        slog.Info("Before containerClient.ReleaseInit", "request", fmt.Sprintf("%+v", initRequest))
 
 	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
+		slog.Error("containerClient.ReleaseInit failed", "error", err)
 		return err
 	}
+	slog.Info("After containerClient.ReleaseInit")
 
 	for _, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
 				continue
 			}
+			slog.Info("runInitCommand copying single library files to repo", "id", library.ID)
 			// Only copy one library to repository.
 			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
 				return err
@@ -189,12 +199,14 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 			break
 		}
+		slog.Info("runInitCommand copying library files to repo", "id", library.ID)
 
 		// Copy all libraries to repository.
 		if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
 			return err
 		}
 	}
+	slog.Info("runInitCommand finished copying library files")
 
 	return copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false)
 }

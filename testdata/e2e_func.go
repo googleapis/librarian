@@ -88,10 +88,12 @@ func doGenerate(args []string) error {
 }
 
 func doReleaseInit(args []string) error {
+	log.Printf("doReleaseInit received args: %v", args)
 	request, err := parseReleaseInitRequest(args)
 	if err != nil {
 		return err
 	}
+	log.Printf("doReleaseInit received request: %+v", request)
 	log.Printf("doReleaseInit received outputDir: %s", request.outputDir)
 	if err := validateLibrarianDir(request.librarianDir, "release-init-request.json"); err != nil {
 		// The request file is not created for release-init, so we don't validate it.
@@ -111,13 +113,20 @@ func doReleaseInit(args []string) error {
 	}
 
 	// Update the version of the library.
+	log.Printf("Initial state: %+v", state)
 	for _, library := range state.Libraries {
+		log.Printf("Checking library: %s", request.libraryID)
 		if library.ID == request.libraryID {
+			log.Printf("Found library to update: %s", library.ID)
+			log.Printf("Original version: %s", library.Version)
 			library.Version = request.libraryVersion
+			log.Printf("Updated version: %s", library.ID)
+			log.Printf("Original SourceRoots: %v", library.SourceRoots)
 			break
 		}
 	}
 
+	log.Printf("State after update: %+v", state)
 	updatedStateBytes, err := yaml.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal updated state: %w", err)
@@ -158,7 +167,7 @@ func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
 			option.repoDir = strs[1]
 		case "output":
 			option.outputDir = strs[1]
-		case "library-id":
+		case "library":
 			option.libraryID = strs[1]
 		case "library-version":
 			option.libraryVersion = strs[1]
