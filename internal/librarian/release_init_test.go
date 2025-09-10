@@ -95,6 +95,126 @@ func TestInitRun(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
+			name: "run release init command for all libraries, update librarian state",
+			runner: &initRunner{
+				workRoot:        t.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID:      "another-example-id",
+							Version: "1.0.0",
+							SourceRoots: []string{
+								"dir3",
+								"dir4",
+							},
+							RemoveRegex: []string{
+								"dir3",
+								"dir4",
+							},
+						},
+						{
+							ID:      "example-id",
+							Version: "2.0.0",
+							SourceRoots: []string{
+								"dir1",
+								"dir2",
+							},
+							RemoveRegex: []string{
+								"dir1",
+								"dir2",
+							},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+						"another-example-id-1.0.0": {
+							{
+								Hash:    plumbing.NewHash("123456"),
+								Message: "feat: another new feature",
+							},
+						},
+						"example-id-2.0.0": {
+							{
+								Hash:    plumbing.NewHash("abcdefg"),
+								Message: "feat: a new feature",
+							},
+						},
+					},
+					ChangedFilesInCommitValueByHash: map[string][]string{
+						plumbing.NewHash("123456").String(): {
+							"dir3/file3.txt",
+							"dir4/file4.txt",
+						},
+						plumbing.NewHash("abcdefg").String(): {
+							"dir1/file1.txt",
+							"dir2/file2.txt",
+						},
+					},
+				},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file1.txt": "",
+				"dir2/file2.txt": "",
+				"dir3/file3.txt": "",
+				"dir4/file4.txt": "",
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:              "another-example-id",
+						Version:         "1.1.0", // version is bumped.
+						PreviousVersion: "1.0.0",
+						SourceRoots: []string{
+							"dir3",
+							"dir4",
+						},
+						RemoveRegex: []string{
+							"dir3",
+							"dir4",
+						},
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "feat",
+								Description: "another new feature",
+								LibraryID:   "another-example-id",
+								Footers:     map[string]string{},
+							},
+						},
+						ReleaseTriggered: true,
+					},
+					{
+						ID:              "example-id",
+						Version:         "2.1.0", // version is bumped.
+						PreviousVersion: "2.0.0",
+						SourceRoots: []string{
+							"dir1",
+							"dir2",
+						},
+						RemoveRegex: []string{
+							"dir1",
+							"dir2",
+						},
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "feat",
+								Description: "a new feature",
+								LibraryID:   "example-id",
+								Footers:     map[string]string{},
+							},
+						},
+						ReleaseTriggered: true,
+					},
+				},
+			},
+		},
+		{
 			name: "run release init command for one library",
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
@@ -223,126 +343,7 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "run release init command for all libraries",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				cfg:             &config.Config{},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							ID:      "another-example-id",
-							Version: "1.0.0",
-							SourceRoots: []string{
-								"dir3",
-								"dir4",
-							},
-							RemoveRegex: []string{
-								"dir3",
-								"dir4",
-							},
-						},
-						{
-							ID:      "example-id",
-							Version: "2.0.0",
-							SourceRoots: []string{
-								"dir1",
-								"dir2",
-							},
-							RemoveRegex: []string{
-								"dir1",
-								"dir2",
-							},
-						},
-					},
-				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
-						"another-example-id-1.0.0": {
-							{
-								Hash:    plumbing.NewHash("123456"),
-								Message: "feat: another new feature",
-							},
-						},
-						"example-id-2.0.0": {
-							{
-								Hash:    plumbing.NewHash("abcdefg"),
-								Message: "feat: a new feature",
-							},
-						},
-					},
-					ChangedFilesInCommitValueByHash: map[string][]string{
-						plumbing.NewHash("123456").String(): {
-							"dir3/file3.txt",
-							"dir4/file4.txt",
-						},
-						plumbing.NewHash("abcdefg").String(): {
-							"dir1/file1.txt",
-							"dir2/file2.txt",
-						},
-					},
-				},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
-			},
-			files: map[string]string{
-				"file1.txt":      "",
-				"dir1/file1.txt": "",
-				"dir2/file2.txt": "",
-				"dir3/file3.txt": "",
-				"dir4/file4.txt": "",
-			},
-			want: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID:              "another-example-id",
-						Version:         "1.1.0", // version is bumped.
-						PreviousVersion: "1.0.0",
-						SourceRoots: []string{
-							"dir3",
-							"dir4",
-						},
-						RemoveRegex: []string{
-							"dir3",
-							"dir4",
-						},
-						Changes: []*conventionalcommits.ConventionalCommit{
-							{
-								Type:        "feat",
-								Description: "another new feature",
-								LibraryID:   "another-example-id",
-								Footers:     map[string]string{},
-							},
-						},
-						ReleaseTriggered: true,
-					},
-					{
-						ID:              "example-id",
-						Version:         "2.1.0", // version is bumped.
-						PreviousVersion: "2.0.0",
-						SourceRoots: []string{
-							"dir1",
-							"dir2",
-						},
-						RemoveRegex: []string{
-							"dir1",
-							"dir2",
-						},
-						Changes: []*conventionalcommits.ConventionalCommit{
-							{
-								Type:        "feat",
-								Description: "a new feature",
-								LibraryID:   "example-id",
-								Footers:     map[string]string{},
-							},
-						},
-						ReleaseTriggered: true,
-					},
-				},
-			},
-		},
+
 		{
 			name: "docker command returns error",
 			runner: &initRunner{
