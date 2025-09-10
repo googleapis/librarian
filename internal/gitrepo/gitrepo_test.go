@@ -1158,7 +1158,12 @@ func TestRestore(t *testing.T) {
 				t.Error("repo should not in clean state")
 			}
 
-			err = localRepo.Restore(test.paths)
+			var relPaths []string
+			for _, path := range test.paths {
+				relPaths = append(relPaths, filepath.Join(dir, path))
+			}
+
+			err = localRepo.Restore(relPaths)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
