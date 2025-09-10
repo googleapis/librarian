@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"github.com/go-git/go-git/v5/plumbing"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
@@ -168,48 +169,32 @@ func TestInitRun(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:              "another-example-id",
-						Version:         "1.1.0", // version is bumped.
-						PreviousVersion: "1.0.0",
+						ID:      "another-example-id",
+						Version: "1.1.0", // version is bumped.
+						APIs:    []*config.API{},
 						SourceRoots: []string{
 							"dir3",
 							"dir4",
 						},
+						PreserveRegex: []string{},
 						RemoveRegex: []string{
 							"dir3",
 							"dir4",
 						},
-						Changes: []*conventionalcommits.ConventionalCommit{
-							{
-								Type:        "feat",
-								Description: "another new feature",
-								LibraryID:   "another-example-id",
-								Footers:     map[string]string{},
-							},
-						},
-						ReleaseTriggered: true,
 					},
 					{
-						ID:              "example-id",
-						Version:         "2.1.0", // version is bumped.
-						PreviousVersion: "2.0.0",
+						ID:      "example-id",
+						Version: "2.1.0", // version is bumped.
+						APIs:    []*config.API{},
 						SourceRoots: []string{
 							"dir1",
 							"dir2",
 						},
+						PreserveRegex: []string{},
 						RemoveRegex: []string{
 							"dir1",
 							"dir2",
 						},
-						Changes: []*conventionalcommits.ConventionalCommit{
-							{
-								Type:        "feat",
-								Description: "a new feature",
-								LibraryID:   "example-id",
-								Footers:     map[string]string{},
-							},
-						},
-						ReleaseTriggered: true,
 					},
 				},
 			},
@@ -259,18 +244,23 @@ func TestInitRun(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID: "another-example-id",
+						ID:   "another-example-id",
+						APIs: []*config.API{},
 						SourceRoots: []string{
 							"dir3",
 							"dir4",
 						},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
 					},
 					{
-						ID: "example-id",
+						ID:   "example-id",
+						APIs: []*config.API{},
 						SourceRoots: []string{
 							"dir1",
 							"dir2",
 						},
+						PreserveRegex: []string{},
 						RemoveRegex: []string{
 							"dir1",
 							"dir2",
@@ -323,18 +313,23 @@ func TestInitRun(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID: "another-example-id",
+						ID:   "another-example-id",
+						APIs: []*config.API{},
 						SourceRoots: []string{
 							"dir3",
 							"dir4",
 						},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
 					},
 					{
-						ID: "example-id",
+						ID:   "example-id",
+						APIs: []*config.API{},
 						SourceRoots: []string{
 							"dir1",
 							"dir2",
 						},
+						PreserveRegex: []string{},
 						RemoveRegex: []string{
 							"dir1",
 							"dir2",
@@ -488,10 +483,13 @@ func TestInitRun(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID: "example-id",
+						ID:   "example-id",
+						APIs: []*config.API{},
 						SourceRoots: []string{
 							"dir1",
 						},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
 					},
 				},
 			},
@@ -615,7 +613,15 @@ func TestInitRun(t *testing.T) {
 			if err != nil {
 				t.Errorf("run() failed: %s", err.Error())
 			}
-			if diff := cmp.Diff(test.want, test.runner.state, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "When")); diff != "" {
+			// load librarian state from state.yaml, which should contain updated
+			// library state.
+			bytes, err := os.ReadFile(filepath.Join(repoDir, ".librarian/state.yaml"))
+			var got *config.LibrarianState
+			err = yaml.Unmarshal(bytes, &got)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
