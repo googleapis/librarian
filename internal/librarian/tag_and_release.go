@@ -200,7 +200,6 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		}
 
 	}
-
 	return r.replacePendingLabel(ctx, p)
 }
 
