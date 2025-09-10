@@ -20,9 +20,8 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/googleapis/librarian/internal/gitrepo"
-
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestParseCommits(t *testing.T) {
@@ -483,5 +482,25 @@ fix(sub): fix a bug that is never closed`,
 				t.Errorf("extractCommitParts(%q) returned diff (-want +got):\n%s", test.message, diff)
 			}
 		})
+	}
+}
+
+func TestConventionalCommit_MarshalJSON(t *testing.T) {
+	c := &ConventionalCommit{
+		Type:    "feat",
+		Subject: "new feature",
+		Body:    "body of feature",
+		Footers: map[string]string{
+			"PiperOrigin-RevId": "12345",
+			"git-commit-hash":   "abcdef123456",
+		},
+	}
+	b, err := c.MarshalJSON()
+	if err != nil {
+		t.Fatalf("MarshalJSON() failed: %v", err)
+	}
+	want := `{"type":"feat","subject":"new feature","body":"body of feature","piper_cl_number":"12345","source_commit_hash":"abcdef123456"}`
+	if diff := cmp.Diff(want, string(b)); diff != "" {
+		t.Errorf("MarshalJSON() mismatch (-want +got):\n%s", diff)
 	}
 }

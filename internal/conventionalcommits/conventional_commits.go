@@ -59,23 +59,9 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 		SourceCommitHash string `json:"source_commit_hash,omitempty"`
 	}{
 		Alias:            (*Alias)(c),
-		PiperCLNumber:    c.Footers["Piper-CL"],
+		PiperCLNumber:    c.Footers["PiperOrigin-RevId"],
 		SourceCommitHash: c.Footers["git-commit-hash"],
 	})
-}
-
-// MarshalYAML implements a custom YAML marshaler for ConventionalCommit.
-func (c *ConventionalCommit) MarshalYAML() (interface{}, error) {
-	type Alias ConventionalCommit
-	return &struct {
-		*Alias
-		PiperCLNumber    string `yaml:"piper_cl_number,omitempty"`
-		SourceCommitHash string `yaml:"source_commit_hash,omitempty"`
-	}{
-		Alias:            (*Alias)(c),
-		PiperCLNumber:    c.Footers["Piper-CL"],
-		SourceCommitHash: c.Footers["git-commit-hash"],
-	}, nil
 }
 
 const breakingChangeKey = "BREAKING CHANGE"

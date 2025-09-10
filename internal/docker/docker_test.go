@@ -839,8 +839,8 @@ func TestReleaseInitRequestContent(t *testing.T) {
 						Subject: "new feature",
 						Body:    "body of feature",
 						Footers: map[string]string{
-							"Piper-CL":        "12345",
-							"git-commit-hash": "abcdef123456",
+							"PiperOrigin-RevId": "12345",
+							"git-commit-hash":   "abcdef123456",
 						},
 					},
 				},
@@ -853,6 +853,8 @@ func TestReleaseInitRequestContent(t *testing.T) {
 		t.Fatalf("New() failed: %v", err)
 	}
 
+	// Override the run command to intercept the arguments and verify the content
+	// of the release-init-request.json file.
 	d.run = func(args ...string) error {
 		var librarianDir string
 		for i, arg := range args {
@@ -874,7 +876,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 			t.Fatalf("ReadFile failed: %v", err)
 		}
 
-		wantFile := filepath.Join("testdata", "release-init-request.json")
+		wantFile := filepath.Join("testdata", "release-init-request", "release-init-request.json")
 		wantBytes, err := os.ReadFile(wantFile)
 		if err != nil {
 			t.Fatalf("ReadFile for want file failed: %v", err)
