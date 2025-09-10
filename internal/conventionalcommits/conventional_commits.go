@@ -15,6 +15,7 @@
 package conventionalcommits
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -28,25 +29,39 @@ import (
 // See https://www.conventionalcommits.org/en/v1.0.0/ for details.
 type ConventionalCommit struct {
 	// Type is the type of change (e.g., "feat", "fix", "docs").
-	Type string
-	// Scope is the scope of the change.
-	Scope string
-	// Description is the short summary of the change.
-	Description string
+	Type string `yaml:"type" json:"type"`
+	// Subject is the short summary of the change.
+	Subject string `yaml:"subject" json:"subject"`
 	// Body is the long-form description of the change.
-	Body string
+	Body string `yaml:"body" json:"body"`
 	// LibraryID is the library ID the commit associated with.
-	LibraryID string
+	LibraryID string `yaml:"-" json:"-"`
+	// Scope is the scope of the change.
+	Scope string `yaml:"-" json:"-"`
 	// Footers contain metadata (e.g,"BREAKING CHANGE", "Reviewed-by").
-	Footers map[string]string
+	Footers map[string]string `yaml:"-" json:"-"`
 	// IsBreaking indicates if the commit introduces a breaking change.
-	IsBreaking bool
+	IsBreaking bool `yaml:"-" json:"-"`
 	// IsNested indicates if the commit is a nested commit.
-	IsNested bool
+	IsNested bool `yaml:"-" json:"-"`
 	// SHA is the full commit hash.
-	SHA string
+	SHA string `yaml:"-" json:"-"`
 	// When is the timestamp of the commit.
-	When time.Time
+	When time.Time `yaml:"-" json:"-"`
+}
+
+// MarshalJSON implements a custom JSON marshaler for ConventionalCommit.
+func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
+	type Alias ConventionalCommit
+	return json.Marshal(&struct {
+		*Alias
+		PiperCLNumber    string `json:"piper_cl_number,omitempty"`
+		SourceCommitHash string `json:"source_commit_hash,omitempty"`
+	}{
+		Alias:            (*Alias)(c),
+		PiperCLNumber:    c.Footers["PiperOrigin-RevId"],
+		SourceCommitHash: c.Footers["git-commit-hash"],
+	})
 }
 
 const breakingChangeKey = "BREAKING CHANGE"
@@ -260,15 +275,15 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	footers, footerIsBreaking := parseFooters(footerLines)
 
 	return &ConventionalCommit{
-		Type:        header.Type,
-		Scope:       header.Scope,
-		Description: header.Description,
-		Body:        strings.TrimSpace(strings.Join(bodyLines, "\n")),
-		LibraryID:   libraryID,
-		Footers:     footers,
-		IsBreaking:  header.IsBreaking || footerIsBreaking,
-		IsNested:    commitPart.isNested,
-		SHA:         commit.Hash.String(),
-		When:        commit.When,
+		Type:       header.Type,
+		Scope:      header.Scope,
+		Subject:    header.Description,
+		Body:       strings.TrimSpace(strings.Join(bodyLines, "\n")),
+		LibraryID:  libraryID,
+		Footers:    footers,
+		IsBreaking: header.IsBreaking || footerIsBreaking,
+		IsNested:   commitPart.isNested,
+		SHA:        commit.Hash.String(),
+		When:       commit.When,
 	}, nil
 }

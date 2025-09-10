@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 )
 
 func TestNew(t *testing.T) {
@@ -814,5 +815,89 @@ func TestDocker_runCommand(t *testing.T) {
 				t.Errorf("Docker.runCommand() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestReleaseInitRequestContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	partialRepoDir := filepath.Join(tmpDir, "partial-repo")
+	librarianDir := filepath.Join(partialRepoDir, config.LibrarianDir)
+	if err := os.MkdirAll(librarianDir, 0755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+
+	stateWithChanges := &config.LibrarianState{
+		Image: "test-image",
+		Libraries: []*config.LibraryState{
+			{
+				ID:               "my-library",
+				Version:          "1.1.0",
+				ReleaseTriggered: true,
+				Changes: []*conventionalcommits.ConventionalCommit{
+					{
+						Type:    "feat",
+						Subject: "new feature",
+						Body:    "body of feature",
+						Footers: map[string]string{
+							"PiperOrigin-RevId": "12345",
+							"git-commit-hash":   "abcdef123456",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	d, err := New(tmpDir, "test-image", "1000", "1000")
+	if err != nil {
+		t.Fatalf("New() failed: %v", err)
+	}
+
+	// Override the run command to intercept the arguments and verify the content
+	// of the release-init-request.json file.
+	d.run = func(args ...string) error {
+		var librarianDir string
+		for i, arg := range args {
+			if arg == "-v" && i+1 < len(args) {
+				parts := strings.Split(args[i+1], ":")
+				if len(parts) == 2 && parts[1] == "/librarian" {
+					librarianDir = parts[0]
+					break
+				}
+			}
+		}
+		if librarianDir == "" {
+			return errors.New("could not find librarian directory mount")
+		}
+
+		jsonPath := filepath.Join(librarianDir, "release-init-request.json")
+		gotBytes, err := os.ReadFile(jsonPath)
+		if err != nil {
+			t.Fatalf("ReadFile failed: %v", err)
+		}
+
+		wantFile := filepath.Join("testdata", "release-init-request", "release-init-request.json")
+		wantBytes, err := os.ReadFile(wantFile)
+		if err != nil {
+			t.Fatalf("ReadFile for want file failed: %v", err)
+		}
+
+		if diff := cmp.Diff(strings.TrimSpace(string(wantBytes)), string(gotBytes)); diff != "" {
+			t.Errorf("Generated JSON mismatch (-want +got):\n%s", diff)
+		}
+		return nil
+	}
+
+	req := &ReleaseInitRequest{
+		Cfg: &config.Config{
+			Repo: tmpDir,
+		},
+		State:           stateWithChanges,
+		PartialRepoDir:  partialRepoDir,
+		Output:          filepath.Join(tmpDir, "output"),
+		LibrarianConfig: &config.LibrarianConfig{},
+	}
+	if err := d.ReleaseInit(context.Background(), req); err != nil {
+		t.Fatalf("d.ReleaseInit() failed: %v", err)
 	}
 }

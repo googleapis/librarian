@@ -28,6 +28,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Setenv("LIBRARIAN_GITHUB_TOKEN", "")
 	for _, test := range []struct {
 		name    string
 		envVars map[string]string
