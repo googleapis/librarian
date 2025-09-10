@@ -1117,6 +1117,69 @@ func TestCreateBranchAndCheckout(t *testing.T) {
 	}
 }
 
+func TestRestore(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		paths         []string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "restore files in paths",
+			paths: []string{
+				"first/path",
+				"second/path",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+			// create files in test.paths
+			for _, path := range test.paths {
+				file := filepath.Join(dir, path, "example.txt")
+				if err := os.WriteFile(file, []byte("example line"), 0755); err != nil {
+					return
+				}
+			}
+			clean, err := localRepo.IsClean()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if clean {
+				t.Error("repo should not in clean state")
+			}
+
+			err = localRepo.Restore(test.paths)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("Restore() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Verify the repo is clean after the restore.
+			clean, err = localRepo.IsClean()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !clean {
+				t.Error("repo should in clean state")
+			}
+		})
+	}
+}
+
 // initTestRepo creates a new git repository in a temporary directory.
 func initTestRepo(t *testing.T) (*git.Repository, string) {
 	t.Helper()
