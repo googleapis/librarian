@@ -505,14 +505,14 @@ func TestFormatReleaseNotes(t *testing.T) {
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "feat",
-								Description: "new feature",
-								SHA:         hash1.String(),
+								Type:    "feat",
+								Subject: "new feature",
+								SHA:     hash1.String(),
 							},
 							{
-								Type:        "fix",
-								Description: "a bug fix",
-								SHA:         hash2.String(),
+								Type:    "fix",
+								Subject: "a bug fix",
+								SHA:     hash2.String(),
 							},
 						},
 						ReleaseTriggered: true,
@@ -551,14 +551,14 @@ Language Image: go:1.21
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "feat",
-								Description: "new feature",
-								SHA:         hash1.String(),
+								Type:    "feat",
+								Subject: "new feature",
+								SHA:     hash1.String(),
 							},
 							{
-								Type:        "feat",
-								Description: "another new feature",
-								SHA:         hash2.String(),
+								Type:    "feat",
+								Subject: "another new feature",
+								SHA:     hash2.String(),
 							},
 						},
 						ReleaseTriggered: true,
@@ -596,9 +596,9 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "feat",
-								Description: "feature for a",
-								SHA:         hash1.String(),
+								Type:    "feat",
+								Subject: "feature for a",
+								SHA:     hash1.String(),
 							},
 						},
 					},
@@ -610,9 +610,9 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "fix",
-								Description: "fix for b",
-								SHA:         hash2.String(),
+								Type:    "fix",
+								Subject: "fix for b",
+								SHA:     hash2.String(),
 							},
 						},
 					},
@@ -658,14 +658,14 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "feat",
-								Description: "new feature",
-								SHA:         hash1.String(),
+								Type:    "feat",
+								Subject: "new feature",
+								SHA:     hash1.String(),
 							},
 							{
-								Type:        "ci",
-								Description: "a ci change",
-								SHA:         hash2.String(),
+								Type:    "ci",
+								Subject: "a ci change",
+								SHA:     hash2.String(),
 							},
 						},
 					},
