@@ -317,6 +317,7 @@ func TestReleaseInit(t *testing.T) {
 	const (
 		initialRepoStateDir = "testdata/e2e/release/init/repo_init"
 		updatedState        = "testdata/e2e/release/init/updated-state.yaml"
+		wantChangelog       = "testdata/e2e/release/init/CHANGELOG.md"
 		libraryID           = "go-google-cloud-pubsub-v1"
 	)
 	t.Parallel()
@@ -325,7 +326,7 @@ func TestReleaseInit(t *testing.T) {
 		outputDir := filepath.Join(t.TempDir(), "output")
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
 			t.Fatal(err)
-	    	}
+		}
 
 		if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 			t.Fatalf("prepare test error = %v", err)
@@ -340,6 +341,32 @@ func TestReleaseInit(t *testing.T) {
 		runGit(t, repo, "commit", "-m", "feat: add new feature")
 		runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
 
+		// Create the release-init-request.json file.
+		librarianDir := filepath.Join(t.TempDir(), ".librarian")
+		if err := os.MkdirAll(librarianDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		requestFile := filepath.Join(librarianDir, "release-init-request.json")
+		requestBody := `{
+			"libraries": [
+				{
+					"id": "go-google-cloud-pubsub-v1",
+					"version": "1.1.0",
+					"source_roots": ["google-cloud-pubsub/v1"],
+					"release_triggered": true,
+					"changes": [
+						{
+							"type": "feat",
+							"subject": "add new feature"
+						}
+					]
+				}
+			]
+		}`
+		if err := os.WriteFile(requestFile, []byte(requestBody), 0644); err != nil {
+			t.Fatal(err)
+		}
+
 		cmd := exec.Command(
 			"go",
 			"run",
@@ -347,8 +374,8 @@ func TestReleaseInit(t *testing.T) {
 			"release",
 			"init",
 			fmt.Sprintf("--repo=%s", repo),
-			fmt.Sprintf("--library=%s", libraryID),
 			fmt.Sprintf("--output=%s", outputDir),
+			fmt.Sprintf("--librarian=%s", librarianDir),
 		)
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
@@ -357,7 +384,7 @@ func TestReleaseInit(t *testing.T) {
 			t.Fatalf("Failed to run release init: %v", err)
 		}
 
-		// Verify the file content
+		// Verify the state.yaml file content
 		t.Logf("Checking for output file in: %s", filepath.Join(outputDir, ".librarian", "state.yaml"))
 		gotBytes, err := os.ReadFile(filepath.Join(outputDir, ".librarian", "state.yaml"))
 		if err != nil {
@@ -378,6 +405,19 @@ func TestReleaseInit(t *testing.T) {
 
 		if diff := cmp.Diff(wantState, gotState); diff != "" {
 			t.Fatalf("Generated yaml mismatch (-want +got): %s", diff)
+		}
+
+		// Verify the CHANGELOG.md file content
+		gotChangelog, err := os.ReadFile(filepath.Join(outputDir, "google-cloud-pubsub/v1", "CHANGELOG.md"))
+		if err != nil {
+			t.Fatalf("Failed to read CHANGELOG.md from output directory: %v", err)
+		}
+		wantChangelogBytes, err := os.ReadFile(wantChangelog)
+		if err != nil {
+			t.Fatalf("Failed to read expected changelog for comparison: %v", err)
+		}
+		if diff := cmp.Diff(string(wantChangelogBytes), string(gotChangelog)); diff != "" {
+			t.Fatalf("Generated changelog mismatch (-want +got): %s", diff)
 		}
 	})
 }

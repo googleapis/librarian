@@ -13,16 +13,18 @@ import (
 )
 
 const (
-	configureRequest       = "configure-request.json"
-	configureResponse      = "configure-response.json"
-	generateRequest        = "generate-request.json"
-	generateResponse       = "generate-response.json"
-	id                     = "id"
-	inputDir               = "input"
-	librarian              = "librarian"
-	outputDir              = "output"
-	simulateCommandErrorID = "simulate-command-error-id"
-	source                 = "source"
+	configureRequest        = "configure-request.json"
+	configureResponse       = "configure-response.json"
+	generateRequest         = "generate-request.json"
+	generateResponse        = "generate-response.json"
+	releaseInitRequest      = "release-init-request.json"
+	releaseInitResponse     = "release-init-response.json"
+	id                      = "id"
+	inputDir                = "input"
+	librarian               = "librarian"
+	outputDir               = "output"
+	simulateCommandErrorID  = "simulate-command-error-id"
+	source                  = "source"
 )
 
 func main() {
@@ -95,34 +97,38 @@ func doReleaseInit(args []string) error {
 	}
 	log.Printf("doReleaseInit received request: %+v", request)
 	log.Printf("doReleaseInit received outputDir: %s", request.outputDir)
-	if err := validateLibrarianDir(request.librarianDir, "release-init-request.json"); err != nil {
-		// The request file is not created for release-init, so we don't validate it.
-		// return err
+	if err := validateLibrarianDir(request.librarianDir, releaseInitRequest); err != nil {
+		return err
 	}
 
-	// Read the state.yaml file.
-	stateFilePath := filepath.Join(request.repoDir, ".librarian", "state.yaml")
-	log.Printf("Reading state file from: %s", stateFilePath)
-	stateBytes, err := os.ReadFile(stateFilePath)
+	state, err := readReleaseInitRequest(filepath.Join(request.librarianDir, releaseInitRequest))
 	if err != nil {
-		return fmt.Errorf("failed to read state.yaml: %w", err)
-	}
-	var state librarianState
-	if err := yaml.Unmarshal(stateBytes, &state); err != nil {
-		return fmt.Errorf("failed to unmarshal state.yaml: %w", err)
+		return err
 	}
 
 	// Update the version of the library.
-	log.Printf("Initial state: %+v", state)
 	for _, library := range state.Libraries {
-		log.Printf("Checking library: %s", request.libraryID)
-		if library.ID == request.libraryID {
-			log.Printf("Found library to update: %s", library.ID)
-			log.Printf("Original version: %s", library.Version)
-			library.Version = request.libraryVersion
-			log.Printf("Updated version: %s", library.ID)
-			log.Printf("Original SourceRoots: %v", library.SourceRoots)
-			break
+		if !library.ReleaseTriggered {
+			continue
+		}
+		log.Printf("Found library to update: %s", library.ID)
+		log.Printf("Version from request: %s", library.Version)
+
+		// Create a changelog.
+		var changelog strings.Builder
+		changelog.WriteString(fmt.Sprintf("## %s\n\n", library.Version))
+		for _, change := range library.Changes {
+			changelog.WriteString(fmt.Sprintf("- %s: %s\n", change.Type, change.Subject))
+		}
+		for _, sourceRoot := range library.SourceRoots {
+			changelogPath := filepath.Join(request.outputDir, sourceRoot, "CHANGELOG.md")
+			if err := os.MkdirAll(filepath.Dir(changelogPath), 0755); err != nil {
+				return fmt.Errorf("failed to create changelog directory: %w", err)
+			}
+			if err := os.WriteFile(changelogPath, []byte(changelog.String()), 0644); err != nil {
+				return fmt.Errorf("failed to write changelog: %w", err)
+			}
+			log.Printf("Wrote changelog to %s", changelogPath)
 		}
 	}
 
@@ -131,28 +137,41 @@ func doReleaseInit(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal updated state: %w", err)
 	}
-	
+
 	outputStateDir := filepath.Join(request.outputDir, ".librarian")
 	if err := os.MkdirAll(outputStateDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	
+
 	outputStatePath := filepath.Join(outputStateDir, "state.yaml")
 	if err := os.WriteFile(outputStatePath, updatedStateBytes, 0644); err != nil {
 		return fmt.Errorf("failed to write updated state.yaml to output: %w", err)
 	}
-	
+
 	log.Print("Wrote updated state.yaml to " + outputStatePath)
-	
+
 	return writeReleaseInitResponse(request)
 }
 
+// readReleaseInitRequest reads the release init request file and creates a librarianState
+// object.
+func readReleaseInitRequest(path string) (*librarianState, error) {
+	state := &librarianState{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(data, &state); err != nil {
+		return nil, err
+	}
+	return state, nil
+}
+
 type releaseInitOption struct {
-	librarianDir string
+
+librarianDir string
 	repoDir      string
 	outputDir    string
-	libraryID      string
-	libraryVersion string
 }
 
 func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
@@ -167,10 +186,6 @@ func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
 			option.repoDir = strs[1]
 		case "output":
 			option.outputDir = strs[1]
-		case "library":
-			option.libraryID = strs[1]
-		case "library-version":
-			option.libraryVersion = strs[1]
 		default:
 			return nil, errors.New("unrecognized option: " + opt)
 		}
@@ -383,21 +398,12 @@ type generateOption struct {
 }
 
 type librarianState struct {
-	Image     string          `json:"image"`
-	Libraries []*libraryState `json:"libraries"`
+	Image     string          `json:"image,omitempty"`
+	Libraries []*libraryState `json:"libraries"
 }
 
 type libraryState struct {
-	ID            string   `json:"id"`
-	Version       string   `json:"version"`
-	APIs          []*api   `json:"apis"`
-	SourceRoots   []string `json:"source_roots"`
-	PreserveRegex []string `json:"preserve_regex"`
-	RemoveRegex   []string `json:"remove_regex"`
-}
-
-type api struct {
-	Path          string `json:"path"`
-	ServiceConfig string `json:"service_config"`
-	Status        string `json:"status"`
-}
+	ID               string    `json:"id"`
+	Version          string    `json:"version"`
+	APIs             []*api    `json:"apis"`
+	SourceRoots      []string  `json:
