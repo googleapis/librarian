@@ -13,18 +13,18 @@ import (
 )
 
 const (
-	configureRequest        = "configure-request.json"
-	configureResponse       = "configure-response.json"
-	generateRequest         = "generate-request.json"
-	generateResponse        = "generate-response.json"
-	releaseInitRequest      = "release-init-request.json"
-	releaseInitResponse     = "release-init-response.json"
-	id                      = "id"
-	inputDir                = "input"
-	librarian               = "librarian"
-	outputDir               = "output"
-	simulateCommandErrorID  = "simulate-command-error-id"
-	source                  = "source"
+	configureRequest       = "configure-request.json"
+	configureResponse      = "configure-response.json"
+	generateRequest        = "generate-request.json"
+	generateResponse       = "generate-response.json"
+	releaseInitRequest     = "release-init-request.json"
+	releaseInitResponse    = "release-init-response.json"
+	id                     = "id"
+	inputDir               = "input"
+	librarian              = "librarian"
+	outputDir              = "output"
+	simulateCommandErrorID = "simulate-command-error-id"
+	source                 = "source"
 )
 
 func main() {
@@ -106,6 +106,11 @@ func doReleaseInit(args []string) error {
 		return err
 	}
 
+	log.Printf("SourceRoots are read from the release-init-request.json file.")
+	for i, library := range state.Libraries {
+		log.Printf("Library %%d ('%%s') has SourceRoots: %%v", i, library.ID, library.SourceRoots)
+	}
+
 	// Update the version of the library.
 	for _, library := range state.Libraries {
 		if !library.ReleaseTriggered {
@@ -137,6 +142,7 @@ func doReleaseInit(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal updated state: %w", err)
 	}
+	log.Printf("Marshalled updated state (YAML):\n%s", string(updatedStateBytes))
 
 	outputStateDir := filepath.Join(request.outputDir, ".librarian")
 	if err := os.MkdirAll(outputStateDir, 0755); err != nil {
@@ -161,15 +167,16 @@ func readReleaseInitRequest(path string) (*librarianState, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("readReleaseInitRequest: File content:\n%s", string(data))
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, err
 	}
+	log.Printf("readReleaseInitRequest: Unmarshalled state: %+v", state)
 	return state, nil
 }
 
 type releaseInitOption struct {
-
-librarianDir string
+	librarianDir string
 	repoDir      string
 	outputDir    string
 }
@@ -206,6 +213,7 @@ func writeReleaseInitResponse(option *releaseInitOption) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("about to write to %s: %s", jsonFilePath, string(data))
 	_, err = jsonFile.Write(data)
 	log.Print("write release init response to " + jsonFilePath)
 
@@ -398,12 +406,28 @@ type generateOption struct {
 }
 
 type librarianState struct {
-	Image     string          `json:"image,omitempty"`
-	Libraries []*libraryState `json:"libraries"
+	Image     string          `json:"image" yaml:"image"`
+	Libraries []*libraryState `json:"libraries" yaml:"libraries"`
 }
 
 type libraryState struct {
-	ID               string    `json:"id"`
-	Version          string    `json:"version"`
-	APIs             []*api    `json:"apis"`
-	SourceRoots      []string  `json:
+	ID               string    `json:"id" yaml:"id"`
+	Version          string    `json:"version" yaml:"version"`
+	APIs             []*api    `json:"apis,omitempty" yaml:"apis,omitempty"`
+	SourceRoots      []string  `json:"source_roots" yaml:"source_roots"`
+	PreserveRegex    []string  `json:"preserve_regex,omitempty" yaml:"preserve_regex,omitempty"`
+	RemoveRegex      []string  `json:"remove_regex,omitempty" yaml:"remove_regex,omitempty"`
+	ReleaseTriggered bool      `json:"release_triggered,omitempty" yaml:"release_triggered,omitempty"`
+	Changes          []*change `json:"changes,omitempty" yaml:"changes,omitempty"`
+}
+
+type api struct {
+	Path          string `json:"path" yaml:"path"`
+	ServiceConfig string `json:"service_config" yaml:"service_config"`
+	Status        string `json:"status" yaml:"status"`
+}
+
+type change struct {
+	Type    string `json:"type" yaml:"type"`
+	Subject string `json:"subject" yaml:"subject"`
+}

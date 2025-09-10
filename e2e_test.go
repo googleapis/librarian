@@ -375,7 +375,7 @@ func TestReleaseInit(t *testing.T) {
 			"init",
 			fmt.Sprintf("--repo=%s", repo),
 			fmt.Sprintf("--output=%s", outputDir),
-			fmt.Sprintf("--librarian=%s", librarianDir),
+			fmt.Sprintf("--library=%s", libraryID),
 		)
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
