@@ -126,6 +126,10 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
+		return err
+	}
+
 	commitInfo := &commitInfo{
 		cfg:           r.cfg,
 		state:         r.state,
