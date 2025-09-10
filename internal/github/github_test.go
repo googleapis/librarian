@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -1108,7 +1107,6 @@ func TestCreateTag(t *testing.T) {
 				if err := json.NewDecoder(r.Body).Decode(&ref); err != nil {
 					t.Fatalf("failed to decode request body: %v", err)
 				}
-				log.Printf("ref: %+v", ref)
 				if ref.Ref == nil || *ref.Ref != "refs/tags/v1.2.3" {
 					t.Errorf("unexpected ref: got %v, want %s", ref.Ref, "refs/tags/v1.2.3")
 				}
