@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -452,17 +451,6 @@ func (r *LocalRepository) Push(branchName string) error {
 // Restore restores files in the given paths from staging area and working tree.
 func (r *LocalRepository) Restore(paths []string) error {
 	slog.Info("Restoring uncommitted changes", "file paths", strings.Join(paths, ","))
-	for i, path := range paths {
-		fileInfo, err := os.Stat(path)
-		if err != nil {
-			return err
-		}
-
-		if fileInfo.IsDir() {
-			paths[i] = filepath.Join(path, "*")
-		}
-	}
-
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
