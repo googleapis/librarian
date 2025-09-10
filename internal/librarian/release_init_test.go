@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"github.com/go-git/go-git/v5/plumbing"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,6 +90,7 @@ func TestInitRun(t *testing.T) {
 		name       string
 		runner     *initRunner
 		files      map[string]string
+		want       *config.LibrarianState
 		wantErr    bool
 		wantErrMsg string
 	}{
@@ -134,6 +136,28 @@ func TestInitRun(t *testing.T) {
 				"dir1/file1.txt": "",
 				"dir2/file2.txt": "",
 			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "another-example-id",
+						SourceRoots: []string{
+							"dir3",
+							"dir4",
+						},
+					},
+					{
+						ID: "example-id",
+						SourceRoots: []string{
+							"dir1",
+							"dir2",
+						},
+						RemoveRegex: []string{
+							"dir1",
+							"dir2",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "run release init command without librarian config",
@@ -176,6 +200,28 @@ func TestInitRun(t *testing.T) {
 				"dir1/file1.txt": "",
 				"dir2/file2.txt": "",
 			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "another-example-id",
+						SourceRoots: []string{
+							"dir3",
+							"dir4",
+						},
+					},
+					{
+						ID: "example-id",
+						SourceRoots: []string{
+							"dir1",
+							"dir2",
+						},
+						RemoveRegex: []string{
+							"dir1",
+							"dir2",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "run release init command for all libraries",
@@ -186,7 +232,8 @@ func TestInitRun(t *testing.T) {
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
-							ID: "another-example-id",
+							ID:      "another-example-id",
+							Version: "1.0.0",
 							SourceRoots: []string{
 								"dir3",
 								"dir4",
@@ -197,7 +244,8 @@ func TestInitRun(t *testing.T) {
 							},
 						},
 						{
-							ID: "example-id",
+							ID:      "example-id",
+							Version: "2.0.0",
 							SourceRoots: []string{
 								"dir1",
 								"dir2",
@@ -211,6 +259,30 @@ func TestInitRun(t *testing.T) {
 				},
 				repo: &MockRepository{
 					Dir: t.TempDir(),
+					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+						"another-example-id-1.0.0": {
+							{
+								Hash:    plumbing.NewHash("123456"),
+								Message: "feat: another new feature",
+							},
+						},
+						"example-id-2.0.0": {
+							{
+								Hash:    plumbing.NewHash("abcdefg"),
+								Message: "feat: a new feature",
+							},
+						},
+					},
+					ChangedFilesInCommitValueByHash: map[string][]string{
+						plumbing.NewHash("123456").String(): {
+							"dir3/file3.txt",
+							"dir4/file4.txt",
+						},
+						plumbing.NewHash("abcdefg").String(): {
+							"dir1/file1.txt",
+							"dir2/file2.txt",
+						},
+					},
 				},
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
@@ -221,6 +293,54 @@ func TestInitRun(t *testing.T) {
 				"dir2/file2.txt": "",
 				"dir3/file3.txt": "",
 				"dir4/file4.txt": "",
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:              "another-example-id",
+						Version:         "1.1.0", // version is bumped.
+						PreviousVersion: "1.0.0",
+						SourceRoots: []string{
+							"dir3",
+							"dir4",
+						},
+						RemoveRegex: []string{
+							"dir3",
+							"dir4",
+						},
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "feat",
+								Description: "another new feature",
+								LibraryID:   "another-example-id",
+								Footers:     map[string]string{},
+							},
+						},
+						ReleaseTriggered: true,
+					},
+					{
+						ID:              "example-id",
+						Version:         "2.1.0", // version is bumped.
+						PreviousVersion: "2.0.0",
+						SourceRoots: []string{
+							"dir1",
+							"dir2",
+						},
+						RemoveRegex: []string{
+							"dir1",
+							"dir2",
+						},
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:        "feat",
+								Description: "a new feature",
+								LibraryID:   "example-id",
+								Footers:     map[string]string{},
+							},
+						},
+						ReleaseTriggered: true,
+					},
+				},
 			},
 		},
 		{
@@ -364,6 +484,16 @@ func TestInitRun(t *testing.T) {
 			files: map[string]string{
 				"dir1/file1.txt": "hello",
 			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-id",
+						SourceRoots: []string{
+							"dir1",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "copy library files returns error",
@@ -483,6 +613,9 @@ func TestInitRun(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("run() failed: %s", err.Error())
+			}
+			if diff := cmp.Diff(test.want, test.runner.state, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "When")); diff != "" {
+				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
