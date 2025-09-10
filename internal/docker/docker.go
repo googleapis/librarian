@@ -269,6 +269,13 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		"--repo=/repo",
 		"--output=/output",
 	}
+	if request.LibraryID != "" {
+		commandArgs = append(commandArgs, fmt.Sprintf("--library=%s", request.LibraryID))
+	}
+	if request.LibraryVersion != "" {
+		commandArgs = append(commandArgs, fmt.Sprintf("--library-version=%s", request.LibraryVersion))
+	}
+	slog.Info("Docker ReleaseInit commandArgs", "args", commandArgs)
 
 	librarianDir := filepath.Join(request.PartialRepoDir, config.LibrarianDir)
 	mounts := []string{

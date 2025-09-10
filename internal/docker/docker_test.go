@@ -493,6 +493,7 @@ func TestDockerRun(t *testing.T) {
 				"--librarian=/librarian",
 				"--repo=/repo",
 				"--output=/output",
+				"--library=testLibraryID",
 			},
 		},
 		{
@@ -531,6 +532,8 @@ func TestDockerRun(t *testing.T) {
 				"--librarian=/librarian",
 				"--repo=/repo",
 				"--output=/output",
+				"--library=testLibraryID",
+				"--library-version=1.2.3",
 			},
 		},
 	} {
