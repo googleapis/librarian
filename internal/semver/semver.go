@@ -91,6 +91,51 @@ func Parse(versionString string) (*Version, error) {
 	return v, nil
 }
 
+// Compare returns an integer comparing two versions.
+// The result is -1, 0, or 1 depending on whether v is less than, equal to, or greater than other.
+func (v *Version) Compare(other *Version) int {
+	if v.Major < other.Major {
+		return -1
+	}
+	if v.Major > other.Major {
+		return 1
+	}
+	if v.Minor < other.Minor {
+		return -1
+	}
+	if v.Minor > other.Minor {
+		return 1
+	}
+	if v.Patch < other.Patch {
+		return -1
+	}
+	if v.Patch > other.Patch {
+		return 1
+	}
+	// a pre-release version is less than a non-pre-release version
+	if v.Prerelease != "" && other.Prerelease == "" {
+		return -1
+	}
+	if v.Prerelease == "" && other.Prerelease != "" {
+		return 1
+	}
+	// lexical comparison between prerelease type (e.g. "alpha" vs "beta")
+	if v.Prerelease < other.Prerelease {
+		return -1
+	}
+	if v.Prerelease > other.Prerelease {
+		return 1
+	}
+	// prerelease number (e.g. "alpha1" vs "alpha2")
+	if v.PrereleaseNumber < other.PrereleaseNumber {
+		return -1
+	}
+	if v.PrereleaseNumber > other.PrereleaseNumber {
+		return 1
+	}
+	return 0
+}
+
 // String formats a Version struct into a string.
 func (v *Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
