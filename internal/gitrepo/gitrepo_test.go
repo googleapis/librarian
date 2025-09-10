@@ -1150,20 +1150,16 @@ func TestRestore(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			clean, err := localRepo.IsClean()
-			if err != nil {
+
+			if _, err := localRepo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
-			if clean {
-				t.Error("repo should not in clean state")
+
+			if err := localRepo.Commit("faked commit"); err != nil {
+				return
 			}
 
-			var relPaths []string
-			for _, path := range test.paths {
-				relPaths = append(relPaths, filepath.Join(dir, path))
-			}
-
-			err = localRepo.Restore(relPaths)
+			err := localRepo.Restore(test.paths)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("%s should return error", test.name)
@@ -1178,13 +1174,12 @@ func TestRestore(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Verify the repo is clean after the restore.
-			clean, err = localRepo.IsClean()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !clean {
-				t.Error("repo should in clean state")
+			// Verify the files are removed.
+			for _, path := range test.paths {
+				file := filepath.Join(dir, path, "example.txt")
+				if _, err := os.Stat(file); !os.IsNotExist(err) {
+					t.Fatalf("%s should be removed", file)
+				}
 			}
 		})
 	}
