@@ -207,7 +207,6 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{},
 				cfg: &config.Config{
 					Library: "example-id",
-					Push:    false,
 				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
