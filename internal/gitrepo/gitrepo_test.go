@@ -1002,7 +1002,7 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			gotCommitMessages := []string{}
+			var gotCommitMessages []string
 			for _, c := range gotCommits {
 				gotCommitMessages = append(gotCommitMessages, strings.Split(c.Message, "\n")[0])
 			}
