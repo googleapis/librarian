@@ -340,6 +340,7 @@ func TestReleaseInit(t *testing.T) {
 		runGit(t, repo, "add", newFilePath)
 		runGit(t, repo, "commit", "-m", "feat: add new feature")
 		runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
+<<<<<<< HEAD
 
 		// Create the release-init-request.json file.
 		librarianDir := filepath.Join(t.TempDir(), ".librarian")
@@ -366,6 +367,8 @@ func TestReleaseInit(t *testing.T) {
 		if err := os.WriteFile(requestFile, []byte(requestBody), 0644); err != nil {
 			t.Fatal(err)
 		}
+=======
+>>>>>>> cc25904 (chore: add logs)
 
 		cmd := exec.Command(
 			"go",

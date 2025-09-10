@@ -101,6 +101,7 @@ func doReleaseInit(args []string) error {
 		return err
 	}
 
+<<<<<<< HEAD
 	state, err := readReleaseInitRequest(filepath.Join(request.librarianDir, releaseInitRequest))
 	if err != nil {
 		return err
@@ -109,10 +110,22 @@ func doReleaseInit(args []string) error {
 	log.Printf("SourceRoots are read from the release-init-request.json file.")
 	for i, library := range state.Libraries {
 		log.Printf("Library %%d ('%%s') has SourceRoots: %%v", i, library.ID, library.SourceRoots)
+=======
+	// Read the state.yaml file.
+	stateFilePath := filepath.Join(request.repoDir, ".librarian", "state.yaml")
+	stateBytes, err := os.ReadFile(stateFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read state.yaml: %w", err)
+	}
+	var state librarianState
+	if err := yaml.Unmarshal(stateBytes, &state); err != nil {
+		return fmt.Errorf("failed to unmarshal state.yaml: %w", err)
+>>>>>>> cc25904 (chore: add logs)
 	}
 
 	// Update the version of the library.
 	for _, library := range state.Libraries {
+<<<<<<< HEAD
 		if !library.ReleaseTriggered {
 			continue
 		}
@@ -138,10 +151,20 @@ func doReleaseInit(args []string) error {
 	}
 
 	log.Printf("State after update: %+v", state)
+=======
+		if library.ID == request.libraryID {
+			library.Version = request.libraryVersion
+			break
+		}
+	}
+
+	// Write the updated state back to state.yaml.
+>>>>>>> cc25904 (chore: add logs)
 	updatedStateBytes, err := yaml.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal updated state: %w", err)
 	}
+<<<<<<< HEAD
 	log.Printf("Marshalled updated state (YAML):\n%s", string(updatedStateBytes))
 
 	outputStateDir := filepath.Join(request.outputDir, ".librarian")
@@ -156,6 +179,15 @@ func doReleaseInit(args []string) error {
 
 	log.Print("Wrote updated state.yaml to " + outputStatePath)
 
+=======
+	if err := os.WriteFile(stateFilePath, updatedStateBytes, 0644); err != nil {
+		return fmt.Errorf("failed to write updated state.yaml: %w", err)
+	}
+
+	// The release-init command in the fake image doesn't need to do anything,
+	// as the e2e test only checks if the command is called correctly.
+	// We just need to create an empty response file.
+>>>>>>> cc25904 (chore: add logs)
 	return writeReleaseInitResponse(request)
 }
 
