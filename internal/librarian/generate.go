@@ -204,7 +204,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		ghClient:        r.ghClient,
 		idToCommits:     idToCommits,
 		failedLibraries: failedLibraries,
-		commitMessage:   "chore: generate libraries",
+		commitMessage:   "feat: generate libraries",
 		prType:          generate,
 	}
 
