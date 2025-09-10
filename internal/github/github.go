@@ -318,8 +318,8 @@ func (c *Client) CreateTag(ctx context.Context, tagName, commitSHA string) error
 	slog.Info("Creating tag", "tag", tagName, "commit", commitSHA)
 	ref := "refs/tags/" + tagName
 	tagRef := &github.Reference{
-		Ref:    github.String(ref),
-		Object: &github.GitObject{SHA: github.String(commitSHA), Type: github.String("commit")},
+		Ref:    github.Ptr(ref),
+		Object: &github.GitObject{SHA: github.Ptr(commitSHA), Type: github.Ptr("commit")},
 	}
 	_, _, err := c.Git.CreateRef(ctx, c.repo.Owner, c.repo.Name, tagRef)
 	return err

@@ -224,74 +224,28 @@ func TestParsePullRequestBody(t *testing.T) {
 	}{
 		{
 			name: "single library",
-			body: `
-Librarian Version: v0.2.0
-Language Image: image
-
-<details><summary>google-cloud-storage: 1.2.3</summary>
-
-[1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
-
-### Features
-
-* Add new feature ([abcdef1](https://github.com/googleapis/google-cloud-go/commit/abcdef1))
-
-</details>`,
+			body: "\nLibrarian Version: v0.2.0\nLanguage Image: image\n\n<details><summary>google-cloud-storage: 1.2.3</summary>\n\n[1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)\n\n### Features\n\n* Add new feature ([abcdef1](https://github.com/googleapis/google-cloud-go/commit/abcdef1))\n\n</details>",
 			want: []libraryRelease{
 				{
 					Version: "1.2.3",
 					Library: "google-cloud-storage",
-					Body: `[1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
-
-### Features
-
-* Add new feature ([abcdef1](https://github.com/googleapis/google-cloud-go/commit/abcdef1))`,
+					Body:    "[1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)\n\n### Features\n\n* Add new feature ([abcdef1](https://github.com/googleapis/google-cloud-go/commit/abcdef1))",
 				},
 			},
 		},
 		{
 			name: "multiple libraries",
-			body: `
-Librarian Version: 1.2.3
-Language Image: gcr.io/test/image:latest
-
-<details><summary>library-one: 1.0.0</summary>
-
-[1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
-
-### Features
-
-* some feature ([1234567](https://github.com/googleapis/repo/commit/1234567))
-
-</details>
-
-<details><summary>another-library-name: 2.3.4</summary>
-
-[2.3.4](https://github.com/googleapis/repo/compare/another-library-name-v2.3.3...another-library-name-v2.3.4) (2025-08-15)
-
-### Bug Fixes
-
-* some bug fix ([abcdefg](https://github.com/googleapis/repo/commit/abcdefg))
-
-</details>`,
+			body: "\nLibrarian Version: 1.2.3\nLanguage Image: gcr.io/test/image:latest\n\n<details><summary>library-one: 1.0.0</summary>\n\n[1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)\n\n### Features\n\n* some feature ([1234567](https://github.com/googleapis/repo/commit/1234567))\n\n</details>\n\n<details><summary>another-library-name: 2.3.4</summary>\n\n[2.3.4](https://github.com/googleapis/repo/compare/another-library-name-v2.3.3...another-library-name-v2.3.4) (2025-08-15)\n\n### Bug Fixes\n\n* some bug fix ([abcdefg](https://github.com/googleapis/repo/commit/abcdefg))\n\n</details>",
 			want: []libraryRelease{
 				{
 					Version: "1.0.0",
 					Library: "library-one",
-					Body: `[1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
-
-### Features
-
-* some feature ([1234567](https://github.com/googleapis/repo/commit/1234567))`,
+					Body:    "[1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)\n\n### Features\n\n* some feature ([1234567](https://github.com/googleapis/repo/commit/1234567))",
 				},
 				{
 					Version: "2.3.4",
 					Library: "another-library-name",
-					Body: `[2.3.4](https://github.com/googleapis/repo/compare/another-library-name-v2.3.3...another-library-name-v2.3.4) (2025-08-15)
-
-### Bug Fixes
-
-* some bug fix ([abcdefg](https://github.com/googleapis/repo/commit/abcdefg))`,
+					Body:    "[2.3.4](https://github.com/googleapis/repo/compare/another-library-name-v2.3.3...another-library-name-v2.3.4) (2025-08-15)\n\n### Bug Fixes\n\n* some bug fix ([abcdefg](https://github.com/googleapis/repo/commit/abcdefg))",
 				},
 			},
 		},
@@ -302,25 +256,12 @@ Language Image: gcr.io/test/image:latest
 		},
 		{
 			name: "malformed summary",
-			body: `
-Librarian Version: 1.2.3
-Language Image: gcr.io/test/image:latest
-
-<details><summary>no-version-here</summary>
-
-some content
-
-</details>`,
+			body: "\nLibrarian Version: 1.2.3\nLanguage Image: gcr.io/test/image:latest\n\n<details><summary>no-version-here</summary>\n\nsome content\n\n</details>",
 			want: nil,
 		},
 		{
 			name: "v prefix in version",
-			body: `
-<details><summary>google-cloud-storage: v1.2.3</summary>
-
-[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
-
-</details>`,
+			body: "\n<details><summary>google-cloud-storage: v1.2.3</summary>\n\n[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)\n\n</details>",
 			want: []libraryRelease{
 				{
 					Version: "v1.2.3",
@@ -342,21 +283,21 @@ some content
 }
 
 func TestProcessPullRequest(t *testing.T) {
-	prBody := `<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>`
+	prBody := "<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>"
 	prNumber := 123
 	mergeCommitSHA := "abcdef"
 	prWithRelease := &github.PullRequest{
 		Body:           &prBody,
 		Number:         &prNumber,
 		MergeCommitSHA: &mergeCommitSHA,
-		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}}, // Corrected: Use gh.Ptr for labels
 	}
 	body := "no release details"
 	prWithoutRelease := &github.PullRequest{
 		Body:           &body,
 		Number:         &prNumber,
 		MergeCommitSHA: &mergeCommitSHA,
-		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}}, // Corrected: Use gh.Ptr for labels
 	}
 	state := &config.LibrarianState{
 		Libraries: []*config.LibraryState{
@@ -372,6 +313,7 @@ func TestProcessPullRequest(t *testing.T) {
 		ghClient               *mockGitHubClient
 		state                  *config.LibrarianState
 		wantErrMsg             string
+		wantCreateTagCalls     int
 		wantCreateReleaseCalls int
 		wantReplaceLabelsCalls int
 	}{
@@ -380,6 +322,7 @@ func TestProcessPullRequest(t *testing.T) {
 			pr:                     prWithRelease,
 			ghClient:               &mockGitHubClient{},
 			state:                  state,
+			wantCreateTagCalls:     1,
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 		},
@@ -397,6 +340,16 @@ func TestProcessPullRequest(t *testing.T) {
 			wantErrMsg: "library google-cloud-storage not found",
 		},
 		{
+			name: "create tag fails",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				createTagErr: errors.New("create tag error"),
+			},
+			state:              state,
+			wantErrMsg:         "failed to create tag",
+			wantCreateTagCalls: 1,
+		},
+		{
 			name: "create release fails",
 			pr:   prWithRelease,
 			ghClient: &mockGitHubClient{
@@ -404,6 +357,7 @@ func TestProcessPullRequest(t *testing.T) {
 			},
 			state:                  state,
 			wantErrMsg:             "failed to create release",
+			wantCreateTagCalls:     1,
 			wantCreateReleaseCalls: 1,
 		},
 		{
@@ -414,6 +368,7 @@ func TestProcessPullRequest(t *testing.T) {
 			},
 			state:                  state,
 			wantErrMsg:             "failed to replace labels",
+			wantCreateTagCalls:     1,
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 		},
@@ -435,6 +390,9 @@ func TestProcessPullRequest(t *testing.T) {
 				t.Fatalf("expected error containing %q, got nil", test.wantErrMsg)
 			}
 
+			if test.ghClient.createTagCalls != test.wantCreateTagCalls {
+				t.Errorf("createTagCalls = %v, want %v", test.ghClient.createTagCalls, test.wantCreateTagCalls)
+			}
 			if test.ghClient.createReleaseCalls != test.wantCreateReleaseCalls {
 				t.Errorf("createReleaseCalls = %v, want %v", test.ghClient.createReleaseCalls, test.wantCreateReleaseCalls)
 			}
@@ -502,17 +460,17 @@ func TestReplacePendingLabel(t *testing.T) {
 
 func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
 	pr1 := &github.PullRequest{
-		Body:           gh.Ptr(`<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>`),
+		Body:           gh.Ptr("<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>"),
 		Number:         gh.Ptr(123),
 		MergeCommitSHA: gh.Ptr("abc123"),
-		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}}, // Corrected: Use gh.Ptr for labels
 	}
 	// This one will fail because the library details are not parsable.
 	pr2 := &github.PullRequest{
-		Body:           gh.Ptr(`<details><summary>unknown-library: v1.0.0</summary>release notes</details>`),
+		Body:           gh.Ptr("<details><summary>unknown-library: v1.0.0</summary>release notes</details>"),
 		Number:         gh.Ptr(456),
 		MergeCommitSHA: gh.Ptr("xyz456"),
-		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}}, // Corrected: Use gh.Ptr for labels
 	}
 	ghClient := &mockGitHubClient{
 		pullRequests: []*github.PullRequest{pr1, pr2},

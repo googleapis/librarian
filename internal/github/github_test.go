@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -1077,6 +1078,71 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantPRs, prs); diff != "" {
 				t.Errorf("FindMergedPullRequestsWithPendingReleaseLabel() prs mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+func TestCreateTag(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		tagName   string
+		commitSHA string
+		handler   http.HandlerFunc
+		wantErr   bool
+	}{
+		{
+			name:      "Success",
+			tagName:   "v1.2.3",
+			commitSHA: "abcdef123456",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("unexpected method: got %s, want %s", r.Method, http.MethodPost)
+				}
+				wantPath := "/repos/owner/repo/git/refs"
+				if r.URL.Path != wantPath {
+					t.Errorf("unexpected path: got %s, want %s", r.URL.Path, wantPath)
+				}
+
+				var ref github.Reference
+				if err := json.NewDecoder(r.Body).Decode(&ref); err != nil {
+					t.Fatalf("failed to decode request body: %v", err)
+				}
+				log.Printf("ref: %+v", ref)
+				if ref.Ref == nil || *ref.Ref != "refs/tags/v1.2.3" {
+					t.Errorf("unexpected ref: got %v, want %s", ref.Ref, "refs/tags/v1.2.3")
+				}
+				fmt.Fprint(w, `{"ref": "refs/tags/v1.2.3"}`)
+			},
+		},
+		{
+			name:      "API Error",
+			tagName:   "v1.2.3",
+			commitSHA: "abcdef123456",
+			handler:   func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) },
+			wantErr:   true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(test.handler)
+			defer server.Close()
+
+			repo := &Repository{Owner: "owner", Name: "repo"}
+			client, err := newClientWithHTTP("fake-token", repo, server.Client())
+			if err != nil {
+				t.Fatalf("newClientWithHTTP() error = %v", err)
+			}
+			client.BaseURL, _ = url.Parse(server.URL + "/")
+
+			err = client.CreateTag(context.Background(), test.tagName, test.commitSHA)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("CreateTag() err = nil, expected error")
+				}
+			} else if err != nil {
+				t.Errorf("CreateTag() err = %v, want nil", err)
 			}
 		})
 	}
