@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,11 +30,14 @@ const (
 )
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	slog.SetDefault(logger)
+
 	if len(os.Args) <= 1 {
 		log.Fatal(errors.New("no command-line arguments provided"))
 	}
 
-	log.Print("received command: ", os.Args[1:])
+	slog.Info("received command", "args", os.Args[1:])
 	switch os.Args[1] {
 	case "configure":
 		if err := doConfigure(os.Args[2:]); err != nil {
@@ -91,13 +95,13 @@ func doGenerate(args []string) error {
 }
 
 func doReleaseInit(args []string) error {
-	log.Printf("doReleaseInit received args: %v", args)
+	slog.Debug("doReleaseInit received args", "args", args)
 	request, err := parseReleaseInitRequest(args)
 	if err != nil {
 		return err
 	}
-	log.Printf("doReleaseInit received request: %+v", request)
-	log.Printf("doReleaseInit received outputDir: %s", request.outputDir)
+	slog.Debug("doReleaseInit received request", "request", request)
+	slog.Debug("doReleaseInit received outputDir", "outputDir", request.outputDir)
 	if err := validateLibrarianDir(request.librarianDir, releaseInitRequest); err != nil {
 		return err
 	}
@@ -107,9 +111,8 @@ func doReleaseInit(args []string) error {
 		return err
 	}
 
-	log.Printf("SourceRoots are read from the release-init-request.json file.")
 	for i, library := range state.Libraries {
-		log.Printf("Library %%d ('%%s') has SourceRoots: %%v", i, library.ID, library.SourceRoots)
+		slog.Debug("Library has SourceRoots", "index", i, "id", library.ID, "source_roots", library.SourceRoots)
 	}
 
 	// Update the version of the library.
@@ -117,8 +120,8 @@ func doReleaseInit(args []string) error {
 		if !library.ReleaseTriggered {
 			continue
 		}
-		log.Printf("Found library to update: %s", library.ID)
-		log.Printf("Version from request: %s", library.Version)
+		slog.Info("Found library to update", "id", library.ID)
+		slog.Info("Version from request", "version", library.Version)
 
 		// Create a changelog.
 		var changelog strings.Builder
@@ -134,16 +137,16 @@ func doReleaseInit(args []string) error {
 			if err := os.WriteFile(changelogPath, []byte(changelog.String()), 0644); err != nil {
 				return fmt.Errorf("failed to write changelog: %w", err)
 			}
-			log.Printf("Wrote changelog to %s", changelogPath)
+			slog.Info("Wrote changelog", "path", changelogPath)
 		}
 	}
 
-	log.Printf("State after update: %+v", state)
+	slog.Debug("State after update", "state", state)
 	updatedStateBytes, err := yaml.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal updated state: %w", err)
 	}
-	log.Printf("Marshalled updated state (YAML):\n%s", string(updatedStateBytes))
+	slog.Debug("Marshalled updated state (YAML)", "yaml", string(updatedStateBytes))
 
 	outputStateDir := filepath.Join(request.outputDir, ".librarian")
 	if err := os.MkdirAll(outputStateDir, 0755); err != nil {
@@ -155,7 +158,7 @@ func doReleaseInit(args []string) error {
 		return fmt.Errorf("failed to write updated state.yaml to output: %w", err)
 	}
 
-	log.Print("Wrote updated state.yaml to " + outputStatePath)
+	slog.Info("Wrote updated state.yaml", "path", outputStatePath)
 
 	return writeReleaseInitResponse(request)
 }
@@ -168,11 +171,11 @@ func readReleaseInitRequest(path string) (*librarianState, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("readReleaseInitRequest: File content:\n%s", string(data))
+	slog.Debug("readReleaseInitRequest: File content", "content", string(data))
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, err
 	}
-	log.Printf("readReleaseInitRequest: Unmarshalled state: %+v", state)
+	slog.Debug("readReleaseInitRequest: Unmarshalled state", "state", state)
 	return state, nil
 }
 
@@ -214,9 +217,9 @@ func writeReleaseInitResponse(option *releaseInitOption) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("about to write to %s: %s", jsonFilePath, string(data))
+	slog.Debug("about to write to file", "path", jsonFilePath, "data", string(data))
 	_, err = jsonFile.Write(data)
-	log.Print("write release init response to " + jsonFilePath)
+	slog.Info("wrote release init response", "path", jsonFilePath)
 
 	return err
 }
@@ -322,7 +325,7 @@ func writeConfigureResponse(option *configureOption, state *librarianState) erro
 		if _, err := jsonFile.Write(data); err != nil {
 			return err
 		}
-		log.Print("write configure response to " + jsonFilePath)
+		slog.Info("write configure response", "path", jsonFilePath)
 	}
 
 	return nil
@@ -364,7 +367,7 @@ func writeGenerateResponse(option *generateOption) (err error) {
 		return err
 	}
 	_, err = jsonFile.Write(data)
-	log.Print("write generate response to " + jsonFilePath)
+	slog.Info("write generate response", "path", jsonFilePath)
 
 	return err
 }
@@ -389,7 +392,7 @@ func generateLibrary(library *libraryState, outputDir string) error {
 		if _, err := os.Create(filepath.Join(srcPath, "example.txt")); err != nil {
 			return err
 		}
-		log.Print("create file in " + srcPath)
+		slog.Info("create file in", "path", srcPath)
 	}
 
 	return nil
