@@ -122,8 +122,13 @@ func (r *initRunner) run(ctx context.Context) error {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
 	slog.Info("Initiating a release", "dir", outputDir)
-	if err := r.runInitCommand(ctx, outputDir); err != nil {
+	if anyReleases, err := r.runInitCommand(ctx, outputDir); err != nil {
 		return err
+	}
+
+	if !anyReleases {
+		slog.Info("No releases created; skipping the commit/PR")
+		return nil
 	}
 
 	commitInfo := &commitInfo{
@@ -145,37 +150,36 @@ func (r *initRunner) run(ctx context.Context) error {
 	return nil
 }
 
-func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
+// runInitCommand updates the repository content with any libraries that need releasing,
+// and returns a value indicating whether there were any such libraries.
+func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) bool, error {
 	dst := r.partialRepo
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return fmt.Errorf("failed to make directory: %w", err)
 	}
 
 	src := r.repo.GetDir()
+	anyReleasesTriggered := false
 	for _, library := range r.state.Libraries {
-		if r.cfg.Library != "" {
-			if r.cfg.Library != library.ID {
-				continue
-			}
-
-			// Only update one library with the given library ID.
-			if err := r.updateLibrary(library); err != nil {
-				return err
-			}
-			if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
-				return err
-			}
-
-			break
+		// If we've been asked to release a specific library, ignore all the others.
+		if r.cfg.Library != "" && r.cfg.Library != library.ID {
+			continue
 		}
 
-		// Update all libraries.
 		if err := r.updateLibrary(library); err != nil {
-			return err
+			return false, err
 		}
-		if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
-			return err
+		if library.ReleaseTriggered {
+			anyReleasesTriggered = true
+			if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
+				return false, err
+			}
 		}
+	}
+
+	if !anyReleasesTriggered {
+		slog.Info("No libraries needed releasing.")
+		return false, nil
 	}
 
 	if err := copyLibrarianDir(dst, src); err != nil {
@@ -200,26 +204,19 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return err
 	}
 
+	// Copy any files that the container created in its /output directory.
 	for _, library := range r.state.Libraries {
-		if r.cfg.Library != "" {
-			if r.cfg.Library != library.ID {
-				continue
-			}
-			// Only copy one library to repository.
-			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
-				return err
-			}
-
-			break
+		// Ignore any libraries that weren't released. (This implicitly
+		// handles "only a specific library was requested".)
+		if !library.ReleaseTriggered {
+			continue
 		}
-
-		// Copy all libraries to repository.
 		if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
 			return err
 		}
 	}
 
-	return copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false)
+	return true, copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false)
 }
 
 // updateLibrary updates the given library in the following way:
@@ -250,8 +247,10 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 		return err
 	}
 
-	library.Version = nextVersion
-	library.ReleaseTriggered = true
+	if nextVersion != library.Version {
+		library.ReleaseTriggered = true
+		library.Version = nextVersion
+	}
 
 	return nil
 }
