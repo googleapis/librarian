@@ -617,11 +617,15 @@ func TestInitRun(t *testing.T) {
 			// load librarian state from state.yaml, which should contain updated
 			// library state.
 			bytes, err := os.ReadFile(filepath.Join(repoDir, ".librarian/state.yaml"))
-			var got *config.LibrarianState
-			err = yaml.Unmarshal(bytes, &got)
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			var got *config.LibrarianState
+			if err := yaml.Unmarshal(bytes, &got); err != nil {
+				t.Fatal(err)
+			}
+
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
