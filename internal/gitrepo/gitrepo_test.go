@@ -1140,9 +1140,14 @@ func TestRestore(t *testing.T) {
 			}
 			// create files in test.paths
 			for _, path := range test.paths {
-				file := filepath.Join(dir, path, "example.txt")
+				path := filepath.Join(dir, path)
+				if err := os.MkdirAll(path, 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				file := filepath.Join(path, "example.txt")
 				if err := os.WriteFile(file, []byte("example line"), 0755); err != nil {
-					return
+					t.Fatal(err)
 				}
 			}
 			clean, err := localRepo.IsClean()
