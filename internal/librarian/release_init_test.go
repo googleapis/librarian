@@ -17,12 +17,13 @@ package librarian
 import (
 	"context"
 	"errors"
-	"github.com/go-git/go-git/v5/plumbing"
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/go-git/go-git/v5/plumbing"
+	"gopkg.in/yaml.v3"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 
