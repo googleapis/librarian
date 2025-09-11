@@ -84,7 +84,7 @@ func parseSourceCommitHash(sourceLink string) (string, error) {
 const breakingChangeKey = "BREAKING CHANGE"
 
 // sourceLinkRegex matches the expected Github commit url format. Git SHA values at
-// the end of the url are 40 hexadecimal characters
+// the end of the url are 40 hexadecimal characters.
 var sourceLinkRegex = regexp.MustCompile(`^https://github\.com/googleapis/googleapis/commits/[a-fA-F0-9]{40}$`)
 var commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
 
@@ -125,7 +125,6 @@ func parseHeader(headerLine string) (*parsedHeader, bool) {
 }
 
 // separateBodyAndFooters splits the lines after the header into body and footer sections.
-// footer is defined a section that starts when it matches the footerRegex
 func separateBodyAndFooters(lines []string) (bodyLines, footerLines []string) {
 	inFooterSection := false
 	for i, line := range lines {
@@ -190,7 +189,7 @@ const (
 )
 
 // extractCommitMessageOverride searches through the commit message
-// and parses for the text between the commit override tags
+// and parses for the text between the commit override tags.
 func extractCommitMessageOverride(message string) string {
 	beginIndex := strings.Index(message, beginCommitOverride)
 	if beginIndex == -1 {
