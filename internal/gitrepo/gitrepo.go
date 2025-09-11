@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -44,6 +45,7 @@ type Repository interface {
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
 	Push(branchName string) error
+	Restore(paths []string) error
 }
 
 // LocalRepository represents a git repository.
@@ -445,4 +447,30 @@ func (r *LocalRepository) Push(branchName string) error {
 	}
 	slog.Info("Successfully pushed branch to remote 'origin", "branch", branchName)
 	return nil
+}
+
+// Restore restores files in the given paths from staging area and working tree.
+func (r *LocalRepository) Restore(paths []string) error {
+	slog.Info("Restoring uncommitted changes", "file paths", strings.Join(paths, ","))
+	for i, path := range paths {
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+
+		if fileInfo.IsDir() {
+			paths[i] = filepath.Join(path, "*")
+		}
+	}
+
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	return worktree.Restore(&git.RestoreOptions{
+		Staged:   true,
+		Worktree: true,
+		Files:    paths,
+	})
 }
