@@ -224,13 +224,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return "", err
 	}
-	// Print out the content of requestFilePath for debugging
-	content, err := os.ReadFile(requestFilePath)
-	if err != nil {
-		slog.Warn("failed to read request file", slog.String("name", requestFilePath), slog.Any("err", err))
-	} else {
-		slog.Info("request file content", slog.String("name", requestFilePath), slog.String("content", string(content)))
-	}
+
 	defer func() {
 		err := os.Remove(requestFilePath)
 		if err != nil {
@@ -264,6 +258,13 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 	requestFilePath := filepath.Join(request.PartialRepoDir, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return err
+	}
+	// Print out the content of requestFilePath for debugging
+	content, err := os.ReadFile(requestFilePath)
+	if err != nil {
+		slog.Warn("failed to read request file", slog.String("name", requestFilePath), slog.Any("err", err))
+	} else {
+		slog.Info("request file content", slog.String("name", requestFilePath), slog.String("content", string(content)))
 	}
 	defer func() {
 		err := os.Remove(requestFilePath)
