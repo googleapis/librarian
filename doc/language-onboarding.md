@@ -29,7 +29,7 @@ The `state.yaml` file is the primary manifest that informs Librarian about the l
 It contains a comprehensive list of all libraries within the repository, along with their current state and
 configuration.
 
-For a detailed breakdown of all of the fields in the `state.yaml` file, please refer to [state-schema.md].
+For a detailed breakdown of all the fields in the `state.yaml` file, please refer to [state-schema.md].
 
 ### `config.yaml`
 
@@ -66,7 +66,7 @@ it must have a binary entrypoint that can accept the arguments passed by Librari
 
 A successful container invocation is expected to exit with a code of `0`. Any non-zero exit code will be treated as an
 error and will halt the current workflow. If a container would like to send an error message back to librarian it can do
-so by including a field in the various response files outlined below. Additionally any logs sent to stderr/stdout will
+so by including a field in the various response files outlined below. Additionally, any logs sent to stderr/stdout will
 be surfaced to the CLI.
 
 The following sections detail the contracts for each container command.
@@ -324,3 +324,8 @@ global file edits. The libraries that are being released will be marked by the `
 ```
 
 [state-schema.md]: state-schema.md
+
+## Language repository settings
+To correctly parse the commit message of a merge commit, only allow squash merging
+and set the default commit message to **Pull request title and description**.
+![Pull request settings](assets/setting-pull-requests.webp)
