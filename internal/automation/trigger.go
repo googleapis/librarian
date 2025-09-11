@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
@@ -93,6 +94,19 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
 		return fmt.Errorf("unsuppoted command: %s", command)
+	}
+
+	// Special case: stage-release only runs on even weeks
+	// Cloud Scheduler does not support cron expressions with bi-weekly frequency,
+	// so we handle that logic here.
+	if triggerName == "stage-release" {
+		today := time.Now()
+		_, weekNumber := today.ISOWeek()
+
+		if weekNumber%2 == 1 {
+			slog.Info("odd week, skipping stage-release trigger", "weekNumber", weekNumber)
+			return nil
+		}
 	}
 
 	errs := make([]error, 0)
