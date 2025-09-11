@@ -18,6 +18,9 @@
 # 'images-dev' repository, which serves as the entry point for the AR Exit Gate.
 # After passing the gate's security checks, the image is promoted and
 # published to the 'images-prod' repository.
+
+# Local test:
+#   gcloud --project=<my-project> builds submit . --config=cloudbuild-test.yaml
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     waitFor: ['-']
