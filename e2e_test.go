@@ -413,11 +413,8 @@ func TestReleaseInit(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			workRoot := t.TempDir()
 			repo := t.TempDir()
-			outputDir := filepath.Join(t.TempDir(), "output")
-			if err := os.MkdirAll(outputDir, 0755); err != nil {
-				t.Fatal(err)
-			}
 
 			if err := initRepo(t, repo, test.initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
@@ -465,7 +462,7 @@ func TestReleaseInit(t *testing.T) {
 				"release",
 				"init",
 				fmt.Sprintf("--repo=%s", repo),
-				fmt.Sprintf("--output=%s", outputDir),
+				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--library=%s", test.libraryID),
 			)
 			cmd.Stderr = os.Stderr
@@ -476,6 +473,7 @@ func TestReleaseInit(t *testing.T) {
 			}
 
 			// Verify the state.yaml file content
+			outputDir := filepath.Join(workRoot, "output")
 			t.Logf("Checking for output file in: %s", filepath.Join(outputDir, ".librarian", "state.yaml"))
 			gotBytes, err := os.ReadFile(filepath.Join(outputDir, ".librarian", "state.yaml"))
 			if err != nil {
