@@ -31,6 +31,6 @@ steps:
     args:
       - '-i'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/librarian'
-      -  '--config'
+      - '--config'
       - '/workspace/container-structure-test.yaml'
       - '-v'
