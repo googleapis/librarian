@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
@@ -95,6 +96,13 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 		return fmt.Errorf("unsuppoted command: %s", command)
 	}
 
+	if triggerName == "stage-release" {
+		_, week := time.Now().ISOWeek()
+		if week%2 == 0 {
+			slog.Info("Skipping stage-release on an even week.")
+			return nil
+		}
+	}
 	errs := make([]error, 0)
 
 	repositories := config.RepositoriesForCommand(command)
