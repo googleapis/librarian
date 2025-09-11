@@ -268,6 +268,12 @@ func TestCompare(t *testing.T) {
 			want:     0,
 		},
 		{
+			name:     "equal with pre-release and number, different separator",
+			versionA: "1.2.3-alpha4",
+			versionB: "1.2.3-alpha.4",
+			want:     0,
+		},
+		{
 			name:     "less than patch",
 			versionA: "1.2.3",
 			versionB: "1.2.4",
@@ -295,6 +301,12 @@ func TestCompare(t *testing.T) {
 			name:     "less than prerelease number",
 			versionA: "1.2.3-alpha1",
 			versionB: "1.2.3-alpha2",
+			want:     -1,
+		},
+		{
+			name:     "less than prerelease number with separator",
+			versionA: "1.2.3-alpha.1",
+			versionB: "1.2.3-alpha.2",
 			want:     -1,
 		},
 		{
@@ -337,6 +349,12 @@ func TestCompare(t *testing.T) {
 			name:     "greater than prerelease number",
 			versionA: "1.2.3-alpha2",
 			versionB: "1.2.3-alpha1",
+			want:     1,
+		},
+		{
+			name:     "greater than prerelease number with separator",
+			versionA: "1.2.3-alpha.2",
+			versionB: "1.2.3-alpha.1",
 			want:     1,
 		},
 		{
