@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -53,6 +54,10 @@ type ConventionalCommit struct {
 // MarshalJSON implements a custom JSON marshaler for ConventionalCommit.
 func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 	type Alias ConventionalCommit
+	sourceCommitHash, err := parseSourceCommitHash(c.Footers["Source-Link"])
+	if err != nil {
+		return nil, err
+	}
 	return json.Marshal(&struct {
 		*Alias
 		PiperCLNumber    string `json:"piper_cl_number,omitempty"`
@@ -60,12 +65,27 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 	}{
 		Alias:            (*Alias)(c),
 		PiperCLNumber:    c.Footers["PiperOrigin-RevId"],
-		SourceCommitHash: c.Footers["git-commit-hash"],
+		SourceCommitHash: sourceCommitHash,
 	})
+}
+
+// parseSourceCommitHash returns the commit hash from source repo's URL.
+// The source commit hash is the last part of the URL.
+// e.g. https://github.com/googleapis/googleapis/commit/{source_commit_hash}
+func parseSourceCommitHash(sourceLink string) (string, error) {
+	if sourceLinkRegex.FindStringSubmatch(sourceLink) == nil {
+		slog.Error("Unable to parse the source commit hash", "Source Link", sourceLink)
+		return "", fmt.Errorf("unable to parse the source commit hash: %s", sourceLink)
+	}
+	sourceCommitHash := path.Base(sourceLink)
+	return sourceCommitHash, nil
 }
 
 const breakingChangeKey = "BREAKING CHANGE"
 
+// sourceLinkRegex matches the expected Github commit url format. Git SHA values at
+// the end of the url are 40 hexadecimal characters
+var sourceLinkRegex = regexp.MustCompile(`^https://github\.com/googleapis/googleapis/commits/[a-fA-F0-9]{40}$`)
 var commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
 
 // footerRegex defines the format for a conventional commit footer.
@@ -105,6 +125,7 @@ func parseHeader(headerLine string) (*parsedHeader, bool) {
 }
 
 // separateBodyAndFooters splits the lines after the header into body and footer sections.
+// footer is defined a section that starts when it matches the footerRegex
 func separateBodyAndFooters(lines []string) (bodyLines, footerLines []string) {
 	inFooterSection := false
 	for i, line := range lines {
@@ -168,6 +189,8 @@ const (
 	endNestedCommit     = "END_NESTED_COMMIT"
 )
 
+// extractCommitMessageOverride searches through the commit message
+// and parses for the text between the commit override tags
 func extractCommitMessageOverride(message string) string {
 	beginIndex := strings.Index(message, beginCommitOverride)
 	if beginIndex == -1 {

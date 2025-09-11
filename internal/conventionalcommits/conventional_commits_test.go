@@ -491,15 +491,59 @@ func TestConventionalCommit_MarshalJSON(t *testing.T) {
 		Body:    "body of feature",
 		Footers: map[string]string{
 			"PiperOrigin-RevId": "12345",
-			"git-commit-hash":   "abcdef123456",
+			"Source-Link":       "https://github.com/googleapis/googleapis/commits/1234512345123451234512345123451234512345",
 		},
 	}
 	b, err := c.MarshalJSON()
 	if err != nil {
 		t.Fatalf("MarshalJSON() failed: %v", err)
 	}
-	want := `{"type":"feat","subject":"new feature","body":"body of feature","piper_cl_number":"12345","source_commit_hash":"abcdef123456"}`
+	want := `{"type":"feat","subject":"new feature","body":"body of feature","piper_cl_number":"12345","source_commit_hash":"1234512345123451234512345123451234512345"}`
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("MarshalJSON() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestParseSourceCommitHash(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		sourceLink string
+		want       string
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:       "valid github source link",
+			sourceLink: "https://github.com/googleapis/googleapis/commits/1234512345123451234512345123451234512345",
+			want:       "1234512345123451234512345123451234512345",
+		},
+		{
+			name:       "invalid source link, not github link",
+			sourceLink: "not a valid link",
+			wantErr:    true,
+			wantErrMsg: "unable to parse the source commit hash",
+		},
+		{
+			name:       "invalid source link, not 40 characters",
+			sourceLink: "https://github.com/googleapis/googleapis/commits/1234",
+			wantErr:    true,
+			wantErrMsg: "unable to parse the source commit hash",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseSourceCommitHash(test.sourceLink)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("expected error, but did not return one")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("ParseSourceCommitHash(%q) returned diff (-want +got):\n%s", test.sourceLink, diff)
+			}
+		})
 	}
 }
