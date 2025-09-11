@@ -273,11 +273,15 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 		return err
 	}
 
-	libraryStr := "{}"
+	library := &config.LibraryState{}
 	if m.wantErrorMsg {
-		libraryStr = "{error: simulated error message}"
+		library.ErrorMessage = "simulated error message"
 	}
-	if err := os.WriteFile(filepath.Join(request.PartialRepoDir, ".librarian", config.ReleaseInitResponse), []byte(libraryStr), 0755); err != nil {
+	b, err := json.MarshalIndent(library, "", " ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(request.PartialRepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
 		return err
 	}
 	return m.initErr
