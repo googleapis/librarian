@@ -51,9 +51,11 @@ const (
 	LibrarianDir = ".librarian"
 	// ReleaseInitRequest is a JSON file that describes which library to release.
 	ReleaseInitRequest = "release-init-request.json"
-
-	pipelineStateFile = "state.yaml"
-	versionCmdName    = "version"
+	// ReleaseInitResponse is a JSON file that describes which library to change
+	// after release.
+	ReleaseInitResponse = "release-init-response.json"
+	pipelineStateFile   = "state.yaml"
+	versionCmdName      = "version"
 )
 
 // are variables so it can be replaced during testing.
