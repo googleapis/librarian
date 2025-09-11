@@ -1603,7 +1603,7 @@ func TestCommitAndPush(t *testing.T) {
 				state:         test.state,
 				repo:          repo,
 				ghClient:      client,
-				commitMessage: "",
+				commitMessage: "commit message",
 				prType:        test.prType,
 			}
 

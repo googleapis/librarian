@@ -205,6 +205,8 @@ func (r *generateRunner) run(ctx context.Context) error {
 		idToCommits:     idToCommits,
 		failedLibraries: failedLibraries,
 		prType:          generate,
+		// Do not set commitMessage because the commit message needs to be same
+		// as PR body.
 	}
 
 	return commitAndPush(ctx, commitInfo)
