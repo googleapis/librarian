@@ -372,7 +372,14 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
+	titlePrefix := ""
+	if info.prType == generate {
+		titlePrefix = "feat"
+	} else {
+		titlePrefix = "chore"
+	}
+
+	title := fmt.Sprintf("%s: librarian %s pull request: %s", titlePrefix, info.prType, datetimeNow)
 	prBody, err := createPRBody(info)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request body: %w", err)
