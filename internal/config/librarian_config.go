@@ -32,7 +32,7 @@ type LibrarianConfig struct {
 
 // LibraryConfig defines configuration for a single library, identified by its ID.
 type LibraryConfig struct {
-	LibraryId   string `yaml:"id"`
+	LibraryID   string `yaml:"id"`
 	NextVersion string `yaml:"next_version"`
 }
 
@@ -63,10 +63,10 @@ func (g *LibrarianConfig) Validate() error {
 	return nil
 }
 
-// LibraryConfigFor finds the LibraryConfig entry for a given libraryId.
-func (g *LibrarianConfig) LibraryConfigFor(libraryId string) *LibraryConfig {
+// LibraryConfigFor finds the LibraryConfig entry for a given LibraryID.
+func (g *LibrarianConfig) LibraryConfigFor(LibraryID string) *LibraryConfig {
 	for _, lib := range g.Libraries {
-		if lib.LibraryId == libraryId {
+		if lib.LibraryID == LibraryID {
 			return lib
 		}
 	}

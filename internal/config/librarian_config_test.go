@@ -107,7 +107,7 @@ func TestLibraryConfigFor(t *testing.T) {
 	cases := []struct {
 		name          string
 		config        *LibrarianConfig
-		libraryID     string
+		LibraryID     string
 		wantLibrary   *LibraryConfig
 		wantErr       bool
 		wantErrSubstr string
@@ -116,22 +116,22 @@ func TestLibraryConfigFor(t *testing.T) {
 			name: "library found",
 			config: &LibrarianConfig{
 				Libraries: []*LibraryConfig{
-					{LibraryId: "lib1", NextVersion: "1.0.0"},
-					{LibraryId: "lib2", NextVersion: "2.0.0"},
+					{LibraryID: "lib1", NextVersion: "1.0.0"},
+					{LibraryID: "lib2", NextVersion: "2.0.0"},
 				},
 			},
-			libraryID:   "lib1",
-			wantLibrary: &LibraryConfig{LibraryId: "lib1", NextVersion: "1.0.0"},
+			LibraryID:   "lib1",
+			wantLibrary: &LibraryConfig{LibraryID: "lib1", NextVersion: "1.0.0"},
 		},
 		{
 			name: "library not found",
 			config: &LibrarianConfig{
 				Libraries: []*LibraryConfig{
-					{LibraryId: "lib1", NextVersion: "1.0.0"},
-					{LibraryId: "lib2", NextVersion: "2.0.0"},
+					{LibraryID: "lib1", NextVersion: "1.0.0"},
+					{LibraryID: "lib2", NextVersion: "2.0.0"},
 				},
 			},
-			libraryID:   "lib3",
+			LibraryID:   "lib3",
 			wantLibrary: nil,
 		},
 		{
@@ -139,26 +139,26 @@ func TestLibraryConfigFor(t *testing.T) {
 			config: &LibrarianConfig{
 				Libraries: []*LibraryConfig{},
 			},
-			libraryID:   "lib1",
+			LibraryID:   "lib1",
 			wantLibrary: nil,
 		},
 		{
 			name: "multiple libraries with target in middle",
 			config: &LibrarianConfig{
 				Libraries: []*LibraryConfig{
-					{LibraryId: "lib1", NextVersion: "1.0.0"},
-					{LibraryId: "lib2", NextVersion: "2.0.0"},
-					{LibraryId: "lib3", NextVersion: "3.0.0"},
+					{LibraryID: "lib1", NextVersion: "1.0.0"},
+					{LibraryID: "lib2", NextVersion: "2.0.0"},
+					{LibraryID: "lib3", NextVersion: "3.0.0"},
 				},
 			},
-			libraryID:   "lib2",
-			wantLibrary: &LibraryConfig{LibraryId: "lib2", NextVersion: "2.0.0"},
+			LibraryID:   "lib2",
+			wantLibrary: &LibraryConfig{LibraryID: "lib2", NextVersion: "2.0.0"},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotLibrary := tc.config.LibraryConfigFor(tc.libraryID)
+			gotLibrary := tc.config.LibraryConfigFor(tc.LibraryID)
 
 			if diff := cmp.Diff(tc.wantLibrary, gotLibrary); diff != "" {
 				t.Errorf("LibraryConfigFor() mismatch (-want +got):\n%s", diff)
