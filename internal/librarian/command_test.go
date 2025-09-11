@@ -1604,7 +1604,6 @@ func TestCommitAndPush(t *testing.T) {
 				repo:          repo,
 				ghClient:      client,
 				commitMessage: "commit message",
-				prType:        test.prType,
 			}
 
 			err := commitAndPush(context.Background(), commitInfo)

@@ -196,17 +196,17 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	message, err := formatGenerationPRBody(r.sourceRepo, r.state, idToCommits, failedLibraries)
+	if err != nil {
+		return err
+	}
+
 	commitInfo := &commitInfo{
-		cfg:             r.cfg,
-		state:           r.state,
-		repo:            r.repo,
-		sourceRepo:      r.sourceRepo,
-		ghClient:        r.ghClient,
-		idToCommits:     idToCommits,
-		failedLibraries: failedLibraries,
-		prType:          generate,
-		// Do not set commitMessage because the commit message needs to be same
-		// as PR body.
+		cfg:           r.cfg,
+		state:         r.state,
+		repo:          r.repo,
+		ghClient:      r.ghClient,
+		commitMessage: message,
 	}
 
 	return commitAndPush(ctx, commitInfo)

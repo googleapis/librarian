@@ -36,11 +36,6 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-const (
-	generate = "generate"
-	release  = "release"
-)
-
 var globalPreservePatterns = []string{
 	fmt.Sprintf(`^%s(/.*)?$`, regexp.QuoteMeta(config.GeneratorInputDir)), // Preserve the generator-input directory and its contents.
 }
@@ -55,13 +50,11 @@ type commitInfo struct {
 	cfg               *config.Config
 	state             *config.LibrarianState
 	repo              gitrepo.Repository
-	sourceRepo        gitrepo.Repository
 	ghClient          GitHubClient
 	idToCommits       map[string]string
 	failedLibraries   []string
 	pullRequestLabels []string
 	commitMessage     string
-	prType            string
 }
 
 type commandRunner struct {
@@ -353,19 +346,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	message := ""
-	if info.commitMessage != "" {
-		message = info.commitMessage
-	} else {
-		// Use generation PR body as commit message so that we can retain commit info
-		// when parsing commit message during release pull request creation.
-		message, err = createPRBody(info)
-		if err != nil {
-			return fmt.Errorf("failed to create pull request body: %w", err)
-		}
-	}
-
-	if err := repo.Commit(message); err != nil {
+	if err := repo.Commit(info.commitMessage); err != nil {
 		return err
 	}
 
@@ -384,8 +365,8 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
-	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, message)
+	title := fmt.Sprintf("Librarian pull request: %s", datetimeNow)
+	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, info.commitMessage)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
@@ -408,17 +389,6 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 		return fmt.Errorf("failed to add labels to pull request: %w", err)
 	}
 	return nil
-}
-
-func createPRBody(info *commitInfo) (string, error) {
-	switch info.prType {
-	case generate:
-		return formatGenerationPRBody(info.sourceRepo, info.state, info.idToCommits, info.failedLibraries)
-	case release:
-		return formatReleaseNotes(info.repo, info.state)
-	default:
-		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
-	}
 }
 
 func copyFile(dst, src string) (err error) {

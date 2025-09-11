@@ -130,14 +130,17 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	message, err := formatReleaseNotes(r.repo, r.state)
+	if err != nil {
+		return err
+	}
+
 	commitInfo := &commitInfo{
 		cfg:           r.cfg,
 		state:         r.state,
 		repo:          r.repo,
-		sourceRepo:    r.sourceRepo,
 		ghClient:      r.ghClient,
-		commitMessage: "chore: create a release",
-		prType:        release,
+		commitMessage: message,
 		// Newly created PRs from the `release init` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
