@@ -127,7 +127,7 @@ func doReleaseInit(args []string) error {
 		var changelog strings.Builder
 		changelog.WriteString(fmt.Sprintf("## %s\n\n", library.Version))
 		for _, change := range library.Changes {
-			changelog.WriteString(fmt.Sprintf("- %s: %s\n", change.Type, change.Description))
+			changelog.WriteString(fmt.Sprintf("- %s: %s\n", change.Type, change.Subject))
 		}
 		for _, sourceRoot := range library.SourceRoots {
 			changelogPath := filepath.Join(request.outputDir, sourceRoot, "CHANGELOG.md")
@@ -435,6 +435,7 @@ type api struct {
 }
 
 type change struct {
-	Type        string `json:"type" yaml:"type"`
-	Description string `json:"description" yaml:"description"`
+	Type    string `json:"type" yaml:"type"`
+	Subject string `json:"subject" yaml:"subject"`
+	Body    string `json:"body" yaml:"body"`
 }
