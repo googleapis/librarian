@@ -49,6 +49,7 @@ var ignoredExts = map[string]bool{
 	".yml":        true,
 	".yaml":       true,
 	".txt":        true,
+	".webp":       true,
 }
 
 var ignoredDirs = []string{
@@ -202,7 +203,7 @@ func rungo(t *testing.T, args ...string) {
 func TestExportedSymbolsHaveDocs(t *testing.T) {
 	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
-			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
+				strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
 			return nil
 		}
 
