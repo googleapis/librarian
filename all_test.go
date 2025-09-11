@@ -32,6 +32,7 @@ import (
 )
 
 var noHeaderRequiredFiles = []string{
+	".gcloudignore",
 	".github/CODEOWNERS",
 	".gitignore",
 	"Dockerfile",
