@@ -16,6 +16,7 @@ package semver
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -160,6 +161,29 @@ func (v *Version) incrementPrerelease() error {
 	}
 	v.PrereleaseNumber = strconv.Itoa(num + 1)
 	return nil
+}
+
+// MaxVersion returns the largest semantic version string among the provided version strings.
+func MaxVersion(versionStrings ...string) string {
+	if len(versionStrings) == 0 {
+		return ""
+	}
+	versions := make([]*Version, 0)
+	for _, versionString := range versionStrings {
+		v, err := Parse(versionString)
+		if err != nil {
+			slog.Warn("Invalid version string", "version", v)
+			continue
+		}
+		versions = append(versions, v)
+	}
+	largest := versions[0]
+	for i := 1; i < len(versions); i++ {
+		if largest.Compare(versions[i]) < 0 {
+			largest = versions[i]
+		}
+	}
+	return largest.String()
 }
 
 // ChangeLevel represents the level of change, corresponding to semantic versioning.

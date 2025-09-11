@@ -21,7 +21,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/semver"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -249,7 +251,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 		return nil
 	}
 
-	nextVersion, err := NextVersion(commits, library.Version, r.cfg.LibraryVersion)
+	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
 	if err != nil {
 		return err
 	}
@@ -258,6 +260,33 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	library.ReleaseTriggered = true
 
 	return nil
+}
+
+func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+	// If library version explicitly passed to CLI, use it
+	if r.cfg.LibraryVersion != "" {
+		return r.cfg.LibraryVersion, nil
+	}
+
+	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
+	if err != nil {
+		return "", err
+	}
+
+	if r.librarianConfig == nil {
+		slog.Info("No librarian config")
+		return nextVersionFromCommits, nil
+	}
+
+	// Look for next_version override from config.yaml
+	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
+	slog.Info("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
+	if libraryConfig == nil || libraryConfig.NextVersion == "" {
+		return nextVersionFromCommits, nil
+	}
+
+	// Compare versions and pick latest
+	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
 }
 
 // copyGlobalAllowlist copies files in the global file allowlist excluding

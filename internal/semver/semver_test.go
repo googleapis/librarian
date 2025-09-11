@@ -386,3 +386,39 @@ func TestCompare(t *testing.T) {
 		})
 	}
 }
+
+func TestMaxVersion(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		versions []string
+		want     string
+	}{
+		{
+			name:     "empty",
+			versions: []string{},
+			want:     "",
+		},
+		{
+			name:     "single",
+			versions: []string{"1.2.3"},
+			want:     "1.2.3",
+		},
+		{
+			name:     "multiple",
+			versions: []string{"1.2.3", "1.2.4", "1.2.2"},
+			want:     "1.2.4",
+		},
+		{
+			name:     "multiple with pre-release",
+			versions: []string{"1.2.4", "1.2.4-alpha", "1.2.4-beta"},
+			want:     "1.2.4",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := MaxVersion(test.versions...)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("TestMaxVersion() returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
