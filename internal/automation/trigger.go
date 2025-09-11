@@ -86,10 +86,10 @@ func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient
 		slog.Error("error loading repositories config", slog.Any("err", err))
 		return err
 	}
-	return runCommandWithConfig(ctx, client, ghClient, command, projectId, push, build, config)
+	return runCommandWithConfig(ctx, client, ghClient, command, projectId, push, build, config, time.Now())
 }
 
-func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, config *RepositoriesConfig) error {
+func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, config *RepositoriesConfig, dateTime time.Time) error {
 	// validate command is allowed
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
@@ -97,7 +97,7 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 	}
 
 	if triggerName == "stage-release" {
-		_, week := time.Now().ISOWeek()
+		_, week := dateTime.ISOWeek()
 		if week%2 == 0 {
 			slog.Info("Skipping stage-release on an even week.")
 			return nil

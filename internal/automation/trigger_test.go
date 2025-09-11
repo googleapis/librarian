@@ -2,6 +2,7 @@
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
+// you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //	https://www.apache.org/licenses/LICENSE-2.0
@@ -18,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/google/go-github/v69/github"
@@ -184,6 +186,10 @@ func TestRunCommandWithConfig(t *testing.T) {
 			Id:   "generate-trigger-id",
 		},
 		{
+			Name: "stage-release",
+			Id:   "stage-release-trigger-id",
+		},
+		{
 			Name: "prepare-release",
 			Id:   "prepare-release-trigger-id",
 		},
@@ -197,6 +203,7 @@ func TestRunCommandWithConfig(t *testing.T) {
 		wantErr  bool
 		ghPRs    []*github.PullRequest
 		ghError  error
+		dateTime time.Time
 	}{
 		{
 			name:    "runs generate trigger with name",
@@ -209,7 +216,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
+			dateTime: time.Now(),
+			wantErr:  false,
 		},
 		{
 			name:    "runs generate trigger with full name",
@@ -222,7 +230,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
+			dateTime: time.Now(),
+			wantErr:  false,
 		},
 		{
 			name:    "runs generate trigger without name",
@@ -234,7 +243,38 @@ func TestRunCommandWithConfig(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			dateTime: time.Now(),
+			wantErr:  true,
+		},
+		{
+			name:    "runs stage-release on odd week",
+			command: "stage-release",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"stage-release"},
+					},
+				},
+			},
+			// Jan 1, 2025 is in week 1 (odd)
+			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			wantErr:  false,
+		},
+		{
+			name:    "skips stage-release on even week",
+			command: "stage-release",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"stage-release"},
+					},
+				},
+			},
+			// Jan 8, 2025 is in week 2 (even)
+			dateTime: time.Date(2025, 1, 8, 0, 0, 0, 0, time.UTC),
+			wantErr:  false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -247,7 +287,7 @@ func TestRunCommandWithConfig(t *testing.T) {
 				prs: test.ghPRs,
 				err: test.ghError,
 			}
-			err := runCommandWithConfig(ctx, client, ghClient, test.command, "some-project", true, true, test.config)
+			err := runCommandWithConfig(ctx, client, ghClient, test.command, "some-project", true, true, test.config, test.dateTime)
 			if test.wantErr && err == nil {
 				t.Errorf("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
