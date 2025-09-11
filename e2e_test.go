@@ -429,32 +429,6 @@ func TestReleaseInit(t *testing.T) {
 			runGit(t, repo, "commit", "-m", "feat: add new feature")
 			runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
 
-			// Create the release-init-request.json file.
-			librarianDir := filepath.Join(t.TempDir(), ".librarian")
-			if err := os.MkdirAll(librarianDir, 0755); err != nil {
-				t.Fatal(err)
-			}
-			requestFile := filepath.Join(librarianDir, "release-init-request.json")
-			requestBody := `{
-				"libraries": [
-					{
-						"id": "go-google-cloud-pubsub-v1",
-						"version": "1.1.0",
-						"source_roots": ["google-cloud-pubsub/v1"],
-						"release_triggered": true,
-						"changes": [
-							{
-								"type": "feat",
-								"description": "add new feature"
-							}
-						]
-					}
-				]
-			}`
-			if err := os.WriteFile(requestFile, []byte(requestBody), 0644); err != nil {
-				t.Fatal(err)
-			}
-
 			cmd := exec.Command(
 				"go",
 				"run",
