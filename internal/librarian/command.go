@@ -353,7 +353,12 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	if err := repo.Commit(info.commitMessage); err != nil {
+	prBody, err := createPRBody(info)
+	if err != nil {
+		return fmt.Errorf("failed to create pull request body: %w", err)
+	}
+
+	if err := repo.Commit(prBody); err != nil {
 		return err
 	}
 
@@ -373,11 +378,6 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
-	prBody, err := createPRBody(info)
-	if err != nil {
-		return fmt.Errorf("failed to create pull request body: %w", err)
-	}
-
 	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
