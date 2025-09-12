@@ -140,6 +140,10 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	if err := saveLibrarianConfig(r.repo.GetDir(), r.librarianConfig); err != nil {
+		return err
+	}
+
 	commitInfo := &commitInfo{
 		branch:         r.branch,
 		commit:         r.commit,
@@ -278,6 +282,14 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
 	if err != nil {
 		return err
+	}
+
+	// Clear next version if it exists. Note that this modifies the librarian config.
+	if r.librarianConfig != nil {
+		libraryConfig := r.librarianConfig.LibraryConfigFor(library.ID)
+		if libraryConfig != nil {
+			libraryConfig.NextVersion = ""
+		}
 	}
 
 	library.Version = nextVersion
