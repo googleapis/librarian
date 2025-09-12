@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -46,7 +45,7 @@ type ConventionalCommit struct {
 	// IsNested indicates if the commit is a nested commit.
 	IsNested bool `yaml:"-" json:"-"`
 	// SHA is the full commit hash.
-	SHA string `yaml:"-" json:"-"`
+	SHA string `yaml:"-" json:"source_commit_hash,omitempty"`
 	// When is the timestamp of the commit.
 	When time.Time `yaml:"-" json:"-"`
 }
@@ -54,38 +53,17 @@ type ConventionalCommit struct {
 // MarshalJSON implements a custom JSON marshaler for ConventionalCommit.
 func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 	type Alias ConventionalCommit
-	sourceCommitHash, err := parseSourceCommitHash(c.Footers["Source-Link"])
-	if err != nil {
-		return nil, err
-	}
 	return json.Marshal(&struct {
 		*Alias
-		PiperCLNumber    string `json:"piper_cl_number,omitempty"`
-		SourceCommitHash string `json:"source_commit_hash,omitempty"`
+		PiperCLNumber string `json:"piper_cl_number,omitempty"`
 	}{
-		Alias:            (*Alias)(c),
-		PiperCLNumber:    c.Footers["PiperOrigin-RevId"],
-		SourceCommitHash: sourceCommitHash,
+		Alias:         (*Alias)(c),
+		PiperCLNumber: c.Footers["PiperOrigin-RevId"],
 	})
-}
-
-// parseSourceCommitHash returns the commit hash from source repo's URL.
-// The source commit hash is the last part of the URL.
-// e.g. https://github.com/googleapis/googleapis/commit/{source_commit_hash}
-func parseSourceCommitHash(sourceLink string) (string, error) {
-	if sourceLinkRegex.FindStringSubmatch(sourceLink) == nil {
-		slog.Error("Unable to parse the source commit hash", "Source Link", sourceLink)
-		return "", fmt.Errorf("unable to parse the source commit hash: %s", sourceLink)
-	}
-	sourceCommitHash := path.Base(sourceLink)
-	return sourceCommitHash, nil
 }
 
 const breakingChangeKey = "BREAKING CHANGE"
 
-// sourceLinkRegex matches the expected Github commit url format. Git SHA values at
-// the end of the url are 40 hexadecimal characters.
-var sourceLinkRegex = regexp.MustCompile(`^https://github\.com/googleapis/googleapis/commits/[a-fA-F0-9]{40}$`)
 var commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
 
 // footerRegex defines the format for a conventional commit footer.

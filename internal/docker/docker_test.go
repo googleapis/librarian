@@ -839,8 +839,8 @@ func TestReleaseInitRequestContent(t *testing.T) {
 						Body:    "body of feature",
 						Footers: map[string]string{
 							"PiperOrigin-RevId": "12345",
-							"Source-Link":       "https://github.com/googleapis/googleapis/commits/1234512345123451234512345123451234512345",
 						},
+						SHA: "1234",
 					},
 				},
 			},
