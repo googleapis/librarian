@@ -16,7 +16,6 @@ package sidekick
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -29,6 +28,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
 
 func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, error) {
@@ -76,13 +76,7 @@ func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, err
 func extractTarball(source, destination string) error {
 	cmd := exec.Command("tar", "-zxf", source)
 	cmd.Dir = destination
-	if output, err := cmd.CombinedOutput(); err != nil {
-		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) && len(ee.Stderr) > 0 {
-			return fmt.Errorf("%v: %v\n%s", cmd, err, ee.Stderr)
-		}
-		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
-	}
-	return nil
+	return external.Exec(cmd)
 }
 
 func extractedName(rootConfig *config.Config, googleapisRoot, configPrefix string) string {

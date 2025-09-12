@@ -1,0 +1,2 @@
+# intentionally left empty - the default .gcloudignore skips the .git
+# folder which we need for detecting build version

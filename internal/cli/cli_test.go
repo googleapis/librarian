@@ -70,7 +70,7 @@ func TestLookup(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cmd := &Command{}
 			cmd.Commands = commands
-			sub, err := cmd.Lookup(test.name)
+			sub, err := lookup(cmd, test.name)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal(err)
@@ -201,6 +201,135 @@ Usage:
 			got := buf.String()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch(-want + got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLookupCommand(t *testing.T) {
+	sub1sub1 := &Command{
+		Short:     "sub1sub1 does something",
+		UsageLine: "sub1sub1",
+		Long:      "sub1sub1 does something",
+	}
+	sub1 := &Command{
+		Short:     "sub1 does something",
+		UsageLine: "sub1",
+		Long:      "sub1 does something",
+		Commands:  []*Command{sub1sub1},
+	}
+	sub2 := &Command{
+		Short:     "sub2 does something",
+		UsageLine: "sub2",
+		Long:      "sub2 does something",
+	}
+	root := &Command{
+		Short:     "root does something",
+		UsageLine: "root",
+		Long:      "root does something",
+		Commands: []*Command{
+			sub1,
+			sub2,
+		},
+	}
+	root.Init()
+	sub1.Init()
+	sub2.Init()
+	sub1sub1.Init()
+
+	for _, test := range []struct {
+		name     string
+		cmd      *Command
+		args     []string
+		wantCmd  *Command
+		wantArgs []string
+		wantErr  bool
+	}{
+		{
+			name:    "no args",
+			cmd:     root,
+			args:    []string{},
+			wantCmd: root,
+		},
+		{
+			name:    "find sub1",
+			cmd:     root,
+			args:    []string{"sub1"},
+			wantCmd: sub1,
+		},
+		{
+			name:     "find sub2",
+			cmd:      root,
+			args:     []string{"sub2"},
+			wantCmd:  sub2,
+			wantArgs: []string{},
+		},
+		{
+			name:     "find sub1sub1",
+			cmd:      root,
+			args:     []string{"sub1", "sub1sub1"},
+			wantCmd:  sub1sub1,
+			wantArgs: []string{},
+		},
+		{
+			name:     "find sub1sub1 with args",
+			cmd:      root,
+			args:     []string{"sub1", "sub1sub1", "arg1"},
+			wantCmd:  sub1sub1,
+			wantArgs: []string{"arg1"},
+		},
+		{
+			name:    "unknown command",
+			cmd:     root,
+			args:    []string{"unknown"},
+			wantErr: true,
+		},
+		{
+			name:    "unknown subcommand",
+			cmd:     root,
+			args:    []string{"sub1", "unknown"},
+			wantErr: true,
+		},
+		{
+			name:     "find sub1 with flag arguments",
+			cmd:      root,
+			args:     []string{"sub1", "-h"},
+			wantCmd:  sub1,
+			wantArgs: []string{"-h"},
+		},
+		{
+			name:     "find sub1sub1 with flag arguments",
+			cmd:      root,
+			args:     []string{"sub1", "sub1sub1", "-h"},
+			wantCmd:  sub1sub1,
+			wantArgs: []string{"-h"},
+		},
+		{
+			name:     "find sub1 with a flag argument in between subcommands",
+			cmd:      root,
+			args:     []string{"sub1", "-h", "sub1sub1"},
+			wantCmd:  sub1,
+			wantArgs: []string{"-h", "sub1sub1"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotCmd, gotArgs, err := LookupCommand(test.cmd, test.args)
+			if (err != nil) != test.wantErr {
+				t.Errorf("lookupCommand() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if gotCmd != test.wantCmd {
+				var gotName, wantName string
+				if gotCmd != nil {
+					gotName = gotCmd.Name()
+				}
+				if test.wantCmd != nil {
+					wantName = test.wantCmd.Name()
+				}
+				t.Errorf("lookupCommand() gotCmd.Name() = %q, want %q", gotName, wantName)
+			}
+			if diff := cmp.Diff(test.wantArgs, gotArgs); diff != "" {
+				t.Errorf("lookupCommand() args mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

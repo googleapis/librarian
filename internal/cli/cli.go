@@ -68,17 +68,6 @@ func (c *Command) Name() string {
 	return parts[0]
 }
 
-// Lookup finds a command by its name, and returns an error if the command is
-// not found.
-func (c *Command) Lookup(name string) (*Command, error) {
-	for _, sub := range c.Commands {
-		if sub.Name() == name {
-			return sub, nil
-		}
-	}
-	return nil, fmt.Errorf("invalid command: %q", name)
-}
-
 func (c *Command) usage(w io.Writer) {
 	if c.Short == "" || c.UsageLine == "" || c.Long == "" {
 		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
@@ -120,4 +109,39 @@ func hasFlags(fs *flag.FlagSet) bool {
 		visited = true
 	})
 	return visited
+}
+
+// LookupCommand recursively looks up the command specified by the given arguments.
+// It returns the command, the remaining arguments, and an error if the command
+// is not found.
+func LookupCommand(cmd *Command, args []string) (*Command, []string, error) {
+	if len(args) == 0 {
+		return cmd, nil, nil
+	}
+	subcommand, err := lookup(cmd, args[0])
+	if err != nil {
+		cmd.Flags.Usage()
+		return nil, nil, err
+	}
+	// If the next argument matches a potential flag (first char is `-`), parse the
+	// remaining arguments as flags. Check if argument is a flag before calling
+	// `lookupCommand` again to avoid flags from being treated as subcommands.
+	if len(args) > 1 && args[1][0] == '-' {
+		return subcommand, args[1:], nil
+	}
+	if len(subcommand.Commands) > 0 {
+		return LookupCommand(subcommand, args[1:])
+	}
+	return subcommand, args[1:], nil
+}
+
+// lookup finds a command by its name, and returns an error if the command is
+// not found.
+func lookup(c *Command, name string) (*Command, error) {
+	for _, sub := range c.Commands {
+		if sub.Name() == name {
+			return sub, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid command: %q", name)
 }

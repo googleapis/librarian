@@ -789,7 +789,7 @@ func TestWriteLibrarianState(t *testing.T) {
 }
 
 func TestDocker_runCommand(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name    string
 		cmdName string
 		args    []string
@@ -807,12 +807,11 @@ func TestDocker_runCommand(t *testing.T) {
 			args:    []string{},
 			wantErr: true,
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			c := &Docker{}
-			if err := c.runCommand(tt.cmdName, tt.args...); (err != nil) != tt.wantErr {
-				t.Errorf("Docker.runCommand() error = %v, wantErr %v", err, tt.wantErr)
+			if err := c.runCommand(test.cmdName, test.args...); (err != nil) != test.wantErr {
+				t.Errorf("Docker.runCommand() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

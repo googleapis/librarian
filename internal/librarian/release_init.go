@@ -21,7 +21,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/semver"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -98,7 +100,7 @@ type initRunner struct {
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
-	runner, err := newCommandRunner(cfg, nil, nil)
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create init runner: %w", err)
 	}
@@ -204,6 +206,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return err
 	}
 
+	// Read the response file.
+	if _, err := readLibraryState(
+		filepath.Join(initRequest.PartialRepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
+		return err
+	}
+
 	for _, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {
@@ -249,7 +257,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 		return nil
 	}
 
-	nextVersion, err := NextVersion(commits, library.Version, r.cfg.LibraryVersion)
+	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
 	if err != nil {
 		return err
 	}
@@ -258,6 +266,39 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	library.ReleaseTriggered = true
 
 	return nil
+}
+
+func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+	// If library version explicitly passed to CLI, use it
+	if r.cfg.LibraryVersion != "" {
+		slog.Info("Library version override specified", "currentVersion", currentVersion, "version", r.cfg.LibraryVersion)
+		newVersion := semver.MaxVersion(currentVersion, r.cfg.LibraryVersion)
+		if newVersion == r.cfg.LibraryVersion {
+			return newVersion, nil
+		} else {
+			slog.Warn("Specified version is not higher than the current version, ignoring override.")
+		}
+	}
+
+	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
+	if err != nil {
+		return "", err
+	}
+
+	if r.librarianConfig == nil {
+		slog.Info("No librarian config")
+		return nextVersionFromCommits, nil
+	}
+
+	// Look for next_version override from config.yaml
+	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
+	slog.Info("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
+	if libraryConfig == nil || libraryConfig.NextVersion == "" {
+		return nextVersionFromCommits, nil
+	}
+
+	// Compare versions and pick latest
+	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
 }
 
 // copyGlobalAllowlist copies files in the global file allowlist excluding

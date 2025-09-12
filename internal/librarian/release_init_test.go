@@ -338,7 +338,6 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name: "docker command returns error",
 			runner: &initRunner{
@@ -356,6 +355,24 @@ func TestInitRun(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "simulated init error",
+		},
+		{
+			name: "release response contains error message",
+			runner: &initRunner{
+				workRoot: t.TempDir(),
+				containerClient: &mockContainerClient{
+					wantErrorMsg: true,
+				},
+				cfg:   &config.Config{},
+				state: &config.LibrarianState{},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				partialRepo:     t.TempDir(),
+				librarianConfig: &config.LibrarianConfig{},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed with error message: simulated error message",
 		},
 		{
 			name: "invalid work root",
@@ -1017,6 +1034,145 @@ func TestCopyGlobalAllowlist(t *testing.T) {
 				if diff := cmp.Diff("old content", string(got)); diff != "" {
 					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, skippedFile)
 				}
+			}
+		})
+	}
+}
+
+func TestDetermineNextVersion(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name            string
+		commits         []*conventionalcommits.ConventionalCommit
+		currentVersion  string
+		libraryID       string
+		config          *config.Config
+		librarianConfig *config.LibrarianConfig
+		wantVersion     string
+		wantErr         bool
+		wantErrMsg      string
+	}{
+		{
+			name: "from commits",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library: "some-library",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{},
+			},
+			currentVersion: "1.0.0",
+			wantVersion:    "1.1.0",
+			wantErr:        false,
+		},
+		{
+			name: "with CLI override version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library:        "some-library",
+				LibraryVersion: "1.2.3",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					&config.LibraryConfig{
+						LibraryID:   "some-library",
+						NextVersion: "2.3.4",
+					},
+				},
+			},
+			currentVersion: "1.0.0",
+			wantVersion:    "1.2.3",
+			wantErr:        false,
+		},
+		{
+			name: "with CLI override version cannot revert version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library:        "some-library",
+				LibraryVersion: "1.2.3",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					&config.LibraryConfig{
+						LibraryID: "some-library",
+					},
+				},
+			},
+			currentVersion: "2.4.0",
+			wantVersion:    "2.5.0",
+			wantErr:        false,
+		},
+		{
+			name: "with config.yaml override version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library: "some-library",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					&config.LibraryConfig{
+						LibraryID:   "some-library",
+						NextVersion: "2.3.4",
+					},
+				},
+			},
+			currentVersion: "1.0.0",
+			wantVersion:    "2.3.4",
+			wantErr:        false,
+		},
+		{
+			name: "with outdated config.yaml override version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library: "some-library",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					&config.LibraryConfig{
+						LibraryID:   "some-library",
+						NextVersion: "2.3.4",
+					},
+				},
+			},
+			currentVersion: "2.4.0",
+			wantVersion:    "2.5.0",
+			wantErr:        false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &initRunner{
+				cfg:             test.config,
+				librarianConfig: test.librarianConfig,
+			}
+			got, err := runner.determineNextVersion(test.commits, test.currentVersion, test.libraryID)
+			if test.wantErr {
+				if err == nil {
+					t.Error("determineNextVersion() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.wantVersion, got); diff != "" {
+				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
