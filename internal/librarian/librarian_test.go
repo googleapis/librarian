@@ -48,7 +48,7 @@ func TestRun(t *testing.T) {
 func TestParentCommands(t *testing.T) {
 	ctx := context.Background()
 
-	tests := []struct {
+	for _, test := range []struct {
 		name       string
 		command    string
 		wantErr    bool
@@ -60,9 +60,7 @@ func TestParentCommands(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: `command "release" requires a subcommand`,
 		},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := Run(ctx, test.command)
 

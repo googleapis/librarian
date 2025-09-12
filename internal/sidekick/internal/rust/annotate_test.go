@@ -1040,7 +1040,7 @@ func TestFieldAnnotations(t *testing.T) {
 }
 
 func TestPrimitiveFieldAnnotations(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		wantType    string
 		wantSerdeAs string
 		typez       api.Typez
@@ -1057,14 +1057,12 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 		{"u64", "wkt::internal::U64", api.FIXED64_TYPE},
 		{"f32", "wkt::internal::F32", api.FLOAT_TYPE},
 		{"f64", "wkt::internal::F64", api.DOUBLE_TYPE},
-	}
-
-	for _, c := range tests {
+	} {
 		singular_field := &api.Field{
 			Name:     "singular_field",
 			JSONName: "singularField",
 			ID:       ".test.Message.singular_field",
-			Typez:    c.typez,
+			Typez:    test.typez,
 		}
 		message := &api.Message{
 			Name:          "TestMessage",
@@ -1087,9 +1085,9 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 			SetterName:         "singular_field",
 			BranchName:         "SingularField",
 			FQMessageName:      "crate::model::TestMessage",
-			FieldType:          c.wantType,
-			PrimitiveFieldType: c.wantType,
-			SerdeAs:            c.wantSerdeAs,
+			FieldType:          test.wantType,
+			PrimitiveFieldType: test.wantType,
+			SerdeAs:            test.wantSerdeAs,
 			AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
 			SkipIfIsDefault:    true,
 		}
@@ -1101,7 +1099,7 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 }
 
 func TestWrapperFieldAnnotations(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		wantType    string
 		wantSerdeAs string
 		typezID     string
@@ -1114,15 +1112,13 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 		{"wkt::FloatValue", "wkt::internal::F32", ".google.protobuf.FloatValue"},
 		{"wkt::DoubleValue", "wkt::internal::F64", ".google.protobuf.DoubleValue"},
 		{"wkt::BoolValue", "", ".google.protobuf.BoolValue"},
-	}
-
-	for _, c := range tests {
+	} {
 		singular_field := &api.Field{
 			Name:     "singular_field",
 			JSONName: "singularField",
 			ID:       ".test.Message.singular_field",
 			Typez:    api.MESSAGE_TYPE,
-			TypezID:  c.typezID,
+			TypezID:  test.typezID,
 			Optional: true,
 		}
 		message := &api.Message{
@@ -1144,9 +1140,9 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 			SetterName:         "singular_field",
 			BranchName:         "SingularField",
 			FQMessageName:      "crate::model::TestMessage",
-			FieldType:          fmt.Sprintf("std::option::Option<%s>", c.wantType),
-			PrimitiveFieldType: c.wantType,
-			SerdeAs:            c.wantSerdeAs,
+			FieldType:          fmt.Sprintf("std::option::Option<%s>", test.wantType),
+			PrimitiveFieldType: test.wantType,
+			SerdeAs:            test.wantSerdeAs,
 			SkipIfIsDefault:    true,
 		}
 		if diff := cmp.Diff(wantField, singular_field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "AddQueryParameter")); diff != "" {

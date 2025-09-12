@@ -217,7 +217,7 @@ func Test_tagAndReleaseRunner_run(t *testing.T) {
 }
 
 func TestParsePullRequestBody(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name string
 		body string
 		want []libraryRelease
@@ -329,12 +329,10 @@ some content
 				},
 			},
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := parsePullRequestBody(tt.body)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := parsePullRequestBody(test.body)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("ParsePullRequestBody() mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -23,7 +23,7 @@ import (
 )
 
 func TestParseSegments(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		path        string
 		want        *api.PathTemplate
 		explanation string
@@ -67,24 +67,22 @@ func TestParseSegments(t *testing.T) {
 		{"/foo:bar/baz", nil, "verb must be the last segment, and : isn't allowed in a LITERAL"},
 		{":foo", nil, "verb cannot be the first segment"},
 		{"/foo/{bar={baz}}", nil, "variables cannot be nested"},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.path, func(t *testing.T) {
-			got, err := ParseSegments(tc.path)
-			if tc.want != nil {
+	} {
+		t.Run(test.path, func(t *testing.T) {
+			got, err := ParseSegments(test.path)
+			if test.want != nil {
 				if err != nil {
 					t.Fatalf("expected no error, got: %v", err)
 				}
 				if got == nil {
-					t.Fatalf("expected path template for %s, got nil", tc.path)
+					t.Fatalf("expected path template for %s, got nil", test.path)
 				}
-				if diff := cmp.Diff(tc.want, got, cmpopts.EquateEmpty()); diff != "" {
-					t.Fatalf("failed parsing path [%s] (-want, +got):\n%s", tc.path, diff)
+				if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+					t.Fatalf("failed parsing path [%s] (-want, +got):\n%s", test.path, diff)
 				}
 			} else {
 				if err == nil {
-					t.Fatalf("ParseSegments(%s) succeeded, want error: %s", tc.path, tc.explanation)
+					t.Fatalf("ParseSegments(%s) succeeded, want error: %s", test.path, test.explanation)
 				}
 			}
 		})

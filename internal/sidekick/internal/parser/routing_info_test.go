@@ -24,7 +24,7 @@ import (
 
 func TestExamples(t *testing.T) {
 	requireProtoc(t)
-	tests := []struct {
+	for _, test := range []struct {
 		methodID string
 		want     []*api.RoutingInfo
 	}{
@@ -241,16 +241,14 @@ func TestExamples(t *testing.T) {
 				},
 			},
 		},
-	}
-
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "routing_info.proto"))
-	for _, tc := range tests {
-		t.Run(tc.methodID, func(t *testing.T) {
-			got, ok := test.State.MethodByID[tc.methodID]
+	} {
+		api := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "routing_info.proto"))
+		t.Run(test.methodID, func(t *testing.T) {
+			got, ok := api.State.MethodByID[test.methodID]
 			if !ok {
-				t.Fatalf("Cannot find method %s in API State", tc.methodID)
+				t.Fatalf("Cannot find method %s in API State", test.methodID)
 			}
-			if diff := cmp.Diff(got.Routing, tc.want); diff != "" {
+			if diff := cmp.Diff(got.Routing, test.want); diff != "" {
 				t.Errorf("routing mismatch (-want, +got):\n%s", diff)
 			}
 		})
@@ -258,7 +256,7 @@ func TestExamples(t *testing.T) {
 }
 
 func TestParsePathTemplateSuccess(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		fieldPath string
 		path      string
 		want      api.RoutingInfo
@@ -426,15 +424,13 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 					}},
 			},
 		},
-	}
-
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("%s:%s", tc.fieldPath, tc.path), func(t *testing.T) {
-			got, err := parseRoutingPathTemplate(tc.fieldPath, tc.path)
+	} {
+		t.Run(fmt.Sprintf("%s:%s", test.fieldPath, test.path), func(t *testing.T) {
+			got, err := parseRoutingPathTemplate(test.fieldPath, test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(got, &tc.want); diff != "" {
+			if diff := cmp.Diff(got, &test.want); diff != "" {
 				t.Errorf("segments mismatch (-want, +got):\n%s\n", diff)
 			}
 		})
@@ -473,7 +469,7 @@ func TestParsePathTemplateFailures(t *testing.T) {
 }
 
 func TestParseVariableSuccess(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		path        string
 		wantName    string
 		wantSpec    api.RoutingPathSpec
@@ -484,22 +480,20 @@ func TestParseVariableSuccess(t *testing.T) {
 		{"routing=a/*/b/**", "routing", api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}}, ""},
 		{"routing=a/*/b/**}", "routing", api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}}, "}"},
 		{"routing=a/*/b/**}/c/*", "routing", api.RoutingPathSpec{Segments: []string{"a", "*", "b", "**"}}, "}/c/*"},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.path, func(t *testing.T) {
-			gotName, gotSpec, width, err := parseRoutingVariable("default", tc.path)
+	} {
+		t.Run(test.path, func(t *testing.T) {
+			gotName, gotSpec, width, err := parseRoutingVariable("default", test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if gotName != tc.wantName {
-				t.Errorf("mismatched variable names, want=%s, got=%s", tc.wantName, gotName)
+			if gotName != test.wantName {
+				t.Errorf("mismatched variable names, want=%s, got=%s", test.wantName, gotName)
 			}
-			if diff := cmp.Diff(gotSpec, tc.wantSpec); diff != "" {
+			if diff := cmp.Diff(gotSpec, test.wantSpec); diff != "" {
 				t.Errorf("segments mismatch (-want, +got):\n%s\n", diff)
 			}
-			if tc.path[width:] != tc.wantTrailer {
-				t.Errorf("trailer segment mismatch, want=%s, got=%s", tc.wantTrailer, tc.path[width:])
+			if test.path[width:] != test.wantTrailer {
+				t.Errorf("trailer segment mismatch, want=%s, got=%s", test.wantTrailer, test.path[width:])
 			}
 		})
 	}
@@ -519,7 +513,7 @@ func TestParseRoutingVariableError(t *testing.T) {
 }
 
 func TestParseRoutingPathSpecSuccess(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		path         string
 		wantTrailer  string
 		wantSegments []string
@@ -530,16 +524,14 @@ func TestParseRoutingPathSpecSuccess(t *testing.T) {
 		{"a/*/b/*}/c/**", "}/c/**", []string{"a", "*", "b", "*"}},
 		{"a=b/*/c/*", "=b/*/c/*", []string{"a"}},
 		{"a/b=b/*/c/*", "=b/*/c/*", []string{"a", "b"}},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.path, func(t *testing.T) {
-			got, width := parseRoutingPathSpec(tc.path)
-			if diff := cmp.Diff(got.Segments, tc.wantSegments); diff != "" {
+	} {
+		t.Run(test.path, func(t *testing.T) {
+			got, width := parseRoutingPathSpec(test.path)
+			if diff := cmp.Diff(got.Segments, test.wantSegments); diff != "" {
 				t.Errorf("segments mismatch (-want, +got):\n%s\n", diff)
 			}
-			if tc.path[width:] != tc.wantTrailer {
-				t.Errorf("trailer segment mismatch, want=%s, got=%s", tc.wantTrailer, tc.path[width:])
+			if test.path[width:] != test.wantTrailer {
+				t.Errorf("trailer segment mismatch, want=%s, got=%s", test.wantTrailer, test.path[width:])
 			}
 		})
 	}

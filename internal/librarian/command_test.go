@@ -1257,7 +1257,7 @@ func TestSeparateFilesAndDirs(t *testing.T) {
 
 func TestCompileRegexps(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name     string
 		patterns []string
 		wantErr  bool
@@ -1291,15 +1291,15 @@ func TestCompileRegexps(t *testing.T) {
 			wantErr: true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			regexps, err := compileRegexps(tc.patterns)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("compileRegexps() error = %v, wantErr %v", err, tc.wantErr)
+			regexps, err := compileRegexps(test.patterns)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("compileRegexps() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if !tc.wantErr {
-				if len(regexps) != len(tc.patterns) {
-					t.Errorf("compileRegexps() len = %d, want %d", len(regexps), len(tc.patterns))
+			if !test.wantErr {
+				if len(regexps) != len(test.patterns) {
+					t.Errorf("compileRegexps() len = %d, want %d", len(regexps), len(test.patterns))
 				}
 			}
 		})

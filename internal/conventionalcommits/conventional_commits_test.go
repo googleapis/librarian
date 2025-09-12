@@ -27,7 +27,7 @@ import (
 func TestParseCommits(t *testing.T) {
 	now := time.Now()
 	sha := plumbing.NewHash("fake-sha")
-	tests := []struct {
+	for _, test := range []struct {
 		name          string
 		message       string
 		want          []*ConventionalCommit
@@ -394,8 +394,7 @@ END_NESTED_COMMIT`,
 				},
 			},
 		},
-	}
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			commit := &gitrepo.Commit{
 				Message: test.message,
