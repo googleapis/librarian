@@ -426,7 +426,13 @@ func TestReleaseInit(t *testing.T) {
 				t.Fatal(err)
 			}
 			runGit(t, repo, "add", newFilePath)
-			runGit(t, repo, "commit", "-m", "feat: add new feature")
+			commitMsg := `feat: add new feature
+
+This change adds a new feature.
+
+git-commit-hash: a1b2c3d4e5f6g7h8i9j0
+PiperOrigin-RevId: 123456789`
+			runGit(t, repo, "commit", "-m", commitMsg)
 			runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
 
 			cmd := exec.Command(
