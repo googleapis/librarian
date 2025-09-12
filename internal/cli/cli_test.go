@@ -143,6 +143,7 @@ func TestUsage(t *testing.T) {
 	preamble := `Test prints test information.
 
 Usage:
+
   test [flags]
 
 `
