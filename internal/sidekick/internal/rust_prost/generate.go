@@ -16,7 +16,6 @@ package rust_prost
 
 import (
 	"embed"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 	"github.com/googleapis/librarian/internal/sidekick/internal/language"
 )
 
@@ -81,21 +81,11 @@ func buildRS(rootName, tmpDir, outDir string) error {
 	cmd.Dir = tmpDir
 	cmd.Env = append(os.Environ(), fmt.Sprintf("SOURCE_ROOT=%s", absRoot))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("DEST=%s", absOutDir))
-	return runAndCaptureErrors(cmd)
+	return external.Exec(cmd)
 }
 
 func testExternalCommand(c string, arg ...string) error {
 	cmd := exec.Command(c, arg...)
 	cmd.Dir = "."
-	return runAndCaptureErrors(cmd)
-}
-
-func runAndCaptureErrors(cmd *exec.Cmd) error {
-	if output, err := cmd.CombinedOutput(); err != nil {
-		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) && len(ee.Stderr) > 0 {
-			return fmt.Errorf("%v: %v\n%s", cmd, err, ee.Stderr)
-		}
-		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
-	}
-	return nil
+	return external.Exec(cmd)
 }

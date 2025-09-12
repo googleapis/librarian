@@ -15,7 +15,6 @@
 package sidekick
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -24,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 	toml "github.com/pelletier/go-toml/v2"
 )
 
@@ -117,13 +117,7 @@ func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 func runExternalCommand(c string, arg ...string) error {
 	cmd := exec.Command(c, arg...)
 	cmd.Dir = "."
-	if output, err := cmd.CombinedOutput(); err != nil {
-		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) && len(ee.Stderr) > 0 {
-			return fmt.Errorf("%v: %v\n%s", cmd, err, ee.Stderr)
-		}
-		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
-	}
-	return nil
+	return external.Exec(cmd)
 }
 
 func getPackageName(output string) (string, error) {
