@@ -15,68 +15,62 @@
 package rustrelease
 
 import (
+	"os"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
 
-func TestBumpVersionsSuccess(t *testing.T) {
-	requireCommand(t, "git")
-	config := &config.Release{
-		Remote: "origin",
-		Branch: "main",
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "git",
-		},
-	}
-	setupForVersionBump(t, "release-2001-02-03")
-	if err := BumpVersions(config); err != nil {
-		t.Fatal(err)
-	}
-}
+func TestLastTagSuccess(t *testing.T) {
+	const wantTag = "release-2001-02-03"
 
-func TestBumpVersionsPreflightError(t *testing.T) {
-	config := &config.Release{
-		Preinstalled: map[string]string{
-			"git": "git-not-found",
-		},
-	}
-	if err := BumpVersions(config); err == nil {
-		t.Errorf("expected an error in BumpVersions() with a bad git command")
-	}
-}
-
-func TestBumpVersionsLastTagError(t *testing.T) {
 	const echo = "/bin/echo"
 	requireCommand(t, echo)
-	config := config.Release{
+	release := config.Release{
 		Remote: "origin",
 		Branch: "main",
 		Preinstalled: map[string]string{
-			"git":   echo,
+			"cargo": echo,
+		},
+	}
+	setupForVersionBump(t, wantTag)
+	got, err := getLastTag(&release)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != wantTag {
+		t.Errorf("tag mismatch, want=%s, got=%s", wantTag, got)
+	}
+}
+
+func TestLastTagGitError(t *testing.T) {
+	const echo = "/bin/echo"
+	requireCommand(t, echo)
+	release := config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
 			"cargo": echo,
 		},
 	}
 	remoteDir := t.TempDir()
 	continueInNewGitRepository(t, remoteDir)
-	initRepositoryContents(t)
-	if err := BumpVersions(&config); err == nil {
-		t.Fatalf("expected an error during GetLastTag")
+	if got, err := getLastTag(&release); err == nil {
+		t.Fatalf("expected an error, got=%s", got)
 	}
 }
 
-func setupForVersionBump(t *testing.T, wantTag string) {
-	remoteDir := t.TempDir()
-	continueInNewGitRepository(t, remoteDir)
-	initRepositoryContents(t)
-	if err := external.Run("git", "tag", wantTag); err != nil {
+func initRepositoryContents(t *testing.T) {
+	t.Helper()
+	requireCommand(t, "git")
+	if err := os.WriteFile("README.md", []byte("# Empty Repo"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	cloneDir := t.TempDir()
-	t.Chdir(cloneDir)
-	if err := external.Run("git", "clone", remoteDir, "."); err != nil {
+	if err := external.Run("git", "add", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "initial version"); err != nil {
 		t.Fatal(err)
 	}
 }
