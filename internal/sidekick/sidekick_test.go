@@ -41,3 +41,10 @@ func requireProtoc(t *testing.T) {
 		t.Skip("skipping test because protoc is not installed")
 	}
 }
+
+func requireCargo(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("cargo"); err != nil {
+		t.Skip("skipping test because cargo is not installed")
+	}
+}

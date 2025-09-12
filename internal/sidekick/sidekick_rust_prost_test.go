@@ -21,6 +21,7 @@ import (
 )
 
 func TestRustProstFromProtobuf(t *testing.T) {
+	requireCargo(t)
 	requireProtoc(t)
 	outDir := t.TempDir()
 	svcConfig := path.Join(testdataDir, "googleapis/google/type/type.yaml")
