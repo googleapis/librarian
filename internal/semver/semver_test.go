@@ -191,7 +191,7 @@ func TestDeriveNext(t *testing.T) {
 			name:            "pre-1.0.0 feat is patch bump",
 			highestChange:   Minor, // feat is minor
 			currentVersion:  "0.2.3",
-			expectedVersion: "0.2.4",
+			expectedVersion: "0.3.0",
 		},
 		{
 			name:            "pre-1.0.0 fix is patch bump",
@@ -200,10 +200,10 @@ func TestDeriveNext(t *testing.T) {
 			expectedVersion: "0.2.4",
 		},
 		{
-			name:            "pre-1.0.0 breaking change is major bump",
+			name:            "pre-1.0.0 breaking change is minor bump",
 			highestChange:   Major,
 			currentVersion:  "0.2.3",
-			expectedVersion: "1.0.0",
+			expectedVersion: "0.3.0",
 		},
 		{
 			name:            "prerelease bump with numeric trailer",

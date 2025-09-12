@@ -226,11 +226,11 @@ func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error
 
 	// Handle standard versions
 	if currentSemVer.Major == 0 {
-		if highestChange == Major {
-			currentSemVer.Major++
-			currentSemVer.Minor = 0
+		// breaking change and feat result in minor bump for pre-1.0.0
+		if highestChange == Major || highestChange == Minor {
+			currentSemVer.Minor++
 			currentSemVer.Patch = 0
-		} else { // feat and fix result in a patch bump for pre-1.0.0
+		} else {
 			currentSemVer.Patch++
 		}
 	} else {
