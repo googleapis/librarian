@@ -28,7 +28,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	if err := librarian.Run(ctx, os.Args[1:]...); err != nil {
+	if err := librarian.Run(ctx, os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
 }

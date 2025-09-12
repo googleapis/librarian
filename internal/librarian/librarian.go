@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/url"
 
 	"github.com/googleapis/librarian/internal/docker"
@@ -31,53 +30,23 @@ var CmdLibrarian = &cli.Command{
 	Short:     "librarian manages client libraries for Google APIs",
 	UsageLine: "librarian <command> [arguments]",
 	Long:      "Librarian manages client libraries for Google APIs.",
-}
-
-func init() {
-	CmdLibrarian.Init()
-	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
+	Commands: []*cli.Command{
 		cmdGenerate,
 		cmdRelease,
 		cmdVersion,
-	)
+	},
 }
 
-// Run executes the Librarian CLI with the given command line
-// arguments.
-func Run(ctx context.Context, arg ...string) error {
-	if err := CmdLibrarian.Parse(arg); err != nil {
-		return err
-	}
-	if len(arg) == 0 {
-		CmdLibrarian.Flags.Usage()
-		return nil
-	}
-	cmd, arg, err := cli.LookupCommand(CmdLibrarian, arg)
-	if err != nil {
-		return err
-	}
-
-	// If a command is just a container for subcommands, it won't have a
-	// Run function. In that case, display its usage instructions.
-	if cmd.Run == nil {
-		cmd.Flags.Usage()
-		return fmt.Errorf("command %q requires a subcommand", cmd.Name())
-	}
-
-	if err := cmd.Parse(arg); err != nil {
-		// We expect that if cmd.Parse fails, it will already
-		// have printed out a command-specific usage error,
-		// so we don't need to display the general usage.
-		return err
-	}
-	slog.Info("librarian", "arguments", arg)
-	if err := cmd.Config.SetDefaults(); err != nil {
+// Run Librarian with the given args.
+func Run(ctx context.Context, args []string) error {
+	CmdLibrarian.Init()
+	if err := CmdLibrarian.Config.SetDefaults(); err != nil {
 		return fmt.Errorf("failed to initialize config: %w", err)
 	}
-	if _, err := cmd.Config.IsValid(); err != nil {
+	if _, err := CmdLibrarian.Config.IsValid(); err != nil {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
-	return cmd.Run(ctx, cmd.Config)
+	return CmdLibrarian.Run(ctx, args)
 }
 
 // GitHubClient is an abstraction over the GitHub client.
