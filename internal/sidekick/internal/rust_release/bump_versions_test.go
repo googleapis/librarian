@@ -18,15 +18,23 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
 
 func TestBumpVersionsSuccess(t *testing.T) {
 	requireCommand(t, "git")
 	config := &config.Release{
+		Remote: "upstream",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "git",
 		},
+	}
+	continueInNewGitRepository(t)
+	remoteDir := t.TempDir()
+	if err := external.Run("git", "remote", "add", config.Remote, remoteDir); err != nil {
+		t.Fatal(err)
 	}
 	if err := BumpVersions(config); err != nil {
 		t.Fatal(err)
