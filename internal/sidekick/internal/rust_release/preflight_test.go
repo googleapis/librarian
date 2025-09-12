@@ -23,9 +23,7 @@ import (
 
 func TestPreflightSuccess(t *testing.T) {
 	const echo = "/bin/echo"
-	if _, err := exec.LookPath("/bin/echo"); err != nil {
-		t.Skipf("skipping test because %s is not installed", echo)
-	}
+	requireCommand(t, echo)
 	release := config.Release{
 		Preinstalled: map[string]string{
 			"git":   echo,
@@ -49,6 +47,7 @@ func TestPreflightMissingGit(t *testing.T) {
 }
 
 func TestPreflightMissingCargo(t *testing.T) {
+	requireCommand(t, "git")
 	release := config.Release{
 		Preinstalled: map[string]string{
 			"cargo": "cargo-is-not-installed",
@@ -86,5 +85,12 @@ func TestCargoExe(t *testing.T) {
 	}
 	if got := cargoExe(&release); got != "alternative" {
 		t.Errorf("mismatch in cargoExe(), want=alternative, got=%s", got)
+	}
+}
+
+func requireCommand(t *testing.T, command string) {
+	t.Helper()
+	if _, err := exec.LookPath(command); err != nil {
+		t.Skipf("skipping test because %s is not installed", command)
 	}
 }
