@@ -16,6 +16,8 @@ package librarian
 
 import (
 	"context"
+	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -46,6 +48,10 @@ func init() {
 // arguments.
 func Run(ctx context.Context, arg ...string) error {
 	if err := CmdLibrarian.Parse(arg); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			CmdLibrarian.Flags.Usage()
+			return nil
+		}
 		return err
 	}
 	if len(arg) == 0 {
@@ -61,13 +67,17 @@ func Run(ctx context.Context, arg ...string) error {
 	// Run function. In that case, display its usage instructions.
 	if cmd.Run == nil {
 		cmd.Flags.Usage()
-		return fmt.Errorf("command %q requires a subcommand", cmd.Name())
+		return nil
 	}
 
 	if err := cmd.Parse(arg); err != nil {
 		// We expect that if cmd.Parse fails, it will already
 		// have printed out a command-specific usage error,
 		// so we don't need to display the general usage.
+		if errors.Is(err, flag.ErrHelp) {
+			cmd.Flags.Usage()
+			return nil
+		}
 		return err
 	}
 	slog.Info("librarian", "arguments", arg)

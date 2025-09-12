@@ -53,10 +53,21 @@ Usage:
 	librarian <command> [arguments]
 
 The commands are:
-{{.Commands}}
+{{range .Commands}}
+
+# {{.Name}}
+
+{{.HelpText}}
+{{end}}
 */
 package librarian
 `
+
+// CommandDoc holds the documentation for a single CLI command.
+type CommandDoc struct {
+	Name     string
+	HelpText string
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -92,7 +103,19 @@ func processFile() error {
 	}
 	helpText := out.Bytes()
 
-	commands, err := extractCommands(helpText)
+	commandNames, err := extractCommandNames(helpText)
+	if err != nil {
+		return err
+	}
+
+	var commands []CommandDoc
+	for _, name := range commandNames {
+		help, err := getCommandHelp(name)
+		if err != nil {
+			return fmt.Errorf("getting help for command %s: %w", name, err)
+		}
+		commands = append(commands, CommandDoc{Name: name, HelpText: help})
+	}
 
 	docFile, err := os.Create("doc.go")
 	if err != nil {
@@ -101,13 +124,28 @@ func processFile() error {
 	defer docFile.Close()
 
 	tmpl := template.Must(template.New("doc").Parse(docTemplate))
-	if err := tmpl.Execute(docFile, struct{ Commands string }{Commands: string(commands)}); err != nil {
+	if err := tmpl.Execute(docFile, struct{ Commands []CommandDoc }{Commands: commands}); err != nil {
 		return fmt.Errorf("could not execute template: %v", err)
 	}
 	return nil
 }
 
-func extractCommands(helpText []byte) ([]byte, error) {
+func getCommandHelp(command string) (string, error) {
+	cmd := exec.Command("go", "run", "../../cmd/librarian/", command, "--help")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := cmd.Run()
+	if err != nil {
+		// The help command also exits with status 1.
+		if out.Len() == 0 {
+			return "", fmt.Errorf("cmd.Run() for '%s --help' failed with %s\n%s", command, err, out.String())
+		}
+	}
+	return out.String(), nil
+}
+
+func extractCommandNames(helpText []byte) ([]string, error) {
 	const (
 		commandsHeader = "Commands:\n\n"
 	)
@@ -117,5 +155,23 @@ func extractCommands(helpText []byte) ([]byte, error) {
 		return nil, errors.New("could not find commands header")
 	}
 	start += len(commandsHeader)
-	return []byte(ss[start:]), nil
+
+	commandsBlock := ss[start:]
+	if end := strings.Index(commandsBlock, "\n\n"); end != -1 {
+		commandsBlock = commandsBlock[:end]
+	}
+
+	var commandNames []string
+	lines := strings.Split(strings.TrimSpace(commandsBlock), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			commandNames = append(commandNames, fields[0])
+		}
+	}
+	return commandNames, nil
 }
