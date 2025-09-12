@@ -79,7 +79,7 @@ func TestRunCloudBuildTrigger(t *testing.T) {
 			substitutions := make(map[string]string)
 			err := runCloudBuildTrigger(ctx, client, "some-project", "some-location", "some-trigger-id", substitutions)
 			if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
-				t.Errorf("runCloudBuildTrigger() error")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -144,10 +144,10 @@ func TestFindTriggerIdByName(t *testing.T) {
 			}
 			triggerId, err := findTriggerIdByName(ctx, client, "some-project", "some-location", "some-trigger-name")
 			if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
-				t.Errorf("expected error() error")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.want, triggerId); diff != "" {
-				t.Errorf("runCloudBuildTrigger() error")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -209,7 +209,7 @@ func TestRunCloudBuildTriggerByName(t *testing.T) {
 			}
 			err := runCloudBuildTriggerByName(ctx, client, "some-project", "some-location", "some-trigger-name", make(map[string]string))
 			if diff := cmp.Diff(test.wantErr, err != nil); diff != "" {
-				t.Errorf("expected error() error")
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

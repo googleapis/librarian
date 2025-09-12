@@ -321,7 +321,7 @@ func TestGetHighestChange(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			highestChange := getHighestChange(test.commits)
 			if diff := cmp.Diff(test.expectedChange, highestChange); diff != "" {
-				t.Errorf("getHighestChange() returned diff (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

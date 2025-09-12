@@ -91,7 +91,7 @@ func TestParseArgs(t *testing.T) {
 				t.Errorf("did not expect error, but received one: %s", err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("parseRepositoriesConfig() mismatch (-want +got): %s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

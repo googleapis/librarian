@@ -415,7 +415,7 @@ END_NESTED_COMMIT`,
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("ParseCommits(%q) returned diff (-want +got):\n%s", test.message, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -478,7 +478,7 @@ fix(sub): fix a bug that is never closed`,
 		t.Run(test.name, func(t *testing.T) {
 			got := extractCommitParts(test.message)
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(commitPart{})); diff != "" {
-				t.Errorf("extractCommitParts(%q) returned diff (-want +got):\n%s", test.message, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

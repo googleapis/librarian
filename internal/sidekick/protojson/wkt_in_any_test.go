@@ -55,7 +55,7 @@ func TestAnyInAny(t *testing.T) {
 		Value: "123s",
 	}
 	if diff := cmp.Diff(wantInner, gotInner); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	anyz, err := anypb.New(inner)
@@ -78,7 +78,7 @@ func TestAnyInAny(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(wantOuter, gotOuter); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -105,7 +105,7 @@ func TestNullInAny(t *testing.T) {
 		Value: nil,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -132,7 +132,7 @@ func TestBoolInAny(t *testing.T) {
 		Value: true,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -159,7 +159,7 @@ func TestNumberInAny(t *testing.T) {
 		Value: 1234.5,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -186,7 +186,7 @@ func TestStringInAny(t *testing.T) {
 		Value: "1234.5",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -227,7 +227,7 @@ func TestStructValue(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -258,7 +258,7 @@ func TestListInAny(t *testing.T) {
 		Value: []any{float64(1), float64(2), float64(3), float64(4), "abc"},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -298,6 +298,6 @@ func TestStructInAny(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched inner, (-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -249,7 +249,7 @@ func TestExamples(t *testing.T) {
 				t.Fatalf("Cannot find method %s in API State", test.methodID)
 			}
 			if diff := cmp.Diff(got.Routing, test.want); diff != "" {
-				t.Errorf("routing mismatch (-want, +got):\n%s", diff)
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 		})
 	}
@@ -430,8 +430,8 @@ func TestParsePathTemplateSuccess(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(got, &test.want); diff != "" {
-				t.Errorf("segments mismatch (-want, +got):\n%s\n", diff)
+			if diff := cmp.Diff(&test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -489,8 +489,8 @@ func TestParseVariableSuccess(t *testing.T) {
 			if gotName != test.wantName {
 				t.Errorf("mismatched variable names, want=%s, got=%s", test.wantName, gotName)
 			}
-			if diff := cmp.Diff(gotSpec, test.wantSpec); diff != "" {
-				t.Errorf("segments mismatch (-want, +got):\n%s\n", diff)
+			if diff := cmp.Diff(test.wantSpec, gotSpec); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if test.path[width:] != test.wantTrailer {
 				t.Errorf("trailer segment mismatch, want=%s, got=%s", test.wantTrailer, test.path[width:])
@@ -528,7 +528,7 @@ func TestParseRoutingPathSpecSuccess(t *testing.T) {
 		t.Run(test.path, func(t *testing.T) {
 			got, width := parseRoutingPathSpec(test.path)
 			if diff := cmp.Diff(got.Segments, test.wantSegments); diff != "" {
-				t.Errorf("segments mismatch (-want, +got):\n%s\n", diff)
+				t.Errorf("mismatch (-want, +got):\n%s\n", diff)
 			}
 			if test.path[width:] != test.wantTrailer {
 				t.Errorf("trailer segment mismatch, want=%s, got=%s", test.wantTrailer, test.path[width:])

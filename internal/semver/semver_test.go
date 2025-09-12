@@ -99,7 +99,7 @@ func TestParse(t *testing.T) {
 				t.Fatalf("Parse() failed: %v", err)
 			}
 			if diff := cmp.Diff(test.want, actual); diff != "" {
-				t.Errorf("Parse() returned diff (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -236,7 +236,7 @@ func TestDeriveNext(t *testing.T) {
 				t.Fatalf("DeriveNext() returned an error: %v", err)
 			}
 			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
-				t.Errorf("DeriveNext() returned diff (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -381,7 +381,7 @@ func TestCompare(t *testing.T) {
 			}
 			got := a.Compare(b)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("TestCompare() returned diff (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

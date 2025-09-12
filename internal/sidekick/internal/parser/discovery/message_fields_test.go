@@ -66,8 +66,8 @@ func TestMakeMessageFields(t *testing.T) {
 		},
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(got, want, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("message fields mismatch (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
