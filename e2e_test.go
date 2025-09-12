@@ -426,12 +426,60 @@ func TestReleaseInit(t *testing.T) {
 				t.Fatal(err)
 			}
 			runGit(t, repo, "add", newFilePath)
-			commitMsg := `feat: add new feature
+			commitMsg := `
+chore: Update generation configuration at Tue Aug 26 02:31:23 UTC 2025 (#11734)
 
-This change adds a new feature.
+This pull request is generated with proto changes between
+[googleapis/googleapis@525c95a](https://github.com/googleapis/googleapis/commit/525c95a7a122ec2869ae06cd02fa5013819463f6)
+(exclusive) and
+[googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
+(inclusive).
 
-git-commit-hash: a1b2c3d4e5f6g7h8i9j0
-PiperOrigin-RevId: 123456789`
+BEGIN_COMMIT_OVERRIDE
+BEGIN_NESTED_COMMIT
+feat: [texttospeech] Support promptable voices by specifying a model
+name and a prompt
+feat: [texttospeech] Add enum value M4A to enum AudioEncoding
+docs: [texttospeech] A comment for method 'StreamingSynthesize' in
+service 'TextToSpeech' is changed
+docs: [texttospeech] A comment for enum value
+'AUDIO_ENCODING_UNSPECIFIED' in enum 'AudioEncoding' is changed
+docs: [texttospeech] A comment for enum value 'OGG_OPUS' in enum
+'AudioEncoding' is changed
+docs: [texttospeech] A comment for enum value 'PCM' in enum
+'AudioEncoding' is changed
+docs: [texttospeech] A comment for field 'low_latency_journey_synthesis'
+in message '.google.cloud.texttospeech.v1beta1.AdvancedVoiceOptions' is
+changed
+docs: [texttospeech] A comment for enum value 'PHONETIC_ENCODING_IPA' in
+enum 'PhoneticEncoding' is changed
+docs: [texttospeech] A comment for enum value
+'PHONETIC_ENCODING_X_SAMPA' in enum 'PhoneticEncoding' is changed
+docs: [texttospeech] A comment for field 'phrase' in message
+'.google.cloud.texttospeech.v1beta1.CustomPronunciationParams' is
+changed
+docs: [texttospeech] A comment for field 'pronunciations' in message
+'.google.cloud.texttospeech.v1beta1.CustomPronunciations' is changed
+docs: [texttospeech] A comment for message 'MultiSpeakerMarkup' is
+changed
+docs: [texttospeech] A comment for field 'custom_pronunciations' in
+message '.google.cloud.texttospeech.v1beta1.SynthesisInput' is changed
+docs: [texttospeech] A comment for field 'voice_clone' in message
+'.google.cloud.texttospeech.v1beta1.VoiceSelectionParams' is changed
+docs: [texttospeech] A comment for field 'speaking_rate' in message
+'.google.cloud.texttospeech.v1beta1.AudioConfig' is changed
+docs: [texttospeech] A comment for field 'audio_encoding' in message
+'.google.cloud.texttospeech.v1beta1.StreamingAudioConfig' is changed
+docs: [texttospeech] A comment for field 'text' in message
+'.google.cloud.texttospeech.v1beta1.StreamingSynthesisInput' is changed
+
+PiperOrigin-RevId: 799242210
+
+Source Link:
+[googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
+END_NESTED_COMMIT
+END_COMMIT_OVERRIDE
+`
 			runGit(t, repo, "commit", "-m", commitMsg)
 			runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
 
