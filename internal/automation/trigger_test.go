@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v69/github"
 )
 
@@ -35,23 +36,26 @@ func (m *mockGitHubClient) FindMergedPullRequestsWithPendingReleaseLabel(ctx con
 
 func TestRunCommandWithClient(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		command       string
-		push          bool
-		build         bool
-		want          string
-		runError      error
-		wantErr       bool
-		buildTriggers []*cloudbuildpb.BuildTrigger
-		ghPRs         []*github.PullRequest
-		ghError       error
+		name            string
+		command         string
+		push            bool
+		build           bool
+		forceRun        bool
+		want            string
+		runError        error
+		wantErr         bool
+		buildTriggers   []*cloudbuildpb.BuildTrigger
+		ghPRs           []*github.PullRequest
+		ghError         error
+		wantTriggersRun []string
 	}{
 		{
-			name:    "runs generate trigger",
-			command: "generate",
-			push:    true,
-			build:   false,
-			wantErr: false,
+			name:     "runs generate trigger",
+			command:  "generate",
+			push:     true,
+			build:    false,
+			forceRun: false,
+			wantErr:  false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "generate",
@@ -62,13 +66,15 @@ func TestRunCommandWithClient(t *testing.T) {
 					Id:   "prepare-release-trigger-id",
 				},
 			},
+			wantTriggersRun: []string{"generate-trigger-id"},
 		},
 		{
-			name:    "runs prepare-release trigger",
-			command: "stage-release",
-			push:    true,
-			build:   false,
-			wantErr: false,
+			name:     "runs prepare-release trigger",
+			command:  "stage-release",
+			push:     true,
+			build:    false,
+			forceRun: false,
+			wantErr:  false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "generate",
@@ -79,13 +85,15 @@ func TestRunCommandWithClient(t *testing.T) {
 					Id:   "stage-release-trigger-id",
 				},
 			},
+			wantTriggersRun: []string{"stage-release-trigger-id"},
 		},
 		{
-			name:    "invalid command",
-			command: "invalid-command",
-			push:    true,
-			build:   false,
-			wantErr: true,
+			name:     "invalid command",
+			command:  "invalid-command",
+			push:     true,
+			build:    false,
+			forceRun: false,
+			wantErr:  true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "generate",
@@ -96,12 +104,14 @@ func TestRunCommandWithClient(t *testing.T) {
 					Id:   "stage-release-trigger-id",
 				},
 			},
+			wantTriggersRun: nil,
 		},
 		{
 			name:     "error triggering",
 			command:  "generate",
 			push:     true,
 			build:    false,
+			forceRun: false,
 			runError: fmt.Errorf("some-error"),
 			wantErr:  true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
@@ -114,48 +124,55 @@ func TestRunCommandWithClient(t *testing.T) {
 					Id:   "stage-release-trigger-id",
 				},
 			},
+			wantTriggersRun: nil,
 		},
 		{
-			name:    "runs publish-release trigger",
-			command: "publish-release",
-			push:    true,
-			build:   false,
-			wantErr: false,
+			name:     "runs publish-release trigger",
+			command:  "publish-release",
+			push:     true,
+			build:    false,
+			forceRun: false,
+			wantErr:  false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "publish-release",
 					Id:   "publish-release-trigger-id",
 				},
 			},
-			ghPRs: []*github.PullRequest{{HTMLURL: github.Ptr("https://github.com/googleapis/librarian/pull/1")}},
+			ghPRs:           []*github.PullRequest{{HTMLURL: github.Ptr("https://github.com/googleapis/librarian/pull/1")}},
+			wantTriggersRun: []string{"publish-release-trigger-id"},
 		},
 		{
-			name:    "skips publish-release with no PRs",
-			command: "publish-release",
-			push:    true,
-			build:   false,
-			wantErr: false,
+			name:     "skips publish-release with no PRs",
+			command:  "publish-release",
+			push:     true,
+			build:    false,
+			forceRun: false,
+			wantErr:  false,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "publish-release",
 					Id:   "publish-release-trigger-id",
 				},
 			},
-			ghPRs: []*github.PullRequest{},
+			ghPRs:           []*github.PullRequest{},
+			wantTriggersRun: nil,
 		},
 		{
-			name:    "error finding PRs for publish-release",
-			command: "publish-release",
-			push:    true,
-			build:   false,
-			wantErr: true,
+			name:     "error finding PRs for publish-release",
+			command:  "publish-release",
+			push:     true,
+			build:    false,
+			forceRun: false,
+			wantErr:  true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "publish-release",
 					Id:   "publish-release-trigger-id",
 				},
 			},
-			ghError: fmt.Errorf("github error"),
+			ghError:         fmt.Errorf("github error"),
+			wantTriggersRun: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -168,11 +185,12 @@ func TestRunCommandWithClient(t *testing.T) {
 				prs: test.ghPRs,
 				err: test.ghError,
 			}
-			err := runCommandWithClient(ctx, client, ghClient, test.command, "some-project", test.push, test.build)
-			if test.wantErr && err == nil {
-				t.Errorf("expected error, but did not return one")
-			} else if !test.wantErr && err != nil {
-				t.Errorf("did not expect error, but received one: %s", err)
+			err := runCommandWithClient(ctx, client, ghClient, test.command, "some-project", test.push, test.build, test.forceRun)
+			if (err != nil) != test.wantErr {
+				t.Errorf("runCommandWithClient() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if diff := cmp.Diff(test.wantTriggersRun, client.triggersRun); diff != "" {
+				t.Errorf("runCommandWithClient() triggersRun diff (-want, +got):\n%s", diff)
 			}
 		})
 	}
@@ -194,15 +212,17 @@ func TestRunCommandWithConfig(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name     string
-		command  string
-		config   *RepositoriesConfig
-		want     string
-		runError error
-		wantErr  bool
-		ghPRs    []*github.PullRequest
-		ghError  error
-		dateTime time.Time
+		name            string
+		command         string
+		config          *RepositoriesConfig
+		want            string
+		runError        error
+		wantErr         bool
+		ghPRs           []*github.PullRequest
+		ghError         error
+		dateTime        time.Time
+		forceRun        bool
+		wantTriggersRun []string
 	}{
 		{
 			name:    "runs generate trigger with name",
@@ -215,8 +235,10 @@ func TestRunCommandWithConfig(t *testing.T) {
 					},
 				},
 			},
-			dateTime: time.Now(),
-			wantErr:  false,
+			dateTime:        time.Now(),
+			forceRun:        false,
+			wantErr:         false,
+			wantTriggersRun: []string{"generate-trigger-id"},
 		},
 		{
 			name:    "runs generate trigger with full name",
@@ -229,8 +251,10 @@ func TestRunCommandWithConfig(t *testing.T) {
 					},
 				},
 			},
-			dateTime: time.Now(),
-			wantErr:  false,
+			dateTime:        time.Now(),
+			forceRun:        false,
+			wantErr:         false,
+			wantTriggersRun: []string{"generate-trigger-id"},
 		},
 		{
 			name:    "runs generate trigger without name",
@@ -242,8 +266,10 @@ func TestRunCommandWithConfig(t *testing.T) {
 					},
 				},
 			},
-			dateTime: time.Now(),
-			wantErr:  true,
+			dateTime:        time.Now(),
+			forceRun:        false,
+			wantErr:         true,
+			wantTriggersRun: nil,
 		},
 		{
 			name:    "runs stage-release on odd week",
@@ -257,8 +283,10 @@ func TestRunCommandWithConfig(t *testing.T) {
 				},
 			},
 			// Jan 1, 2025 is in week 1 (odd)
-			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-			wantErr:  false,
+			dateTime:        time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			forceRun:        false,
+			wantErr:         false,
+			wantTriggersRun: []string{"stage-release-trigger-id"},
 		},
 		{
 			name:    "skips stage-release on even week",
@@ -272,8 +300,27 @@ func TestRunCommandWithConfig(t *testing.T) {
 				},
 			},
 			// Jan 8, 2025 is in week 2 (even)
-			dateTime: time.Date(2025, 1, 8, 0, 0, 0, 0, time.UTC),
-			wantErr:  false,
+			dateTime:        time.Date(2025, 1, 8, 0, 0, 0, 0, time.UTC),
+			forceRun:        false,
+			wantErr:         false,
+			wantTriggersRun: nil,
+		},
+		{
+			name:    "runs stage-release on even week with forceRun",
+			command: "stage-release",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"stage-release"},
+					},
+				},
+			},
+			// Jan 8, 2025 is in week 2 (even)
+			dateTime:        time.Date(2025, 1, 8, 0, 0, 0, 0, time.UTC),
+			forceRun:        true,
+			wantErr:         false,
+			wantTriggersRun: []string{"stage-release-trigger-id"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -286,11 +333,12 @@ func TestRunCommandWithConfig(t *testing.T) {
 				prs: test.ghPRs,
 				err: test.ghError,
 			}
-			err := runCommandWithConfig(ctx, client, ghClient, test.command, "some-project", true, true, test.config, test.dateTime)
-			if test.wantErr && err == nil {
-				t.Errorf("expected error, but did not return one")
-			} else if !test.wantErr && err != nil {
-				t.Errorf("did not expect error, but received one: %s", err)
+			err := runCommandWithConfig(ctx, client, ghClient, test.command, "some-project", true, true, test.forceRun, test.config, test.dateTime)
+			if (err != nil) != test.wantErr {
+				t.Errorf("runCommandWithConfig() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if diff := cmp.Diff(test.wantTriggersRun, client.triggersRun); diff != "" {
+				t.Errorf("runCommandWithConfig() triggersRun diff (-want, +got):\n%s", diff)
 			}
 		})
 	}

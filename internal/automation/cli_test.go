@@ -36,6 +36,7 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     true,
+				ForceRun:  false,
 			},
 		},
 		{
@@ -47,6 +48,7 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "some-project-id",
 				Push:      true,
 				Build:     true,
+				ForceRun:  false,
 			},
 		},
 		{
@@ -58,6 +60,7 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     true,
+				ForceRun:  false,
 			},
 		},
 		{
@@ -69,6 +72,7 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      false,
 				Build:     true,
+				ForceRun:  false,
 			},
 		},
 		{
@@ -80,6 +84,19 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     false,
+				ForceRun:  false,
+			},
+		},
+		{
+			name:    "sets forceRun",
+			args:    []string{"--forceRun=true"},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "generate",
+				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      true,
+				Build:     true,
+				ForceRun:  true,
 			},
 		},
 	} {
