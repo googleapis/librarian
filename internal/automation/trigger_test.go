@@ -186,8 +186,10 @@ func TestRunCommandWithClient(t *testing.T) {
 				err: test.ghError,
 			}
 			err := runCommandWithClient(ctx, client, ghClient, test.command, "some-project", test.push, test.build, test.forceRun)
-			if (err != nil) != test.wantErr {
-				t.Errorf("runCommandWithClient() error = %v, wantErr %v", err, test.wantErr)
+			if test.wantErr && err == nil {
+				t.Errorf("expected error, but did not return one")
+			} else if !test.wantErr && err != nil {
+				t.Errorf("did not expect error, but received one: %s", err)
 			}
 			if diff := cmp.Diff(test.wantTriggersRun, client.triggersRun); diff != "" {
 				t.Errorf("runCommandWithClient() triggersRun diff (-want, +got):\n%s", diff)
@@ -334,8 +336,10 @@ func TestRunCommandWithConfig(t *testing.T) {
 				err: test.ghError,
 			}
 			err := runCommandWithConfig(ctx, client, ghClient, test.command, "some-project", true, true, test.forceRun, test.config, test.dateTime)
-			if (err != nil) != test.wantErr {
-				t.Errorf("runCommandWithConfig() error = %v, wantErr %v", err, test.wantErr)
+			if test.wantErr && err == nil {
+				t.Errorf("expected error, but did not return one")
+			} else if !test.wantErr && err != nil {
+				t.Errorf("did not expect error, but received one: %s", err)
 			}
 			if diff := cmp.Diff(test.wantTriggersRun, client.triggersRun); diff != "" {
 				t.Errorf("runCommandWithConfig() triggersRun diff (-want, +got):\n%s", diff)

@@ -93,7 +93,7 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 	// validate command is allowed
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
-		return fmt.Errorf("unsuppoted command: %s", command)
+		return fmt.Errorf("unsupported command: %s", command)
 	}
 
 	if triggerName == "stage-release" {
