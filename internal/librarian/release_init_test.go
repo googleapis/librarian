@@ -22,7 +22,9 @@ import (
 	"strings"
 	"testing"
 
+	gogitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"gopkg.in/yaml.v3"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
@@ -88,6 +90,21 @@ func TestInitRun(t *testing.T) {
 	t.Parallel()
 	gitStatus := make(git.Status)
 	gitStatus["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+
+	mockRepoWithReleasableUnit := &MockRepository{
+		Dir:          t.TempDir(),
+		AddAllStatus: gitStatus,
+		RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+			Name: "origin",
+			URLs: []string{"https://github.com/googleapis/librarian.git"},
+		})},
+		ChangedFilesInCommitValue: []string{"file.txt"},
+		GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
+			{
+				Message: "feat: a feature",
+			},
+		},
+	}
 	for _, test := range []struct {
 		name       string
 		runner     *initRunner
@@ -200,7 +217,7 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name: "run release init command for one library",
+			name: "run release init command for one library (library id in cfg)",
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
@@ -208,14 +225,16 @@ func TestInitRun(t *testing.T) {
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
-							ID: "another-example-id",
+							Version: "1.0.0",
+							ID:      "another-example-id",
 							SourceRoots: []string{
 								"dir3",
 								"dir4",
 							},
 						},
 						{
-							ID: "example-id",
+							Version: "2.0.0",
+							ID:      "example-id",
 							SourceRoots: []string{
 								"dir1",
 								"dir2",
@@ -227,9 +246,7 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
+				repo:            mockRepoWithReleasableUnit,
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
 			},
@@ -241,8 +258,9 @@ func TestInitRun(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:   "another-example-id",
-						APIs: []*config.API{},
+						Version: "1.0.0",
+						ID:      "another-example-id",
+						APIs:    []*config.API{},
 						SourceRoots: []string{
 							"dir3",
 							"dir4",
@@ -251,8 +269,9 @@ func TestInitRun(t *testing.T) {
 						RemoveRegex:   []string{},
 					},
 					{
-						ID:   "example-id",
-						APIs: []*config.API{},
+						Version: "2.1.0", // Version is bumped only for library specified
+						ID:      "example-id",
+						APIs:    []*config.API{},
 						SourceRoots: []string{
 							"dir1",
 							"dir2",
@@ -267,7 +286,34 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name: "run release init command without librarian config",
+			name: "run release init command for one invalid library (invalid library id in cfg)",
+			runner: &initRunner{
+				workRoot:        t.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Library: "does-not-exist",
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID: "another-example-id",
+						},
+						{
+							ID: "example-id",
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+			wantErr:    true,
+			wantErrMsg: "unable to find library for release",
+		},
+		{
+			name: "run release init command without librarian config (no config.yaml file)",
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
@@ -275,14 +321,16 @@ func TestInitRun(t *testing.T) {
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
-							ID: "another-example-id",
+							Version: "1.0.0",
+							ID:      "another-example-id",
 							SourceRoots: []string{
 								"dir3",
 								"dir4",
 							},
 						},
 						{
-							ID: "example-id",
+							Version: "2.0.0",
+							ID:      "example-id",
 							SourceRoots: []string{
 								"dir1",
 								"dir2",
@@ -294,9 +342,7 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
+				repo:        mockRepoWithReleasableUnit,
 				partialRepo: t.TempDir(),
 			},
 			files: map[string]string{
@@ -307,8 +353,9 @@ func TestInitRun(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:   "another-example-id",
-						APIs: []*config.API{},
+						Version: "1.0.0",
+						ID:      "another-example-id",
+						APIs:    []*config.API{},
 						SourceRoots: []string{
 							"dir3",
 							"dir4",
@@ -317,8 +364,9 @@ func TestInitRun(t *testing.T) {
 						RemoveRegex:   []string{},
 					},
 					{
-						ID:   "example-id",
-						APIs: []*config.API{},
+						Version: "2.1.0",
+						ID:      "example-id",
+						APIs:    []*config.API{},
 						SourceRoots: []string{
 							"dir1",
 							"dir2",
@@ -339,10 +387,9 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{
 					initErr: errors.New("simulated init error"),
 				},
-				state: &config.LibrarianState{},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
+				library:         "1.0.0",
+				libraryVersion:  "example-id",
+				repo:            mockRepoWithReleasableUnit,
 				partialRepo:     t.TempDir(),
 				librarianConfig: &config.LibrarianConfig{},
 			},
@@ -356,10 +403,9 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{
 					wantErrorMsg: true,
 				},
-				state: &config.LibrarianState{},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
+				library:         "example-id",
+				libraryVersion:  "1.0.0",
+				repo:            mockRepoWithReleasableUnit,
 				partialRepo:     t.TempDir(),
 				librarianConfig: &config.LibrarianConfig{},
 			},
@@ -421,6 +467,143 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 		{
+			name: "single library has no releasable units, no state change",
+			runner: &initRunner{
+				workRoot:        os.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							Version: "1.0.0",
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+						Name: "origin",
+						URLs: []string{"https://github.com/googleapis/librarian.git"},
+					})},
+					ChangedFilesInCommitValue: []string{"file.txt"},
+					GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
+						{
+							Message: "chore: not releasable",
+						},
+						{
+							Message: "test: not releasable",
+						},
+						{
+							Message: "build: not releasable",
+						},
+					},
+				},
+				ghClient:        &mockGitHubClient{},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+		},
+		{
+			name: "release init has multiple libraries but only one has a releasable unit",
+			runner: &initRunner{
+				workRoot:        os.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							Version: "1.0.0",
+							ID:      "another-example-id",
+						},
+						{
+							Version: "2.0.0",
+							ID:      "example-id",
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir:                       t.TempDir(),
+					ChangedFilesInCommitValue: []string{"file.txt"},
+					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+						"another-example-id-1.0.0": {
+							{
+								Message: "chore: not releasable",
+							},
+						},
+						"example-id-2.0.0": {
+							{
+								Message: "feat: a new feature",
+							},
+						},
+					},
+				},
+				ghClient:        &mockGitHubClient{},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:            "another-example-id",
+						Version:       "1.0.0", // version is NOT bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "example-id",
+						Version:       "2.1.0", // version is bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
+			name: "configured library (library id in cfg) does not have releasable unit, no state change",
+			runner: &initRunner{
+				workRoot:        os.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Library: "another-example-id", // release only for this library
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							Version: "1.0.0",
+							ID:      "another-example-id",
+						},
+						{
+							Version: "2.0.0",
+							ID:      "example-id",
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir:                       t.TempDir(),
+					ChangedFilesInCommitValue: []string{"file.txt"},
+					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+						"another-example-id-1.0.0": {
+							{
+								Message: "chore: not releasable",
+							},
+						},
+						"example-id-2.0.0": {
+							{
+								Message: "feat: a new feature",
+							},
+						},
+					},
+				},
+				ghClient:        &mockGitHubClient{},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+		},
+		{
 			name: "failed to commit and push",
 			runner: &initRunner{
 				workRoot:        os.TempDir(),
@@ -429,14 +612,27 @@ func TestInitRun(t *testing.T) {
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
-							ID: "example-id",
+							Version: "1.0.0",
+							ID:      "example-id",
 						},
 					},
 				},
 				repo: &MockRepository{
 					Dir:          t.TempDir(),
 					AddAllStatus: gitStatus,
-					RemotesValue: []*git.Remote{}, // No remotes
+					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+						Name: "origin",
+						URLs: []string{"https://github.com/googleapis/librarian.git"},
+					})},
+					ChangedFilesInCommitValue: []string{"file.txt"},
+					GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
+						{
+							Message: "feat: a feature",
+						},
+					},
+					// This AddAll is used in commitAndPush(). If commitAndPush() is invoked,
+					// then this test should error out
+					AddAllError: errors.New("unable to add all files"),
 				},
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
@@ -465,16 +661,15 @@ func TestInitRun(t *testing.T) {
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
-							ID: "example-id",
+							Version: "1.0.0",
+							ID:      "example-id",
 							SourceRoots: []string{
 								"dir1",
 							},
 						},
 					},
 				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
+				repo:            mockRepoWithReleasableUnit,
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
 			},
@@ -484,8 +679,9 @@ func TestInitRun(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:   "example-id",
-						APIs: []*config.API{},
+						ID:      "example-id",
+						Version: "1.1.0",
+						APIs:    []*config.API{},
 						SourceRoots: []string{
 							"dir1",
 						},
@@ -504,16 +700,15 @@ func TestInitRun(t *testing.T) {
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
-							ID: "example-id",
+							Version: "1.0.0",
+							ID:      "example-id",
 							SourceRoots: []string{
 								"dir1",
 							},
 						},
 					},
 				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
+				repo:            mockRepoWithReleasableUnit,
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
 			},
@@ -531,16 +726,15 @@ func TestInitRun(t *testing.T) {
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
-							ID: "example-id",
+							Version: "1.0.0",
+							ID:      "example-id",
 							SourceRoots: []string{
 								"dir1",
 							},
 						},
 					},
 				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
+				repo:            mockRepoWithReleasableUnit,
 				librarianConfig: &config.LibrarianConfig{},
 				partialRepo:     t.TempDir(),
 			},
@@ -617,6 +811,8 @@ func TestInitRun(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			// If there is no release triggered for any library, then the librarian state
+			// is not be written back. The `want` value for the librarian state is nil
 			var got *config.LibrarianState
 			if err := yaml.Unmarshal(bytes, &got); err != nil {
 				t.Fatal(err)
