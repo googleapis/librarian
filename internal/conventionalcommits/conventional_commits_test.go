@@ -261,7 +261,7 @@ END_NESTED_COMMIT
 					LibraryID: "example-id",
 					IsNested:  false,
 					Footers:   map[string]string{},
-					SHA:       sha.String(),
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 				{
@@ -272,7 +272,7 @@ END_NESTED_COMMIT
 					LibraryID: "example-id",
 					IsNested:  true,
 					Footers:   map[string]string{},
-					SHA:       sha.String(),
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 				{
@@ -283,12 +283,11 @@ END_NESTED_COMMIT
 					LibraryID: "example-id",
 					IsNested:  true,
 					Footers:   map[string]string{},
-					SHA:       sha.String(),
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 			},
 		},
-
 		{
 			name: "commit with empty nested commit",
 			message: `feat(parser): main feature
@@ -341,7 +340,6 @@ PiperOrigin-RevId: 654321
 Source-link: fake-link
 END_NESTED_COMMIT
 END_COMMIT_OVERRIDE
-
 `,
 			want: []*ConventionalCommit{
 				{
@@ -351,7 +349,7 @@ END_COMMIT_OVERRIDE
 					LibraryID: "example-id",
 					IsNested:  true,
 					Footers:   map[string]string{"PiperOrigin-RevId": "123456", "Source-link": "fake-link"},
-					SHA:       sha.String(),
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 				{
@@ -361,7 +359,7 @@ END_COMMIT_OVERRIDE
 					Body:      "body of nested commit 2\n...",
 					LibraryID: "example-id",
 					Footers:   map[string]string{"PiperOrigin-RevId": "654321", "Source-link": "fake-link"},
-					SHA:       sha.String(),
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 			},
@@ -491,14 +489,14 @@ func TestConventionalCommit_MarshalJSON(t *testing.T) {
 		Body:    "body of feature",
 		Footers: map[string]string{
 			"PiperOrigin-RevId": "12345",
-			"git-commit-hash":   "abcdef123456",
 		},
+		SHA: "1234",
 	}
 	b, err := c.MarshalJSON()
 	if err != nil {
 		t.Fatalf("MarshalJSON() failed: %v", err)
 	}
-	want := `{"type":"feat","subject":"new feature","body":"body of feature","piper_cl_number":"12345","source_commit_hash":"abcdef123456"}`
+	want := `{"type":"feat","subject":"new feature","body":"body of feature","source_commit_hash":"1234","piper_cl_number":"12345"}`
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("MarshalJSON() mismatch (-want +got):\n%s", diff)
 	}
