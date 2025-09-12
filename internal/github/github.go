@@ -257,7 +257,10 @@ func (c *Client) GetPullRequest(ctx context.Context, number int) (*PullRequest, 
 	return pr, err
 }
 
-// CreateRelease creates a tag and release in the repository at the given commitish.
+// CreateRelease creates a tag and release in the repository at the given
+// commit-ish. See
+// https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-commit-ishalsocommittish
+// for definition of commit-ish.
 func (c *Client) CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error) {
 	r, _, err := c.Repositories.CreateRelease(ctx, c.repo.Owner, c.repo.Name, &github.RepositoryRelease{
 		TagName:         &tagName,
