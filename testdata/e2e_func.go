@@ -30,7 +30,7 @@ const (
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
 
 	if len(os.Args) <= 1 {
@@ -101,7 +101,6 @@ func doReleaseInit(args []string) error {
 		return err
 	}
 	slog.Debug("doReleaseInit received request", "request", request)
-	slog.Debug("doReleaseInit received outputDir", "outputDir", request.outputDir)
 	if err := validateLibrarianDir(request.librarianDir, releaseInitRequest); err != nil {
 		return err
 	}
@@ -212,7 +211,7 @@ func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
 }
 
 func writeReleaseInitResponseJSON(option *releaseInitOption) error {
-	jsonFilePath := filepath.Join(option.librarianDir, "release-init-response.json")
+	jsonFilePath := filepath.Join(option.librarianDir, releaseInitResponse)
 	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
 		return err

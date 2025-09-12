@@ -6,6 +6,3 @@ libraries:
       - path: google/cloud/pubsub/v1
     source_roots:
       - google-cloud-pubsub/v1
-    release:
-      release-level: minor
-      release-version: 1.1.0
