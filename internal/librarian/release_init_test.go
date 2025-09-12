@@ -22,12 +22,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"gopkg.in/yaml.v3"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 
 	"github.com/googleapis/librarian/internal/gitrepo"
 
@@ -89,12 +89,13 @@ func TestInitRun(t *testing.T) {
 	gitStatus := make(git.Status)
 	gitStatus["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 	for _, test := range []struct {
-		name       string
-		runner     *initRunner
-		files      map[string]string
-		want       *config.LibrarianState
-		wantErr    bool
-		wantErrMsg string
+		name                string
+		runner              *initRunner
+		files               map[string]string
+		want                *config.LibrarianState
+		wantLibrarianConfig *config.LibrarianConfig
+		wantErr             bool
+		wantErrMsg          string
 	}{
 		{
 			name: "run release init command for all libraries, update librarian state",
@@ -550,6 +551,129 @@ func TestInitRun(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to copy file",
 		},
+		{
+			name: "run release init command for one library clears next_version",
+
+			runner: &initRunner{
+				workRoot:        t.TempDir(),
+				containerClient: &mockContainerClient{},
+				cfg: &config.Config{
+					Library: "example-id",
+				},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID:      "another-example-id",
+							Version: "1.0.0",
+							SourceRoots: []string{
+								"dir3",
+								"dir4",
+							},
+							RemoveRegex: []string{
+								"dir3",
+								"dir4",
+							},
+						},
+						{
+							ID:      "example-id",
+							Version: "2.0.0",
+							SourceRoots: []string{
+								"dir1",
+								"dir2",
+							},
+							RemoveRegex: []string{
+								"dir1",
+								"dir2",
+							},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+						"another-example-id-1.0.0": {
+							{
+								Hash:    plumbing.NewHash("123456"),
+								Message: "feat: another new feature",
+							},
+						},
+						"example-id-2.0.0": {
+							{
+								Hash:    plumbing.NewHash("abcdefg"),
+								Message: "feat: a new feature",
+							},
+						},
+					},
+					ChangedFilesInCommitValueByHash: map[string][]string{
+						plumbing.NewHash("123456").String(): {
+							"dir3/file3.txt",
+							"dir4/file4.txt",
+						},
+						plumbing.NewHash("abcdefg").String(): {
+							"dir1/file1.txt",
+							"dir2/file2.txt",
+						},
+					},
+				},
+				librarianConfig: &config.LibrarianConfig{
+					Libraries: []*config.LibraryConfig{
+						{
+							LibraryID:   "example-id",
+							NextVersion: "2.3.4",
+						},
+					},
+				},
+				partialRepo: t.TempDir(),
+			},
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file1.txt": "",
+				"dir2/file2.txt": "",
+				"dir3/file3.txt": "",
+				"dir4/file4.txt": "",
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "another-example-id",
+						Version: "1.0.0", // version is untouched.
+						APIs:    []*config.API{},
+						SourceRoots: []string{
+							"dir3",
+							"dir4",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir3",
+							"dir4",
+						},
+					},
+					{
+						ID:      "example-id",
+						Version: "2.3.4", // version is overridden.
+						APIs:    []*config.API{},
+						SourceRoots: []string{
+							"dir1",
+							"dir2",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir1",
+							"dir2",
+						},
+					},
+				},
+			},
+			wantLibrarianConfig: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{},
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:   "example-id",
+						NextVersion: "",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// Setup library files before running the command.
@@ -624,6 +748,21 @@ func TestInitRun(t *testing.T) {
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
+			}
+
+			if test.wantLibrarianConfig != nil {
+				bytes, err = os.ReadFile(filepath.Join(repoDir, ".librarian/config.yaml"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				var got *config.LibrarianConfig
+				if err := yaml.Unmarshal(bytes, &got); err != nil {
+					t.Fatal(err)
+				}
+
+				if diff := cmp.Diff(test.wantLibrarianConfig, got); diff != "" {
+					t.Errorf("config mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
