@@ -98,7 +98,7 @@ type initRunner struct {
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
-	runner, err := newCommandRunner(cfg, nil, nil)
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create init runner: %w", err)
 	}

@@ -95,7 +95,7 @@ type tagAndReleaseRunner struct {
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
-	runner, err := newCommandRunner(cfg, nil, nil)
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
 		return nil, err
 	}

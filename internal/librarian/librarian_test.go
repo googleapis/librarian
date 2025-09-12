@@ -30,7 +30,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 
@@ -110,14 +109,13 @@ func TestGenerate_DefaultBehavior(t *testing.T) {
 	cfg.WorkRoot = repoDir
 	cfg.Repo = repoDir
 	cfg.APISource = apiSourceDir
-	runner, err := newGenerateRunner(cfg, func(token string, repo *github.Repository) (GitHubClient, error) {
-		return mockGH, nil
-	}, func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
-		return mockContainer, nil
-	})
+	runner, err := newGenerateRunner(cfg)
 	if err != nil {
 		t.Fatalf("newGenerateRunner() failed: %v", err)
 	}
+
+	runner.ghClient = mockGH
+	runner.containerClient = mockContainer
 	if err := runner.run(ctx); err != nil {
 		t.Fatalf("runner.run() failed: %v", err)
 	}
