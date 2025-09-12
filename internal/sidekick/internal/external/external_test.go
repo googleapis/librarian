@@ -35,3 +35,9 @@ func TestError(t *testing.T) {
 		t.Errorf("expected an error using go invalid-subcommand-bad-bad-bad")
 	}
 }
+
+func TestRun(t *testing.T) {
+	if err := Run("go", "help"); err != nil {
+		t.Fatal(err)
+	}
+}

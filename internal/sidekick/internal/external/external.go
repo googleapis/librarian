@@ -27,3 +27,10 @@ func Exec(cmd *exec.Cmd) error {
 	}
 	return nil
 }
+
+// Run executes a program (with arguments) and captures any error output.
+func Run(command string, arg ...string) error {
+	cmd := exec.Command(command, arg...)
+	cmd.Dir = "."
+	return Exec(cmd)
+}

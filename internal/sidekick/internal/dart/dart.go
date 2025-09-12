@@ -16,7 +16,6 @@ package dart
 
 import (
 	"fmt"
-	"os/exec"
 	"regexp"
 	"strings"
 	"unicode"
@@ -245,14 +244,8 @@ func shouldGenerateMethod(m *api.Method) bool {
 }
 
 func formatDirectory(dir string) error {
-	if err := runExternalCommand("dart", "format", dir); err != nil {
+	if err := external.Run("dart", "format", dir); err != nil {
 		return fmt.Errorf("got an error trying to run `dart format`; perhaps try https://dart.dev/get-dart (%w)", err)
 	}
 	return nil
-}
-
-func runExternalCommand(c string, arg ...string) error {
-	cmd := exec.Command(c, arg...)
-	cmd.Dir = "."
-	return external.Exec(cmd)
 }
