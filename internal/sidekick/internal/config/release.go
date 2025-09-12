@@ -32,11 +32,11 @@ type Release struct {
 	// cargo = /usr/bin/cargo
 	Preinstalled map[string]string `toml:"pre-installed"`
 
-	// IgnoredIfChanged defines globs that are ignored in change analysis.
+	// IgnoredChanges defines globs that are ignored in change analysis.
 	IgnoredChanges []string `toml:"ignored-changes,omitempty"`
 }
 
-// Tool definites the configuration required to install helper tools.
+// Tool defines the configuration required to install helper tools.
 type Tool struct {
 	Name    string `toml:"name"`
 	Version string `toml:"version"`
