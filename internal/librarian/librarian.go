@@ -16,8 +16,6 @@ package librarian
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 	"net/url"
 
 	"github.com/googleapis/librarian/internal/docker"
@@ -40,68 +38,6 @@ func init() {
 		cmdRelease,
 		cmdVersion,
 	)
-}
-
-// Run executes the Librarian CLI with the given command line
-// arguments.
-func Run(ctx context.Context, arg ...string) error {
-	if err := CmdLibrarian.Parse(arg); err != nil {
-		return err
-	}
-	if len(arg) == 0 {
-		CmdLibrarian.Flags.Usage()
-		return nil
-	}
-	cmd, arg, err := lookupCommand(CmdLibrarian, arg)
-	if err != nil {
-		return err
-	}
-
-	// If a command is just a container for subcommands, it won't have a
-	// Run function. In that case, display its usage instructions.
-	if cmd.Run == nil {
-		cmd.Flags.Usage()
-		return fmt.Errorf("command %q requires a subcommand", cmd.Name())
-	}
-
-	if err := cmd.Parse(arg); err != nil {
-		// We expect that if cmd.Parse fails, it will already
-		// have printed out a command-specific usage error,
-		// so we don't need to display the general usage.
-		return err
-	}
-	slog.Info("librarian", "arguments", arg)
-	if err := cmd.Config.SetDefaults(); err != nil {
-		return fmt.Errorf("failed to initialize config: %w", err)
-	}
-	if _, err := cmd.Config.IsValid(); err != nil {
-		return fmt.Errorf("failed to validate config: %s", err)
-	}
-	return cmd.Run(ctx, cmd.Config)
-}
-
-// lookupCommand recursively looks up the command specified by the given arguments.
-// It returns the command, the remaining arguments, and an error if the command
-// is not found.
-func lookupCommand(cmd *cli.Command, args []string) (*cli.Command, []string, error) {
-	if len(args) == 0 {
-		return cmd, nil, nil
-	}
-	subcommand, err := cmd.Lookup(args[0])
-	if err != nil {
-		cmd.Flags.Usage()
-		return nil, nil, err
-	}
-	// If the next argument matches a potential flag (first char is `-`), parse the
-	// remaining arguments as flags. Check if argument is a flag before calling
-	// `lookupCommand` again to avoid flags from being treated as subcommands.
-	if len(args) > 1 && args[1][0] == '-' {
-		return subcommand, args[1:], nil
-	}
-	if len(subcommand.Commands) > 0 {
-		return lookupCommand(subcommand, args[1:])
-	}
-	return subcommand, args[1:], nil
 }
 
 // GitHubClient is an abstraction over the GitHub client.

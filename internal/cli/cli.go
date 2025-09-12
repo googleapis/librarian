@@ -38,8 +38,8 @@ type Command struct {
 	// Long is the full description of the command.
 	Long string
 
-	// Run executes the command.
-	Run func(ctx context.Context, cfg *config.Config) error
+	// Action is the action to be executed.
+	Action func(context.Context, *Command) error
 
 	// Commands are the sub commands.
 	Commands []*Command
@@ -52,10 +52,34 @@ type Command struct {
 	Config *config.Config
 }
 
-// Parse parses the provided command-line arguments using the command's flag
-// set.
-func (c *Command) Parse(args []string) error {
-	return c.Flags.Parse(args)
+// Run executes the command with the provided arguments.
+func (c *Command) Run(ctx context.Context, args []string) error {
+	cmd, remaining, err := lookupCommand(c, args)
+	if err != nil {
+		c.Flags.Usage()
+		return err
+	}
+	if err := cmd.Flags.Parse(remaining); err != nil {
+		return err
+	}
+
+	if cmd.Action == nil {
+		cmd.Flags.Usage()
+		if len(cmd.Commands) > 0 {
+			return fmt.Errorf("command %q requires a subcommand", cmd.Name())
+		}
+		return fmt.Errorf("no action defined for command %q", cmd.Name())
+	}
+
+	if cmd.Config == nil {
+		if err := cmd.Config.SetDefaults(); err != nil {
+			return fmt.Errorf("failed to initialize config: %w", err)
+		}
+	}
+	if _, err := cmd.Config.IsValid(); err != nil {
+		return fmt.Errorf("failed to validate config: %s", err)
+	}
+	return cmd.Action(ctx, cmd)
 }
 
 // Name is the command name. Command.Short is always expected to begin with
@@ -68,9 +92,33 @@ func (c *Command) Name() string {
 	return parts[0]
 }
 
-// Lookup finds a command by its name, and returns an error if the command is
+// lookupCommand recursively looks up the command specified by the given arguments.
+// It returns the command, the remaining arguments, and an error if the command
+// is not found.
+func lookupCommand(cmd *Command, args []string) (*Command, []string, error) {
+	if len(args) == 0 {
+		return cmd, nil, nil
+	}
+	subcommand, err := cmd.lookup(args[0])
+	if err != nil {
+		cmd.Flags.Usage()
+		return nil, nil, err
+	}
+	// If the next argument matches a potential flag (first char is `-`), parse the
+	// remaining arguments as flags. Check if argument is a flag before calling
+	// `lookupCommand` again to avoid flags from being treated as subcommands.
+	if len(args) > 1 && args[1][0] == '-' {
+		return subcommand, args[1:], nil
+	}
+	if len(subcommand.Commands) > 0 {
+		return lookupCommand(subcommand, args[1:])
+	}
+	return subcommand, args[1:], nil
+}
+
+// lookup finds a command by its name, and returns an error if the command is
 // not found.
-func (c *Command) Lookup(name string) (*Command, error) {
+func (c *Command) lookup(name string) (*Command, error) {
 	for _, sub := range c.Commands {
 		if sub.Name() == name {
 			return sub, nil

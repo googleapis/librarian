@@ -450,7 +450,7 @@ func TestLookupCommand(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotCmd, gotArgs, err := lookupCommand(tc.cmd, tc.args)
+			gotCmd, gotArgs, err := cli.LookupCommand(tc.cmd, tc.args)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("lookupCommand() error = %v, wantErr %v", err, tc.wantErr)
 				return
