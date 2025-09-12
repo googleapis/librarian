@@ -38,6 +38,9 @@ var triggerNameByCommandName = map[string]string{
 
 const region = "global"
 
+// timeNow is a variable so we can patch it in tests.
+var timeNow = time.Now
+
 // GitHubClient handles communication with the GitHub API.
 type GitHubClient interface {
 	FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*github.PullRequest, error)
@@ -100,9 +103,7 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 	// Cloud Scheduler does not support cron expressions with bi-weekly frequency,
 	// so we handle that logic here.
 	if triggerName == "stage-release" {
-		today := time.Now()
-		_, weekNumber := today.ISOWeek()
-
+		_, weekNumber :=  timeNow().ISOWeek()
 		if weekNumber%2 == 1 {
 			slog.Info("odd week, skipping stage-release trigger", "weekNumber", weekNumber)
 			return nil

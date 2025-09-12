@@ -26,6 +26,8 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+var triggersRan = 0
+
 type mockCloudBuildClient struct {
 	runError      error
 	buildTriggers []*cloudbuildpb.BuildTrigger
@@ -33,6 +35,7 @@ type mockCloudBuildClient struct {
 
 func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error {
 	slog.Info("running fake RunBuildTrigger")
+	triggersRan++
 	if c.runError != nil {
 		return c.runError
 	}

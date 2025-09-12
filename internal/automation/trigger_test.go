@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/google/go-github/v69/github"
@@ -30,6 +31,13 @@ type mockGitHubClient struct {
 
 func (m *mockGitHubClient) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*github.PullRequest, error) {
 	return m.prs, m.err
+}
+
+// patchTimeNow temporarily replaces time.Now for testing.
+func patchTimeNow(t time.Time) func() {
+	orig := timeNow
+	timeNow = func() time.Time { return t }
+	return func() { timeNow = orig }
 }
 
 func TestRunCommandWithClient(t *testing.T) {
@@ -63,7 +71,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			},
 		},
 		{
-			name:    "runs prepare-release trigger",
+			name:    "runs stage-release trigger",
 			command: "stage-release",
 			push:    true,
 			build:   false,
@@ -184,8 +192,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 			Id:   "generate-trigger-id",
 		},
 		{
-			Name: "prepare-release",
-			Id:   "prepare-release-trigger-id",
+			Name: "stage-release",
+			Id:   "stage-release-trigger-id",
 		},
 	}
 	for _, test := range []struct {
@@ -197,6 +205,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 		wantErr  bool
 		ghPRs    []*github.PullRequest
 		ghError  error
+		updateTime                   time.Time
+		wantNumberOfTriggersExecuted int
 	}{
 		{
 			name:    "runs generate trigger with name",
@@ -210,6 +220,7 @@ func TestRunCommandWithConfig(t *testing.T) {
 				},
 			},
 			wantErr: false,
+			wantNumberOfTriggersExecuted: 1,
 		},
 		{
 			name:    "runs generate trigger with full name",
@@ -223,6 +234,7 @@ func TestRunCommandWithConfig(t *testing.T) {
 				},
 			},
 			wantErr: false,
+			wantNumberOfTriggersExecuted: 1,
 		},
 		{
 			name:    "runs generate trigger without name",
@@ -235,6 +247,38 @@ func TestRunCommandWithConfig(t *testing.T) {
 				},
 			},
 			wantErr: true,
+			wantNumberOfTriggersExecuted: 0,
+		},
+		{
+			name:    "skips stage-release trigger on odd week",
+			command: "stage-release",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "https://github.com/googleapis/google-cloud-python",
+						SupportedCommands: []string{"stage-release"},
+					},
+				},
+			},
+			wantErr: false,
+			wantNumberOfTriggersExecuted: 0,
+			updateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), // Jan 1, 2025 is an odd week
+
+		},
+		{
+			name:"runs stage-release trigger on even week",
+			command: "stage-release",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "https://github.com/googleapis/google-cloud-python",
+						SupportedCommands: []string{"stage-release"},
+					},
+				},
+			},
+			wantErr: false,
+			wantNumberOfTriggersExecuted: 1,
+			updateTime: time.Date(2025, 1, 8, 0, 0, 0, 0, time.UTC), // Jan 8, 2025 is an even week
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -247,12 +291,20 @@ func TestRunCommandWithConfig(t *testing.T) {
 				prs: test.ghPRs,
 				err: test.ghError,
 			}
+			if &test.updateTime != nil {
+				restore := patchTimeNow(test.updateTime)
+				defer restore()
+			}
 			err := runCommandWithConfig(ctx, client, ghClient, test.command, "some-project", true, true, test.config)
 			if test.wantErr && err == nil {
 				t.Errorf("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
 				t.Errorf("did not expect error, but received one: %s", err)
 			}
+			if triggersRan != test.wantNumberOfTriggersExecuted {
+				t.Errorf("expected %d triggers executed, but got %d", test.wantNumberOfTriggersExecuted, triggersRan)
+			}
+			triggersRan = 0
 		})
 	}
 }
