@@ -204,6 +204,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return err
 	}
 
+	// Read the response file.
+	if _, err := readLibraryState(
+		filepath.Join(initRequest.PartialRepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
+		return err
+	}
+
 	for _, library := range r.state.Libraries {
 		if r.cfg.Library != "" {
 			if r.cfg.Library != library.ID {

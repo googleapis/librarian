@@ -338,7 +338,6 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name: "docker command returns error",
 			runner: &initRunner{
@@ -356,6 +355,24 @@ func TestInitRun(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "simulated init error",
+		},
+		{
+			name: "release response contains error message",
+			runner: &initRunner{
+				workRoot: t.TempDir(),
+				containerClient: &mockContainerClient{
+					wantErrorMsg: true,
+				},
+				cfg:   &config.Config{},
+				state: &config.LibrarianState{},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				partialRepo:     t.TempDir(),
+				librarianConfig: &config.LibrarianConfig{},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed with error message: simulated error message",
 		},
 		{
 			name: "invalid work root",

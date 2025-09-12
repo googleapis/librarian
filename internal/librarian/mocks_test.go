@@ -125,6 +125,7 @@ type mockContainerClient struct {
 	noBuildResponse     bool
 	noConfigureResponse bool
 	noGenerateResponse  bool
+	noReleaseResponse   bool
 	noInitVersion       bool
 	wantErrorMsg        bool
 	// Set this value if you want library files
@@ -264,6 +265,25 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 
 func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error {
 	m.initCalls++
+	if m.noReleaseResponse {
+		return m.initErr
+	}
+	// Write a release-init-response.json unless we're configured not to.
+	if err := os.MkdirAll(filepath.Join(request.PartialRepoDir, ".librarian"), 0755); err != nil {
+		return err
+	}
+
+	library := &config.LibraryState{}
+	if m.wantErrorMsg {
+		library.ErrorMessage = "simulated error message"
+	}
+	b, err := json.MarshalIndent(library, "", " ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(request.PartialRepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
+		return err
+	}
 	return m.initErr
 }
 
