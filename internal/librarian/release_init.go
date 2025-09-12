@@ -265,7 +265,13 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
 	// If library version explicitly passed to CLI, use it
 	if r.cfg.LibraryVersion != "" {
-		return r.cfg.LibraryVersion, nil
+		slog.Info("Library version override specified", "currentVersion", currentVersion, "version", r.cfg.LibraryVersion)
+		newVersion := semver.MaxVersion(currentVersion, r.cfg.LibraryVersion)
+		if newVersion == r.cfg.LibraryVersion {
+			return newVersion, nil
+		} else {
+			slog.Warn("Specified version is not higher than the current version, ignoring override.")
+		}
 	}
 
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)

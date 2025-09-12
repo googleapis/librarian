@@ -1074,7 +1074,7 @@ func TestDetermineNextVersion(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "with CLI override version can revert version",
+			name: "with CLI override version cannot revert version",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat"},
 			},
@@ -1091,7 +1091,7 @@ func TestDetermineNextVersion(t *testing.T) {
 				},
 			},
 			currentVersion: "2.4.0",
-			wantVersion:    "1.2.3",
+			wantVersion:    "2.5.0",
 			wantErr:        false,
 		},
 		{
