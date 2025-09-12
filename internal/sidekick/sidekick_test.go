@@ -35,16 +35,21 @@ var (
 	specificationSource        = fmt.Sprintf("%s/openapi/secretmanager_openapi_v1.json", testdataDir)
 )
 
-func requireProtoc(t *testing.T) {
+func requireCommand(t *testing.T, command string) {
 	t.Helper()
-	if _, err := exec.LookPath("protoc"); err != nil {
-		t.Skip("skipping test because protoc is not installed")
+	if _, err := exec.LookPath(command); err != nil {
+		t.Skipf("skipping test because %s is not installed", command)
 	}
 }
 
+func requireProtoc(t *testing.T) {
+	requireCommand(t, "protoc")
+}
+
 func requireCargo(t *testing.T) {
-	t.Helper()
-	if _, err := exec.LookPath("cargo"); err != nil {
-		t.Skip("skipping test because cargo is not installed")
-	}
+	requireCommand(t, "cargo")
+}
+
+func requireGit(t *testing.T) {
+	requireCommand(t, "git")
 }
