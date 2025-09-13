@@ -111,28 +111,23 @@ func TestCalculateDependencies(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		imports []string
-		want    []string
+		want    []packageDependency
 	}{
-		{name: "empty", imports: []string{}, want: []string{}},
-		{name: "dart import", imports: []string{typedDataImport}, want: []string{}},
-		{name: "package import", imports: []string{httpImport}, want: []string{"http"}},
-		{name: "dart and package imports", imports: []string{typedDataImport, httpImport}, want: []string{"http"}},
+		{name: "empty", imports: []string{}, want: []packageDependency{}},
+		{name: "dart import", imports: []string{typedDataImport}, want: []packageDependency{}},
+		{name: "package import", imports: []string{httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
+		{name: "dart and package imports", imports: []string{typedDataImport, httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
 		{name: "package imports", imports: []string{
 			httpImport,
 			"package:google_cloud_foo/foo.dart",
-		}, want: []string{"google_cloud_foo", "http"}},
+		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "any"}, {Name: "http", Constraint: "^1.3.0"}}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			deps := map[string]string{}
 			for _, imp := range test.imports {
 				deps[imp] = imp
 			}
-			gotFull := calculateDependencies(deps)
-
-			got := []string{}
-			for _, dep := range gotFull {
-				got = append(got, dep.Name)
-			}
+			got := calculateDependencies(deps, map[string]string{"http": "^1.3.0"})
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in calculateDependencies (-want, +got)\n:%s", diff)
