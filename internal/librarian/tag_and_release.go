@@ -69,8 +69,8 @@ Examples:
 
   # Find and process all pending merged release PRs in a repository.
   librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go`,
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		runner, err := newTagAndReleaseRunner(cfg)
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		runner, err := newTagAndReleaseRunner(cmd.Config)
 		if err != nil {
 			return err
 		}
