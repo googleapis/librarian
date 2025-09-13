@@ -442,7 +442,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "empty API source",
 			cfg: &config.Config{
 				API:         "some/api",
-				APISource:   "", // This will trigger the clone of googleapis
+				APISource:   "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",

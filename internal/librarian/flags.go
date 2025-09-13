@@ -22,15 +22,14 @@ import (
 
 func addFlagAPI(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.API, "api", "",
-		`Relative path to the API to be configured/generated (e.g., google/cloud/functions/v2). 
+		`Relative path to the API to be configured/generated (e.g., google/cloud/functions/v2).
 Must be specified when generating a new library.`)
 }
 
 func addFlagAPISource(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.APISource, "api-source", "",
+	fs.StringVar(&cfg.APISource, "api-source", "https://github.com/googleapis/googleapis",
 		`The location of an API specification repository.
-Can be a remote URL or a local file path. If not specified, googleapis is the
-default and will be cloned.`)
+Can be a remote URL or a local file path.`)
 }
 
 func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
