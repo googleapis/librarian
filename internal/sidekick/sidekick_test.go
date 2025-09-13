@@ -49,7 +49,3 @@ func requireProtoc(t *testing.T) {
 func requireCargo(t *testing.T) {
 	requireCommand(t, "cargo")
 }
-
-func requireGit(t *testing.T) {
-	requireCommand(t, "git")
-}
