@@ -40,7 +40,7 @@ func TestParseAndSetFlags(t *testing.T) {
 	cmd.Flags.IntVar(&intFlag, "count", 0, "count flag")
 
 	args := []string{"-name=foo", "-count=5"}
-	if err := cmd.Parse(args); err != nil {
+	if err := cmd.Flags.Parse(args); err != nil {
 		t.Fatalf("Parse() failed: %v", err)
 	}
 
@@ -312,7 +312,7 @@ func TestLookupCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotCmd, gotArgs, err := LookupCommand(test.cmd, test.args)
+			gotCmd, gotArgs, err := lookupCommand(test.cmd, test.args)
 			if (err != nil) != test.wantErr {
 				t.Errorf("lookupCommand() error = %v, wantErr %v", err, test.wantErr)
 				return
