@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sidekick
+package rustrelease
 
 import (
 	"testing"
@@ -20,33 +20,26 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
-func TestPreflightSuccess(t *testing.T) {
-	requireGit(t)
-	config := config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"git":   "git",
-				"cargo": "git",
-			},
+func TestBumpVersionsSuccess(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "git",
 		},
 	}
-	cmdLine := CommandLine{}
-	if err := rustBumpVersions(&config, &cmdLine); err != nil {
+	if err := BumpVersions(config); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestPreflightMissingCommand(t *testing.T) {
-	requireGit(t)
-	config := config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"cargo": "not-a-valid-command-bad-bad",
-			},
+func TestBumpVersionsPreflightError(t *testing.T) {
+	config := &config.Release{
+		Preinstalled: map[string]string{
+			"git": "git-not-found",
 		},
 	}
-	cmdLine := CommandLine{}
-	if err := rustBumpVersions(&config, &cmdLine); err == nil {
-		t.Errorf("expected an error in rustBumpVersions() with a bad cargo command")
+	if err := BumpVersions(config); err == nil {
+		t.Errorf("expected an error in BumpVersions() with a bad git command")
 	}
 }
