@@ -57,9 +57,9 @@ func Run(ctx context.Context, arg ...string) error {
 		return err
 	}
 
-	// If a command is just a container for subcommands, it won't have a
-	// Run function. In that case, display its usage instructions.
-	if cmd.Run == nil {
+	// If a command is just a container for subcommands, it won't have an
+	// Action function. In that case, display its usage instructions.
+	if cmd.Action == nil {
 		cmd.Flags.Usage()
 		return fmt.Errorf("command %q requires a subcommand", cmd.Name())
 	}
@@ -77,7 +77,7 @@ func Run(ctx context.Context, arg ...string) error {
 	if _, err := cmd.Config.IsValid(); err != nil {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
-	return cmd.Run(ctx, cmd.Config)
+	return cmd.Action(ctx, cmd)
 }
 
 // GitHubClient is an abstraction over the GitHub client.

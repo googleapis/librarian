@@ -38,8 +38,8 @@ type Command struct {
 	// Long is the full description of the command.
 	Long string
 
-	// Run executes the command.
-	Run func(ctx context.Context, cfg *config.Config) error
+	// Action executes the command.
+	Action func(context.Context, *Command) error
 
 	// Commands are the sub commands.
 	Commands []*Command
