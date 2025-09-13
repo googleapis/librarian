@@ -209,15 +209,17 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		cfg:             &config.Config{Push: r.push, Commit: r.commit},
-		state:           r.state,
-		repo:            r.repo,
-		sourceRepo:      r.sourceRepo,
+		branch:          r.cfg.Branch,
+		commit:          r.cfg.Commit,
+		commitMessage:   "feat: generate libraries",
+		failedLibraries: failedLibraries,
 		ghClient:        r.ghClient,
 		idToCommits:     idToCommits,
-		failedLibraries: failedLibraries,
-		commitMessage:   "feat: generate libraries",
 		prType:          generate,
+		push:            r.cfg.Push,
+		repo:            r.repo,
+		sourceRepo:      r.sourceRepo,
+		state:           r.state,
 	}
 
 	return commitAndPush(ctx, commitInfo)

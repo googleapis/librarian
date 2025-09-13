@@ -141,22 +141,20 @@ func (r *initRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		cfg: &config.Config{
-			Library:        r.library,
-			LibraryVersion: r.libraryVersion,
-			Push:           r.push,
-			Commit:         r.commit,
-			Branch:         r.branch,
-		},
-		state:         r.state,
-		repo:          r.repo,
-		sourceRepo:    r.sourceRepo,
-		ghClient:      r.ghClient,
-		commitMessage: "chore: create a release",
-		prType:        release,
+		branch:         r.branch,
+		commit:         r.commit,
+		commitMessage:  "chore: create a release",
+		ghClient:       r.ghClient,
+		library:        r.library,
+		libraryVersion: r.libraryVersion,
+		prType:         release,
 		// Newly created PRs from the `release init` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
+		push:              r.push,
+		repo:              r.repo,
+		sourceRepo:        r.sourceRepo,
+		state:             r.state,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)

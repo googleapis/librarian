@@ -69,16 +69,20 @@ type ContainerClient interface {
 }
 
 type commitInfo struct {
-	cfg               *config.Config
-	state             *config.LibrarianState
-	repo              gitrepo.Repository
-	sourceRepo        gitrepo.Repository
+	branch            string
+	commit            bool
+	commitMessage     string
+	failedLibraries   []string
 	ghClient          GitHubClient
 	idToCommits       map[string]string
-	failedLibraries   []string
-	pullRequestLabels []string
-	commitMessage     string
+	library           string
+	libraryVersion    string
 	prType            string
+	pullRequestLabels []string
+	push              bool
+	repo              gitrepo.Repository
+	sourceRepo        gitrepo.Repository
+	state             *config.LibrarianState
 }
 
 type commandRunner struct {
@@ -333,8 +337,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
 func commitAndPush(ctx context.Context, info *commitInfo) error {
-	cfg := info.cfg
-	if !cfg.Push && !cfg.Commit {
+	if !info.push && !info.commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
 	}
@@ -363,7 +366,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	if !cfg.Push {
+	if !info.push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
 		return nil
 	}
@@ -380,7 +383,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
 
-	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody)
+	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, info.branch, title, prBody)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
