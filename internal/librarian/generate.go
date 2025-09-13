@@ -113,14 +113,20 @@ func init() {
 }
 
 type generateRunner struct {
-	cfg             *config.Config
+	api             string
+	apiSource       string
+	build           bool
+	commit          bool
+	containerClient ContainerClient
+	ghClient        GitHubClient
+	hostMount       string
+	image           string
+	library         string
+	push            bool
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
-	ghClient        GitHubClient
-	containerClient ContainerClient
 	workRoot        string
-	image           string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -129,14 +135,20 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		return nil, err
 	}
 	return &generateRunner{
-		cfg:             runner.cfg,
-		workRoot:        runner.workRoot,
+		api:             cfg.API,
+		apiSource:       cfg.APISource,
+		build:           cfg.Build,
+		commit:          cfg.Commit,
+		containerClient: runner.containerClient,
+		ghClient:        runner.ghClient,
+		hostMount:       cfg.HostMount,
+		image:           runner.image,
+		library:         cfg.Library,
+		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
-		image:           runner.image,
-		ghClient:        runner.ghClient,
-		containerClient: runner.containerClient,
+		workRoot:        runner.workRoot,
 	}, nil
 }
 
@@ -155,10 +167,10 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string, 0)
 	var failedLibraries []string
-	if r.cfg.API != "" || r.cfg.Library != "" {
-		libraryID := r.cfg.Library
+	if r.api != "" || r.library != "" {
+		libraryID := r.library
 		if libraryID == "" {
-			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
+			libraryID = findLibraryIDByAPIPath(r.state, r.api)
 		}
 		oldCommit, err := r.generateSingleLibrary(ctx, libraryID, outputDir)
 		if err != nil {
@@ -197,7 +209,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		cfg:             r.cfg,
+		cfg:             &config.Config{Push: r.push, Commit: r.commit},
 		state:           r.state,
 		repo:            r.repo,
 		sourceRepo:      r.sourceRepo,
@@ -226,7 +238,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // Returns the last generated commit before the generation and error, if any.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
 	if r.needsConfigure() {
-		slog.Info("library not configured, start initial configuration", "library", r.cfg.Library)
+		slog.Info("library not configured, start initial configuration", "library", r.library)
 		configuredLibraryID, err := r.runConfigureCommand(ctx)
 		if err != nil {
 			return "", err
@@ -271,7 +283,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 }
 
 func (r *generateRunner) needsConfigure() bool {
-	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
+	return r.api != "" && r.library != "" && findLibraryByID(r.state, r.library) == nil
 }
 
 func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error {
@@ -300,7 +312,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 	}
 
 	generateRequest := &docker.GenerateRequest{
-		Cfg:       r.cfg,
+		Cfg:       &config.Config{HostMount: r.hostMount},
 		State:     r.state,
 		ApiRoot:   apiRoot,
 		LibraryID: libraryID,
@@ -332,7 +344,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 // The `outputDir` parameter specifies the target directory where the built artifacts
 // should be placed.
 func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) error {
-	if !r.cfg.Build {
+	if !r.build {
 		slog.Info("Build flag not specified, skipping")
 		return nil
 	}
@@ -342,7 +354,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 	}
 
 	buildRequest := &docker.BuildRequest{
-		Cfg:       r.cfg,
+		Cfg:       &config.Config{HostMount: r.hostMount},
 		State:     r.state,
 		LibraryID: libraryID,
 		RepoDir:   r.repo.GetDir(),
@@ -385,7 +397,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 // it returns an empty string and an error.
 func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
 
-	apiRoot, err := filepath.Abs(r.cfg.APISource)
+	apiRoot, err := filepath.Abs(r.apiSource)
 	if err != nil {
 		return "", err
 	}
@@ -393,24 +405,24 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	setAllAPIStatus(r.state, config.StatusExisting)
 	// Record to state, not write to state.yaml
 	r.state.Libraries = append(r.state.Libraries, &config.LibraryState{
-		ID:   r.cfg.Library,
-		APIs: []*config.API{{Path: r.cfg.API, Status: config.StatusNew}},
+		ID:   r.library,
+		APIs: []*config.API{{Path: r.api, Status: config.StatusNew}},
 	})
 
 	if err := populateServiceConfigIfEmpty(
 		r.state,
-		r.cfg.APISource); err != nil {
+		r.apiSource); err != nil {
 		return "", err
 	}
 
 	configureRequest := &docker.ConfigureRequest{
-		Cfg:       r.cfg,
+		Cfg:       &config.Config{HostMount: r.hostMount},
 		State:     r.state,
 		ApiRoot:   apiRoot,
-		LibraryID: r.cfg.Library,
+		LibraryID: r.library,
 		RepoDir:   r.repo.GetDir(),
 	}
-	slog.Info("Performing configuration for library", "id", r.cfg.Library)
+	slog.Info("Performing configuration for library", "id", r.library)
 	if _, err := r.containerClient.Configure(ctx, configureRequest); err != nil {
 		return "", err
 	}
@@ -427,7 +439,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	if libraryState.Version == "" {
-		slog.Info("library doesn't receive a version, apply the default version", "id", r.cfg.Library)
+		slog.Info("library doesn't receive a version, apply the default version", "id", r.library)
 		libraryState.Version = "0.0.0"
 	}
 
