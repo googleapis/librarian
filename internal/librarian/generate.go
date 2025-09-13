@@ -87,7 +87,7 @@ in '.librarian/state.yaml'.
 Example with build and push:
   SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`,
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		runner, err := newGenerateRunner(cfg)
+		runner, err := newGenerateRunner(cmd.Config)
 		if err != nil {
 			return err
 		}
