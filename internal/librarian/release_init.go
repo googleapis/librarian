@@ -71,20 +71,6 @@ Examples:
 	},
 }
 
-func init() {
-	cmdInit.Init()
-	fs := cmdInit.Flags
-	cfg := cmdInit.Config
-
-	addFlagCommit(fs, cfg)
-	addFlagPush(fs, cfg)
-	addFlagImage(fs, cfg)
-	addFlagLibrary(fs, cfg)
-	addFlagLibraryVersion(fs, cfg)
-	addFlagRepo(fs, cfg)
-	addFlagBranch(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-}
 
 type initRunner struct {
 	cfg             *config.Config

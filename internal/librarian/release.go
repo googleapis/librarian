@@ -25,10 +25,3 @@ var cmdRelease = &cli.Command{
 	Long:      "Manages releases of libraries.",
 }
 
-func init() {
-	cmdRelease.Init()
-	cmdRelease.Commands = append(cmdRelease.Commands,
-		cmdInit,
-		cmdTagAndRelease,
-	)
-}

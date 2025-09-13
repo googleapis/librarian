@@ -22,34 +22,21 @@ import (
 
 	"github.com/googleapis/librarian/internal/docker"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/github"
 )
-
-// CmdLibrarian is the top-level command for the Librarian CLI.
-var CmdLibrarian = &cli.Command{
-	Short:     "librarian manages client libraries for Google APIs",
-	UsageLine: "librarian <command> [arguments]",
-	Long:      "Librarian manages client libraries for Google APIs.",
-	Commands: []*cli.Command{
-		cmdGenerate,
-		cmdRelease,
-		cmdVersion,
-	},
-}
 
 // Run executes the Librarian CLI with the given command line
 // arguments.
 func Run(ctx context.Context, arg ...string) error {
-	CmdLibrarian.Init()
+	cmd := newLibrarianCommand()
 	slog.Info("librarian", "arguments", arg)
-	if err := CmdLibrarian.Config.SetDefaults(); err != nil {
+	if err := cmd.Config.SetDefaults(); err != nil {
 		return fmt.Errorf("failed to initialize config: %w", err)
 	}
-	if _, err := CmdLibrarian.Config.IsValid(); err != nil {
+	if _, err := cmd.Config.IsValid(); err != nil {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
-	return CmdLibrarian.Run(ctx, arg)
+	return cmd.Run(ctx, arg)
 }
 
 // GitHubClient is an abstraction over the GitHub client.

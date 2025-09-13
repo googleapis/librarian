@@ -78,14 +78,6 @@ Examples:
 	},
 }
 
-func init() {
-	cmdTagAndRelease.Init()
-	fs := cmdTagAndRelease.Flags
-	cfg := cmdTagAndRelease.Config
-
-	addFlagRepo(fs, cfg)
-	addFlagPR(fs, cfg)
-}
 
 type tagAndReleaseRunner struct {
 	cfg      *config.Config

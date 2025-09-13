@@ -95,22 +95,6 @@ Example with build and push:
 	},
 }
 
-func init() {
-	cmdGenerate.Init()
-	fs := cmdGenerate.Flags
-	cfg := cmdGenerate.Config
-
-	addFlagAPI(fs, cfg)
-	addFlagAPISource(fs, cfg)
-	addFlagBuild(fs, cfg)
-	addFlagHostMount(fs, cfg)
-	addFlagImage(fs, cfg)
-	addFlagLibrary(fs, cfg)
-	addFlagRepo(fs, cfg)
-	addFlagBranch(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-	addFlagPush(fs, cfg)
-}
 
 type generateRunner struct {
 	cfg             *config.Config

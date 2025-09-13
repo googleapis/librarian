@@ -35,7 +35,9 @@ import (
 )
 
 func TestCommandUsage(t *testing.T) {
-	for _, c := range CmdLibrarian.Commands {
+	// Build the command tree for testing
+	cmd := newLibrarianCommand()
+	for _, c := range cmd.Commands {
 		t.Run(c.Name(), func(t *testing.T) {
 			parts := strings.Fields(c.UsageLine)
 			// The first word should always be "librarian".
