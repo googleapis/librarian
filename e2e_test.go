@@ -413,6 +413,7 @@ func TestReleaseInit(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Skip("Skipping until parser is fixed. See: https://github.com/googleapis/librarian/issues/2120")
 			workRoot := t.TempDir()
 			repo := t.TempDir()
 

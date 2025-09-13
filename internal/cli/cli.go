@@ -74,7 +74,7 @@ func (c *Command) usage(w io.Writer) {
 	}
 
 	fmt.Fprintf(w, "%s\n\n", c.Long)
-	fmt.Fprintf(w, "Usage:\n  %s", c.UsageLine)
+	fmt.Fprintf(w, "Usage:\n\n  %s", c.UsageLine)
 	if len(c.Commands) > 0 {
 		fmt.Fprint(w, "\n\nCommands:\n")
 		for _, c := range c.Commands {
