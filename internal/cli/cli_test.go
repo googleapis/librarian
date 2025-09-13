@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestParseAndSetFlags(t *testing.T) {
@@ -42,7 +41,7 @@ func TestParseAndSetFlags(t *testing.T) {
 	cmd.Flags.IntVar(&intFlag, "count", 0, "count flag")
 
 	args := []string{"-name=foo", "-count=5"}
-	if err := cmd.Parse(args); err != nil {
+	if err := cmd.Flags.Parse(args); err != nil {
 		t.Fatalf("Parse() failed: %v", err)
 	}
 
@@ -54,22 +53,21 @@ func TestParseAndSetFlags(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
+func TestAction(t *testing.T) {
 	executed := false
 	cmd := &Command{
 		Short: "run runs the command",
-		Run: func(ctx context.Context, cfg *config.Config) error {
+		Action: func(ctx context.Context, cmd *Command) error {
 			executed = true
 			return nil
 		},
 	}
 
-	cfg := &config.Config{}
-	if err := cmd.Run(t.Context(), cfg); err != nil {
+	if err := cmd.Action(t.Context(), cmd); err != nil {
 		t.Fatal(err)
 	}
 	if !executed {
-		t.Errorf("cmd.Run was not executed")
+		t.Errorf("cmd.Action was not executed")
 	}
 }
 
@@ -278,7 +276,7 @@ func TestLookupCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotCmd, gotArgs, err := LookupCommand(test.cmd, test.args)
+			gotCmd, gotArgs, err := lookupCommand(test.cmd, test.args)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -294,6 +292,80 @@ func TestLookupCommand(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantArgs, gotArgs, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRun(t *testing.T) {
+	actionExecuted := false
+	subcmd := &Command{
+		Short:     "bar is a subcommand",
+		Long:      "bar is a subcommand.",
+		UsageLine: "bar",
+		Action: func(ctx context.Context, cmd *Command) error {
+			actionExecuted = true
+			return nil
+		},
+	}
+	subcmd.Init()
+
+	root := &Command{
+		Short:     "foo is the root command",
+		Long:      "foo is the root command.",
+		UsageLine: "foo",
+		Commands:  []*Command{subcmd},
+	}
+	root.Init()
+
+	noaction := &Command{
+		Short:     "noaction has no action",
+		Long:      "noaction has no action.",
+		UsageLine: "noaction",
+	}
+	noaction.Init()
+
+	for _, test := range []struct {
+		name           string
+		cmd            *Command
+		args           []string
+		wantErr        bool
+		actionExecuted bool
+	}{
+		{
+			name:           "execute foo with subcommand bar",
+			cmd:            root,
+			args:           []string{"bar"},
+			actionExecuted: true,
+		},
+		{
+			name:    "unknown subcommand",
+			cmd:     root,
+			args:    []string{"unknown"},
+			wantErr: true,
+		},
+		{
+			name:    "flag parse error",
+			cmd:     subcmd,
+			args:    []string{"-unknown"},
+			wantErr: true,
+		},
+		{
+			name:    "no action defined on command with no subcommands",
+			cmd:     noaction,
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			actionExecuted = false
+			err := test.cmd.Run(t.Context(), test.args)
+			if err != nil {
+				if !test.wantErr {
+					t.Errorf("error = %v, wantErr %v", err, test.wantErr)
+				}
+			}
+			if actionExecuted != test.actionExecuted {
+				t.Errorf("actionExecuted = %v, want %v", actionExecuted, test.actionExecuted)
 			}
 		})
 	}

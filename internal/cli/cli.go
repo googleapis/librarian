@@ -38,8 +38,8 @@ type Command struct {
 	// Long is the full description of the command.
 	Long string
 
-	// Run executes the command.
-	Run func(ctx context.Context, cfg *config.Config) error
+	// Action executes the command.
+	Action func(context.Context, *Command) error
 
 	// Commands are the sub commands.
 	Commands []*Command
@@ -52,10 +52,24 @@ type Command struct {
 	Config *config.Config
 }
 
-// Parse parses the provided command-line arguments using the command's flag
-// set.
-func (c *Command) Parse(args []string) error {
-	return c.Flags.Parse(args)
+// Run executes the command with the provided arguments.
+func (c *Command) Run(ctx context.Context, args []string) error {
+	cmd, remaining, err := lookupCommand(c, args)
+	if err != nil {
+		return err
+	}
+	if err := cmd.Flags.Parse(remaining); err != nil {
+		return err
+	}
+
+	if cmd.Action == nil {
+		cmd.Flags.Usage()
+		if len(cmd.Commands) > 0 {
+			return nil
+		}
+		return fmt.Errorf("no action defined for command %q", cmd.Name())
+	}
+	return cmd.Action(ctx, cmd)
 }
 
 // Name is the command name. Command.Short is always expected to begin with
@@ -111,10 +125,10 @@ func hasFlags(fs *flag.FlagSet) bool {
 	return visited
 }
 
-// LookupCommand looks up the command specified by the given arguments.
+// lookupCommand looks up the command specified by the given arguments.
 // It returns the command, the remaining arguments, and an error if the command
 // is not found.
-func LookupCommand(cmd *Command, args []string) (*Command, []string, error) {
+func lookupCommand(cmd *Command, args []string) (*Command, []string, error) {
 	// If the first character of the argument is '-' assume it is a flag.
 	for len(args) > 0 && args[0][0] != '-' {
 		name := args[0]

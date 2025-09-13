@@ -86,8 +86,14 @@ in '.librarian/state.yaml'.
 
 Example with build and push:
   SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`,
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		runner, err := newGenerateRunner(cfg)
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		if err := cmd.Config.SetDefaults(); err != nil {
+			return fmt.Errorf("failed to initialize config: %w", err)
+		}
+		if _, err := cmd.Config.IsValid(); err != nil {
+			return fmt.Errorf("failed to validate config: %s", err)
+		}
+		runner, err := newGenerateRunner(cmd.Config)
 		if err != nil {
 			return err
 		}
