@@ -73,18 +73,15 @@ type commandRunner struct {
 const defaultAPISourceBranch = "master"
 
 func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
-
-	if cfg.APISource == "" {
-		cfg.APISource = "https://github.com/googleapis/googleapis"
-	}
-
 	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
 
-	var sourceRepo gitrepo.Repository
-	var sourceRepoDir string
+	var (
+		sourceRepo    gitrepo.Repository
+		sourceRepoDir string
+	)
 	if cfg.CommandName == generateCmdName {
 		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
@@ -140,7 +137,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 func cloneOrOpenRepo(workRoot, repo, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
-		return nil, errors.New("repo must be specified")
+		return nil, fmt.Errorf("repo must be specified")
 	}
 
 	if isURL(repo) {
