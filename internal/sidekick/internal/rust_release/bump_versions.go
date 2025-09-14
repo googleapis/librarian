@@ -22,7 +22,11 @@ func BumpVersions(config *config.Release) error {
 	if err := PreFlight(config); err != nil {
 		return err
 	}
-	_, err := getLastTag(config)
+	lastTag, err := getLastTag(config)
+	if err != nil {
+		return err
+	}
+	_, err = filesChangedSince(config, lastTag)
 	if err != nil {
 		return err
 	}

@@ -15,11 +15,19 @@
 package rustrelease
 
 import (
-	"os"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/internal/external"
+)
+
+const (
+	initialCargoContents = `# Example Cargo file
+[package]
+name    = "%s"
+version = "1.0.0"
+`
+
+	initialLibRsContents = `pub fn test() -> &'static str { "Hello World" }`
 )
 
 func TestLastTagSuccess(t *testing.T) {
@@ -58,19 +66,5 @@ func TestLastTagGitError(t *testing.T) {
 	continueInNewGitRepository(t, remoteDir)
 	if got, err := getLastTag(&release); err == nil {
 		t.Fatalf("expected an error, got=%s", got)
-	}
-}
-
-func initRepositoryContents(t *testing.T) {
-	t.Helper()
-	requireCommand(t, "git")
-	if err := os.WriteFile("README.md", []byte("# Empty Repo"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := external.Run("git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := external.Run("git", "commit", "-m", "initial version"); err != nil {
-		t.Fatal(err)
 	}
 }

@@ -15,11 +15,9 @@
 package rustrelease
 
 import (
-	"os/exec"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
 
 func TestPreflightMissingGit(t *testing.T) {
@@ -87,27 +85,5 @@ func TestCargoExe(t *testing.T) {
 	}
 	if got := cargoExe(&release); got != "alternative" {
 		t.Errorf("mismatch in cargoExe(), want=alternative, got=%s", got)
-	}
-}
-
-func requireCommand(t *testing.T, command string) {
-	t.Helper()
-	if _, err := exec.LookPath(command); err != nil {
-		t.Skipf("skipping test because %s is not installed", command)
-	}
-}
-
-func continueInNewGitRepository(t *testing.T, tmpDir string) {
-	t.Helper()
-	requireCommand(t, "git")
-	t.Chdir(tmpDir)
-	if err := external.Run("git", "init", "-b", "main"); err != nil {
-		t.Fatal(err)
-	}
-	if err := external.Run("git", "config", "user.email", "test@test-only.com"); err != nil {
-		t.Fatal(err)
-	}
-	if err := external.Run("git", "config", "user.name", "Test Account"); err != nil {
-		t.Fatal(err)
 	}
 }

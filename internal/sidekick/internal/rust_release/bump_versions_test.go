@@ -15,6 +15,10 @@
 package rustrelease
 
 import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
@@ -75,6 +79,67 @@ func setupForVersionBump(t *testing.T, wantTag string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
 	if err := external.Run("git", "clone", remoteDir, "."); err != nil {
+		t.Fatal(err)
+	}
+	configNewGitRepository(t)
+}
+
+func continueInNewGitRepository(t *testing.T, tmpDir string) {
+	t.Helper()
+	requireCommand(t, "git")
+	t.Chdir(tmpDir)
+	if err := external.Run("git", "init", "-b", "main"); err != nil {
+		t.Fatal(err)
+	}
+	configNewGitRepository(t)
+}
+
+func requireCommand(t *testing.T, command string) {
+	t.Helper()
+	if _, err := exec.LookPath(command); err != nil {
+		t.Skipf("skipping test because %s is not installed", command)
+	}
+}
+
+func configNewGitRepository(t *testing.T) {
+	if err := external.Run("git", "config", "user.email", "test@test-only.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "config", "user.name", "Test Account"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func initRepositoryContents(t *testing.T) {
+	t.Helper()
+	requireCommand(t, "git")
+	if err := os.WriteFile("README.md", []byte("# Empty Repo"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	addCrate(t, path.Join("src", "storage"), "google-cloud-storage")
+	addCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
+	if err := external.Run("git", "add", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "initial version"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func addCrate(t *testing.T, location, name string) {
+	t.Helper()
+	_ = os.MkdirAll(path.Join(location, "src"), 0755)
+	contents := []byte(fmt.Sprintf(initialCargoContents, name))
+	if err := os.WriteFile(path.Join(location, "Cargo.toml"), contents, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path.Join(location, "src", "lib.rs"), []byte(initialLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path.Join(location, ".sidekick.toml"), []byte("# initial version"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path.Join(location, ".repo-metadata.json"), []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
 }
