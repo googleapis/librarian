@@ -23,5 +23,4 @@ func BumpVersions(config *config.Release) error {
 		return err
 	}
 	return nil
-
 }
