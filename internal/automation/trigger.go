@@ -15,18 +15,19 @@
 package automation
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"iter"
-	"log/slog"
-	"os"
-	"strings"
+    "context"
+    "errors"
+    "fmt"
+    "iter"
+    "log/slog"
+    "os"
+    "strings"
 
-	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
-	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
-	"github.com/googleapis/gax-go/v2"
-	"github.com/googleapis/librarian/internal/github"
+    cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
+    "cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
+    "github.com/googleapis/gax-go/v2"
+    "github.com/googleapis/librarian/internal/config"
+    "github.com/googleapis/librarian/internal/github"
 )
 
 var triggerNameByCommandName = map[string]string{
@@ -72,7 +73,7 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 	wrappedClient := &wrappedCloudBuildClient{
 		client: c,
 	}
-	ghClient, err := github.NewClient(os.Getenv("LIBRARIAN_GITHUB_TOKEN"), &github.Repository{})
+    ghClient, err := github.NewClient(os.Getenv(config.EnvVarGitHubToken), &github.Repository{})
 	if err != nil {
 		return fmt.Errorf("error creating github client: %w", err)
 	}

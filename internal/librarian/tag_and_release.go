@@ -99,9 +99,9 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cfg.GitHubToken == "" {
-		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
-	}
+    if cfg.GitHubToken == "" {
+        return nil, fmt.Errorf("`%s` must be set", config.EnvVarGitHubToken)
+    }
 	return &tagAndReleaseRunner{
 		cfg:      cfg,
 		repo:     runner.repo,
