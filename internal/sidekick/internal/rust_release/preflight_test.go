@@ -15,7 +15,6 @@
 package rustrelease
 
 import (
-	"os"
 	"os/exec"
 	"testing"
 
@@ -102,9 +101,7 @@ func continueInNewGitRepository(t *testing.T) {
 	t.Helper()
 	requireCommand(t, "git")
 	tmpDir := t.TempDir()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmpDir)
 	if err := external.Run("git", "init"); err != nil {
 		t.Fatal(err)
 	}
