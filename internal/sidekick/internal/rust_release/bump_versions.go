@@ -26,9 +26,10 @@ func BumpVersions(config *config.Release) error {
 	if err != nil {
 		return err
 	}
-	_, err = filesChangedSince(config, lastTag)
+	files, err := filesChangedSince(config, lastTag)
 	if err != nil {
 		return err
 	}
+	_ = findCargoManifests(files)
 	return nil
 }
