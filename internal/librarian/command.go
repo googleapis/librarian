@@ -289,7 +289,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 			return err
 		}
 		for _, file := range files {
-			slog.Info("Copying file", "file", file)
+			slog.Debug("Copying file", "file", file)
 			srcFile := filepath.Join(srcPath, file)
 			dstFile := filepath.Join(dstPath, file)
 			if err := copyFile(dstFile, srcFile); err != nil {
@@ -521,7 +521,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 
 	// Remove files first, then directories.
 	for _, file := range filesToRemove {
-		slog.Info("removing file", "path", file)
+		slog.Debug("removing file", "path", file)
 		if err := os.Remove(file); err != nil {
 			return err
 		}
@@ -533,7 +533,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	})
 
 	for _, dir := range dirsToRemove {
-		slog.Info("removing directory", "path", dir)
+		slog.Debug("removing directory", "path", dir)
 		if err := os.Remove(dir); err != nil {
 			// It's possible the directory is not empty due to preserved files.
 			slog.Warn("failed to remove directory, it may not be empty", "dir", dir, "err", err)
