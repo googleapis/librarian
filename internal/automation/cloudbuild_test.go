@@ -29,6 +29,7 @@ import (
 type mockCloudBuildClient struct {
 	runError      error
 	buildTriggers []*cloudbuildpb.BuildTrigger
+	triggersRun   []string
 }
 
 func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error {
@@ -36,6 +37,12 @@ func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbu
 	if c.runError != nil {
 		return c.runError
 	}
+	for _, t := range c.triggersRun {
+		if t == req.TriggerId {
+			return nil
+		}
+	}
+	c.triggersRun = append(c.triggersRun, req.TriggerId)
 	return nil
 }
 
