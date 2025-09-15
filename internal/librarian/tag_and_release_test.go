@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -131,10 +132,10 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &tagAndReleaseRunner{
-				pullRequest: test.cfg.PullRequest,
-				ghClient:    test.ghClient,
+				cfg:      test.cfg,
+				ghClient: test.ghClient,
 			}
-			got, err := r.determinePullRequestsToProcess(t.Context())
+			got, err := r.determinePullRequestsToProcess(context.Background())
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -192,9 +193,10 @@ func Test_tagAndReleaseRunner_run(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &tagAndReleaseRunner{
+				cfg:      &config.Config{}, // empty config so it searches
 				ghClient: test.ghClient,
 			}
-			err := r.run(t.Context())
+			err := r.run(context.Background())
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -433,7 +435,7 @@ func TestProcessPullRequest(t *testing.T) {
 				ghClient: test.ghClient,
 				state:    test.state,
 			}
-			err := r.processPullRequest(t.Context(), test.pr)
+			err := r.processPullRequest(context.Background(), test.pr)
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -494,7 +496,7 @@ func TestReplacePendingLabel(t *testing.T) {
 			r := &tagAndReleaseRunner{
 				ghClient: test.ghClient,
 			}
-			err := r.replacePendingLabel(t.Context(), test.pr)
+			err := r.replacePendingLabel(context.Background(), test.pr)
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -529,6 +531,7 @@ func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
 	}
 
 	r := &tagAndReleaseRunner{
+		cfg:      &config.Config{},
 		ghClient: ghClient,
 		state: &config.LibrarianState{
 			Libraries: []*config.LibraryState{
@@ -538,7 +541,7 @@ func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
 			},
 		},
 	}
-	err := r.run(t.Context())
+	err := r.run(context.Background())
 	if err == nil || !strings.Contains(err.Error(), "failed to process some pull requests") {
 		t.Fatalf("expected error 'failed to process some pull requests', got %v", err)
 	}
