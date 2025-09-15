@@ -190,9 +190,10 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	processFooters(footers)
 
 	var commits []*ConventionalCommit
-	// If the body lines have multiple headers, separate them into
-	// different conventional commit, all associated with the same
-	// commit sha.
+	// If the body lines have multiple headers, separate them into  different conventional
+	// commit, all associated with the same commit sha.
+	// Note that we assume single line headers, the 2nd line of headers, if exists,
+	// will be discarded.
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
