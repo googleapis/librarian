@@ -525,13 +525,19 @@ END_NESTED_COMMIT
 			},
 		},
 		{
-			name: "malformed nested commit without end marker",
+			name: "malformed nested commit without end marker, with primary commit",
 			message: `feat(parser): main feature
 BEGIN_NESTED_COMMIT
 fix(sub): fix a bug that is never closed`,
 			want: []commitPart{
 				{message: "feat(parser): main feature", isNested: false},
 			},
+		},
+		{
+			name: "malformed nested commit without end marker, without primary commit",
+			message: `BEGIN_NESTED_COMMIT
+fix(sub): fix a bug that is never closed`,
+			want: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
