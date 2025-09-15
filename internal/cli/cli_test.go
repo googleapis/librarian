@@ -53,41 +53,6 @@ func TestParseAndSetFlags(t *testing.T) {
 	}
 }
 
-func TestLookup(t *testing.T) {
-	commands := []*Command{
-		{Short: "foo runs the foo command"},
-		{Short: "bar runs the bar command"},
-	}
-
-	for _, test := range []struct {
-		name    string
-		wantErr bool
-	}{
-		{"foo", false},
-		{"bar", false},
-		{"baz", true}, // not found case
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cmd := &Command{}
-			cmd.Commands = commands
-			sub, err := lookup(cmd, test.name)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal(err)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatal(err)
-			}
-			if sub.Name() != test.name {
-				t.Errorf("got = %q, want = %q", sub.Name(), test.name)
-			}
-		})
-	}
-}
-
 func TestRun(t *testing.T) {
 	executed := false
 	cmd := &Command{
@@ -250,7 +215,6 @@ func TestLookupCommand(t *testing.T) {
 		{
 			name:    "no args",
 			cmd:     root,
-			args:    []string{},
 			wantCmd: root,
 		},
 		{
@@ -260,18 +224,16 @@ func TestLookupCommand(t *testing.T) {
 			wantCmd: sub1,
 		},
 		{
-			name:     "find sub2",
-			cmd:      root,
-			args:     []string{"sub2"},
-			wantCmd:  sub2,
-			wantArgs: []string{},
+			name:    "find sub2",
+			cmd:     root,
+			args:    []string{"sub2"},
+			wantCmd: sub2,
 		},
 		{
-			name:     "find sub1sub1",
-			cmd:      root,
-			args:     []string{"sub1", "sub1sub1"},
-			wantCmd:  sub1sub1,
-			wantArgs: []string{},
+			name:    "find sub1sub1",
+			cmd:     root,
+			args:    []string{"sub1", "sub1sub1"},
+			wantCmd: sub1sub1,
 		},
 		{
 			name:     "find sub1sub1 with args",
@@ -317,8 +279,7 @@ func TestLookupCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			gotCmd, gotArgs, err := LookupCommand(test.cmd, test.args)
 			if (err != nil) != test.wantErr {
-				t.Errorf("lookupCommand() error = %v, wantErr %v", err, test.wantErr)
-				return
+				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
 			}
 			if gotCmd != test.wantCmd {
 				var gotName, wantName string
@@ -328,10 +289,10 @@ func TestLookupCommand(t *testing.T) {
 				if test.wantCmd != nil {
 					wantName = test.wantCmd.Name()
 				}
-				t.Errorf("lookupCommand() gotCmd.Name() = %q, want %q", gotName, wantName)
+				t.Errorf("gotCmd.Name() = %q, want %q", gotName, wantName)
 			}
 			if diff := cmp.Diff(test.wantArgs, gotArgs); diff != "" {
-				t.Errorf("lookupCommand() args mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
