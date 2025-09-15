@@ -19,21 +19,8 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
-
-func TestPreflightSuccess(t *testing.T) {
-	const echo = "/bin/echo"
-	requireCommand(t, echo)
-	release := config.Release{
-		Preinstalled: map[string]string{
-			"git":   echo,
-			"cargo": echo,
-		},
-	}
-	if err := PreFlight(&release); err != nil {
-		t.Fatal(err)
-	}
-}
 
 func TestPreflightMissingGit(t *testing.T) {
 	release := config.Release{
@@ -53,6 +40,21 @@ func TestPreflightMissingCargo(t *testing.T) {
 			"cargo": "cargo-is-not-installed",
 		},
 	}
+	if err := PreFlight(&release); err == nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPreflightMissingUpstream(t *testing.T) {
+	requireCommand(t, "git")
+	requireCommand(t, "/bin/echo")
+	release := config.Release{
+		Preinstalled: map[string]string{
+			"cargo": "/bin/echo",
+		},
+		Remote: "upstream",
+	}
+	continueInNewGitRepository(t)
 	if err := PreFlight(&release); err == nil {
 		t.Fatal(err)
 	}
@@ -92,5 +94,15 @@ func requireCommand(t *testing.T, command string) {
 	t.Helper()
 	if _, err := exec.LookPath(command); err != nil {
 		t.Skipf("skipping test because %s is not installed", command)
+	}
+}
+
+func continueInNewGitRepository(t *testing.T) {
+	t.Helper()
+	requireCommand(t, "git")
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	if err := external.Run("git", "init"); err != nil {
+		t.Fatal(err)
 	}
 }
