@@ -301,7 +301,7 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 	return footers, isBreaking
 }
 
-// processFooters format value of certain keys
+// processFooters format value of certain keys.
 func processFooters(footers map[string]string) {
 	for key, value := range footers {
 		if key == sourceLinkKey {
