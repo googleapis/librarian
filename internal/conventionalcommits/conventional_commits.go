@@ -178,7 +178,7 @@ func extractCommitParts(message string) []commitPart {
 	return commitParts
 }
 
-// parseSimpleCommit parses a simple commit message and returns a ConventionalCommit.
+// parseSimpleCommit parses a simple commit message and returns a slice of ConventionalCommit.
 // A simple commit message is commit that does not include override or nested commits.
 func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
 	trimmedMessage := strings.TrimSpace(commitPart.message)
@@ -192,6 +192,9 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	processFooters(footers)
 
 	var commits []*ConventionalCommit
+	// If the body lines have multiple headers, separate them into
+	// different conventional commit, all associated with the same
+	// commit sha.
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
@@ -212,6 +215,8 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 		})
 	}
 
+	// If only one conventional commit is found, i.e., only one header line is
+	// in the commit message, assign the body field.
 	if len(commits) == 1 {
 		commits[0].Body = strings.TrimSpace(strings.Join(bodyLines[1:], "\n"))
 	}
@@ -302,6 +307,7 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 func processFooters(footers map[string]string) {
 	for key, value := range footers {
 		if key == sourceLinkKey {
+			// Exact commit sha from the googleapis commit.
 			matches := sourceLinkRegex.FindStringSubmatch(value)
 			if len(matches) == 0 {
 				continue
