@@ -328,7 +328,7 @@ body of nested commit 1
 
 PiperOrigin-RevId: 123456
 
-Source-link: fake-link
+Source-Link: fake-link
 END_NESTED_COMMIT
 BEGIN_NESTED_COMMIT
 feat: [abc] nested commit 2
@@ -337,7 +337,7 @@ body of nested commit 2
 
 PiperOrigin-RevId: 654321
 
-Source-link: fake-link
+Source-Link: fake-link
 END_NESTED_COMMIT
 END_COMMIT_OVERRIDE
 `,
@@ -348,7 +348,7 @@ END_COMMIT_OVERRIDE
 					Body:      "body of nested commit 1\n...",
 					LibraryID: "example-id",
 					IsNested:  true,
-					Footers:   map[string]string{"PiperOrigin-RevId": "123456", "Source-link": "fake-link"},
+					Footers:   map[string]string{"PiperOrigin-RevId": "123456", "Source-Link": "fake-link"},
 					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
@@ -358,7 +358,7 @@ END_COMMIT_OVERRIDE
 					IsNested:  true,
 					Body:      "body of nested commit 2\n...",
 					LibraryID: "example-id",
-					Footers:   map[string]string{"PiperOrigin-RevId": "654321", "Source-link": "fake-link"},
+					Footers:   map[string]string{"PiperOrigin-RevId": "654321", "Source-Link": "fake-link"},
 					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
