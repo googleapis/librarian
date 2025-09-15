@@ -153,8 +153,8 @@ func findServiceConfigIn(path string) (string, error) {
 
 func saveLibrarianConfig(repoDir string, librarianConfig *config.LibrarianConfig) error {
 	path := filepath.Join(repoDir, config.LibrarianDir, librarianConfigFile)
-	buffer := new(bytes.Buffer)
-	encoder := yaml.NewEncoder(buffer)
+	var buffer bytes.Buffer
+	encoder := yaml.NewEncoder(&buffer)
 	encoder.SetIndent(2)
 	err := encoder.Encode(librarianConfig)
 	if err != nil {
@@ -165,8 +165,8 @@ func saveLibrarianConfig(repoDir string, librarianConfig *config.LibrarianConfig
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 	path := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
-	buffer := new(bytes.Buffer)
-	encoder := yaml.NewEncoder(buffer)
+	var buffer bytes.Buffer
+	encoder := yaml.NewEncoder(&buffer)
 	encoder.SetIndent(2)
 	err := encoder.Encode(state)
 	if err != nil {
