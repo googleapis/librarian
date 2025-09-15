@@ -31,6 +31,7 @@ const (
 	beginNestedCommit   = "BEGIN_NESTED_COMMIT"
 	endNestedCommit     = "END_NESTED_COMMIT"
 	breakingChangeKey   = "BREAKING CHANGE"
+	sourceLinkKey       = "Source-Link"
 )
 
 var (
@@ -39,7 +40,8 @@ var (
 	// A footer key consists of letters and hyphens, or is the "BREAKING CHANGE"
 	// literal. The key is followed by ": " and then the value.
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
-	footerRegex = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
+	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
+	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
 )
 
 // ConventionalCommit represents a parsed conventional commit message.
@@ -124,7 +126,7 @@ func ParseCommits(commit *gitrepo.Commit, libraryID string) ([]*ConventionalComm
 		}
 
 		if c != nil {
-			commits = append(commits, c)
+			commits = append(commits, c...)
 		}
 	}
 
@@ -178,34 +180,43 @@ func extractCommitParts(message string) []commitPart {
 
 // parseSimpleCommit parses a simple commit message and returns a ConventionalCommit.
 // A simple commit message is commit that does not include override or nested commits.
-func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID string) (*ConventionalCommit, error) {
+func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
 	trimmedMessage := strings.TrimSpace(commitPart.message)
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
 
 	lines := strings.Split(trimmedMessage, "\n")
-	bodyLines, footerLines := separateBodyAndFooters(lines[1:])
+	bodyLines, footerLines := separateBodyAndFooters(lines)
 	footers, footerIsBreaking := parseFooters(footerLines)
+	processFooters(footers)
 
-	header, ok := parseHeader(lines[0])
-	if !ok {
-		slog.Warn("Invalid conventional commit message", "message", commitPart.message, "hash", commit.Hash.String())
-		return nil, nil
+	var commits []*ConventionalCommit
+	for _, bodyLine := range bodyLines {
+		header, ok := parseHeader(bodyLine)
+		if !ok {
+			slog.Warn("Invalid conventional commit message", "message", commitPart.message, "hash", commit.Hash.String())
+			return nil, nil
+		}
+
+		commits = append(commits, &ConventionalCommit{
+			Type:       header.Type,
+			Scope:      header.Scope,
+			Subject:    header.Description,
+			LibraryID:  libraryID,
+			Footers:    footers,
+			IsBreaking: header.IsBreaking || footerIsBreaking,
+			IsNested:   commitPart.isNested,
+			SHA:        commit.Hash.String(),
+			When:       commit.When,
+		})
 	}
 
-	return &ConventionalCommit{
-		Type:       header.Type,
-		Scope:      header.Scope,
-		Subject:    header.Description,
-		Body:       strings.TrimSpace(strings.Join(bodyLines, "\n")),
-		LibraryID:  libraryID,
-		Footers:    footers,
-		IsBreaking: header.IsBreaking || footerIsBreaking,
-		IsNested:   commitPart.isNested,
-		SHA:        commit.Hash.String(),
-		When:       commit.When,
-	}, nil
+	if len(commits) == 1 {
+		commits[0].Body = strings.TrimSpace(strings.Join(bodyLines[1:], "\n"))
+	}
+
+	return commits, nil
 }
 
 // parseHeader parses the header line of a commit message.
@@ -285,4 +296,17 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 		}
 	}
 	return footers, isBreaking
+}
+
+// processFooters format value of certain keys
+func processFooters(footers map[string]string) {
+	for key, value := range footers {
+		if key == sourceLinkKey {
+			matches := sourceLinkRegex.FindStringSubmatch(value)
+			if len(matches) == 0 {
+				continue
+			}
+			footers[key] = matches[2]
+		}
+	}
 }
