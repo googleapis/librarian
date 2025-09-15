@@ -1,67 +1,34 @@
 # config.yaml Schema
 
-This document describes the schema for the `config.yaml` file, which is used by
-Librarian to specify repository-level and library-level configuration. This file
-is maintained by the repository owner.
+This document describes the schema for the `config.yaml` file, which is used by Librarian to specify repository-level
+and library-level configuration. This file is maintained by the repository owner.
 
-For more details, see the Go implementation in
-[librarian_config.go](../internal/config/librarian_config.go).
+For more details, see the Go implementation in [librarian_config.go](../internal/config/librarian_config.go).
 
 ## Top-Level Fields
 
-Field                    | Type | Description                                            | Required | Validation Constraints
------------------------- | ---- | ------------------------------------------------------ | -------- | ----------------------
-`global_files_allowlist` | list | A list of [global files](#global-files-object)         | No       | See details below.
-`libraries`              | list | A list of [library configurations](#libraries-object). | No       | See details below.
+| Field                    | Type | Description                                            | Required | Validation Constraints |
+|--------------------------|------|--------------------------------------------------------|----------|------------------------|
+| `global_files_allowlist` | list | A list of [global files](#global-files-object).        | No       | See details below.     |
+| `libraries`              | list | A list of [library configurations](#libraries-object). | No       | See details below.     |
 
 ## `global-files` Object
 
-Each object in the `global_files_allowlist` list represents a global file that
-Librarian is able to modify.
+Each object in the `global_files_allowlist` list represents a global file that Librarian is able to modify.
 
-| Field         | Type   | Description        | Required | Validation    |
-:               :        :                    :          : Constraints   :
-| ------------- | ------ | ------------------ | -------- | ------------- |
-| `path`        | string | A path from the    | Yes      | Cannot be     |
-:               :        : repository root.   :          : empty. May    :
-:               :        :                    :          : include       :
-:               :        :                    :          : relative      :
-:               :        :                    :          : paths, but    :
-:               :        :                    :          : cannot escape :
-:               :        :                    :          : the           :
-:               :        :                    :          : repository    :
-:               :        :                    :          : root.         :
-| `permissions` | string | Permissions of the | Yes      | One of        |
-:               :        : mounted file.      :          : `read-only`,  :
-:               :        :                    :          : `write-only`, :
-:               :        :                    :          : `read-write`. :
+| Field         | Type   | Description                      | Required | Validation Constraints                                                              |
+|---------------|--------|----------------------------------|----------|-------------------------------------------------------------------------------------|
+| `path`        | string | A path from the repository root. | Yes.     | Cannot be empty. May include relative paths, but cannot escape the repository root. |
+| `permissions` | string | Permissions of the mounted file. | Yes      | One of `read-only`, `write-only`, `read-write`.                                     |
 
 ## `libraries` Object
 
-Each object in the `libraries` list represents a single library and has the
-following fields:
+Each object in the `libraries` list represents a single library and has the following fields:
 
-| Field          | Type   | Description       | Required | Validation        |
-:                :        :                   :          : Constraints       :
-| -------------- | ------ | ----------------- | -------- | ----------------- |
-| `id`           | string | A unique          | Yes      | Must be a valid   |
-:                :        : identifier for    :          : library ID.       :
-:                :        : the library, in a :          :                   :
-:                :        : language-specific :          :                   :
-:                :        : format. It should :          :                   :
-:                :        : not be empty and  :          :                   :
-:                :        : only contains     :          :                   :
-:                :        : alphanumeric      :          :                   :
-:                :        : characters,       :          :                   :
-:                :        : slashes, periods, :          :                   :
-:                :        : underscores, and  :          :                   :
-:                :        : hyphens.          :          :                   :
-| `next_version` | string | The next released | No       | Must be a valid   |
-:                :        : version of the    :          : semantic version, :
-:                :        : library. Ignored  :          : "v" prefix is     :
-:                :        : unless it would   :          : optional.         :
-:                :        : increase the      :          :                   :
-:                :        : release version.  :          :                   :
+| Field                   | Type   | Description                                                                                                                                                              | Required | Validation Constraints                                    |
+|-------------------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-----------------------------------------------------------|
+| `id`           | string | A unique identifier for the library, in a language-specific format. It should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens. | Yes      | Must be a valid library ID.                               |
+| `next_version` | string | The next released version of the library. Ignored unless it would increase the release version.                                                                                   | No       | Must be a valid semantic version, "v" prefix is optional. |
 
 ## Example
 
