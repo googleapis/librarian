@@ -128,7 +128,7 @@ func TestParseArgs(t *testing.T) {
 		},
 		{
 			name:    "sets forceRun",
-			args:    []string{"--forceRun=true"},
+			args:    []string{"--force-run=true"},
 			wantErr: false,
 			want: &runOptions{
 				Command:   "generate",

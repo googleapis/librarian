@@ -54,7 +54,7 @@ func parseFlags(args []string) (*runOptions, error) {
 	command := flagSet.String("command", "generate", "The librarian command to run")
 	push := flagSet.Bool("push", true, "The _PUSH flag (true/false) to Librarian CLI's -push option")
 	build := flagSet.Bool("build", true, "The _BUILD flag (true/false) to Librarian CLI's -build option")
-	forceRun := flagSet.Bool("forceRun", false, "If true, forces the command to run even if it would otherwise be skipped.")
+	forceRun := flagSet.Bool("force-run", false, "The _FORCE_RUN flag (true/false) to Librarian CLI's -force-run option")
 	err := flagSet.Parse(args)
 	if err != nil {
 		return nil, err
