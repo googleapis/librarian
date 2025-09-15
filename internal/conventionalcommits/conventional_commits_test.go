@@ -482,6 +482,69 @@ fix(sub): fix a bug that is never closed`,
 	}
 }
 
+func TestParseFooters(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		footer string
+		want   map[string]string
+	}{
+		{
+			name: "footers on each line",
+			footer: `PiperOrigin-RevId: 1234
+Source-Link: source-link`,
+			want: map[string]string{
+				"PiperOrigin-RevId": "1234",
+				"Source-Link":       "source-link",
+			},
+		},
+		{
+			name: "footers values on a new line",
+			footer: `PiperOrigin-RevId:
+1234
+Source-Link:
+source-link`,
+			want: map[string]string{
+				"PiperOrigin-RevId": "1234",
+				"Source-Link":       "source-link",
+			},
+		},
+		{
+			name: "footers seperate by multiple new lines",
+			footer: `PiperOrigin-RevId:
+
+1234
+
+
+Source-Link:
+
+source-link`,
+			want: map[string]string{
+				"PiperOrigin-RevId": "1234",
+				"Source-Link":       "source-link",
+			},
+		},
+		{
+			name: "invalid footers ignored",
+			footer: `PiperOrigin-RevId: 1234
+Source-Link: source-link
+this is not a valid footer
+this is also not valid
+footers!`,
+			want: map[string]string{
+				"PiperOrigin-RevId": "1234",
+				"Source-Link":       "source-link",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, _ := parseFooters(strings.Split(test.footer, "\n"))
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestConventionalCommit_MarshalJSON(t *testing.T) {
 	c := &ConventionalCommit{
 		Type:    "feat",
