@@ -872,6 +872,8 @@ func TestInitRun(t *testing.T) {
 				t.Errorf("run() failed: %s", err.Error())
 			}
 
+			// Check how many times the docker container has been called. If a release is to proceed
+			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0.
 			if diff := cmp.Diff(test.containerClient.initCalls, test.dockerInitCalls); diff != "" {
 				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
 			}
