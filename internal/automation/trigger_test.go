@@ -44,6 +44,7 @@ func TestRunCommandWithClient(t *testing.T) {
 		want            string
 		runError        error
 		wantErr         bool
+		dateTime        time.Time
 		buildTriggers   []*cloudbuildpb.BuildTrigger
 		ghPRs           []*github.PullRequest
 		ghError         error
@@ -56,6 +57,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			build:    false,
 			forceRun: false,
 			wantErr:  false,
+			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "generate",
@@ -75,6 +77,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			build:    false,
 			forceRun: false,
 			wantErr:  false,
+			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "generate",
@@ -94,6 +97,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			build:    false,
 			forceRun: false,
 			wantErr:  true,
+			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "generate",
@@ -114,6 +118,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			forceRun: false,
 			runError: fmt.Errorf("some-error"),
 			wantErr:  true,
+			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "generate",
@@ -133,6 +138,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			build:    false,
 			forceRun: false,
 			wantErr:  false,
+			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "publish-release",
@@ -149,6 +155,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			build:    false,
 			forceRun: false,
 			wantErr:  false,
+			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "publish-release",
@@ -165,6 +172,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			build:    false,
 			forceRun: false,
 			wantErr:  true,
+			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "publish-release",
@@ -185,7 +193,7 @@ func TestRunCommandWithClient(t *testing.T) {
 				prs: test.ghPRs,
 				err: test.ghError,
 			}
-			err := runCommandWithClient(ctx, client, ghClient, test.command, "some-project", test.push, test.build, test.forceRun)
+			err := runCommandWithClient(ctx, client, ghClient, test.command, "some-project", test.push, test.build, test.forceRun, test.dateTime)
 			if test.wantErr && err == nil {
 				t.Errorf("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
