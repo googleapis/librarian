@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,6 +44,28 @@ const (
 
 var globalPreservePatterns = []string{
 	fmt.Sprintf(`^%s(/.*)?$`, regexp.QuoteMeta(config.GeneratorInputDir)), // Preserve the generator-input directory and its contents.
+}
+
+// GitHubClient is an abstraction over the GitHub client.
+type GitHubClient interface {
+	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
+	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error)
+	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
+	GetLabels(ctx context.Context, number int) ([]string, error)
+	ReplaceLabels(ctx context.Context, number int, labels []string) error
+	SearchPullRequests(ctx context.Context, query string) ([]*github.PullRequest, error)
+	GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error)
+	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
+	CreateIssueComment(ctx context.Context, number int, comment string) error
+	CreateTag(ctx context.Context, tag, commitish string) error
+}
+
+// ContainerClient is an abstraction over the Docker client.
+type ContainerClient interface {
+	Build(ctx context.Context, request *docker.BuildRequest) error
+	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
+	Generate(ctx context.Context, request *docker.GenerateRequest) error
+	ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error
 }
 
 type commitInfo struct {
@@ -631,4 +654,13 @@ func separateFilesAndDirs(paths []string) ([]string, []string, error) {
 		}
 	}
 	return filePaths, dirPaths, nil
+}
+
+func isURL(s string) bool {
+	u, err := url.ParseRequestURI(s)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
 }
