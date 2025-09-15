@@ -665,7 +665,6 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 			wantLibrarianConfig: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{},
 				Libraries: []*config.LibraryConfig{
 					{
 						LibraryID:   "example-id",

@@ -26,14 +26,14 @@ const (
 
 // LibrarianConfig defines the contract for the config.yaml file.
 type LibrarianConfig struct {
-	GlobalFilesAllowlist []*GlobalFile    `yaml:"global_files_allowlist"`
-	Libraries            []*LibraryConfig `yaml:"libraries"`
+	GlobalFilesAllowlist []*GlobalFile    `yaml:"global_files_allowlist,omitempty"`
+	Libraries            []*LibraryConfig `yaml:"libraries,omitempty"`
 }
 
 // LibraryConfig defines configuration for a single library, identified by its ID.
 type LibraryConfig struct {
 	LibraryID   string `yaml:"id"`
-	NextVersion string `yaml:"next_version"`
+	NextVersion string `yaml:"next_version,omitempty"`
 }
 
 // GlobalFile defines the global files in language repositories.
