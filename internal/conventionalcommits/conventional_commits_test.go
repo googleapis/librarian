@@ -116,7 +116,7 @@ func TestParseCommits(t *testing.T) {
 		},
 		{
 			name:    "feat with multiple footers for generated changes",
-			message: "feat: [library-name] add new feature\nThis is the body.\n...\n\nPiperOrigin-RevId: piper_cl_number\n\nSource-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})",
+			message: "feat: [library-name] add new feature\nThis is the body.\n...\n\nPiperOrigin-RevId: piper_cl_number\n\nSource-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/abcdefg1234567)",
 			want: []*ConventionalCommit{
 				{
 					Type:       "feat",
@@ -127,7 +127,7 @@ func TestParseCommits(t *testing.T) {
 					IsBreaking: false,
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "piper_cl_number",
-						"Source-Link":       "[googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})",
+						"Source-Link":       "abcdefg1234567",
 					},
 					SHA:  sha.String(),
 					When: now,
