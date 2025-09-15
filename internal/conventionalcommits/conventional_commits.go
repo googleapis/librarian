@@ -195,8 +195,8 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
-			slog.Warn("Invalid conventional commit message", "message", commitPart.message, "hash", commit.Hash.String())
-			return nil, nil
+			slog.Warn("bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
+			continue
 		}
 
 		commits = append(commits, &ConventionalCommit{
