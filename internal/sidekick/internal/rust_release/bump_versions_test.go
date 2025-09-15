@@ -159,11 +159,19 @@ func initRepositoryContents(t *testing.T) {
 	addCrate(t, path.Join("src", "storage"), "google-cloud-storage")
 	addCrate(t, path.Join("src", "gax-internal"), "google-cloud-gax-internal")
 	addCrate(t, path.Join("src", "gax-internal", "echo-server"), "echo-server")
-	addCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
+	addGeneratedCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
 	if err := external.Run("git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
 	if err := external.Run("git", "commit", "-m", "initial version"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func addGeneratedCrate(t *testing.T, location, name string) {
+	t.Helper()
+	addCrate(t, location, name)
+	if err := os.WriteFile(path.Join(location, ".sidekick.toml"), []byte("# initial version"), 0644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -176,9 +184,6 @@ func addCrate(t *testing.T, location, name string) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path.Join(location, "src", "lib.rs"), []byte(initialLibRsContents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path.Join(location, ".sidekick.toml"), []byte("# initial version"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path.Join(location, ".repo-metadata.json"), []byte("{}"), 0644); err != nil {

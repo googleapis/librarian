@@ -26,15 +26,15 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// packageInfo contains the package information.
-type packageInfo struct {
+// crateInfo contains the package information.
+type crateInfo struct {
 	Name    string `toml:"name"`
 	Version string `toml:"version"`
 	Publish bool   `toml:"publish"`
 }
 
 type cargo struct {
-	Package *packageInfo `toml:"package"`
+	Package *crateInfo `toml:"package"`
 }
 
 func updateManifest(config *config.Release, lastTag, manifest string) ([]string, error) {
@@ -50,7 +50,7 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 		return nil, err
 	}
 	info := cargo{
-		Package: &packageInfo{
+		Package: &crateInfo{
 			Publish: true,
 		},
 	}
@@ -73,8 +73,9 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if err := os.WriteFile(manifest, []byte(strings.Join(lines, "\n")), 0644); err != nil {
 		return nil, err
 	}
-	// TODO(#2127) - also update the .sidekick.toml file, if it exists.
-
+	if err := updateSidekickConfig(manifest, newVersion); err != nil {
+		return nil, err
+	}
 	return []string{info.Package.Name}, nil
 }
 

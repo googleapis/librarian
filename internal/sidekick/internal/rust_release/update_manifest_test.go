@@ -205,6 +205,25 @@ name = "google-cloud-storage"
 	}
 }
 
+func TestUpdateManifestBadSidekickConfig(t *testing.T) {
+	const tag = "update-manifest-bad-sidekick"
+	requireCommand(t, "git")
+	setupForVersionBump(t, tag)
+	release := config.Release{
+		Remote:       "origin",
+		Branch:       "main",
+		Preinstalled: map[string]string{},
+	}
+	name := path.Join("src", "storage", "Cargo.toml")
+	if err := os.WriteFile(path.Join("src", "storage", ".sidekick.toml"), []byte{}, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if got, err := updateManifest(&release, tag, name); err == nil {
+		t.Errorf("expected an error when using a bad version, got=%v", got)
+	}
+}
+
 func TestBumpPackageVersion(t *testing.T) {
 	for _, test := range []struct {
 		Input string
