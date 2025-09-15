@@ -135,8 +135,5 @@ func LookupCommand(cmd *Command, args []string) (*Command, []string, error) {
 		cmd = found
 		args = args[1:]
 	}
-	if len(args) == 0 {
-		return cmd, nil, nil
-	}
 	return cmd, args, nil
 }
