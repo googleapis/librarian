@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -291,7 +292,7 @@ func TestLookupCommand(t *testing.T) {
 				}
 				t.Errorf("gotCmd.Name() = %q, want %q", gotName, wantName)
 			}
-			if diff := cmp.Diff(test.wantArgs, gotArgs); diff != "" {
+			if diff := cmp.Diff(test.wantArgs, gotArgs, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
