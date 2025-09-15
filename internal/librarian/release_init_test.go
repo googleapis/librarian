@@ -290,9 +290,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Library: "does-not-exist",
-				},
+				library:         "does-not-exist",
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -387,8 +385,14 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{
 					initErr: errors.New("simulated init error"),
 				},
-				library:         "1.0.0",
-				libraryVersion:  "example-id",
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							Version: "1.0.0",
+							ID:      "example-id",
+						},
+					},
+				},
 				repo:            mockRepoWithReleasableUnit,
 				partialRepo:     t.TempDir(),
 				librarianConfig: &config.LibrarianConfig{},
@@ -403,8 +407,14 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{
 					wantErrorMsg: true,
 				},
-				library:         "example-id",
-				libraryVersion:  "1.0.0",
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							Version: "1.0.0",
+							ID:      "example-id",
+						},
+					},
+				},
 				repo:            mockRepoWithReleasableUnit,
 				partialRepo:     t.TempDir(),
 				librarianConfig: &config.LibrarianConfig{},
@@ -471,7 +481,6 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        os.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg:             &config.Config{},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -508,7 +517,6 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        os.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg:             &config.Config{},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -567,9 +575,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        os.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Library: "another-example-id", // release only for this library
-				},
+				library:         "another-example-id", // release only for this library
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
