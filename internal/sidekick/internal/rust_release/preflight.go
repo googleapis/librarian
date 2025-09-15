@@ -27,9 +27,6 @@ func PreFlight(config *config.Release) error {
 	if err := external.Run(cargoExe(config), "--version"); err != nil {
 		return err
 	}
-	if err := external.Run(gitExe(config), "remote", "get-url", config.Remote); err != nil {
-		return err
-	}
 	return nil
 }
 
