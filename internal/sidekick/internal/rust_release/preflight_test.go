@@ -54,7 +54,7 @@ func TestPreflightMissingUpstream(t *testing.T) {
 		},
 		Remote: "upstream",
 	}
-	continueInNewGitRepository(t)
+	continueInNewGitRepository(t, t.TempDir())
 	if err := PreFlight(&release); err == nil {
 		t.Fatal(err)
 	}
@@ -97,12 +97,17 @@ func requireCommand(t *testing.T, command string) {
 	}
 }
 
-func continueInNewGitRepository(t *testing.T) {
+func continueInNewGitRepository(t *testing.T, tmpDir string) {
 	t.Helper()
 	requireCommand(t, "git")
-	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := external.Run("git", "init"); err != nil {
+	if err := external.Run("git", "init", "-b", "main"); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "config", "user.email", "test@test-only.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "config", "user.name", "Test Account"); err != nil {
 		t.Fatal(err)
 	}
 }

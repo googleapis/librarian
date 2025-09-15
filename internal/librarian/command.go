@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -45,17 +46,43 @@ var globalPreservePatterns = []string{
 	fmt.Sprintf(`^%s(/.*)?$`, regexp.QuoteMeta(config.GeneratorInputDir)), // Preserve the generator-input directory and its contents.
 }
 
+// GitHubClient is an abstraction over the GitHub client.
+type GitHubClient interface {
+	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
+	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error)
+	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
+	GetLabels(ctx context.Context, number int) ([]string, error)
+	ReplaceLabels(ctx context.Context, number int, labels []string) error
+	SearchPullRequests(ctx context.Context, query string) ([]*github.PullRequest, error)
+	GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error)
+	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
+	CreateIssueComment(ctx context.Context, number int, comment string) error
+	CreateTag(ctx context.Context, tag, commitish string) error
+}
+
+// ContainerClient is an abstraction over the Docker client.
+type ContainerClient interface {
+	Build(ctx context.Context, request *docker.BuildRequest) error
+	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
+	Generate(ctx context.Context, request *docker.GenerateRequest) error
+	ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error
+}
+
 type commitInfo struct {
-	cfg               *config.Config
-	state             *config.LibrarianState
-	repo              gitrepo.Repository
-	sourceRepo        gitrepo.Repository
+	branch            string
+	commit            bool
+	commitMessage     string
+	failedLibraries   []string
 	ghClient          GitHubClient
 	idToCommits       map[string]string
-	failedLibraries   []string
-	pullRequestLabels []string
-	commitMessage     string
+	library           string
+	libraryVersion    string
 	prType            string
+	pullRequestLabels []string
+	push              bool
+	repo              gitrepo.Repository
+	sourceRepo        gitrepo.Repository
+	state             *config.LibrarianState
 }
 
 type commandRunner struct {
@@ -73,18 +100,15 @@ type commandRunner struct {
 const defaultAPISourceBranch = "master"
 
 func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
-
-	if cfg.APISource == "" {
-		cfg.APISource = "https://github.com/googleapis/googleapis"
-	}
-
 	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
 
-	var sourceRepo gitrepo.Repository
-	var sourceRepoDir string
+	var (
+		sourceRepo    gitrepo.Repository
+		sourceRepoDir string
+	)
 	if cfg.CommandName == generateCmdName {
 		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
@@ -140,7 +164,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 func cloneOrOpenRepo(workRoot, repo, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
-		return nil, errors.New("repo must be specified")
+		return nil, fmt.Errorf("repo must be specified")
 	}
 
 	if isURL(repo) {
@@ -313,8 +337,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
 func commitAndPush(ctx context.Context, info *commitInfo) error {
-	cfg := info.cfg
-	if !cfg.Push && !cfg.Commit {
+	if !info.push && !info.commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
 	}
@@ -343,7 +366,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	if !cfg.Push {
+	if !info.push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
 		return nil
 	}
@@ -360,7 +383,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
 
-	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody)
+	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, info.branch, title, prBody)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
@@ -634,4 +657,13 @@ func separateFilesAndDirs(paths []string) ([]string, []string, error) {
 		}
 	}
 	return filePaths, dirPaths, nil
+}
+
+func isURL(s string) bool {
+	u, err := url.ParseRequestURI(s)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
 }

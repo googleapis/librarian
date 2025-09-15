@@ -64,7 +64,7 @@ type ConventionalCommit struct {
 	// IsNested indicates if the commit is a nested commit.
 	IsNested bool `yaml:"-" json:"-"`
 	// SHA is the full commit hash.
-	SHA string `yaml:"-" json:"-"`
+	SHA string `yaml:"-" json:"source_commit_hash,omitempty"`
 	// When is the timestamp of the commit.
 	When time.Time `yaml:"-" json:"-"`
 }
@@ -88,12 +88,10 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 	type Alias ConventionalCommit
 	return json.Marshal(&struct {
 		*Alias
-		PiperCLNumber    string `json:"piper_cl_number,omitempty"`
-		SourceCommitHash string `json:"source_commit_hash,omitempty"`
+		PiperCLNumber string `json:"piper_cl_number,omitempty"`
 	}{
-		Alias:            (*Alias)(c),
-		PiperCLNumber:    c.Footers["PiperOrigin-RevId"],
-		SourceCommitHash: c.Footers["git-commit-hash"],
+		Alias:         (*Alias)(c),
+		PiperCLNumber: c.Footers["PiperOrigin-RevId"],
 	})
 }
 

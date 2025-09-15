@@ -10,8 +10,8 @@
           "type": "feat",
           "subject": "new feature",
           "body": "body of feature",
-          "piper_cl_number": "12345",
-          "source_commit_hash": "abcdef123456"
+          "source_commit_hash": "1234",
+          "piper_cl_number": "12345"
         }
       ],
       "apis": null,

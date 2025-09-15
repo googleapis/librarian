@@ -88,10 +88,10 @@ func init() {
 }
 
 type tagAndReleaseRunner struct {
-	cfg      *config.Config
-	ghClient GitHubClient
-	repo     gitrepo.Repository
-	state    *config.LibrarianState
+	ghClient    GitHubClient
+	pullRequest string
+	repo        gitrepo.Repository
+	state       *config.LibrarianState
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
@@ -103,10 +103,10 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
 	}
 	return &tagAndReleaseRunner{
-		cfg:      cfg,
-		repo:     runner.repo,
-		state:    runner.state,
-		ghClient: runner.ghClient,
+		ghClient:    runner.ghClient,
+		pullRequest: cfg.PullRequest,
+		repo:        runner.repo,
+		state:       runner.state,
 	}, nil
 }
 
@@ -140,11 +140,11 @@ func (r *tagAndReleaseRunner) run(ctx context.Context) error {
 
 func (r *tagAndReleaseRunner) determinePullRequestsToProcess(ctx context.Context) ([]*github.PullRequest, error) {
 	slog.Info("determining pull requests to process")
-	if r.cfg.PullRequest != "" {
-		slog.Info("processing a single pull request", "pr", r.cfg.PullRequest)
-		ss := strings.Split(r.cfg.PullRequest, "/")
+	if r.pullRequest != "" {
+		slog.Info("processing a single pull request", "pr", r.pullRequest)
+		ss := strings.Split(r.pullRequest, "/")
 		if len(ss) != pullRequestSegments {
-			return nil, fmt.Errorf("invalid pull request format: %s", r.cfg.PullRequest)
+			return nil, fmt.Errorf("invalid pull request format: %s", r.pullRequest)
 		}
 		prNum, err := strconv.Atoi(ss[pullRequestSegments-1])
 		if err != nil {

@@ -14,17 +14,22 @@
 
 package rustrelease
 
-import "github.com/googleapis/librarian/internal/sidekick/internal/config"
+import (
+	"fmt"
+	"os/exec"
+	"strings"
 
-// BumpVersions finds all the crates that need a version bump and performs the
-// bump, changing both the Cargo.toml and sidekick.toml files.
-func BumpVersions(config *config.Release) error {
-	if err := PreFlight(config); err != nil {
-		return err
-	}
-	_, err := getLastTag(config)
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+)
+
+func getLastTag(config *config.Release) (string, error) {
+	branch := fmt.Sprintf("%s/%s", config.Remote, config.Branch)
+	cmd := exec.Command("git", "describe", "--abbrev=0", "--tags", branch)
+	cmd.Dir = "."
+	contents, err := cmd.CombinedOutput()
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	tag := string(contents)
+	return strings.TrimSuffix(tag, "\n"), nil
 }
