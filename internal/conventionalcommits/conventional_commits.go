@@ -183,17 +183,16 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
+
 	lines := strings.Split(trimmedMessage, "\n")
+	bodyLines, footerLines := separateBodyAndFooters(lines[1:])
+	footers, footerIsBreaking := parseFooters(footerLines)
 
 	header, ok := parseHeader(lines[0])
 	if !ok {
 		slog.Warn("Invalid conventional commit message", "message", commitPart.message, "hash", commit.Hash.String())
 		return nil, nil
 	}
-
-	bodyLines, footerLines := separateBodyAndFooters(lines[1:])
-
-	footers, footerIsBreaking := parseFooters(footerLines)
 
 	return &ConventionalCommit{
 		Type:       header.Type,
