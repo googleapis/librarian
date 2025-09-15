@@ -54,14 +54,12 @@ func TestBumpVersionsLastTagError(t *testing.T) {
 	requireCommand(t, echo)
 	config := config.Release{
 		Remote: "origin",
-		Branch: "main",
+		Branch: "invalid-branch",
 		Preinstalled: map[string]string{
 			"cargo": echo,
 		},
 	}
-	remoteDir := t.TempDir()
-	continueInNewGitRepository(t, remoteDir)
-	initRepositoryContents(t)
+	setupForVersionBump(t, "last-tag-error")
 	if err := BumpVersions(&config); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
 	}
