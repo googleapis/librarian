@@ -36,7 +36,10 @@ effect.
 	)
 }
 
-// rustBumpVersions increments the version numbers as needed.
+// rustGenerate increments the version numbers as needed.
 func rustBumpVersions(rootConfig *config.Config, cmdLine *CommandLine) error {
-	return rustrelease.BumpVersions(rootConfig.Release)
+	if err := rustrelease.PreFlight(rootConfig.Release); err != nil {
+		return err
+	}
+	return nil
 }
