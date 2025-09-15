@@ -101,6 +101,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -204,7 +205,9 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				library:         "example-id",
+				cfg: &config.Config{
+					Library: "example-id",
+				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -271,7 +274,10 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				library:         "example-id",
+				cfg: &config.Config{
+					Push:    false,
+					Library: "example-id",
+				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -339,6 +345,7 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{
 					initErr: errors.New("simulated init error"),
 				},
+				cfg:   &config.Config{},
 				state: &config.LibrarianState{},
 				repo: &MockRepository{
 					Dir: t.TempDir(),
@@ -356,6 +363,7 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{
 					wantErrorMsg: true,
 				},
+				cfg:   &config.Config{},
 				state: &config.LibrarianState{},
 				repo: &MockRepository{
 					Dir: t.TempDir(),
@@ -382,7 +390,9 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				library:         "example-id",
+				cfg: &config.Config{
+					Library: "example-id",
+				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -404,6 +414,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -425,7 +436,9 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        os.TempDir(),
 				containerClient: &mockContainerClient{},
-				push:            true,
+				cfg: &config.Config{
+					Push: true,
+				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -461,7 +474,10 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				library:         "example-id",
+				cfg: &config.Config{
+					Library: "example-id",
+					Push:    false,
+				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -500,7 +516,10 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				library:         "example-id",
+				cfg: &config.Config{
+					Library: "example-id",
+					Push:    false,
+				},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -528,6 +547,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
+				cfg:             &config.Config{},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -776,8 +796,10 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &initRunner{
-				libraryVersion: test.libraryVersion,
-				repo:           test.repo,
+				cfg: &config.Config{
+					LibraryVersion: test.libraryVersion,
+				},
+				repo: test.repo,
 			}
 			var err error
 			if test.repo != nil {
@@ -1134,7 +1156,7 @@ func TestDetermineNextVersion(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			runner := &initRunner{
-				libraryVersion:  test.config.LibraryVersion,
+				cfg:             test.config,
 				librarianConfig: test.librarianConfig,
 			}
 			got, err := runner.determineNextVersion(test.commits, test.currentVersion, test.libraryID)
