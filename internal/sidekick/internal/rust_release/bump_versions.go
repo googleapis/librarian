@@ -30,6 +30,14 @@ func BumpVersions(config *config.Release) error {
 	if err != nil {
 		return err
 	}
-	_ = findCargoManifests(files)
+	var packages []string
+	for _, manifest := range findCargoManifests(files) {
+		names, err := updateManifest(config, lastTag, manifest)
+		if err != nil {
+			return err
+		}
+		packages = append(packages, names...)
+	}
+	_ = packages
 	return nil
 }

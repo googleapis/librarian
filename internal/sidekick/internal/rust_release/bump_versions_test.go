@@ -46,6 +46,13 @@ func TestBumpVersionsSuccess(t *testing.T) {
 		},
 	}
 	setupForVersionBump(t, "release-2001-02-03")
+	name := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+		t.Fatal(err)
+	}
 	if err := BumpVersions(config); err != nil {
 		t.Fatal(err)
 	}
@@ -76,6 +83,29 @@ func TestBumpVersionsLastTagError(t *testing.T) {
 	setupForVersionBump(t, "last-tag-error")
 	if err := BumpVersions(&config); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
+	}
+}
+
+func TestBumpVersionsManifestError(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "git",
+		},
+	}
+	setupForVersionBump(t, "release-bad-manifest")
+	name := path.Join("src", "storage", "Cargo.toml")
+	if err := os.WriteFile(name, []byte("invalid-toml-file = {"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: broke storage manifest file", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := BumpVersions(config); err == nil {
+		t.Errorf("expected error while processing invalid manifest file")
 	}
 }
 
