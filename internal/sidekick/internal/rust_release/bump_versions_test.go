@@ -127,6 +127,8 @@ func initRepositoryContents(t *testing.T) {
 		t.Fatal(err)
 	}
 	addCrate(t, path.Join("src", "storage"), "google-cloud-storage")
+	addCrate(t, path.Join("src", "gax-internal"), "google-cloud-gax-internal")
+	addCrate(t, path.Join("src", "gax-internal", "echo-server"), "echo-server")
 	addCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
 	if err := external.Run("git", "add", "."); err != nil {
 		t.Fatal(err)
