@@ -10,7 +10,7 @@ For more details, see the Go implementation in [librarian_config.go](../internal
 | Field       | Type   | Description                                         | Required | Validation Constraints |
 |-------------|--------|-----------------------------------------------------|----------|------------------------------------------------------------------------------------|
 | `global_files_allowlist`     | list | A list of [global files](#global-files-object) | No      | See details below. |
-| `libraries` | list   | A list of [library configurations](#libraries-object). | Yes      | See details below. |
+| `libraries` | list   | A list of [library configurations](#libraries-object). | No      | See details below. |
 
 ## `global-files` Object
 
