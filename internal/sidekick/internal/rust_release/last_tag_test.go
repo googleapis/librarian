@@ -20,16 +20,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
-const (
-	initialCargoContents = `# Example Cargo file
-[package]
-name    = "%s"
-version = "1.0.0"
-`
-
-	initialLibRsContents = `pub fn test() -> &'static str { "Hello World" }`
-)
-
 func TestLastTagSuccess(t *testing.T) {
 	const wantTag = "release-2001-02-03"
 

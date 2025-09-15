@@ -25,6 +25,16 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
 
+const (
+	initialCargoContents = `# Example Cargo file
+[package]
+name    = "%s"
+version = "1.0.0"
+`
+
+	initialLibRsContents = `pub fn test() -> &'static str { "Hello World" }`
+)
+
 func TestBumpVersionsSuccess(t *testing.T) {
 	requireCommand(t, "git")
 	config := &config.Release{
