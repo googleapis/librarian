@@ -101,7 +101,7 @@ func continueInNewGitRepository(t *testing.T, tmpDir string) {
 	t.Helper()
 	requireCommand(t, "git")
 	t.Chdir(tmpDir)
-	if err := external.Run("git", "init"); err != nil {
+	if err := external.Run("git", "init", "-b", "main"); err != nil {
 		t.Fatal(err)
 	}
 	if err := external.Run("git", "config", "user.email", "test@test-only.com"); err != nil {

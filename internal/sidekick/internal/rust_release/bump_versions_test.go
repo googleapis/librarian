@@ -50,12 +50,12 @@ func TestBumpVersionsPreflightError(t *testing.T) {
 
 func TestBumpVersionsLastTagError(t *testing.T) {
 	const echo = "/bin/echo"
+	requireCommand(t, "git")
 	requireCommand(t, echo)
 	config := config.Release{
 		Remote: "origin",
 		Branch: "main",
 		Preinstalled: map[string]string{
-			"git":   echo,
 			"cargo": echo,
 		},
 	}
