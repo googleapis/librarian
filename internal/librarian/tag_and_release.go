@@ -90,6 +90,7 @@ func init() {
 	cfg := cmdTagAndRelease.Config
 
 	addFlagRepo(fs, cfg)
+	addFlagBranch(fs, cfg)
 	addFlagPR(fs, cfg)
 }
 

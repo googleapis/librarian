@@ -133,7 +133,7 @@ func open(dir string) (*LocalRepository, error) {
 }
 
 func clone(dir, url, branch, ci string) (*LocalRepository, error) {
-	slog.Info("Cloning repository", "url", url, "dir", dir)
+	slog.Info("Cloning repository", "url", url, "dir", dir, "branch", branch)
 	options := &git.CloneOptions{
 		URL:           url,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
