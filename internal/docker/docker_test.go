@@ -64,10 +64,6 @@ func TestDockerRun(t *testing.T) {
 	)
 
 	state := &config.LibrarianState{}
-	cfg := &config.Config{}
-	cfgInDocker := &config.Config{
-		HostMount: "hostDir:localDir",
-	}
 	repoDir := filepath.Join(os.TempDir())
 	for _, test := range []struct {
 		name       string
@@ -84,7 +80,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfg,
 					State:     state,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
@@ -115,7 +110,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfg,
 					State:     state,
 					RepoDir:   "/non-existed-dir",
 					ApiRoot:   testAPIRoot,
@@ -135,7 +129,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfg,
 					State:     state,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
@@ -156,12 +149,12 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfgInDocker,
 					State:     state,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 					Output:    "hostDir",
 					LibraryID: testLibraryID,
+					HostMount: "hostDir:localDir",
 				}
 
 				return d.Generate(ctx, generateRequest)
@@ -187,7 +180,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				buildRequest := &BuildRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -212,7 +204,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				buildRequest := &BuildRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   "/non-exist-dir",
@@ -230,7 +221,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				buildRequest := &BuildRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -249,7 +239,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				configureRequest := &ConfigureRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -306,7 +295,6 @@ func TestDockerRun(t *testing.T) {
 					},
 				}
 				configureRequest := &ConfigureRequest{
-					Cfg:       cfg,
 					State:     curState,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -341,7 +329,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				configureRequest := &ConfigureRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   "/non-exist-dir",
@@ -361,7 +348,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				configureRequest := &ConfigureRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -388,9 +374,6 @@ func TestDockerRun(t *testing.T) {
 				}
 
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: repoDir,
-					},
 					State:           state,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
@@ -425,9 +408,6 @@ func TestDockerRun(t *testing.T) {
 				}
 
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: repoDir,
-					},
 					State:           state,
 					PartialRepoDir:  partialRepoDir,
 					Output:          testOutput,
@@ -447,9 +427,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: os.TempDir(),
-					},
 					State:          state,
 					PartialRepoDir: "/non-exist-dir",
 					Output:         testOutput,
@@ -471,9 +448,6 @@ func TestDockerRun(t *testing.T) {
 					t.Fatal(err)
 				}
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: repoDir,
-					},
 					State:           state,
 					PartialRepoDir:  partialRepoDir,
 					Output:          testOutput,
@@ -508,9 +482,6 @@ func TestDockerRun(t *testing.T) {
 				}
 
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: os.TempDir(),
-					},
 					State:           state,
 					PartialRepoDir:  partialRepoDir,
 					Output:          testOutput,
@@ -888,9 +859,6 @@ func TestReleaseInitRequestContent(t *testing.T) {
 	}
 
 	req := &ReleaseInitRequest{
-		Cfg: &config.Config{
-			Repo: tmpDir,
-		},
 		State:           stateWithChanges,
 		PartialRepoDir:  partialRepoDir,
 		Output:          filepath.Join(tmpDir, "output"),

@@ -211,19 +211,15 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
-		Cfg: &config.Config{
-			Library:        r.library,
-			LibraryVersion: r.libraryVersion,
-			Push:           r.push,
-			Commit:         r.commit,
-			Branch:         r.branch,
-		},
-		State:           r.state,
+		Branch:          r.branch,
+		Commit:          r.commit,
 		LibrarianConfig: r.librarianConfig,
 		LibraryID:       r.library,
 		LibraryVersion:  r.libraryVersion,
 		Output:          outputDir,
 		PartialRepoDir:  dst,
+		Push:            r.push,
+		State:           r.state,
 	}
 
 	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
