@@ -28,7 +28,7 @@ Each object in the `libraries` list represents a single library and has the foll
 | Field                   | Type   | Description                                                                                                                                                           | Required | Validation Constraints |
 |-------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|------------------------|
 | `id`                    | string | A unique identifier for the library, in a language-specific format. It should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens.                                                                                                  | Yes      | Must be a valid library ID. |
-| `version_version`       | string | The next released version of the library. Ignored unless it would increase the release version. | No       | Must be a valid semantic version, "v" prefix is optional. |
+| `next_version`       | string | The next released version of the library. Ignored unless it would increase the release version. | No       | Must be a valid semantic version, "v" prefix is optional. |
 
 ## Example
 
