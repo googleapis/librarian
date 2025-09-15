@@ -2,7 +2,7 @@
 
 This document describes the schema for the `state.yaml` file, which is used by Librarian to track the status of managed files. This file should not be edited manually.
 
-For more details, see the Go implementation in [state.go](../internal/librarian/state.go).
+For more details, see the Go implementation in [state.go](../internal/config/state.go).
 
 ## Top-Level Fields
 
