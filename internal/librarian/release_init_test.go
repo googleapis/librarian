@@ -557,9 +557,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Library: "example-id",
-				},
+				library:         "example-id",
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
