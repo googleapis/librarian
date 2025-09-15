@@ -106,75 +106,82 @@ func TestInitRun(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name       string
-		runner     *initRunner
-		files      map[string]string
-		want       *config.LibrarianState
-		wantErr    bool
-		wantErrMsg string
+		name            string
+		containerClient *mockContainerClient
+		dockerInitCalls int
+		// TODO: Pass all setup fields to the setupRunner func
+		setupRunner func(containerClient *mockContainerClient) *initRunner
+		files       map[string]string
+		want        *config.LibrarianState
+		wantErr     bool
+		wantErrMsg  string
 	}{
 		{
-			name: "run release init command for all libraries, update librarian state",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							ID:      "another-example-id",
-							Version: "1.0.0",
-							SourceRoots: []string{
-								"dir3",
-								"dir4",
-							},
-							RemoveRegex: []string{
-								"dir3",
-								"dir4",
-							},
-						},
-						{
-							ID:      "example-id",
-							Version: "2.0.0",
-							SourceRoots: []string{
-								"dir1",
-								"dir2",
-							},
-							RemoveRegex: []string{
-								"dir1",
-								"dir2",
-							},
-						},
-					},
-				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
-						"another-example-id-1.0.0": {
+			name:            "run release init command for all libraries, update librarian state",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
 							{
-								Hash:    plumbing.NewHash("123456"),
-								Message: "feat: another new feature",
+								ID:      "another-example-id",
+								Version: "1.0.0",
+								SourceRoots: []string{
+									"dir3",
+									"dir4",
+								},
+								RemoveRegex: []string{
+									"dir3",
+									"dir4",
+								},
 							},
-						},
-						"example-id-2.0.0": {
 							{
-								Hash:    plumbing.NewHash("abcdefg"),
-								Message: "feat: a new feature",
+								ID:      "example-id",
+								Version: "2.0.0",
+								SourceRoots: []string{
+									"dir1",
+									"dir2",
+								},
+								RemoveRegex: []string{
+									"dir1",
+									"dir2",
+								},
 							},
 						},
 					},
-					ChangedFilesInCommitValueByHash: map[string][]string{
-						plumbing.NewHash("123456").String(): {
-							"dir3/file3.txt",
-							"dir4/file4.txt",
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: another new feature",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Hash:    plumbing.NewHash("abcdefg"),
+									Message: "feat: a new feature",
+								},
+							},
 						},
-						plumbing.NewHash("abcdefg").String(): {
-							"dir1/file1.txt",
-							"dir2/file2.txt",
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"dir3/file3.txt",
+								"dir4/file4.txt",
+							},
+							plumbing.NewHash("abcdefg").String(): {
+								"dir1/file1.txt",
+								"dir2/file2.txt",
+							},
 						},
 					},
-				},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 			files: map[string]string{
 				"file1.txt":      "",
@@ -217,38 +224,42 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name: "run release init command for one library (library id in cfg)",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				library:         "example-id",
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "another-example-id",
-							SourceRoots: []string{
-								"dir3",
-								"dir4",
+			name:            "run release init command for one library (library id in cfg)",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					library:         "example-id",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "another-example-id",
+								SourceRoots: []string{
+									"dir3",
+									"dir4",
+								},
 							},
-						},
-						{
-							Version: "2.0.0",
-							ID:      "example-id",
-							SourceRoots: []string{
-								"dir1",
-								"dir2",
-							},
-							RemoveRegex: []string{
-								"dir1",
-								"dir2",
+							{
+								Version: "2.0.0",
+								ID:      "example-id",
+								SourceRoots: []string{
+									"dir1",
+									"dir2",
+								},
+								RemoveRegex: []string{
+									"dir1",
+									"dir2",
+								},
 							},
 						},
 					},
-				},
-				repo:            mockRepoWithReleasableUnit,
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					repo:            mockRepoWithReleasableUnit,
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 			files: map[string]string{
 				"file1.txt":      "",
@@ -286,62 +297,69 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name: "run release init command for one invalid library (invalid library id in cfg)",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				library:         "does-not-exist",
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							ID: "another-example-id",
-						},
-						{
-							ID: "example-id",
+			name:            "run release init command for one invalid library (invalid library id in cfg)",
+			containerClient: &mockContainerClient{},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					library:         "does-not-exist",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID: "another-example-id",
+							},
+							{
+								ID: "example-id",
+							},
 						},
 					},
-				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+					},
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 			wantErr:    true,
 			wantErrMsg: "unable to find library for release",
 		},
 		{
-			name: "run release init command without librarian config (no config.yaml file)",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				library:         "example-id",
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "another-example-id",
-							SourceRoots: []string{
-								"dir3",
-								"dir4",
+			name:            "run release init command without librarian config (no config.yaml file)",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					library:         "example-id",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "another-example-id",
+								SourceRoots: []string{
+									"dir3",
+									"dir4",
+								},
 							},
-						},
-						{
-							Version: "2.0.0",
-							ID:      "example-id",
-							SourceRoots: []string{
-								"dir1",
-								"dir2",
-							},
-							RemoveRegex: []string{
-								"dir1",
-								"dir2",
+							{
+								Version: "2.0.0",
+								ID:      "example-id",
+								SourceRoots: []string{
+									"dir1",
+									"dir2",
+								},
+								RemoveRegex: []string{
+									"dir1",
+									"dir2",
+								},
 							},
 						},
 					},
-				},
-				repo:        mockRepoWithReleasableUnit,
-				partialRepo: t.TempDir(),
+					repo:        mockRepoWithReleasableUnit,
+					partialRepo: t.TempDir(),
+				}
 			},
 			files: map[string]string{
 				"file1.txt":      "",
@@ -380,174 +398,196 @@ func TestInitRun(t *testing.T) {
 		},
 		{
 			name: "docker command returns error",
-			runner: &initRunner{
-				workRoot: t.TempDir(),
-				containerClient: &mockContainerClient{
-					initErr: errors.New("simulated init error"),
-				},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "example-id",
+			containerClient: &mockContainerClient{
+				initErr: errors.New("simulated init error"),
+			},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "example-id",
+							},
 						},
 					},
-				},
-				repo:            mockRepoWithReleasableUnit,
-				partialRepo:     t.TempDir(),
-				librarianConfig: &config.LibrarianConfig{},
+					repo:            mockRepoWithReleasableUnit,
+					partialRepo:     t.TempDir(),
+					librarianConfig: &config.LibrarianConfig{},
+				}
 			},
 			wantErr:    true,
 			wantErrMsg: "simulated init error",
 		},
 		{
 			name: "release response contains error message",
-			runner: &initRunner{
-				workRoot: t.TempDir(),
-				containerClient: &mockContainerClient{
-					wantErrorMsg: true,
-				},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "example-id",
+			containerClient: &mockContainerClient{
+				wantErrorMsg: true,
+			},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "example-id",
+							},
 						},
 					},
-				},
-				repo:            mockRepoWithReleasableUnit,
-				partialRepo:     t.TempDir(),
-				librarianConfig: &config.LibrarianConfig{},
+					repo:            mockRepoWithReleasableUnit,
+					partialRepo:     t.TempDir(),
+					librarianConfig: &config.LibrarianConfig{},
+				}
 			},
 			wantErr:    true,
 			wantErrMsg: "failed with error message: simulated error message",
 		},
 		{
 			name: "invalid work root",
-			runner: &initRunner{
-				workRoot: "/invalid/path",
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot: "/invalid/path",
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+					},
+				}
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create output dir",
 		},
 		{
-			name: "failed to get changes from repo when releasing one library",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				library:         "example-id",
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							ID: "example-id",
+			name:            "failed to get changes from repo when releasing one library",
+			containerClient: &mockContainerClient{},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					library:         "example-id",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID: "example-id",
+							},
 						},
 					},
-				},
-				repo: &MockRepository{
-					Dir:                             t.TempDir(),
-					GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
-				},
-				partialRepo: t.TempDir(),
+					repo: &MockRepository{
+						Dir:                             t.TempDir(),
+						GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
+					},
+					partialRepo: t.TempDir(),
+				}
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 		{
-			name: "failed to get changes from repo when releasing multiple libraries",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							ID: "example-id",
+			name:            "failed to get changes from repo when releasing multiple libraries",
+			containerClient: &mockContainerClient{},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID: "example-id",
+							},
 						},
 					},
-				},
-				repo: &MockRepository{
-					Dir:                             t.TempDir(),
-					GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
-				},
-				partialRepo: t.TempDir(),
+					repo: &MockRepository{
+						Dir:                             t.TempDir(),
+						GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
+					},
+					partialRepo: t.TempDir(),
+				}
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 		{
-			name: "single library has no releasable units, no state change",
-			runner: &initRunner{
-				workRoot:        os.TempDir(),
-				containerClient: &mockContainerClient{},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
+			name:            "single library has no releasable units, no state change",
+			containerClient: &mockContainerClient{},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        os.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+							},
 						},
 					},
-				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-						Name: "origin",
-						URLs: []string{"https://github.com/googleapis/librarian.git"},
-					})},
-					ChangedFilesInCommitValue: []string{"file.txt"},
-					GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
-						{
-							Message: "chore: not releasable",
-						},
-						{
-							Message: "test: not releasable",
-						},
-						{
-							Message: "build: not releasable",
-						},
-					},
-				},
-				ghClient:        &mockGitHubClient{},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
-			},
-		},
-		{
-			name: "release init has multiple libraries but only one has a releasable unit",
-			runner: &initRunner{
-				workRoot:        os.TempDir(),
-				containerClient: &mockContainerClient{},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "another-example-id",
-						},
-						{
-							Version: "2.0.0",
-							ID:      "example-id",
-						},
-					},
-				},
-				repo: &MockRepository{
-					Dir:                       t.TempDir(),
-					ChangedFilesInCommitValue: []string{"file.txt"},
-					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
-						"another-example-id-1.0.0": {
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						})},
+						ChangedFilesInCommitValue: []string{"file.txt"},
+						GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 							{
 								Message: "chore: not releasable",
 							},
-						},
-						"example-id-2.0.0": {
 							{
-								Message: "feat: a new feature",
+								Message: "test: not releasable",
+							},
+							{
+								Message: "build: not releasable",
 							},
 						},
 					},
-				},
-				ghClient:        &mockGitHubClient{},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					ghClient:        &mockGitHubClient{},
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
+			},
+		},
+		{
+			name:            "release init has multiple libraries but only one has a releasable unit",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        os.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "another-example-id",
+							},
+							{
+								Version: "2.0.0",
+								ID:      "example-id",
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir:                       t.TempDir(),
+						ChangedFilesInCommitValue: []string{"file.txt"},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Message: "chore: not releasable",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Message: "feat: a new feature",
+								},
+							},
+						},
+					},
+					ghClient:        &mockGitHubClient{},
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -571,113 +611,126 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name: "configured library (library id in cfg) does not have releasable unit, no state change",
-			runner: &initRunner{
-				workRoot:        os.TempDir(),
-				containerClient: &mockContainerClient{},
-				library:         "another-example-id", // release only for this library
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "another-example-id",
-						},
-						{
-							Version: "2.0.0",
-							ID:      "example-id",
-						},
-					},
-				},
-				repo: &MockRepository{
-					Dir:                       t.TempDir(),
-					ChangedFilesInCommitValue: []string{"file.txt"},
-					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
-						"another-example-id-1.0.0": {
+			name:            "configured library (library id in cfg) does not have releasable unit, no state change",
+			containerClient: &mockContainerClient{},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        os.TempDir(),
+					containerClient: containerClient,
+					library:         "another-example-id", // release only for this library
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
 							{
-								Message: "chore: not releasable",
+								Version: "1.0.0",
+								ID:      "another-example-id",
 							},
-						},
-						"example-id-2.0.0": {
 							{
-								Message: "feat: a new feature",
+								Version: "2.0.0",
+								ID:      "example-id",
 							},
 						},
 					},
-				},
-				ghClient:        &mockGitHubClient{},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					repo: &MockRepository{
+						Dir:                       t.TempDir(),
+						ChangedFilesInCommitValue: []string{"file.txt"},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Message: "chore: not releasable",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Message: "feat: a new feature",
+								},
+							},
+						},
+					},
+					ghClient:        &mockGitHubClient{},
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 		},
 		{
-			name: "failed to commit and push",
-			runner: &initRunner{
-				workRoot:        os.TempDir(),
-				containerClient: &mockContainerClient{},
-				push:            true,
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "example-id",
+			name:            "failed to commit and push",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        os.TempDir(),
+					containerClient: containerClient,
+					push:            true,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "example-id",
+							},
 						},
 					},
-				},
-				repo: &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: gitStatus,
-					RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-						Name: "origin",
-						URLs: []string{"https://github.com/googleapis/librarian.git"},
-					})},
-					ChangedFilesInCommitValue: []string{"file.txt"},
-					GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
-						{
-							Message: "feat: a feature",
+					repo: &MockRepository{
+						Dir:          t.TempDir(),
+						AddAllStatus: gitStatus,
+						RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						})},
+						ChangedFilesInCommitValue: []string{"file.txt"},
+						GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
+							{
+								Message: "feat: a feature",
+							},
 						},
+						// This AddAll is used in commitAndPush(). If commitAndPush() is invoked,
+						// then this test should error out
+						AddAllError: errors.New("unable to add all files"),
 					},
-					// This AddAll is used in commitAndPush(). If commitAndPush() is invoked,
-					// then this test should error out
-					AddAllError: errors.New("unable to add all files"),
-				},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to commit and push",
 		},
 		{
 			name: "failed to make partial repo",
-			runner: &initRunner{
-				workRoot: t.TempDir(),
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
-				partialRepo: "/invalid/path",
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot: t.TempDir(),
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+					},
+					partialRepo: "/invalid/path",
+				}
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to make directory",
 		},
 		{
-			name: "run release init command with symbolic link",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				library:         "example-id",
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "example-id",
-							SourceRoots: []string{
-								"dir1",
+			name:            "run release init command with symbolic link",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					library:         "example-id",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "example-id",
+								SourceRoots: []string{
+									"dir1",
+								},
 							},
 						},
 					},
-				},
-				repo:            mockRepoWithReleasableUnit,
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					repo:            mockRepoWithReleasableUnit,
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 			files: map[string]string{
 				"dir1/file1.txt": "hello",
@@ -698,25 +751,28 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name: "copy library files returns error",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				library:         "example-id",
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "example-id",
-							SourceRoots: []string{
-								"dir1",
+			name:            "copy library files returns error",
+			containerClient: &mockContainerClient{},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					library:         "example-id",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "example-id",
+								SourceRoots: []string{
+									"dir1",
+								},
 							},
 						},
 					},
-				},
-				repo:            mockRepoWithReleasableUnit,
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					repo:            mockRepoWithReleasableUnit,
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 			files: map[string]string{
 				"dir1/file1.txt": "hello",
@@ -725,24 +781,27 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed to copy file",
 		},
 		{
-			name: "copy library files returns error (no library id in cfg)",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							Version: "1.0.0",
-							ID:      "example-id",
-							SourceRoots: []string{
-								"dir1",
+			name:            "copy library files returns error (no library id in cfg)",
+			containerClient: &mockContainerClient{},
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "example-id",
+								SourceRoots: []string{
+									"dir1",
+								},
 							},
 						},
 					},
-				},
-				repo:            mockRepoWithReleasableUnit,
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
+					repo:            mockRepoWithReleasableUnit,
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
 			},
 			files: map[string]string{
 				"dir1/file1.txt": "hello",
@@ -752,9 +811,11 @@ func TestInitRun(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			runner := test.setupRunner(test.containerClient)
+
 			// Setup library files before running the command.
-			repoDir := test.runner.repo.GetDir()
-			outputDir := filepath.Join(test.runner.workRoot, "output")
+			repoDir := runner.repo.GetDir()
+			outputDir := filepath.Join(runner.workRoot, "output")
 			for path, content := range test.files {
 				// Create files in repoDir and outputDir because the run() function
 				// will copy files from outputDir to repoDir.
@@ -770,7 +831,7 @@ func TestInitRun(t *testing.T) {
 			}
 			if strings.HasPrefix(test.name, "copy library files returns error") {
 				// Make the directory non-writable so that the copy operations fail.
-				if err := os.Chmod(test.runner.partialRepo, 0555); err != nil {
+				if err := os.Chmod(runner.partialRepo, 0555); err != nil {
 					t.Fatalf("os.Chmod() = %v", err)
 				}
 			}
@@ -795,7 +856,7 @@ func TestInitRun(t *testing.T) {
 				t.Fatalf("os.WriteFile() = %v", err)
 			}
 
-			err := test.runner.run(context.Background())
+			err := runner.run(context.Background())
 			if test.wantErr {
 				if err == nil {
 					t.Error("run() should return error")
@@ -810,6 +871,11 @@ func TestInitRun(t *testing.T) {
 			if err != nil {
 				t.Errorf("run() failed: %s", err.Error())
 			}
+
+			if diff := cmp.Diff(test.containerClient.initCalls, test.dockerInitCalls); diff != "" {
+				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
+			}
+
 			// load librarian state from state.yaml, which should contain updated
 			// library state.
 			bytes, err := os.ReadFile(filepath.Join(repoDir, ".librarian/state.yaml"))
