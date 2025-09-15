@@ -167,7 +167,6 @@ Usage:
 				},
 			},
 			want: fmt.Sprintf(`%sFlags:
-
   -name string
     	name flag (default "default")
 

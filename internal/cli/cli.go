@@ -84,7 +84,7 @@ func (c *Command) usage(w io.Writer) {
 		}
 	}
 	if hasFlags(c.Flags) {
-		fmt.Fprint(w, "\n\nFlags:\n\n")
+		fmt.Fprint(w, "\n\nFlags:\n")
 	}
 	c.Flags.SetOutput(w)
 	c.Flags.PrintDefaults()
