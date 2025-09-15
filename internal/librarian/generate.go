@@ -115,6 +115,7 @@ func init() {
 type generateRunner struct {
 	api             string
 	apiSource       string
+	branch          string
 	build           bool
 	commit          bool
 	containerClient ContainerClient
@@ -209,14 +210,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		branch:          r.cfg.Branch,
-		commit:          r.cfg.Commit,
+		branch:          r.branch,
+		commit:          r.commit,
 		commitMessage:   "feat: generate libraries",
 		failedLibraries: failedLibraries,
 		ghClient:        r.ghClient,
 		idToCommits:     idToCommits,
 		prType:          generate,
-		push:            r.cfg.Push,
+		push:            r.push,
 		repo:            r.repo,
 		sourceRepo:      r.sourceRepo,
 		state:           r.state,
