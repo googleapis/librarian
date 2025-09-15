@@ -16,16 +16,20 @@
 package config
 
 import (
-	"errors"
-	"fmt"
-	"log/slog"
-	"os"
-	"os/user"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"time"
+    "errors"
+    "fmt"
+    "log/slog"
+    "os"
+    "os/user"
+    "path/filepath"
+    "regexp"
+    "strings"
+    "time"
 )
+
+// EnvVarGitHubToken is the environment variable name used to read the
+// GitHub access token for operations that push to GitHub.
+const EnvVarGitHubToken = "LIBRARIAN_GITHUB_TOKEN"
 
 const (
 	// BuildRequest is a JSON file that describes which library to build/test.
@@ -238,10 +242,10 @@ type Config struct {
 
 // New returns a new Config populated with environment variables.
 func New(cmdName string) *Config {
-	return &Config{
-		CommandName: cmdName,
-		GitHubToken: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
-	}
+    return &Config{
+        CommandName: cmdName,
+        GitHubToken: os.Getenv(EnvVarGitHubToken),
+    }
 }
 
 // setupUser performs late initialization of user-specific configuration,
