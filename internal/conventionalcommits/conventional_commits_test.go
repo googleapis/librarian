@@ -116,7 +116,7 @@ func TestParseCommits(t *testing.T) {
 		},
 		{
 			name:    "feat with multiple footers for generated changes",
-			message: "feat: [library-name] add new feature\nThis is the body.\n...\n\nPiperOrigin-RevId: piper_cl_number\n\nSource-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})",
+			message: "feat: [library-name] add new feature\nThis is the body.\n...\n\nPiperOrigin-RevId: piper_cl_number\n\nSource-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/abcdefg1234567)",
 			want: []*ConventionalCommit{
 				{
 					Type:       "feat",
@@ -127,7 +127,7 @@ func TestParseCommits(t *testing.T) {
 					IsBreaking: false,
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "piper_cl_number",
-						"Source-Link":       "[googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/{source_commit_hash})",
+						"Source-Link":       "abcdefg1234567",
 					},
 					SHA:  sha.String(),
 					When: now,
@@ -261,7 +261,7 @@ END_NESTED_COMMIT
 					LibraryID: "example-id",
 					IsNested:  false,
 					Footers:   map[string]string{},
-					SHA:       sha.String(),
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 				{
@@ -272,7 +272,7 @@ END_NESTED_COMMIT
 					LibraryID: "example-id",
 					IsNested:  true,
 					Footers:   map[string]string{},
-					SHA:       sha.String(),
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 				{
@@ -283,12 +283,11 @@ END_NESTED_COMMIT
 					LibraryID: "example-id",
 					IsNested:  true,
 					Footers:   map[string]string{},
-					SHA:       sha.String(),
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 			},
 		},
-
 		{
 			name: "commit with empty nested commit",
 			message: `feat(parser): main feature
@@ -329,7 +328,7 @@ body of nested commit 1
 
 PiperOrigin-RevId: 123456
 
-Source-link: fake-link
+Source-Link: fake-link
 END_NESTED_COMMIT
 BEGIN_NESTED_COMMIT
 feat: [abc] nested commit 2
@@ -338,10 +337,9 @@ body of nested commit 2
 
 PiperOrigin-RevId: 654321
 
-Source-link: fake-link
+Source-Link: fake-link
 END_NESTED_COMMIT
 END_COMMIT_OVERRIDE
-
 `,
 			want: []*ConventionalCommit{
 				{
@@ -350,8 +348,8 @@ END_COMMIT_OVERRIDE
 					Body:      "body of nested commit 1\n...",
 					LibraryID: "example-id",
 					IsNested:  true,
-					Footers:   map[string]string{"PiperOrigin-RevId": "123456", "Source-link": "fake-link"},
-					SHA:       sha.String(),
+					Footers:   map[string]string{"PiperOrigin-RevId": "123456", "Source-Link": "fake-link"},
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 				{
@@ -360,8 +358,8 @@ END_COMMIT_OVERRIDE
 					IsNested:  true,
 					Body:      "body of nested commit 2\n...",
 					LibraryID: "example-id",
-					Footers:   map[string]string{"PiperOrigin-RevId": "654321", "Source-link": "fake-link"},
-					SHA:       sha.String(),
+					Footers:   map[string]string{"PiperOrigin-RevId": "654321", "Source-Link": "fake-link"},
+					SHA:       sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					When:      now,
 				},
 			},
@@ -391,6 +389,67 @@ END_NESTED_COMMIT`,
 					Footers:   map[string]string{"Reviewed-by": "Jane Doe"},
 					SHA:       sha.String(),
 					When:      now,
+				},
+			},
+		},
+		{
+			name: "parse multiple lines message inside nested commit",
+			message: `
+chore: Update generation configuration at Tue Aug 26 02:31:23 UTC 2025 (#11734)
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@525c95a](https://github.com/googleapis/googleapis/commit/525c95a7a122ec2869ae06cd02fa5013819463f6)
+(exclusive) and
+[googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
+(inclusive).
+
+BEGIN_COMMIT_OVERRIDE
+BEGIN_NESTED_COMMIT
+feat: [texttospeech] Support promptable voices by specifying a model name and a prompt
+feat: [texttospeech] Add enum value M4A to enum AudioEncoding
+docs: [texttospeech] A comment for method 'StreamingSynthesize' in service 'TextToSpeech' is changed
+
+PiperOrigin-RevId: 799242210
+
+Source-Link: [googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
+END_NESTED_COMMIT
+END_COMMIT_OVERRIDE`,
+			want: []*ConventionalCommit{
+				{
+					Type:      "feat",
+					Subject:   "[texttospeech] Support promptable voices by specifying a model name and a prompt",
+					LibraryID: "example-id",
+					IsNested:  true,
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "799242210",
+						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
+					},
+					SHA:  sha.String(),
+					When: now,
+				},
+				{
+					Type:      "feat",
+					Subject:   "[texttospeech] Add enum value M4A to enum AudioEncoding",
+					LibraryID: "example-id",
+					IsNested:  true,
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "799242210",
+						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
+					},
+					SHA:  sha.String(),
+					When: now,
+				},
+				{
+					Type:      "docs",
+					Subject:   "[texttospeech] A comment for method 'StreamingSynthesize' in service 'TextToSpeech' is changed",
+					LibraryID: "example-id",
+					IsNested:  true,
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "799242210",
+						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
+					},
+					SHA:  sha.String(),
+					When: now,
 				},
 			},
 		},
@@ -466,13 +525,19 @@ END_NESTED_COMMIT
 			},
 		},
 		{
-			name: "malformed nested commit without end marker",
+			name: "malformed nested commit without end marker, with primary commit",
 			message: `feat(parser): main feature
 BEGIN_NESTED_COMMIT
 fix(sub): fix a bug that is never closed`,
 			want: []commitPart{
 				{message: "feat(parser): main feature", isNested: false},
 			},
+		},
+		{
+			name: "malformed nested commit without end marker, without primary commit",
+			message: `BEGIN_NESTED_COMMIT
+fix(sub): fix a bug that is never closed`,
+			want: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -491,14 +556,14 @@ func TestConventionalCommit_MarshalJSON(t *testing.T) {
 		Body:    "body of feature",
 		Footers: map[string]string{
 			"PiperOrigin-RevId": "12345",
-			"git-commit-hash":   "abcdef123456",
 		},
+		SHA: "1234",
 	}
 	b, err := c.MarshalJSON()
 	if err != nil {
 		t.Fatalf("MarshalJSON() failed: %v", err)
 	}
-	want := `{"type":"feat","subject":"new feature","body":"body of feature","piper_cl_number":"12345","source_commit_hash":"abcdef123456"}`
+	want := `{"type":"feat","subject":"new feature","body":"body of feature","source_commit_hash":"1234","piper_cl_number":"12345"}`
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("MarshalJSON() mismatch (-want +got):\n%s", diff)
 	}

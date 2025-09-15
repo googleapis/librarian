@@ -21,7 +21,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/semver"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
@@ -42,7 +44,7 @@ executing in such a directory the '--repo' flag must be provided.
 This command scans the git history since the last release, identifies changes
 (feat, fix, BREAKING CHANGE), and calculates the appropriate version bump
 according to semver rules. It then delegates all language-specific file
-modifications, such as updating a CHANGELOG.md or bumping the version in a pom.xml, 
+modifications, such as updating a CHANGELOG.md or bumping the version in a pom.xml,
 to the configured language-specific container.
 
 By default, 'release init' leaves the changes in your local working directory
@@ -85,16 +87,20 @@ func init() {
 }
 
 type initRunner struct {
-	cfg             *config.Config
+	branch          string
+	commit          bool
+	containerClient ContainerClient
+	ghClient        GitHubClient
+	image           string
+	librarianConfig *config.LibrarianConfig
+	library         string
+	libraryVersion  string
+	partialRepo     string
+	push            bool
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
-	librarianConfig *config.LibrarianConfig
-	ghClient        GitHubClient
-	containerClient ContainerClient
 	workRoot        string
-	partialRepo     string
-	image           string
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
@@ -103,16 +109,20 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		return nil, fmt.Errorf("failed to create init runner: %w", err)
 	}
 	return &initRunner{
-		cfg:             runner.cfg,
+		branch:          cfg.Branch,
+		commit:          cfg.Commit,
+		containerClient: runner.containerClient,
+		ghClient:        runner.ghClient,
+		image:           runner.image,
+		librarianConfig: runner.librarianConfig,
+		library:         cfg.Library,
+		libraryVersion:  cfg.LibraryVersion,
+		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
+		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
-		librarianConfig: runner.librarianConfig,
-		ghClient:        runner.ghClient,
-		containerClient: runner.containerClient,
 		workRoot:        runner.workRoot,
-		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
-		image:           runner.image,
 	}, nil
 }
 
@@ -131,16 +141,20 @@ func (r *initRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		cfg:           r.cfg,
-		state:         r.state,
-		repo:          r.repo,
-		sourceRepo:    r.sourceRepo,
-		ghClient:      r.ghClient,
-		commitMessage: "chore: create a release",
-		prType:        release,
+		branch:         r.branch,
+		commit:         r.commit,
+		commitMessage:  "chore: create a release",
+		ghClient:       r.ghClient,
+		library:        r.library,
+		libraryVersion: r.libraryVersion,
+		prType:         release,
 		// Newly created PRs from the `release init` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
+		push:              r.push,
+		repo:              r.repo,
+		sourceRepo:        r.sourceRepo,
+		state:             r.state,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
@@ -157,8 +171,8 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 	src := r.repo.GetDir()
 	for _, library := range r.state.Libraries {
-		if r.cfg.Library != "" {
-			if r.cfg.Library != library.ID {
+		if r.library != "" {
+			if r.library != library.ID {
 				continue
 			}
 
@@ -191,11 +205,17 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
-		Cfg:             r.cfg,
+		Cfg: &config.Config{
+			Library:        r.library,
+			LibraryVersion: r.libraryVersion,
+			Push:           r.push,
+			Commit:         r.commit,
+			Branch:         r.branch,
+		},
 		State:           r.state,
 		LibrarianConfig: r.librarianConfig,
-		LibraryID:       r.cfg.Library,
-		LibraryVersion:  r.cfg.LibraryVersion,
+		LibraryID:       r.library,
+		LibraryVersion:  r.libraryVersion,
 		Output:          outputDir,
 		PartialRepoDir:  dst,
 	}
@@ -211,12 +231,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	for _, library := range r.state.Libraries {
-		if r.cfg.Library != "" {
-			if r.cfg.Library != library.ID {
+		if r.library != "" {
+			if r.library != library.ID {
 				continue
 			}
 			// Only copy one library to repository.
-			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
+			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.library, outputDir); err != nil {
 				return err
 			}
 
@@ -255,7 +275,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 		return nil
 	}
 
-	nextVersion, err := NextVersion(commits, library.Version, r.cfg.LibraryVersion)
+	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
 	if err != nil {
 		return err
 	}
@@ -264,6 +284,39 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	library.ReleaseTriggered = true
 
 	return nil
+}
+
+func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+	// If library version explicitly passed to CLI, use it
+	if r.libraryVersion != "" {
+		slog.Info("Library version override specified", "currentVersion", currentVersion, "version", r.libraryVersion)
+		newVersion := semver.MaxVersion(currentVersion, r.libraryVersion)
+		if newVersion == r.libraryVersion {
+			return newVersion, nil
+		} else {
+			slog.Warn("Specified version is not higher than the current version, ignoring override.")
+		}
+	}
+
+	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
+	if err != nil {
+		return "", err
+	}
+
+	if r.librarianConfig == nil {
+		slog.Info("No librarian config")
+		return nextVersionFromCommits, nil
+	}
+
+	// Look for next_version override from config.yaml
+	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
+	slog.Info("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
+	if libraryConfig == nil || libraryConfig.NextVersion == "" {
+		return nextVersionFromCommits, nil
+	}
+
+	// Compare versions and pick latest
+	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
 }
 
 // copyGlobalAllowlist copies files in the global file allowlist excluding

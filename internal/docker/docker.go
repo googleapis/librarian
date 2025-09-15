@@ -185,7 +185,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
 
-	return c.runDocker(ctx, request.Cfg, CommandGenerate, mounts, commandArgs)
+	return c.runDocker(ctx, request.Cfg.HostMount, CommandGenerate, mounts, commandArgs)
 }
 
 // Build builds the library with an ID of libraryID, as configured in
@@ -212,7 +212,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		"--repo=/repo",
 	}
 
-	return c.runDocker(ctx, request.Cfg, CommandBuild, mounts, commandArgs)
+	return c.runDocker(ctx, request.Cfg.HostMount, CommandBuild, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -245,7 +245,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
 
-	if err := c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, request.Cfg.HostMount, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
 
@@ -277,21 +277,19 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
-	if err := c.runDocker(ctx, request.Cfg, CommandReleaseInit, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, request.Cfg.HostMount, CommandReleaseInit, mounts, commandArgs); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
-	mounts = maybeRelocateMounts(cfg, mounts)
-
+func (c *Docker) runDocker(_ context.Context, hostMount string, command Command, mounts []string, commandArgs []string) (err error) {
+	mounts = maybeRelocateMounts(hostMount, mounts)
 	args := []string{
 		"run",
 		"--rm", // Automatically delete the container after completion
 	}
-
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
 	}
@@ -308,18 +306,18 @@ func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Comman
 	return c.run(args...)
 }
 
-func maybeRelocateMounts(cfg *config.Config, mounts []string) []string {
+func maybeRelocateMounts(hostMount string, mounts []string) []string {
 	// When running in Kokoro, we'll be running sibling containers.
 	// Make sure we specify the "from" part of the mount as the host directory.
-	if cfg.HostMount == "" {
+	if hostMount == "" {
 		return mounts
 	}
 
 	relocatedMounts := []string{}
-	hostMount := strings.Split(cfg.HostMount, ":")
+	hostMountParts := strings.Split(hostMount, ":")
 	for _, mount := range mounts {
-		if strings.HasPrefix(mount, hostMount[0]) {
-			mount = strings.Replace(mount, hostMount[0], hostMount[1], 1)
+		if strings.HasPrefix(mount, hostMountParts[0]) {
+			mount = strings.Replace(mount, hostMountParts[0], hostMountParts[1], 1)
 		}
 		relocatedMounts = append(relocatedMounts, mount)
 	}

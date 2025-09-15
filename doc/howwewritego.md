@@ -106,7 +106,7 @@ func TestTransform(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := Transform(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("Transform() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

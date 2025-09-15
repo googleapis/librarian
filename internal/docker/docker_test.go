@@ -839,8 +839,8 @@ func TestReleaseInitRequestContent(t *testing.T) {
 						Body:    "body of feature",
 						Footers: map[string]string{
 							"PiperOrigin-RevId": "12345",
-							"git-commit-hash":   "abcdef123456",
 						},
+						SHA: "1234",
 					},
 				},
 			},
@@ -875,7 +875,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 			t.Fatalf("ReadFile failed: %v", err)
 		}
 
-		wantFile := filepath.Join("testdata", "release-init-request", "release-init-request.json")
+		wantFile := filepath.Join("..", "..", "testdata", "docker", "release-init-request", "release-init-request.json")
 		wantBytes, err := os.ReadFile(wantFile)
 		if err != nil {
 			t.Fatalf("ReadFile for want file failed: %v", err)

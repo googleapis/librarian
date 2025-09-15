@@ -20,12 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"net/url"
-
-	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/github"
 )
 
 // CmdLibrarian is the top-level command for the Librarian CLI.
@@ -58,7 +54,7 @@ func Run(ctx context.Context, arg ...string) error {
 		CmdLibrarian.Flags.Usage()
 		return nil
 	}
-	cmd, arg, err := lookupCommand(CmdLibrarian, arg)
+	cmd, arg, err := cli.LookupCommand(CmdLibrarian, arg)
 	if err != nil {
 		return err
 	}
@@ -88,59 +84,4 @@ func Run(ctx context.Context, arg ...string) error {
 		return fmt.Errorf("failed to validate config: %s", err)
 	}
 	return cmd.Run(ctx, cmd.Config)
-}
-
-// lookupCommand recursively looks up the command specified by the given arguments.
-// It returns the command, the remaining arguments, and an error if the command
-// is not found.
-func lookupCommand(cmd *cli.Command, args []string) (*cli.Command, []string, error) {
-	if len(args) == 0 {
-		return cmd, nil, nil
-	}
-	subcommand, err := cmd.Lookup(args[0])
-	if err != nil {
-		cmd.Flags.Usage()
-		return nil, nil, err
-	}
-	// If the next argument matches a potential flag (first char is `-`), parse the
-	// remaining arguments as flags. Check if argument is a flag before calling
-	// `lookupCommand` again to avoid flags from being treated as subcommands.
-	if len(args) > 1 && args[1][0] == '-' {
-		return subcommand, args[1:], nil
-	}
-	if len(subcommand.Commands) > 0 {
-		return lookupCommand(subcommand, args[1:])
-	}
-	return subcommand, args[1:], nil
-}
-
-// GitHubClient is an abstraction over the GitHub client.
-type GitHubClient interface {
-	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
-	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error)
-	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
-	GetLabels(ctx context.Context, number int) ([]string, error)
-	ReplaceLabels(ctx context.Context, number int, labels []string) error
-	SearchPullRequests(ctx context.Context, query string) ([]*github.PullRequest, error)
-	GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error)
-	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
-	CreateIssueComment(ctx context.Context, number int, comment string) error
-	CreateTag(ctx context.Context, tag, commitish string) error
-}
-
-// ContainerClient is an abstraction over the Docker client.
-type ContainerClient interface {
-	Build(ctx context.Context, request *docker.BuildRequest) error
-	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
-	Generate(ctx context.Context, request *docker.GenerateRequest) error
-	ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error
-}
-
-func isURL(s string) bool {
-	u, err := url.ParseRequestURI(s)
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return false
-	}
-
-	return true
 }

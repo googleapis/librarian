@@ -330,50 +330,38 @@ func TestGetHighestChange(t *testing.T) {
 func TestNextVersion(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name                string
-		commits             []*conventionalcommits.ConventionalCommit
-		currentVersion      string
-		overrideNextVersion string
-		wantVersion         string
-		wantErr             bool
+		name           string
+		commits        []*conventionalcommits.ConventionalCommit
+		currentVersion string
+		wantVersion    string
+		wantErr        bool
 	}{
-		{
-			name:                "with override version",
-			commits:             []*conventionalcommits.ConventionalCommit{},
-			currentVersion:      "1.0.0",
-			overrideNextVersion: "2.0.0",
-			wantVersion:         "2.0.0",
-			wantErr:             false,
-		},
 		{
 			name: "without override version",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat"},
 			},
-			currentVersion:      "1.0.0",
-			overrideNextVersion: "",
-			wantVersion:         "1.1.0",
-			wantErr:             false,
+			currentVersion: "1.0.0",
+			wantVersion:    "1.1.0",
+			wantErr:        false,
 		},
 		{
 			name: "derive next returns error",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat"},
 			},
-			currentVersion:      "invalid-version",
-			overrideNextVersion: "",
-			wantVersion:         "",
-			wantErr:             true,
+			currentVersion: "invalid-version",
+			wantVersion:    "",
+			wantErr:        true,
 		},
 		{
 			name: "breaking change on nested commit results in minor bump",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{Type: "feat", IsBreaking: true, IsNested: true},
 			},
-			currentVersion:      "1.2.3",
-			overrideNextVersion: "",
-			wantVersion:         "1.3.0",
-			wantErr:             false,
+			currentVersion: "1.2.3",
+			wantVersion:    "1.3.0",
+			wantErr:        false,
 		},
 		{
 			name: "major change before nested commit results in major bump",
@@ -381,14 +369,13 @@ func TestNextVersion(t *testing.T) {
 				{Type: "feat", IsBreaking: true},
 				{Type: "fix", IsNested: true},
 			},
-			currentVersion:      "1.2.3",
-			overrideNextVersion: "",
-			wantVersion:         "2.0.0",
-			wantErr:             false,
+			currentVersion: "1.2.3",
+			wantVersion:    "2.0.0",
+			wantErr:        false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotVersion, err := NextVersion(test.commits, test.currentVersion, test.overrideNextVersion)
+			gotVersion, err := NextVersion(test.commits, test.currentVersion)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NextVersion() error = %v, wantErr %v", err, test.wantErr)
 				return

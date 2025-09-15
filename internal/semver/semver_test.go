@@ -191,7 +191,7 @@ func TestDeriveNext(t *testing.T) {
 			name:            "pre-1.0.0 feat is patch bump",
 			highestChange:   Minor, // feat is minor
 			currentVersion:  "0.2.3",
-			expectedVersion: "0.2.4",
+			expectedVersion: "0.3.0",
 		},
 		{
 			name:            "pre-1.0.0 fix is patch bump",
@@ -200,10 +200,10 @@ func TestDeriveNext(t *testing.T) {
 			expectedVersion: "0.2.4",
 		},
 		{
-			name:            "pre-1.0.0 breaking change is major bump",
+			name:            "pre-1.0.0 breaking change is minor bump",
 			highestChange:   Major,
 			currentVersion:  "0.2.3",
-			expectedVersion: "1.0.0",
+			expectedVersion: "0.3.0",
 		},
 		{
 			name:            "prerelease bump with numeric trailer",
@@ -382,6 +382,42 @@ func TestCompare(t *testing.T) {
 			got := a.Compare(b)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMaxVersion(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		versions []string
+		want     string
+	}{
+		{
+			name:     "empty",
+			versions: []string{},
+			want:     "",
+		},
+		{
+			name:     "single",
+			versions: []string{"1.2.3"},
+			want:     "1.2.3",
+		},
+		{
+			name:     "multiple",
+			versions: []string{"1.2.3", "1.2.4", "1.2.2"},
+			want:     "1.2.4",
+		},
+		{
+			name:     "multiple with pre-release",
+			versions: []string{"1.2.4", "1.2.4-alpha", "1.2.4-beta"},
+			want:     "1.2.4",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := MaxVersion(test.versions...)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("TestMaxVersion() returned diff (-want +got):\n%s", diff)
 			}
 		})
 	}

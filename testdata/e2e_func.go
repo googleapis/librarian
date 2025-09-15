@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -15,6 +18,8 @@ const (
 	configureResponse      = "configure-response.json"
 	generateRequest        = "generate-request.json"
 	generateResponse       = "generate-response.json"
+	releaseInitRequest     = "release-init-request.json"
+	releaseInitResponse    = "release-init-response.json"
 	id                     = "id"
 	inputDir               = "input"
 	librarian              = "librarian"
@@ -25,11 +30,14 @@ const (
 )
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	slog.SetDefault(logger)
+
 	if len(os.Args) <= 1 {
 		log.Fatal(errors.New("no command-line arguments provided"))
 	}
 
-	log.Print("received command: ", os.Args[1:])
+	slog.Info("received command", "args", os.Args[1:])
 	switch os.Args[1] {
 	case "configure":
 		if err := doConfigure(os.Args[2:]); err != nil {
@@ -37,6 +45,10 @@ func main() {
 		}
 	case "generate":
 		if err := doGenerate(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+	case "release-init":
+		if err := doReleaseInit(os.Args[2:]); err != nil {
 			log.Fatal(err)
 		}
 	default:
@@ -80,6 +92,202 @@ func doGenerate(args []string) error {
 	}
 
 	return writeGenerateResponse(request)
+}
+
+func doReleaseInit(args []string) error {
+	slog.Debug("doReleaseInit received args", "args", args)
+	request, err := parseReleaseInitRequest(args)
+	if err != nil {
+		return err
+	}
+	slog.Debug("doReleaseInit received request", "request", request)
+	if err := validateLibrarianDir(request.librarianDir, releaseInitRequest); err != nil {
+		return err
+	}
+
+	state, err := readReleaseInitRequestJSON(filepath.Join(request.librarianDir, releaseInitRequest))
+	if err != nil {
+		return err
+	}
+
+	for i, library := range state.Libraries {
+		slog.Debug("Library has SourceRoots", "index", i, "id", library.ID, "source_roots", library.SourceRoots)
+	}
+
+	// Update the version of the library.
+	for _, library := range state.Libraries {
+		if !library.ReleaseTriggered {
+			continue
+		}
+		slog.Info("Found library to update", "id", library.ID)
+		slog.Info("Version from request", "version", library.Version)
+
+		// Create a changelog.
+		var changelog strings.Builder
+		changelog.WriteString(fmt.Sprintf("## %s\n\n", library.Version))
+		for _, change := range library.Changes {
+			changelog.WriteString(fmt.Sprintf("- %s: %s\n", change.Type, change.Subject))
+		}
+		for _, sourceRoot := range library.SourceRoots {
+			changelogPath := filepath.Join(request.outputDir, sourceRoot, "CHANGELOG.md")
+			if err := os.MkdirAll(filepath.Dir(changelogPath), 0755); err != nil {
+				return fmt.Errorf("failed to create changelog directory: %w", err)
+			}
+			if err := os.WriteFile(changelogPath, []byte(changelog.String()), 0644); err != nil {
+				return fmt.Errorf("failed to write changelog: %w", err)
+			}
+			slog.Info("Wrote changelog", "path", changelogPath)
+		}
+	}
+
+	slog.Debug("State after update", "state", state)
+	updatedStateBytes, err := yaml.Marshal(state)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated state: %w", err)
+	}
+	slog.Debug("Marshalled updated state (YAML)", "yaml", string(updatedStateBytes))
+
+	outputStateDir := filepath.Join(request.outputDir, ".librarian")
+	if err := os.MkdirAll(outputStateDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	outputStatePath := filepath.Join(outputStateDir, "state.yaml")
+	if err := os.WriteFile(outputStatePath, updatedStateBytes, 0644); err != nil {
+		return fmt.Errorf("failed to write updated state.yaml to output: %w", err)
+	}
+
+	slog.Info("Wrote updated state.yaml", "path", outputStatePath)
+
+	return writeReleaseInitResponseJSON(request)
+}
+
+// readReleaseInitRequestJSON reads the release init request file and creates a librarianState
+// object.
+func readReleaseInitRequestJSON(path string) (*librarianState, error) {
+	state := &librarianState{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	slog.Debug("readReleaseInitRequest: File content", "content", string(data))
+	if err := json.Unmarshal(data, &state); err != nil {
+		return nil, err
+	}
+	slog.Debug("readReleaseInitRequest: Unmarshalled state", "state", state)
+
+	// Validate the unmarshalled JSON content.
+	if err := validateReleaseInitRequestJSON(state); err != nil {
+		slog.Error("readReleaseInitRequest: Validation failed", "error", err)
+		return nil, err
+	}
+
+	return state, nil
+}
+
+type releaseInitOption struct {
+	librarianDir string
+	repoDir      string
+	outputDir    string
+}
+
+func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
+	option := &releaseInitOption{}
+	for _, arg := range args {
+		opt, _ := strings.CutPrefix(arg, "--")
+		strs := strings.Split(opt, "=")
+		switch strs[0] {
+		case "librarian":
+			option.librarianDir = strs[1]
+		case "repo":
+			option.repoDir = strs[1]
+		case "output":
+			option.outputDir = strs[1]
+		default:
+			return nil, errors.New("unrecognized option: " + opt)
+		}
+	}
+	return option, nil
+}
+
+func writeReleaseInitResponseJSON(option *releaseInitOption) error {
+	jsonFilePath := filepath.Join(option.librarianDir, releaseInitResponse)
+	jsonFile, err := os.Create(jsonFilePath)
+	if err != nil {
+		return err
+	}
+	defer jsonFile.Close()
+
+	dataMap := map[string]string{}
+	data, err := json.MarshalIndent(dataMap, "", "  ")
+	if err != nil {
+		return err
+	}
+	slog.Debug("about to write to file", "path", jsonFilePath, "data", string(data))
+	_, err = jsonFile.Write(data)
+	slog.Info("wrote release init response", "path", jsonFilePath)
+
+	return err
+}
+
+// validateReleaseInitRequestJSON validates the structure and content of the
+// data unmarshalled from the release-init-request.json file.
+// This file is generated by the librarian tool and consumed by this mock container.
+// It checks if the structure matches the expected contract.
+func validateReleaseInitRequestJSON(state *librarianState) error {
+	if state.Image == "" {
+		return errors.New("validation error: missing 'image' in release-init-request.json")
+	}
+	if len(state.Libraries) == 0 {
+		return errors.New("validation error: no libraries found in release-init-request.json")
+	}
+
+	foundTriggered := false
+	for i, lib := range state.Libraries {
+		if lib.ID == "" {
+			return fmt.Errorf("validation error: library %d missing 'id'", i)
+		}
+		if !lib.ReleaseTriggered {
+			continue
+		}
+		foundTriggered = true
+		slog.Debug("Validating triggered library", "id", lib.ID)
+
+		if lib.Version == "" {
+			return fmt.Errorf("validation error: library %s missing 'version'", lib.ID)
+		}
+		if len(lib.SourceRoots) == 0 {
+			return fmt.Errorf("validation error: library %s missing 'source_roots'", lib.ID)
+		}
+
+		if len(lib.Changes) == 0 {
+			return fmt.Errorf("validation error: no changes found for library %s", lib.ID)
+		}
+		for j, change := range lib.Changes {
+			// Validate fields based on the contract example in language-onboarding.md
+			if change.Type == "" {
+				return fmt.Errorf("validation error: library %s, change %d missing 'type'", lib.ID, j)
+			}
+			if change.Subject == "" {
+				return fmt.Errorf("validation error: library %s, change %d missing 'subject'", lib.ID, j)
+			}
+			// body is optional
+
+			// These fields are expected based on the contract
+			if change.PiperCLNumber == "" {
+				return fmt.Errorf("validation error: library %s, change %d missing 'piper_cl_number'", lib.ID, j)
+			}
+			if change.SourceCommitHash == "" {
+				return fmt.Errorf("validation error: library %s, change %d missing 'source_commit_hash'", lib.ID, j)
+			}
+		}
+	}
+
+	if !foundTriggered {
+		slog.Warn("No library was marked with release_triggered: true in request")
+	}
+	slog.Debug("validateReleaseInitRequestJSON: Validation passed")
+	return nil
 }
 
 func parseConfigureRequest(args []string) (*configureOption, error) {
@@ -183,7 +391,7 @@ func writeConfigureResponse(option *configureOption, state *librarianState) erro
 		if _, err := jsonFile.Write(data); err != nil {
 			return err
 		}
-		log.Print("write configure response to " + jsonFilePath)
+		slog.Info("write configure response", "path", jsonFilePath)
 	}
 
 	return nil
@@ -225,7 +433,7 @@ func writeGenerateResponse(option *generateOption) (err error) {
 		return err
 	}
 	_, err = jsonFile.Write(data)
-	log.Print("write generate response to " + jsonFilePath)
+	slog.Info("write generate response", "path", jsonFilePath)
 
 	return err
 }
@@ -250,7 +458,7 @@ func generateLibrary(library *libraryState, outputDir string) error {
 		if _, err := os.Create(filepath.Join(srcPath, "example.txt")); err != nil {
 			return err
 		}
-		log.Print("create file in " + srcPath)
+		slog.Info("create file in", "path", srcPath)
 	}
 
 	return nil
@@ -271,21 +479,31 @@ type generateOption struct {
 }
 
 type librarianState struct {
-	Image     string          `json:"image"`
-	Libraries []*libraryState `json:"libraries"`
+	Image     string          `json:"image" yaml:"image"`
+	Libraries []*libraryState `json:"libraries" yaml:"libraries"`
 }
 
 type libraryState struct {
-	ID            string   `json:"id"`
-	Version       string   `json:"version"`
-	APIs          []*api   `json:"apis"`
-	SourceRoots   []string `json:"source_roots"`
-	PreserveRegex []string `json:"preserve_regex"`
-	RemoveRegex   []string `json:"remove_regex"`
+	ID               string    `json:"id" yaml:"id"`
+	Version          string    `json:"version" yaml:"version"`
+	APIs             []*api    `json:"apis,omitempty" yaml:"apis,omitempty"`
+	SourceRoots      []string  `json:"source_roots" yaml:"source_roots"`
+	PreserveRegex    []string  `json:"preserve_regex,omitempty" yaml:"preserve_regex,omitempty"`
+	RemoveRegex      []string  `json:"remove_regex,omitempty" yaml:"remove_regex,omitempty"`
+	ReleaseTriggered bool      `json:"release_triggered,omitempty" yaml:"release_triggered,omitempty"`
+	Changes          []*change `json:"changes,omitempty" yaml:"changes,omitempty"`
 }
 
 type api struct {
-	Path          string `json:"path"`
-	ServiceConfig string `json:"service_config"`
-	Status        string `json:"status"`
+	Path          string `json:"path" yaml:"path"`
+	ServiceConfig string `json:"service_config" yaml:"service_config"`
+	Status        string `json:"status" yaml:"status"`
+}
+
+type change struct {
+	Type             string `json:"type" yaml:"type"`
+	Subject          string `json:"subject" yaml:"subject"`
+	Body             string `json:"body" yaml:"body"`
+	PiperCLNumber    string `json:"piper_cl_number" yaml:"piper_cl_number"`
+	SourceCommitHash string `json:"source_commit_hash" yaml:"source_commit_hash"`
 }
