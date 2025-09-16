@@ -79,6 +79,13 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	// No need to update the librarian state if there are no libraries
+	// that need to be released
+	if !hasLibrariesToRelease(r.state.Libraries) {
+		slog.Info("No release created; skipping the commit/PR")
+		return nil
+	}
+
 	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
 		return err
 	}
@@ -106,6 +113,17 @@ func (r *initRunner) run(ctx context.Context) error {
 	return nil
 }
 
+// hasLibrariesToRelease searches through the state of each library and checks
+// that there is a single library configured to be triggered.
+func hasLibrariesToRelease(libraryStates []*config.LibraryState) bool {
+	for _, library := range libraryStates {
+		if library.ReleaseTriggered {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
 	dst := r.partialRepo
 	if err := os.MkdirAll(dst, 0755); err != nil {
@@ -113,30 +131,34 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	src := r.repo.GetDir()
-	for _, library := range r.state.Libraries {
-		if r.library != "" {
-			if r.library != library.ID {
-				continue
-			}
-
-			// Only update one library with the given library ID.
-			if err := r.updateLibrary(library); err != nil {
-				return err
-			}
-			if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
-				return err
-			}
-
-			break
+	librariesToRelease := r.state.Libraries
+	// If a library has been specified, only process the release for it
+	if r.library != "" {
+		library := findLibraryByID(r.state, r.library)
+		if library == nil {
+			slog.Error("Unable to find the specified library. Cannot proceed with the release.", "library", r.library)
+			return fmt.Errorf("unable to find library for release: %s", r.library)
 		}
-
-		// Update all libraries.
+		librariesToRelease = []*config.LibraryState{library}
+	}
+	// Mark if there are any library that needs to be released
+	foundReleasableLibrary := false
+	for _, library := range librariesToRelease {
 		if err := r.updateLibrary(library); err != nil {
 			return err
 		}
-		if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
-			return err
+		// Copy the library files over if a release is needed
+		if library.ReleaseTriggered {
+			foundReleasableLibrary = true
+			if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
+				return err
+			}
 		}
+	}
+
+	if !foundReleasableLibrary {
+		slog.Info("No libraries need to be released")
+		return nil
 	}
 
 	if err := copyLibrarianDir(dst, src); err != nil {
@@ -169,22 +191,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return err
 	}
 
-	for _, library := range r.state.Libraries {
-		if r.library != "" {
-			if r.library != library.ID {
-				continue
-			}
-			// Only copy one library to repository.
-			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.library, outputDir); err != nil {
+	for _, library := range librariesToRelease {
+		// Copy the library files back if a release is needed
+		if library.ReleaseTriggered {
+			if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
 				return err
 			}
-
-			break
-		}
-
-		// Copy all libraries to repository.
-		if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
-			return err
 		}
 	}
 
@@ -201,16 +213,13 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 //
 // 4. Set the library's release trigger to true.
 func (r *initRunner) updateLibrary(library *config.LibraryState) error {
-	// Update the previous version, we need this value when creating release note.
-	library.PreviousVersion = library.Version
 	commits, err := GetConventionalCommitsSinceLastRelease(r.repo, library)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
 
-	library.Changes = commits
-	if len(library.Changes) == 0 {
-		slog.Info("Skip releasing library since no eligible change is found", "library", library.ID)
+	if len(commits) == 0 {
+		slog.Info("Skip releasing library as there are no commits", "library", library.ID)
 		return nil
 	}
 
@@ -219,8 +228,14 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 		return err
 	}
 
-	library.Version = nextVersion
-	library.ReleaseTriggered = true
+	// Update the previous version, we need this value when creating release note.
+	library.PreviousVersion = library.Version
+	library.Changes = commits
+	// Only update the library state if there are releasable units
+	if library.Version != nextVersion {
+		library.Version = nextVersion
+		library.ReleaseTriggered = true
+	}
 
 	return nil
 }

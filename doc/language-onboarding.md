@@ -27,7 +27,7 @@ must be present in the `.librarian` directory at the root of the language reposi
 
 The `state.yaml` file is the primary manifest that informs Librarian about the libraries it is responsible for managing.
 It contains a comprehensive list of all libraries within the repository, along with their current state and
-configuration.
+configuration. Repository maintainers **SHOULD NOT** modify this file manually.
 
 For a detailed breakdown of all the fields in the `state.yaml` file, please refer to [state-schema.md].
 
@@ -35,28 +35,9 @@ For a detailed breakdown of all the fields in the `state.yaml` file, please refe
 
 The `config.yaml` file is a handwritten configuration file that allows you to customize Librarian's behavior at the
 repository level. Its primary use is to define which files the language-specific container is allowed to access.
+Repository maintainers are expected to maintain this file. Librarian will not modify this file.
 
-Here is an example of a `config.yaml` file:
-
-```yaml
-# .librarian/config.yaml
-
-# A list of files that will be provided to the 'configure' and 'release-init'
-# container invocations.
-global_files_allowlist:
-  # Allow the container to read and write the root go.work file during the
-  # 'configure' step to add new modules.
-  - path: "go.work"
-    permissions: "read-write"
-
-  # Allow the container to read a template.
-  - path: "internal/README.md.template"
-    permissions: "read-only"
-
-  # Allow publishing the updated root README.md.
-  - path: "README.md"
-    permissions: "write-only"
-```
+For a detailed breakdown of all the fields in the `config.yaml` file, please refer to [config-schema.md].
 
 ## Container Contracts
 
