@@ -397,7 +397,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 func (r *generateRunner) backupLibrary(libraryID string) error {
 	dst := filepath.Join(r.backupDir, libraryID)
 	if err := os.MkdirAll(dst, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create backup dir, %s: %w", dst, err)
 	}
 
 	return copyLibraryFiles(r.state, dst, libraryID, r.repo.GetDir())

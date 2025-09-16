@@ -916,6 +916,93 @@ func TestGenerateScenarios(t *testing.T) {
 	}
 }
 
+func TestBackupLibrary(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		libraryID   string
+		sourceRoots []string
+		backupDir   string
+		wantErr     bool
+		wantErrMsg  string
+	}{
+		{
+			name:      "backup library files",
+			libraryID: "example-id",
+			sourceRoots: []string{
+				"one/path",
+				"another/path",
+			},
+			backupDir: t.TempDir(),
+		},
+		{
+			name:       "failed to create backup dir",
+			libraryID:  "example-id",
+			backupDir:  "/non-existent/dir",
+			wantErr:    true,
+			wantErrMsg: "failed to create backup dir",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newTestGitRepo(t)
+			r := &generateRunner{
+				repo: repo,
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID:          "example-id",
+							SourceRoots: test.sourceRoots,
+						},
+						{
+							ID: "ignored",
+							SourceRoots: []string{
+								"ignored/path",
+							},
+						},
+					},
+				},
+				backupDir: test.backupDir,
+			}
+			// Create library files.
+			for _, path := range test.sourceRoots {
+				relPath := filepath.Join(repo.GetDir(), path)
+				if err := os.MkdirAll(relPath, 0755); err != nil {
+					t.Error(err)
+				}
+
+				file := filepath.Join(relPath, "example.txt")
+				if err := os.WriteFile(file, []byte("example"), 0755); err != nil {
+					t.Error(err)
+				}
+			}
+
+			err := r.backupLibrary(test.libraryID)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("%s should return error", test.name)
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Verify library files exist in backup dir.
+			for _, path := range test.sourceRoots {
+				expectedFile := filepath.Join(r.backupDir, test.libraryID, path, "example.txt")
+				_, err := os.Stat(expectedFile)
+				if err != nil {
+					t.Fatalf("backup failed for %s", expectedFile)
+				}
+			}
+		})
+	}
+}
+
 func TestUpdateLastGeneratedCommitState(t *testing.T) {
 	t.Parallel()
 	sourceRepo := newTestGitRepo(t)
