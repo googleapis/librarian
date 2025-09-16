@@ -401,7 +401,7 @@ func TestInitRun(t *testing.T) {
 			containerClient: &mockContainerClient{
 				initErr: errors.New("simulated init error"),
 			},
-			// error occured inside the docker container, there was a single request made to the container
+			// error occurred inside the docker container, there was a single request made to the container
 			dockerInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
