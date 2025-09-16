@@ -422,8 +422,5 @@ func (m *MockRepository) Push(name string) error {
 }
 
 func (m *MockRepository) Restore(paths []string) error {
-	if m.RestoreError != nil {
-		return m.RestoreError
-	}
-	return nil
+	return m.RestoreError
 }
