@@ -15,6 +15,7 @@
 package rustrelease
 
 import (
+	"log/slog"
 	"slices"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
@@ -51,7 +52,8 @@ func BumpVersions(config *config.Release) error {
 		return nil
 	}
 	for _, name := range crates {
-		if err := external.Run(cargoExe(config), "semver-checks", "-p", name); err != nil {
+		slog.Info("runnning cargo semver-checks", "crate", name)
+		if err := external.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
 			return err
 		}
 	}
@@ -59,5 +61,5 @@ func BumpVersions(config *config.Release) error {
 }
 
 func containsSemverChecks(a config.Tool) bool {
-	return a.Name == "semver-checks"
+	return a.Name == "cargo-semver-checks"
 }

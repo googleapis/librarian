@@ -47,7 +47,7 @@ func TestBumpVersionsSuccess(t *testing.T) {
 		},
 		Tools: map[string][]config.Tool{
 			"cargo": {
-				{Name: "semver-checks", Version: "1.2.3"},
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
 			},
 		},
 	}
