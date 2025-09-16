@@ -86,7 +86,6 @@ type commitInfo struct {
 }
 
 type commandRunner struct {
-	cfg             *config.Config
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
@@ -150,7 +149,6 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		return nil, err
 	}
 	return &commandRunner{
-		cfg:             cfg,
 		workRoot:        cfg.WorkRoot,
 		repo:            languageRepo,
 		sourceRepo:      sourceRepo,
