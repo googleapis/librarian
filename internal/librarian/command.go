@@ -99,7 +99,7 @@ type commandRunner struct {
 const defaultAPISourceBranch = "master"
 
 func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.Branch, cfg.CI, cfg.GitHubToken)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		sourceRepoDir string
 	)
 	if cfg.CommandName == generateCmdName {
-		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
+		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +157,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}, nil
 }
 
-func cloneOrOpenRepo(workRoot, repo, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, fmt.Errorf("repo must be specified")
 	}
@@ -175,6 +175,7 @@ func cloneOrOpenRepo(workRoot, repo, branch, ci string, gitPassword string) (*gi
 			RemoteBranch: branch,
 			CI:           ci,
 			GitPassword:  gitPassword,
+			Depth:        depth,
 		})
 	}
 	// repo is a directory
@@ -288,7 +289,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 			return err
 		}
 		for _, file := range files {
-			slog.Info("Copying file", "file", file)
+			slog.Debug("Copying file", "file", file)
 			srcFile := filepath.Join(srcPath, file)
 			dstFile := filepath.Join(dstPath, file)
 			if err := copyFile(dstFile, srcFile); err != nil {
@@ -519,7 +520,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 
 	// Remove files first, then directories.
 	for _, file := range filesToRemove {
-		slog.Info("removing file", "path", file)
+		slog.Debug("removing file", "path", file)
 		if err := os.Remove(file); err != nil {
 			return err
 		}
@@ -531,7 +532,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	})
 
 	for _, dir := range dirsToRemove {
-		slog.Info("removing directory", "path", dir)
+		slog.Debug("removing directory", "path", dir)
 		if err := os.Remove(dir); err != nil {
 			// It's possible the directory is not empty due to preserved files.
 			slog.Warn("failed to remove directory, it may not be empty", "dir", dir, "err", err)

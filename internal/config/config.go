@@ -94,6 +94,10 @@ type Config struct {
 	// APISource is specified with the -api-source flag.
 	APISource string
 
+	// APISourceDepth controls the depth of the repository closing **IF**
+	// APISource is a github repository and it is cloned.
+	APISourceDepth int
+
 	// Branch is the remote branch of the language repository to use.
 	// This is the branch which is cloned when Repo is a URL, and also used
 	// as the base reference for any pull requests created by the command.

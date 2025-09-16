@@ -38,9 +38,12 @@ type cargo struct {
 }
 
 func updateManifest(config *config.Release, lastTag, manifest string) ([]string, error) {
-	updated, err := manifestVersionUpdated(config, lastTag, manifest)
+	needsBump, err := manifestVersionNeedsBump(config, lastTag, manifest)
 	if err != nil {
 		return nil, err
+	}
+	if !needsBump {
+		return nil, nil
 	}
 	contents, err := os.ReadFile(manifest)
 	if err != nil {
@@ -57,9 +60,6 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if !info.Package.Publish {
 		return nil, nil
 	}
-	if updated {
-		return []string{info.Package.Name}, nil
-	}
 	newVersion, err := bumpPackageVersion(info.Package.Version)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,9 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if idx == -1 {
 		return nil, fmt.Errorf("expected a line starting with `version ` in %v", lines)
 	}
-	lines[idx] = fmt.Sprintf(`version = "%s"`, newVersion)
+	// The number of spaces may seem weird. They match the number of spaces in
+	// the mustache template.
+	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion)
 	if err := os.WriteFile(manifest, []byte(strings.Join(lines, "\n")), 0644); err != nil {
 		return nil, err
 	}
@@ -95,7 +97,7 @@ func bumpPackageVersion(version string) (string, error) {
 	return strings.Join(components, "."), nil
 }
 
-func manifestVersionUpdated(config *config.Release, lastTag, manifest string) (bool, error) {
+func manifestVersionNeedsBump(config *config.Release, lastTag, manifest string) (bool, error) {
 	delta := fmt.Sprintf("%s..HEAD", lastTag)
 	cmd := exec.Command(gitExe(config), "diff", delta, "--", manifest)
 	cmd.Dir = "."
@@ -103,10 +105,12 @@ func manifestVersionUpdated(config *config.Release, lastTag, manifest string) (b
 	if err != nil {
 		return false, err
 	}
+	if len(contents) == 0 {
+		return true, nil
+	}
 	lines := strings.Split(string(contents), "\n")
 	has := func(prefix string) bool {
 		return slices.ContainsFunc(lines, func(line string) bool { return strings.HasPrefix(line, prefix) })
 	}
-	updated := has("+version") && has("-version")
-	return updated, nil
+	return !has("+version "), nil
 }
