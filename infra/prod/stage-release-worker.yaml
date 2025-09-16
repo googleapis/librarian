@@ -15,12 +15,9 @@
 # This runs the `librarian release init` command with a provided repository,
 # secret name, and optional library ID
 steps:
-  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher@sha256:00aa886a70e110e9e8cfb888a232a1c508031e58cfeee60870ef7a11ca3d5656
+  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher
     id: stage-release-dispatcher
-    entrypoint: go
     args:
-      - 'run'
-      - './cmd/automation'
       - '--project=$PROJECT_ID'
       - '--command=stage-release'
       - '--push=$_PUSH'
