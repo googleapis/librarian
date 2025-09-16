@@ -28,6 +28,53 @@ const (
 	newLibRsContents = `pub fn hello() -> &'static str { "Hello World" }`
 )
 
+func TestMatchesBranchPointSuccess(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+	}
+	remoteDir := setupForPublish(t, "v1.0.0")
+	cloneRepository(t, remoteDir)
+	if err := matchesBranchPoint(config); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMatchesBranchDiffError(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "not-a-valid-branch",
+	}
+	remoteDir := setupForPublish(t, "v1.0.0")
+	cloneRepository(t, remoteDir)
+	if err := matchesBranchPoint(config); err == nil {
+		t.Errorf("expected an error with an invalid branch")
+	}
+}
+
+func TestMatchesDirtyCloneError(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "not-a-valid-branch",
+	}
+	remoteDir := setupForPublish(t, "v1.0.0")
+	cloneRepository(t, remoteDir)
+	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	if err := external.Run("git", "add", path.Join("src", "pubsub")); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := matchesBranchPoint(config); err == nil {
+		t.Errorf("expected an error with a dirty clone")
+	}
+}
+
 func TestIsNewFile(t *testing.T) {
 	const wantTag = "new-file-success"
 	release := config.Release{
