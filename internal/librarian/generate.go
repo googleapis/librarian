@@ -259,13 +259,8 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 
 	if r.build {
 		// Backup library files so that we can restore library if build failed.
-		dst := filepath.Join(r.backupDir, libraryID)
-		if err := os.MkdirAll(dst, 0755); err != nil {
+		if err := r.backupLibrary(libraryID); err != nil {
 			return "", err
-		}
-
-		if err := copyLibraryFiles(r.state, dst, libraryID, r.repo.GetDir()); err != nil {
-			return "", fmt.Errorf("failed to backup library %s to %s: %w", libraryID, r.backupDir, err)
 		}
 	}
 
@@ -397,6 +392,16 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	return libraryState.ID, nil
+}
+
+// backupLibrary saves library file to a backup directory.
+func (r *generateRunner) backupLibrary(libraryID string) error {
+	dst := filepath.Join(r.backupDir, libraryID)
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+
+	return copyLibraryFiles(r.state, dst, libraryID, r.repo.GetDir())
 }
 
 // restoreLibrary restores library files from backup directory.
