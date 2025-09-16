@@ -15,7 +15,7 @@
 # This runs the `librarian release init` command with a provided repository,
 # secret name, and optional library ID
 steps:
-  - name: golang:1.25.0
+  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher
     id: stage-release-dispatcher
     entrypoint: go
     args:

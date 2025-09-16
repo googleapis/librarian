@@ -37,15 +37,86 @@ version = "1.0.0"
 
 func TestBumpVersionsSuccess(t *testing.T) {
 	requireCommand(t, "git")
+	requireCommand(t, "/bin/echo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
-			"cargo": "git",
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+			},
 		},
 	}
 	setupForVersionBump(t, "release-2001-02-03")
+	name := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := BumpVersions(config); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBumpVersionsNoCargoTools(t *testing.T) {
+	requireCommand(t, "git")
+	requireCommand(t, "/bin/echo")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"not-cargo": {
+				{Name: "semver-checks", Version: "1.2.3"},
+			},
+		},
+	}
+	setupForVersionBump(t, "release-2001-02-03")
+	name := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := BumpVersions(config); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBumpVersionsNoSemverChecks(t *testing.T) {
+	requireCommand(t, "git")
+	requireCommand(t, "/bin/echo")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{Name: "some-other-tool", Version: "1.2.3"},
+			},
+		},
+	}
+	setupForVersionBump(t, "release-2001-02-03")
+	name := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+		t.Fatal(err)
+	}
 	if err := BumpVersions(config); err != nil {
 		t.Fatal(err)
 	}
@@ -76,6 +147,29 @@ func TestBumpVersionsLastTagError(t *testing.T) {
 	setupForVersionBump(t, "last-tag-error")
 	if err := BumpVersions(&config); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
+	}
+}
+
+func TestBumpVersionsManifestError(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "git",
+		},
+	}
+	setupForVersionBump(t, "release-bad-manifest")
+	name := path.Join("src", "storage", "Cargo.toml")
+	if err := os.WriteFile(name, []byte("invalid-toml-file = {"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: broke storage manifest file", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := BumpVersions(config); err == nil {
+		t.Errorf("expected error while processing invalid manifest file")
 	}
 }
 
@@ -129,11 +223,19 @@ func initRepositoryContents(t *testing.T) {
 	addCrate(t, path.Join("src", "storage"), "google-cloud-storage")
 	addCrate(t, path.Join("src", "gax-internal"), "google-cloud-gax-internal")
 	addCrate(t, path.Join("src", "gax-internal", "echo-server"), "echo-server")
-	addCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
+	addGeneratedCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
 	if err := external.Run("git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
 	if err := external.Run("git", "commit", "-m", "initial version"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func addGeneratedCrate(t *testing.T, location, name string) {
+	t.Helper()
+	addCrate(t, location, name)
+	if err := os.WriteFile(path.Join(location, ".sidekick.toml"), []byte("# initial version"), 0644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -146,9 +248,6 @@ func addCrate(t *testing.T, location, name string) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path.Join(location, "src", "lib.rs"), []byte(initialLibRsContents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path.Join(location, ".sidekick.toml"), []byte("# initial version"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path.Join(location, ".repo-metadata.json"), []byte("{}"), 0644); err != nil {

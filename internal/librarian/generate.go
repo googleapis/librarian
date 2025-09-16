@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -31,92 +30,6 @@ import (
 const (
 	generateCmdName = "generate"
 )
-
-var cmdGenerate = &cli.Command{
-	Short:     "generate onboards and generates client library code",
-	UsageLine: "librarian generate [flags]",
-	Long: `The generate command is the primary tool for all code generation
-tasks. It handles both the initial setup of a new library (onboarding) and the
-regeneration of existing ones. Librarian works by delegating language-specific
-tasks to a container, which is configured in the .librarian/state.yaml file.
-Librarian is environment aware and will check if the current directory is the
-root of a librarian repository. If you are not executing in such a directory the
-'--repo' flag must be provided.
-
-# Onboarding a new library
-
-To configure and generate a new library for the first time, you must specify the
-API to be generated and the library it will belong to. Librarian will invoke the
-'configure' command in the language container to set up the repository, add the
-new library's configuration to the '.librarian/state.yaml' file, and then
-proceed with generation.
-
-Example:
-  librarian generate --library=secretmanager --api=google/cloud/secretmanager/v1
-
-# Regenerating existing libraries
-
-You can regenerate a single, existing library by specifying either the library
-ID or the API path. If no specific library or API is provided, Librarian will
-regenerate all libraries listed in '.librarian/state.yaml'. If '--library' or
-'--api' is specified the whole library will be regenerated.
-
-Examples:
-  # Regenerate a single library by its ID
-  librarian generate --library=secretmanager
-
-  # Regenerate a single library by its API path
-  librarian generate --api=google/cloud/secretmanager/v1
-
-  # Regenerate all libraries in the repository
-  librarian generate
-
-# Workflow and Options:
-
-The generation process involves delegating to the language container's
-'generate' command. After the code is generated, the tool cleans the destination
-directories and copies the new files into place, according to the configuration
-in '.librarian/state.yaml'.
-
-- If the '--build' flag is specified, the 'build' command is also executed in
-  the container to compile and validate the generated code.
-- If the '--push' flag is provided, the changes are committed to a new branch,
-  and a pull request is created on GitHub. Otherwise, the changes are left in
-  your local working directory for inspection.
-
-Example with build and push:
-  SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`,
-	Action: func(ctx context.Context, cmd *cli.Command) error {
-		if err := cmd.Config.SetDefaults(); err != nil {
-			return fmt.Errorf("failed to initialize config: %w", err)
-		}
-		if _, err := cmd.Config.IsValid(); err != nil {
-			return fmt.Errorf("failed to validate config: %s", err)
-		}
-		runner, err := newGenerateRunner(cmd.Config)
-		if err != nil {
-			return err
-		}
-		return runner.run(ctx)
-	},
-}
-
-func init() {
-	cmdGenerate.Init()
-	fs := cmdGenerate.Flags
-	cfg := cmdGenerate.Config
-
-	addFlagAPI(fs, cfg)
-	addFlagAPISource(fs, cfg)
-	addFlagBuild(fs, cfg)
-	addFlagHostMount(fs, cfg)
-	addFlagImage(fs, cfg)
-	addFlagLibrary(fs, cfg)
-	addFlagRepo(fs, cfg)
-	addFlagBranch(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-	addFlagPush(fs, cfg)
-}
 
 type generateRunner struct {
 	api             string
@@ -321,12 +234,12 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 	}
 
 	generateRequest := &docker.GenerateRequest{
-		Cfg:       &config.Config{HostMount: r.hostMount},
-		State:     r.state,
 		ApiRoot:   apiRoot,
+		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		Output:    outputDir,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
 	slog.Info("Performing generation for library", "id", libraryID, "outputDir", outputDir)
 	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
@@ -363,10 +276,10 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 	}
 
 	buildRequest := &docker.BuildRequest{
-		Cfg:       &config.Config{HostMount: r.hostMount},
-		State:     r.state,
+		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
 	slog.Info("Performing build for library", "id", libraryID)
 	if err := r.containerClient.Build(ctx, buildRequest); err != nil {
@@ -425,11 +338,11 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	configureRequest := &docker.ConfigureRequest{
-		Cfg:       &config.Config{HostMount: r.hostMount},
-		State:     r.state,
 		ApiRoot:   apiRoot,
+		HostMount: r.hostMount,
 		LibraryID: r.library,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
 	slog.Info("Performing configuration for library", "id", r.library)
 	if _, err := r.containerClient.Configure(ctx, configureRequest); err != nil {
