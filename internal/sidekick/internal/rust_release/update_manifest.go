@@ -42,9 +42,6 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if err != nil {
 		return nil, err
 	}
-	if updated {
-		return nil, nil
-	}
 	contents, err := os.ReadFile(manifest)
 	if err != nil {
 		return nil, err
@@ -59,6 +56,9 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	}
 	if !info.Package.Publish {
 		return nil, nil
+	}
+	if updated {
+		return []string{info.Package.Name}, nil
 	}
 	newVersion, err := bumpPackageVersion(info.Package.Version)
 	if err != nil {

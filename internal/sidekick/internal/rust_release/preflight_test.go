@@ -58,6 +58,54 @@ func TestPreflightMissingUpstream(t *testing.T) {
 	}
 }
 
+func TestPreflightWithTools(t *testing.T) {
+	requireCommand(t, "git")
+	requireCommand(t, "/bin/echo")
+	release := config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{
+					Name:    "cargo-semver-checks",
+					Version: "0.42.0",
+				},
+			},
+		},
+	}
+	setupForVersionBump(t, "test-preflight-with-tools")
+	if err := PreFlight(&release); err != nil {
+		t.Errorf("expected a successful run, got=%v", err)
+	}
+}
+
+func TestPreflightToolFailure(t *testing.T) {
+	requireCommand(t, "git")
+	release := config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			// Using `git install blah blah` will fail.
+			"cargo": "git",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{
+					Name:    "invalid-tool-name---",
+					Version: "a.b.c",
+				},
+			},
+		},
+	}
+	setupForVersionBump(t, "test-preflight-with-tools")
+	if err := PreFlight(&release); err == nil {
+		t.Errorf("expected an error installing cargo-semver-checks")
+	}
+}
+
 func TestGitExe(t *testing.T) {
 	release := config.Release{}
 	if got := gitExe(&release); got != "git" {

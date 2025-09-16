@@ -15,6 +15,8 @@
 package rustrelease
 
 import (
+	"fmt"
+
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
@@ -29,6 +31,16 @@ func PreFlight(config *config.Release) error {
 	}
 	if err := external.Run(gitExe(config), "remote", "get-url", config.Remote); err != nil {
 		return err
+	}
+	tools, ok := config.Tools["cargo"]
+	if !ok {
+		return nil
+	}
+	for _, tool := range tools {
+		spec := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
+		if err := external.Run(cargoExe(config), "install", "--locked", spec); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -14,7 +14,12 @@
 
 package rustrelease
 
-import "github.com/googleapis/librarian/internal/sidekick/internal/config"
+import (
+	"slices"
+
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/external"
+)
 
 // BumpVersions finds all the crates that need a version bump and performs the
 // bump, changing both the Cargo.toml and sidekick.toml files.
@@ -30,14 +35,29 @@ func BumpVersions(config *config.Release) error {
 	if err != nil {
 		return err
 	}
-	var packages []string
+	var crates []string
 	for _, manifest := range findCargoManifests(files) {
 		names, err := updateManifest(config, lastTag, manifest)
 		if err != nil {
 			return err
 		}
-		packages = append(packages, names...)
+		crates = append(crates, names...)
 	}
-	_ = packages
+	if tools, ok := config.Tools["cargo"]; ok {
+		if !slices.ContainsFunc(tools, containsSemverChecks) {
+			return nil
+		}
+	} else {
+		return nil
+	}
+	for _, name := range crates {
+		if err := external.Run(cargoExe(config), "semver-checks", "-p", name); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func containsSemverChecks(a config.Tool) bool {
+	return a.Name == "semver-checks"
 }

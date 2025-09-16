@@ -63,9 +63,16 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want = nil
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+	contents, err = os.ReadFile(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx = bytes.Index(contents, []byte("version = \"1.1.0\"\n"))
+	if idx == -1 {
+		t.Errorf("expected version = 1.1.0 in new file, got=%s", contents)
 	}
 }
 

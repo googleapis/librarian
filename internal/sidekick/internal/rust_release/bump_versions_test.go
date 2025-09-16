@@ -37,12 +37,18 @@ version = "1.0.0"
 
 func TestBumpVersionsSuccess(t *testing.T) {
 	requireCommand(t, "git")
+	requireCommand(t, "/bin/echo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
-			"cargo": "git",
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{Name: "semver-checks", Version: "1.2.3"},
+			},
 		},
 	}
 	setupForVersionBump(t, "release-2001-02-03")
