@@ -34,7 +34,6 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -616,8 +615,9 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "configured library (library id in cfg) does not have releasable unit, no state change",
+			name:            "library does not have releasable unit, specified for release",
 			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        os.TempDir(),
@@ -655,6 +655,26 @@ func TestInitRun(t *testing.T) {
 					librarianConfig: &config.LibrarianConfig{},
 					partialRepo:     t.TempDir(),
 				}
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						Version:       "1.1.0", // No releasable units, but was specified. Automatically bumping to minor
+						ID:            "another-example-id",
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						Version:       "2.0.0",
+						ID:            "example-id",
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
 			},
 		},
 		{
@@ -909,59 +929,85 @@ func TestInitRun(t *testing.T) {
 	}
 }
 
+func TestProcessLibrary(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name         string
+		libraryState *config.LibraryState
+		repo         gitrepo.Repository
+		wantErr      bool
+		wantErrMsg   string
+	}{
+		{
+			name: "failed to get commit history of one library",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch conventional commits for library",
+		},
+	} {
+		r := &initRunner{
+			repo: test.repo,
+		}
+		err := r.processLibrary(test.libraryState)
+		if test.wantErr {
+			if err == nil {
+				t.Error("processLibrary() should return error")
+			}
+			if !strings.Contains(err.Error(), test.wantErrMsg) {
+				t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+			}
+			return
+		}
+
+		if err != nil {
+			t.Errorf("failed to run processLibrary(): %q", err.Error())
+		}
+	}
+}
+
 func TestUpdateLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name            string
-		pathAndMessages []pathAndMessage
-		tags            []string
-		libraryVersion  string
-		library         *config.LibraryState
-		repo            gitrepo.Repository
-		want            *config.LibraryState
-		wantErr         bool
-		wantErrMsg      string
+		name           string
+		libraryState   *config.LibraryState
+		library        string // this is the `--library` input
+		libraryVersion string // this is the `--version` input
+		commits        []*conventionalcommits.ConventionalCommit
+		want           *config.LibraryState
+		wantErr        bool
+		wantErrMsg     string
 	}{
 		{
-			name: "update a library",
-			pathAndMessages: []pathAndMessage{
-				{
-					path:    "non-related/path/example.txt",
-					message: "chore: initial commit",
-				},
-				{
-					path:    "one/path/example.txt",
-					message: "feat: add a config file\n\nThis is the body.\n\nPiperOrigin-RevId: 12345",
-				},
-				{
-					path:    "one/path/example.txt",
-					message: "fix: change a typo",
-				},
-				{
-					path:    "another/path/example.txt",
-					message: "fix: another commit",
-				},
-			},
-			tags: []string{
-				"one-id-1.2.3",
-			},
-			libraryVersion: "2.0.0",
-			library: &config.LibraryState{
+			name: "update a library, automatic version calculation",
+			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
+			},
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:      "fix",
+					Subject:   "change a typo",
+					LibraryID: "one-id",
+					Footers:   map[string]string{},
+				},
+				{
+					Type:      "feat",
+					Subject:   "add a config file",
+					Body:      "This is the body.",
+					LibraryID: "one-id",
+					Footers:   map[string]string{"PiperOrigin-RevId": "12345"},
 				},
 			},
 			want: &config.LibraryState{
 				ID:              "one-id",
-				Version:         "2.0.0",
+				Version:         "1.3.0",
 				PreviousVersion: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
-				},
 				Changes: []*conventionalcommits.ConventionalCommit{
 					{
 						Type:      "fix",
@@ -981,46 +1027,77 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "get breaking changes of one library",
-			pathAndMessages: []pathAndMessage{
-				{
-					path:    "non-related/path/example.txt",
-					message: "chore: initial commit",
-				},
-				{
-					path:    "one/path/example.txt",
-					message: "feat!: change a typo",
-				},
-				{
-					path:    "one/path/config.txt",
-					message: "feat: add another config file\n\nThis is the body\n\nBREAKING CHANGE: this is a breaking change",
-				},
-			},
-			tags: []string{
-				"one-id-1.2.3",
-			},
-			library: &config.LibraryState{
+			name: "update a library with releasable units and version specified",
+			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
+			},
+			libraryVersion: "5.0.0",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:    "fix",
+					Subject: "change a typo",
+					Footers: map[string]string{},
+				},
+				{
+					Type:    "feat",
+					Subject: "add a config file",
+					Body:    "This is the body.",
+					Footers: map[string]string{"PiperOrigin-RevId": "12345"},
+				},
+			},
+			want: &config.LibraryState{
+				ID:              "one-id",
+				Version:         "5.0.0", // Use the `--version` value`
+				PreviousVersion: "1.2.3",
+				Changes: []*conventionalcommits.ConventionalCommit{
+					{
+						Type:    "fix",
+						Subject: "change a typo",
+						Footers: map[string]string{},
+					},
+					{
+						Type:    "feat",
+						Subject: "add a config file",
+						Body:    "This is the body.",
+						Footers: map[string]string{"PiperOrigin-RevId": "12345"},
+					},
+				},
+				ReleaseTriggered: true,
+			},
+		},
+		{
+			name: "get breaking changes of one library",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:    "feat",
+					Subject: "add another config file",
+					Body:    "This is the body",
+					Footers: map[string]string{
+						"BREAKING CHANGE": "this is a breaking change",
+					},
+					IsBreaking: true,
+				},
+				{
+					Type:       "feat",
+					Subject:    "change a typo",
+					Footers:    map[string]string{},
+					IsBreaking: true,
 				},
 			},
 			want: &config.LibraryState{
 				ID:              "one-id",
 				Version:         "2.0.0",
 				PreviousVersion: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
-				},
 				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:      "feat",
-						Subject:   "add another config file",
-						Body:      "This is the body",
-						LibraryID: "one-id",
+						Type:    "feat",
+						Subject: "add another config file",
+						Body:    "This is the body",
 						Footers: map[string]string{
 							"BREAKING CHANGE": "this is a breaking change",
 						},
@@ -1029,7 +1106,6 @@ func TestUpdateLibrary(t *testing.T) {
 					{
 						Type:       "feat",
 						Subject:    "change a typo",
-						LibraryID:  "one-id",
 						Footers:    map[string]string{},
 						IsBreaking: true,
 					},
@@ -1038,52 +1114,91 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "failed to get commit history of one library",
-			library: &config.LibraryState{
+			name: "library has no changes",
+			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
+			},
+			want: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+		},
+		{
+			name: "library has no releasable units, but is specified for release",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			library: "one-id",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:    "chore",
+					Subject: "a chore",
 				},
 			},
-			repo: &MockRepository{
-				GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
+			want: &config.LibraryState{
+				ID:               "one-id",
+				PreviousVersion:  "1.2.3",
+				Version:          "1.3.0", // Automatically bumped minor version
+				ReleaseTriggered: true,
+				Changes: []*conventionalcommits.ConventionalCommit{
+					{
+						Type:    "chore",
+						Subject: "a chore",
+					},
+				},
 			},
-			wantErr:    true,
-			wantErrMsg: "failed to fetch conventional commits for library",
+		},
+		{
+			name: "library has no releasable units, but is specified for release with a specific version",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			library:        "one-id",
+			libraryVersion: "2.0.0",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:    "chore",
+					Subject: "a chore",
+				},
+			},
+			want: &config.LibraryState{
+				ID:               "one-id",
+				PreviousVersion:  "1.2.3",
+				Version:          "2.0.0", // Use the `--version` override value
+				ReleaseTriggered: true,
+				Changes: []*conventionalcommits.ConventionalCommit{
+					{
+						Type:    "chore",
+						Subject: "a chore",
+					},
+				},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &initRunner{
+				library:        test.library,
 				libraryVersion: test.libraryVersion,
-				repo:           test.repo,
 			}
-			var err error
-			if test.repo != nil {
-				err = r.updateLibrary(test.library)
-			} else {
-				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				r.repo = repo
-				err = r.updateLibrary(test.library)
-			}
+			err := r.updateLibrary(test.libraryState, test.commits)
 
 			if test.wantErr {
 				if err == nil {
-					t.Error("getChangesOf() should return error")
+					t.Error("updateLibrary() should return error")
 				}
-
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
 				}
-
 				return
 			}
 
 			if err != nil {
-				t.Errorf("failed to run getChangesOf(): %q", err.Error())
+				t.Errorf("failed to run updateLibrary(): %q", err.Error())
 			}
-			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "When")); diff != "" {
+			if diff := cmp.Diff(test.want, test.libraryState); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})

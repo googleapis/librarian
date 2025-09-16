@@ -132,7 +132,6 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
-	// If a library has been specified, only process the release for it
 	if r.library != "" {
 		library := findLibraryByID(r.state, r.library)
 		if library == nil {
@@ -144,9 +143,10 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	// Mark if there are any library that needs to be released
 	foundReleasableLibrary := false
 	for _, library := range librariesToRelease {
-		if err := r.updateLibrary(library); err != nil {
+		if err := r.processLibrary(library); err != nil {
 			return err
 		}
+
 		// Copy the library files over if a release is needed
 		if library.ReleaseTriggered {
 			foundReleasableLibrary = true
@@ -203,40 +203,57 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	return copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false)
 }
 
-// updateLibrary updates the given library in the following way:
-//
-// 1. Update the library's previous version.
-//
-// 2. Get the library's commit history in the given git repository.
-//
-// 3. Override the library version if libraryVersion is not empty.
-//
-// 4. Set the library's release trigger to true.
-func (r *initRunner) updateLibrary(library *config.LibraryState) error {
+// processLibrary wrapper to process the library for release. Helps retrieve latest commits
+// since the last release and passing the changes to updateLibrary.
+func (r *initRunner) processLibrary(library *config.LibraryState) error {
 	commits, err := GetConventionalCommitsSinceLastRelease(r.repo, library)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
+	return r.updateLibrary(library, commits)
+}
 
-	if len(commits) == 0 {
-		slog.Info("Skip releasing library as there are no commits", "library", library.ID)
-		return nil
-	}
-
+// updateLibrary updates the library's state with the new release information:
+//
+// 1. Determines the library version's next version.
+//
+// 2. Updates the library's previous version and the new current version.
+//
+// 3. Set the library's release trigger to true.
+func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conventionalcommits.ConventionalCommit) error {
+	// The new version is either the library version override value or the automatically
+	// computed next semver version from the changes.
 	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
 	if err != nil {
 		return err
 	}
+	slog.Debug("Determined the library's next version", "library", library.ID, "nextVersion", nextVersion)
+
+	if nextVersion == library.Version {
+		// No library is specified for release. No releasable units found and will not continue with release
+		if r.library == "" {
+			slog.Info("Library does not have any releasable units since the last release and will not be released.",
+				"library", library.ID, "version", library.Version)
+			return nil
+		}
+
+		// Library is specified for release, but the next version is calculated to be the same as the
+		// current one. It is possible that version override is not specified or there are no releasable
+		// units found. If so, automatically bump to the next minor version and continue with the release.
+		nextVersion, err = semver.DeriveNext(semver.Minor, library.Version)
+		if err != nil {
+			return err
+		}
+		slog.Warn("Unable to find a releasable unit and bumping to next minor version. Use the --version flag to set a specific version other than the next minor.",
+			"library", library.ID, "nextVersion", nextVersion)
+	}
+	slog.Info("Updating library to the next version", "library", r.library, "currentVersion", library.Version, "nextVersion", nextVersion)
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
 	library.Changes = commits
-	// Only update the library state if there are releasable units
-	if library.Version != nextVersion {
-		library.Version = nextVersion
-		library.ReleaseTriggered = true
-	}
-
+	library.Version = nextVersion
+	library.ReleaseTriggered = true
 	return nil
 }
 
