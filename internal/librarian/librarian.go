@@ -115,7 +115,6 @@ func Run(ctx context.Context, arg ...string) error {
 	addFlagRepo(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
 	addFlagPR(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
 
-	// Release command
 	cmdRelease := &cli.Command{
 		Short:     "release manages releases of libraries.",
 		UsageLine: "librarian release <command> [arguments]",
