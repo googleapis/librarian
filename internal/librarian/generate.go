@@ -83,10 +83,9 @@ func (r *generateRunner) run(ctx context.Context) error {
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
 	}
+	// Do not need to create the backup directory here because the directory will
+	// be created by backupLibrary, if needed.
 	r.backupDir = filepath.Join(r.workRoot, "backup")
-	if err := os.Mkdir(r.backupDir, 0755); err != nil {
-		return fmt.Errorf("failed to make backup directory, %s: %w", r.backupDir, err)
-	}
 	// The last generated commit is changed after library generation,
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
