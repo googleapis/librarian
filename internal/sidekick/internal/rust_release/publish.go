@@ -53,11 +53,9 @@ func Publish(config *config.Release, dryRun bool) error {
 		}
 	}
 	slog.Info("computing publication plan with: cargo workspaces plan")
-	hasRootsPem := false
 	cmd := exec.Command(cargoExe(config), "workspaces", "plan", "--skip-published")
-	if _, err := os.Stat("/usr/share/ca-certificates/google/roots.pem"); err == nil {
-		hasRootsPem = true
-		cmd.Env = append(os.Environ(), "CARGO_HTTP_CAINFO=/usr/share/ca-certificates/google/roots.pem")
+	if config.RootsPem != "" {
+		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}
 	cmd.Dir = "."
 	output, err := cmd.Output()
@@ -88,8 +86,8 @@ func Publish(config *config.Release, dryRun bool) error {
 		args = append(args, "--dry-run")
 	}
 	cmd = exec.Command(cargoExe(config), args...)
-	if hasRootsPem {
-		cmd.Env = append(os.Environ(), "CARGO_HTTP_CAINFO=/usr/share/ca-certificates/google/roots.pem")
+	if config.RootsPem != "" {
+		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}
 	cmd.Dir = "."
 	return cmd.Run()
