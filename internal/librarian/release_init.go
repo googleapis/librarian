@@ -25,72 +25,9 @@ import (
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/semver"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
-
-// cmdInit is the command for the `release init` subcommand.
-var cmdInit = &cli.Command{
-	Short:     "init initiates a release by creating a release pull request.",
-	UsageLine: "librarian release init [flags]",
-	Long: `The 'release init' command is the primary entry point for initiating
-a new release. It automates the creation of a release pull request by parsing
-conventional commits, determining the next semantic version for each library,
-and generating a changelog. Librarian is environment aware and will check if the
-current directory is the root of a librarian repository. If you are not
-executing in such a directory the '--repo' flag must be provided.
-
-This command scans the git history since the last release, identifies changes
-(feat, fix, BREAKING CHANGE), and calculates the appropriate version bump
-according to semver rules. It then delegates all language-specific file
-modifications, such as updating a CHANGELOG.md or bumping the version in a pom.xml,
-to the configured language-specific container.
-
-By default, 'release init' leaves the changes in your local working directory
-for inspection. Use the '--push' flag to automatically commit the changes to
-a new branch and create a pull request on GitHub. The '--commit' flag may be
-used to create a local commit without creating a pull request; this flag is
-ignored if '--push' is also specified.
-
-Examples:
-  # Create a release PR for all libraries with pending changes.
-  librarian release init --push
-
-  # Create a release PR for a single library.
-  librarian release init --library=secretmanager --push
-
-  # Manually specify a version for a single library, overriding the calculation.
-  librarian release init --library=secretmanager --library-version=2.0.0 --push`,
-	Action: func(ctx context.Context, cmd *cli.Command) error {
-		if err := cmd.Config.SetDefaults(); err != nil {
-			return fmt.Errorf("failed to initialize config: %w", err)
-		}
-		if _, err := cmd.Config.IsValid(); err != nil {
-			return fmt.Errorf("failed to validate config: %s", err)
-		}
-		runner, err := newInitRunner(cmd.Config)
-		if err != nil {
-			return err
-		}
-		return runner.run(ctx)
-	},
-}
-
-func init() {
-	cmdInit.Init()
-	fs := cmdInit.Flags
-	cfg := cmdInit.Config
-
-	addFlagCommit(fs, cfg)
-	addFlagPush(fs, cfg)
-	addFlagImage(fs, cfg)
-	addFlagLibrary(fs, cfg)
-	addFlagLibraryVersion(fs, cfg)
-	addFlagRepo(fs, cfg)
-	addFlagBranch(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-}
 
 type initRunner struct {
 	branch          string

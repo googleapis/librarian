@@ -34,21 +34,6 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func TestCommandUsage(t *testing.T) {
-	for _, c := range CmdLibrarian.Commands {
-		t.Run(c.Name(), func(t *testing.T) {
-			parts := strings.Fields(c.UsageLine)
-			// The first word should always be "librarian".
-			if parts[0] != "librarian" {
-				t.Errorf("invalid usage text: %q (the first word should be `librarian`)", c.UsageLine)
-			}
-			if !strings.Contains(c.UsageLine, c.Name()) {
-				t.Errorf("invalid usage text: %q (should contain command name %q)", c.UsageLine, c.Name())
-			}
-		})
-	}
-}
-
 func TestFindLibraryByID(t *testing.T) {
 	lib1 := &config.LibraryState{ID: "lib1"}
 	lib2 := &config.LibraryState{ID: "lib2"}
