@@ -139,10 +139,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
 		}
 	}
-	ghClient, err := github.NewClient(cfg.GitHubToken, gitRepo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
-	}
+	ghClient := github.NewClient(cfg.GitHubToken, gitRepo)
 
 	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {

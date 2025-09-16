@@ -52,16 +52,16 @@ type Client struct {
 }
 
 // NewClient creates a new Client to interact with GitHub.
-func NewClient(accessToken string, repo *Repository) (*Client, error) {
+func NewClient(accessToken string, repo *Repository) *Client {
 	return newClientWithHTTP(accessToken, repo, nil)
 }
 
-func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) (*Client, error) {
+func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) *Client {
 	return &Client{
 		Client:      github.NewClient(httpClient).WithAuthToken(accessToken),
 		accessToken: accessToken,
 		repo:        repo,
-	}, nil
+	}
 }
 
 // Token returns the access token for Client.
