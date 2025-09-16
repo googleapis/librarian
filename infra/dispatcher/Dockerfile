@@ -20,7 +20,7 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
+RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/automation
 
 FROM golang:1.25.0
 
