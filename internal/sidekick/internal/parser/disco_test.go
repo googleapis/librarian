@@ -36,8 +36,8 @@ func TestDisco_Parse(t *testing.T) {
 	if got.Title != wantTitle {
 		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
 	}
-	if diff := cmp.Diff(got.Description, wantDescription); diff != "" {
-		t.Errorf("description mismatch (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if got.PackageName != wantPackageName {
 		t.Errorf("want = %q; got = %q", wantPackageName, got.PackageName)
@@ -58,8 +58,8 @@ func TestDisco_ParseNoServiceConfig(t *testing.T) {
 	if got.Title != wantTitle {
 		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
 	}
-	if diff := cmp.Diff(got.Description, wantDescription); diff != "" {
-		t.Errorf("description mismatch (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

@@ -22,6 +22,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing"
+	"gopkg.in/yaml.v3"
+
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/go-git/go-git/v5"
@@ -89,18 +92,119 @@ func TestInitRun(t *testing.T) {
 		name       string
 		runner     *initRunner
 		files      map[string]string
+		want       *config.LibrarianState
 		wantErr    bool
 		wantErrMsg string
 	}{
+		{
+			name: "run release init command for all libraries, update librarian state",
+			runner: &initRunner{
+				workRoot:        t.TempDir(),
+				containerClient: &mockContainerClient{},
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID:      "another-example-id",
+							Version: "1.0.0",
+							SourceRoots: []string{
+								"dir3",
+								"dir4",
+							},
+							RemoveRegex: []string{
+								"dir3",
+								"dir4",
+							},
+						},
+						{
+							ID:      "example-id",
+							Version: "2.0.0",
+							SourceRoots: []string{
+								"dir1",
+								"dir2",
+							},
+							RemoveRegex: []string{
+								"dir1",
+								"dir2",
+							},
+						},
+					},
+				},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+					GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+						"another-example-id-1.0.0": {
+							{
+								Hash:    plumbing.NewHash("123456"),
+								Message: "feat: another new feature",
+							},
+						},
+						"example-id-2.0.0": {
+							{
+								Hash:    plumbing.NewHash("abcdefg"),
+								Message: "feat: a new feature",
+							},
+						},
+					},
+					ChangedFilesInCommitValueByHash: map[string][]string{
+						plumbing.NewHash("123456").String(): {
+							"dir3/file3.txt",
+							"dir4/file4.txt",
+						},
+						plumbing.NewHash("abcdefg").String(): {
+							"dir1/file1.txt",
+							"dir2/file2.txt",
+						},
+					},
+				},
+				librarianConfig: &config.LibrarianConfig{},
+				partialRepo:     t.TempDir(),
+			},
+			files: map[string]string{
+				"file1.txt":      "",
+				"dir1/file1.txt": "",
+				"dir2/file2.txt": "",
+				"dir3/file3.txt": "",
+				"dir4/file4.txt": "",
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "another-example-id",
+						Version: "1.1.0", // version is bumped.
+						APIs:    []*config.API{},
+						SourceRoots: []string{
+							"dir3",
+							"dir4",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir3",
+							"dir4",
+						},
+					},
+					{
+						ID:      "example-id",
+						Version: "2.1.0", // version is bumped.
+						APIs:    []*config.API{},
+						SourceRoots: []string{
+							"dir1",
+							"dir2",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir1",
+							"dir2",
+						},
+					},
+				},
+			},
+		},
 		{
 			name: "run release init command for one library",
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Library: "example-id",
-					Push:    false,
-				},
+				library:         "example-id",
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -134,16 +238,40 @@ func TestInitRun(t *testing.T) {
 				"dir1/file1.txt": "",
 				"dir2/file2.txt": "",
 			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "another-example-id",
+						APIs: []*config.API{},
+						SourceRoots: []string{
+							"dir3",
+							"dir4",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:   "example-id",
+						APIs: []*config.API{},
+						SourceRoots: []string{
+							"dir1",
+							"dir2",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir1",
+							"dir2",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "run release init command without librarian config",
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Push:    false,
-					Library: "example-id",
-				},
+				library:         "example-id",
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -176,51 +304,32 @@ func TestInitRun(t *testing.T) {
 				"dir1/file1.txt": "",
 				"dir2/file2.txt": "",
 			},
-		},
-		{
-			name: "run release init command for all libraries",
-			runner: &initRunner{
-				workRoot:        t.TempDir(),
-				containerClient: &mockContainerClient{},
-				cfg:             &config.Config{},
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							ID: "another-example-id",
-							SourceRoots: []string{
-								"dir3",
-								"dir4",
-							},
-							RemoveRegex: []string{
-								"dir3",
-								"dir4",
-							},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "another-example-id",
+						APIs: []*config.API{},
+						SourceRoots: []string{
+							"dir3",
+							"dir4",
 						},
-						{
-							ID: "example-id",
-							SourceRoots: []string{
-								"dir1",
-								"dir2",
-							},
-							RemoveRegex: []string{
-								"dir1",
-								"dir2",
-							},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:   "example-id",
+						APIs: []*config.API{},
+						SourceRoots: []string{
+							"dir1",
+							"dir2",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir1",
+							"dir2",
 						},
 					},
 				},
-				repo: &MockRepository{
-					Dir: t.TempDir(),
-				},
-				librarianConfig: &config.LibrarianConfig{},
-				partialRepo:     t.TempDir(),
-			},
-			files: map[string]string{
-				"file1.txt":      "",
-				"dir1/file1.txt": "",
-				"dir2/file2.txt": "",
-				"dir3/file3.txt": "",
-				"dir4/file4.txt": "",
 			},
 		},
 		{
@@ -230,7 +339,6 @@ func TestInitRun(t *testing.T) {
 				containerClient: &mockContainerClient{
 					initErr: errors.New("simulated init error"),
 				},
-				cfg:   &config.Config{},
 				state: &config.LibrarianState{},
 				repo: &MockRepository{
 					Dir: t.TempDir(),
@@ -240,6 +348,23 @@ func TestInitRun(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "simulated init error",
+		},
+		{
+			name: "release response contains error message",
+			runner: &initRunner{
+				workRoot: t.TempDir(),
+				containerClient: &mockContainerClient{
+					wantErrorMsg: true,
+				},
+				state: &config.LibrarianState{},
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+				},
+				partialRepo:     t.TempDir(),
+				librarianConfig: &config.LibrarianConfig{},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed with error message: simulated error message",
 		},
 		{
 			name: "invalid work root",
@@ -257,9 +382,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Library: "example-id",
-				},
+				library:         "example-id",
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -281,7 +404,6 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg:             &config.Config{},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -303,9 +425,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        os.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Push: true,
-				},
+				push:            true,
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -341,10 +461,7 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Library: "example-id",
-					Push:    false,
-				},
+				library:         "example-id",
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -364,16 +481,26 @@ func TestInitRun(t *testing.T) {
 			files: map[string]string{
 				"dir1/file1.txt": "hello",
 			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "example-id",
+						APIs: []*config.API{},
+						SourceRoots: []string{
+							"dir1",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
 		},
 		{
 			name: "copy library files returns error",
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg: &config.Config{
-					Library: "example-id",
-					Push:    false,
-				},
+				library:         "example-id",
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -401,7 +528,6 @@ func TestInitRun(t *testing.T) {
 			runner: &initRunner{
 				workRoot:        t.TempDir(),
 				containerClient: &mockContainerClient{},
-				cfg:             &config.Config{},
 				state: &config.LibrarianState{
 					Libraries: []*config.LibraryState{
 						{
@@ -484,6 +610,21 @@ func TestInitRun(t *testing.T) {
 			if err != nil {
 				t.Errorf("run() failed: %s", err.Error())
 			}
+			// load librarian state from state.yaml, which should contain updated
+			// library state.
+			bytes, err := os.ReadFile(filepath.Join(repoDir, ".librarian/state.yaml"))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var got *config.LibrarianState
+			if err := yaml.Unmarshal(bytes, &got); err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("state mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
@@ -543,17 +684,17 @@ func TestUpdateLibrary(t *testing.T) {
 				},
 				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:        "fix",
-						Description: "change a typo",
-						LibraryID:   "one-id",
-						Footers:     map[string]string{},
+						Type:      "fix",
+						Subject:   "change a typo",
+						LibraryID: "one-id",
+						Footers:   map[string]string{},
 					},
 					{
-						Type:        "feat",
-						Description: "add a config file",
-						Body:        "This is the body.",
-						LibraryID:   "one-id",
-						Footers:     map[string]string{"PiperOrigin-RevId": "12345"},
+						Type:      "feat",
+						Subject:   "add a config file",
+						Body:      "This is the body.",
+						LibraryID: "one-id",
+						Footers:   map[string]string{"PiperOrigin-RevId": "12345"},
 					},
 				},
 				ReleaseTriggered: true,
@@ -596,21 +737,21 @@ func TestUpdateLibrary(t *testing.T) {
 				},
 				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:        "feat",
-						Description: "add another config file",
-						Body:        "This is the body",
-						LibraryID:   "one-id",
+						Type:      "feat",
+						Subject:   "add another config file",
+						Body:      "This is the body",
+						LibraryID: "one-id",
 						Footers: map[string]string{
 							"BREAKING CHANGE": "this is a breaking change",
 						},
 						IsBreaking: true,
 					},
 					{
-						Type:        "feat",
-						Description: "change a typo",
-						LibraryID:   "one-id",
-						Footers:     map[string]string{},
-						IsBreaking:  true,
+						Type:       "feat",
+						Subject:    "change a typo",
+						LibraryID:  "one-id",
+						Footers:    map[string]string{},
+						IsBreaking: true,
 					},
 				},
 				ReleaseTriggered: true,
@@ -635,10 +776,8 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &initRunner{
-				cfg: &config.Config{
-					LibraryVersion: test.libraryVersion,
-				},
-				repo: test.repo,
+				libraryVersion: test.libraryVersion,
+				repo:           test.repo,
 			}
 			var err error
 			if test.repo != nil {
@@ -873,6 +1012,145 @@ func TestCopyGlobalAllowlist(t *testing.T) {
 				if diff := cmp.Diff("old content", string(got)); diff != "" {
 					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, skippedFile)
 				}
+			}
+		})
+	}
+}
+
+func TestDetermineNextVersion(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name            string
+		commits         []*conventionalcommits.ConventionalCommit
+		currentVersion  string
+		libraryID       string
+		config          *config.Config
+		librarianConfig *config.LibrarianConfig
+		wantVersion     string
+		wantErr         bool
+		wantErrMsg      string
+	}{
+		{
+			name: "from commits",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library: "some-library",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{},
+			},
+			currentVersion: "1.0.0",
+			wantVersion:    "1.1.0",
+			wantErr:        false,
+		},
+		{
+			name: "with CLI override version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library:        "some-library",
+				LibraryVersion: "1.2.3",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					&config.LibraryConfig{
+						LibraryID:   "some-library",
+						NextVersion: "2.3.4",
+					},
+				},
+			},
+			currentVersion: "1.0.0",
+			wantVersion:    "1.2.3",
+			wantErr:        false,
+		},
+		{
+			name: "with CLI override version cannot revert version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library:        "some-library",
+				LibraryVersion: "1.2.3",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					&config.LibraryConfig{
+						LibraryID: "some-library",
+					},
+				},
+			},
+			currentVersion: "2.4.0",
+			wantVersion:    "2.5.0",
+			wantErr:        false,
+		},
+		{
+			name: "with config.yaml override version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library: "some-library",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					&config.LibraryConfig{
+						LibraryID:   "some-library",
+						NextVersion: "2.3.4",
+					},
+				},
+			},
+			currentVersion: "1.0.0",
+			wantVersion:    "2.3.4",
+			wantErr:        false,
+		},
+		{
+			name: "with outdated config.yaml override version",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{Type: "feat"},
+			},
+			config: &config.Config{
+				Library: "some-library",
+			},
+			libraryID: "some-library",
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					&config.LibraryConfig{
+						LibraryID:   "some-library",
+						NextVersion: "2.3.4",
+					},
+				},
+			},
+			currentVersion: "2.4.0",
+			wantVersion:    "2.5.0",
+			wantErr:        false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &initRunner{
+				libraryVersion:  test.config.LibraryVersion,
+				librarianConfig: test.librarianConfig,
+			}
+			got, err := runner.determineNextVersion(test.commits, test.currentVersion, test.libraryID)
+			if test.wantErr {
+				if err == nil {
+					t.Error("determineNextVersion() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.wantVersion, got); diff != "" {
+				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

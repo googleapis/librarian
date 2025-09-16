@@ -75,7 +75,11 @@ Language Image: {{.ImageVersion}}
 {{ range .CommitSections }}
 ### {{.Heading}}
 {{ range .Commits }}
-* {{.Description}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+{{ if index .Footers "PiperOrigin-RevId" -}}
+* {{.Subject}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+{{- else -}}
+* {{.Subject}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+{{- end }}
 {{ end }}
 
 {{- end }}
@@ -106,7 +110,7 @@ Language Image: {{.ImageVersion}}
 BEGIN_COMMIT_OVERRIDE
 {{ range .Commits }}
 BEGIN_NESTED_COMMIT
-{{.Type}}: [{{.LibraryID}}] {{.Description}}
+{{.Type}}: [{{.LibraryID}}] {{.Subject}}
 {{.Body}}
 
 PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}

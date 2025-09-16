@@ -15,7 +15,6 @@
 package github
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -36,10 +35,7 @@ func TestToken(t *testing.T) {
 	t.Parallel()
 	want := "fake-token"
 	repo := &Repository{Owner: "owner", Name: "repo"}
-	client, err := NewClient(want, repo)
-	if err != nil {
-		t.Fatalf("NewClient() error = %v", err)
-	}
+	client := NewClient(want, repo)
 	if got := client.Token(); got != want {
 		t.Errorf("Token() = %q, want %q", got, want)
 	}
@@ -102,13 +98,10 @@ func TestGetRawContent(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 
 			client.BaseURL, _ = url.Parse(server.URL + "/")
-			content, err := client.GetRawContent(context.Background(), "path/to/file", "main")
+			content, err := client.GetRawContent(t.Context(), "path/to/file", "main")
 
 			if test.wantErr {
 				if err == nil {
@@ -440,13 +433,10 @@ func TestCreatePullRequest(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			metadata, err := client.CreatePullRequest(context.Background(), repo, test.remoteBranch, test.remoteBase, test.title, test.body)
+			metadata, err := client.CreatePullRequest(t.Context(), repo, test.remoteBranch, test.remoteBase, test.title, test.body)
 
 			if test.wantErr {
 				if err == nil {
@@ -510,13 +500,10 @@ func TestAddLabelsToIssue(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			err = client.AddLabelsToIssue(context.Background(), repo, test.issueNum, test.labels)
+			err := client.AddLabelsToIssue(t.Context(), repo, test.issueNum, test.labels)
 
 			if test.wantErr {
 				if err == nil {
@@ -588,13 +575,10 @@ func TestGetLabels(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			gotLabels, err := client.GetLabels(context.Background(), test.issueNum)
+			gotLabels, err := client.GetLabels(t.Context(), test.issueNum)
 
 			if test.wantErr {
 				if err == nil {
@@ -664,13 +648,10 @@ func TestReplaceLabels(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			err = client.ReplaceLabels(context.Background(), test.issueNum, test.labels)
+			err := client.ReplaceLabels(t.Context(), test.issueNum, test.labels)
 
 			if test.wantErr {
 				if err == nil {
@@ -704,7 +685,7 @@ func TestSearchPullRequests(t *testing.T) {
 			query: "is:pr is:open author:app/dependabot",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(r.URL.Path, "/search/issues") {
-					if r.URL.Query().Get("q") != "is:pr is:open author:app/dependabot" {
+					if r.URL.Query().Get("q") != "repo:owner/repo is:pr is:open author:app/dependabot" {
 						t.Errorf("unexpected query: got %q", r.URL.Query().Get("q"))
 					}
 					fmt.Fprint(w, `{"items": [{"number": 1, "pull_request": {}}]}`)
@@ -773,13 +754,10 @@ func TestSearchPullRequests(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			prs, err := client.SearchPullRequests(context.Background(), test.query)
+			prs, err := client.SearchPullRequests(t.Context(), test.query)
 
 			if test.wantErr {
 				if err == nil {
@@ -839,13 +817,10 @@ func TestGetPullRequest(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			pr, err := client.GetPullRequest(context.Background(), test.number)
+			pr, err := client.GetPullRequest(t.Context(), test.number)
 
 			if test.wantErr {
 				if err == nil {
@@ -919,13 +894,10 @@ func TestCreateRelease(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			release, err := client.CreateRelease(context.Background(), test.tagName, test.releaseName, test.body, test.commitish)
+			release, err := client.CreateRelease(t.Context(), test.tagName, test.releaseName, test.body, test.commitish)
 
 			if test.wantErr {
 				if err == nil {
@@ -991,13 +963,10 @@ func TestCreateIssueComment(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			err = client.CreateIssueComment(context.Background(), test.number, test.body)
+			err := client.CreateIssueComment(t.Context(), test.number, test.body)
 
 			if test.wantErr {
 				if err == nil {
@@ -1057,13 +1026,10 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 			defer server.Close()
 
 			repo := &Repository{Owner: "owner", Name: "repo"}
-			client, err := newClientWithHTTP("fake-token", repo, server.Client())
-			if err != nil {
-				t.Fatalf("newClientWithHTTP() error = %v", err)
-			}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			prs, err := client.FindMergedPullRequestsWithPendingReleaseLabel(context.Background(), "owner", "repo")
+			prs, err := client.FindMergedPullRequestsWithPendingReleaseLabel(t.Context(), "owner", "repo")
 
 			if test.wantErr {
 				if err == nil {
@@ -1077,6 +1043,67 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantPRs, prs); diff != "" {
 				t.Errorf("FindMergedPullRequestsWithPendingReleaseLabel() prs mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+func TestCreateTag(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		tagName   string
+		commitSHA string
+		handler   http.HandlerFunc
+		wantErr   bool
+	}{
+		{
+			name:      "Success",
+			tagName:   "v1.2.3",
+			commitSHA: "abcdef123456",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("unexpected method: got %s, want %s", r.Method, http.MethodPost)
+				}
+				wantPath := "/repos/owner/repo/git/refs"
+				if r.URL.Path != wantPath {
+					t.Errorf("unexpected path: got %s, want %s", r.URL.Path, wantPath)
+				}
+
+				var ref github.Reference
+				if err := json.NewDecoder(r.Body).Decode(&ref); err != nil {
+					t.Fatalf("failed to decode request body: %v", err)
+				}
+				if ref.Ref == nil || *ref.Ref != "refs/tags/v1.2.3" {
+					t.Errorf("unexpected ref: got %v, want %s", ref.Ref, "refs/tags/v1.2.3")
+				}
+				fmt.Fprint(w, `{"ref": "refs/tags/v1.2.3"}`)
+			},
+		},
+		{
+			name:      "API Error",
+			tagName:   "v1.2.3",
+			commitSHA: "abcdef123456",
+			handler:   func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) },
+			wantErr:   true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(test.handler)
+			defer server.Close()
+
+			repo := &Repository{Owner: "owner", Name: "repo"}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
+			client.BaseURL, _ = url.Parse(server.URL + "/")
+
+			err := client.CreateTag(t.Context(), test.tagName, test.commitSHA)
+
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("CreateTag() err = nil, expected error")
+				}
+			} else if err != nil {
+				t.Errorf("CreateTag() err = %v, want nil", err)
 			}
 		})
 	}

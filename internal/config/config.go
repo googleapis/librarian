@@ -51,9 +51,10 @@ const (
 	LibrarianDir = ".librarian"
 	// ReleaseInitRequest is a JSON file that describes which library to release.
 	ReleaseInitRequest = "release-init-request.json"
-
-	pipelineStateFile = "state.yaml"
-	versionCmdName    = "version"
+	// ReleaseInitResponse is a JSON file that describes which library to change
+	// after release.
+	ReleaseInitResponse = "release-init-response.json"
+	pipelineStateFile   = "state.yaml"
 )
 
 // are variables so it can be replaced during testing.
@@ -256,9 +257,6 @@ func (c *Config) setupUser() error {
 }
 
 func (c *Config) createWorkRoot() error {
-	if c.CommandName == versionCmdName {
-		return nil
-	}
 	if c.WorkRoot != "" {
 		slog.Info("Using specified working directory", "dir", c.WorkRoot)
 		return nil
@@ -284,9 +282,6 @@ func (c *Config) createWorkRoot() error {
 }
 
 func (c *Config) deriveRepo() error {
-	if c.CommandName == versionCmdName {
-		return nil
-	}
 	if c.Repo != "" {
 		slog.Debug("repo value provided by user", "repo", c.Repo)
 		return nil
@@ -325,7 +320,7 @@ func (c *Config) IsValid() (bool, error) {
 		return false, err
 	}
 
-	if c.CommandName != versionCmdName && c.Repo == "" {
+	if c.Repo == "" {
 		return false, errors.New("language repository not specified or detected")
 	}
 

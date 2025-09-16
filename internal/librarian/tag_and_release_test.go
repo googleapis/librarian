@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -132,10 +131,10 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &tagAndReleaseRunner{
-				cfg:      test.cfg,
-				ghClient: test.ghClient,
+				pullRequest: test.cfg.PullRequest,
+				ghClient:    test.ghClient,
 			}
-			got, err := r.determinePullRequestsToProcess(context.Background())
+			got, err := r.determinePullRequestsToProcess(t.Context())
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -193,10 +192,9 @@ func Test_tagAndReleaseRunner_run(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &tagAndReleaseRunner{
-				cfg:      &config.Config{}, // empty config so it searches
 				ghClient: test.ghClient,
 			}
-			err := r.run(context.Background())
+			err := r.run(t.Context())
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -217,7 +215,7 @@ func Test_tagAndReleaseRunner_run(t *testing.T) {
 }
 
 func TestParsePullRequestBody(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name string
 		body string
 		want []libraryRelease
@@ -329,12 +327,10 @@ some content
 				},
 			},
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := parsePullRequestBody(tt.body)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := parsePullRequestBody(test.body)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("ParsePullRequestBody() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -374,6 +370,7 @@ func TestProcessPullRequest(t *testing.T) {
 		wantErrMsg             string
 		wantCreateReleaseCalls int
 		wantReplaceLabelsCalls int
+		wantCreateTagCalls     int
 	}{
 		{
 			name:                   "happy path",
@@ -382,6 +379,7 @@ func TestProcessPullRequest(t *testing.T) {
 			state:                  state,
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
+			wantCreateTagCalls:     1,
 		},
 		{
 			name:     "no release details",
@@ -405,6 +403,7 @@ func TestProcessPullRequest(t *testing.T) {
 			state:                  state,
 			wantErrMsg:             "failed to create release",
 			wantCreateReleaseCalls: 1,
+			wantCreateTagCalls:     1,
 		},
 		{
 			name: "replace labels fails",
@@ -416,6 +415,17 @@ func TestProcessPullRequest(t *testing.T) {
 			wantErrMsg:             "failed to replace labels",
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
+			wantCreateTagCalls:     1,
+		},
+		{
+			name: "create tag fails",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				createTagErr: errors.New("create tag error"),
+			},
+			state:              state,
+			wantErrMsg:         "failed to create tag",
+			wantCreateTagCalls: 1,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -423,7 +433,7 @@ func TestProcessPullRequest(t *testing.T) {
 				ghClient: test.ghClient,
 				state:    test.state,
 			}
-			err := r.processPullRequest(context.Background(), test.pr)
+			err := r.processPullRequest(t.Context(), test.pr)
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -484,7 +494,7 @@ func TestReplacePendingLabel(t *testing.T) {
 			r := &tagAndReleaseRunner{
 				ghClient: test.ghClient,
 			}
-			err := r.replacePendingLabel(context.Background(), test.pr)
+			err := r.replacePendingLabel(t.Context(), test.pr)
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -519,7 +529,6 @@ func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
 	}
 
 	r := &tagAndReleaseRunner{
-		cfg:      &config.Config{},
 		ghClient: ghClient,
 		state: &config.LibrarianState{
 			Libraries: []*config.LibraryState{
@@ -529,7 +538,7 @@ func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
 			},
 		},
 	}
-	err := r.run(context.Background())
+	err := r.run(t.Context())
 	if err == nil || !strings.Contains(err.Error(), "failed to process some pull requests") {
 		t.Fatalf("expected error 'failed to process some pull requests', got %v", err)
 	}

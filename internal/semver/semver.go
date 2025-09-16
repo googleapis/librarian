@@ -16,6 +16,7 @@ package semver
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -91,6 +92,51 @@ func Parse(versionString string) (*Version, error) {
 	return v, nil
 }
 
+// Compare returns an integer comparing two versions.
+// The result is -1, 0, or 1 depending on whether v is less than, equal to, or greater than other.
+func (v *Version) Compare(other *Version) int {
+	if v.Major < other.Major {
+		return -1
+	}
+	if v.Major > other.Major {
+		return 1
+	}
+	if v.Minor < other.Minor {
+		return -1
+	}
+	if v.Minor > other.Minor {
+		return 1
+	}
+	if v.Patch < other.Patch {
+		return -1
+	}
+	if v.Patch > other.Patch {
+		return 1
+	}
+	// a pre-release version is less than a non-pre-release version
+	if v.Prerelease != "" && other.Prerelease == "" {
+		return -1
+	}
+	if v.Prerelease == "" && other.Prerelease != "" {
+		return 1
+	}
+	// lexical comparison between prerelease type (e.g. "alpha" vs "beta")
+	if v.Prerelease < other.Prerelease {
+		return -1
+	}
+	if v.Prerelease > other.Prerelease {
+		return 1
+	}
+	// prerelease number (e.g. "alpha1" vs "alpha2")
+	if v.PrereleaseNumber < other.PrereleaseNumber {
+		return -1
+	}
+	if v.PrereleaseNumber > other.PrereleaseNumber {
+		return 1
+	}
+	return 0
+}
+
 // String formats a Version struct into a string.
 func (v *Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
@@ -115,6 +161,29 @@ func (v *Version) incrementPrerelease() error {
 	}
 	v.PrereleaseNumber = strconv.Itoa(num + 1)
 	return nil
+}
+
+// MaxVersion returns the largest semantic version string among the provided version strings.
+func MaxVersion(versionStrings ...string) string {
+	if len(versionStrings) == 0 {
+		return ""
+	}
+	versions := make([]*Version, 0)
+	for _, versionString := range versionStrings {
+		v, err := Parse(versionString)
+		if err != nil {
+			slog.Warn("Invalid version string", "version", v)
+			continue
+		}
+		versions = append(versions, v)
+	}
+	largest := versions[0]
+	for i := 1; i < len(versions); i++ {
+		if largest.Compare(versions[i]) < 0 {
+			largest = versions[i]
+		}
+	}
+	return largest.String()
 }
 
 // ChangeLevel represents the level of change, corresponding to semantic versioning.
@@ -157,11 +226,11 @@ func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error
 
 	// Handle standard versions
 	if currentSemVer.Major == 0 {
-		if highestChange == Major {
-			currentSemVer.Major++
-			currentSemVer.Minor = 0
+		// breaking change and feat result in minor bump for pre-1.0.0
+		if highestChange == Major || highestChange == Minor {
+			currentSemVer.Minor++
 			currentSemVer.Patch = 0
-		} else { // feat and fix result in a patch bump for pre-1.0.0
+		} else {
 			currentSemVer.Patch++
 		}
 	} else {

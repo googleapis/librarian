@@ -26,7 +26,14 @@ const (
 
 // LibrarianConfig defines the contract for the config.yaml file.
 type LibrarianConfig struct {
-	GlobalFilesAllowlist []*GlobalFile `yaml:"global_files_allowlist"`
+	GlobalFilesAllowlist []*GlobalFile    `yaml:"global_files_allowlist"`
+	Libraries            []*LibraryConfig `yaml:"libraries"`
+}
+
+// LibraryConfig defines configuration for a single library, identified by its ID.
+type LibraryConfig struct {
+	LibraryID   string `yaml:"id"`
+	NextVersion string `yaml:"next_version"`
 }
 
 // GlobalFile defines the global files in language repositories.
@@ -53,5 +60,15 @@ func (g *LibrarianConfig) Validate() error {
 		}
 	}
 
+	return nil
+}
+
+// LibraryConfigFor finds the LibraryConfig entry for a given LibraryID.
+func (g *LibrarianConfig) LibraryConfigFor(LibraryID string) *LibraryConfig {
+	for _, lib := range g.Libraries {
+		if lib.LibraryID == LibraryID {
+			return lib
+		}
+	}
 	return nil
 }

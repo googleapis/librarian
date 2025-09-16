@@ -12,23 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate go run -tags docgen doc_generate.go
+
+/*
+Package librarian contains the business logic for the Librarian CLI.
+Implementation details for interacting with other systems (Git, GitHub,
+Docker etc.) are abstracted into other packages.
+
+Usage:
+
+	librarian <command> [arguments]
+
+The commands are:
+
+	generate                   onboards and generates client library code
+	release                    manages releases of libraries.
+	version                    prints the version information
+*/
 package librarian
-
-import (
-	"github.com/googleapis/librarian/internal/cli"
-)
-
-// cmdRelease is the command for the `release` subcommand.
-var cmdRelease = &cli.Command{
-	Short:     "release manages releases of libraries.",
-	UsageLine: "librarian release <command> [arguments]",
-	Long:      "Manages releases of libraries.",
-}
-
-func init() {
-	cmdRelease.Init()
-	cmdRelease.Commands = append(cmdRelease.Commands,
-		cmdInit,
-		cmdTagAndRelease,
-	)
-}

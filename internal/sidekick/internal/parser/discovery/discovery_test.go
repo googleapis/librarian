@@ -40,8 +40,8 @@ func TestInfo(t *testing.T) {
 	if got.Title != wantTitle {
 		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
 	}
-	if diff := cmp.Diff(got.Description, wantDescription); diff != "" {
-		t.Errorf("description mismatch (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if got.PackageName != "" {
 		t.Errorf("expected empty package name")
@@ -66,8 +66,8 @@ func TestComputeParses(t *testing.T) {
 	if got.Title != wantTitle {
 		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
 	}
-	if diff := cmp.Diff(got.Description, wantDescription); diff != "" {
-		t.Errorf("description mismatch (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if got.PackageName != "" {
 		t.Errorf("expected empty package name")
@@ -90,8 +90,8 @@ func TestServiceConfigOverridesInfo(t *testing.T) {
 	if got.Title != sc.Title {
 		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
 	}
-	if diff := cmp.Diff(got.Description, sc.Documentation.Summary); diff != "" {
-		t.Errorf("description mismatch (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(sc.Documentation.Summary, got.Description); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if len(sc.Apis) != 2 {
 		t.Fatalf("expected 2 APIs in service config")

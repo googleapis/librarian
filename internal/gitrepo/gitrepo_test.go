@@ -409,7 +409,7 @@ func TestCommit(t *testing.T) {
 		return &LocalRepository{Dir: dir, repo: goGitRepo}
 	}
 
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name       string
 		setup      func(t *testing.T) *LocalRepository
 		commitMsg  string
@@ -514,18 +514,18 @@ func TestCommit(t *testing.T) {
 			wantErrMsg: "permission denied",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo := tc.setup(t)
+			repo := test.setup(t)
 
-			err := repo.Commit(tc.commitMsg)
+			err := repo.Commit(test.commitMsg)
 
-			if tc.wantErr {
+			if test.wantErr {
 				if err == nil {
 					t.Fatalf("Commit() expected error, got nil")
 				}
-				if tc.wantErrMsg != "" && !strings.Contains(err.Error(), tc.wantErrMsg) {
-					t.Errorf("Commit() error = %q, want to contain %q", err.Error(), tc.wantErrMsg)
+				if test.wantErrMsg != "" && !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("Commit() error = %q, want to contain %q", err.Error(), test.wantErrMsg)
 				}
 				return
 			}
@@ -534,8 +534,8 @@ func TestCommit(t *testing.T) {
 				t.Fatalf("Commit() unexpected error = %v", err)
 			}
 
-			if tc.check != nil {
-				tc.check(t, repo, tc.commitMsg)
+			if test.check != nil {
+				test.check(t, repo, test.commitMsg)
 			}
 		})
 	}
@@ -543,7 +543,7 @@ func TestCommit(t *testing.T) {
 
 func TestRemotes(t *testing.T) {
 	t.Parallel()
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name         string
 		setupRemotes map[string][]string
 		wantErr      bool
@@ -566,11 +566,11 @@ func TestRemotes(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			gogitRepo, dir := initTestRepo(t)
 
-			for name, urls := range tt.setupRemotes {
+			for name, urls := range test.setupRemotes {
 				if _, err := gogitRepo.CreateRemote(&goGitConfig.RemoteConfig{
 					Name: name,
 					URLs: urls,
@@ -581,15 +581,15 @@ func TestRemotes(t *testing.T) {
 
 			repo := &LocalRepository{Dir: dir, repo: gogitRepo}
 			got, err := repo.Remotes()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Remotes() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Errorf("Remotes() error = %v, wantErr %v", err, test.wantErr)
 			}
 
 			gotRemotes := make(map[string][]string)
 			for _, r := range got {
 				gotRemotes[r.Config().Name] = r.Config().URLs
 			}
-			if diff := cmp.Diff(tt.setupRemotes, gotRemotes); diff != "" {
+			if diff := cmp.Diff(test.setupRemotes, gotRemotes); diff != "" {
 				t.Errorf("Remotes() mismatch (-want +got):\n%s", diff)
 			}
 		})

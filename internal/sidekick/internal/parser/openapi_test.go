@@ -770,8 +770,8 @@ func TestOpenAPI_MakeApiWithServiceConfig(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 	want := sample.API()
-	if diff := cmp.Diff(got, want, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums", "State")); diff != "" {
-		t.Errorf("mismatched API attributes (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums", "State")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 }
@@ -793,8 +793,8 @@ func TestOpenAPI_MakeApiServiceConfigOverridesDescription(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
-	if diff := cmp.Diff(got, want, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums", "State")); diff != "" {
-		t.Errorf("mismatched API attributes (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums", "State")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 }

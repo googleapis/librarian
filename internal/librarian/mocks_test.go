@@ -40,6 +40,7 @@ type mockGitHubClient struct {
 	searchPullRequestsCalls int
 	getPullRequestCalls     int
 	createReleaseCalls      int
+	createTagCalls          int
 	createPullRequestErr    error
 	addLabelsToIssuesErr    error
 	getLabelsErr            error
@@ -47,6 +48,7 @@ type mockGitHubClient struct {
 	searchPullRequestsErr   error
 	getPullRequestErr       error
 	createReleaseErr        error
+	createTagErr            error
 	createdPR               *github.PullRequestMetadata
 	labels                  []string
 	pullRequests            []*github.PullRequest
@@ -97,6 +99,11 @@ func (m *mockGitHubClient) CreateRelease(ctx context.Context, tagName, releaseNa
 	return m.createdRelease, m.createReleaseErr
 }
 
+func (m *mockGitHubClient) CreateTag(ctx context.Context, tagName, commitish string) error {
+	m.createTagCalls++
+	return m.createTagErr
+}
+
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
@@ -118,6 +125,7 @@ type mockContainerClient struct {
 	noBuildResponse     bool
 	noConfigureResponse bool
 	noGenerateResponse  bool
+	noReleaseResponse   bool
 	noInitVersion       bool
 	wantErrorMsg        bool
 	// Set this value if you want library files
@@ -257,6 +265,25 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 
 func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error {
 	m.initCalls++
+	if m.noReleaseResponse {
+		return m.initErr
+	}
+	// Write a release-init-response.json unless we're configured not to.
+	if err := os.MkdirAll(filepath.Join(request.PartialRepoDir, ".librarian"), 0755); err != nil {
+		return err
+	}
+
+	library := &config.LibraryState{}
+	if m.wantErrorMsg {
+		library.ErrorMessage = "simulated error message"
+	}
+	b, err := json.MarshalIndent(library, "", " ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(request.PartialRepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
+		return err
+	}
 	return m.initErr
 }
 

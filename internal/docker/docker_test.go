@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 )
 
 func TestNew(t *testing.T) {
@@ -63,10 +64,6 @@ func TestDockerRun(t *testing.T) {
 	)
 
 	state := &config.LibrarianState{}
-	cfg := &config.Config{}
-	cfgInDocker := &config.Config{
-		HostMount: "hostDir:localDir",
-	}
 	repoDir := filepath.Join(os.TempDir())
 	for _, test := range []struct {
 		name       string
@@ -83,7 +80,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfg,
 					State:     state,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
@@ -114,7 +110,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfg,
 					State:     state,
 					RepoDir:   "/non-existed-dir",
 					ApiRoot:   testAPIRoot,
@@ -134,7 +129,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfg,
 					State:     state,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
@@ -155,12 +149,12 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
-					Cfg:       cfgInDocker,
 					State:     state,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
 					Output:    "hostDir",
 					LibraryID: testLibraryID,
+					HostMount: "hostDir:localDir",
 				}
 
 				return d.Generate(ctx, generateRequest)
@@ -186,7 +180,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				buildRequest := &BuildRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -211,7 +204,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				buildRequest := &BuildRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   "/non-exist-dir",
@@ -229,7 +221,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				buildRequest := &BuildRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -248,7 +239,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				configureRequest := &ConfigureRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -263,11 +253,13 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/repo", repoDir),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
+				"--repo=/repo",
 				"--source=/source",
 			},
 		},
@@ -303,7 +295,6 @@ func TestDockerRun(t *testing.T) {
 					},
 				}
 				configureRequest := &ConfigureRequest{
-					Cfg:       cfg,
 					State:     curState,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -321,11 +312,13 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/repo", repoDir),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
+				"--repo=/repo",
 				"--source=/source",
 			},
 		},
@@ -336,7 +329,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				configureRequest := &ConfigureRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   "/non-exist-dir",
@@ -356,7 +348,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				configureRequest := &ConfigureRequest{
-					Cfg:       cfg,
 					State:     state,
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
@@ -383,9 +374,6 @@ func TestDockerRun(t *testing.T) {
 				}
 
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: repoDir,
-					},
 					State:           state,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
@@ -420,9 +408,6 @@ func TestDockerRun(t *testing.T) {
 				}
 
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: repoDir,
-					},
 					State:           state,
 					PartialRepoDir:  partialRepoDir,
 					Output:          testOutput,
@@ -442,9 +427,6 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: os.TempDir(),
-					},
 					State:          state,
 					PartialRepoDir: "/non-exist-dir",
 					Output:         testOutput,
@@ -466,9 +448,6 @@ func TestDockerRun(t *testing.T) {
 					t.Fatal(err)
 				}
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: repoDir,
-					},
 					State:           state,
 					PartialRepoDir:  partialRepoDir,
 					Output:          testOutput,
@@ -503,9 +482,6 @@ func TestDockerRun(t *testing.T) {
 				}
 
 				releaseInitRequest := &ReleaseInitRequest{
-					Cfg: &config.Config{
-						Repo: os.TempDir(),
-					},
 					State:           state,
 					PartialRepoDir:  partialRepoDir,
 					Output:          testOutput,
@@ -784,7 +760,7 @@ func TestWriteLibrarianState(t *testing.T) {
 }
 
 func TestDocker_runCommand(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name    string
 		cmdName string
 		args    []string
@@ -802,13 +778,93 @@ func TestDocker_runCommand(t *testing.T) {
 			args:    []string{},
 			wantErr: true,
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			c := &Docker{}
-			if err := c.runCommand(tt.cmdName, tt.args...); (err != nil) != tt.wantErr {
-				t.Errorf("Docker.runCommand() error = %v, wantErr %v", err, tt.wantErr)
+			if err := c.runCommand(test.cmdName, test.args...); (err != nil) != test.wantErr {
+				t.Errorf("Docker.runCommand() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestReleaseInitRequestContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	partialRepoDir := filepath.Join(tmpDir, "partial-repo")
+	librarianDir := filepath.Join(partialRepoDir, config.LibrarianDir)
+	if err := os.MkdirAll(librarianDir, 0755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+
+	stateWithChanges := &config.LibrarianState{
+		Image: "test-image",
+		Libraries: []*config.LibraryState{
+			{
+				ID:               "my-library",
+				Version:          "1.1.0",
+				ReleaseTriggered: true,
+				Changes: []*conventionalcommits.ConventionalCommit{
+					{
+						Type:    "feat",
+						Subject: "new feature",
+						Body:    "body of feature",
+						Footers: map[string]string{
+							"PiperOrigin-RevId": "12345",
+						},
+						SHA: "1234",
+					},
+				},
+			},
+		},
+	}
+
+	d, err := New(tmpDir, "test-image", "1000", "1000")
+	if err != nil {
+		t.Fatalf("New() failed: %v", err)
+	}
+
+	// Override the run command to intercept the arguments and verify the content
+	// of the release-init-request.json file.
+	d.run = func(args ...string) error {
+		var librarianDir string
+		for i, arg := range args {
+			if arg == "-v" && i+1 < len(args) {
+				parts := strings.Split(args[i+1], ":")
+				if len(parts) == 2 && parts[1] == "/librarian" {
+					librarianDir = parts[0]
+					break
+				}
+			}
+		}
+		if librarianDir == "" {
+			return errors.New("could not find librarian directory mount")
+		}
+
+		jsonPath := filepath.Join(librarianDir, "release-init-request.json")
+		gotBytes, err := os.ReadFile(jsonPath)
+		if err != nil {
+			t.Fatalf("ReadFile failed: %v", err)
+		}
+
+		wantFile := filepath.Join("..", "..", "testdata", "docker", "release-init-request", "release-init-request.json")
+		wantBytes, err := os.ReadFile(wantFile)
+		if err != nil {
+			t.Fatalf("ReadFile for want file failed: %v", err)
+		}
+
+		if diff := cmp.Diff(strings.TrimSpace(string(wantBytes)), string(gotBytes)); diff != "" {
+			t.Errorf("Generated JSON mismatch (-want +got):\n%s", diff)
+		}
+		return nil
+	}
+
+	req := &ReleaseInitRequest{
+		State:           stateWithChanges,
+		PartialRepoDir:  partialRepoDir,
+		Output:          filepath.Join(tmpDir, "output"),
+		LibrarianConfig: &config.LibrarianConfig{},
+	}
+	if err := d.ReleaseInit(context.Background(), req); err != nil {
+		t.Fatalf("d.ReleaseInit() failed: %v", err)
 	}
 }

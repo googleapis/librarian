@@ -12,127 +12,145 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package librarian contains the business logic for the Librarian CLI.
-// Implementation details for interacting with other systems (Git, GitHub,
-// Docker etc.) are abstracted into other packages.
 package librarian
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
-
-	"github.com/googleapis/librarian/internal/docker"
 
 	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/github"
 )
 
-// CmdLibrarian is the top-level command for the Librarian CLI.
-var CmdLibrarian = &cli.Command{
-	Short:     "librarian manages client libraries for Google APIs",
-	UsageLine: "librarian <command> [arguments]",
-	Long:      "Librarian manages client libraries for Google APIs.",
-}
-
-func init() {
-	CmdLibrarian.Init()
-	CmdLibrarian.Commands = append(CmdLibrarian.Commands,
-		cmdGenerate,
-		cmdRelease,
-		cmdVersion,
-	)
-}
-
-// Run executes the Librarian CLI with the given command line
-// arguments.
+// Run executes the Librarian CLI with the given command line arguments.
 func Run(ctx context.Context, arg ...string) error {
-	if err := CmdLibrarian.Parse(arg); err != nil {
-		return err
-	}
-	if len(arg) == 0 {
-		CmdLibrarian.Flags.Usage()
-		return fmt.Errorf("command not specified")
-	}
-	cmd, arg, err := lookupCommand(CmdLibrarian, arg)
-	if err != nil {
-		return err
-	}
-
-	// If a command is just a container for subcommands, it won't have a
-	// Run function. In that case, display its usage instructions.
-	if cmd.Run == nil {
-		cmd.Flags.Usage()
-		return fmt.Errorf("command %q requires a subcommand", cmd.Name())
-	}
-
-	if err := cmd.Parse(arg); err != nil {
-		// We expect that if cmd.Parse fails, it will already
-		// have printed out a command-specific usage error,
-		// so we don't need to display the general usage.
-		return err
-	}
+	cmd := newLibrarianCommand()
 	slog.Info("librarian", "arguments", arg)
-	if err := cmd.Config.SetDefaults(); err != nil {
-		return fmt.Errorf("failed to initialize config: %w", err)
-	}
-	if _, err := cmd.Config.IsValid(); err != nil {
-		return fmt.Errorf("failed to validate config: %s", err)
-	}
-	return cmd.Run(ctx, cmd.Config)
+	return cmd.Run(ctx, arg)
 }
 
-// lookupCommand recursively looks up the command specified by the given arguments.
-// It returns the command, the remaining arguments, and an error if the command
-// is not found.
-func lookupCommand(cmd *cli.Command, args []string) (*cli.Command, []string, error) {
-	if len(args) == 0 {
-		return cmd, nil, nil
+func newLibrarianCommand() *cli.Command {
+	cmdVersion := &cli.Command{
+		Short:     "version prints the version information",
+		UsageLine: "librarian version",
+		Long:      versionLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			fmt.Println(cli.Version())
+			return nil
+		},
 	}
-	subcommand, err := cmd.Lookup(args[0])
-	if err != nil {
-		cmd.Flags.Usage()
-		return nil, nil, err
+	cmdVersion.Init()
+
+	cmdRelease := &cli.Command{
+		Short:     "release manages releases of libraries.",
+		UsageLine: "librarian release <command> [arguments]",
+		Long:      releaseLongHelp,
+		Commands: []*cli.Command{
+			newCmdInit(),
+			newCmdTagAndRelease(),
+		},
 	}
-	// If the next argument matches a potential flag (first char is `-`), parse the
-	// remaining arguments as flags. Check if argument is a flag before calling
-	// `lookupCommand` again to avoid flags from being treated as subcommands.
-	if len(args) > 1 && args[1][0] == '-' {
-		return subcommand, args[1:], nil
+	cmdRelease.Init()
+
+	cmd := &cli.Command{
+		Short:     "librarian manages client libraries for Google APIs",
+		UsageLine: "librarian <command> [arguments]",
+		Long:      librarianLongHelp,
+		Commands: []*cli.Command{
+			newCmdGenerate(),
+			cmdRelease,
+			cmdVersion,
+		},
 	}
-	if len(subcommand.Commands) > 0 {
-		return lookupCommand(subcommand, args[1:])
-	}
-	return subcommand, args[1:], nil
+	cmd.Init()
+	return cmd
 }
 
-// GitHubClient is an abstraction over the GitHub client.
-type GitHubClient interface {
-	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
-	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error)
-	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
-	GetLabels(ctx context.Context, number int) ([]string, error)
-	ReplaceLabels(ctx context.Context, number int, labels []string) error
-	SearchPullRequests(ctx context.Context, query string) ([]*github.PullRequest, error)
-	GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error)
-	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
-	CreateIssueComment(ctx context.Context, number int, comment string) error
-}
-
-// ContainerClient is an abstraction over the Docker client.
-type ContainerClient interface {
-	Build(ctx context.Context, request *docker.BuildRequest) error
-	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
-	Generate(ctx context.Context, request *docker.GenerateRequest) error
-	ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error
-}
-
-func isURL(s string) bool {
-	u, err := url.ParseRequestURI(s)
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return false
+func newCmdGenerate() *cli.Command {
+	cmdGenerate := &cli.Command{
+		Short:     "generate onboards and generates client library code",
+		UsageLine: "librarian generate [flags]",
+		Long:      generateLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if err := cmd.Config.SetDefaults(); err != nil {
+				return fmt.Errorf("failed to initialize config: %w", err)
+			}
+			if _, err := cmd.Config.IsValid(); err != nil {
+				return fmt.Errorf("failed to validate config: %s", err)
+			}
+			runner, err := newGenerateRunner(cmd.Config)
+			if err != nil {
+				return err
+			}
+			return runner.run(ctx)
+		},
 	}
+	cmdGenerate.Init()
+	addFlagAPI(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagAPISource(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagBuild(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagHostMount(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagImage(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagLibrary(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagRepo(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagBranch(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagWorkRoot(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagPush(cmdGenerate.Flags, cmdGenerate.Config)
+	return cmdGenerate
+}
 
-	return true
+func newCmdTagAndRelease() *cli.Command {
+	cmdTagAndRelease := &cli.Command{
+		Short:     "tag-and-release tags and creates a GitHub release for a merged pull request.",
+		UsageLine: "librarian release tag-and-release [arguments]",
+		Long:      tagAndReleaseLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if err := cmd.Config.SetDefaults(); err != nil {
+				return fmt.Errorf("failed to initialize config: %w", err)
+			}
+			if _, err := cmd.Config.IsValid(); err != nil {
+				return fmt.Errorf("failed to validate config: %s", err)
+			}
+			runner, err := newTagAndReleaseRunner(cmd.Config)
+			if err != nil {
+				return err
+			}
+			return runner.run(ctx)
+		},
+	}
+	cmdTagAndRelease.Init()
+	addFlagRepo(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
+	addFlagPR(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
+	return cmdTagAndRelease
+}
+
+func newCmdInit() *cli.Command {
+	cmdInit := &cli.Command{
+		Short:     "init initiates a release by creating a release pull request.",
+		UsageLine: "librarian release init [flags]",
+		Long:      releaseInitLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if err := cmd.Config.SetDefaults(); err != nil {
+				return fmt.Errorf("failed to initialize config: %w", err)
+			}
+			if _, err := cmd.Config.IsValid(); err != nil {
+				return fmt.Errorf("failed to validate config: %s", err)
+			}
+			runner, err := newInitRunner(cmd.Config)
+			if err != nil {
+				return err
+			}
+			return runner.run(ctx)
+		},
+	}
+	cmdInit.Init()
+	addFlagCommit(cmdInit.Flags, cmdInit.Config)
+	addFlagPush(cmdInit.Flags, cmdInit.Config)
+	addFlagImage(cmdInit.Flags, cmdInit.Config)
+	addFlagLibrary(cmdInit.Flags, cmdInit.Config)
+	addFlagLibraryVersion(cmdInit.Flags, cmdInit.Config)
+	addFlagRepo(cmdInit.Flags, cmdInit.Config)
+	addFlagBranch(cmdInit.Flags, cmdInit.Config)
+	addFlagWorkRoot(cmdInit.Flags, cmdInit.Config)
+	return cmdInit
 }

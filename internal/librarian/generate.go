@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -32,111 +31,44 @@ const (
 	generateCmdName = "generate"
 )
 
-var cmdGenerate = &cli.Command{
-	Short:     "generate onboards and generates client library code",
-	UsageLine: "librarian generate [flags]",
-	Long: `The generate command is the primary tool for all code generation
-tasks. It handles both the initial setup of a new library (onboarding) and the
-regeneration of existing ones. Librarian works by delegating language-specific
-tasks to a container, which is configured in the .librarian/state.yaml file.
-Librarian is environment aware and will check if the current directory is the
-root of a librarian repository. If you are not executing in such a directory the
-'--repo' flag must be provided.
-
-# Onboarding a new library
-
-To configure and generate a new library for the first time, you must specify the
-API to be generated and the library it will belong to. Librarian will invoke the
-'configure' command in the language container to set up the repository, add the
-new library's configuration to the '.librarian/state.yaml' file, and then
-proceed with generation.
-
-Example:
-  librarian generate --library=secretmanager --api=google/cloud/secretmanager/v1
-
-# Regenerating existing libraries
-
-You can regenerate a single, existing library by specifying either the library
-ID or the API path. If no specific library or API is provided, Librarian will
-regenerate all libraries listed in '.librarian/state.yaml'. If '--library' or
-'--api' is specified the whole library will be regenerated.
-
-Examples:
-  # Regenerate a single library by its ID
-  librarian generate --library=secretmanager
-
-  # Regenerate a single library by its API path
-  librarian generate --api=google/cloud/secretmanager/v1
-
-  # Regenerate all libraries in the repository
-  librarian generate
-
-# Workflow and Options:
-
-The generation process involves delegating to the language container's
-'generate' command. After the code is generated, the tool cleans the destination
-directories and copies the new files into place, according to the configuration
-in '.librarian/state.yaml'.
-
-- If the '--build' flag is specified, the 'build' command is also executed in
-  the container to compile and validate the generated code.
-- If the '--push' flag is provided, the changes are committed to a new branch,
-  and a pull request is created on GitHub. Otherwise, the changes are left in
-  your local working directory for inspection.
-
-Example with build and push:
-  SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`,
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		runner, err := newGenerateRunner(cfg, nil, nil)
-		if err != nil {
-			return err
-		}
-		return runner.run(ctx)
-	},
-}
-
-func init() {
-	cmdGenerate.Init()
-	fs := cmdGenerate.Flags
-	cfg := cmdGenerate.Config
-
-	addFlagAPI(fs, cfg)
-	addFlagAPISource(fs, cfg)
-	addFlagBuild(fs, cfg)
-	addFlagHostMount(fs, cfg)
-	addFlagImage(fs, cfg)
-	addFlagLibrary(fs, cfg)
-	addFlagRepo(fs, cfg)
-	addFlagBranch(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-	addFlagPush(fs, cfg)
-}
-
 type generateRunner struct {
-	cfg             *config.Config
+	api             string
+	apiSource       string
+	branch          string
+	build           bool
+	commit          bool
+	containerClient ContainerClient
+	ghClient        GitHubClient
+	hostMount       string
+	image           string
+	library         string
+	push            bool
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
-	ghClient        GitHubClient
-	containerClient ContainerClient
 	workRoot        string
-	image           string
 }
 
-func newGenerateRunner(cfg *config.Config, ghClientFactory GitHubClientFactory, containerClientFactory ContainerClientFactory) (*generateRunner, error) {
-	runner, err := newCommandRunner(cfg, ghClientFactory, containerClientFactory)
+func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &generateRunner{
-		cfg:             runner.cfg,
-		workRoot:        runner.workRoot,
+		api:             cfg.API,
+		apiSource:       cfg.APISource,
+		build:           cfg.Build,
+		commit:          cfg.Commit,
+		containerClient: runner.containerClient,
+		ghClient:        runner.ghClient,
+		hostMount:       cfg.HostMount,
+		image:           runner.image,
+		library:         cfg.Library,
+		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
-		image:           runner.image,
-		ghClient:        runner.ghClient,
-		containerClient: runner.containerClient,
+		workRoot:        runner.workRoot,
 	}, nil
 }
 
@@ -155,10 +87,10 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string, 0)
 	var failedLibraries []string
-	if r.cfg.API != "" || r.cfg.Library != "" {
-		libraryID := r.cfg.Library
+	if r.api != "" || r.library != "" {
+		libraryID := r.library
 		if libraryID == "" {
-			libraryID = findLibraryIDByAPIPath(r.state, r.cfg.API)
+			libraryID = findLibraryIDByAPIPath(r.state, r.api)
 		}
 		oldCommit, err := r.generateSingleLibrary(ctx, libraryID, outputDir)
 		if err != nil {
@@ -166,6 +98,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		}
 		idToCommits[libraryID] = oldCommit
 	} else {
+		succeededGenerations := 0
 		failedGenerations := 0
 		for _, library := range r.state.Libraries {
 			oldCommit, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
@@ -177,9 +110,15 @@ func (r *generateRunner) run(ctx context.Context) error {
 				// Only add the mapping if library generation is successful so that
 				// failed library will not appear in generation PR body.
 				idToCommits[library.ID] = oldCommit
+				succeededGenerations++
 			}
 		}
-		slog.Info("generation statistics", "all", len(r.state.Libraries), "failures", failedGenerations)
+
+		slog.Info(
+			"generation statistics",
+			"all", len(r.state.Libraries),
+			"successes", succeededGenerations,
+			"failures", failedGenerations)
 		if failedGenerations > 0 && failedGenerations == len(r.state.Libraries) {
 			return fmt.Errorf("all %d libraries failed to generate", failedGenerations)
 		}
@@ -190,19 +129,20 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		cfg:             r.cfg,
-		state:           r.state,
-		repo:            r.repo,
+		branch:          r.branch,
+		commit:          r.commit,
+		commitMessage:   "feat: generate libraries",
+		failedLibraries: failedLibraries,
 		ghClient:        r.ghClient,
 		idToCommits:     idToCommits,
-		failedLibraries: failedLibraries,
-		commitMessage:   "chore: generate libraries",
 		prType:          generate,
+		push:            r.push,
+		repo:            r.repo,
+		sourceRepo:      r.sourceRepo,
+		state:           r.state,
 	}
-	if err := commitAndPush(ctx, commitInfo); err != nil {
-		return err
-	}
-	return nil
+
+	return commitAndPush(ctx, commitInfo)
 }
 
 // generateSingleLibrary manages the generation of a single client library.
@@ -220,7 +160,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // Returns the last generated commit before the generation and error, if any.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
 	if r.needsConfigure() {
-		slog.Info("library not configured, start initial configuration", "library", r.cfg.Library)
+		slog.Info("library not configured, start initial configuration", "library", r.library)
 		configuredLibraryID, err := r.runConfigureCommand(ctx)
 		if err != nil {
 			return "", err
@@ -265,7 +205,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 }
 
 func (r *generateRunner) needsConfigure() bool {
-	return r.cfg.API != "" && r.cfg.Library != "" && findLibraryByID(r.state, r.cfg.Library) == nil
+	return r.api != "" && r.library != "" && findLibraryByID(r.state, r.library) == nil
 }
 
 func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error {
@@ -294,12 +234,12 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 	}
 
 	generateRequest := &docker.GenerateRequest{
-		Cfg:       r.cfg,
-		State:     r.state,
 		ApiRoot:   apiRoot,
+		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		Output:    outputDir,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
 	slog.Info("Performing generation for library", "id", libraryID, "outputDir", outputDir)
 	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
@@ -326,7 +266,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 // The `outputDir` parameter specifies the target directory where the built artifacts
 // should be placed.
 func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) error {
-	if !r.cfg.Build {
+	if !r.build {
 		slog.Info("Build flag not specified, skipping")
 		return nil
 	}
@@ -336,10 +276,10 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 	}
 
 	buildRequest := &docker.BuildRequest{
-		Cfg:       r.cfg,
-		State:     r.state,
+		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
 	slog.Info("Performing build for library", "id", libraryID)
 	if err := r.containerClient.Build(ctx, buildRequest); err != nil {
@@ -379,7 +319,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 // it returns an empty string and an error.
 func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
 
-	apiRoot, err := filepath.Abs(r.cfg.APISource)
+	apiRoot, err := filepath.Abs(r.apiSource)
 	if err != nil {
 		return "", err
 	}
@@ -387,24 +327,24 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	setAllAPIStatus(r.state, config.StatusExisting)
 	// Record to state, not write to state.yaml
 	r.state.Libraries = append(r.state.Libraries, &config.LibraryState{
-		ID:   r.cfg.Library,
-		APIs: []*config.API{{Path: r.cfg.API, Status: config.StatusNew}},
+		ID:   r.library,
+		APIs: []*config.API{{Path: r.api, Status: config.StatusNew}},
 	})
 
 	if err := populateServiceConfigIfEmpty(
 		r.state,
-		r.cfg.APISource); err != nil {
+		r.apiSource); err != nil {
 		return "", err
 	}
 
 	configureRequest := &docker.ConfigureRequest{
-		Cfg:       r.cfg,
-		State:     r.state,
 		ApiRoot:   apiRoot,
-		LibraryID: r.cfg.Library,
+		HostMount: r.hostMount,
+		LibraryID: r.library,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
-	slog.Info("Performing configuration for library", "id", r.cfg.Library)
+	slog.Info("Performing configuration for library", "id", r.library)
 	if _, err := r.containerClient.Configure(ctx, configureRequest); err != nil {
 		return "", err
 	}
@@ -421,7 +361,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	if libraryState.Version == "" {
-		slog.Info("library doesn't receive a version, apply the default version", "id", r.cfg.Library)
+		slog.Info("library doesn't receive a version, apply the default version", "id", r.library)
 		libraryState.Version = "0.0.0"
 	}
 

@@ -505,14 +505,14 @@ func TestFormatReleaseNotes(t *testing.T) {
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "feat",
-								Description: "new feature",
-								SHA:         hash1.String(),
+								Type:    "feat",
+								Subject: "new feature",
+								SHA:     hash1.String(),
 							},
 							{
-								Type:        "fix",
-								Description: "a bug fix",
-								SHA:         hash2.String(),
+								Type:    "fix",
+								Subject: "a bug fix",
+								SHA:     hash2.String(),
 							},
 						},
 						ReleaseTriggered: true,
@@ -540,6 +540,58 @@ Language Image: go:1.21
 				librarianVersion, today),
 		},
 		{
+			name: "single library release, with cl num",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the NewVersion in the release note.
+						Version:         "1.1.0",
+						PreviousVersion: "1.0.0",
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:    "feat",
+								Subject: "new feature",
+								SHA:     hash1.String(),
+								Footers: map[string]string{
+									"PiperOrigin-RevId": "123456",
+								},
+							},
+							{
+								Type:    "fix",
+								Subject: "a bug fix",
+								SHA:     hash2.String(),
+								Footers: map[string]string{
+									"PiperOrigin-RevId": "987654",
+								},
+							},
+						},
+						ReleaseTriggered: true,
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+			},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+### Features
+
+* new feature (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+
+### Bug Fixes
+
+* a bug fix (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+
+</details>`,
+				librarianVersion, today),
+		},
+		{
 			name: "single library with multiple features",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
@@ -551,14 +603,14 @@ Language Image: go:1.21
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "feat",
-								Description: "new feature",
-								SHA:         hash1.String(),
+								Type:    "feat",
+								Subject: "new feature",
+								SHA:     hash1.String(),
 							},
 							{
-								Type:        "feat",
-								Description: "another new feature",
-								SHA:         hash2.String(),
+								Type:    "feat",
+								Subject: "another new feature",
+								SHA:     hash2.String(),
 							},
 						},
 						ReleaseTriggered: true,
@@ -596,9 +648,9 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "feat",
-								Description: "feature for a",
-								SHA:         hash1.String(),
+								Type:    "feat",
+								Subject: "feature for a",
+								SHA:     hash1.String(),
 							},
 						},
 					},
@@ -610,9 +662,9 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "fix",
-								Description: "fix for b",
-								SHA:         hash2.String(),
+								Type:    "fix",
+								Subject: "fix for b",
+								SHA:     hash2.String(),
 							},
 						},
 					},
@@ -658,14 +710,14 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:        "feat",
-								Description: "new feature",
-								SHA:         hash1.String(),
+								Type:    "feat",
+								Subject: "new feature",
+								SHA:     hash1.String(),
 							},
 							{
-								Type:        "ci",
-								Description: "a ci change",
-								SHA:         hash2.String(),
+								Type:    "ci",
+								Subject: "a ci change",
+								SHA:     hash2.String(),
 							},
 						},
 					},

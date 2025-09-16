@@ -21,96 +21,51 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/semver"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-// cmdInit is the command for the `release init` subcommand.
-var cmdInit = &cli.Command{
-	Short:     "init initiates a release by creating a release pull request.",
-	UsageLine: "librarian release init [flags]",
-	Long: `The 'release init' command is the primary entry point for initiating
-a new release. It automates the creation of a release pull request by parsing
-conventional commits, determining the next semantic version for each library,
-and generating a changelog. Librarian is environment aware and will check if the
-current directory is the root of a librarian repository. If you are not
-executing in such a directory the '--repo' flag must be provided.
-
-This command scans the git history since the last release, identifies changes
-(feat, fix, BREAKING CHANGE), and calculates the appropriate version bump
-according to semver rules. It then delegates all language-specific file
-modifications, such as updating a CHANGELOG.md or bumping the version in a pom.xml, 
-to the configured language-specific container.
-
-By default, 'release init' leaves the changes in your local working directory
-for inspection. Use the '--push' flag to automatically commit the changes to
-a new branch and create a pull request on GitHub. The '--commit' flag may be
-used to create a local commit without creating a pull request; this flag is
-ignored if '--push' is also specified.
-
-Examples:
-  # Create a release PR for all libraries with pending changes.
-  librarian release init --push
-
-  # Create a release PR for a single library.
-  librarian release init --library=secretmanager --push
-
-  # Manually specify a version for a single library, overriding the calculation.
-  librarian release init --library=secretmanager --library-version=2.0.0 --push`,
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		runner, err := newInitRunner(cfg)
-		if err != nil {
-			return err
-		}
-		return runner.run(ctx)
-	},
-}
-
-func init() {
-	cmdInit.Init()
-	fs := cmdInit.Flags
-	cfg := cmdInit.Config
-
-	addFlagCommit(fs, cfg)
-	addFlagPush(fs, cfg)
-	addFlagImage(fs, cfg)
-	addFlagLibrary(fs, cfg)
-	addFlagLibraryVersion(fs, cfg)
-	addFlagRepo(fs, cfg)
-	addFlagBranch(fs, cfg)
-	addFlagWorkRoot(fs, cfg)
-}
-
 type initRunner struct {
-	cfg             *config.Config
-	repo            gitrepo.Repository
-	state           *config.LibrarianState
-	librarianConfig *config.LibrarianConfig
-	ghClient        GitHubClient
+	branch          string
+	commit          bool
 	containerClient ContainerClient
-	workRoot        string
-	partialRepo     string
+	ghClient        GitHubClient
 	image           string
+	librarianConfig *config.LibrarianConfig
+	library         string
+	libraryVersion  string
+	partialRepo     string
+	push            bool
+	repo            gitrepo.Repository
+	sourceRepo      gitrepo.Repository
+	state           *config.LibrarianState
+	workRoot        string
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
-	runner, err := newCommandRunner(cfg, nil, nil)
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create init runner: %w", err)
 	}
 	return &initRunner{
-		cfg:             runner.cfg,
-		repo:            runner.repo,
-		state:           runner.state,
-		librarianConfig: runner.librarianConfig,
-		ghClient:        runner.ghClient,
+		branch:          cfg.Branch,
+		commit:          cfg.Commit,
 		containerClient: runner.containerClient,
-		workRoot:        runner.workRoot,
-		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
+		ghClient:        runner.ghClient,
 		image:           runner.image,
+		librarianConfig: runner.librarianConfig,
+		library:         cfg.Library,
+		libraryVersion:  cfg.LibraryVersion,
+		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
+		push:            cfg.Push,
+		repo:            runner.repo,
+		sourceRepo:      runner.sourceRepo,
+		state:           runner.state,
+		workRoot:        runner.workRoot,
 	}, nil
 }
 
@@ -124,16 +79,25 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
+		return err
+	}
+
 	commitInfo := &commitInfo{
-		cfg:           r.cfg,
-		state:         r.state,
-		repo:          r.repo,
-		ghClient:      r.ghClient,
-		commitMessage: "chore: create a release",
-		prType:        release,
+		branch:         r.branch,
+		commit:         r.commit,
+		commitMessage:  "chore: create a release",
+		ghClient:       r.ghClient,
+		library:        r.library,
+		libraryVersion: r.libraryVersion,
+		prType:         release,
 		// Newly created PRs from the `release init` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
+		push:              r.push,
+		repo:              r.repo,
+		sourceRepo:        r.sourceRepo,
+		state:             r.state,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
@@ -150,8 +114,8 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 	src := r.repo.GetDir()
 	for _, library := range r.state.Libraries {
-		if r.cfg.Library != "" {
-			if r.cfg.Library != library.ID {
+		if r.library != "" {
+			if r.library != library.ID {
 				continue
 			}
 
@@ -184,26 +148,34 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
-		Cfg:             r.cfg,
-		State:           r.state,
+		Branch:          r.branch,
+		Commit:          r.commit,
 		LibrarianConfig: r.librarianConfig,
-		LibraryID:       r.cfg.Library,
-		LibraryVersion:  r.cfg.LibraryVersion,
+		LibraryID:       r.library,
+		LibraryVersion:  r.libraryVersion,
 		Output:          outputDir,
 		PartialRepoDir:  dst,
+		Push:            r.push,
+		State:           r.state,
 	}
 
 	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
 		return err
 	}
 
+	// Read the response file.
+	if _, err := readLibraryState(
+		filepath.Join(initRequest.PartialRepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
+		return err
+	}
+
 	for _, library := range r.state.Libraries {
-		if r.cfg.Library != "" {
-			if r.cfg.Library != library.ID {
+		if r.library != "" {
+			if r.library != library.ID {
 				continue
 			}
 			// Only copy one library to repository.
-			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.cfg.Library, outputDir); err != nil {
+			if err := copyLibraryFiles(r.state, r.repo.GetDir(), r.library, outputDir); err != nil {
 				return err
 			}
 
@@ -242,7 +214,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 		return nil
 	}
 
-	nextVersion, err := NextVersion(commits, library.Version, r.cfg.LibraryVersion)
+	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
 	if err != nil {
 		return err
 	}
@@ -251,6 +223,39 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 	library.ReleaseTriggered = true
 
 	return nil
+}
+
+func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+	// If library version explicitly passed to CLI, use it
+	if r.libraryVersion != "" {
+		slog.Info("Library version override specified", "currentVersion", currentVersion, "version", r.libraryVersion)
+		newVersion := semver.MaxVersion(currentVersion, r.libraryVersion)
+		if newVersion == r.libraryVersion {
+			return newVersion, nil
+		} else {
+			slog.Warn("Specified version is not higher than the current version, ignoring override.")
+		}
+	}
+
+	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
+	if err != nil {
+		return "", err
+	}
+
+	if r.librarianConfig == nil {
+		slog.Info("No librarian config")
+		return nextVersionFromCommits, nil
+	}
+
+	// Look for next_version override from config.yaml
+	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
+	slog.Info("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
+	if libraryConfig == nil || libraryConfig.NextVersion == "" {
+		return nextVersionFromCommits, nil
+	}
+
+	// Compare versions and pick latest
+	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
 }
 
 // copyGlobalAllowlist copies files in the global file allowlist excluding

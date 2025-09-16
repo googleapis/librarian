@@ -32,6 +32,7 @@ import (
 )
 
 var noHeaderRequiredFiles = []string{
+	".gcloudignore",
 	".github/CODEOWNERS",
 	".gitignore",
 	"Dockerfile",
@@ -48,6 +49,8 @@ var ignoredExts = map[string]bool{
 	".md":         true,
 	".yml":        true,
 	".yaml":       true,
+	".txt":        true,
+	".webp":       true,
 }
 
 var ignoredDirs = []string{

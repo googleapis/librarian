@@ -77,7 +77,7 @@ func (m *modelAnnotations) IsGaxiCrate() bool {
 // ReleaseLevelIsGA returns true if the ReleaseLevel attribute indicates this
 // is a GA library.
 func (m *modelAnnotations) ReleaseLevelIsGA() bool {
-	return m.ReleaseLevel == "GA"
+	return m.ReleaseLevel == "GA" || m.ReleaseLevel == "stable"
 }
 
 type serviceAnnotations struct {

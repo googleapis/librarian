@@ -80,10 +80,8 @@ func TestRunGenerateCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
-				cfg: &config.Config{
-					API:       test.api,
-					APISource: t.TempDir(),
-				},
+				api:             test.api,
+				apiSource:       t.TempDir(),
 				repo:            test.repo,
 				sourceRepo:      newTestGitRepo(t),
 				ghClient:        test.ghClient,
@@ -183,9 +181,7 @@ func TestRunBuildCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
-				cfg: &config.Config{
-					Build: test.build,
-				},
+				build:           test.build,
 				repo:            test.repo,
 				state:           test.state,
 				containerClient: test.container,
@@ -331,31 +327,28 @@ func TestRunConfigureCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			sourcePath := t.TempDir()
-			cfg := &config.Config{
-				API:       test.api,
-				APISource: sourcePath,
-			}
 			r := &generateRunner{
-				cfg:             cfg,
+				api:             test.api,
+				apiSource:       sourcePath,
 				repo:            test.repo,
 				state:           test.state,
 				containerClient: test.container,
 			}
 
 			// Create a service config
-			if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Join(r.apiSource, test.api), 0755); err != nil {
 				t.Fatal(err)
 			}
 
 			data := []byte("type: google.api.Service")
-			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+			if err := os.WriteFile(filepath.Join(r.apiSource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
 
 			if test.name == "configures library with non-existent api source" {
 				// This test verifies the scenario of no service config is found
 				// in api path.
-				if err := os.RemoveAll(filepath.Join(cfg.APISource)); err != nil {
+				if err := os.RemoveAll(filepath.Join(r.apiSource)); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -442,7 +435,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "empty API source",
 			cfg: &config.Config{
 				API:         "some/api",
-				APISource:   "", // This will trigger the clone of googleapis
+				APISource:   "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -504,7 +497,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				}
 			}
 
-			r, err := newGenerateRunner(test.cfg, nil, nil)
+			r, err := newGenerateRunner(test.cfg)
 			if (err != nil) != test.wantErr {
 				t.Errorf("newGenerateRunner() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -533,7 +526,6 @@ func TestGenerateScenarios(t *testing.T) {
 		name               string
 		api                string
 		library            string
-		repo               gitrepo.Repository
 		state              *config.LibrarianState
 		container          *mockContainerClient
 		ghClient           GitHubClient
@@ -548,7 +540,6 @@ func TestGenerateScenarios(t *testing.T) {
 			name:    "generate single library including initial configuration",
 			api:     "some/api",
 			library: "some-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 			},
@@ -567,7 +558,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name:    "generate single existing library by library id",
 			library: "some-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -592,7 +582,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "generate single existing library by api",
 			api:  "some/api",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -618,7 +607,6 @@ func TestGenerateScenarios(t *testing.T) {
 			name:    "generate single existing library with library id and api",
 			api:     "some/api",
 			library: "some-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -643,7 +631,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name:    "generate single existing library with invalid library id should fail",
 			library: "some-not-configured-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -663,7 +650,6 @@ func TestGenerateScenarios(t *testing.T) {
 			name:    "generate single existing library with error message in response",
 			api:     "some/api",
 			library: "some-library",
-			repo:    newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -684,7 +670,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 		{
 			name: "generate all libraries configured in state",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -715,7 +700,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "generate single library, corrupted api",
 			api:  "corrupted/api/path",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -734,7 +718,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "symlink in output",
 			api:  "some/api",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -753,7 +736,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "generate error",
 			api:  "some/api",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -772,7 +754,6 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "build error",
 			api:  "some/api",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -796,7 +777,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 		{
 			name: "generate all, partial failure does not halt execution",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -828,7 +808,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 		{
 			name: "generate all, all fail should report error",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -854,7 +833,6 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 		{
 			name: "generate skips libraries with no APIs",
-			repo: newTestGitRepo(t),
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -872,16 +850,15 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				API:       test.api,
-				Library:   test.library,
-				APISource: t.TempDir(),
-				Build:     test.build,
-			}
+			apiSource := t.TempDir()
+			repo := newTestGitRepoWithState(t, test.state, true)
 
 			r := &generateRunner{
-				cfg:             cfg,
-				repo:            test.repo,
+				api:             test.api,
+				library:         test.library,
+				apiSource:       apiSource,
+				build:           test.build,
+				repo:            repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
 				containerClient: test.container,
@@ -890,11 +867,11 @@ func TestGenerateScenarios(t *testing.T) {
 			}
 
 			// Create a service config in api path.
-			if err := os.MkdirAll(filepath.Join(cfg.APISource, test.api), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Join(r.apiSource, test.api), 0755); err != nil {
 				t.Fatal(err)
 			}
 			data := []byte("type: google.api.Service")
-			if err := os.WriteFile(filepath.Join(cfg.APISource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+			if err := os.WriteFile(filepath.Join(r.apiSource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
 
