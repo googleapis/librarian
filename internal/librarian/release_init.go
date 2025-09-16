@@ -281,6 +281,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState) error {
 
 	if len(commits) == 0 {
 		slog.Info("Skip releasing library as there are no commits", "library", library.ID)
+		return nil
 	}
 
 	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
