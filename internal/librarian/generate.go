@@ -196,11 +196,7 @@ func newGitHubClient(repo, token string, languageRepo *gitrepo.LocalRepository) 
 			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
 		}
 	}
-	ghClient, err := github.NewClient(token, gitRepo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
-	}
-	return ghClient, nil
+	return github.NewClient(token, gitRepo)
 }
 
 // run executes the library generation process.

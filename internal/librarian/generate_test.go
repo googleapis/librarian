@@ -477,6 +477,18 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "github repo URL",
+			cfg: &config.Config{
+				API:         "some/api",
+				APISource:   newTestGitRepo(t).GetDir(),
+				Repo:        "https://github.com/googleapis/librarian",
+				WorkRoot:    t.TempDir(),
+				Image:       "gcr.io/test/test-image",
+				CommandName: generateCmdName,
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
