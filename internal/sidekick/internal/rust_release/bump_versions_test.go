@@ -205,14 +205,13 @@ func setupForPublish(t *testing.T, wantTag string) string {
 	return remoteDir
 }
 
-func cloneRepository(t *testing.T, remoteDir string) string {
+func cloneRepository(t *testing.T, remoteDir string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
 	if err := external.Run("git", "clone", remoteDir, "."); err != nil {
 		t.Fatal(err)
 	}
 	configNewGitRepository(t)
-	return cloneDir
 }
 
 func continueInNewGitRepository(t *testing.T, tmpDir string) {

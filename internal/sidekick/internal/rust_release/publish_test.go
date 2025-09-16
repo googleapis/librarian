@@ -64,7 +64,7 @@ func TestPublishWithNewCrate(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
+	remoteDir := setupForPublish(t, "release-with-new-crate")
 	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := external.Run("git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
@@ -101,7 +101,7 @@ func TestPublishWithRootsPem(t *testing.T) {
 		},
 		RootsPem: rootsPem,
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
+	remoteDir := setupForPublish(t, "release-with-roots-pem")
 	cloneRepository(t, remoteDir)
 	if err := Publish(config, true); err != nil {
 		t.Fatal(err)
@@ -125,7 +125,7 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
+	remoteDir := setupForPublish(t, "release-with-local-changes-error")
 	cloneRepository(t, remoteDir)
 	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := external.Run("git", "add", path.Join("src", "pubsub")); err != nil {
