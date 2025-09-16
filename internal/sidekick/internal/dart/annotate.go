@@ -347,7 +347,7 @@ func calculateRequiredFields(model *api.API) map[string]*api.Field {
 }
 
 // calculateDependencies calculates package dependencies based on `package:` imports.
-func calculateDependencies(imports map[string]string, constaints map[string]string) []packageDependency {
+func calculateDependencies(imports map[string]string, constraints map[string]string) []packageDependency {
 	deps := []packageDependency{}
 
 	for _, imp := range imports {
@@ -357,7 +357,7 @@ func calculateDependencies(imports map[string]string, constaints map[string]stri
 			if !slices.ContainsFunc(deps, func(dep packageDependency) bool {
 				return dep.Name == name
 			}) {
-				constraint := constaints[name]
+				constraint := constraints[name]
 				if len(constraint) == 0 {
 					// TODO(https://github.com/googleapis/librarian/issues/1989):
 					// Never emit "any" constraints.
