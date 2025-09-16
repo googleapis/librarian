@@ -15,7 +15,7 @@
 # This runs the `librarian release tag-and-release` command with a provided repository,
 # secret name, and optional PR
 steps:
-  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher
+  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher@sha256:00aa886a70e110e9e8cfb888a232a1c508031e58cfeee60870ef7a11ca3d5656
     id: publish-release-dispatcher
     entrypoint: go
     args:
