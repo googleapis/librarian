@@ -100,7 +100,7 @@ type commandRunner struct {
 const defaultAPISourceBranch = "master"
 
 func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.Branch, cfg.CI, cfg.GitHubToken)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		sourceRepoDir string
 	)
 	if cfg.CommandName == generateCmdName {
-		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
+		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +162,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}, nil
 }
 
-func cloneOrOpenRepo(workRoot, repo, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, fmt.Errorf("repo must be specified")
 	}
@@ -180,6 +180,7 @@ func cloneOrOpenRepo(workRoot, repo, branch, ci string, gitPassword string) (*gi
 			RemoteBranch: branch,
 			CI:           ci,
 			GitPassword:  gitPassword,
+			Depth:        depth,
 		})
 	}
 	// repo is a directory
