@@ -306,13 +306,12 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 	// Read the library state from the response.
 	_, err := readLibraryState(filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse))
 	if err != nil {
-		// Restore library files when build fails.
-		src := filepath.Join(r.backupDir, libraryID)
-		if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryID, src); err != nil {
-			return fmt.Errorf("failed to restore library %s to %s: %w", libraryID, r.repo.GetDir(), err)
+		slog.Error("Build fails", "id", libraryID)
+		// Remove library files from source roots and restore backup files.
+		if err := r.restoreLibrary(libraryID); err != nil {
+			return err
 		}
 
-		slog.Error("Build fails", "id", libraryID)
 		return err
 	}
 
@@ -398,6 +397,22 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	return libraryState.ID, nil
+}
+
+// restoreLibrary restores library files from backup directory.
+func (r *generateRunner) restoreLibrary(libraryID string) error {
+	slog.Info("Restoring library files", "id", libraryID)
+	library := findLibraryByID(r.state, libraryID)
+	// Clean library source roots to make sure new files are removed.
+	for _, path := range library.SourceRoots {
+		relPath := filepath.Join(r.repo.GetDir(), path)
+		if err := os.RemoveAll(relPath); err != nil {
+			return err
+		}
+	}
+
+	src := filepath.Join(r.backupDir, libraryID)
+	return copyLibraryFiles(r.state, r.repo.GetDir(), libraryID, src)
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {
