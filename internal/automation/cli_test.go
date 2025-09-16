@@ -15,10 +15,49 @@
 package automation
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+func TestRun(t *testing.T) {
+
+	tests := []struct {
+		name          string
+		args          []string
+		runCommandErr error
+		wantErr       bool
+	}{
+		{
+			name:    "success",
+			args:    []string{"--command=generate"},
+			wantErr: false,
+		},
+		{
+			name:    "error parsing flags",
+			args:    []string{"--unknown-flag"},
+			wantErr: true,
+		},
+		{
+			name:          "error from RunCommand",
+			args:          []string{"--command=generate"},
+			runCommandErr: errors.New("run command failed"),
+			wantErr:       true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool, forceRun bool) error {
+				return tt.runCommandErr
+			}
+			if err := Run(tt.args); (err != nil) != tt.wantErr {
+				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
 
 func TestParseArgs(t *testing.T) {
 	for _, test := range []struct {
@@ -36,6 +75,7 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     true,
+				ForceRun:  false,
 			},
 		},
 		{
@@ -47,6 +87,7 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "some-project-id",
 				Push:      true,
 				Build:     true,
+				ForceRun:  false,
 			},
 		},
 		{
@@ -58,6 +99,7 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     true,
+				ForceRun:  false,
 			},
 		},
 		{
@@ -69,6 +111,7 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      false,
 				Build:     true,
+				ForceRun:  false,
 			},
 		},
 		{
@@ -80,6 +123,19 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     false,
+				ForceRun:  false,
+			},
+		},
+		{
+			name:    "sets forceRun",
+			args:    []string{"--force-run=true"},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "generate",
+				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      true,
+				Build:     true,
+				ForceRun:  true,
 			},
 		},
 	} {

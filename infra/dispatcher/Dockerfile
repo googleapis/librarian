@@ -11,21 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# This runs the `librarian release init` command with a provided repository,
-# secret name, and optional library ID
-steps:
-  - name: golang:1.25.0
-    id: stage-release-dispatcher
-    entrypoint: go
-    args:
-      - 'run'
-      - './cmd/automation'
-      - '--project=$PROJECT_ID'
-      - '--command=stage-release'
-      - '--push=$_PUSH'
-      - '--force-run=$_FORCE_RUN'
-tags: ['stage-release-dispatcher']
-availableSecrets:
-options:
-  logging: CLOUD_LOGGING_ONLY
+FROM golang:1.25.0
+
+WORKDIR /app
+
+ADD . /app
+RUN go build ./...
+
+ENTRYPOINT [ "go" ]

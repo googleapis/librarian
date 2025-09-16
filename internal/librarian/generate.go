@@ -86,8 +86,14 @@ in '.librarian/state.yaml'.
 
 Example with build and push:
   SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`,
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		runner, err := newGenerateRunner(cfg)
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		if err := cmd.Config.SetDefaults(); err != nil {
+			return fmt.Errorf("failed to initialize config: %w", err)
+		}
+		if _, err := cmd.Config.IsValid(); err != nil {
+			return fmt.Errorf("failed to validate config: %s", err)
+		}
+		runner, err := newGenerateRunner(cmd.Config)
 		if err != nil {
 			return err
 		}
@@ -315,12 +321,12 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 	}
 
 	generateRequest := &docker.GenerateRequest{
-		Cfg:       &config.Config{HostMount: r.hostMount},
-		State:     r.state,
 		ApiRoot:   apiRoot,
+		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		Output:    outputDir,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
 	slog.Info("Performing generation for library", "id", libraryID, "outputDir", outputDir)
 	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
@@ -357,10 +363,10 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 	}
 
 	buildRequest := &docker.BuildRequest{
-		Cfg:       &config.Config{HostMount: r.hostMount},
-		State:     r.state,
+		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
 	slog.Info("Performing build for library", "id", libraryID)
 	if err := r.containerClient.Build(ctx, buildRequest); err != nil {
@@ -419,11 +425,11 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	configureRequest := &docker.ConfigureRequest{
-		Cfg:       &config.Config{HostMount: r.hostMount},
-		State:     r.state,
 		ApiRoot:   apiRoot,
+		HostMount: r.hostMount,
 		LibraryID: r.library,
 		RepoDir:   r.repo.GetDir(),
+		State:     r.state,
 	}
 	slog.Info("Performing configuration for library", "id", r.library)
 	if _, err := r.containerClient.Configure(ctx, configureRequest); err != nil {

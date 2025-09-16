@@ -62,8 +62,14 @@ Examples:
 
   # Manually specify a version for a single library, overriding the calculation.
   librarian release init --library=secretmanager --library-version=2.0.0 --push`,
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		runner, err := newInitRunner(cfg)
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		if err := cmd.Config.SetDefaults(); err != nil {
+			return fmt.Errorf("failed to initialize config: %w", err)
+		}
+		if _, err := cmd.Config.IsValid(); err != nil {
+			return fmt.Errorf("failed to validate config: %s", err)
+		}
+		runner, err := newInitRunner(cmd.Config)
 		if err != nil {
 			return err
 		}
@@ -205,19 +211,15 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
-		Cfg: &config.Config{
-			Library:        r.library,
-			LibraryVersion: r.libraryVersion,
-			Push:           r.push,
-			Commit:         r.commit,
-			Branch:         r.branch,
-		},
-		State:           r.state,
+		Branch:          r.branch,
+		Commit:          r.commit,
 		LibrarianConfig: r.librarianConfig,
 		LibraryID:       r.library,
 		LibraryVersion:  r.libraryVersion,
 		Output:          outputDir,
 		PartialRepoDir:  dst,
+		Push:            r.push,
+		State:           r.state,
 	}
 
 	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
