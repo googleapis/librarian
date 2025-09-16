@@ -1022,13 +1022,6 @@ func TestRestoreLibrary(t *testing.T) {
 			},
 			backupDir: t.TempDir(),
 		},
-		//{
-		//	name:       "failed to create backup dir",
-		//	libraryID:  "example-id",
-		//	backupDir:  "/non-existent/dir",
-		//	wantErr:    true,
-		//	wantErrMsg: "failed to create backup dir",
-		//},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := newTestGitRepo(t)
