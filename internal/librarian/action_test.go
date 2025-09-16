@@ -22,19 +22,28 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestGenerateAction(t *testing.T) {
-	t.Parallel()
-	testActionConfig(t, cmdGenerate)
-}
-
-func TestInitAction(t *testing.T) {
-	t.Parallel()
-	testActionConfig(t, cmdInit)
-}
-
-func TestTagAndReleaseAction(t *testing.T) {
-	t.Parallel()
-	testActionConfig(t, cmdTagAndRelease)
+func TestLibrarianAction(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		fn   func() *cli.Command
+	}{
+		{
+			name: "generate",
+			fn:   newCmdGenerate,
+		},
+		{
+			name: "init",
+			fn:   newCmdInit,
+		},
+		{
+			name: "tag-and-release",
+			fn:   newCmdTagAndRelease,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			testActionConfig(t, test.fn())
+		})
+	}
 }
 
 // testActionConfig tests the execution flow for each Command.Action. The
