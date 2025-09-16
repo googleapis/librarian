@@ -415,6 +415,22 @@ func TestProcessPullRequest(t *testing.T) {
 			wantErrMsg: "library google-cloud-storage not found",
 		},
 		{
+			name: "missing tag format",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				librarianState: &config.LibrarianState{
+					Image: "gcr.io/some-project-id/some-test-image:latest",
+					Libraries: []*config.LibraryState{
+						{
+							ID:          "google-cloud-storage",
+							SourceRoots: []string{"some/path"},
+						},
+					},
+				},
+			},
+			wantErrMsg: "library google-cloud-storage did not configure tag_format",
+		},
+		{
 			name: "create release fails",
 			pr:   prWithRelease,
 			ghClient: &mockGitHubClient{
