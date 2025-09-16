@@ -15,6 +15,8 @@
 package rustrelease
 
 import (
+	"bytes"
+	"fmt"
 	"os/exec"
 	"slices"
 	"strings"
@@ -22,6 +24,18 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
+
+func isNewFile(config *config.Release, ref, name string) bool {
+	delta := fmt.Sprintf("%s..HEAD", ref)
+	cmd := exec.Command(gitExe(config), "diff", "--summary", delta, "--", name)
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+	expected := fmt.Sprintf(" create mode 100644 %s", name)
+	return bytes.HasPrefix(output, []byte(expected))
+}
 
 func filesChangedSince(config *config.Release, ref string) ([]string, error) {
 	cmd := exec.Command(gitExe(config), "diff", "--name-only", ref)

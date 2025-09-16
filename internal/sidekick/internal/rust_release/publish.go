@@ -17,6 +17,8 @@ package rustrelease
 import (
 	"fmt"
 	"log/slog"
+	"maps"
+	"os"
 	"os/exec"
 	"slices"
 	"strings"
@@ -40,41 +42,55 @@ func Publish(config *config.Release, dryRun bool) error {
 	if err != nil {
 		return err
 	}
-	var changedCrates []string
+	manifests := map[string]string{}
 	for _, manifest := range findCargoManifests(files) {
 		names, err := publishedCrate(manifest)
 		if err != nil {
 			return err
 		}
-		changedCrates = append(changedCrates, names...)
+		for _, name := range names {
+			manifests[name] = manifest
+		}
 	}
+	slog.Info("computing publication plan with: cargo workspaces plan")
+	hasRootsPem := false
 	cmd := exec.Command(cargoExe(config), "workspaces", "plan", "--skip-published")
-	cmd.Env = append(cmd.Env, "CARGO_HTTP_CAINFO=/usr/share/ca-certificates/google/roots.pem")
+	if _, err := os.Stat("/usr/share/ca-certificates/google/roots.pem"); err == nil {
+		hasRootsPem = true
+		cmd.Env = append(os.Environ(), "CARGO_HTTP_CAINFO=/usr/share/ca-certificates/google/roots.pem")
+	}
 	cmd.Dir = "."
-	output, err := cmd.CombinedOutput()
+	output, err := cmd.Output()
 	if err != nil {
 		return err
 	}
 	plannedCrates := strings.Split(string(output), "\n")
 	plannedCrates = slices.DeleteFunc(plannedCrates, func(a string) bool { return a == "" })
+	changedCrates := slices.Collect(maps.Keys(manifests))
 	slices.Sort(plannedCrates)
 	slices.Sort(changedCrates)
 	if diff := cmp.Diff(changedCrates, plannedCrates); diff != "" && cargoExe(config) != "/bin/echo" {
 		return fmt.Errorf("mismatched workspace plan vs. changed crates, probably missing some version bumps (-plan, +changed):\n%s", diff)
 	}
 
-	for _, name := range changedCrates {
-		slog.Info("runnning cargo semver-checks", "crate", name)
+	for name, manifest := range manifests {
+		if isNewFile(config, lastTag, manifest) {
+			continue
+		}
+		slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)
 		if err := external.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
 			return err
 		}
 	}
+	slog.Info("publishing crates with: cargo workspaces publish --skip-published ...")
 	args := []string{"workspaces", "publish", "--skip-published", "--publish-interval=60", "--no-git-commit", "--from-git", "skip"}
 	if dryRun {
 		args = append(args, "--dry-run")
 	}
 	cmd = exec.Command(cargoExe(config), args...)
-	cmd.Env = append(cmd.Env, "CARGO_HTTP_CAINFO=/usr/share/ca-certificates/google/roots.pem")
+	if hasRootsPem {
+		cmd.Env = append(os.Environ(), "CARGO_HTTP_CAINFO=/usr/share/ca-certificates/google/roots.pem")
+	}
 	cmd.Dir = "."
 	return cmd.Run()
 }
