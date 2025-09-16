@@ -401,6 +401,8 @@ func TestInitRun(t *testing.T) {
 			containerClient: &mockContainerClient{
 				initErr: errors.New("simulated init error"),
 			},
+			// error occured inside the docker container, there was a single request made to the container
+			dockerInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        t.TempDir(),
@@ -422,10 +424,11 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "simulated init error",
 		},
 		{
-			name: "release response contains error message",
+			name: "release response from container contains error message",
 			containerClient: &mockContainerClient{
 				wantErrorMsg: true,
 			},
+			// error reported from the docker container, there was a single request made to the container
 			dockerInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
@@ -448,10 +451,12 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed with error message: simulated error message",
 		},
 		{
-			name: "invalid work root",
+			name:            "invalid work root",
+			containerClient: &mockContainerClient{},
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
-					workRoot: "/invalid/path",
+					workRoot:        "/invalid/path",
+					containerClient: containerClient,
 					repo: &MockRepository{
 						Dir: t.TempDir(),
 					},
@@ -694,10 +699,12 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed to commit and push",
 		},
 		{
-			name: "failed to make partial repo",
+			name:            "failed to make partial repo",
+			containerClient: &mockContainerClient{},
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
-					workRoot: t.TempDir(),
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
 					repo: &MockRepository{
 						Dir: t.TempDir(),
 					},
@@ -857,6 +864,15 @@ func TestInitRun(t *testing.T) {
 			}
 
 			err := runner.run(context.Background())
+
+			// Check how many times the docker container has been called. If a release is to proceed
+			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0. Run this check even
+			// if there is an error that is wanted to ensure that a docker request is only made when
+			// we want it to.
+			if diff := cmp.Diff(test.containerClient.initCalls, test.dockerInitCalls); diff != "" {
+				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
+			}
+
 			if test.wantErr {
 				if err == nil {
 					t.Error("run() should return error")
@@ -870,12 +886,6 @@ func TestInitRun(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("run() failed: %s", err.Error())
-			}
-
-			// Check how many times the docker container has been called. If a release is to proceed
-			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0.
-			if diff := cmp.Diff(test.containerClient.initCalls, test.dockerInitCalls); diff != "" {
-				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
 			}
 
 			// load librarian state from state.yaml, which should contain updated
