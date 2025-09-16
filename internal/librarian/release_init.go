@@ -122,6 +122,13 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	image := deriveImage(cfg.Image, state)
+	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	if err != nil {
+		return nil, err
+	}
+
 	ghClient, err := newGitHubClient(cfg.Repo, cfg.GitHubToken, languageRepo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
@@ -130,6 +137,7 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	return &initRunner{
 		branch:          cfg.Branch,
 		commit:          cfg.Commit,
+		containerClient: container,
 		ghClient:        ghClient,
 		image:           deriveImage(cfg.Image, state),
 		librarianConfig: librarianConfig,
