@@ -144,6 +144,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 
 		tagFormat, err := determineTagFormat(release.Library, libraryState)
 		if err != nil {
+			slog.Warn("could not determine tag format", "library", release.Library)
 			return err
 		}
 
@@ -162,7 +163,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 func determineTagFormat(libraryID string, librarianState *config.LibrarianState) (string, error) {
 	// TODO(#2177): read from LibrarianConfig
 	libraryState := librarianState.LibraryByID(libraryID)
-	if librarianState == nil {
+	if libraryState == nil {
 		return "", fmt.Errorf("library %s not found", libraryID)
 	}
 	if libraryState.TagFormat != "" {
