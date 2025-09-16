@@ -81,6 +81,63 @@ func TestPublishLastTagError(t *testing.T) {
 	}
 }
 
+func TestPublishBadManifest(t *testing.T) {
+	requireCommand(t, "git")
+	requireCommand(t, "/bin/echo")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+				{Name: "cargo-workspaces", Version: "3.4.5"},
+			},
+		},
+	}
+	setupForVersionBump(t, "release-2001-02-03")
+	name := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	name = path.Join("src", "storage", "Cargo.toml")
+	if err := os.WriteFile(name, []byte("bad-toml = {\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := Publish(config, true); err == nil {
+		t.Errorf("expected an error with a bad manifest file")
+	}
+}
+
+func TestPublishGetPlanError(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "git",
+		},
+	}
+	setupForVersionBump(t, "release-2001-02-03")
+	name := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := Publish(config, true); err == nil {
+		t.Fatalf("expected an error during plan generation")
+	}
+}
+
 func TestPublishPlanMismatchError(t *testing.T) {
 	requireCommand(t, "git")
 	requireCommand(t, "echo")
