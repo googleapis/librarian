@@ -139,6 +139,7 @@ func clone(dir, url, branch, ci string) (*LocalRepository, error) {
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 		Tags:          git.AllTags,
+		Depth:         1,
 		// .NET uses submodules for conformance tests.
 		// (There may be other examples too.)
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
