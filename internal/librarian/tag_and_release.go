@@ -101,18 +101,23 @@ type tagAndReleaseRunner struct {
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
-	runner, err := newCommandRunner(cfg)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
-	if cfg.GitHubToken == "" {
-		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
+	state, err := loadRepoState(languageRepo, "")
+	if err != nil {
+		return nil, err
+	}
+	ghClient, err := newGitHubClient(cfg.Repo, cfg.GitHubToken, languageRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 	}
 	return &tagAndReleaseRunner{
-		ghClient:    runner.ghClient,
+		ghClient:    ghClient,
 		pullRequest: cfg.PullRequest,
-		repo:        runner.repo,
-		state:       runner.state,
+		repo:        languageRepo,
+		state:       state,
 	}, nil
 }
 
