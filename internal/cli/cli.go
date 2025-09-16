@@ -19,6 +19,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -59,6 +60,9 @@ func (c *Command) Run(ctx context.Context, args []string) error {
 		return err
 	}
 	if err := cmd.Flags.Parse(remaining); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 

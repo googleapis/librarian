@@ -46,7 +46,7 @@ func updateSidekickConfig(manifest, newVersion string) error {
 	result = append(result, lines[:iCodec+1]...)
 	tail := lines[iCodec+1:]
 	iVersion := slices.IndexFunc(tail, func(a string) bool { return strings.HasPrefix(a, "version = ") })
-	verLine := fmt.Sprintf(`version = "%s"`, newVersion)
+	verLine := fmt.Sprintf(`version        = '%s'`, newVersion)
 	if iVersion == -1 {
 		result = append(result, verLine)
 		result = append(result, tail...)

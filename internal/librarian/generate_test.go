@@ -434,23 +434,25 @@ func TestNewGenerateRunner(t *testing.T) {
 		{
 			name: "empty API source",
 			cfg: &config.Config{
-				API:         "some/api",
-				APISource:   "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
-				Repo:        newTestGitRepo(t).GetDir(),
-				WorkRoot:    t.TempDir(),
-				Image:       "gcr.io/test/test-image",
-				CommandName: generateCmdName,
+				API:            "some/api",
+				APISource:      "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
+				APISourceDepth: 1,
+				Repo:           newTestGitRepo(t).GetDir(),
+				WorkRoot:       t.TempDir(),
+				Image:          "gcr.io/test/test-image",
+				CommandName:    generateCmdName,
 			},
 		},
 		{
 			name: "clone googleapis fails",
 			cfg: &config.Config{
-				API:         "some/api",
-				APISource:   "", // This will trigger the clone of googleapis
-				Repo:        newTestGitRepo(t).GetDir(),
-				WorkRoot:    t.TempDir(),
-				Image:       "gcr.io/test/test-image",
-				CommandName: generateCmdName,
+				API:            "some/api",
+				APISource:      "", // This will trigger the clone of googleapis
+				APISourceDepth: 1,
+				Repo:           newTestGitRepo(t).GetDir(),
+				WorkRoot:       t.TempDir(),
+				Image:          "gcr.io/test/test-image",
+				CommandName:    generateCmdName,
 			},
 			wantErr: true,
 		},

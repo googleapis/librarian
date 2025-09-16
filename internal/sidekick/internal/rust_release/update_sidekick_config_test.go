@@ -30,13 +30,13 @@ func TestUpdateSidekickConfigSuccess(t *testing.T) {
 [codec]
 a = 123
 version = "1.2.3"
-c = 345
+copyright-year = '2038'
 `
 	const want = `# With version line
 [codec]
 a = 123
-version = "2.3.4"
-c = 345
+version        = '2.3.4'
+copyright-year = '2038'
 `
 	if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
@@ -59,13 +59,13 @@ func TestUpdateSidekickConfigSuccessNoVersion(t *testing.T) {
 	sidekick := path.Join(tmpDir, ".sidekick.toml")
 	const contents = `# With version line
 [codec]
-a = 123
+copyright-year = '2038'
 c = 345
 `
 	const want = `# With version line
 [codec]
-version = "2.3.4"
-a = 123
+version        = '2.3.4'
+copyright-year = '2038'
 c = 345
 `
 	if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
@@ -94,7 +94,7 @@ func TestUpdateSidekickConfigSuccessEmptyCodec(t *testing.T) {
 	const want = `# With version line
 
 [codec]
-version = "2.3.4"
+version        = '2.3.4'
 `
 	if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
