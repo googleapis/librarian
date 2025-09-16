@@ -46,24 +46,44 @@ type initRunner struct {
 }
 
 func newInitRunner(cfg *config.Config) (*initRunner, error) {
-	runner, err := newCommandRunner(cfg)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create init runner: %w", err)
+		return nil, err
 	}
+	state, err := loadRepoState(languageRepo, "")
+	if err != nil {
+		return nil, err
+	}
+	librarianConfig, err := loadLibrarianConfig(languageRepo)
+	if err != nil {
+		return nil, err
+	}
+
+	image := deriveImage(cfg.Image, state)
+	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	if err != nil {
+		return nil, err
+	}
+
+	ghClient, err := newGitHubClient(cfg.Repo, cfg.GitHubToken, languageRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
+	}
+
 	return &initRunner{
 		branch:          cfg.Branch,
 		commit:          cfg.Commit,
-		containerClient: runner.containerClient,
-		ghClient:        runner.ghClient,
-		image:           runner.image,
-		librarianConfig: runner.librarianConfig,
+		containerClient: container,
+		ghClient:        ghClient,
+		image:           deriveImage(cfg.Image, state),
+		librarianConfig: librarianConfig,
 		library:         cfg.Library,
 		libraryVersion:  cfg.LibraryVersion,
+		partialRepo:     filepath.Join(cfg.WorkRoot, "release-init"),
 		push:            cfg.Push,
-		repo:            runner.repo,
-		sourceRepo:      runner.sourceRepo,
-		state:           runner.state,
-		workRoot:        runner.workRoot,
+		repo:            languageRepo,
+		state:           state,
+		workRoot:        cfg.WorkRoot,
 	}, nil
 }
 

@@ -92,68 +92,6 @@ type commitInfo struct {
 	failedGenerations int
 }
 
-type commandRunner struct {
-	repo            gitrepo.Repository
-	sourceRepo      gitrepo.Repository
-	state           *config.LibrarianState
-	librarianConfig *config.LibrarianConfig
-	ghClient        GitHubClient
-	containerClient ContainerClient
-	image           string
-	workRoot        string
-}
-
-func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken)
-	if err != nil {
-		return nil, err
-	}
-
-	var (
-		sourceRepo    gitrepo.Repository
-		sourceRepoDir string
-	)
-	if cfg.CommandName == generateCmdName {
-		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
-		if err != nil {
-			return nil, err
-		}
-		sourceRepoDir = sourceRepo.GetDir()
-	}
-	state, err := loadRepoState(languageRepo, sourceRepoDir)
-	if err != nil {
-		return nil, err
-	}
-
-	librarianConfig, err := loadLibrarianConfig(languageRepo)
-	if err != nil {
-		return nil, err
-	}
-
-	image := deriveImage(cfg.Image, state)
-
-	gitHubRepo, err := GetGitHubRepository(cfg, languageRepo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get GitHub repository: %w", err)
-	}
-
-	ghClient := github.NewClient(cfg.GitHubToken, gitHubRepo)
-	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
-	if err != nil {
-		return nil, err
-	}
-	return &commandRunner{
-		workRoot:        cfg.WorkRoot,
-		repo:            languageRepo,
-		sourceRepo:      sourceRepo,
-		state:           state,
-		librarianConfig: librarianConfig,
-		image:           image,
-		ghClient:        ghClient,
-		containerClient: container,
-	}, nil
-}
-
 func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, fmt.Errorf("repo must be specified")

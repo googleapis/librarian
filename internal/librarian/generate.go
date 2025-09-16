@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -50,28 +51,67 @@ type generateRunner struct {
 	workRoot        string
 }
 
+const defaultAPISourceBranch = "master"
+
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
-	runner, err := newCommandRunner(cfg)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
+	sourceRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
+	if err != nil {
+		return nil, err
+	}
+	sourceRepoDir := sourceRepo.GetDir()
+	state, err := loadRepoState(languageRepo, sourceRepoDir)
+	if err != nil {
+		return nil, err
+	}
+
+	image := deriveImage(cfg.Image, state)
+	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	if err != nil {
+		return nil, err
+	}
+
+	ghClient, err := newGitHubClient(cfg.Repo, cfg.GitHubToken, languageRepo)
+	if err != nil {
+		return nil, err
+	}
+
 	return &generateRunner{
 		api:             cfg.API,
 		branch:          cfg.Branch,
 		build:           cfg.Build,
 		commit:          cfg.Commit,
-		containerClient: runner.containerClient,
-		ghClient:        runner.ghClient,
+		containerClient: container,
+		ghClient:        ghClient,
 		hostMount:       cfg.HostMount,
-		image:           runner.image,
+		image:           image,
+		librarianConfig: cfg.LibrarianConfig,
 		library:         cfg.Library,
 		push:            cfg.Push,
-		repo:            runner.repo,
-		sourceRepo:      runner.sourceRepo,
-		state:           runner.state,
-		librarianConfig: runner.librarianConfig,
-		workRoot:        runner.workRoot,
+		repo:            languageRepo,
+		sourceRepo:      sourceRepo,
+		state:           state,
+		workRoot:        cfg.WorkRoot,
 	}, nil
+}
+
+func newGitHubClient(repo, token string, languageRepo *gitrepo.LocalRepository) (_ GitHubClient, err error) {
+	var gitRepo *github.Repository
+	if isURL(repo) {
+		gitRepo, err = github.ParseRemote(repo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse repo url: %w", err)
+		}
+	} else {
+		gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
+		}
+	}
+	return github.NewClient(token, gitRepo), nil
 }
 
 // run executes the library generation process.

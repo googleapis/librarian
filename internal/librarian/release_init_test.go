@@ -54,7 +54,7 @@ func TestNewInitRunner(t *testing.T) {
 				APISource: newTestGitRepo(t).GetDir(),
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to create init runner",
+			wantErrMsg: "repo must be specified",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

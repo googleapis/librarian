@@ -70,6 +70,8 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 	return &tagAndReleaseRunner{
 		ghClient:    ghClient,
 		pullRequest: cfg.PullRequest,
+		repo:        languageRepo,
+		state:       state,
 	}, nil
 }
 
