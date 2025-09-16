@@ -63,6 +63,7 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	want = nil
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
@@ -227,7 +228,7 @@ func TestUpdateManifestBadSidekickConfig(t *testing.T) {
 	}
 
 	if got, err := updateManifest(&release, tag, name); err == nil {
-		t.Errorf("expected an error when using a bad version, got=%v", got)
+		t.Errorf("expected an error when using a bad sidekick file, got=%v", got)
 	}
 }
 
@@ -252,7 +253,7 @@ func TestBumpPackageVersion(t *testing.T) {
 	}
 }
 
-func TestManifestVersionUpdatedSuccess(t *testing.T) {
+func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 	const tag = "manifest-version-update-success"
 	requireCommand(t, "git")
 	setupForVersionBump(t, tag)
@@ -279,16 +280,43 @@ func TestManifestVersionUpdatedSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updated, err := manifestVersionUpdated(&release, tag, name)
+	needsBump, err := manifestVersionNeedsBump(&release, tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !updated {
-		t.Errorf("expected a change for %s, got=%v", name, updated)
+	if needsBump {
+		t.Errorf("expected no need for a bump for %s", name)
 	}
 }
 
-func TestManifestVersionUpdatedNoChange(t *testing.T) {
+func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
+	const tag = "manifest-version-update-new-crate"
+	requireCommand(t, "git")
+	setupForVersionBump(t, tag)
+	release := config.Release{
+		Remote:       "origin",
+		Branch:       "main",
+		Preinstalled: map[string]string{},
+	}
+	addGeneratedCrate(t, path.Join("src", "new"), "google-cloud-new")
+	if err := external.Run("git", "add", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "new crate", "."); err != nil {
+		t.Fatal(err)
+	}
+	name := path.Join("src", "new", "Cargo.toml")
+
+	needsBump, err := manifestVersionNeedsBump(&release, tag, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if needsBump {
+		t.Errorf("no changes for new crates")
+	}
+}
+
+func TestManifestVersionNeedsBumpNoChange(t *testing.T) {
 	const tag = "manifest-version-update-no-change"
 	requireCommand(t, "git")
 	setupForVersionBump(t, tag)
@@ -298,16 +326,16 @@ func TestManifestVersionUpdatedNoChange(t *testing.T) {
 		Preinstalled: map[string]string{},
 	}
 	name := path.Join("src", "storage", "Cargo.toml")
-	updated, err := manifestVersionUpdated(&release, tag, name)
+	needsBump, err := manifestVersionNeedsBump(&release, tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if updated {
-		t.Errorf("expected no change for %s, got=%v", name, updated)
+	if !needsBump {
+		t.Errorf("expected no change for %s", name)
 	}
 }
 
-func TestManifestVersionUpdatedBadDiff(t *testing.T) {
+func TestManifestVersionNeedsBumpBadDiff(t *testing.T) {
 	const tag = "manifest-version-update-success"
 	requireCommand(t, "git")
 	setupForVersionBump(t, tag)
@@ -317,7 +345,7 @@ func TestManifestVersionUpdatedBadDiff(t *testing.T) {
 		Preinstalled: map[string]string{},
 	}
 	name := path.Join("src", "storage", "Cargo.toml")
-	if updated, err := manifestVersionUpdated(&release, "not-a-valid-tag", name); err == nil {
+	if updated, err := manifestVersionNeedsBump(&release, "not-a-valid-tag", name); err == nil {
 		t.Errorf("expected an error with an valid tag, got=%v", updated)
 	}
 }
