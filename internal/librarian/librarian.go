@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/googleapis/librarian/internal/cli"
 )
@@ -36,6 +35,5 @@ var CmdLibrarian = &cli.Command{
 // Run executes the Librarian CLI with the given command line arguments.
 func Run(ctx context.Context, arg ...string) error {
 	CmdLibrarian.Init()
-	slog.Info("librarian", "arguments", arg)
 	return CmdLibrarian.Run(ctx, arg)
 }
