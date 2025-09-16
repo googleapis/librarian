@@ -26,5 +26,13 @@ steps:
       - '-t'
       - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
       - '.'
+  - id: structure-test
+    name: gcr.io/gcp-runtimes/structure_test
+    args:
+      - '-i'
+      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+      - '--config'
+      - '/workspace/container-structure-test.yaml'
+      - '-v'
 images:
   - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'

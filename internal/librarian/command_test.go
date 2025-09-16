@@ -34,21 +34,6 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func TestCommandUsage(t *testing.T) {
-	for _, c := range CmdLibrarian.Commands {
-		t.Run(c.Name(), func(t *testing.T) {
-			parts := strings.Fields(c.UsageLine)
-			// The first word should always be "librarian".
-			if parts[0] != "librarian" {
-				t.Errorf("invalid usage text: %q (the first word should be `librarian`)", c.UsageLine)
-			}
-			if !strings.Contains(c.UsageLine, c.Name()) {
-				t.Errorf("invalid usage text: %q (should contain command name %q)", c.UsageLine, c.Name())
-			}
-		})
-	}
-}
-
 func TestFindLibraryByID(t *testing.T) {
 	lib1 := &config.LibraryState{ID: "lib1"}
 	lib2 := &config.LibraryState{ID: "lib2"}
@@ -1257,7 +1242,7 @@ func TestSeparateFilesAndDirs(t *testing.T) {
 
 func TestCompileRegexps(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name     string
 		patterns []string
 		wantErr  bool
@@ -1291,15 +1276,15 @@ func TestCompileRegexps(t *testing.T) {
 			wantErr: true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			regexps, err := compileRegexps(tc.patterns)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("compileRegexps() error = %v, wantErr %v", err, tc.wantErr)
+			regexps, err := compileRegexps(test.patterns)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("compileRegexps() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if !tc.wantErr {
-				if len(regexps) != len(tc.patterns) {
-					t.Errorf("compileRegexps() len = %d, want %d", len(regexps), len(tc.patterns))
+			if !test.wantErr {
+				if len(regexps) != len(test.patterns) {
+					t.Errorf("compileRegexps() len = %d, want %d", len(regexps), len(test.patterns))
 				}
 			}
 		})
@@ -1594,17 +1579,15 @@ func TestCommitAndPush(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
-			localConfig := &config.Config{
-				Push:   test.push,
-				Commit: test.commit,
-			}
+
 			commitInfo := &commitInfo{
-				cfg:           localConfig,
-				state:         test.state,
-				repo:          repo,
-				ghClient:      client,
+				commit:        test.commit,
 				commitMessage: "",
+				ghClient:      client,
 				prType:        test.prType,
+				push:          test.push,
+				repo:          repo,
+				state:         test.state,
 			}
 
 			err := commitAndPush(context.Background(), commitInfo)

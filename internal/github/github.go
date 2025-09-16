@@ -228,6 +228,7 @@ func (c *Client) SearchPullRequests(ctx context.Context, query string) ([]*PullR
 	opts := &github.SearchOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
+	query = fmt.Sprintf("repo:%s/%s %s", c.repo.Owner, c.repo.Name, query)
 	for {
 		result, resp, err := c.Search.Issues(ctx, query, opts)
 		if err != nil {
@@ -256,7 +257,10 @@ func (c *Client) GetPullRequest(ctx context.Context, number int) (*PullRequest, 
 	return pr, err
 }
 
-// CreateRelease creates a tag and release in the repository at the given commitish.
+// CreateRelease creates a tag and release in the repository at the given
+// commit-ish. See
+// https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-commit-ishalsocommittish
+// for definition of commit-ish.
 func (c *Client) CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error) {
 	r, _, err := c.Repositories.CreateRelease(ctx, c.repo.Owner, c.repo.Name, &github.RepositoryRelease{
 		TagName:         &tagName,
@@ -310,4 +314,17 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 		opt.Page = resp.NextPage
 	}
 	return allPRs, nil
+}
+
+// CreateTag creates a lightweight tag in the repository at the given commit SHA.
+// This does NOT create a release, just the tag.
+func (c *Client) CreateTag(ctx context.Context, tagName, commitSHA string) error {
+	slog.Info("Creating tag", "tag", tagName, "commit", commitSHA)
+	ref := "refs/tags/" + tagName
+	tagRef := &github.Reference{
+		Ref:    github.Ptr(ref),
+		Object: &github.GitObject{SHA: github.Ptr(commitSHA), Type: github.Ptr("commit")},
+	}
+	_, _, err := c.Git.CreateRef(ctx, c.repo.Owner, c.repo.Name, tagRef)
+	return err
 }

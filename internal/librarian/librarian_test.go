@@ -22,15 +22,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 
@@ -42,44 +39,6 @@ import (
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func TestParentCommands(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name       string
-		command    string
-		wantErr    bool
-		wantErrMsg string // Expected substring in the error
-	}{
-		{
-			name:       "release no subcommand",
-			command:    "release",
-			wantErr:    true,
-			wantErrMsg: `command "release" requires a subcommand`,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := Run(ctx, test.command)
-
-			if test.wantErr {
-				if err == nil {
-					t.Fatalf("Run(ctx, %q) got nil, want error containing %q", test.command, test.wantErrMsg)
-				}
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("Run(ctx, %q) got error %q, want error containing %q", test.command, err.Error(), test.wantErrMsg)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("Run(ctx, %q) got error %v, want nil", test.command, err)
-			}
-		})
 	}
 }
 
@@ -110,14 +69,13 @@ func TestGenerate_DefaultBehavior(t *testing.T) {
 	cfg.WorkRoot = repoDir
 	cfg.Repo = repoDir
 	cfg.APISource = apiSourceDir
-	runner, err := newGenerateRunner(cfg, func(token string, repo *github.Repository) (GitHubClient, error) {
-		return mockGH, nil
-	}, func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
-		return mockContainer, nil
-	})
+	runner, err := newGenerateRunner(cfg)
 	if err != nil {
 		t.Fatalf("newGenerateRunner() failed: %v", err)
 	}
+
+	runner.ghClient = mockGH
+	runner.containerClient = mockContainer
 	if err := runner.run(ctx); err != nil {
 		t.Fatalf("runner.run() failed: %v", err)
 	}
@@ -339,135 +297,4 @@ func setupRepoForGetCommits(t *testing.T, pathAndMessages []pathAndMessage, tags
 type pathAndMessage struct {
 	path    string
 	message string
-}
-
-func TestLookupCommand(t *testing.T) {
-	sub1sub1 := &cli.Command{
-		Short:     "sub1sub1 does something",
-		UsageLine: "sub1sub1",
-		Long:      "sub1sub1 does something",
-	}
-	sub1 := &cli.Command{
-		Short:     "sub1 does something",
-		UsageLine: "sub1",
-		Long:      "sub1 does something",
-		Commands:  []*cli.Command{sub1sub1},
-	}
-	sub2 := &cli.Command{
-		Short:     "sub2 does something",
-		UsageLine: "sub2",
-		Long:      "sub2 does something",
-	}
-	root := &cli.Command{
-		Short:     "root does something",
-		UsageLine: "root",
-		Long:      "root does something",
-		Commands: []*cli.Command{
-			sub1,
-			sub2,
-		},
-	}
-	root.Init()
-	sub1.Init()
-	sub2.Init()
-	sub1sub1.Init()
-
-	testCases := []struct {
-		name     string
-		cmd      *cli.Command
-		args     []string
-		wantCmd  *cli.Command
-		wantArgs []string
-		wantErr  bool
-	}{
-		{
-			name:    "no args",
-			cmd:     root,
-			args:    []string{},
-			wantCmd: root,
-		},
-		{
-			name:    "find sub1",
-			cmd:     root,
-			args:    []string{"sub1"},
-			wantCmd: sub1,
-		},
-		{
-			name:     "find sub2",
-			cmd:      root,
-			args:     []string{"sub2"},
-			wantCmd:  sub2,
-			wantArgs: []string{},
-		},
-		{
-			name:     "find sub1sub1",
-			cmd:      root,
-			args:     []string{"sub1", "sub1sub1"},
-			wantCmd:  sub1sub1,
-			wantArgs: []string{},
-		},
-		{
-			name:     "find sub1sub1 with args",
-			cmd:      root,
-			args:     []string{"sub1", "sub1sub1", "arg1"},
-			wantCmd:  sub1sub1,
-			wantArgs: []string{"arg1"},
-		},
-		{
-			name:    "unknown command",
-			cmd:     root,
-			args:    []string{"unknown"},
-			wantErr: true,
-		},
-		{
-			name:    "unknown subcommand",
-			cmd:     root,
-			args:    []string{"sub1", "unknown"},
-			wantErr: true,
-		},
-		{
-			name:     "find sub1 with flag arguments",
-			cmd:      root,
-			args:     []string{"sub1", "-h"},
-			wantCmd:  sub1,
-			wantArgs: []string{"-h"},
-		},
-		{
-			name:     "find sub1sub1 with flag arguments",
-			cmd:      root,
-			args:     []string{"sub1", "sub1sub1", "-h"},
-			wantCmd:  sub1sub1,
-			wantArgs: []string{"-h"},
-		},
-		{
-			name:     "find sub1 with a flag argument in between subcommands",
-			cmd:      root,
-			args:     []string{"sub1", "-h", "sub1sub1"},
-			wantCmd:  sub1,
-			wantArgs: []string{"-h", "sub1sub1"},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			gotCmd, gotArgs, err := lookupCommand(tc.cmd, tc.args)
-			if (err != nil) != tc.wantErr {
-				t.Errorf("lookupCommand() error = %v, wantErr %v", err, tc.wantErr)
-				return
-			}
-			if gotCmd != tc.wantCmd {
-				var gotName, wantName string
-				if gotCmd != nil {
-					gotName = gotCmd.Name()
-				}
-				if tc.wantCmd != nil {
-					wantName = tc.wantCmd.Name()
-				}
-				t.Errorf("lookupCommand() gotCmd.Name() = %q, want %q", gotName, wantName)
-			}
-			if diff := cmp.Diff(tc.wantArgs, gotArgs); diff != "" {
-				t.Errorf("lookupCommand() args mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
 }

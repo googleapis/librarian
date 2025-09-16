@@ -58,6 +58,7 @@ type Config struct {
 	Source           map[string]string       `toml:"source,omitempty"`
 	Codec            map[string]string       `toml:"codec,omitempty"`
 	CommentOverrides []DocumentationOverride `toml:"documentation-overrides,omitempty"`
+	Release          *Release                `toml:"release,omitempty"`
 
 	// Gcloud is used to pass data into gcloud.Generate. It does not use the
 	// normal .sidekick.toml file, but instead reads a gcloud.yaml file.
@@ -133,6 +134,8 @@ func mergeConfigs(rootConfig, local *Config) *Config {
 		Source:           map[string]string{},
 		Codec:            map[string]string{},
 		CommentOverrides: local.CommentOverrides,
+		// Release does not accept local overrides
+		Release: rootConfig.Release,
 	}
 	for k, v := range rootConfig.Codec {
 		merged.Codec[k] = v

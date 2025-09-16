@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -43,59 +42,15 @@ var (
 	summaryRegex = regexp.MustCompile(`(.*?): (v?\d+\.\d+\.\d+)`)
 )
 
-// cmdTagAndRelease is the command for the `release tag-and-release` subcommand.
-var cmdTagAndRelease = &cli.Command{
-	Short:     "tag-and-release tags and creates a GitHub release for a merged pull request.",
-	UsageLine: "librarian release tag-and-release [arguments]",
-	Long: `The 'tag-and-release' command is the final step in the release
-process. It is designed to be run after a release pull request, created by
-'release init', has been merged.
-
-This command's primary responsibilities are to:
-
-- Create a Git tag for each library version included in the merged pull request.
-- Create a corresponding GitHub Release for each tag, using the release notes
-  from the pull request body.
-- Update the pull request's label from 'release:pending' to 'release:done' to
-  mark the process as complete.
-
-You can target a specific merged pull request using the '--pr' flag. If no pull
-request is specified, the command will automatically search for and process all
-merged pull requests with the 'release:pending' label from the last 30 days.
-
-Examples:
-  # Tag and create a GitHub release for a specific merged PR.
-  librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
-
-  # Find and process all pending merged release PRs in a repository.
-  librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go`,
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		runner, err := newTagAndReleaseRunner(cfg)
-		if err != nil {
-			return err
-		}
-		return runner.run(ctx)
-	},
-}
-
-func init() {
-	cmdTagAndRelease.Init()
-	fs := cmdTagAndRelease.Flags
-	cfg := cmdTagAndRelease.Config
-
-	addFlagRepo(fs, cfg)
-	addFlagPR(fs, cfg)
-}
-
 type tagAndReleaseRunner struct {
-	cfg      *config.Config
-	ghClient GitHubClient
-	repo     gitrepo.Repository
-	state    *config.LibrarianState
+	ghClient    GitHubClient
+	pullRequest string
+	repo        gitrepo.Repository
+	state       *config.LibrarianState
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
-	runner, err := newCommandRunner(cfg, nil, nil)
+	runner, err := newCommandRunner(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -103,10 +58,10 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
 	}
 	return &tagAndReleaseRunner{
-		cfg:      cfg,
-		repo:     runner.repo,
-		state:    runner.state,
-		ghClient: runner.ghClient,
+		ghClient:    runner.ghClient,
+		pullRequest: cfg.PullRequest,
+		repo:        runner.repo,
+		state:       runner.state,
 	}, nil
 }
 
@@ -140,11 +95,11 @@ func (r *tagAndReleaseRunner) run(ctx context.Context) error {
 
 func (r *tagAndReleaseRunner) determinePullRequestsToProcess(ctx context.Context) ([]*github.PullRequest, error) {
 	slog.Info("determining pull requests to process")
-	if r.cfg.PullRequest != "" {
-		slog.Info("processing a single pull request", "pr", r.cfg.PullRequest)
-		ss := strings.Split(r.cfg.PullRequest, "/")
+	if r.pullRequest != "" {
+		slog.Info("processing a single pull request", "pr", r.pullRequest)
+		ss := strings.Split(r.pullRequest, "/")
 		if len(ss) != pullRequestSegments {
-			return nil, fmt.Errorf("invalid pull request format: %s", r.cfg.PullRequest)
+			return nil, fmt.Errorf("invalid pull request format: %s", r.pullRequest)
 		}
 		prNum, err := strconv.Atoi(ss[pullRequestSegments-1])
 		if err != nil {
@@ -174,9 +129,17 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		slog.Warn("no release details found in pull request body, skipping")
 		return nil
 	}
+
+	// Add a tag to the release commit to trigger louhi flow: "release-please-{pr number}"
+	//TODO: remove this logic as part of https://github.com/googleapis/librarian/issues/2044
+	commitSha := p.GetMergeCommitSHA()
+	tagName := fmt.Sprintf("release-please-%d", p.GetNumber())
+	if err := r.ghClient.CreateTag(ctx, tagName, commitSha); err != nil {
+		return fmt.Errorf("failed to create tag %s: %w", tagName, err)
+	}
+
 	for _, release := range releases {
 		slog.Info("creating release", "library", release.Library, "version", release.Version)
-		commitish := p.GetMergeCommitSHA()
 
 		lib := r.state.LibraryByID(release.Library)
 		if lib == nil {
@@ -186,7 +149,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		// Create the release.
 		tagName := formatTag(lib, release.Version)
 		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
-		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitish); err != nil {
+		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
 			return fmt.Errorf("failed to create release: %w", err)
 		}
 

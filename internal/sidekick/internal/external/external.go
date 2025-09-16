@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	https://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,26 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package librarian
+// Package external provides helper functions to work with external commands.
+package external
 
 import (
-	"context"
 	"fmt"
-
-	"github.com/googleapis/librarian/internal/cli"
-	"github.com/googleapis/librarian/internal/config"
+	"os/exec"
 )
 
-var cmdVersion = &cli.Command{
-	Short:     "version prints the version information",
-	UsageLine: "librarian version",
-	Long:      "Version prints version information for the librarian binary.",
-	Run: func(ctx context.Context, cfg *config.Config) error {
-		fmt.Println(cli.Version())
-		return nil
-	},
+// Exec executes a command and captures any error output.
+func Exec(cmd *exec.Cmd) error {
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
+	}
+	return nil
 }
 
-func init() {
-	cmdVersion.Init()
+// Run executes a program (with arguments) and captures any error output.
+func Run(command string, arg ...string) error {
+	cmd := exec.Command(command, arg...)
+	cmd.Dir = "."
+	return Exec(cmd)
 }

@@ -17,6 +17,8 @@ package config
 import (
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestGlobalConfig_Validate(t *testing.T) {
@@ -96,6 +98,70 @@ func TestGlobalConfig_Validate(t *testing.T) {
 
 			if err != nil {
 				t.Errorf("GlobalConfig.Validate() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestLibraryConfigFor(t *testing.T) {
+	cases := []struct {
+		name          string
+		config        *LibrarianConfig
+		LibraryID     string
+		wantLibrary   *LibraryConfig
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{
+			name: "library found",
+			config: &LibrarianConfig{
+				Libraries: []*LibraryConfig{
+					{LibraryID: "lib1", NextVersion: "1.0.0"},
+					{LibraryID: "lib2", NextVersion: "2.0.0"},
+				},
+			},
+			LibraryID:   "lib1",
+			wantLibrary: &LibraryConfig{LibraryID: "lib1", NextVersion: "1.0.0"},
+		},
+		{
+			name: "library not found",
+			config: &LibrarianConfig{
+				Libraries: []*LibraryConfig{
+					{LibraryID: "lib1", NextVersion: "1.0.0"},
+					{LibraryID: "lib2", NextVersion: "2.0.0"},
+				},
+			},
+			LibraryID:   "lib3",
+			wantLibrary: nil,
+		},
+		{
+			name: "empty libraries",
+			config: &LibrarianConfig{
+				Libraries: []*LibraryConfig{},
+			},
+			LibraryID:   "lib1",
+			wantLibrary: nil,
+		},
+		{
+			name: "multiple libraries with target in middle",
+			config: &LibrarianConfig{
+				Libraries: []*LibraryConfig{
+					{LibraryID: "lib1", NextVersion: "1.0.0"},
+					{LibraryID: "lib2", NextVersion: "2.0.0"},
+					{LibraryID: "lib3", NextVersion: "3.0.0"},
+				},
+			},
+			LibraryID:   "lib2",
+			wantLibrary: &LibraryConfig{LibraryID: "lib2", NextVersion: "2.0.0"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotLibrary := tc.config.LibraryConfigFor(tc.LibraryID)
+
+			if diff := cmp.Diff(tc.wantLibrary, gotLibrary); diff != "" {
+				t.Errorf("LibraryConfigFor() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

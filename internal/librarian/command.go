@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -45,27 +46,46 @@ var globalPreservePatterns = []string{
 	fmt.Sprintf(`^%s(/.*)?$`, regexp.QuoteMeta(config.GeneratorInputDir)), // Preserve the generator-input directory and its contents.
 }
 
-// GitHubClientFactory type for creating a GitHubClient.
-type GitHubClientFactory func(token string, repo *github.Repository) (GitHubClient, error)
+// GitHubClient is an abstraction over the GitHub client.
+type GitHubClient interface {
+	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
+	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error)
+	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
+	GetLabels(ctx context.Context, number int) ([]string, error)
+	ReplaceLabels(ctx context.Context, number int, labels []string) error
+	SearchPullRequests(ctx context.Context, query string) ([]*github.PullRequest, error)
+	GetPullRequest(ctx context.Context, number int) (*github.PullRequest, error)
+	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
+	CreateIssueComment(ctx context.Context, number int, comment string) error
+	CreateTag(ctx context.Context, tag, commitish string) error
+}
 
-// ContainerClientFactory type for creating a ContainerClient.
-type ContainerClientFactory func(workRoot, image, userUID, userGID string) (ContainerClient, error)
+// ContainerClient is an abstraction over the Docker client.
+type ContainerClient interface {
+	Build(ctx context.Context, request *docker.BuildRequest) error
+	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
+	Generate(ctx context.Context, request *docker.GenerateRequest) error
+	ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error
+}
 
 type commitInfo struct {
-	cfg               *config.Config
-	state             *config.LibrarianState
-	repo              gitrepo.Repository
-	sourceRepo        gitrepo.Repository
+	branch            string
+	commit            bool
+	commitMessage     string
+	failedLibraries   []string
 	ghClient          GitHubClient
 	idToCommits       map[string]string
-	failedLibraries   []string
-	pullRequestLabels []string
-	commitMessage     string
+	library           string
+	libraryVersion    string
 	prType            string
+	pullRequestLabels []string
+	push              bool
+	repo              gitrepo.Repository
+	sourceRepo        gitrepo.Repository
+	state             *config.LibrarianState
 }
 
 type commandRunner struct {
-	cfg             *config.Config
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
@@ -78,31 +98,16 @@ type commandRunner struct {
 
 const defaultAPISourceBranch = "master"
 
-func newCommandRunner(cfg *config.Config, ghClientFactory GitHubClientFactory, containerClientFactory ContainerClientFactory) (*commandRunner, error) {
-	// If no GitHub client factory is provided, use the default one.
-	if ghClientFactory == nil {
-		ghClientFactory = func(token string, repo *github.Repository) (GitHubClient, error) {
-			return github.NewClient(token, repo)
-		}
-	}
-	// If no container client factory is provided, use the default one.
-	if containerClientFactory == nil {
-		containerClientFactory = func(workRoot, image, userUID, userGID string) (ContainerClient, error) {
-			return docker.New(workRoot, image, userUID, userGID)
-		}
-	}
-
-	if cfg.APISource == "" {
-		cfg.APISource = "https://github.com/googleapis/googleapis"
-	}
-
+func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
 
-	var sourceRepo gitrepo.Repository
-	var sourceRepoDir string
+	var (
+		sourceRepo    gitrepo.Repository
+		sourceRepoDir string
+	)
 	if cfg.CommandName == generateCmdName {
 		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
@@ -134,17 +139,16 @@ func newCommandRunner(cfg *config.Config, ghClientFactory GitHubClientFactory, c
 			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
 		}
 	}
-	ghClient, err := ghClientFactory(cfg.GitHubToken, gitRepo)
+	ghClient, err := github.NewClient(cfg.GitHubToken, gitRepo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GitHub client: %w", err)
 	}
 
-	container, err := containerClientFactory(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
 	}
 	return &commandRunner{
-		cfg:             cfg,
 		workRoot:        cfg.WorkRoot,
 		repo:            languageRepo,
 		sourceRepo:      sourceRepo,
@@ -158,7 +162,7 @@ func newCommandRunner(cfg *config.Config, ghClientFactory GitHubClientFactory, c
 
 func cloneOrOpenRepo(workRoot, repo, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
-		return nil, errors.New("repo must be specified")
+		return nil, fmt.Errorf("repo must be specified")
 	}
 
 	if isURL(repo) {
@@ -331,8 +335,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
 func commitAndPush(ctx context.Context, info *commitInfo) error {
-	cfg := info.cfg
-	if !cfg.Push && !cfg.Commit {
+	if !info.push && !info.commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
 		return nil
 	}
@@ -361,7 +364,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	if !cfg.Push {
+	if !info.push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
 		return nil
 	}
@@ -372,13 +375,13 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	title := fmt.Sprintf("Librarian %s pull request: %s", info.prType, datetimeNow)
+	title := fmt.Sprintf("chore: librarian %s pull request: %s", info.prType, datetimeNow)
 	prBody, err := createPRBody(info)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
 
-	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, cfg.Branch, title, prBody)
+	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, info.branch, title, prBody)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
@@ -652,4 +655,13 @@ func separateFilesAndDirs(paths []string) ([]string, []string, error) {
 		}
 	}
 	return filePaths, dirPaths, nil
+}
+
+func isURL(s string) bool {
+	u, err := url.ParseRequestURI(s)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
 }

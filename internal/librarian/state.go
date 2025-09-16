@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -152,11 +153,14 @@ func findServiceConfigIn(path string) (string, error) {
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 	path := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
-	bytes, err := yaml.Marshal(state)
+	var buffer bytes.Buffer
+	encoder := yaml.NewEncoder(&buffer)
+	encoder.SetIndent(2)
+	err := encoder.Encode(state)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, bytes, 0644)
+	return os.WriteFile(path, buffer.Bytes(), 0644)
 }
 
 // readLibraryState reads the library state from a container response, if it exists.

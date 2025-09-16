@@ -39,8 +39,8 @@ func TestProtobuf_Info(t *testing.T) {
 	if got.Title != sc.Title {
 		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
 	}
-	if diff := cmp.Diff(got.Description, sc.Documentation.Summary); diff != "" {
-		t.Errorf("description mismatch (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(sc.Documentation.Summary, got.Description); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -58,8 +58,8 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 		Title:       "Secret Manager API",
 		Description: "",
 	}
-	if diff := cmp.Diff(got, want, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums", "State")); diff != "" {
-		t.Errorf("mismatched API attributes (-want, +got):\n%s", diff)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums", "State")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

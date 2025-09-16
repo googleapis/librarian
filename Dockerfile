@@ -20,8 +20,7 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
-COPY cmd cmd
-COPY internal internal
+COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
 
 # Using docker:dind so we can run docker from the CLI,

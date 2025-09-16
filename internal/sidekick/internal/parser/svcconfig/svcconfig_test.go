@@ -32,8 +32,8 @@ func TestExtractPackageName(t *testing.T) {
 		{sample.ServiceConfig(), &ServiceNames{"google.cloud.secretmanager.v1", "SecretManagerService"}},
 	} {
 		got := ExtractPackageName(test.Input)
-		if diff := cmp.Diff(got, test.Want); diff != "" {
-			t.Errorf("mismatched API attributes (-want, +got):\n%s", diff)
+		if diff := cmp.Diff(test.Want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }

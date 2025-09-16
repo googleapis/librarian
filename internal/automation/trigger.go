@@ -21,6 +21,8 @@ import (
 	"iter"
 	"log/slog"
 	"os"
+	"strings"
+	"time"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
@@ -62,7 +64,7 @@ func (c *wrappedCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cl
 }
 
 // RunCommand triggers a command for each registered repository that supports it.
-func RunCommand(ctx context.Context, command string, projectId string, push bool, build bool) error {
+func RunCommand(ctx context.Context, command string, projectId string, push bool, build bool, forceRun bool) error {
 	c, err := cloudbuild.NewClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error creating cloudbuild client: %w", err)
@@ -75,25 +77,32 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 	if err != nil {
 		return fmt.Errorf("error creating github client: %w", err)
 	}
-	return runCommandWithClient(ctx, wrappedClient, ghClient, command, projectId, push, build)
+	return runCommandWithClient(ctx, wrappedClient, ghClient, command, projectId, push, build, forceRun, time.Now())
 }
 
-func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool) error {
+func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, forceRun bool, dateTime time.Time) error {
 	config, err := loadRepositoriesConfig()
 	if err != nil {
 		slog.Error("error loading repositories config", slog.Any("err", err))
 		return err
 	}
-	return runCommandWithConfig(ctx, client, ghClient, command, projectId, push, build, config)
+	return runCommandWithConfig(ctx, client, ghClient, command, projectId, push, build, forceRun, config, dateTime)
 }
 
-func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, config *RepositoriesConfig) error {
+func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, forceRun bool, config *RepositoriesConfig, dateTime time.Time) error {
 	// validate command is allowed
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
-		return fmt.Errorf("unsuppoted command: %s", command)
+		return fmt.Errorf("unsupported command: %s", command)
 	}
 
+	if triggerName == "stage-release" {
+		_, week := dateTime.ISOWeek()
+		if week%2 == 0 && !forceRun {
+			slog.Info("Skipping stage-release on an even week.")
+			return nil
+		}
+	}
 	errs := make([]error, 0)
 
 	repositories := config.RepositoriesForCommand(command)
@@ -113,7 +122,9 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 			"_PUSH":                     fmt.Sprintf("%v", push),
 		}
 		if command == "publish-release" {
-			prs, err := ghClient.FindMergedPullRequestsWithPendingReleaseLabel(ctx, "googleapis", repository.Name)
+			parts := strings.Split(gitUrl, "/")
+			repositoryOwner := parts[len(parts)-2]
+			prs, err := ghClient.FindMergedPullRequestsWithPendingReleaseLabel(ctx, repositoryOwner, repository.Name)
 			if err != nil {
 				slog.Error("Error finding merged pull requests for publish-release", slog.Any("err", err), slog.String("repository", repository.Name))
 				errs = append(errs, err)

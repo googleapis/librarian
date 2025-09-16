@@ -20,6 +20,9 @@ import (
 	"log/slog"
 )
 
+// runCommandFn is a function type that matches RunCommand, for mocking in tests.
+var runCommandFn = RunCommand
+
 // Run parses the command line arguments and triggers the specified command.
 func Run(args []string) error {
 	ctx := context.Background()
@@ -29,7 +32,7 @@ func Run(args []string) error {
 		return err
 	}
 
-	err = RunCommand(ctx, options.Command, options.ProjectId, options.Push, options.Build)
+	err = runCommandFn(ctx, options.Command, options.ProjectId, options.Push, options.Build, options.ForceRun)
 	if err != nil {
 		slog.Error("Error running command", slog.Any("err", err))
 		return err
@@ -42,6 +45,7 @@ type runOptions struct {
 	ProjectId string
 	Push      bool
 	Build     bool
+	ForceRun  bool
 }
 
 func parseFlags(args []string) (*runOptions, error) {
@@ -50,6 +54,7 @@ func parseFlags(args []string) (*runOptions, error) {
 	command := flagSet.String("command", "generate", "The librarian command to run")
 	push := flagSet.Bool("push", true, "The _PUSH flag (true/false) to Librarian CLI's -push option")
 	build := flagSet.Bool("build", true, "The _BUILD flag (true/false) to Librarian CLI's -build option")
+	forceRun := flagSet.Bool("force-run", false, "The _FORCE_RUN flag (true/false) to Librarian CLI's -force-run option")
 	err := flagSet.Parse(args)
 	if err != nil {
 		return nil, err
@@ -59,5 +64,6 @@ func parseFlags(args []string) (*runOptions, error) {
 		Command:   *command,
 		Push:      *push,
 		Build:     *build,
+		ForceRun:  *forceRun,
 	}, nil
 }

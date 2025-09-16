@@ -107,7 +107,7 @@ func TestMapSlice(t *testing.T) {
 }
 
 func TestHasNestedTypes(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		input *api.Message
 		want  bool
 	}{
@@ -145,12 +145,10 @@ func TestHasNestedTypes(t *testing.T) {
 			},
 			want: false,
 		},
-	}
-
-	for _, c := range tests {
-		got := HasNestedTypes(c.input)
-		if got != c.want {
-			t.Errorf("mismatched result for HasNestedTypes on %v", c.input)
+	} {
+		got := HasNestedTypes(test.input)
+		if got != test.want {
+			t.Errorf("mismatched result for HasNestedTypes on %v", test.input)
 		}
 	}
 }

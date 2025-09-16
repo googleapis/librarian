@@ -75,7 +75,11 @@ Language Image: {{.ImageVersion}}
 {{ range .CommitSections }}
 ### {{.Heading}}
 {{ range .Commits }}
+{{ if index .Footers "PiperOrigin-RevId" -}}
+* {{.Subject}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+{{- else -}}
 * {{.Subject}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+{{- end }}
 {{ end }}
 
 {{- end }}

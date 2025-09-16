@@ -15,15 +15,14 @@
 package sidekick
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 	toml "github.com/pelletier/go-toml/v2"
 )
 
@@ -55,34 +54,34 @@ func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 		cmdLine.Output = path.Join("src/generated", strings.TrimPrefix(cmdLine.SpecificationSource, "google/"))
 	}
 
-	if err := runExternalCommand("cargo", "--version"); err != nil {
+	if err := external.Run("cargo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
-	if err := runExternalCommand("taplo", "--version"); err != nil {
+	if err := external.Run("taplo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `taplo --version`, please install using `cargo install taplo-cli`: %w", err)
 	}
-	if err := runExternalCommand("typos", "--version"); err != nil {
+	if err := external.Run("typos", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `typos --version`, please install using `cargo install typos-cli`: %w", err)
 	}
-	if err := runExternalCommand("git", "--version"); err != nil {
+	if err := external.Run("git", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `git --version`, the instructions on https://github.com/git-guides/install-git may solve this problem: %w", err)
 	}
 
 	slog.Info("Preparing cargo workspace to get new package")
-	if err := runExternalCommand("cargo", "new", "--vcs", "none", "--lib", cmdLine.Output); err != nil {
+	if err := external.Run("cargo", "new", "--vcs", "none", "--lib", cmdLine.Output); err != nil {
 		return err
 	}
-	if err := runExternalCommand("taplo", "fmt", "Cargo.toml"); err != nil {
+	if err := external.Run("taplo", "fmt", "Cargo.toml"); err != nil {
 		return err
 	}
 	slog.Info("Generating new library code and adding it to git")
 	if err := generate(rootConfig, cmdLine); err != nil {
 		return err
 	}
-	if err := runExternalCommand("cargo", "fmt"); err != nil {
+	if err := external.Run("cargo", "fmt"); err != nil {
 		return err
 	}
-	if err := runExternalCommand("git", "add", cmdLine.Output); err != nil {
+	if err := external.Run("git", "add", cmdLine.Output); err != nil {
 		return err
 	}
 	packagez, err := getPackageName(cmdLine.Output)
@@ -91,38 +90,26 @@ func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 	}
 	slog.Info("Generated new client library", "package", packagez)
 	slog.Info("Running `cargo test` on new client library")
-	if err := runExternalCommand("cargo", "test", "--package", packagez); err != nil {
+	if err := external.Run("cargo", "test", "--package", packagez); err != nil {
 		return err
 	}
 	slog.Info("Running `cargo doc` on new client library")
-	if err := runExternalCommand("env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--package", packagez, "--no-deps"); err != nil {
+	if err := external.Run("env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--package", packagez, "--no-deps"); err != nil {
 		return err
 	}
 	slog.Info("Running `cargo clippy` on new client library")
-	if err := runExternalCommand("cargo", "clippy", "--package", packagez, "--", "--deny", "warnings"); err != nil {
+	if err := external.Run("cargo", "clippy", "--package", packagez, "--", "--deny", "warnings"); err != nil {
 		return err
 	}
 	slog.Info("Running `typos` on new client library")
-	if err := runExternalCommand("typos"); err != nil {
+	if err := external.Run("typos"); err != nil {
 		slog.Info("please manually add the typos to `.typos.toml` and fix the problem upstream")
 		return err
 	}
-	if err := runExternalCommand("git", "add", "Cargo.lock", "Cargo.toml"); err != nil {
+	if err := external.Run("git", "add", "Cargo.lock", "Cargo.toml"); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func runExternalCommand(c string, arg ...string) error {
-	cmd := exec.Command(c, arg...)
-	cmd.Dir = "."
-	if output, err := cmd.CombinedOutput(); err != nil {
-		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) && len(ee.Stderr) > 0 {
-			return fmt.Errorf("%v: %v\n%s", cmd, err, ee.Stderr)
-		}
-		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
-	}
 	return nil
 }
 

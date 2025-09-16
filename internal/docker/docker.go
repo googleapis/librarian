@@ -66,78 +66,108 @@ type Docker struct {
 // BuildRequest contains all the information required for a language
 // container to run the build command.
 type BuildRequest struct {
-	// cfg is a pointer to the [config.Config] struct, holding general configuration
-	// values parsed from flags or environment variables.
-	Cfg *config.Config
-	// state is a pointer to the [config.LibrarianState] struct, representing
-	// the overall state of the generation and release pipeline.
-	State *config.LibrarianState
-	// libraryID specifies the ID of the library to build.
+	// HostMount specifies a mount point from the Docker host into the Docker
+	// container. The format is "{host-dir}:{local-dir}".
+	HostMount string
+
+	// LibraryID specifies the ID of the library to build.
 	LibraryID string
+
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
+
+	// State is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
 }
 
 // ConfigureRequest contains all the information required for a language
 // container to run the configure command.
 type ConfigureRequest struct {
-	// cfg is a pointer to the [config.Config] struct, holding general configuration
-	// values parsed from flags or environment variables.
-	Cfg *config.Config
-	// state is a pointer to the [config.LibrarianState] struct, representing
-	// the overall state of the generation and release pipeline.
-	State *config.LibrarianState
-	// apiRoot specifies the root directory of the API specification repo.
+	// ApiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
+
+	// HostMount specifies a mount point from the Docker host into the Docker
+	// container. The format is "{host-dir}:{local-dir}".
+	HostMount string
+
 	// libraryID specifies the ID of the library to configure.
 	LibraryID string
+
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
+
+	// State is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
 }
 
 // GenerateRequest contains all the information required for a language
 // container to run the generate command.
 type GenerateRequest struct {
-	// cfg is a pointer to the [config.Config] struct, holding general configuration
-	// values parsed from flags or environment variables.
-	Cfg *config.Config
-	// state is a pointer to the [config.LibrarianState] struct, representing
-	// the overall state of the generation and release pipeline.
-	State *config.LibrarianState
-	// apiRoot specifies the root directory of the API specification repo.
+	// ApiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
-	// libraryID specifies the ID of the library to generate.
+
+	// HostMount specifies a mount point from the Docker host into the Docker
+	// container. The format is "{host-dir}:{local-dir}".
+	HostMount string
+
+	// LibraryID specifies the ID of the library to generate.
 	LibraryID string
-	// output specifies the empty output directory into which the command should
+
+	// Output specifies the empty output directory into which the command should
 	// generate code
 	Output string
+
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
+
+	// State is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
 }
 
 // ReleaseInitRequest contains all the information required for a language
 // container to run the  init command.
 type ReleaseInitRequest struct {
-	// Cfg is a pointer to the [config.Config] struct, holding general configuration
-	// values parsed from flags or environment variables.
-	Cfg *config.Config
+	// Branch is the remote branch of the language repository to use.
+	Branch string
+
+	// Commit determines whether to create a commit for the release but not
+	// create a pull request. This flag is ignored if Push is set to true.
+	Commit bool
+
+	// HostMount is used to remap Docker mount paths when running in environments
+	// where Docker containers are siblings (e.g., Kokoro).
+	// It specifies a mount point from the Docker host into the Docker container.
+	// The format is "{host-dir}:{local-dir}".
+	HostMount string
+
 	// LibrarianConfig is a pointer to the [config.LibrarianConfig] struct, holding
 	// global files configuration in a language repository.
 	LibrarianConfig *config.LibrarianConfig
-	// State is a pointer to the [config.LibrarianState] struct, representing
-	// the overall state of the generation and release pipeline.
-	State *config.LibrarianState
+
 	// LibraryID specifies the ID of the library to release.
 	LibraryID string
+
 	// LibraryVersion specifies the version of the library to release.
 	LibraryVersion string
+
 	// Output specifies the empty output directory into which the command should
 	// generate code.
 	Output string
+
 	// PartialRepoDir is the local root directory of language repository contains
 	// files that make up libraries and global files.
 	// This is the directory that container can access.
 	PartialRepoDir string
+
+	// Push determines whether to push changes to GitHub.
+	Push bool
+
+	// State is a pointer to the [config.LibrarianState] struct, representing
+	// the overall state of the generation and release pipeline.
+	State *config.LibrarianState
 }
 
 // New constructs a Docker instance which will invoke the specified
@@ -184,8 +214,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
-
-	return c.runDocker(ctx, request.Cfg, CommandGenerate, mounts, commandArgs)
+	return c.runDocker(ctx, request.HostMount, CommandGenerate, mounts, commandArgs)
 }
 
 // Build builds the library with an ID of libraryID, as configured in
@@ -212,7 +241,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		"--repo=/repo",
 	}
 
-	return c.runDocker(ctx, request.Cfg, CommandBuild, mounts, commandArgs)
+	return c.runDocker(ctx, request.HostMount, CommandBuild, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -245,7 +274,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
 
-	if err := c.runDocker(ctx, request.Cfg, CommandConfigure, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, request.HostMount, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
 
@@ -277,21 +306,19 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
-	if err := c.runDocker(ctx, request.Cfg, CommandReleaseInit, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, request.HostMount, CommandReleaseInit, mounts, commandArgs); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Command, mounts []string, commandArgs []string) (err error) {
-	mounts = maybeRelocateMounts(cfg, mounts)
-
+func (c *Docker) runDocker(_ context.Context, hostMount string, command Command, mounts []string, commandArgs []string) (err error) {
+	mounts = maybeRelocateMounts(hostMount, mounts)
 	args := []string{
 		"run",
 		"--rm", // Automatically delete the container after completion
 	}
-
 	for _, mount := range mounts {
 		args = append(args, "-v", mount)
 	}
@@ -308,18 +335,18 @@ func (c *Docker) runDocker(_ context.Context, cfg *config.Config, command Comman
 	return c.run(args...)
 }
 
-func maybeRelocateMounts(cfg *config.Config, mounts []string) []string {
+func maybeRelocateMounts(hostMount string, mounts []string) []string {
 	// When running in Kokoro, we'll be running sibling containers.
 	// Make sure we specify the "from" part of the mount as the host directory.
-	if cfg.HostMount == "" {
+	if hostMount == "" {
 		return mounts
 	}
 
 	relocatedMounts := []string{}
-	hostMount := strings.Split(cfg.HostMount, ":")
+	hostMountParts := strings.Split(hostMount, ":")
 	for _, mount := range mounts {
-		if strings.HasPrefix(mount, hostMount[0]) {
-			mount = strings.Replace(mount, hostMount[0], hostMount[1], 1)
+		if strings.HasPrefix(mount, hostMountParts[0]) {
+			mount = strings.Replace(mount, hostMountParts[0], hostMountParts[1], 1)
 		}
 		relocatedMounts = append(relocatedMounts, mount)
 	}
