@@ -69,7 +69,9 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if idx == -1 {
 		return nil, fmt.Errorf("expected a line starting with `version ` in %v", lines)
 	}
-	lines[idx] = fmt.Sprintf(`version = "%s"`, newVersion)
+	// The number of spaces may seem weird. They match the number of spaces in
+	// the mustache template.
+	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion)
 	if err := os.WriteFile(manifest, []byte(strings.Join(lines, "\n")), 0644); err != nil {
 		return nil, err
 	}
