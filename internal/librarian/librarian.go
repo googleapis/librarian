@@ -24,6 +24,12 @@ import (
 
 // Run executes the Librarian CLI with the given command line arguments.
 func Run(ctx context.Context, arg ...string) error {
+	cmd := newLibrarianCommand()
+	slog.Info("librarian", "arguments", arg)
+	return cmd.Run(ctx, arg)
+}
+
+func newLibrarianCommand() *cli.Command {
 	cmdVersion := &cli.Command{
 		Short:     "version prints the version information",
 		UsageLine: "librarian version",
@@ -35,6 +41,32 @@ func Run(ctx context.Context, arg ...string) error {
 	}
 	cmdVersion.Init()
 
+	cmdRelease := &cli.Command{
+		Short:     "release manages releases of libraries.",
+		UsageLine: "librarian release <command> [arguments]",
+		Long:      releaseLongHelp,
+		Commands: []*cli.Command{
+			newCmdInit(),
+			newCmdTagAndRelease(),
+		},
+	}
+	cmdRelease.Init()
+
+	cmd := &cli.Command{
+		Short:     "librarian manages client libraries for Google APIs",
+		UsageLine: "librarian <command> [arguments]",
+		Long:      librarianLongHelp,
+		Commands: []*cli.Command{
+			newCmdGenerate(),
+			cmdRelease,
+			cmdVersion,
+		},
+	}
+	cmd.Init()
+	return cmd
+}
+
+func newCmdGenerate() *cli.Command {
 	cmdGenerate := &cli.Command{
 		Short:     "generate onboards and generates client library code",
 		UsageLine: "librarian generate [flags]",
@@ -64,7 +96,35 @@ func Run(ctx context.Context, arg ...string) error {
 	addFlagBranch(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagWorkRoot(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagPush(cmdGenerate.Flags, cmdGenerate.Config)
+	return cmdGenerate
+}
 
+func newCmdTagAndRelease() *cli.Command {
+	cmdTagAndRelease := &cli.Command{
+		Short:     "tag-and-release tags and creates a GitHub release for a merged pull request.",
+		UsageLine: "librarian release tag-and-release [arguments]",
+		Long:      tagAndReleaseLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			if err := cmd.Config.SetDefaults(); err != nil {
+				return fmt.Errorf("failed to initialize config: %w", err)
+			}
+			if _, err := cmd.Config.IsValid(); err != nil {
+				return fmt.Errorf("failed to validate config: %s", err)
+			}
+			runner, err := newTagAndReleaseRunner(cmd.Config)
+			if err != nil {
+				return err
+			}
+			return runner.run(ctx)
+		},
+	}
+	cmdTagAndRelease.Init()
+	addFlagRepo(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
+	addFlagPR(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
+	return cmdTagAndRelease
+}
+
+func newCmdInit() *cli.Command {
 	cmdInit := &cli.Command{
 		Short:     "init initiates a release by creating a release pull request.",
 		UsageLine: "librarian release init [flags]",
@@ -92,52 +152,5 @@ func Run(ctx context.Context, arg ...string) error {
 	addFlagRepo(cmdInit.Flags, cmdInit.Config)
 	addFlagBranch(cmdInit.Flags, cmdInit.Config)
 	addFlagWorkRoot(cmdInit.Flags, cmdInit.Config)
-
-	cmdTagAndRelease := &cli.Command{
-		Short:     "tag-and-release tags and creates a GitHub release for a merged pull request.",
-		UsageLine: "librarian release tag-and-release [arguments]",
-		Long:      tagAndReleaseLongHelp,
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			if err := cmd.Config.SetDefaults(); err != nil {
-				return fmt.Errorf("failed to initialize config: %w", err)
-			}
-			if _, err := cmd.Config.IsValid(); err != nil {
-				return fmt.Errorf("failed to validate config: %s", err)
-			}
-			runner, err := newTagAndReleaseRunner(cmd.Config)
-			if err != nil {
-				return err
-			}
-			return runner.run(ctx)
-		},
-	}
-	cmdTagAndRelease.Init()
-	addFlagRepo(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
-	addFlagPR(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
-
-	cmdRelease := &cli.Command{
-		Short:     "release manages releases of libraries.",
-		UsageLine: "librarian release <command> [arguments]",
-		Long:      releaseLongHelp,
-		Commands: []*cli.Command{
-			cmdInit,
-			cmdTagAndRelease,
-		},
-	}
-	cmdRelease.Init()
-
-	cmd := &cli.Command{
-		Short:     "librarian manages client libraries for Google APIs",
-		UsageLine: "librarian <command> [arguments]",
-		Long:      librarianLongHelp,
-		Commands: []*cli.Command{
-			cmdGenerate,
-			cmdRelease,
-			cmdVersion,
-		},
-	}
-	cmd.Init()
-
-	slog.Info("librarian", "arguments", arg)
-	return cmd.Run(ctx, arg)
+	return cmdInit
 }
