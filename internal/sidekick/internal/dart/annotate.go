@@ -359,7 +359,8 @@ func calculateDependencies(imports map[string]string, constaints map[string]stri
 			}) {
 				constraint := constaints[name]
 				if len(constraint) == 0 {
-					// TODO(brianquinlan): before release, we should never generate any "any" constraint.
+					// TODO(https://github.com/googleapis/librarian/issues/1989):
+					// Never emit "any" constraints.
 					constraint = "any"
 				}
 				deps = append(deps, packageDependency{Name: name, Constraint: constraint})
