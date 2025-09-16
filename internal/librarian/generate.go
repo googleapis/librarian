@@ -252,6 +252,11 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		return "", err
 	}
 
+	// Backup library files so that we can restore library if build failed.
+	if r.build {
+
+	}
+
 	if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), libraryID, outputDir); err != nil {
 		return "", err
 	}
