@@ -47,6 +47,7 @@ type generateRunner struct {
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
 	workRoot        string
+	backupDir       string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -81,6 +82,10 @@ func (r *generateRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
+	}
+	r.backupDir = filepath.Join(r.workRoot, "backup")
+	if err := os.Mkdir(r.backupDir, 0755); err != nil {
+		return fmt.Errorf("failed to make backup directory, %s: %w", r.backupDir, err)
 	}
 	// The last generated commit is changed after library generation,
 	// use this map to keep the mapping from library id to commit sha before the
@@ -252,9 +257,16 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		return "", err
 	}
 
-	// Backup library files so that we can restore library if build failed.
 	if r.build {
+		// Backup library files so that we can restore library if build failed.
+		dst := filepath.Join(r.backupDir, libraryID)
+		if err := os.MkdirAll(dst, 0755); err != nil {
+			return "", err
+		}
 
+		if err := copyLibraryFiles(r.state, dst, libraryID, r.repo.GetDir()); err != nil {
+			return "", fmt.Errorf("failed to backup library %s to %s: %w", libraryID, r.backupDir, err)
+		}
 	}
 
 	if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), libraryID, outputDir); err != nil {
@@ -292,8 +304,15 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 	}
 
 	// Read the library state from the response.
-	if _, err := readLibraryState(
-		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse)); err != nil {
+	_, err := readLibraryState(filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse))
+	if err != nil {
+		// Restore library files when build fails.
+		src := filepath.Join(r.backupDir, libraryID)
+		if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryID, src); err != nil {
+			return fmt.Errorf("failed to restore library %s to %s: %w", libraryID, r.repo.GetDir(), err)
+		}
+
+		slog.Error("Build fails", "id", libraryID)
 		return err
 	}
 
