@@ -416,7 +416,12 @@ func (r *generateRunner) restoreLibrary(libraryID string) error {
 	}
 
 	src := filepath.Join(r.backupDir, libraryID)
-	return copyLibraryFiles(r.state, r.repo.GetDir(), libraryID, src)
+	if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryID, src); err != nil {
+		return err
+	}
+
+	// Clean up backup dir.
+	return os.RemoveAll(src)
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {
