@@ -38,6 +38,9 @@ func Publish(config *config.Release, dryRun bool) error {
 	if err != nil {
 		return err
 	}
+	if err := matchesBranchPoint(config); err != nil {
+		return err
+	}
 	files, err := filesChangedSince(config, lastTag)
 	if err != nil {
 		return err

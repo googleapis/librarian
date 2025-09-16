@@ -40,14 +40,8 @@ func TestPublishSuccess(t *testing.T) {
 			},
 		},
 	}
-	setupForVersionBump(t, "release-2001-02-03")
-	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	remoteDir := setupForPublish(t, "release-2001-02-03")
+	cloneRepository(t, remoteDir)
 	if err := Publish(config, true); err != nil {
 		t.Fatal(err)
 	}
@@ -70,18 +64,15 @@ func TestPublishWithNewCrate(t *testing.T) {
 			},
 		},
 	}
-	setupForVersionBump(t, "release-2001-02-03")
+	remoteDir := setupForPublish(t, "release-2001-02-03")
 	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := external.Run("git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
-	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+	if err := external.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	cloneRepository(t, remoteDir)
 	if err := Publish(config, true); err != nil {
 		t.Fatal(err)
 	}
@@ -110,16 +101,41 @@ func TestPublishWithRootsPem(t *testing.T) {
 		},
 		RootsPem: rootsPem,
 	}
-	setupForVersionBump(t, "release-2001-02-03")
-	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	remoteDir := setupForPublish(t, "release-2001-02-03")
+	cloneRepository(t, remoteDir)
 	if err := Publish(config, true); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPublishWithLocalChangesError(t *testing.T) {
+	requireCommand(t, "git")
+	requireCommand(t, "/bin/echo")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+				{Name: "cargo-workspaces", Version: "3.4.5"},
+			},
+		},
+	}
+	remoteDir := setupForPublish(t, "release-2001-02-03")
+	cloneRepository(t, remoteDir)
+	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	if err := external.Run("git", "add", path.Join("src", "pubsub")); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := Publish(config, true); err == nil {
+		t.Errorf("expected an error publishing a dirty local repository")
 	}
 }
 
@@ -145,7 +161,8 @@ func TestPublishLastTagError(t *testing.T) {
 			"cargo": echo,
 		},
 	}
-	setupForVersionBump(t, "last-tag-error")
+	remoteDir := setupForPublish(t, "release-2001-02-03")
+	cloneRepository(t, remoteDir)
 	if err := Publish(&config, true); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
 	}
@@ -168,7 +185,7 @@ func TestPublishBadManifest(t *testing.T) {
 			},
 		},
 	}
-	setupForVersionBump(t, "release-2001-02-03")
+	remoteDir := setupForPublish(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
 	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
@@ -180,6 +197,7 @@ func TestPublishBadManifest(t *testing.T) {
 	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
+	cloneRepository(t, remoteDir)
 	if err := Publish(config, true); err == nil {
 		t.Errorf("expected an error with a bad manifest file")
 	}
@@ -195,14 +213,8 @@ func TestPublishGetPlanError(t *testing.T) {
 			"cargo": "git",
 		},
 	}
-	setupForVersionBump(t, "release-2001-02-03")
-	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	remoteDir := setupForPublish(t, "release-2001-02-03")
+	cloneRepository(t, remoteDir)
 	if err := Publish(config, true); err == nil {
 		t.Fatalf("expected an error during plan generation")
 	}
@@ -225,14 +237,8 @@ func TestPublishPlanMismatchError(t *testing.T) {
 			},
 		},
 	}
-	setupForVersionBump(t, "release-2001-02-03")
-	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	remoteDir := setupForPublish(t, "release-2001-02-03")
+	cloneRepository(t, remoteDir)
 	if err := Publish(config, true); err == nil {
 		t.Fatalf("expected an error during plan comparison")
 	}
