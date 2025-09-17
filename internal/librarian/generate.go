@@ -58,6 +58,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		api:             cfg.API,
 		apiSource:       cfg.APISource,
 		build:           cfg.Build,
+		branch:          cfg.Branch,
 		commit:          cfg.Commit,
 		containerClient: runner.containerClient,
 		ghClient:        runner.ghClient,

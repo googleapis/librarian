@@ -390,6 +390,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   newTestGitRepo(t).GetDir(),
+				Branch:      "main",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -401,6 +402,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   t.TempDir(), // Not a git repo
+				Branch:      "main",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -413,6 +415,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   t.TempDir(),
+				Branch:      "main",
 				Repo:        "https://github.com/googleapis/librarian.git",
 				WorkRoot:    t.TempDir(),
 				CommandName: generateCmdName,
@@ -424,6 +427,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   newTestGitRepo(t).GetDir(),
+				Branch:      "main",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -437,6 +441,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				API:            "some/api",
 				APISource:      "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
 				APISourceDepth: 1,
+				Branch:         "main",
 				Repo:           newTestGitRepo(t).GetDir(),
 				WorkRoot:       t.TempDir(),
 				Image:          "gcr.io/test/test-image",
@@ -449,6 +454,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				API:            "some/api",
 				APISource:      "", // This will trigger the clone of googleapis
 				APISourceDepth: 1,
+				Branch:         "main",
 				Repo:           newTestGitRepo(t).GetDir(),
 				WorkRoot:       t.TempDir(),
 				Image:          "gcr.io/test/test-image",
@@ -461,6 +467,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   newTestGitRepo(t).GetDir(),
+				Branch:      "main",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -517,6 +524,9 @@ func TestNewGenerateRunner(t *testing.T) {
 			}
 			if r.sourceRepo == nil {
 				t.Errorf("newGenerateRunner() sourceRepo is nil")
+			}
+			if r.branch == "" {
+				t.Errorf("newGenerateRunner() branch is empty")
 			}
 		})
 	}
