@@ -149,8 +149,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		}
 
 		// Create the release.
-		replacer := strings.NewReplacer("{id}", release.Library, "{version}", release.Version)
-		tagName := replacer.Replace(tagFormat)
+		tagName := formatTag(tagFormat, release.Library, release.Version)
 		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
 		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
 			return fmt.Errorf("failed to create release: %w", err)

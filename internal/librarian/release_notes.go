@@ -277,8 +277,8 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 
 	// The version should already be updated to the next version.
 	newVersion := library.Version
-	newTag := formatTag(library, newVersion)
-	previousTag := formatTag(library, library.PreviousVersion)
+	newTag := formatTag(library.TagFormat, library.ID, newVersion)
+	previousTag := formatTag(library.TagFormat, library.ID, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
 	for _, commit := range library.Changes {
