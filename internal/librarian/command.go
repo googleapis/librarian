@@ -92,8 +92,9 @@ type commandRunner struct {
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
-	workRoot        string
+	branch          string
 	image           string
+	workRoot        string
 }
 
 const defaultAPISourceBranch = "master"
@@ -146,6 +147,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		return nil, err
 	}
 	return &commandRunner{
+		branch:          cfg.Branch,
 		workRoot:        cfg.WorkRoot,
 		repo:            languageRepo,
 		sourceRepo:      sourceRepo,

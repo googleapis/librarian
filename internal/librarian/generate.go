@@ -69,6 +69,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
 		workRoot:        runner.workRoot,
+		branch:          runner.branch,
 	}, nil
 }
 
