@@ -476,10 +476,10 @@ func TestLoadRepoStateFromGitHub(t *testing.T) {
 			got, err := loadRepoStateFromGitHub(context.Background(), test.ghClient, test.branch)
 			if test.wantErr {
 				if err == nil {
-					t.Error("loadRepoStateFromGitHub() should fail")
+					t.Fatal("loadRepoStateFromGitHub() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("want error message: %s, got %s", test.wantErrMsg, err.Error())
+					t.Fatalf("want error message: %s, got %s", test.wantErrMsg, err.Error())
 				}
 
 				return
@@ -489,7 +489,7 @@ func TestLoadRepoStateFromGitHub(t *testing.T) {
 				t.Fatalf("loadRepoStateFromGitHub() unexpected error: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
+				t.Fatalf("Response library state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
