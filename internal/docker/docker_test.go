@@ -174,6 +174,35 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
+			name: "Generate with file read error",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				generateRequest := &GenerateRequest{
+					State:     state,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					LibraryID: testLibraryID,
+				}
+				return d.Generate(ctx, generateRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandGenerate),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--source=/source",
+			},
+		},
+		{
 			name: "Build",
 			docker: &Docker{
 				Image: testImage,
