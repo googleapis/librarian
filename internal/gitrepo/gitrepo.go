@@ -76,6 +76,8 @@ type RepositoryOptions struct {
 	CI string
 	// GitPassword is used for HTTP basic auth.
 	GitPassword string
+	// Depth controls the cloning depth if the repository needs to be cloned.
+	Depth int
 }
 
 // NewRepository provides access to a git repository based on the provided options.
@@ -114,7 +116,7 @@ func newRepositoryWithoutUser(opts *RepositoryOptions) (*LocalRepository, error)
 			return nil, fmt.Errorf("gitrepo: remote branch is required when cloning")
 		}
 		slog.Info("Repository not found, executing clone")
-		return clone(opts.Dir, opts.RemoteURL, opts.RemoteBranch, opts.CI)
+		return clone(opts.Dir, opts.RemoteURL, opts.RemoteBranch, opts.CI, opts.Depth)
 	}
 	return nil, fmt.Errorf("failed to check for repository at %q: %w", opts.Dir, err)
 }
@@ -132,13 +134,14 @@ func open(dir string) (*LocalRepository, error) {
 	}, nil
 }
 
-func clone(dir, url, branch, ci string) (*LocalRepository, error) {
+func clone(dir, url, branch, ci string, depth int) (*LocalRepository, error) {
 	slog.Info("Cloning repository", "url", url, "dir", dir)
 	options := &git.CloneOptions{
 		URL:           url,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 		Tags:          git.AllTags,
+		Depth:         depth,
 		// .NET uses submodules for conformance tests.
 		// (There may be other examples too.)
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,

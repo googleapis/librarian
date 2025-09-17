@@ -16,6 +16,7 @@ package rustrelease
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/external"
@@ -37,6 +38,7 @@ func PreFlight(config *config.Release) error {
 		return nil
 	}
 	for _, tool := range tools {
+		slog.Info("installing cargo tool", "name", tool.Name, "version", tool.Version)
 		spec := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		if err := external.Run(cargoExe(config), "install", "--locked", spec); err != nil {
 			return err

@@ -241,7 +241,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 				}
 			}()
 
-			repo, err := cloneOrOpenRepo(workRoot, test.repo, test.ci, "main", "")
+			repo, err := cloneOrOpenRepo(workRoot, test.repo, 1, test.ci, "main", "")
 			if test.wantErr {
 				if err == nil {
 					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")

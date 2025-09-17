@@ -17,10 +17,7 @@
 steps:
   - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher
     id: generate-dispatcher
-    entrypoint: go
     args:
-      - 'run'
-      - './cmd/automation'
       - '--project=$PROJECT_ID'
       - '--command=generate'
       - '--push=$_PUSH'

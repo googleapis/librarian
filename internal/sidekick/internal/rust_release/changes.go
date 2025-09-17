@@ -15,6 +15,8 @@
 package rustrelease
 
 import (
+	"bytes"
+	"fmt"
 	"os/exec"
 	"slices"
 	"strings"
@@ -22,6 +24,33 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
+
+func matchesBranchPoint(config *config.Release) error {
+	branch := fmt.Sprintf("%s/%s", config.Remote, config.Branch)
+	delta := fmt.Sprintf("%s...HEAD", branch)
+	cmd := exec.Command(gitExe(config), "diff", "--name-only", delta)
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	if len(output) != 0 {
+		return fmt.Errorf("the local repository does not match is branch point from %s, change files:\n%s", branch, string(output))
+	}
+	return nil
+}
+
+func isNewFile(config *config.Release, ref, name string) bool {
+	delta := fmt.Sprintf("%s..HEAD", ref)
+	cmd := exec.Command(gitExe(config), "diff", "--summary", delta, "--", name)
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+	expected := fmt.Sprintf(" create mode 100644 %s", name)
+	return bytes.HasPrefix(output, []byte(expected))
+}
 
 func filesChangedSince(config *config.Release, ref string) ([]string, error) {
 	cmd := exec.Command(gitExe(config), "diff", "--name-only", ref)

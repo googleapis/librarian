@@ -182,16 +182,19 @@ type annotateModel struct {
 	packagePrefixes map[string]string
 	// A mapping from field IDs to fields for the fields we know to be required.
 	requiredFields map[string]*api.Field
+	// A mapping from a package name (e.g. "http") to its version constraint (e.g. "^1.3.0").
+	dependencyConstraints map[string]string
 }
 
 func newAnnotateModel(model *api.API) *annotateModel {
 	return &annotateModel{
-		model:           model,
-		state:           model.State,
-		imports:         map[string]string{},
-		packageMapping:  map[string]string{},
-		packagePrefixes: map[string]string{},
-		requiredFields:  map[string]*api.Field{},
+		model:                 model,
+		state:                 model.State,
+		imports:               map[string]string{},
+		packageMapping:        map[string]string{},
+		packagePrefixes:       map[string]string{},
+		requiredFields:        map[string]*api.Field{},
+		dependencyConstraints: map[string]string{},
 	}
 }
 
@@ -247,6 +250,14 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			protoPackage := keys[1]
 			annotate.packagePrefixes[protoPackage] = definition
+		case strings.HasPrefix(key, "package:"):
+			// Version constraints for a package.
+			//
+			// Expressed as: 'package:<package name>' = '<version constraint>'
+			// For example: 'package:http' = '^1.3.0'
+			//
+			// If the package is needed as a dependency, then this constract is used.
+			annotate.dependencyConstraints[strings.TrimPrefix(key, "package:")] = definition
 		}
 	}
 
@@ -281,7 +292,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	// Add the import for the google_cloud_gax package.
 	annotate.imports["cloud_gax"] = commonImport
 
-	packageDependencies := calculateDependencies(annotate.imports)
+	packageDependencies := calculateDependencies(annotate.imports, annotate.dependencyConstraints)
 
 	ann := &modelAnnotations{
 		Parent:         model,
@@ -336,18 +347,23 @@ func calculateRequiredFields(model *api.API) map[string]*api.Field {
 }
 
 // calculateDependencies calculates package dependencies based on `package:` imports.
-func calculateDependencies(imports map[string]string) []packageDependency {
-	var deps []packageDependency
+func calculateDependencies(imports map[string]string, constraints map[string]string) []packageDependency {
+	deps := []packageDependency{}
 
 	for _, imp := range imports {
-		if strings.HasPrefix(imp, "package:") {
-			name := strings.TrimPrefix(imp, "package:")
+		if name, hadPrefix := strings.CutPrefix(imp, "package:"); hadPrefix {
 			name = strings.Split(name, "/")[0]
 
 			if !slices.ContainsFunc(deps, func(dep packageDependency) bool {
 				return dep.Name == name
 			}) {
-				deps = append(deps, packageDependency{Name: name, Constraint: "any"})
+				constraint := constraints[name]
+				if len(constraint) == 0 {
+					// TODO(https://github.com/googleapis/librarian/issues/1989):
+					// Never emit "any" constraints.
+					constraint = "any"
+				}
+				deps = append(deps, packageDependency{Name: name, Constraint: constraint})
 			}
 		}
 	}

@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/googleapis/librarian/internal/cli"
 )
@@ -25,7 +24,6 @@ import (
 // Run executes the Librarian CLI with the given command line arguments.
 func Run(ctx context.Context, arg ...string) error {
 	cmd := newLibrarianCommand()
-	slog.Info("librarian", "arguments", arg)
 	return cmd.Run(ctx, arg)
 }
 

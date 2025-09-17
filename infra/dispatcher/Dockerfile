@@ -11,11 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+FROM golang:1.25.0 AS build
+
+WORKDIR /src
+
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/automation
+
 FROM golang:1.25.0
 
 WORKDIR /app
 
-ADD . /app
-RUN go build ./...
-
-ENTRYPOINT [ "go" ]
+COPY --from=build /src/automation .
+ENTRYPOINT [ "/app/automation" ]
