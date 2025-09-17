@@ -721,7 +721,7 @@ func TestInitRun(t *testing.T) {
 				}
 			},
 			wantErr:    true,
-			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to set the version for this library",
+			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to force a release for",
 		},
 		{
 			name:            "failed to commit and push",
@@ -1067,7 +1067,7 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "update a library with releasable units, version inputted",
+			name: "update a library with releasable units, valid version inputted",
 			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
@@ -1103,6 +1103,28 @@ func TestUpdateLibrary(t *testing.T) {
 				},
 				ReleaseTriggered: true,
 			},
+		},
+		{
+			name: "update a library with releasable units, invalid version inputted",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			libraryVersion: "1.0.0",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:    "fix",
+					Subject: "change a typo",
+				},
+				{
+					Type:    "feat",
+					Subject: "add a config file",
+					Body:    "This is the body.",
+					Footers: map[string]string{"PiperOrigin-RevId": "12345"},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "inputted version is not SemVer greater than the current version. Set a version SemVer greater than current than",
 		},
 		{
 			name: "library has breaking changes",
@@ -1175,7 +1197,7 @@ func TestUpdateLibrary(t *testing.T) {
 				},
 			},
 			wantErr:    true,
-			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to set the version for this library",
+			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to force a release for",
 		},
 		{
 			name: "library has no releasable units and is inputted for release with a specific version",
@@ -1465,49 +1487,6 @@ func TestDetermineNextVersion(t *testing.T) {
 			},
 			currentVersion: "1.0.0",
 			wantVersion:    "1.1.0",
-			wantErr:        false,
-		},
-		{
-			name: "with CLI override version",
-			commits: []*conventionalcommits.ConventionalCommit{
-				{Type: "feat"},
-			},
-			config: &config.Config{
-				Library:        "some-library",
-				LibraryVersion: "1.2.3",
-			},
-			libraryID: "some-library",
-			librarianConfig: &config.LibrarianConfig{
-				Libraries: []*config.LibraryConfig{
-					&config.LibraryConfig{
-						LibraryID:   "some-library",
-						NextVersion: "2.3.4",
-					},
-				},
-			},
-			currentVersion: "1.0.0",
-			wantVersion:    "1.2.3",
-			wantErr:        false,
-		},
-		{
-			name: "with CLI override version cannot revert version",
-			commits: []*conventionalcommits.ConventionalCommit{
-				{Type: "feat"},
-			},
-			config: &config.Config{
-				Library:        "some-library",
-				LibraryVersion: "1.2.3",
-			},
-			libraryID: "some-library",
-			librarianConfig: &config.LibrarianConfig{
-				Libraries: []*config.LibraryConfig{
-					&config.LibraryConfig{
-						LibraryID: "some-library",
-					},
-				},
-			},
-			currentVersion: "2.4.0",
-			wantVersion:    "2.5.0",
 			wantErr:        false,
 		},
 		{

@@ -221,29 +221,38 @@ func (r *initRunner) processLibrary(library *config.LibraryState) error {
 //
 // 3. Set the library's release trigger to true.
 func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conventionalcommits.ConventionalCommit) error {
-	// The new version is either the library version override value or the automatically
-	// computed next semver version from the changes.
-	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
-	if err != nil {
-		return err
-	}
-	slog.Debug("Determined the library's next version", "library", library.ID, "nextVersion", nextVersion)
-
-	if nextVersion == library.Version {
-		// No library is specified for release. No releasable units found and will not continue with release
-		if r.library == "" {
-			slog.Info("Library does not have any releasable units and will not be released.",
-				"library", library.ID, "version", library.Version)
-			return nil
-		} else {
-			// Library was inputted for release, but a version was not specified or the version was not
-			// SemVer greater than the current version
-			slog.Error("Inputted library does not have a releasable unit and will not be released. Use the --version flag to set a specific version.",
-				"library", library.ID, "nextVersion", nextVersion)
-			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to set the version for this library: %s", library.ID)
+	var nextVersion string
+	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
+	if r.libraryVersion != "" {
+		slog.Info("Library version override inputted", "currentVersion", library.Version, "inputVersion", r.libraryVersion)
+		nextVersion = semver.MaxVersion(library.Version, r.libraryVersion)
+		slog.Debug("Determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
+		// Inputted version is either equal or less than current version and cannot be used for release
+		if nextVersion == library.Version {
+			slog.Error("Inputted version is not SemVer greater than the current version", "library", library.ID, "currentVersion", library.Version, "inputVersion", r.libraryVersion)
+			return fmt.Errorf("inputted version is not SemVer greater than the current version. Set a version SemVer greater than current than: %s", library.Version)
 		}
+	} else {
+		var err error
+		nextVersion, err = r.determineNextVersion(commits, library.Version, library.ID)
+		if err != nil {
+			return err
+		}
+		slog.Debug("Determined the library's next version from commits", "library", library.ID, "nextVersion", nextVersion)
+		// Unable to find a releasable unit from the changes
+		if nextVersion == library.Version {
+			// No library was inputted for release. Skipping this library for release
+			if r.library == "" {
+				slog.Info("Library does not have any releasable units and will not be released.", "library", library.ID, "version", library.Version)
+				return nil
+			}
+			// Library was inputted for release, but does not contain a releasable unit
+			slog.Error("Inputted library does not have a releasable unit and will not be released. Use the version flag to force a release.",
+				"library", library.ID, "nextVersion", nextVersion)
+			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to force a release for: %s", library.ID)
+		}
+		slog.Info("Updating library to the next version", "library", r.library, "currentVersion", library.Version, "nextVersion", nextVersion)
 	}
-	slog.Info("Updating library to the next version", "library", r.library, "currentVersion", library.Version, "nextVersion", nextVersion)
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
@@ -253,18 +262,9 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 	return nil
 }
 
+// determineNextVersion determines the next valid SemVer version from the commits or from
+// the next_version override value in the config.yaml file.
 func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
-	// If library version explicitly passed to CLI, use it
-	if r.libraryVersion != "" {
-		slog.Info("Library version override specified", "currentVersion", currentVersion, "version", r.libraryVersion)
-		newVersion := semver.MaxVersion(currentVersion, r.libraryVersion)
-		if newVersion == r.libraryVersion {
-			return newVersion, nil
-		} else {
-			slog.Warn("Specified version is not higher than the current version, ignoring override.")
-		}
-	}
-
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
 	if err != nil {
 		return "", err
