@@ -229,7 +229,6 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 		slog.Debug("Determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
 		// Inputted version is either equal or less than current version and cannot be used for release
 		if nextVersion == library.Version {
-			slog.Error("Inputted version is not SemVer greater than the current version", "library", library.ID, "currentVersion", library.Version, "inputVersion", r.libraryVersion)
 			return fmt.Errorf("inputted version is not SemVer greater than the current version. Set a version SemVer greater than current than: %s", library.Version)
 		}
 	} else {
@@ -247,8 +246,6 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 				return nil
 			}
 			// Library was inputted for release, but does not contain a releasable unit
-			slog.Error("Inputted library does not have a releasable unit and will not be released. Use the version flag to force a release.",
-				"library", library.ID, "nextVersion", nextVersion)
 			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to force a release for: %s", library.ID)
 		}
 		slog.Info("Updating library to the next version", "library", r.library, "currentVersion", library.Version, "nextVersion", nextVersion)
