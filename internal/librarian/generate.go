@@ -49,8 +49,8 @@ type generateRunner struct {
 	workRoot        string
 }
 
-func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
-	runner, err := newCommandRunner(cfg)
+func newGenerateRunner(cfg *config.Config, ghClient GitHubClient) (*generateRunner, error) {
+	runner, err := newCommandRunner(cfg, ghClient)
 	if err != nil {
 		return nil, err
 	}

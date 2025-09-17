@@ -98,7 +98,7 @@ type commandRunner struct {
 
 const defaultAPISourceBranch = "master"
 
-func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
+func newCommandRunner(cfg *config.Config, ghClient GitHubClient) (*commandRunner, error) {
 	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
@@ -127,19 +127,21 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	image := deriveImage(cfg.Image, state)
 
-	var gitRepo *github.Repository
-	if isURL(cfg.Repo) {
-		gitRepo, err = github.ParseRemote(cfg.Repo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse repo url: %w", err)
+	if ghClient == nil {
+		var gitRepo *github.Repository
+		if isURL(cfg.Repo) {
+			gitRepo, err = github.ParseRemote(cfg.Repo)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse repo url: %w", err)
+			}
+		} else {
+			gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
+			}
 		}
-	} else {
-		gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
-		}
+		ghClient = github.NewClient(cfg.GitHubToken, gitRepo)
 	}
-	ghClient := github.NewClient(cfg.GitHubToken, gitRepo)
 
 	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {

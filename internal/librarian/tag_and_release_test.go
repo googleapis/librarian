@@ -51,7 +51,7 @@ func TestNewTagAndReleaseRunner(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			r, err := newTagAndReleaseRunner(tc.cfg)
+			r, err := newTagAndReleaseRunner(tc.cfg, nil)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("newTagAndReleaseRunner() error = %v, wantErr %v", err, tc.wantErr)
 				return

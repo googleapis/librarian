@@ -65,7 +65,7 @@ func TestNewInitRunner(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := newInitRunner(test.cfg)
+			_, err := newInitRunner(test.cfg, nil)
 			if test.wantErr {
 				if err == nil {
 					t.Error("newInitRunner() should return error")

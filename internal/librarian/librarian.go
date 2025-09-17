@@ -78,7 +78,7 @@ func newCmdGenerate() *cli.Command {
 			if _, err := cmd.Config.IsValid(); err != nil {
 				return fmt.Errorf("failed to validate config: %s", err)
 			}
-			runner, err := newGenerateRunner(cmd.Config)
+			runner, err := newGenerateRunner(cmd.Config, nil)
 			if err != nil {
 				return err
 			}
@@ -111,7 +111,7 @@ func newCmdTagAndRelease() *cli.Command {
 			if _, err := cmd.Config.IsValid(); err != nil {
 				return fmt.Errorf("failed to validate config: %s", err)
 			}
-			runner, err := newTagAndReleaseRunner(cmd.Config)
+			runner, err := newTagAndReleaseRunner(cmd.Config, nil)
 			if err != nil {
 				return err
 			}
@@ -136,7 +136,7 @@ func newCmdInit() *cli.Command {
 			if _, err := cmd.Config.IsValid(); err != nil {
 				return fmt.Errorf("failed to validate config: %s", err)
 			}
-			runner, err := newInitRunner(cmd.Config)
+			runner, err := newInitRunner(cmd.Config, nil)
 			if err != nil {
 				return err
 			}

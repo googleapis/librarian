@@ -46,8 +46,8 @@ type initRunner struct {
 	workRoot        string
 }
 
-func newInitRunner(cfg *config.Config) (*initRunner, error) {
-	runner, err := newCommandRunner(cfg)
+func newInitRunner(cfg *config.Config, ghClient GitHubClient) (*initRunner, error) {
+	runner, err := newCommandRunner(cfg, ghClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create init runner: %w", err)
 	}

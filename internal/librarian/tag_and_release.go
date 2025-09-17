@@ -49,8 +49,8 @@ type tagAndReleaseRunner struct {
 	state       *config.LibrarianState
 }
 
-func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
-	runner, err := newCommandRunner(cfg)
+func newTagAndReleaseRunner(cfg *config.Config, ghClient GitHubClient) (*tagAndReleaseRunner, error) {
+	runner, err := newCommandRunner(cfg, ghClient)
 	if err != nil {
 		return nil, err
 	}

@@ -69,12 +69,11 @@ func TestGenerate_DefaultBehavior(t *testing.T) {
 	cfg.WorkRoot = repoDir
 	cfg.Repo = repoDir
 	cfg.APISource = apiSourceDir
-	runner, err := newGenerateRunner(cfg)
+	runner, err := newGenerateRunner(cfg, mockGH)
 	if err != nil {
 		t.Fatalf("newGenerateRunner() failed: %v", err)
 	}
 
-	runner.ghClient = mockGH
 	runner.containerClient = mockContainer
 	if err := runner.run(ctx); err != nil {
 		t.Fatalf("runner.run() failed: %v", err)
