@@ -92,8 +92,8 @@ type commandRunner struct {
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
-	workRoot        string
 	image           string
+	workRoot        string
 }
 
 const defaultAPISourceBranch = "master"

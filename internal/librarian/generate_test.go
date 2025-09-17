@@ -381,15 +381,17 @@ func TestRunConfigureCommand(t *testing.T) {
 func TestNewGenerateRunner(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name    string
-		cfg     *config.Config
-		wantErr bool
+		name       string
+		cfg        *config.Config
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "valid config",
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   newTestGitRepo(t).GetDir(),
+				Branch:      "test-branch",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -406,13 +408,15 @@ func TestNewGenerateRunner(t *testing.T) {
 				Image:       "gcr.io/test/test-image",
 				CommandName: generateCmdName,
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "repository does not exist",
 		},
 		{
 			name: "missing image",
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   t.TempDir(),
+				Branch:      "test-branch",
 				Repo:        "https://github.com/googleapis/librarian.git",
 				WorkRoot:    t.TempDir(),
 				CommandName: generateCmdName,
@@ -424,6 +428,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   newTestGitRepo(t).GetDir(),
+				Branch:      "test-branch",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -437,6 +442,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				API:            "some/api",
 				APISource:      "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
 				APISourceDepth: 1,
+				Branch:         "test-branch",
 				Repo:           newTestGitRepo(t).GetDir(),
 				WorkRoot:       t.TempDir(),
 				Image:          "gcr.io/test/test-image",
@@ -454,13 +460,15 @@ func TestNewGenerateRunner(t *testing.T) {
 				Image:          "gcr.io/test/test-image",
 				CommandName:    generateCmdName,
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "repo must be specified",
 		},
 		{
 			name: "valid config with local repo",
 			cfg: &config.Config{
 				API:         "some/api",
 				APISource:   newTestGitRepo(t).GetDir(),
+				Branch:      "test-branch",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
 				Image:       "gcr.io/test/test-image",
@@ -500,12 +508,26 @@ func TestNewGenerateRunner(t *testing.T) {
 			}
 
 			r, err := newGenerateRunner(test.cfg)
-			if (err != nil) != test.wantErr {
-				t.Errorf("newGenerateRunner() error = %v, wantErr %v", err, test.wantErr)
-			}
 			if test.wantErr {
+				if err == nil {
+					t.Fatalf("newGenerateRunner() error = %v, wantErr %v", err, test.wantErr)
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Fatalf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+
 				return
 			}
+
+			if err != nil {
+				t.Fatalf("newGenerateRunner() got error: %v", err)
+			}
+
+			if r.branch == "" {
+				t.Errorf("newGenerateRunner() branch is not set")
+			}
+
 			if r.ghClient == nil {
 				t.Errorf("newGenerateRunner() ghClient is nil")
 			}

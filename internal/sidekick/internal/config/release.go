@@ -34,6 +34,10 @@ type Release struct {
 
 	// IgnoredChanges defines globs that are ignored in change analysis.
 	IgnoredChanges []string `toml:"ignored-changes,omitempty"`
+
+	// An alternative location for the `roots.pem` file. If empty it has no
+	// effect.
+	RootsPem string
 }
 
 // Tool defines the configuration required to install helper tools.

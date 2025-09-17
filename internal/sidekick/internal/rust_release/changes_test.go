@@ -28,6 +28,97 @@ const (
 	newLibRsContents = `pub fn hello() -> &'static str { "Hello World" }`
 )
 
+func TestMatchesBranchPointSuccess(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+	}
+	remoteDir := setupForPublish(t, "v1.0.0")
+	cloneRepository(t, remoteDir)
+	if err := matchesBranchPoint(config); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMatchesBranchDiffError(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "not-a-valid-branch",
+	}
+	remoteDir := setupForPublish(t, "v1.0.0")
+	cloneRepository(t, remoteDir)
+	if err := matchesBranchPoint(config); err == nil {
+		t.Errorf("expected an error with an invalid branch")
+	}
+}
+
+func TestMatchesDirtyCloneError(t *testing.T) {
+	requireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "not-a-valid-branch",
+	}
+	remoteDir := setupForPublish(t, "v1.0.0")
+	cloneRepository(t, remoteDir)
+	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	if err := external.Run("git", "add", path.Join("src", "pubsub")); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := matchesBranchPoint(config); err == nil {
+		t.Errorf("expected an error with a dirty clone")
+	}
+}
+
+func TestIsNewFile(t *testing.T) {
+	const wantTag = "new-file-success"
+	release := config.Release{
+		Remote:       "origin",
+		Branch:       "main",
+		Preinstalled: map[string]string{},
+	}
+	setupForVersionBump(t, wantTag)
+	existingName := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(existingName, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	newName := path.Join("src", "storage", "src", "new.rs")
+	if err := os.WriteFile(newName, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "add", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+		t.Fatal(err)
+	}
+	if isNewFile(&release, wantTag, existingName) {
+		t.Errorf("file is not new but reported as such: %s", existingName)
+	}
+	if !isNewFile(&release, wantTag, newName) {
+		t.Errorf("file is new but not reported as such: %s", newName)
+	}
+}
+
+func TestIsNewFileDiffError(t *testing.T) {
+	const wantTag = "new-file-success"
+	release := config.Release{
+		Remote:       "origin",
+		Branch:       "main",
+		Preinstalled: map[string]string{},
+	}
+	setupForVersionBump(t, wantTag)
+	existingName := path.Join("src", "storage", "src", "lib.rs")
+	if isNewFile(&release, "invalid-tag", existingName) {
+		t.Errorf("diff errors should return false for isNewFile(): %s", existingName)
+	}
+}
+
 func TestFilesChangedSuccess(t *testing.T) {
 	const wantTag = "release-2001-02-03"
 

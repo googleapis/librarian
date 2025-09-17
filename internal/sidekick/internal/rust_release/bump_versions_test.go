@@ -188,6 +188,32 @@ func setupForVersionBump(t *testing.T, wantTag string) {
 	configNewGitRepository(t)
 }
 
+func setupForPublish(t *testing.T, wantTag string) string {
+	remoteDir := t.TempDir()
+	continueInNewGitRepository(t, remoteDir)
+	initRepositoryContents(t)
+	if err := external.Run("git", "tag", wantTag); err != nil {
+		t.Fatal(err)
+	}
+	name := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+		t.Fatal(err)
+	}
+	return remoteDir
+}
+
+func cloneRepository(t *testing.T, remoteDir string) {
+	cloneDir := t.TempDir()
+	t.Chdir(cloneDir)
+	if err := external.Run("git", "clone", remoteDir, "."); err != nil {
+		t.Fatal(err)
+	}
+	configNewGitRepository(t)
+}
+
 func continueInNewGitRepository(t *testing.T, tmpDir string) {
 	t.Helper()
 	requireCommand(t, "git")
