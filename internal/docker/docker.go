@@ -193,6 +193,14 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		return err
 	}
 	defer func(name string) {
+		if filepath.Base(name) == config.GenerateRequest {
+			content, err := os.ReadFile(name)
+			if err != nil {
+				slog.Warn("failed to read file for debugging", "name", name, "err", err)
+			} else {
+				slog.Debug("generate-request.json content:", "content", string(content))
+			}
+		}
 		err := os.Remove(name)
 		if err != nil {
 			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
