@@ -276,7 +276,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 
 	// Traverse and annotate the messages defined in this API.
 	for _, m := range model.Messages {
-		annotate.annotateMessage(m, annotate.imports)
+		annotate.annotateMessage(m)
 	}
 
 	for _, s := range model.Services {
@@ -430,9 +430,9 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 	s.Codec = ann
 }
 
-func (annotate *annotateModel) annotateMessage(m *api.Message, imports map[string]string) {
+func (annotate *annotateModel) annotateMessage(m *api.Message) {
 	// Add the import for the common JSON helpers.
-	imports["cloud_gax_helpers"] = commonHelpersImport
+	annotate.imports["cloud_gax_helpers"] = commonHelpersImport
 
 	for _, f := range m.Fields {
 		annotate.annotateField(f)
@@ -444,7 +444,7 @@ func (annotate *annotateModel) annotateMessage(m *api.Message, imports map[strin
 		annotate.annotateEnum(e)
 	}
 	for _, m := range m.Messages {
-		annotate.annotateMessage(m, imports)
+		annotate.annotateMessage(m)
 	}
 
 	constructorBody := ";"
@@ -504,12 +504,11 @@ func createToStringLines(message *api.Message) []string {
 
 func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	// Ignore imports added from the input and output messages.
-	tempImports := map[string]string{}
 	if method.InputType.Codec == nil {
-		annotate.annotateMessage(method.InputType, tempImports)
+		annotate.annotateMessage(method.InputType)
 	}
 	if method.OutputType.Codec == nil {
-		annotate.annotateMessage(method.OutputType, tempImports)
+		annotate.annotateMessage(method.OutputType)
 	}
 
 	pathInfoAnnotation := &pathInfoAnnotation{

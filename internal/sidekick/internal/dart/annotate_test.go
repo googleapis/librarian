@@ -238,8 +238,7 @@ func TestAnnotateMessageToString(t *testing.T) {
 		{message: sample.Automatic(), expected: 0},
 	} {
 		t.Run(test.message.Name, func(t *testing.T) {
-			imports := map[string]string{}
-			annotate.annotateMessage(test.message, imports)
+			annotate.annotateMessage(test.message)
 
 			codec := test.message.Codec.(*messageAnnotation)
 			actual := codec.ToStringLines
