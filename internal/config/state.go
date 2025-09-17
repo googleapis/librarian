@@ -47,10 +47,15 @@ func (s *LibrarianState) Validate() error {
 	if len(s.Libraries) == 0 {
 		return fmt.Errorf("libraries cannot be empty")
 	}
+	seenLibraryIDs := make(map[string]bool)
 	for i, l := range s.Libraries {
 		if l == nil {
 			return fmt.Errorf("library at index %d cannot be nil", i)
 		}
+		if _, exists := seenLibraryIDs[l.ID]; exists {
+			return fmt.Errorf("duplicate library ID %s", l.ID)
+		}
+		seenLibraryIDs[l.ID] = true
 		if err := l.Validate(); err != nil {
 			return fmt.Errorf("invalid library at index %d: %w", i, err)
 		}

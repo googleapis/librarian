@@ -71,14 +71,31 @@ func TestLibrarianState_Validate(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "libraries cannot be empty",
 		},
+		{
+			name: "duplicate library IDs",
+			state: &LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*LibraryState{
+					{
+						ID:          "x",
+						SourceRoots: []string{"src/x"},
+					},
+					{
+						ID:          "x",
+						SourceRoots: []string{"src/x"},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "duplicate library ID",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := test.state.Validate()
 			if test.wantErr {
 				if err == nil {
 					t.Error("Librarian.Validate() should fail")
-				}
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
+				} else if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
 				}
 
