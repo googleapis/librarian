@@ -92,7 +92,6 @@ type commandRunner struct {
 	librarianConfig *config.LibrarianConfig
 	ghClient        GitHubClient
 	containerClient ContainerClient
-	branch          string
 	image           string
 	workRoot        string
 }
@@ -147,7 +146,6 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		return nil, err
 	}
 	return &commandRunner{
-		branch:          cfg.Branch,
 		workRoot:        cfg.WorkRoot,
 		repo:            languageRepo,
 		sourceRepo:      sourceRepo,
