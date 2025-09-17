@@ -408,7 +408,8 @@ func TestNewGenerateRunner(t *testing.T) {
 				Image:       "gcr.io/test/test-image",
 				CommandName: generateCmdName,
 			},
-			wantErr: true,
+			wantErr:    true,
+			wantErrMsg: "repository does not exist",
 		},
 		{
 			name: "missing image",
