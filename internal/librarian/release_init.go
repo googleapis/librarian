@@ -232,20 +232,16 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 	if nextVersion == library.Version {
 		// No library is specified for release. No releasable units found and will not continue with release
 		if r.library == "" {
-			slog.Info("Library does not have any releasable units since the last release and will not be released.",
+			slog.Info("Library does not have any releasable units and will not be released.",
 				"library", library.ID, "version", library.Version)
 			return nil
+		} else {
+			// Library was inputted for release, but a version was not specified or the version was not
+			// SemVer greater than the current version
+			slog.Error("Inputted library does not have a releasable unit and will not be released. Use the --version flag to set a specific version.",
+				"library", library.ID, "nextVersion", nextVersion)
+			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to set the version for this library: %s", library.ID)
 		}
-
-		// Library is specified for release, but the next version is calculated to be the same as the
-		// current one. It is possible that version override is not specified or there are no releasable
-		// units found. If so, automatically bump to the next minor version and continue with the release.
-		nextVersion, err = semver.DeriveNext(semver.Minor, library.Version)
-		if err != nil {
-			return err
-		}
-		slog.Warn("Unable to find a releasable unit and bumping to next minor version. Use the --version flag to set a specific version other than the next minor.",
-			"library", library.ID, "nextVersion", nextVersion)
 	}
 	slog.Info("Updating library to the next version", "library", r.library, "currentVersion", library.Version, "nextVersion", nextVersion)
 

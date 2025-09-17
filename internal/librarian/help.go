@@ -89,8 +89,8 @@ to the configured language-specific container.
 If a specific library is configured for release via the '--library' flag, a single
 releasable change is needed to automatically calculate a version bump. If there are
 no releasable changes since the last release, the '--version' flag should be included
-to set a new version for the library. If the '--version' flag is not set, then the
-next minor version is used as the next version.
+to set a new version for the library. The new version must be "SemVer" greater than the
+current version.
 
 By default, 'release init' leaves the changes in your local working directory
 for inspection. Use the '--push' flag to automatically commit the changes to

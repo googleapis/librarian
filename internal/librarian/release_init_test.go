@@ -553,7 +553,7 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "release init has multiple libraries but only one has a releasable unit",
+			name:            "release init has multiple libraries but only one library has a releasable unit",
 			containerClient: &mockContainerClient{},
 			dockerInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
@@ -615,9 +615,73 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "library does not have releasable unit, specified for release",
+			name:            "inputted library does not have a releasable unit, version is inputted",
 			containerClient: &mockContainerClient{},
 			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        os.TempDir(),
+					containerClient: containerClient,
+					library:         "another-example-id", // release only for this library
+					libraryVersion:  "3.0.0",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version: "1.0.0",
+								ID:      "another-example-id",
+							},
+							{
+								Version: "2.0.0",
+								ID:      "example-id",
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir:                       t.TempDir(),
+						ChangedFilesInCommitValue: []string{"file.txt"},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Message: "chore: not releasable",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Message: "feat: a new feature",
+								},
+							},
+						},
+					},
+					ghClient:        &mockGitHubClient{},
+					librarianConfig: &config.LibrarianConfig{},
+					partialRepo:     t.TempDir(),
+				}
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						Version:       "3.0.0",
+						ID:            "another-example-id",
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						Version:       "2.0.0",
+						ID:            "example-id",
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
+			name:            "inputted library does not have a releasable unit, no version inputted",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 0, // version was not inputted, do not trigger a release
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        os.TempDir(),
@@ -656,26 +720,8 @@ func TestInitRun(t *testing.T) {
 					partialRepo:     t.TempDir(),
 				}
 			},
-			want: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						Version:       "1.1.0", // No releasable units, but was specified. Automatically bumping to minor
-						ID:            "another-example-id",
-						APIs:          []*config.API{},
-						SourceRoots:   []string{},
-						PreserveRegex: []string{},
-						RemoveRegex:   []string{},
-					},
-					{
-						Version:       "2.0.0",
-						ID:            "example-id",
-						APIs:          []*config.API{},
-						SourceRoots:   []string{},
-						PreserveRegex: []string{},
-						RemoveRegex:   []string{},
-					},
-				},
-			},
+			wantErr:    true,
+			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to set the version for this library",
 		},
 		{
 			name:            "failed to commit and push",
@@ -991,17 +1037,14 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 			commits: []*conventionalcommits.ConventionalCommit{
 				{
-					Type:      "fix",
-					Subject:   "change a typo",
-					LibraryID: "one-id",
-					Footers:   map[string]string{},
+					Type:    "fix",
+					Subject: "change a typo",
 				},
 				{
-					Type:      "feat",
-					Subject:   "add a config file",
-					Body:      "This is the body.",
-					LibraryID: "one-id",
-					Footers:   map[string]string{"PiperOrigin-RevId": "12345"},
+					Type:    "feat",
+					Subject: "add a config file",
+					Body:    "This is the body.",
+					Footers: map[string]string{"PiperOrigin-RevId": "12345"},
 				},
 			},
 			want: &config.LibraryState{
@@ -1010,24 +1053,21 @@ func TestUpdateLibrary(t *testing.T) {
 				PreviousVersion: "1.2.3",
 				Changes: []*conventionalcommits.ConventionalCommit{
 					{
-						Type:      "fix",
-						Subject:   "change a typo",
-						LibraryID: "one-id",
-						Footers:   map[string]string{},
+						Type:    "fix",
+						Subject: "change a typo",
 					},
 					{
-						Type:      "feat",
-						Subject:   "add a config file",
-						Body:      "This is the body.",
-						LibraryID: "one-id",
-						Footers:   map[string]string{"PiperOrigin-RevId": "12345"},
+						Type:    "feat",
+						Subject: "add a config file",
+						Body:    "This is the body.",
+						Footers: map[string]string{"PiperOrigin-RevId": "12345"},
 					},
 				},
 				ReleaseTriggered: true,
 			},
 		},
 		{
-			name: "update a library with releasable units and version specified",
+			name: "update a library with releasable units, version inputted",
 			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
@@ -1037,7 +1077,6 @@ func TestUpdateLibrary(t *testing.T) {
 				{
 					Type:    "fix",
 					Subject: "change a typo",
-					Footers: map[string]string{},
 				},
 				{
 					Type:    "feat",
@@ -1054,7 +1093,6 @@ func TestUpdateLibrary(t *testing.T) {
 					{
 						Type:    "fix",
 						Subject: "change a typo",
-						Footers: map[string]string{},
 					},
 					{
 						Type:    "feat",
@@ -1067,7 +1105,7 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "get breaking changes of one library",
+			name: "library has breaking changes",
 			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
@@ -1085,7 +1123,6 @@ func TestUpdateLibrary(t *testing.T) {
 				{
 					Type:       "feat",
 					Subject:    "change a typo",
-					Footers:    map[string]string{},
 					IsBreaking: true,
 				},
 			},
@@ -1106,7 +1143,6 @@ func TestUpdateLibrary(t *testing.T) {
 					{
 						Type:       "feat",
 						Subject:    "change a typo",
-						Footers:    map[string]string{},
 						IsBreaking: true,
 					},
 				},
@@ -1119,13 +1155,14 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:      "one-id",
 				Version: "1.2.3",
 			},
+			commits: []*conventionalcommits.ConventionalCommit{},
 			want: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
 			},
 		},
 		{
-			name: "library has no releasable units, but is specified for release",
+			name: "library has no releasable units and is inputted for release without a version",
 			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
@@ -1137,27 +1174,17 @@ func TestUpdateLibrary(t *testing.T) {
 					Subject: "a chore",
 				},
 			},
-			want: &config.LibraryState{
-				ID:               "one-id",
-				PreviousVersion:  "1.2.3",
-				Version:          "1.3.0", // Automatically bumped minor version
-				ReleaseTriggered: true,
-				Changes: []*conventionalcommits.ConventionalCommit{
-					{
-						Type:    "chore",
-						Subject: "a chore",
-					},
-				},
-			},
+			wantErr:    true,
+			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to set the version for this library",
 		},
 		{
-			name: "library has no releasable units, but is specified for release with a specific version",
+			name: "library has no releasable units and is inputted for release with a specific version",
 			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
 			},
 			library:        "one-id",
-			libraryVersion: "2.0.0",
+			libraryVersion: "5.0.0",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{
 					Type:    "chore",
@@ -1167,7 +1194,7 @@ func TestUpdateLibrary(t *testing.T) {
 			want: &config.LibraryState{
 				ID:               "one-id",
 				PreviousVersion:  "1.2.3",
-				Version:          "2.0.0", // Use the `--version` override value
+				Version:          "5.0.0", // Use the `--version` override value
 				ReleaseTriggered: true,
 				Changes: []*conventionalcommits.ConventionalCommit{
 					{
@@ -1194,7 +1221,6 @@ func TestUpdateLibrary(t *testing.T) {
 				}
 				return
 			}
-
 			if err != nil {
 				t.Errorf("failed to run updateLibrary(): %q", err.Error())
 			}
