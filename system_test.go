@@ -1,0 +1,241 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package librarian
+
+import (
+	"context"
+	"os"
+	"path"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/github"
+	"github.com/googleapis/librarian/internal/gitrepo"
+)
+
+var testToken = os.Getenv("TEST_GITHUB_TOKEN")
+
+func TestGetRawContentSystem(t *testing.T) {
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
+	repoName := "https://github.com/googleapis/librarian"
+
+	for _, credential := range []struct {
+		name  string
+		token string
+	}{
+		{
+			name:  "with credentials",
+			token: testToken,
+		},
+		{
+			name:  "without credentials",
+			token: "",
+		},
+	} {
+		t.Run(credential.name, func(t *testing.T) {
+			for _, test := range []struct {
+				name          string
+				path          string
+				wantErr       bool
+				wantErrSubstr string
+			}{
+				{
+					name:    "existing file",
+					path:    ".librarian/state.yaml",
+					wantErr: false,
+				},
+				{
+					name:          "missing file",
+					path:          "not-a-real-file.txt",
+					wantErr:       true,
+					wantErrSubstr: "no file named",
+				},
+			} {
+				t.Run(test.name, func(t *testing.T) {
+					repo, err := github.ParseRemote(repoName)
+					if err != nil {
+						t.Fatalf("unexpected error in ParseRemote() %s", err)
+					}
+
+					client := github.NewClient(testToken, repo)
+					got, err := client.GetRawContent(context.Background(), test.path, "main")
+
+					if test.wantErr {
+						if err == nil {
+							t.Fatalf("GetRawContent() err = nil, want error containing %q", test.wantErrSubstr)
+						} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+							t.Errorf("GetRawContent() err = %v, want error containing %q", err, test.wantErrSubstr)
+						}
+					} else {
+						if err != nil {
+							t.Errorf("GetRawContent() err = %v, want nil", err)
+						}
+						if len(got) <= 0 {
+							t.Fatalf("GetRawContent() expected to fetch contents for %s from %s", test.path, repoName)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestPullRequestSystem(t *testing.T) {
+	// Clone a repo
+	// Create a commit and push
+	// Create a pull request
+	// Add a label to the issue
+	// Fetch labels for the issue and verify
+	// Replace the issue labels
+	// Search for the pull request
+	// Fetch the pull request
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
+	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	if testRepoName == "" {
+		t.Skip("TEST_GITHUB_REPO not set, skipping GitHub integration test")
+	}
+
+	// Clone a repo
+	workdir := path.Join(t.TempDir(), "test-repo")
+	localRepository, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir:          workdir,
+		MaybeClone:   true,
+		RemoteURL:    testRepoName,
+		RemoteBranch: "main",
+		GitPassword:  testToken,
+		Depth:        1,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error in NewRepository() %s", err)
+	}
+	repo, err := github.ParseRemote(testRepoName)
+	if err != nil {
+		t.Fatalf("unexpected error in ParseRemote() %s", err)
+	}
+
+	branchName := "integration-test"
+	err = localRepository.CreateBranchAndCheckout(branchName)
+	if err != nil {
+		t.Fatalf("unexpected error in CreateBranchAndCheckout() %s", err)
+	}
+
+	// Create a commit and push
+	err = os.WriteFile(path.Join(workdir, "some-file.txt"), []byte("some-content"), 0644)
+	if err != nil {
+		t.Fatalf("unexpected error writing a file to git repo %s", err)
+	}
+	_, err = localRepository.AddAll()
+	if err != nil {
+		t.Fatalf("unexepected error in AddAll() %s", err)
+	}
+	err = localRepository.Commit("build: add test file")
+	if err != nil {
+		t.Fatalf("unexpected error in Commit() %s", err)
+	}
+	err = localRepository.Push(branchName)
+	if err != nil {
+		t.Fatalf("unexpected error in Push() %s", err)
+	}
+
+	// Create a pull request
+	client := github.NewClient(testToken, repo)
+	metadata, err := client.CreatePullRequest(t.Context(), repo, branchName, "main", "test: integration test", "do not merge")
+	if err != nil {
+		t.Fatalf("unexpected error in CreatePullRequest() %s", err)
+	}
+	t.Logf("created pull request: %d", metadata.Number)
+
+	// Add a label to the pull request
+	labels := []string{"do not merge", "type: cleanup"}
+	err = client.AddLabelsToIssue(t.Context(), repo, metadata.Number, labels)
+	if err != nil {
+		t.Fatalf("unexpected error in AddLabelsToIssue() %s", err)
+	}
+
+	// Get labels and verify
+	foundLabels, err := client.GetLabels(t.Context(), metadata.Number)
+	if err != nil {
+		t.Fatalf("unexpected error in GetLabels() %s", err)
+	}
+	if diff := cmp.Diff(foundLabels, labels); diff != "" {
+		t.Fatalf("GetLabels() mismatch (-want + got):\n%s", diff)
+	}
+
+	// Replace labels
+	labels = []string{"foo", "bar"}
+	err = client.ReplaceLabels(t.Context(), metadata.Number, labels)
+	if err != nil {
+		t.Fatalf("unexpected error in ReplaceLabels() %s", err)
+	}
+
+	// Get labels and verify
+	foundLabels, err = client.GetLabels(t.Context(), metadata.Number)
+	if err != nil {
+		t.Fatalf("unexpected error in GetLabels() %s", err)
+	}
+	if diff := cmp.Diff(foundLabels, labels); diff != "" {
+		t.Fatalf("GetLabels() mismatch (-want + got):\n%s", diff)
+	}
+
+	// Add label
+	err = client.AddLabelsToIssue(t.Context(), repo, metadata.Number, []string{"librarian-test", "asdf"})
+	if err != nil {
+		t.Fatalf("unexpected error in AddLabelsToIssue() %s", err)
+	}
+
+	// Get labels and verify
+	wantLabels := []string{"foo", "bar", "librarian-test", "asdf"}
+	foundLabels, err = client.GetLabels(t.Context(), metadata.Number)
+	if err != nil {
+		t.Fatalf("unexpected error in GetLabels() %s", err)
+	}
+	if diff := cmp.Diff(foundLabels, wantLabels); diff != "" {
+		t.Fatalf("GetLabels() mismatch (-want + got):\n%s", diff)
+	}
+
+	// Search for pull requests (this may take a bit of time, so try 3 times)
+	found := false
+	for i := 0; i < 3; i++ {
+		foundPullRequests, err := client.SearchPullRequests(t.Context(), "label:librarian-test is:open")
+		if err != nil {
+			t.Fatalf("unexpected error in SearchPullRequests() %s", err)
+		}
+		if len(foundPullRequests) == 0 {
+			found = true
+			break
+		}
+		delay := time.Duration(2 * time.Second)
+		t.Logf("Retrying in %v...\n", delay)
+		time.Sleep(delay)
+	}
+	if !found {
+		t.Fatalf("failed to find pull request after 3 attempts")
+	}
+
+	// Get single pull request
+	foundPullRequest, err := client.GetPullRequest(t.Context(), metadata.Number)
+	if err != nil {
+		t.Fatalf("unexpected error in GetPullRequest() %s", err)
+	}
+	if diff := cmp.Diff(*foundPullRequest.Number, metadata.Number); diff != "" {
+		t.Fatalf("pull request number mismatch (-want + got):\n%s", diff)
+	}
+}

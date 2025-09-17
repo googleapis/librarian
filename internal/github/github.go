@@ -57,8 +57,12 @@ func NewClient(accessToken string, repo *Repository) *Client {
 }
 
 func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) *Client {
+	client := github.NewClient(httpClient)
+	if accessToken != "" {
+		client = client.WithAuthToken(accessToken)
+	}
 	return &Client{
-		Client:      github.NewClient(httpClient).WithAuthToken(accessToken),
+		Client:      client,
 		accessToken: accessToken,
 		repo:        repo,
 	}
