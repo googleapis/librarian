@@ -20,7 +20,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"os/exec"
+
 	"path/filepath"
 	"testing"
 
@@ -223,15 +223,6 @@ func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState, writeSt
 		t.Fatalf("gitrepo.Open(%q) = %v", dir, err)
 	}
 	return repo
-}
-
-func runGit(t *testing.T, dir string, args ...string) {
-	t.Helper()
-	cmd := exec.Command("git", args...)
-	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("git %v: %v", args, err)
-	}
 }
 
 // setupRepoForGetCommits creates an empty gitrepo and creates some commits and
