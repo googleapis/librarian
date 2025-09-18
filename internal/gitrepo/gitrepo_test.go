@@ -1117,6 +1117,65 @@ func TestCreateBranchAndCheckout(t *testing.T) {
 	}
 }
 
+func TestRestore(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		paths         []string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "restore files in paths",
+			paths: []string{
+				"first/path",
+				"second/path",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+			// Create files in test.paths
+			for _, path := range test.paths {
+				relPath := filepath.Join(dir, path)
+				if err := os.MkdirAll(relPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+				file := filepath.Join(relPath, "example.txt")
+				if err := os.WriteFile(file, []byte("example line"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			err := localRepo.Restore(test.paths)
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("Restore() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Verify files are removed from the working tree.
+			for _, path := range test.paths {
+				file := filepath.Join(dir, path, "example.txt")
+				if _, err := os.Stat(file); !os.IsNotExist(err) {
+					t.Errorf("file %s should be removed", file)
+				}
+			}
+		})
+	}
+}
+
 // initTestRepo creates a new git repository in a temporary directory.
 func initTestRepo(t *testing.T) (*git.Repository, string) {
 	t.Helper()

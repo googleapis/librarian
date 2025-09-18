@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -458,7 +459,11 @@ func (r *LocalRepository) Push(branchName string) error {
 // this operation.
 func (r *LocalRepository) Restore(paths []string) error {
 	args := []string{"restore"}
-	args = append(args, paths...)
+	for _, path := range paths {
+		relPath := filepath.Join(r.Dir, path)
+		args = append(args, relPath)
+	}
+
 	slog.Info("Restoring uncommitted changes", "paths", strings.Join(paths, ","))
 	cmd := exec.Command("git", args...)
 	cmd.Stderr = os.Stderr
