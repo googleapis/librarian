@@ -1231,6 +1231,27 @@ func TestProtobuf_Pagination(t *testing.T) {
 				},
 			},
 			{
+				Name:            "ListFooWithMaxResultsIncorrectMessageType",
+				ID:              ".test.TestService.ListFooWithMaxResultsIncorrectMessageType",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooMaxResultIncorrectMessageTypeRequest",
+				OutputTypeID:    ".test.ListFooResponse",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("v1").
+								WithVariable(api.NewPathVariable("parent").
+									WithLiteral("projects").
+									WithMatch()).
+								WithLiteral("foos"),
+							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
+						},
+					},
+				},
+			},
+			{
 				Name:            "ListFooMissingNextPageToken",
 				ID:              ".test.TestService.ListFooMissingNextPageToken",
 				SourceServiceID: ".test.TestService",

@@ -88,6 +88,13 @@ service TestService {
     };
     option (google.api.method_signature) = "parent";
   }
+
+  rpc ListFooWithMaxResultsIncorrectMessageType(ListFooMaxResultIncorrectMessageTypeRequest) returns (ListFooResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/foos"
+    };
+    option (google.api.method_signature) = "parent";
+  }
 }
 
 message ListFooMissingPageSizeRequest {
@@ -173,6 +180,19 @@ message ListFooMaxResultsUInt32ValueRequest {
     ];
     
     google.protobuf.UInt32Value max_results = 2 [(google.api.field_behavior) = OPTIONAL];
+
+    string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message ListFooMaxResultIncorrectMessageTypeRequest {
+    string parent = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (google.api.resource_reference) = {
+            child_type: "test.googleapis.com/Foo"
+        }
+    ];
+
+    google.protobuf.StringValue max_results = 2 [(google.api.field_behavior) = OPTIONAL];
 
     string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
 }

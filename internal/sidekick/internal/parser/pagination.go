@@ -50,7 +50,9 @@ func updateMethodPagination(a *api.API) {
 				}
 			case maxResults:
 				// Legacy maxResults types can be int32/uint32, and protobuf wrappers Int32Value/UInt32Value.
-				if f.Typez == api.INT32_TYPE || f.Typez == api.UINT32_TYPE || f.Typez == api.MESSAGE_TYPE {
+				if f.Typez == api.INT32_TYPE || f.Typez == api.UINT32_TYPE ||
+					(f.Typez == api.MESSAGE_TYPE &&
+						(f.TypezID == ".google.protobuf.Int32Value" || f.TypezID == ".google.protobuf.UInt32Value")) {
 					hasPageSize = true
 				}
 			}
