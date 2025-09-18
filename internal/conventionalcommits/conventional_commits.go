@@ -64,7 +64,10 @@ type ConventionalCommit struct {
 	// IsNested indicates if the commit is a nested commit.
 	IsNested bool `yaml:"-" json:"-"`
 	// SHA is the full commit hash.
+	// Deprecated: use CommitHash instead.
 	SHA string `yaml:"-" json:"source_commit_hash,omitempty"`
+	// CommitHash is the full commit hash.
+	CommitHash string `yaml:"-" json:"commit_hash,omitempty"`
 	// When is the timestamp of the commit.
 	When time.Time `yaml:"-" json:"-"`
 }
@@ -210,6 +213,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			IsBreaking: header.IsBreaking || footerIsBreaking,
 			IsNested:   commitPart.isNested,
 			SHA:        commit.Hash.String(),
+			CommitHash: commit.Hash.String(),
 			When:       commit.When,
 		})
 	}

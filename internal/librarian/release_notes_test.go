@@ -505,14 +505,14 @@ func TestFormatReleaseNotes(t *testing.T) {
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "new feature",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
 							},
 							{
-								Type:    "fix",
-								Subject: "a bug fix",
-								SHA:     hash2.String(),
+								Type:       "fix",
+								Subject:    "a bug fix",
+								CommitHash: hash2.String(),
 							},
 						},
 						ReleaseTriggered: true,
@@ -551,17 +551,17 @@ Language Image: go:1.21
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "new feature",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
 								Footers: map[string]string{
 									"PiperOrigin-RevId": "123456",
 								},
 							},
 							{
-								Type:    "fix",
-								Subject: "a bug fix",
-								SHA:     hash2.String(),
+								Type:       "fix",
+								Subject:    "a bug fix",
+								CommitHash: hash2.String(),
 								Footers: map[string]string{
 									"PiperOrigin-RevId": "987654",
 								},
@@ -603,14 +603,14 @@ Language Image: go:1.21
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "new feature",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
 							},
 							{
-								Type:    "feat",
-								Subject: "another new feature",
-								SHA:     hash2.String(),
+								Type:       "feat",
+								Subject:    "another new feature",
+								CommitHash: hash2.String(),
 							},
 						},
 						ReleaseTriggered: true,
@@ -648,9 +648,9 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "feature for a",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "feature for a",
+								CommitHash: hash1.String(),
 							},
 						},
 					},
@@ -662,9 +662,9 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "fix",
-								Subject: "fix for b",
-								SHA:     hash2.String(),
+								Type:       "fix",
+								Subject:    "fix for b",
+								CommitHash: hash2.String(),
 							},
 						},
 					},
@@ -710,14 +710,14 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "new feature",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
 							},
 							{
-								Type:    "ci",
-								Subject: "a ci change",
-								SHA:     hash2.String(),
+								Type:       "ci",
+								Subject:    "a ci change",
+								CommitHash: hash2.String(),
 							},
 						},
 					},
