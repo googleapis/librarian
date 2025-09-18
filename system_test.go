@@ -211,23 +211,26 @@ func TestPullRequestSystem(t *testing.T) {
 		t.Fatalf("GetLabels() mismatch (-want + got):\n%s", diff)
 	}
 
-	// Search for pull requests (this may take a bit of time, so try 3 times)
+	// Search for pull requests (this may take a bit of time, so try 5 times)
 	found := false
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		foundPullRequests, err := client.SearchPullRequests(t.Context(), "label:librarian-test is:open")
 		if err != nil {
 			t.Fatalf("unexpected error in SearchPullRequests() %s", err)
 		}
-		if len(foundPullRequests) == 0 {
-			found = true
-			break
+		for _, pullRequest := range foundPullRequests {
+			// Look for the PR we created
+			if *pullRequest.Number == metadata.Number {
+				found = true
+				break
+			}
 		}
 		delay := time.Duration(2 * time.Second)
 		t.Logf("Retrying in %v...\n", delay)
 		time.Sleep(delay)
 	}
 	if !found {
-		t.Fatalf("failed to find pull request after 3 attempts")
+		t.Fatalf("failed to find pull request after 5 attempts")
 	}
 
 	// Get single pull request
