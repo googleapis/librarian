@@ -1175,6 +1175,83 @@ func TestProtobuf_Pagination(t *testing.T) {
 				},
 			},
 			{
+				Name:            "ListFooWithMaxResultsUInt32Value",
+				ID:              ".test.TestService.ListFooWithMaxResultsUInt32Value",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooMaxResultsUInt32ValueRequest",
+				OutputTypeID:    ".test.ListFooResponse",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("v1").
+								WithVariable(api.NewPathVariable("parent").
+									WithLiteral("projects").
+									WithMatch()).
+								WithLiteral("foos"),
+							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
+						},
+					},
+				},
+				Pagination: &api.Field{
+					Name:     "page_token",
+					ID:       ".test.ListFooMaxResultsUInt32ValueRequest.page_token",
+					Typez:    9,
+					JSONName: "pageToken",
+					Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_OPTIONAL},
+				},
+			},
+			{
+				Name:            "ListFooWithMaxResultsInt32Value",
+				ID:              ".test.TestService.ListFooWithMaxResultsInt32Value",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooMaxResultsInt32ValueRequest",
+				OutputTypeID:    ".test.ListFooResponse",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("v1").
+								WithVariable(api.NewPathVariable("parent").
+									WithLiteral("projects").
+									WithMatch()).
+								WithLiteral("foos"),
+							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
+						},
+					},
+				},
+				Pagination: &api.Field{
+					Name:     "page_token",
+					ID:       ".test.ListFooMaxResultsInt32ValueRequest.page_token",
+					Typez:    9,
+					JSONName: "pageToken",
+					Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_OPTIONAL},
+				},
+			},
+			{
+				Name:            "ListFooWithMaxResultsIncorrectMessageType",
+				ID:              ".test.TestService.ListFooWithMaxResultsIncorrectMessageType",
+				SourceServiceID: ".test.TestService",
+				InputTypeID:     ".test.ListFooMaxResultIncorrectMessageTypeRequest",
+				OutputTypeID:    ".test.ListFooResponse",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("v1").
+								WithVariable(api.NewPathVariable("parent").
+									WithLiteral("projects").
+									WithMatch()).
+								WithLiteral("foos"),
+							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
+						},
+					},
+				},
+			},
+			{
 				Name:            "ListFooMissingNextPageToken",
 				ID:              ".test.TestService.ListFooMissingNextPageToken",
 				SourceServiceID: ".test.TestService",

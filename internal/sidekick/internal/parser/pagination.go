@@ -14,7 +14,9 @@
 
 package parser
 
-import "github.com/googleapis/librarian/internal/sidekick/internal/api"
+import (
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+)
 
 const (
 	pageSize      = "pageSize"
@@ -41,15 +43,16 @@ func updateMethodPagination(a *api.API) {
 			// Some legacy services (e.g. sqladmin.googleapis.com)
 			// predate AIP-4233 and use `maxResults` instead of
 			// `pageSize` for the field name.
-			// Furthermore, some of these services use both
-			// `uint32` and `int32` for the `maxResults` field type.
 			switch f.JSONName {
 			case pageSize:
 				if f.Typez == api.INT32_TYPE {
 					hasPageSize = true
 				}
 			case maxResults:
-				if f.Typez == api.INT32_TYPE || f.Typez == api.UINT32_TYPE {
+				// Legacy maxResults types can be int32/uint32, and protobuf wrappers Int32Value/UInt32Value.
+				if f.Typez == api.INT32_TYPE || f.Typez == api.UINT32_TYPE ||
+					(f.Typez == api.MESSAGE_TYPE &&
+						(f.TypezID == ".google.protobuf.Int32Value" || f.TypezID == ".google.protobuf.UInt32Value")) {
 					hasPageSize = true
 				}
 			}

@@ -19,6 +19,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
+import "google/protobuf/wrappers.proto";
 
 service TestService {
   option (google.api.default_host) = "test.googleapis.com";
@@ -68,6 +69,27 @@ service TestService {
   }
 
   rpc ListFooWithMaxResultsUInt32(ListFooMaxResultsUInt32Request) returns (ListFooResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/foos"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc ListFooWithMaxResultsUInt32Value(ListFooMaxResultsUInt32ValueRequest) returns (ListFooResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/foos"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc ListFooWithMaxResultsInt32Value(ListFooMaxResultsInt32ValueRequest) returns (ListFooResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/foos"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  rpc ListFooWithMaxResultsIncorrectMessageType(ListFooMaxResultIncorrectMessageTypeRequest) returns (ListFooResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/foos"
     };
@@ -132,6 +154,45 @@ message ListFooMaxResultsUInt32Request {
     ];
     
     uint32 max_results = 2 [(google.api.field_behavior) = OPTIONAL];
+
+    string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message ListFooMaxResultsInt32ValueRequest {
+    string parent = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (google.api.resource_reference) = {
+            child_type: "test.googleapis.com/Foo"
+        }
+    ];
+    
+    google.protobuf.Int32Value max_results = 2 [(google.api.field_behavior) = OPTIONAL];
+
+    string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message ListFooMaxResultsUInt32ValueRequest {
+    string parent = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (google.api.resource_reference) = {
+            child_type: "test.googleapis.com/Foo"
+        }
+    ];
+    
+    google.protobuf.UInt32Value max_results = 2 [(google.api.field_behavior) = OPTIONAL];
+
+    string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message ListFooMaxResultIncorrectMessageTypeRequest {
+    string parent = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (google.api.resource_reference) = {
+            child_type: "test.googleapis.com/Foo"
+        }
+    ];
+
+    google.protobuf.StringValue max_results = 2 [(google.api.field_behavior) = OPTIONAL];
 
     string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
 }
