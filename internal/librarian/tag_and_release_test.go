@@ -596,3 +596,97 @@ func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
 		t.Errorf("replaceLabelsCalls = %v, want 1", ghClient.replaceLabelsCalls)
 	}
 }
+
+func TestDetermineTagFormat(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		librarianState  *config.LibrarianState
+		librarianConfig *config.LibrarianConfig
+		want            string
+		wantErrMsg      string
+	}{
+		{
+			name: "uses default",
+			librarianState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{},
+			want:            defaultTagFormat,
+		},
+		{
+			name: "prefers per-library from config",
+			librarianState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:        "example-library",
+						TagFormat: "per-library-tag-format-from-state",
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				TagFormat: "from-config",
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID: "example-library",
+						TagFormat: "per-library-tag-format-from-config",
+					},
+				},
+			},
+			want: "per-library-tag-format-from-config",
+		},
+		{
+			name: "prefers from config",
+			librarianState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:        "example-library",
+						TagFormat: "per-library-tag-format-from-state",
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				TagFormat: "from-config",
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID: "example-library",
+					},
+				},
+			},
+			want: "from-config",
+		},
+		{
+			name: "falls back to per-library from state",
+			librarianState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:        "example-library",
+						TagFormat: "per-library-tag-format-from-state",
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{},
+			want:            "per-library-tag-format-from-state",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := determineTagFormat("example-library", test.librarianState, test.librarianConfig)
+			if err != nil {
+				if test.wantErrMsg == "" {
+					t.Fatalf("unexpected error in determineTagFormat() %s", err)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Fatalf("got %q, want contains %q", err, test.wantErrMsg)
+				}
+				return
+			}
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("determineTagFormat() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
