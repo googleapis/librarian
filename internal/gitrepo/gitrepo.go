@@ -46,6 +46,7 @@ type Repository interface {
 	CreateBranchAndCheckout(name string) error
 	Push(branchName string) error
 	Restore(paths []string) error
+	CleanUntracked(paths []string) error
 	pushRefSpec(refSpec string) error
 }
 
@@ -478,4 +479,29 @@ func (r *LocalRepository) Restore(paths []string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Dir = r.Dir
 	return cmd.Run()
+}
+
+// CleanUntracked removes untracked files within the given paths.
+func (r *LocalRepository) CleanUntracked(paths []string) error {
+	slog.Info("Cleaning untracked files", "paths", strings.Join(paths, ","))
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	statue, err := worktree.Status()
+	// Remove an untracked file if it lives within one of the given paths.
+	for _, path := range paths {
+		for file, fileStatue := range statue {
+			if !strings.Contains(file, path) || fileStatue.Worktree != git.Untracked {
+				continue
+			}
+
+			if err := os.Remove(file); err != nil {
+				return fmt.Errorf("failed to remove untracked file, %s", file)
+			}
+		}
+	}
+
+	return nil
 }
