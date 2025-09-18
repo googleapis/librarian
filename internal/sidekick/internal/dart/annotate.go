@@ -52,6 +52,7 @@ type modelAnnotations struct {
 	Imports             []string
 	DevDependencies     []string
 	DoNotPublish        bool
+	RepositoryURL       string
 }
 
 // HasServices returns true if the model has services.
@@ -210,6 +211,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		partFileReference   string
 		doNotPublish        bool
 		devDependencies     = []string{}
+		repositoryURL       string
 	)
 
 	for key, definition := range options {
@@ -234,6 +236,8 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 				)
 			}
 			doNotPublish = value
+		case key == "repository-url":
+			repositoryURL = definition
 		case strings.HasPrefix(key, "proto:"):
 			// "proto:google.protobuf" = "package:google_cloud_protobuf/protobuf.dart"
 			keys := strings.Split(key, ":")
@@ -315,6 +319,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		PackageDependencies: packageDependencies,
 		DevDependencies:     devDependencies,
 		DoNotPublish:        doNotPublish,
+		RepositoryURL:       repositoryURL,
 	}
 
 	model.Codec = ann

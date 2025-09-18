@@ -44,7 +44,7 @@ func TestAnnotateModel(t *testing.T) {
 func TestAnnotateModel_Options(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 
-	var foo = []struct {
+	var tests = []struct {
 		options map[string]string
 		verify  func(*testing.T, *annotateModel)
 	}{
@@ -85,6 +85,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
+			map[string]string{"repository-url": "http://example.com/repo"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("http://example.com/repo", codec.RepositoryURL); diff != "" {
+					t.Errorf("mismatch in Codec.RepositoryURL (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
 			map[string]string{"package:http": "1.2.0"},
 			func(t *testing.T, am *annotateModel) {
 				if diff := cmp.Diff(map[string]string{"http": "1.2.0"}, am.dependencyConstraints); diff != "" {
@@ -94,7 +103,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 		},
 	}
 
-	for _, tt := range foo {
+	for _, tt := range tests {
 		annotate := newAnnotateModel(model)
 		err := annotate.annotateModel(tt.options)
 		if err != nil {
