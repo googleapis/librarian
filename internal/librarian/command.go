@@ -141,6 +141,16 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}
 	ghClient := github.NewClient(cfg.GitHubToken, gitRepo)
 
+	// If a custom GitHub API endpoint is provided (for testing),
+	// parse it and set it as the BaseURL on the GitHub client.
+	if cfg.GitHubAPIEndpoint != "" {
+		endpoint, err := url.Parse(cfg.GitHubAPIEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse github-api-endpoint: %w", err)
+		}
+		ghClient.BaseURL = endpoint
+	}
+
 	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err

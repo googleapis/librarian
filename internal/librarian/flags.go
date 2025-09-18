@@ -44,6 +44,12 @@ func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
 a pull request. This flag is ignored if push is set to true.`)
 }
 
+func addFlagGitHubAPIEndpoint(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.GitHubAPIEndpoint, "github-api-endpoint", "",
+		`The GitHub API endpoint to use for all GitHub API operations.
+This is intended for testing and should not be used in production.`)
+}
+
 func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
 	defaultValue := ""
 	fs.StringVar(&cfg.HostMount, "host-mount", defaultValue,
