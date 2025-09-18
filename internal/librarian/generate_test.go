@@ -551,6 +551,7 @@ func TestGenerateScenarios(t *testing.T) {
 		api                string
 		library            string
 		state              *config.LibrarianState
+		librarianConfig    *config.LibrarianConfig
 		container          *mockContainerClient
 		ghClient           GitHubClient
 		build              bool
@@ -831,6 +832,92 @@ func TestGenerateScenarios(t *testing.T) {
 			wantBuildCalls:    1,
 		},
 		{
+			name: "generate skips blocked libraries",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "google.cloud.texttospeech.v1",
+						APIs: []*config.API{{Path: "google/cloud/texttospeech/v1"}},
+					},
+					{
+						ID:   "google.cloud.vision.v1",
+						APIs: []*config.API{{Path: "google/cloud/vision/v1"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{LibraryID: "google.cloud.texttospeech.v1"},
+					{LibraryID: "google.cloud.vision.v1", GenerateBlocked: true},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:          &mockGitHubClient{},
+			build:             true,
+			wantGenerateCalls: 1,
+			wantBuildCalls:    1,
+		},
+		{
+			name:    "generate runs blocked libraries if explicitly requested",
+			library: "google.cloud.vision.v1",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "google.cloud.texttospeech.v1",
+						APIs: []*config.API{{Path: "google/cloud/texttospeech/v1"}},
+					},
+					{
+						ID:   "google.cloud.vision.v1",
+						APIs: []*config.API{{Path: "google/cloud/vision/v1"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{LibraryID: "google.cloud.texttospecech.v1"},
+					{LibraryID: "google.cloud.vision.v1", GenerateBlocked: true},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:          &mockGitHubClient{},
+			build:             true,
+			wantGenerateCalls: 1,
+			wantBuildCalls:    1,
+		},
+		{
+			name: "generate skips a blocked library and the rest fail. should report error",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "google.cloud.texttospeech.v1",
+						APIs: []*config.API{{Path: "google/cloud/texttospeech/v1"}},
+					},
+					{
+						ID:   "google.cloud.vision.v1",
+						APIs: []*config.API{{Path: "google/cloud/vision/v1"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{LibraryID: "google.cloud.texttospeech.v1"},
+					{LibraryID: "google.cloud.vision.v1", GenerateBlocked: true},
+				},
+			},
+			container:  &mockContainerClient{generateErr: errors.New("generate error")},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantErr:    true,
+			wantErrMsg: "all 1 libraries failed to generate (blocked: 1)",
+		},
+		{
 			name: "generate all, all fail should report error",
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
@@ -885,6 +972,7 @@ func TestGenerateScenarios(t *testing.T) {
 				repo:            repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
+				librarianConfig: test.librarianConfig,
 				containerClient: test.container,
 				ghClient:        test.ghClient,
 				workRoot:        t.TempDir(),
