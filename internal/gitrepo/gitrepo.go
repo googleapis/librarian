@@ -21,7 +21,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -454,20 +453,17 @@ func (r *LocalRepository) Push(branchName string) error {
 }
 
 // Restore restores changes in the working tree, leaving staged area untouched.
+// Note that untracked files, if any, are not touched.
 //
 // Wrap git operations in exec, because [git.Worktree.Restore] does not support
 // this operation.
 func (r *LocalRepository) Restore(paths []string) error {
 	args := []string{"restore"}
-	for _, path := range paths {
-		relPath := filepath.Join(r.Dir, path)
-		args = append(args, relPath)
-	}
-
+	args = append(args, paths...)
 	slog.Info("Restoring uncommitted changes", "paths", strings.Join(paths, ","))
 	cmd := exec.Command("git", args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-
+	cmd.Dir = r.Dir
 	return cmd.Run()
 }
