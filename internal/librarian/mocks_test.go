@@ -312,6 +312,7 @@ type MockRepository struct {
 	ChangedFilesInCommitError              error
 	CreateBranchAndCheckoutError           error
 	PushError                              error
+	RestoreError                           error
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -418,4 +419,8 @@ func (m *MockRepository) Push(name string) error {
 		return m.PushError
 	}
 	return nil
+}
+
+func (m *MockRepository) Restore(paths []string) error {
+	return m.RestoreError
 }
