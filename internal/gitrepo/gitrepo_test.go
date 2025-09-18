@@ -15,6 +15,7 @@
 package gitrepo
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1138,14 +1139,21 @@ func TestRestore(t *testing.T) {
 				Dir:  dir,
 				repo: repo,
 			}
-			// Create files in test.paths
+			// Create files in test.paths and commit the change.
 			for _, path := range test.paths {
-				relPath := filepath.Join(dir, path)
-				if err := os.MkdirAll(relPath, 0755); err != nil {
+				file := filepath.Join(path, "example.txt")
+				createAndCommit(t, repo, file, []byte("old content"), fmt.Sprintf("commit path, %s", path))
+			}
+
+			// Change file contents.
+			for _, path := range test.paths {
+				file := filepath.Join(dir, path, "example.txt")
+				if err := os.WriteFile(file, []byte("new content"), 0755); err != nil {
 					t.Fatal(err)
 				}
-				file := filepath.Join(relPath, "example.txt")
-				if err := os.WriteFile(file, []byte("example line"), 0755); err != nil {
+				// Create untracked files.
+				untrackedFile := filepath.Join(dir, path, "untracked.txt")
+				if err := os.WriteFile(untrackedFile, []byte("new content"), 0755); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -1165,11 +1173,19 @@ func TestRestore(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Verify files are removed from the working tree.
 			for _, path := range test.paths {
-				file := filepath.Join(dir, path, "example.txt")
-				if _, err := os.Stat(file); !os.IsNotExist(err) {
-					t.Errorf("file %s should be removed", file)
+				got, err := os.ReadFile(filepath.Join(dir, path, "example.txt"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				// Verify file contents are restored.
+				if diff := cmp.Diff("old content", string(got)); diff != "" {
+					t.Errorf("Restore() mismatch (-want +got):\n%s", diff)
+				}
+				// Verify the untracked files are untouched.
+				untrackedFile := filepath.Join(dir, path, "untracked.txt")
+				if _, err := os.Stat(untrackedFile); err != nil {
+					t.Errorf("untracked file, %s should not be removed", untrackedFile)
 				}
 			}
 		})
