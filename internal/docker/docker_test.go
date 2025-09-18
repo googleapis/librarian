@@ -521,7 +521,7 @@ func TestDockerRun(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
@@ -620,7 +620,7 @@ func TestWriteLibraryState(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("writeLibraryState() shoud fail")
+					t.Fatalf("writeLibraryState() shoud fail")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -731,7 +731,7 @@ func TestWriteLibrarianState(t *testing.T) {
 			err := writeLibrarianState(test.state, filePath)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("writeLibrarianState() shoud fail")
+					t.Fatalf("writeLibrarianState() shoud fail")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

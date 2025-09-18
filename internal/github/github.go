@@ -57,8 +57,12 @@ func NewClient(accessToken string, repo *Repository) *Client {
 }
 
 func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) *Client {
+	client := github.NewClient(httpClient)
+	if accessToken != "" {
+		client = client.WithAuthToken(accessToken)
+	}
 	return &Client{
-		Client:      github.NewClient(httpClient).WithAuthToken(accessToken),
+		Client:      client,
 		accessToken: accessToken,
 		repo:        repo,
 	}
@@ -326,5 +330,15 @@ func (c *Client) CreateTag(ctx context.Context, tagName, commitSHA string) error
 		Object: &github.GitObject{SHA: github.Ptr(commitSHA), Type: github.Ptr("commit")},
 	}
 	_, _, err := c.Git.CreateRef(ctx, c.repo.Owner, c.repo.Name, tagRef)
+	return err
+}
+
+// ClosePullRequest closes the pull request specified by pull request number.
+func (c *Client) ClosePullRequest(ctx context.Context, number int) error {
+	slog.Info("Closing pull request", slog.Int("number", number))
+	state := "closed"
+	_, _, err := c.PullRequests.Edit(ctx, c.repo.Owner, c.repo.Name, number, &github.PullRequest{
+		State: &state,
+	})
 	return err
 }

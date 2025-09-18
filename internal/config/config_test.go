@@ -364,7 +364,7 @@ func TestDeriveRepo(t *testing.T) {
 				if err := os.MkdirAll(stateDir, 0755); err != nil {
 					t.Fatal(err)
 				}
-				stateFile := filepath.Join(stateDir, pipelineStateFile)
+				stateFile := filepath.Join(stateDir, LibrarianStateFile)
 				if err := os.WriteFile(stateFile, []byte("test"), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -439,7 +439,7 @@ func TestSetDefaults(t *testing.T) {
 				if err := os.MkdirAll(stateDir, 0755); err != nil {
 					t.Fatal(err)
 				}
-				stateFile := filepath.Join(stateDir, pipelineStateFile)
+				stateFile := filepath.Join(stateDir, LibrarianStateFile)
 				if err := os.WriteFile(stateFile, []byte("test"), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -454,7 +454,7 @@ func TestSetDefaults(t *testing.T) {
 				if err := os.MkdirAll(stateDir, 0755); err != nil {
 					t.Fatal(err)
 				}
-				stateFile := filepath.Join(stateDir, pipelineStateFile)
+				stateFile := filepath.Join(stateDir, LibrarianStateFile)
 				if err := os.WriteFile(stateFile, []byte("test"), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -545,7 +545,7 @@ func TestValidateHostMount(t *testing.T) {
 			ok, err := validateHostMount(test.hostMount, test.defaultMount)
 			if test.wantErr {
 				if err == nil {
-					t.Error("validateHostMount() should return error")
+					t.Fatal("validateHostMount() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

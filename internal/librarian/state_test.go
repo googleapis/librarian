@@ -15,12 +15,15 @@
 package librarian
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"gopkg.in/yaml.v3"
 )
@@ -143,7 +146,7 @@ func TestFindServiceConfigIn(t *testing.T) {
 			got, err := findServiceConfigIn(test.path)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("findServiceConfigIn() should return error")
+					t.Fatal("findServiceConfigIn() should return error")
 				}
 
 				return
@@ -191,7 +194,7 @@ func TestParseGlobalConfig(t *testing.T) {
 			got, err := parseLibrarianConfig(path)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("parseGlobalConfig() should return error")
+					t.Fatal("parseGlobalConfig() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -278,7 +281,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 			err := populateServiceConfigIfEmpty(test.state, test.path)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("findServiceConfigIn() should return error")
+					t.Fatal("findServiceConfigIn() should return error")
 				}
 
 				return
@@ -393,7 +396,7 @@ func TestReadLibraryState(t *testing.T) {
 
 			if test.name == "load content with an error message" {
 				if err == nil {
-					t.Errorf("readLibraryState() expected an error but got nil")
+					t.Fatal("readLibraryState() expected an error but got nil")
 				}
 
 				if g, w := err.Error(), "failed with error message"; !strings.Contains(g, w) {
@@ -405,7 +408,7 @@ func TestReadLibraryState(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("readLibraryState() should fail")
+					t.Fatal("readLibraryState() should fail")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -419,6 +422,74 @@ func TestReadLibraryState(t *testing.T) {
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("Response library state mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLoadRepoStateFromGitHub(t *testing.T) {
+	t.Parallel()
+
+	state := &config.LibrarianState{
+		Image: "gcr.io/some-project-id/some-test-image:latest",
+		Libraries: []*config.LibraryState{
+			{
+				ID:          "google-cloud-storage",
+				SourceRoots: []string{"some/path"},
+				TagFormat:   "v{version}",
+			},
+		},
+	}
+	for _, test := range []struct {
+		name       string
+		branch     string
+		ghClient   GitHubClient
+		want       *config.LibrarianState
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "happy path",
+			ghClient: &mockGitHubClient{
+				librarianState: state,
+			},
+			want: state,
+		},
+		{
+			name: "missing file",
+			ghClient: &mockGitHubClient{
+				rawErr: fmt.Errorf("file not found"),
+			},
+			wantErr:    true,
+			wantErrMsg: "file not found",
+		},
+		{
+			name: "invalid state file",
+			ghClient: &mockGitHubClient{
+				librarianState: &config.LibrarianState{},
+			},
+			wantErr:    true,
+			wantErrMsg: "validating librarian state",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := loadRepoStateFromGitHub(context.Background(), test.ghClient, test.branch)
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("loadRepoStateFromGitHub() should fail")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Fatalf("want error message: %s, got %s", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("loadRepoStateFromGitHub() unexpected error: %v", err)
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Fatalf("Response library state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
