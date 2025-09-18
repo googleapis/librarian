@@ -154,6 +154,14 @@ type API struct {
 	State *APIState
 }
 
+// HasMessages returns true if the API contains messages (most do).
+//
+// This is useful in the mustache templates to skip code that only makes sense
+// when per-message code follows.
+func (api *API) HasMessages() bool {
+	return len(api.Messages) != 0
+}
+
 // APIState contains helpful information that can be used when generating
 // clients.
 type APIState struct {

@@ -143,7 +143,7 @@ func TestFindServiceConfigIn(t *testing.T) {
 			got, err := findServiceConfigIn(test.path)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("findServiceConfigIn() should return error")
+					t.Fatal("findServiceConfigIn() should return error")
 				}
 
 				return
@@ -191,7 +191,7 @@ func TestParseGlobalConfig(t *testing.T) {
 			got, err := parseLibrarianConfig(path)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("parseGlobalConfig() should return error")
+					t.Fatal("parseGlobalConfig() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -278,7 +278,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 			err := populateServiceConfigIfEmpty(test.state, test.path)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("findServiceConfigIn() should return error")
+					t.Fatal("findServiceConfigIn() should return error")
 				}
 
 				return
@@ -393,7 +393,7 @@ func TestReadLibraryState(t *testing.T) {
 
 			if test.name == "load content with an error message" {
 				if err == nil {
-					t.Errorf("readLibraryState() expected an error but got nil")
+					t.Fatal("readLibraryState() expected an error but got nil")
 				}
 
 				if g, w := err.Error(), "failed with error message"; !strings.Contains(g, w) {
@@ -405,7 +405,7 @@ func TestReadLibraryState(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("readLibraryState() should fail")
+					t.Fatal("readLibraryState() should fail")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

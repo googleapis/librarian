@@ -662,7 +662,7 @@ func TestGetCommit(t *testing.T) {
 			got, err := repo.GetCommit(commitHash)
 			if test.wantErr {
 				if err == nil {
-					t.Error("GetCommit() should fail")
+					t.Fatal("GetCommit() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
@@ -991,7 +991,7 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
 					t.Errorf("GetCommitsForPathsSinceCommit() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
@@ -1053,7 +1053,7 @@ func TestGetCommitsForPathsSinceTag(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
 					t.Errorf("GetCommitsForPathsSinceTag() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
@@ -1099,7 +1099,7 @@ func TestCreateBranchAndCheckout(t *testing.T) {
 			err := repo.CreateBranchAndCheckout(test.branchName)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
 					t.Errorf("CreateBranchAndCheckout() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)

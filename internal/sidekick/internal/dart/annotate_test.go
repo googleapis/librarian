@@ -43,22 +43,64 @@ func TestAnnotateModel(t *testing.T) {
 
 func TestAnnotateModel_Options(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	annotate := newAnnotateModel(model)
-	err := annotate.annotateModel(map[string]string{
-		"version":   "1.0.0",
-		"part-file": "src/test.p.dart",
-	})
-	if err != nil {
-		t.Fatal(err)
+
+	var foo = []struct {
+		options map[string]string
+		verify  func(*testing.T, *annotateModel)
+	}{
+		{
+			map[string]string{"package-name-override": "google-cloud-type"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("google-cloud-type", codec.PackageName); diff != "" {
+					t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"dev-dependencies": "test,mockito"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff([]string{"test", "mockito", "lints"}, codec.DevDependencies); diff != "" {
+					t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"version": "1.2.3"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("1.2.3", codec.PackageVersion); diff != "" {
+					t.Errorf("mismatch in Codec.PackageVersion (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"part-file": "src/test.p.dart"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("src/test.p.dart", codec.PartFileReference); diff != "" {
+					t.Errorf("mismatch in Codec.PartFileReference (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"package:http": "1.2.0"},
+			func(t *testing.T, am *annotateModel) {
+				if diff := cmp.Diff(map[string]string{"http": "1.2.0"}, am.dependencyConstraints); diff != "" {
+					t.Errorf("mismatch in annotateModel.dependencyConstraints (-want, +got)\n:%s", diff)
+				}
+			},
+		},
 	}
 
-	codec := model.Codec.(*modelAnnotations)
-
-	if diff := cmp.Diff("1.0.0", codec.PackageVersion); diff != "" {
-		t.Errorf("mismatch in Codec.PackageVersion (-want, +got)\n:%s", diff)
-	}
-	if diff := cmp.Diff("src/test.p.dart", codec.PartFileReference); diff != "" {
-		t.Errorf("mismatch in Codec.PartFileReference (-want, +got)\n:%s", diff)
+	for _, tt := range foo {
+		annotate := newAnnotateModel(model)
+		err := annotate.annotateModel(tt.options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tt.verify(t, annotate)
 	}
 }
 
@@ -111,28 +153,23 @@ func TestCalculateDependencies(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		imports []string
-		want    []string
+		want    []packageDependency
 	}{
-		{name: "empty", imports: []string{}, want: []string{}},
-		{name: "dart import", imports: []string{typedDataImport}, want: []string{}},
-		{name: "package import", imports: []string{httpImport}, want: []string{"http"}},
-		{name: "dart and package imports", imports: []string{typedDataImport, httpImport}, want: []string{"http"}},
+		{name: "empty", imports: []string{}, want: []packageDependency{}},
+		{name: "dart import", imports: []string{typedDataImport}, want: []packageDependency{}},
+		{name: "package import", imports: []string{httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
+		{name: "dart and package imports", imports: []string{typedDataImport, httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
 		{name: "package imports", imports: []string{
 			httpImport,
 			"package:google_cloud_foo/foo.dart",
-		}, want: []string{"google_cloud_foo", "http"}},
+		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "any"}, {Name: "http", Constraint: "^1.3.0"}}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			deps := map[string]string{}
 			for _, imp := range test.imports {
 				deps[imp] = imp
 			}
-			gotFull := calculateDependencies(deps)
-
-			got := []string{}
-			for _, dep := range gotFull {
-				got = append(got, dep.Name)
-			}
+			got := calculateDependencies(deps, map[string]string{"http": "^1.3.0"})
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in calculateDependencies (-want, +got)\n:%s", diff)

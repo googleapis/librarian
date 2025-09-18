@@ -356,7 +356,7 @@ END_COMMIT_OVERRIDE`,
 			got, err := formatGenerationPRBody(test.repo, test.state, test.idToCommits, test.failedLibraries)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
 					t.Errorf("formatGenerationPRBody() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
@@ -460,7 +460,7 @@ func TestFindLatestCommit(t *testing.T) {
 			got, err := findLatestGenerationCommit(test.repo, test.state, test.idToCommits)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
 					t.Errorf("findLatestCommit() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
@@ -772,7 +772,7 @@ Language Image: go:1.21
 			got, err := formatReleaseNotes(test.repo, test.state)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
 					t.Errorf("formatReleaseNotes() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)

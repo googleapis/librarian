@@ -71,12 +71,30 @@ func TestLibrarianState_Validate(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "libraries cannot be empty",
 		},
+		{
+			name: "duplicate library IDs",
+			state: &LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*LibraryState{
+					{
+						ID:          "x",
+						SourceRoots: []string{"src/x"},
+					},
+					{
+						ID:          "x",
+						SourceRoots: []string{"src/x"},
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "duplicate library ID",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := test.state.Validate()
 			if test.wantErr {
 				if err == nil {
-					t.Error("Librarian.Validate() should fail")
+					t.Fatal("Librarian.Validate() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
@@ -299,7 +317,7 @@ func TestLibrary_Validate(t *testing.T) {
 			err := test.library.Validate()
 			if test.wantErr {
 				if err == nil {
-					t.Error("Library.Validate() should fail")
+					t.Fatal("Library.Validate() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
@@ -345,7 +363,7 @@ func TestAPI_Validate(t *testing.T) {
 			err := test.api.Validate()
 			if test.wantErr {
 				if err == nil {
-					t.Error("API.Validate() should fail")
+					t.Fatal("API.Validate() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
