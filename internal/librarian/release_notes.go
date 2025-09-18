@@ -76,9 +76,9 @@ Language Image: {{.ImageVersion}}
 ### {{.Heading}}
 {{ range .Commits }}
 {{ if index .Footers "PiperOrigin-RevId" -}}
-* {{.Subject}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+* {{.Subject}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.CommitHash}}))
 {{- else -}}
-* {{.Subject}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+* {{.Subject}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.CommitHash}}))
 {{- end }}
 {{ end }}
 
@@ -115,7 +115,7 @@ BEGIN_NESTED_COMMIT
 
 PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
 
-Source-link: [googleapis/googleapis@{{shortSHA .SHA}}](https://github.com/googleapis/googleapis/commit/{{.SHA}})
+Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{.CommitHash}})
 END_NESTED_COMMIT
 {{ end }}
 END_COMMIT_OVERRIDE
@@ -188,7 +188,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	sort.Slice(allCommits, func(i, j int) bool {
 		return allCommits[i].When.After(allCommits[j].When)
 	})
-	endSHA := allCommits[0].SHA
+	endSHA := allCommits[0].CommitHash
 	librarianVersion := cli.Version()
 	data := &generationPRBody{
 		StartSHA:         startSHA,
