@@ -301,6 +301,17 @@ func (s *bindingSubstitution) TemplateAsString() string {
 	return strings.Join(s.Template, "/")
 }
 
+// Produces a (partial) path template for this substitution.
+//
+// e.g.: "projects/{field_name}" or "{field_name}" if the template is * or **.
+func (s *bindingSubstitution) SubstitutionAsString() string {
+	name := "{" + s.FieldName + "}";
+	if (s.Template[0] == "*" || s.Template[0] == "**") {
+		return name;
+	}
+	return s.Template[0] + "/" + name;
+}
+
 type pathBindingAnnotation struct {
 	// The path format string for this binding
 	//
@@ -329,6 +340,19 @@ func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
 // HasVariablePath returns true if the path has a variable.
 func (b *pathBindingAnnotation) HasVariablePath() bool {
 	return len(b.Substitutions) != 0
+}
+
+// Produces a path template suitable for instrumentation and logging.
+func (b *pathBindingAnnotation) PathTemplate() string {
+	if len(b.Substitutions) == 0 {
+		return b.PathFmt
+	}
+
+ 	template := b.PathFmt
+	for _, s := range b.Substitutions {
+		template = strings.Replace(template, "{}", s.SubstitutionAsString(), 1);
+	}
+	return template
 }
 
 type oneOfAnnotation struct {
