@@ -136,7 +136,6 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	if r.library != "" {
 		library := findLibraryByID(r.state, r.library)
 		if library == nil {
-			slog.Error("Unable to find the specified library. Cannot proceed with the release.", "library", r.library)
 			return fmt.Errorf("unable to find library for release: %s", r.library)
 		}
 		librariesToRelease = []*config.LibraryState{library}
