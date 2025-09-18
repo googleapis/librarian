@@ -165,9 +165,9 @@ func TestCalculateDependencies(t *testing.T) {
 		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "any"}, {Name: "http", Constraint: "^1.3.0"}}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			deps := map[string]bool{}
+			deps := map[string]string{}
 			for _, imp := range test.imports {
-				deps[imp] = true
+				deps[imp] = imp
 			}
 			got := calculateDependencies(deps, map[string]string{"http": "^1.3.0"})
 
@@ -204,9 +204,9 @@ func TestCalculateImports(t *testing.T) {
 		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			deps := map[string]bool{}
+			deps := map[string]string{}
 			for _, imp := range test.imports {
-				deps[imp] = true
+				deps[imp] = imp
 			}
 			got := calculateImports(deps)
 
@@ -238,7 +238,7 @@ func TestAnnotateMessageToString(t *testing.T) {
 		{message: sample.Automatic(), expected: 0},
 	} {
 		t.Run(test.message.Name, func(t *testing.T) {
-			imports := map[string]bool{}
+			imports := map[string]string{}
 			annotate.annotateMessage(test.message, imports)
 
 			codec := test.message.Codec.(*messageAnnotation)
