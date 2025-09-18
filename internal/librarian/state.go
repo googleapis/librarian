@@ -16,11 +16,13 @@ package librarian
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -47,6 +49,18 @@ func loadRepoState(repo *gitrepo.LocalRepository, source string) (*config.Librar
 	return parseLibrarianState(path, source)
 }
 
+func loadRepoStateFromGitHub(ctx context.Context, ghClient GitHubClient, branch string) (*config.LibrarianState, error) {
+	content, err := ghClient.GetRawContent(ctx, path.Join(config.LibrarianDir, config.LibrarianStateFile), branch)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := loadLibrarianStateFromBytes(content, "")
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
 func loadLibrarianConfig(repo *gitrepo.LocalRepository) (*config.LibrarianConfig, error) {
 	if repo == nil {
 		slog.Info("repo is nil, skipping state loading")
@@ -61,8 +75,12 @@ func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
 	if err != nil {
 		return nil, err
 	}
+	return loadLibrarianStateFromBytes(bytes, source)
+}
+
+func loadLibrarianStateFromBytes(data []byte, source string) (*config.LibrarianState, error) {
 	var s config.LibrarianState
-	if err := yaml.Unmarshal(bytes, &s); err != nil {
+	if err := yaml.Unmarshal(data, &s); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
 	if err := populateServiceConfigIfEmpty(&s, source); err != nil {

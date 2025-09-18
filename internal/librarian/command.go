@@ -555,7 +555,7 @@ func findSubDirRelPaths(dir, subDir string) ([]string, error) {
 		return nil, fmt.Errorf("subDir is not nested within the dir: %s, %s", subDir, dir)
 	}
 
-	paths := []string{}
+	var paths []string
 	err = filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

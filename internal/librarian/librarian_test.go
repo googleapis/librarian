@@ -45,11 +45,11 @@ func TestRun(t *testing.T) {
 func TestGenerate_DefaultBehavior(t *testing.T) {
 	ctx := context.Background()
 
-	// 1. Setup a mock repository with a state file
+	// 1. Set up a mock repository with a state file
 	repo := newTestGitRepo(t)
 	repoDir := repo.GetDir()
 
-	// Setup a dummy API Source repo to prevent cloning googleapis/googleapis
+	// Set up a dummy API Source repo to prevent cloning googleapis/googleapis
 	apiSourceDir := t.TempDir()
 	runGit(t, apiSourceDir, "init")
 	runGit(t, apiSourceDir, "config", "user.email", "test@example.com")

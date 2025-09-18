@@ -30,7 +30,7 @@ const defaultTagFormat = "{id}-{version}"
 // GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file.
 func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
-	tag := formatTag(library, "")
+	tag := formatTag(library.TagFormat, library.ID, library.Version)
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
@@ -101,16 +101,11 @@ func shouldExclude(files, excludePaths []string) bool {
 }
 
 // formatTag returns the git tag for a given library version.
-func formatTag(library *config.LibraryState, versionOverride string) string {
-	version := library.Version
-	if versionOverride != "" {
-		version = versionOverride
-	}
-	tagFormat := library.TagFormat
+func formatTag(tagFormat string, libraryID string, version string) string {
 	if tagFormat == "" {
 		tagFormat = defaultTagFormat
 	}
-	r := strings.NewReplacer("{id}", library.ID, "{version}", version)
+	r := strings.NewReplacer("{id}", libraryID, "{version}", version)
 	return r.Replace(tagFormat)
 }
 
