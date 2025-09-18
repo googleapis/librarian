@@ -227,7 +227,8 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 		slog.Info("Library version override inputted", "currentVersion", library.Version, "inputVersion", r.libraryVersion)
 		nextVersion = semver.MaxVersion(library.Version, r.libraryVersion)
 		slog.Debug("Determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
-		// Inputted version is either equal or less than current version and cannot be used for release
+		// Currently, nextVersion is the max of current version or input version. If nextVersion is equal to the current version,
+		// then the input version is either equal or less than current version and cannot be used for release
 		if nextVersion == library.Version {
 			return fmt.Errorf("inputted version is not SemVer greater than the current version. Set a version SemVer greater than current than: %s", library.Version)
 		}
