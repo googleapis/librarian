@@ -1200,7 +1200,7 @@ func TestCleanUntracked(t *testing.T) {
 		wantErrPhrase string
 	}{
 		{
-			name: "remove untracked files in paths",
+			name: "remove_untracked_files_in_paths",
 			paths: []string{
 				"first/path",
 				"second/path",
