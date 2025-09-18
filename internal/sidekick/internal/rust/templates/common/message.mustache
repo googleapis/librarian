@@ -48,7 +48,7 @@ pub struct {{Codec.Name}} {
     pub {{Codec.FieldName}}: std::option::Option<{{{Codec.FieldType}}}>,
     {{/OneOfs}}
 
-    _unknown_fields: serde_json::Map<std::string::String, serde_json::Value>,
+    pub(crate) _unknown_fields: serde_json::Map<std::string::String, serde_json::Value>,
 }
 
 {{> /templates/common/feature_gate}}
@@ -249,112 +249,6 @@ impl gax::paginator::internal::PageableResponse for {{Codec.Name}} {
     {{/NextPageToken}}
 }
 {{/Pagination}}
-
-{{!
-    We will grow this code over multiple PRs to complete the serialization and
-    deserialization of message types via code generation.
-}}
-{{> /templates/common/feature_gate}}
-#[doc(hidden)]
-impl<'de> serde::de::Deserialize<'de> for {{Codec.Name}} {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        {{> /templates/common/deser_field_tag}}
-        {{! This is the visitor for the message }}
-        struct Visitor;
-        impl<'de> serde::de::Visitor<'de> for Visitor {
-            type Value = {{Codec.Name}};
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("struct {{Codec.Name}}")
-            }
-            fn visit_map<A>(self, mut map: A) -> std::result::Result<Self::Value, A::Error>
-            where
-                A: serde::de::MapAccess<'de>,
-            {
-                use std::option::Option::Some;
-                #[allow(unused_imports)]
-                use serde::de::Error;
-                {{#HasFields}}
-                let mut fields = std::collections::HashSet::new();
-                {{/HasFields}}
-                let mut result = Self::Value::new();
-                while let Some(tag) = map.next_key::<__FieldTag>()? {
-                    #[allow(clippy::match_single_binding)]
-                    match tag {
-                        {{#Fields}}
-                        __FieldTag::__{{Codec.SetterName}} => {
-                            if !fields.insert(__FieldTag::__{{Codec.SetterName}}) {
-                                return std::result::Result::Err(A::Error::duplicate_field("multiple values for {{Codec.SetterName}}"));
-                            }
-                            {{^Codec.RequiresSerdeAs}}
-                            {{> /templates/common/deser_plain_message_field}}
-                            {{/Codec.RequiresSerdeAs}}
-                            {{#Codec.RequiresSerdeAs}}
-                            {{> /templates/common/deser_with_message_field}}
-                            {{/Codec.RequiresSerdeAs}}
-                        },
-                        {{/Fields}}
-                        __FieldTag::Unknown(key) => {
-                            let value = map.next_value::<serde_json::Value>()?;
-                            result._unknown_fields.insert(key, value);
-                        },
-                    }
-                }
-                std::result::Result::Ok(result)
-            }
-        }
-        deserializer.deserialize_any(Visitor)
-    }
-}
-
-{{> /templates/common/feature_gate}}
-#[doc(hidden)]
-impl serde::ser::Serialize for {{Codec.Name}} {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        #[allow(unused_imports)]
-        use std::option::Option::Some;
-        use serde::ser::SerializeMap;
-        let mut state = serializer.serialize_map(std::option::Option::None)?;
-        {{#Fields}}
-        {{^Synthetic}}
-        {{^Codec.RequiresSerdeAs}}
-        {{> /templates/common/ser_plain_message_field}}
-        {{/Codec.RequiresSerdeAs}}
-        {{#Codec.RequiresSerdeAs}}
-        {{> /templates/common/ser_with_message_field}}
-        {{/Codec.RequiresSerdeAs}}
-        {{/Synthetic}}
-        {{/Fields}}
-        if !self._unknown_fields.is_empty() {
-            for (key, value) in self._unknown_fields.iter() {
-                state.serialize_entry(key, &value)?;
-            }
-        }
-        state.end()
-    }
-}
-
-{{> /templates/common/feature_gate}}
-impl std::fmt::Debug for {{Codec.Name}} {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut debug_struct = f.debug_struct("{{Codec.Name}}");
-        {{#Codec.BasicFields}}
-        debug_struct.field("{{Codec.FieldName}}", &self.{{Codec.FieldName}});
-        {{/Codec.BasicFields}}
-        {{#OneOfs}}
-        debug_struct.field("{{Codec.FieldName}}", &self.{{Codec.FieldName}});
-        {{/OneOfs}}
-        if !self._unknown_fields.is_empty() {
-            debug_struct.field("_unknown_fields", &self._unknown_fields);
-        }
-        debug_struct.finish()
-    }
-}
 {{#Codec.HasNestedTypes}}
 
 /// Defines additional types related to [{{Name}}].

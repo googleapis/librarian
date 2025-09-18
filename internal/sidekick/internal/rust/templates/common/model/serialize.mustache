@@ -1,5 +1,5 @@
 {{!
-Copyright 2024 Google LLC
+Copyright 2025 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,23 +17,11 @@ limitations under the License.
 {{#Codec.BoilerPlate}}
 //{{{.}}}
 {{/Codec.BoilerPlate}}
+{{#HasMessages}}
 
-{{! Disable warnings that are known to cause trouble }}
-{{#Codec.DisabledRustdocWarnings}}
-#![allow(rustdoc::{{.}})]
-{{/Codec.DisabledRustdocWarnings}}
-#![no_implicit_prelude]
-extern crate std;
-{{#Codec.ExternPackages}}
-extern crate {{.}};
-{{/Codec.ExternPackages}}
-
-mod debug;
-mod deserialize;
-mod serialize;
+#[allow(unused_imports)]
+use super::*;
+{{/HasMessages}}
 {{#Messages}}
-{{> message}}
+{{> /templates/common/model/serialize/message}}
 {{/Messages}}
-{{#Enums}}
-{{> enum}}
-{{/Enums}}
