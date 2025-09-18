@@ -86,6 +86,12 @@ according to semver rules. It then delegates all language-specific file
 modifications, such as updating a CHANGELOG.md or bumping the version in a pom.xml,
 to the configured language-specific container.
 
+If a specific library is configured for release via the '--library' flag, a single
+releasable change is needed to automatically calculate a version bump. If there are
+no releasable changes since the last release, the '--version' flag should be included
+to set a new version for the library. The new version must be "SemVer" greater than the
+current version.
+
 By default, 'release init' leaves the changes in your local working directory
 for inspection. Use the '--push' flag to automatically commit the changes to
 a new branch and create a pull request on GitHub. The '--commit' flag may be
