@@ -174,7 +174,7 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: "Generate with file read error",
+			name: "Generate with file read failure warning",
 			docker: &Docker{
 				Image: testImage,
 			},
