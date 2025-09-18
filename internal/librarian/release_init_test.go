@@ -1003,7 +1003,7 @@ func TestProcessLibrary(t *testing.T) {
 		err := r.processLibrary(test.libraryState)
 		if test.wantErr {
 			if err == nil {
-				t.Error("processLibrary() should return error")
+				t.Fatal("processLibrary() should return error")
 			}
 			if !strings.Contains(err.Error(), test.wantErrMsg) {
 				t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
