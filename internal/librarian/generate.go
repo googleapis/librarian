@@ -47,7 +47,6 @@ type generateRunner struct {
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
 	workRoot        string
-	backupDir       string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -84,9 +83,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
 	}
-	// Do not need to create the backup directory here because the directory will
-	// be created by backupLibrary, if needed.
-	r.backupDir = filepath.Join(r.workRoot, "backup")
 	// The last generated commit is changed after library generation,
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
@@ -257,13 +253,6 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		return "", err
 	}
 
-	if r.build {
-		// Backup library files so that we can restore library if build failed.
-		if err := r.backupLibrary(libraryID); err != nil {
-			return "", err
-		}
-	}
-
 	if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), libraryID, outputDir); err != nil {
 		return "", err
 	}
@@ -299,14 +288,8 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 	}
 
 	// Read the library state from the response.
-	_, err := readLibraryState(filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse))
-	if err != nil {
-		slog.Error("Build fails", "id", libraryID)
-		// Remove library files from source roots and restore backup files.
-		if err := r.restoreLibrary(libraryID); err != nil {
-			return err
-		}
-
+	if _, err := readLibraryState(
+		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse)); err != nil {
 		return err
 	}
 
@@ -392,37 +375,6 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	return libraryState.ID, nil
-}
-
-// backupLibrary saves library file to a backup directory.
-func (r *generateRunner) backupLibrary(libraryID string) error {
-	dst := filepath.Join(r.backupDir, libraryID)
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return fmt.Errorf("failed to create backup dir, %s: %w", dst, err)
-	}
-
-	return copyLibraryFiles(r.state, dst, libraryID, r.repo.GetDir())
-}
-
-// restoreLibrary restores library files from backup directory.
-func (r *generateRunner) restoreLibrary(libraryID string) error {
-	slog.Info("Restoring library files", "id", libraryID)
-	library := findLibraryByID(r.state, libraryID)
-	// Clean library source roots to make sure new files are removed.
-	for _, path := range library.SourceRoots {
-		relPath := filepath.Join(r.repo.GetDir(), path)
-		if err := os.RemoveAll(relPath); err != nil {
-			return err
-		}
-	}
-
-	src := filepath.Join(r.backupDir, libraryID)
-	if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryID, src); err != nil {
-		return err
-	}
-
-	// Clean up backup dir.
-	return os.RemoveAll(src)
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {
