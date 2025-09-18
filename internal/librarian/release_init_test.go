@@ -70,7 +70,7 @@ func TestNewInitRunner(t *testing.T) {
 			_, err := newInitRunner(test.cfg)
 			if test.wantErr {
 				if err == nil {
-					t.Error("newInitRunner() should return error")
+					t.Fatal("newInitRunner() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -875,7 +875,7 @@ func TestInitRun(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Error("run() should return error")
+					t.Fatal("run() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -1070,7 +1070,7 @@ func TestUpdateLibrary(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Error("getChangesOf() should return error")
+					t.Fatal("getChangesOf() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -1261,7 +1261,7 @@ func TestCopyGlobalAllowlist(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Error("cleanAndCopyGlobalAllowlist() should return error")
+					t.Fatal("cleanAndCopyGlobalAllowlist() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -1420,7 +1420,7 @@ func TestDetermineNextVersion(t *testing.T) {
 			got, err := runner.determineNextVersion(test.commits, test.currentVersion, test.libraryID)
 			if test.wantErr {
 				if err == nil {
-					t.Error("determineNextVersion() should return error")
+					t.Fatal("determineNextVersion() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

@@ -190,7 +190,7 @@ func TestRunBuildCommand(t *testing.T) {
 			err := r.runBuildCommand(context.Background(), test.libraryID)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				return
 			}
@@ -357,7 +357,7 @@ func TestRunConfigureCommand(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("runConfigureCommand() should return error")
+					t.Fatal("runConfigureCommand() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -913,7 +913,7 @@ func TestGenerateScenarios(t *testing.T) {
 			err := r.run(context.Background())
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

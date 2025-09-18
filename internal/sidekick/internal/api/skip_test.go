@@ -232,7 +232,7 @@ func TestIncludeUnknownIdError(t *testing.T) {
 		"included-ids": ".test.UnknownId",
 	})
 	if err == nil {
-		t.Errorf("SkipModelElements should error on unknown IDs")
+		t.Fatal("SkipModelElements should error on unknown IDs")
 	}
 
 	msg := err.Error()

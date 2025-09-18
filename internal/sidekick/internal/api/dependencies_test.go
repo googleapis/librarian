@@ -30,7 +30,7 @@ func TestFindDependenciesUnknownIdErrors(t *testing.T) {
 
 	_, err := FindDependencies(model, []string{".test.UnknownId"})
 	if err == nil {
-		t.Errorf("FindDependencies should error on unknown IDs")
+		t.Fatal("FindDependencies should error on unknown IDs")
 	}
 
 	msg := err.Error()

@@ -463,7 +463,7 @@ END_COMMIT_OVERRIDE`,
 			got, err := ParseCommits(commit, "example-id")
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
 					t.Errorf("ParseCommits(%q) returned error %q, want to contain %q", test.message, err.Error(), test.wantErrPhrase)

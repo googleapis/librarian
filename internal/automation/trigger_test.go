@@ -195,7 +195,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			}
 			err := runCommandWithClient(ctx, client, ghClient, test.command, "some-project", test.push, test.build, test.forceRun, test.dateTime)
 			if test.wantErr && err == nil {
-				t.Errorf("expected error, but did not return one")
+				t.Fatal("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
 				t.Errorf("did not expect error, but received one: %s", err)
 			}
@@ -345,7 +345,7 @@ func TestRunCommandWithConfig(t *testing.T) {
 			}
 			err := runCommandWithConfig(ctx, client, ghClient, test.command, "some-project", true, true, test.forceRun, test.config, test.dateTime)
 			if test.wantErr && err == nil {
-				t.Errorf("expected error, but did not return one")
+				t.Fatal("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
 				t.Errorf("did not expect error, but received one: %s", err)
 			}

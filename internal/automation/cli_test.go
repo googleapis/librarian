@@ -142,7 +142,7 @@ func TestParseArgs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := parseFlags(test.args)
 			if test.wantErr && err == nil {
-				t.Errorf("expected error, but did not return one")
+				t.Fatal("expected error, but did not return one")
 			} else if !test.wantErr && err != nil {
 				t.Errorf("did not expect error, but received one: %s", err)
 			}
