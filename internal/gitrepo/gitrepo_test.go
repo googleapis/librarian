@@ -1193,6 +1193,7 @@ func TestRestore(t *testing.T) {
 }
 
 func TestCleanUntracked(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name          string
 		paths         []string
@@ -1208,6 +1209,7 @@ func TestCleanUntracked(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			repo, dir := initTestRepo(t)
 			localRepo := &LocalRepository{
 				Dir:  dir,
