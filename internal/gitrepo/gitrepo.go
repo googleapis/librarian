@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -44,6 +45,7 @@ type Repository interface {
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
 	Push(branchName string) error
+	Restore(paths []string) error
 }
 
 // LocalRepository represents a git repository.
@@ -448,4 +450,19 @@ func (r *LocalRepository) Push(branchName string) error {
 	}
 	slog.Info("Successfully pushed branch to remote 'origin", "branch", branchName)
 	return nil
+}
+
+// Restore restores changes in the working tree, leaving staged area untouched.
+//
+// Wrap git operations in exec, because [git.Worktree.Restore] does not support
+// this operation.
+func (r *LocalRepository) Restore(paths []string) error {
+	args := []string{"restore"}
+	args = append(args, paths...)
+	slog.Info("Restoring uncommitted changes", "paths", strings.Join(paths, ","))
+	cmd := exec.Command("git", args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	return cmd.Run()
 }
