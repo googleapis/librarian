@@ -1244,7 +1244,7 @@ func TestUpdateLibrary(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Errorf("failed to run updateLibrary(): %q", err.Error())
+				t.Fatalf("failed to run updateLibrary(): %q", err.Error())
 			}
 			if diff := cmp.Diff(test.want, test.libraryState); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
