@@ -103,11 +103,13 @@ func (r *generateRunner) run(ctx context.Context) error {
 	} else {
 		succeededGenerations := 0
 		failedGenerations := 0
+		blockedGenerations := 0
 		for _, library := range r.state.Libraries {
 			if r.librarianConfig != nil {
 				libConfig := r.librarianConfig.LibraryConfigFor(library.ID)
 				if libConfig != nil && libConfig.GenerateBlocked {
 					slog.Info("library has generate_blocked, skipping", "id", library.ID)
+					blockedGenerations++
 					continue
 				}
 			}
@@ -128,9 +130,11 @@ func (r *generateRunner) run(ctx context.Context) error {
 			"generation statistics",
 			"all", len(r.state.Libraries),
 			"successes", succeededGenerations,
+			"blocked", blockedGenerations,
 			"failures", failedGenerations)
-		if failedGenerations > 0 && failedGenerations == len(r.state.Libraries) {
-			return fmt.Errorf("all %d libraries failed to generate", failedGenerations)
+		if failedGenerations > 0 && failedGenerations+blockedGenerations == len(r.state.Libraries) {
+			return fmt.Errorf("all %d libraries failed to generate (blocked: %d)",
+				failedGenerations, blockedGenerations)
 		}
 	}
 
