@@ -82,13 +82,13 @@ func TestGetRawContentSystem(t *testing.T) {
 						} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
 							t.Errorf("GetRawContent() err = %v, want error containing %q", err, test.wantErrSubstr)
 						}
-					} else {
-						if err != nil {
-							t.Errorf("GetRawContent() err = %v, want nil", err)
-						}
-						if len(got) <= 0 {
-							t.Fatalf("GetRawContent() expected to fetch contents for %s from %s", test.path, repoName)
-						}
+						return
+					}
+					if err != nil {
+						t.Errorf("GetRawContent() err = %v, want nil", err)
+					}
+					if len(got) <= 0 {
+						t.Fatalf("GetRawContent() expected to fetch contents for %s from %s", test.path, repoName)
 					}
 				})
 			}
