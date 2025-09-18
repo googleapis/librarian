@@ -1236,7 +1236,7 @@ func TestUpdateLibrary(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Error("updateLibrary() should return error")
+					t.Fatal("updateLibrary() should return error")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
