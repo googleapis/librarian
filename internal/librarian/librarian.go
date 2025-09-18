@@ -151,5 +151,6 @@ func newCmdInit() *cli.Command {
 	addFlagRepo(cmdInit.Flags, cmdInit.Config)
 	addFlagBranch(cmdInit.Flags, cmdInit.Config)
 	addFlagWorkRoot(cmdInit.Flags, cmdInit.Config)
+	addFlagGitHubAPIEndpoint(cmdInit.Flags, cmdInit.Config)
 	return cmdInit
 }

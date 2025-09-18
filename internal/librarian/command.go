@@ -58,6 +58,7 @@ type GitHubClient interface {
 	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
 	CreateIssueComment(ctx context.Context, number int, comment string) error
 	CreateTag(ctx context.Context, tag, commitish string) error
+	GetRepository() *github.Repository
 }
 
 // ContainerClient is an abstraction over the Docker client.
@@ -127,28 +128,46 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	image := deriveImage(cfg.Image, state)
 
-	var gitRepo *github.Repository
-	if isURL(cfg.Repo) {
-		gitRepo, err = github.ParseRemote(cfg.Repo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse repo url: %w", err)
-		}
-	} else {
-		gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
-		}
-	}
-	ghClient := github.NewClient(cfg.GitHubToken, gitRepo)
+	var (
+		gitRepo  *github.Repository
+		ghClient *github.Client
+	)
 
-	// If a custom GitHub API endpoint is provided (for testing),
-	// parse it and set it as the BaseURL on the GitHub client.
-	if cfg.GitHubAPIEndpoint != "" {
+	if cfg.GitHubAPIEndpoint == "" {
+		// Production setup
+		if isURL(cfg.Repo) {
+			gitRepo, err = github.ParseRemote(cfg.Repo)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse repo url: %w", err)
+			}
+		} else {
+			gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
+			}
+		}
+		// Create the client with the determined repository.
+		ghClient = github.NewClient(cfg.GitHubToken, gitRepo)
+	} else {
+		// Test setup, as GitHubAPIEndpoint is provided for test only.
+		slog.Info("Custom GitHub API endpoint provided, configuring for testing", "endpoint", cfg.GitHubAPIEndpoint)
+
+		// Use a dummy repository as owner/repo are not crucial for mock server routing in tests.
+		gitRepo = &github.Repository{Owner: "test-owner", Name: "test-repo"}
+		// Create the client with the dummy repo.
+		ghClient = github.NewClient(cfg.GitHubToken, gitRepo)
+
+		// Parse and set the custom BaseURL for the GitHub client.
 		endpoint, err := url.Parse(cfg.GitHubAPIEndpoint)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse github-api-endpoint: %w", err)
 		}
+		// Ensure the endpoint URL has a trailing slash.
+		if !strings.HasSuffix(endpoint.Path, "/") {
+			endpoint.Path += "/"
+		}
 		ghClient.BaseURL = endpoint
+		slog.Info("GitHub client configured for testing", "owner", gitRepo.Owner, "repo", gitRepo.Name, "base_url", ghClient.BaseURL.String())
 	}
 
 	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
@@ -377,14 +396,32 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return nil
 	}
 
-	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
-	if err != nil {
-		return err
+	var gitHubRepo *github.Repository
+	// Check if a custom endpoint is being used by looking at the BaseURL.
+	isTest := false
+	if client, ok := info.ghClient.(*github.Client); ok {
+		if client.BaseURL != nil && client.BaseURL.String() != "https://api.github.com/" {
+			isTest = true
+		}
+	}
+
+	if isTest {
+		slog.Info("Detected custom GitHub endpoint, using client's configured repo for PR")
+		gitHubRepo = info.ghClient.GetRepository()
+		if gitHubRepo == nil {
+			return fmt.Errorf("github client has nil repository in test mode")
+		}
+	} else {
+		slog.Info("Fetching GitHub repo from remote for PR")
+		var err error
+		gitHubRepo, err = github.FetchGitHubRepoFromRemote(info.repo)
+		if err != nil {
+			return err
+		}
 	}
 
 	title := fmt.Sprintf("chore: librarian %s pull request: %s", info.prType, datetimeNow)
-	prBody, err := createPRBody(info)
+	prBody, err := createPRBody(info, gitHubRepo)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
@@ -414,12 +451,12 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 	return nil
 }
 
-func createPRBody(info *commitInfo) (string, error) {
+func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, error) {
 	switch info.prType {
 	case generate:
 		return formatGenerationPRBody(info.sourceRepo, info.state, info.idToCommits, info.failedLibraries)
 	case release:
-		return formatReleaseNotes(info.repo, info.state)
+		return formatReleaseNotes(info.state, gitHubRepo)
 	default:
 		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
 	}
