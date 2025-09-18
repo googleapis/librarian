@@ -341,4 +341,3 @@ go run ./cmd/librarian/ generate -repo=<your repository> -push
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ release init -repo=<your repository> -push
 ```
-
