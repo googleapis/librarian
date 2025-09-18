@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -497,8 +498,9 @@ func (r *LocalRepository) CleanUntracked(paths []string) error {
 				continue
 			}
 
-			if err := os.Remove(file); err != nil {
-				return fmt.Errorf("failed to remove untracked file, %s", file)
+			relPath := filepath.Join(r.Dir, file)
+			if err := os.Remove(relPath); err != nil {
+				return fmt.Errorf("failed to remove untracked file, %s: %q", relPath, err)
 			}
 		}
 	}
