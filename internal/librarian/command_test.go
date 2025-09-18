@@ -244,7 +244,7 @@ func TestCloneOrOpenLanguageRepo(t *testing.T) {
 			repo, err := cloneOrOpenRepo(workRoot, test.repo, 1, test.ci, "main", "")
 			if test.wantErr {
 				if err == nil {
-					t.Error("cloneOrOpenLanguageRepo() expected an error but got nil")
+					t.Fatal("cloneOrOpenLanguageRepo() expected an error but got nil")
 				}
 				return
 			}
@@ -493,7 +493,7 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 			err := cleanAndCopyLibrary(test.state, repoDir, test.libraryID, outputDir)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.errContains) {
 					t.Errorf("want: %s, got %s", test.errContains, err.Error())
@@ -792,7 +792,7 @@ func TestClean(t *testing.T) {
 			err := clean(tmpDir, test.sourceRoots, test.removePatterns, test.preservePatterns)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				return
 			}
@@ -979,7 +979,7 @@ func TestFindSubDirRelPaths(t *testing.T) {
 			paths, err := findSubDirRelPaths(rootDirPath, subDirPath)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.errorString) {
 					t.Errorf("runConfigureCommand() err = %v, want error containing %q", err, test.errorString)
@@ -1134,7 +1134,7 @@ func TestFilterPathsForRemoval(t *testing.T) {
 			gotToRemove, err := filterPathsForRemoval(sourceRootPaths, test.removePatterns, test.preservePatterns)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				return
 			}
@@ -1205,7 +1205,7 @@ func TestSeparateFilesAndDirs(t *testing.T) {
 			gotFiles, gotDirs, err := separateFilesAndDirs(paths)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("%s should return error", test.name)
+					t.Fatalf("%s should return error", test.name)
 				}
 				return
 			}
@@ -1594,8 +1594,9 @@ func TestCommitAndPush(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("commitAndPush() expected error, got nil")
-				} else if test.expectedErrMsg != "" && !strings.Contains(err.Error(), test.expectedErrMsg) {
+					t.Fatal("commitAndPush() expected error, got nil")
+				}
+				if test.expectedErrMsg != "" && !strings.Contains(err.Error(), test.expectedErrMsg) {
 					t.Errorf("commitAndPush() error = %v, expected to contain: %q", err, test.expectedErrMsg)
 				}
 				return
@@ -1654,7 +1655,7 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("addLabelsToPullRequest() expected error, got nil")
+					t.Fatal("addLabelsToPullRequest() expected error, got nil")
 				}
 				if test.expectedErrMsg != "" && !strings.Contains(err.Error(), test.expectedErrMsg) {
 					t.Errorf("addLabelsToPullRequest() error = %v, expected to contain: %q", err, test.expectedErrMsg)
@@ -1847,11 +1848,9 @@ func TestCopyLibraryFiles(t *testing.T) {
 			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("copyLibraryFiles() shoud fail")
-					return
+					t.Fatal("copyLibraryFiles() shoud fail")
 				}
-				e := err.Error()
-				if !strings.Contains(e, test.wantErrMsg) {
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
 				}
 
@@ -1930,7 +1929,7 @@ func TestCopyFile(t *testing.T) {
 			err := copyFile(test.dst, test.foo)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("copyFile() shoud fail")
+					t.Fatal("copyFile() should fail")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

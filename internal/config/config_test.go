@@ -545,7 +545,7 @@ func TestValidateHostMount(t *testing.T) {
 			ok, err := validateHostMount(test.hostMount, test.defaultMount)
 			if test.wantErr {
 				if err == nil {
-					t.Error("validateHostMount() should return error")
+					t.Fatal("validateHostMount() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

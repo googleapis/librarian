@@ -105,8 +105,9 @@ func TestGetRawContent(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("GetRawContent() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("GetRawContent() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("GetRawContent() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
@@ -220,8 +221,9 @@ func TestFetchGitHubRepoFromRemote(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("FetchGitHubRepoFromRemote() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("FetchGitHubRepoFromRemote() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("FetchGitHubRepoFromRemote() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
@@ -276,8 +278,9 @@ func TestParseURL(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("ParseURL() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("ParseURL() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("ParseURL() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
@@ -335,8 +338,9 @@ func TestParseSSHRemote(t *testing.T) {
 			repo, err := parseSSHRemote(test.remote)
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("ParseSSHRemote() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("ParseSSHRemote() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("ParseSSHRemote() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else {
@@ -440,8 +444,9 @@ func TestCreatePullRequest(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("CreatePullRequest() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("CreatePullRequest() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("CreatePullRequest() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else if err != nil {
@@ -507,7 +512,7 @@ func TestAddLabelsToIssue(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("AddLabelsToIssue() should return an error")
+					t.Fatal("AddLabelsToIssue() should return an error")
 				}
 				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("AddLabelsToIssue() err = %v, want error containing %q", err, test.wantErrSubstr)
@@ -582,7 +587,7 @@ func TestGetLabels(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("GetLabels() should return an error")
+					t.Fatal("GetLabels() should return an error")
 				}
 				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("GetLabels() err = %v, want error containing %q", err, test.wantErrSubstr)
@@ -655,7 +660,7 @@ func TestReplaceLabels(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("ReplaceLabels() should return an error")
+					t.Fatal("ReplaceLabels() should return an error")
 				}
 				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("ReplaceLabels() err = %v, want error containing %q", err, test.wantErrSubstr)
@@ -761,8 +766,9 @@ func TestSearchPullRequests(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("SearchPullRequests() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("SearchPullRequests() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("SearchPullRequests() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else if err != nil {
@@ -824,8 +830,9 @@ func TestGetPullRequest(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("GetPullRequest() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("GetPullRequest() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("GetPullRequest() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else if err != nil {
@@ -901,8 +908,9 @@ func TestCreateRelease(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("CreateRelease() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("CreateRelease() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("CreateRelease() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else if err != nil {
@@ -970,8 +978,9 @@ func TestCreateIssueComment(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("CreateComment() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("CreateComment() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("CreateComment() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else if err != nil {
@@ -1033,8 +1042,9 @@ func TestFindMergedPullRequestsWithPendingReleaseLabel(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("FindMergedPullRequestsWithPendingReleaseLabel() err = nil, want error containing %q", test.wantErrSubstr)
-				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Fatalf("FindMergedPullRequestsWithPendingReleaseLabel() err = nil, want error containing %q", test.wantErrSubstr)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSubstr) {
 					t.Errorf("FindMergedPullRequestsWithPendingReleaseLabel() err = %v, want error containing %q", err, test.wantErrSubstr)
 				}
 			} else if err != nil {
@@ -1100,7 +1110,7 @@ func TestCreateTag(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Errorf("CreateTag() err = nil, expected error")
+					t.Fatal("CreateTag() err = nil, expected error")
 				}
 			} else if err != nil {
 				t.Errorf("CreateTag() err = %v, want nil", err)
