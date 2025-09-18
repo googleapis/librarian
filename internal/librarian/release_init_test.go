@@ -997,8 +997,14 @@ func TestProcessLibrary(t *testing.T) {
 			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 	} {
+		state := &config.LibrarianState{
+			Libraries: []*config.LibraryState{
+				test.libraryState,
+			},
+		}
 		r := &initRunner{
-			repo: test.repo,
+			repo:  test.repo,
+			state: state,
 		}
 		err := r.processLibrary(test.libraryState)
 		if test.wantErr {

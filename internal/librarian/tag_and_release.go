@@ -189,7 +189,8 @@ func determineTagFormat(libraryID string, librarianState *config.LibrarianState,
 	if libraryState.TagFormat != "" {
 		return libraryState.TagFormat, nil
 	}
-	return "", fmt.Errorf("library %s did not configure tag_format", libraryID)
+	slog.Warn("library %s did not configure tag_format, using default %s", libraryID, defaultTagFormat)
+	return defaultTagFormat, nil
 }
 
 // libraryRelease holds the parsed information from a pull request body.
