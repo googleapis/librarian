@@ -86,7 +86,7 @@ func TestGlobalConfig_Validate(t *testing.T) {
 			err := test.config.Validate()
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("GlobalConfig.Validate() should return error")
+					t.Errorf("GlobalConfig.Validate() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

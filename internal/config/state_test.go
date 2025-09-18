@@ -94,9 +94,8 @@ func TestLibrarianState_Validate(t *testing.T) {
 			err := test.state.Validate()
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("Librarian.Validate() should fail")
-				}
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Error("Librarian.Validate() should fail")
+				} else if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
 				}
 
@@ -317,7 +316,7 @@ func TestLibrary_Validate(t *testing.T) {
 			err := test.library.Validate()
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("Library.Validate() should fail")
+					t.Error("Library.Validate() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
@@ -363,7 +362,7 @@ func TestAPI_Validate(t *testing.T) {
 			err := test.api.Validate()
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("API.Validate() should fail")
+					t.Error("API.Validate() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message %q, got %q", test.wantErrMsg, err.Error())
