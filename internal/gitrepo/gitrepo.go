@@ -44,6 +44,7 @@ type Repository interface {
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
 	Push(branchName string) error
+	pushRefSpec(refSpec string) error
 }
 
 // LocalRepository represents a git repository.
@@ -427,8 +428,19 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 // Push pushes the local branch to the origin remote.
 func (r *LocalRepository) Push(branchName string) error {
 	// https://stackoverflow.com/a/75727620
-	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
+	refSpec := fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName)
 	slog.Info("Pushing changes", "branch name", branchName, slog.Any("refspec", refSpec))
+	return r.pushRefSpec(refSpec)
+}
+
+// DeleteBranch deletes a branch on the origin remote.
+func (r *LocalRepository) DeleteBranch(branchName string) error {
+	refSpec := fmt.Sprintf(":refs/heads/%s", branchName)
+	return r.pushRefSpec(refSpec)
+}
+
+func (r *LocalRepository) pushRefSpec(refSpec string) error {
+	slog.Info("Pushing changes", "refSpec", refSpec)
 	var auth *httpAuth.BasicAuth
 	if r.gitPassword != "" {
 		slog.Info("Authenticating with basic auth")
@@ -441,11 +453,11 @@ func (r *LocalRepository) Push(branchName string) error {
 	}
 	if err := r.repo.Push(&git.PushOptions{
 		RemoteName: "origin",
-		RefSpecs:   []config.RefSpec{refSpec},
+		RefSpecs:   []config.RefSpec{config.RefSpec(refSpec)},
 		Auth:       auth,
 	}); err != nil {
 		return err
 	}
-	slog.Info("Successfully pushed branch to remote 'origin", "branch", branchName)
+	slog.Info("Successfully pushed changes", "refSpec", refSpec)
 	return nil
 }

@@ -16,6 +16,8 @@ package librarian
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"strings"
@@ -105,6 +107,7 @@ func TestPullRequestSystem(t *testing.T) {
 	// Replace the issue labels
 	// Search for the pull request
 	// Fetch the pull request
+	// Close the pull request
 	if testToken == "" {
 		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
@@ -131,7 +134,8 @@ func TestPullRequestSystem(t *testing.T) {
 		t.Fatalf("unexpected error in ParseRemote() %s", err)
 	}
 
-	branchName := "integration-test"
+	now := time.Now()
+	branchName := fmt.Sprintf("integration-test-%s", now.Format("20060102150405"))
 	err = localRepository.CreateBranchAndCheckout(branchName)
 	if err != nil {
 		t.Fatalf("unexpected error in CreateBranchAndCheckout() %s", err)
@@ -155,23 +159,40 @@ func TestPullRequestSystem(t *testing.T) {
 		t.Fatalf("unexpected error in Push() %s", err)
 	}
 
+	cleanupBranch := func() {
+		slog.Info("cleaning up created branch", "branch", branchName)
+		err := localRepository.DeleteBranch(branchName)
+		if err != nil {
+			t.Fatalf("unexpected error in DeleteBranch() %s", err)
+		}
+	}
+	defer cleanupBranch()
+
 	// Create a pull request
 	client := github.NewClient(testToken, repo)
-	metadata, err := client.CreatePullRequest(t.Context(), repo, branchName, "main", "test: integration test", "do not merge")
+	createdPullRequest, err := client.CreatePullRequest(t.Context(), repo, branchName, "main", "test: integration test", "do not merge")
 	if err != nil {
 		t.Fatalf("unexpected error in CreatePullRequest() %s", err)
 	}
-	t.Logf("created pull request: %d", metadata.Number)
+	t.Logf("created pull request: %d", createdPullRequest.Number)
+
+	// Ensure we clean up the created PR. The pull request is closed later in the
+	// test, but this should make sure unless ClosePullRequest() is not working.
+	cleanupPR := func() {
+		slog.Info("cleaning up opened pull request")
+		client.ClosePullRequest(t.Context(), createdPullRequest.Number)
+	}
+	defer cleanupPR()
 
 	// Add a label to the pull request
 	labels := []string{"do not merge", "type: cleanup"}
-	err = client.AddLabelsToIssue(t.Context(), repo, metadata.Number, labels)
+	err = client.AddLabelsToIssue(t.Context(), repo, createdPullRequest.Number, labels)
 	if err != nil {
 		t.Fatalf("unexpected error in AddLabelsToIssue() %s", err)
 	}
 
 	// Get labels and verify
-	foundLabels, err := client.GetLabels(t.Context(), metadata.Number)
+	foundLabels, err := client.GetLabels(t.Context(), createdPullRequest.Number)
 	if err != nil {
 		t.Fatalf("unexpected error in GetLabels() %s", err)
 	}
@@ -181,13 +202,13 @@ func TestPullRequestSystem(t *testing.T) {
 
 	// Replace labels
 	labels = []string{"foo", "bar"}
-	err = client.ReplaceLabels(t.Context(), metadata.Number, labels)
+	err = client.ReplaceLabels(t.Context(), createdPullRequest.Number, labels)
 	if err != nil {
 		t.Fatalf("unexpected error in ReplaceLabels() %s", err)
 	}
 
 	// Get labels and verify
-	foundLabels, err = client.GetLabels(t.Context(), metadata.Number)
+	foundLabels, err = client.GetLabels(t.Context(), createdPullRequest.Number)
 	if err != nil {
 		t.Fatalf("unexpected error in GetLabels() %s", err)
 	}
@@ -196,14 +217,14 @@ func TestPullRequestSystem(t *testing.T) {
 	}
 
 	// Add label
-	err = client.AddLabelsToIssue(t.Context(), repo, metadata.Number, []string{"librarian-test", "asdf"})
+	err = client.AddLabelsToIssue(t.Context(), repo, createdPullRequest.Number, []string{"librarian-test", "asdf"})
 	if err != nil {
 		t.Fatalf("unexpected error in AddLabelsToIssue() %s", err)
 	}
 
 	// Get labels and verify
 	wantLabels := []string{"foo", "bar", "librarian-test", "asdf"}
-	foundLabels, err = client.GetLabels(t.Context(), metadata.Number)
+	foundLabels, err = client.GetLabels(t.Context(), createdPullRequest.Number)
 	if err != nil {
 		t.Fatalf("unexpected error in GetLabels() %s", err)
 	}
@@ -220,7 +241,7 @@ func TestPullRequestSystem(t *testing.T) {
 		}
 		for _, pullRequest := range foundPullRequests {
 			// Look for the PR we created
-			if *pullRequest.Number == metadata.Number {
+			if *pullRequest.Number == createdPullRequest.Number {
 				found = true
 				break
 			}
@@ -233,12 +254,21 @@ func TestPullRequestSystem(t *testing.T) {
 		t.Fatalf("failed to find pull request after 5 attempts")
 	}
 
+	// Close pull request
+	err = client.ClosePullRequest(t.Context(), createdPullRequest.Number)
+	if err != nil {
+		t.Fatalf("unexpected error in ClosePullRequest() %s", err)
+	}
+
 	// Get single pull request
-	foundPullRequest, err := client.GetPullRequest(t.Context(), metadata.Number)
+	foundPullRequest, err := client.GetPullRequest(t.Context(), createdPullRequest.Number)
 	if err != nil {
 		t.Fatalf("unexpected error in GetPullRequest() %s", err)
 	}
-	if diff := cmp.Diff(*foundPullRequest.Number, metadata.Number); diff != "" {
+	if diff := cmp.Diff(*foundPullRequest.Number, createdPullRequest.Number); diff != "" {
 		t.Fatalf("pull request number mismatch (-want + got):\n%s", diff)
+	}
+	if diff := cmp.Diff(*foundPullRequest.State, "closed"); diff != "" {
+		t.Fatalf("pull request state mismatch (-want + got):\n%s", diff)
 	}
 }

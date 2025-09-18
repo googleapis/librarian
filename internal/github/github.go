@@ -332,3 +332,13 @@ func (c *Client) CreateTag(ctx context.Context, tagName, commitSHA string) error
 	_, _, err := c.Git.CreateRef(ctx, c.repo.Owner, c.repo.Name, tagRef)
 	return err
 }
+
+// ClosePullRequest closes the pull request specified by pull request number.
+func (c *Client) ClosePullRequest(ctx context.Context, number int) error {
+	slog.Info("Closing pull request", slog.Int("number", number))
+	state := "closed"
+	_, _, err := c.PullRequests.Edit(ctx, c.repo.Owner, c.repo.Name, number, &github.PullRequest{
+		State: &state,
+	})
+	return err
+}
