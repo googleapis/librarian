@@ -127,6 +127,12 @@ type Config struct {
 	// This flag is ignored if Push is set to true.
 	Commit bool
 
+	// GitHubAPIEndpoint is the GitHub API endpoint to use for all GitHub API
+	// operations.
+	//
+	// This is intended for testing and should not be used in production.
+	GitHubAPIEndpoint string
+
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
 	//
