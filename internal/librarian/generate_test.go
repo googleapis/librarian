@@ -945,7 +945,7 @@ func TestGenerateScenarios(t *testing.T) {
 				repo:            repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
-				librarianConfig: test.librarianConfig,
+				libraryConfig:   test.librarianConfig,
 				containerClient: test.container,
 				ghClient:        test.ghClient,
 				workRoot:        t.TempDir(),
