@@ -490,7 +490,6 @@ END_COMMIT_OVERRIDE
 			runGit(t, repo, "commit", "-m", commitMsg)
 			runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
 
-			// Setup mock GitHub server for --push case
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Header.Get("Authorization") != "Bearer fake-token" {
 					t.Errorf("missing or wrong authorization header: got %q", r.Header.Get("Authorization"))
