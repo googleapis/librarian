@@ -1423,6 +1423,15 @@ func PackageName(api *api.API, packageNameOverride string) string {
 	return "google-cloud-" + name
 }
 
+func (c *codec) packageName(model *api.API) string {
+	return PackageName(model, c.packageNameOverride)
+}
+
+func (c *codec) packageNamespace(model *api.API) string {
+	packageName := c.packageName(model)
+	return strings.ReplaceAll(packageName, "-", "_")
+}
+
 // ServiceName returns the service name.
 func (c *codec) ServiceName(service *api.Service) string {
 	if override, ok := c.nameOverrides[service.ID]; ok {

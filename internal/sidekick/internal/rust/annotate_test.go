@@ -27,6 +27,10 @@ func TestPackageNames(t *testing.T) {
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{},
 		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Override the default name for test APIs ("Test").
 	model.Name = "workflows-v1"
 	codec, err := newCodec(true, map[string]string{
@@ -259,6 +263,11 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		ID:      ".test.OperationMetadata",
 		Package: "test",
 	}
+	operation := &api.Message{
+		Name:    "Operation",
+		ID:      ".google.longrunning.Operation",
+		Package: "google.longrunning",
+	}
 	service := &api.Service{
 		Name:    "LroService",
 		ID:      ".test.LroService",
@@ -290,8 +299,11 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 			},
 		},
 	}
-	model := api.NewTestAPI([]*api.Message{create, delete, resource, metadata}, []*api.Enum{}, []*api.Service{service})
-	api.CrossReference(model)
+	model := api.NewTestAPI([]*api.Message{create, delete, resource, metadata, operation}, []*api.Enum{}, []*api.Service{service})
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	codec, err := newCodec(true, map[string]string{
 		"include-grpc-only-methods": "true",
@@ -1787,6 +1799,9 @@ func TestRoutingRequired(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{message},
 		[]*api.Enum{},
 		[]*api.Service{service})
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	codec, err := newCodec(true, map[string]string{
 		"include-grpc-only-methods": "true",
 		"routing-required":          "true",
