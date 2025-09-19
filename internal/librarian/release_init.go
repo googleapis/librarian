@@ -144,7 +144,8 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	for _, library := range librariesToRelease {
 		if r.librarianConfig != nil {
 			libraryConfig := r.librarianConfig.LibraryConfigFor(library.ID)
-			if libraryConfig != nil && libraryConfig.ReleaseBlocked {
+			if libraryConfig != nil && libraryConfig.ReleaseBlocked && r.library != library.ID {
+				// Do not skip the `release_blocked` library if library ID is explicitly specified.
 				slog.Info("library has release_blocked, skipping", "id", library.ID)
 				continue
 			}

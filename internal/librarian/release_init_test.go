@@ -296,7 +296,7 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "run release init command, skips blocked libraries",
+			name:            "run release init command, skips blocked libraries!",
 			containerClient: &mockContainerClient{},
 			dockerInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
@@ -306,7 +306,7 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID:      "another-example-id",
+								ID:      "blocked-example-id",
 								Version: "1.0.0",
 							},
 							{
@@ -318,21 +318,31 @@ func TestInitRun(t *testing.T) {
 					repo: &MockRepository{
 						Dir: t.TempDir(),
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
-							"another-example-id-1.0.0": {
+							"blocked-example-id-1.0.0": {
 								{
+									Hash:    plumbing.NewHash("123456"),
 									Message: "feat: another new feature",
 								},
 							},
 							"example-id-2.0.0": {
 								{
+									Hash:    plumbing.NewHash("abcdefg"),
 									Message: "feat: a new feature",
 								},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"dir1/file1.txt",
+							},
+							plumbing.NewHash("abcdefg").String(): {
+								"dir1/file2.txt",
 							},
 						},
 					},
 					librarianConfig: &config.LibrarianConfig{
 						Libraries: []*config.LibraryConfig{
-							{LibraryID: "another-example-id", ReleaseBlocked: true},
+							{LibraryID: "blocked-example-id", ReleaseBlocked: true},
 							{LibraryID: "example-id"},
 						},
 					},
@@ -342,7 +352,7 @@ func TestInitRun(t *testing.T) {
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
-						ID:            "another-example-id",
+						ID:            "blocked-example-id",
 						Version:       "1.0.0", // version is NOT bumped.
 						APIs:          []*config.API{},
 						SourceRoots:   []string{},
@@ -352,6 +362,61 @@ func TestInitRun(t *testing.T) {
 					{
 						ID:            "example-id",
 						Version:       "2.1.0", // version is bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
+			name:            "run release init command, does not skip blocked library if explicitly specified",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					// The library is explicitly specified.
+					library: "blocked-example-id",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID:      "blocked-example-id",
+								Version: "1.0.0",
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"blocked-example-id-1.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: another new feature",
+								},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"dir1/file1.txt",
+							},
+						},
+					},
+					librarianConfig: &config.LibrarianConfig{
+						Libraries: []*config.LibraryConfig{
+							{LibraryID: "blocked-example-id", ReleaseBlocked: true},
+						},
+					},
+					partialRepo: t.TempDir(),
+				}
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:            "blocked-example-id",
+						Version:       "1.1.0",
 						APIs:          []*config.API{},
 						SourceRoots:   []string{},
 						PreserveRegex: []string{},
