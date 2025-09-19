@@ -54,11 +54,11 @@ func loadRepoStateFromGitHub(ctx context.Context, ghClient GitHubClient, branch 
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := loadLibrarianStateFromBytes(content, "")
+	state, err := loadLibrarianStateFromBytes(content, "")
 	if err != nil {
 		return nil, err
 	}
-	return cfg, nil
+	return state, nil
 }
 
 func loadLibrarianConfig(repo *gitrepo.LocalRepository) (*config.LibrarianConfig, error) {
@@ -68,6 +68,18 @@ func loadLibrarianConfig(repo *gitrepo.LocalRepository) (*config.LibrarianConfig
 	}
 	path := filepath.Join(repo.Dir, config.LibrarianDir, librarianConfigFile)
 	return parseLibrarianConfig(path)
+}
+
+func loadLibrarianConfigFromGitHub(ctx context.Context, ghClient GitHubClient, branch string) (*config.LibrarianConfig, error) {
+	content, err := ghClient.GetRawContent(ctx, path.Join(config.LibrarianDir, config.LibrarianConfigFile), branch)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := loadLibrarianConfigFromBytes(content)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
@@ -101,8 +113,12 @@ func parseLibrarianConfig(path string) (*config.LibrarianConfig, error) {
 		}
 		return nil, err
 	}
+	return loadLibrarianConfigFromBytes(bytes)
+}
+
+func loadLibrarianConfigFromBytes(data []byte) (*config.LibrarianConfig, error) {
 	var lc config.LibrarianConfig
-	if err := yaml.Unmarshal(bytes, &lc); err != nil {
+	if err := yaml.Unmarshal(data, &lc); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal global config: %w", err)
 	}
 	if err := lc.Validate(); err != nil {

@@ -29,9 +29,8 @@ const defaultTagFormat = "{id}-{version}"
 
 // GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file.
-func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
-	tag := formatTag(library.TagFormat, library.ID, library.Version)
-	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
+func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState, tagName string) ([]*conventionalcommits.ConventionalCommit, error) {
+	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tagName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}

@@ -137,7 +137,13 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 	}
 
 	// Load library state from remote repo
-	libraryState, err := loadRepoStateFromGitHub(ctx, r.ghClient, *p.Base.Ref)
+	targetBranch := *p.Base.Ref
+	librarianState, err := loadRepoStateFromGitHub(ctx, r.ghClient, targetBranch)
+	if err != nil {
+		return err
+	}
+
+	librarianConfig, err := loadLibrarianConfigFromGitHub(ctx, r.ghClient, targetBranch)
 	if err != nil {
 		return err
 	}
@@ -152,7 +158,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 	for _, release := range releases {
 		slog.Info("creating release", "library", release.Library, "version", release.Version)
 
-		tagFormat, err := determineTagFormat(release.Library, libraryState)
+		tagFormat, err := determineTagFormat(release.Library, librarianState, librarianConfig)
 		if err != nil {
 			slog.Warn("could not determine tag format", "library", release.Library)
 			return err
@@ -169,8 +175,23 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 	return r.replacePendingLabel(ctx, p)
 }
 
-func determineTagFormat(libraryID string, librarianState *config.LibrarianState) (string, error) {
-	// TODO(#2177): read from LibrarianConfig
+func determineTagFormat(libraryID string, librarianState *config.LibrarianState, librarianConfig *config.LibrarianConfig) (string, error) {
+	// Order of preference:
+	// 1. per-library from config.yaml
+	// 2. top-level from config.yaml
+	// 3. per-library from state.yaml (deprecated)
+	if librarianConfig != nil {
+		// prefer per-library config
+		libraryConfig := librarianConfig.LibraryConfigFor(libraryID)
+		if libraryConfig != nil && libraryConfig.TagFormat != "" {
+			return libraryConfig.TagFormat, nil
+		}
+		// top-level from config
+		if librarianConfig.TagFormat != "" {
+			return librarianConfig.TagFormat, nil
+		}
+	}
+
 	libraryState := librarianState.LibraryByID(libraryID)
 	if libraryState == nil {
 		return "", fmt.Errorf("library %s not found", libraryID)
@@ -178,7 +199,8 @@ func determineTagFormat(libraryID string, librarianState *config.LibrarianState)
 	if libraryState.TagFormat != "" {
 		return libraryState.TagFormat, nil
 	}
-	return "", fmt.Errorf("library %s did not configure tag_format", libraryID)
+	slog.Warn("library %s did not configure tag_format, using default %s", libraryID, defaultTagFormat)
+	return defaultTagFormat, nil
 }
 
 // libraryRelease holds the parsed information from a pull request body.
