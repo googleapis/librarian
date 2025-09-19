@@ -18,7 +18,10 @@
 package librarian
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,6 +30,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/config"
 	"gopkg.in/yaml.v3"
 )
@@ -520,6 +524,131 @@ END_COMMIT_OVERRIDE
 			}
 		})
 	}
+}
+
+func TestReleaseTagAndRelease(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		prBody  string
+		push    bool
+		wantErr bool
+	}{
+		{
+			name: "runs successfully",
+			prBody: `<details><summary>go-google-cloud-pubsub-v1: v1.0.1</summary>
+### Features
+- feat: new feature
+</details>`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := t.TempDir()
+			if err := initRepo(t, repo, "testdata/e2e/release/init/repo_init"); err != nil {
+				t.Fatalf("prepare test error = %v", err)
+			}
+			runGit(t, repo, "tag", "go-google-cloud-pubsub-v1-1.0.0")
+			newFilePath := filepath.Join(repo, "google-cloud-pubsub/v1", "new-file.txt")
+			if err := os.WriteFile(newFilePath, []byte("new file"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			runGit(t, repo, "add", newFilePath)
+			runGit(t, repo, "commit", "-m", "feat: new feature")
+			headSHA, err := getHeadSHA(repo)
+			if err != nil {
+				t.Fatalf("failed to get head sha: %v", err)
+			}
+
+			// Set up a mock GitHub API server using httptest.
+			// This server will intercept HTTP requests made by the librarian command
+			// and provide canned responses, avoiding any real calls to the GitHub API.
+			// The handlers below simulate the endpoints that 'release tag-and-release' interacts with.
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Verify that the GitHub token is being sent correctly.
+				if r.Header.Get("Authorization") != "Bearer fake-token" {
+					t.Errorf("missing or wrong authorization header: got %q", r.Header.Get("Authorization"))
+				}
+
+				// Mock endpoint for GET /repos/{owner}/{repo}/pulls/{number}
+				if r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/pulls/123") {
+					w.WriteHeader(http.StatusOK)
+					// Return a minimal PR object with the body and merge commit SHA.
+					fmt.Fprintf(w, `{"number": 123, "body": %q, "merge_commit_sha": %q}`, test.prBody, headSHA)
+					return
+				}
+
+				// Mock endpoint for POST /repos/{owner}/{repo}/git/refs (creating the release-please tag)
+				if r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/git/refs") {
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprint(w, `{"ref": "refs/tags/release-please-123"}`)
+					return
+				}
+
+				// Mock endpoint for POST /repos/{owner}/{repo}/releases (creating the GitHub Release)
+				if r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/releases") {
+					var newRelease github.RepositoryRelease
+					if err := json.NewDecoder(r.Body).Decode(&newRelease); err != nil {
+						t.Fatalf("failed to decode request body: %v", err)
+					}
+					expectedTagName := "go-google-cloud-pubsub-v1-v1.0.1"
+					if *newRelease.TagName != expectedTagName {
+						t.Errorf("unexpected tag name: got %q, want %q", *newRelease.TagName, expectedTagName)
+					}
+					if *newRelease.TargetCommitish != headSHA {
+						t.Errorf("unexpected commitish: got %q, want %q", *newRelease.TargetCommitish, headSHA)
+					}
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprint(w, `{"name": "v1.0.1"}`)
+					return
+				}
+
+				// Mock endpoint for PUT /repos/{owner}/{repo}/issues/{number}/labels (updating labels)
+				if r.Method == "PUT" && strings.HasSuffix(r.URL.Path, "/issues/123/labels") {
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprint(w, `[]`)
+					return
+				}
+
+				// If any other request is made, fail the test.
+				t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			}))
+			defer server.Close()
+
+			cmdArgs := []string{
+				"run",
+				"github.com/googleapis/librarian/cmd/librarian",
+				"release",
+				"tag-and-release",
+				fmt.Sprintf("--repo=%s", repo),
+				fmt.Sprintf("--github-api-endpoint=%s/", server.URL),
+				"--pr=https://github.com/googleapis/librarian/pull/123",
+			}
+			if test.push {
+				cmdArgs = append(cmdArgs, "--push")
+			}
+
+			cmd := exec.Command("go", cmdArgs...)
+			cmd.Env = append(os.Environ(), "LIBRARIAN_GITHUB_TOKEN=fake-token")
+			cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+			if err := cmd.Run(); err != nil {
+				if !test.wantErr {
+					t.Fatalf("Failed to run release tag-and-release: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// getHeadSHA is a helper to get the latest commit SHA from a repo.
+func getHeadSHA(dir string) (string, error) {
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 // initRepo initiates a git repo in the given directory, copy
