@@ -53,7 +53,13 @@ impl std::fmt::Debug for {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> gax::client_builder::Result<Self> {
+        let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
+        let inner = if tracing_is_enabled {
+            inner.with_instrumentation(Some(crate::info::INSTRUMENTATION_CLIENT_INFO))
+        } else {
+            inner
+        };
         Ok(Self { inner })
     }
 }

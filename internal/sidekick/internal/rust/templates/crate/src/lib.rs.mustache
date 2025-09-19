@@ -109,6 +109,7 @@ const DEFAULT_HOST: &str = "https://{{Codec.DefaultHost}}/";
 pub(crate) mod info {
     const NAME: &str = env!("CARGO_PKG_NAME");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
+
     lazy_static::lazy_static! {
         pub(crate) static ref X_GOOG_API_CLIENT_HEADER: String = {
             let ac = gaxi::api_header::XGoogApiClient{
@@ -119,6 +120,13 @@ pub(crate) mod info {
             ac.rest_header_value()
         };
     }
+
+    pub(crate) static INSTRUMENTATION_CLIENT_INFO: gaxi::options::InstrumentationClientInfo = gaxi::options::InstrumentationClientInfo {
+        service_name: "{{Name}}",
+        client_version: VERSION,
+        client_artifact: NAME,
+        default_host: "{{Codec.DefaultHostShort}}",
+    };
 }
 
 {{/Codec.HasServices}}
