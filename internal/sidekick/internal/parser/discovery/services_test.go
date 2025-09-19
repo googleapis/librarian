@@ -22,31 +22,35 @@ import (
 )
 
 func TestService(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := model.State.ServiceByID["..projects"]; ok {
-		t.Errorf("expected no service for `projects` resource as it has no methods")
-	}
 
-	id := "..externalAccountKeys"
+	id := "..zones"
 	got, ok := model.State.ServiceByID[id]
 	if !ok {
 		t.Fatalf("expected service %s in the API model", id)
 	}
 	want := &api.Service{
-		Name:          "externalAccountKeys",
+		Name:          "zones",
 		ID:            id,
 		Package:       "",
-		Documentation: "Service for the `externalAccountKeys` resource.",
+		Documentation: "Service for the `zones` resource.",
 		Methods: []*api.Method{
 			{
-				ID:            "..externalAccountKeys.create",
-				Name:          "create",
-				Documentation: "Creates a new ExternalAccountKey bound to the project.",
-				InputTypeID:   "..ExternalAccountKey",
-				OutputTypeID:  "..ExternalAccountKey",
+				ID:            "..zones.get",
+				Name:          "get",
+				Documentation: "Returns the specified Zone resource.",
+				InputTypeID:   ".google.protobuf.Empty",
+				OutputTypeID:  "..Zone",
+			},
+			{
+				ID:            "..zones.list",
+				Name:          "list",
+				Documentation: "Retrieves the list of Zone resources available to the specified project.",
+				InputTypeID:   ".google.protobuf.Empty",
+				OutputTypeID:  "..ZoneList",
 			},
 		},
 	}
@@ -54,7 +58,7 @@ func TestService(t *testing.T) {
 }
 
 func TestServiceTopLevelMethodErrors(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +73,7 @@ func TestServiceTopLevelMethodErrors(t *testing.T) {
 }
 
 func TestServiceChildMethodErrors(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
