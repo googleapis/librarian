@@ -1195,10 +1195,8 @@ func TestRestore(t *testing.T) {
 func TestCleanUntracked(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name          string
-		paths         []string
-		wantErr       bool
-		wantErrPhrase string
+		name  string
+		paths []string
 	}{
 		{
 			name: "remove_untracked_files_in_paths",
@@ -1244,19 +1242,10 @@ func TestCleanUntracked(t *testing.T) {
 				}
 			}
 
-			err := localRepo.CleanUntracked(test.paths)
-			if test.wantErr {
-				if err == nil {
-					t.Fatalf("%s should return error", test.name)
-				}
-				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("CleanUntracked() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
-				}
-				return
-			}
+			if err := localRepo.CleanUntracked(test.paths); err != nil {
+				t.Error(err)
 
-			if err != nil {
-				t.Fatal(err)
+				return
 			}
 
 			for _, path := range test.paths {
