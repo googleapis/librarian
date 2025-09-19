@@ -980,11 +980,11 @@ func TestGenerateScenarios(t *testing.T) {
 			}
 
 			// Create a service config in api path.
-			if err := os.MkdirAll(filepath.Join(r.apiSource, test.api), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Join(r.sourceRepo.GetDir(), test.api), 0755); err != nil {
 				t.Fatal(err)
 			}
 			data := []byte("type: google.api.Service")
-			if err := os.WriteFile(filepath.Join(r.apiSource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+			if err := os.WriteFile(filepath.Join(r.sourceRepo.GetDir(), test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
 
