@@ -190,22 +190,25 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	processFooters(footers)
 
 	var commits []*ConventionalCommit
-	// If the body lines have multiple headers, separate them into  different conventional
-	// commit, all associated with the same commit sha.
+	// hold the subjects of each commit.
+	var subjects [][]string
+	// If the body lines have multiple headers, separate them into different conventional commit, all associated with
+	// the same commit sha.
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
 			slog.Warn("bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
-			// This is a multi-line header, append the line to the subject of the last commit.
 			if len(commits) == 0 {
 				continue
 			}
 
-			lastCommit := commits[len(commits)-1]
-			lastCommit.Subject = fmt.Sprintf("%s %s", lastCommit.Subject, strings.TrimSpace(bodyLine))
+			// This might be a multi-line header, append the line to the subject of the last commit.
+			lastSubject := subjects[len(subjects)-1]
+			lastSubject = append(lastSubject, strings.TrimSpace(bodyLine))
 			continue
 		}
 
+		subjects = append(subjects, []string{})
 		commits = append(commits, &ConventionalCommit{
 			Type:       header.Type,
 			Scope:      header.Scope,
@@ -219,10 +222,20 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 		})
 	}
 
-	// If only one conventional commit is found, i.e., only one header line is
-	// in the commit message, assign the body field.
 	if len(commits) == 1 {
+		// If only one conventional commit is found, i.e., only one header line is
+		// in the commit message, assign the body field.
 		commits[0].Body = strings.TrimSpace(strings.Join(bodyLines[1:], "\n"))
+	} else {
+		// Otherwise, concatenate all lines as the subject of the corresponding commit.
+		// This is a workaround when GitHub inserts line breaks in the middle of a long line after squash and merge.
+		for i, commit := range commits {
+			if len(subjects[i]) == 0 {
+				continue
+			}
+
+			commit.Subject = fmt.Sprintf("%s %s", commit.Subject, strings.Join(subjects[i], " "))
+		}
 	}
 
 	return commits, nil
