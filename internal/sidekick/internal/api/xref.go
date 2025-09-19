@@ -29,9 +29,27 @@ import "fmt"
 // reference any types or names of the `OneOf` during their generation.
 func CrossReference(model *API) error {
 	for _, m := range model.State.MessageByID {
+		for _, f := range m.Fields {
+			f.Parent = m
+			switch f.Typez {
+			case MESSAGE_TYPE:
+				t, ok := model.State.MessageByID[f.TypezID]
+				if !ok {
+					return fmt.Errorf("cannot find message type %s for field %s", f.TypezID, f.ID)
+				}
+				f.MessageType = t
+			case ENUM_TYPE:
+				t, ok := model.State.EnumByID[f.TypezID]
+				if !ok {
+					return fmt.Errorf("cannot find enum type %s for field %s", f.TypezID, f.ID)
+				}
+				f.EnumType = t
+			}
+		}
 		for _, o := range m.OneOfs {
 			for _, f := range o.Fields {
 				f.Group = o
+				f.Parent = m
 			}
 		}
 	}
