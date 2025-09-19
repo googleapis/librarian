@@ -192,12 +192,17 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	var commits []*ConventionalCommit
 	// If the body lines have multiple headers, separate them into  different conventional
 	// commit, all associated with the same commit sha.
-	// Note that we assume single line headers, the 2nd line of headers, if exists,
-	// will be discarded.
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
 			slog.Warn("bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
+			// This is a multi-line header, append the line to the subject of the last commit.
+			if len(commits) == 0 {
+				continue
+			}
+
+			lastCommit := commits[len(commits)-1]
+			lastCommit.Subject = fmt.Sprintf("%s %s", lastCommit.Subject, strings.TrimSpace(bodyLine))
 			continue
 		}
 
@@ -212,12 +217,6 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			SHA:        commit.Hash.String(),
 			When:       commit.When,
 		})
-	}
-
-	// If only one conventional commit is found, i.e., only one header line is
-	// in the commit message, assign the body field.
-	if len(commits) == 1 {
-		commits[0].Body = strings.TrimSpace(strings.Join(bodyLines[1:], "\n"))
 	}
 
 	return commits, nil
