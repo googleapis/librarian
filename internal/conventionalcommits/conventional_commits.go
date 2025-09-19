@@ -190,7 +190,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	processFooters(footers)
 
 	var commits []*ConventionalCommit
-	// hold the subjects of each commit.
+	// Hold the subjects of each commit.
 	var subjects [][]string
 	// If the body lines have multiple headers, separate them into different conventional commit, all associated with
 	// the same commit sha.
@@ -199,6 +199,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 		if !ok {
 			slog.Warn("bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
 			if len(commits) == 0 {
+				// This should not happen as we expect a conventional commit message inside a nested commit.
 				continue
 			}
 
@@ -230,11 +231,8 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 		// Otherwise, concatenate all lines as the subject of the corresponding commit.
 		// This is a workaround when GitHub inserts line breaks in the middle of a long line after squash and merge.
 		for i, commit := range commits {
-			if len(subjects[i]) == 0 {
-				continue
-			}
-
-			commit.Subject = fmt.Sprintf("%s %s", commit.Subject, strings.Join(subjects[i], " "))
+			sub := fmt.Sprintf("%s %s", commit.Subject, strings.Join(subjects[i], " "))
+			commit.Subject = strings.TrimSpace(sub)
 		}
 	}
 
