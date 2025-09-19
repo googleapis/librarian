@@ -32,6 +32,17 @@ func TestService(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected service %s in the API model", id)
 	}
+	if got.HasRequests() == false {
+		t.Errorf("service should have synthetic request messages")
+	}
+	wantGet, ok := model.State.MessageByID["..zones.getRequest"]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", "..zones.getRequest")
+	}
+	wantList, ok := model.State.MessageByID["..zones.listRequest"]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
+	}
 	want := &api.Service{
 		Name:          "zones",
 		ID:            id,
@@ -43,7 +54,7 @@ func TestService(t *testing.T) {
 				ID:            "..zones.get",
 				Name:          "get",
 				Documentation: "Returns the specified Zone resource.",
-				InputTypeID:   ".google.protobuf.Empty",
+				InputTypeID:   "..zones.getRequest",
 				OutputTypeID:  "..Zone",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
@@ -59,14 +70,14 @@ func TestService(t *testing.T) {
 							QueryParameters: map[string]bool{},
 						},
 					},
-					BodyFieldPath: "*",
+					BodyFieldPath: "",
 				},
 			},
 			{
 				ID:            "..zones.list",
 				Name:          "list",
 				Documentation: "Retrieves the list of Zone resources available to the specified project.",
-				InputTypeID:   ".google.protobuf.Empty",
+				InputTypeID:   "..zones.listRequest",
 				OutputTypeID:  "..ZoneList",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
@@ -87,10 +98,11 @@ func TestService(t *testing.T) {
 							},
 						},
 					},
-					BodyFieldPath: "*",
+					BodyFieldPath: "",
 				},
 			},
 		},
+		Requests: []*api.Message{wantGet, wantList},
 	}
 	apitest.CheckService(t, got, want)
 }

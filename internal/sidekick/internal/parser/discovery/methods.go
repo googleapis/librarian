@@ -21,25 +21,33 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
-func makeServiceMethods(model *api.API, serviceID string, doc *document, resource *resource) ([]*api.Method, error) {
+func makeServiceMethods(model *api.API, serviceName, serviceID string, doc *document, resource *resource) ([]*api.Method, []*api.Message, error) {
+	requests := &api.Message{
+		Name:          serviceName,
+		ID:            serviceID,
+		Package:       model.PackageName,
+		Documentation: fmt.Sprintf("Synthetic request messages for %s.", serviceID),
+	}
+	model.State.MessageByID[requests.ID] = requests
+
 	var methods []*api.Method
 	for _, input := range resource.Methods {
-		method, err := makeMethod(model, serviceID, doc, input)
+		method, err := makeMethod(model, serviceID, doc, requests, input)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		methods = append(methods, method)
 	}
 
-	return methods, nil
+	return methods, requests.Messages, nil
 }
 
-func makeMethod(model *api.API, serviceID string, doc *document, input *method) (*api.Method, error) {
+func makeMethod(model *api.API, serviceID string, doc *document, requestsParent *api.Message, input *method) (*api.Method, error) {
 	id := fmt.Sprintf("%s.%s", serviceID, input.Name)
 	if input.MediaUpload != nil {
 		return nil, fmt.Errorf("media upload methods are not supported, id=%s", id)
 	}
-	inputID, err := getMethodType(model, id, "request type", input.Request)
+	bodyID, err := getMethodType(model, id, "request type", input.Request)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +55,34 @@ func makeMethod(model *api.API, serviceID string, doc *document, input *method) 
 	if err != nil {
 		return nil, err
 	}
+
+	// Discovery doc methods get a synthetic request message.
+	requestMessage := &api.Message{
+		Name:          fmt.Sprintf("%sRequest", input.Name),
+		ID:            fmt.Sprintf("%s.%sRequest", requestsParent.ID, input.Name),
+		Package:       model.PackageName,
+		Documentation: fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", input.Name, id[1:]),
+		Parent:        requestsParent,
+		// TODO(#2268) - deprecated if method is deprecated.
+	}
+	model.State.MessageByID[requestMessage.ID] = requestMessage
+	requestsParent.Messages = append(requestsParent.Messages, requestMessage)
+
+	bodyPathField := ""
+	if bodyID != ".google.protobuf.Empty" {
+		body := &api.Field{
+			Documentation: fmt.Sprintf("Synthetic request body field for the [%s()][%s] method.", input.Name, id[1:]),
+			Name:          "body",
+			JSONName:      "body",
+			ID:            fmt.Sprintf("%s.%s", requestMessage.ID, "body"),
+			Typez:         api.MESSAGE_TYPE,
+			TypezID:       bodyID,
+			Optional:      true,
+		}
+		requestMessage.Fields = append(requestMessage.Fields, body)
+		bodyPathField = "body"
+	}
+
 	var uriTemplate string
 	if strings.HasSuffix(doc.ServicePath, "/") {
 		uriTemplate = fmt.Sprintf("%s%s", doc.ServicePath, input.Path)
@@ -58,6 +94,7 @@ func makeMethod(model *api.API, serviceID string, doc *document, input *method) 
 	if err != nil {
 		return nil, err
 	}
+
 	binding := &api.PathBinding{
 		Verb:            input.HTTPMethod,
 		PathTemplate:    path,
@@ -67,18 +104,29 @@ func makeMethod(model *api.API, serviceID string, doc *document, input *method) 
 		if p.Location != "path" {
 			binding.QueryParameters[p.Name] = true
 		}
+		prop := &property{
+			Name:   p.Name,
+			Schema: &p.schema,
+		}
+		field, err := makeField(fmt.Sprintf(requestMessage.ID, id), prop)
+		if err != nil {
+			return nil, err
+		}
+		field.Synthetic = true
+		field.Optional = !p.Required
+		requestMessage.Fields = append(requestMessage.Fields, field)
 	}
 	method := &api.Method{
 		ID:            id,
 		Name:          input.Name,
 		Documentation: input.Description,
-		// TODO(#1850) - handle deprecated methods
+		// TODO(#2268) - handle deprecated methods
 		// Deprecated: ...,
-		InputTypeID:  inputID,
+		InputTypeID:  requestMessage.ID,
 		OutputTypeID: outputID,
 		PathInfo: &api.PathInfo{
 			Bindings:      []*api.PathBinding{binding},
-			BodyFieldPath: "*",
+			BodyFieldPath: bodyPathField,
 		},
 	}
 	model.State.MethodByID[id] = method
