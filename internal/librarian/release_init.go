@@ -142,6 +142,13 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	// Mark if there are any library that needs to be released
 	foundReleasableLibrary := false
 	for _, library := range librariesToRelease {
+		if r.librarianConfig != nil {
+			libraryConfig := r.librarianConfig.LibraryConfigFor(library.ID)
+			if libraryConfig != nil && libraryConfig.ReleaseBlocked {
+				slog.Info("library has release_blocked, skipping", "id", library.ID)
+				continue
+			}
+		}
 		if err := r.processLibrary(library); err != nil {
 			return err
 		}

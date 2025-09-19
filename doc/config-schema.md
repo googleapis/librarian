@@ -30,6 +30,7 @@ Each object in the `libraries` list represents a single library and has the foll
 | `id`           | string | A unique identifier for the library, in a language-specific format. It should not be empty and only contains alphanumeric characters, slashes, periods, underscores, and hyphens. | Yes      | Must be a valid library ID.                               |
 | `next_version` | string | The next released version of the library. Ignored unless it would increase the release version.                                                                                   | No       | Must be a valid semantic version, "v" prefix is optional. |
 | `generate_blocked` | bool | Set this to `true` to skip the generation of this library. It's `false` by default. | No       |  |
+| `release_blocked`  | bool   | Set this to `true` to skip the release of this library. It's `false` by default. | No       |  |
 
 ## Example
 
@@ -56,4 +57,5 @@ libraries:
   - id: "example-library"
     next_version: "2.3.4"
     generate_blocked: false
+    release_blocked: false
 ```

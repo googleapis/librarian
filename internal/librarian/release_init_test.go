@@ -296,6 +296,71 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
+			name:            "run release init command, skips blocked libraries",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID:      "another-example-id",
+								Version: "1.0.0",
+							},
+							{
+								ID:      "example-id",
+								Version: "2.0.0",
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Message: "feat: another new feature",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Message: "feat: a new feature",
+								},
+							},
+						},
+					},
+					librarianConfig: &config.LibrarianConfig{
+						Libraries: []*config.LibraryConfig{
+							{LibraryID: "another-example-id", ReleaseBlocked: true},
+							{LibraryID: "example-id"},
+						},
+					},
+					partialRepo: t.TempDir(),
+				}
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:            "another-example-id",
+						Version:       "1.0.0", // version is NOT bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "example-id",
+						Version:       "2.1.0", // version is bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
 			name:            "run release init command for one invalid library (invalid library id in cfg)",
 			containerClient: &mockContainerClient{},
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
