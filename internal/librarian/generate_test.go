@@ -331,6 +331,7 @@ func TestRunConfigureCommand(t *testing.T) {
 				api:             test.api,
 				apiSource:       sourcePath,
 				repo:            test.repo,
+				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
 				containerClient: test.container,
 			}
