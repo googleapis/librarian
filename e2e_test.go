@@ -543,37 +543,69 @@ func TestReleaseTagAndRelease(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repo := t.TempDir()
-			if err := initRepo(t, repo, "testdata/e2e/release/init/repo_init"); err != nil {
-				t.Fatalf("prepare test error = %v", err)
-			}
-			runGit(t, repo, "tag", "go-google-cloud-pubsub-v1-1.0.0")
-			newFilePath := filepath.Join(repo, "google-cloud-pubsub/v1", "new-file.txt")
-			if err := os.WriteFile(newFilePath, []byte("new file"), 0644); err != nil {
-				t.Fatal(err)
-			}
-			runGit(t, repo, "add", newFilePath)
-			runGit(t, repo, "commit", "-m", "feat: new feature")
-			headSHA, err := getHeadSHA(repo)
-			if err != nil {
-				t.Fatalf("failed to get head sha: %v", err)
-			}
+			headSHA := "abcdef123456"
 
 			// Set up a mock GitHub API server using httptest.
 			// This server will intercept HTTP requests made by the librarian command
 			// and provide canned responses, avoiding any real calls to the GitHub API.
 			// The handlers below simulate the endpoints that 'release tag-and-release' interacts with.
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var server *httptest.Server
+			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				// Verify that the GitHub token is being sent correctly.
 				if r.Header.Get("Authorization") != "Bearer fake-token" {
 					t.Errorf("missing or wrong authorization header: got %q", r.Header.Get("Authorization"))
+				}
+
+				const stateYAMLContent = `
+image: gcr.io/some-project/some-image:latest
+libraries:
+- id: go-google-cloud-pubsub-v1
+  source_roots:
+  - google-cloud-pubsub/v1
+  tag_format: go-google-cloud-pubsub-v1-{version}
+`
+				// The download URL can be any unique path. The mock server will handle it.
+				downloadURL := server.URL + "/raw/librarian/state.yaml"
+
+				// Handler for the .librarian DIRECTORY listing request.
+				// The client sends this to find the state.yaml file.
+				if r.Method == "GET" && r.URL.Path == "/repos/googleapis/librarian/contents/.librarian" {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusOK)
+					// CRITICAL: The response for the directory listing must include the `download_url` for the file.
+					fmt.Fprintf(w, `[{"name": "state.yaml", "path": ".librarian/state.yaml", "type": "file", "download_url": %q}]`, downloadURL)
+					return
+				}
+
+				// Handler for the raw CONTENT download request.
+				// The client hits this endpoint after extracting the download_url from the directory listing.
+				if r.Method == "GET" && r.URL.Path == "/raw/librarian/state.yaml" {
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprint(w, stateYAMLContent)
+					return
+				}
+
+				// Mock endpoint for the .librarian directory listing.
+				// This handles the preliminary request the GitHub client makes before fetching a file.
+				if r.Method == "GET" && r.URL.Path == "/repos/googleapis/librarian/contents/.librarian" {
+					w.WriteHeader(http.StatusOK)
+					// This response tells the client that the directory contains a file named state.yaml
+					fmt.Fprint(w, `[{"name": "state.yaml", "path": ".librarian/state.yaml", "type": "file"}]`)
+					return
+				}
+
+				// Mock endpoint for GET /.librarian/state.yaml
+				if r.Method == "GET" && strings.HasSuffix(r.URL.Path, ".librarian/state.yaml") {
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprint(w, stateYAMLContent)
+					return
 				}
 
 				// Mock endpoint for GET /repos/{owner}/{repo}/pulls/{number}
 				if r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/pulls/123") {
 					w.WriteHeader(http.StatusOK)
 					// Return a minimal PR object with the body and merge commit SHA.
-					fmt.Fprintf(w, `{"number": 123, "body": %q, "merge_commit_sha": %q}`, test.prBody, headSHA)
+					fmt.Fprintf(w, `{"number": 123, "body": %q, "merge_commit_sha": %q, "base": {"ref": "main"}}`, test.prBody, headSHA)
 					return
 				}
 
@@ -619,7 +651,7 @@ func TestReleaseTagAndRelease(t *testing.T) {
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
 				"tag-and-release",
-				fmt.Sprintf("--repo=%s", repo),
+				"--repo=https://github.com/googleapis/librarian",
 				fmt.Sprintf("--github-api-endpoint=%s/", server.URL),
 				"--pr=https://github.com/googleapis/librarian/pull/123",
 			}
@@ -638,17 +670,6 @@ func TestReleaseTagAndRelease(t *testing.T) {
 			}
 		})
 	}
-}
-
-// getHeadSHA is a helper to get the latest commit SHA from a repo.
-func getHeadSHA(dir string) (string, error) {
-	cmd := exec.Command("git", "rev-parse", "HEAD")
-	cmd.Dir = dir
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(out)), nil
 }
 
 // initRepo initiates a git repo in the given directory, copy
