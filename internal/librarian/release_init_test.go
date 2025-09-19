@@ -106,9 +106,9 @@ func TestInitRun(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name            string
-		containerClient *mockContainerClient
-		dockerInitCalls int
+		name             string
+		containerClient  *mockContainerClient
+		releaseInitCalls int
 		// TODO: Pass all setup fields to the setupRunner func
 		setupRunner func(containerClient *mockContainerClient) *initRunner
 		files       map[string]string
@@ -117,9 +117,9 @@ func TestInitRun(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name:            "run release init command for all libraries, update librarian state",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
+			name:             "run release init command for all libraries, update librarian state",
+			containerClient:  &mockContainerClient{},
+			releaseInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        t.TempDir(),
@@ -224,9 +224,9 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "run release init command for one library (library id in cfg)",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
+			name:             "run release init command for one library (library id in cfg)",
+			containerClient:  &mockContainerClient{},
+			releaseInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        t.TempDir(),
@@ -325,9 +325,9 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "unable to find library for release",
 		},
 		{
-			name:            "run release init command without librarian config (no config.yaml file)",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
+			name:             "run release init command without librarian config (no config.yaml file)",
+			containerClient:  &mockContainerClient{},
+			releaseInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        t.TempDir(),
@@ -397,12 +397,12 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name: "docker command returns error",
+			name: "container returns an error",
 			containerClient: &mockContainerClient{
 				initErr: errors.New("simulated init error"),
 			},
-			// error occurred inside the docker container, there was a single request made to the container
-			dockerInitCalls: 1,
+			// error occurred inside the container, there was a single request made to the container
+			releaseInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        t.TempDir(),
@@ -428,8 +428,8 @@ func TestInitRun(t *testing.T) {
 			containerClient: &mockContainerClient{
 				wantErrorMsg: true,
 			},
-			// error reported from the docker container, there was a single request made to the container
-			dockerInitCalls: 1,
+			// error reported from the container, there was a single request made to the container
+			releaseInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        t.TempDir(),
@@ -554,9 +554,9 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "release init has multiple libraries but only one has a releasable unit",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
+			name:             "release init has multiple libraries but only one has a releasable unit",
+			containerClient:  &mockContainerClient{},
+			releaseInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        os.TempDir(),
@@ -658,9 +658,9 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "failed to commit and push",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
+			name:             "failed to commit and push",
+			containerClient:  &mockContainerClient{},
+			releaseInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        os.TempDir(),
@@ -715,9 +715,9 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed to make directory",
 		},
 		{
-			name:            "run release init command with symbolic link",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
+			name:             "run release init command with symbolic link",
+			containerClient:  &mockContainerClient{},
+			releaseInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        t.TempDir(),
@@ -865,11 +865,10 @@ func TestInitRun(t *testing.T) {
 
 			err := runner.run(context.Background())
 
-			// Check how many times the docker container has been called. If a release is to proceed
-			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0. Run this check even
-			// if there is an error that is wanted to ensure that a docker request is only made when
-			// we want it to.
-			if diff := cmp.Diff(test.containerClient.initCalls, test.dockerInitCalls); diff != "" {
+			// Check how many times the container has been called. If a release is to proceed we expect
+			// this to be 1. Otherwise, the releaseInitCalls should be 0. Run this check even if there
+			// is an error that is wanted to ensure that a request is only made when we want it to.
+			if diff := cmp.Diff(test.containerClient.initCalls, test.releaseInitCalls); diff != "" {
 				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
 			}
 
