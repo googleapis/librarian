@@ -85,11 +85,6 @@ func (c *Client) Token() string {
 	return c.accessToken
 }
 
-// GetRepository returns the Repository associated with the Client.
-func (c *Client) GetRepository() *Repository {
-	return c.repo
-}
-
 // Repository represents a GitHub repository with an owner (e.g. an organization or a user)
 // and a repository name.
 type Repository struct {
