@@ -204,8 +204,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			}
 
 			// This might be a multi-line header, append the line to the subject of the last commit.
-			lastSubject := subjects[len(subjects)-1]
-			lastSubject = append(lastSubject, strings.TrimSpace(bodyLine))
+			subjects[len(subjects)-1] = append(subjects[len(subjects)-1], strings.TrimSpace(bodyLine))
 			continue
 		}
 
