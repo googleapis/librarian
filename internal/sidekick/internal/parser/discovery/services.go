@@ -37,7 +37,7 @@ func addServiceRecursive(model *api.API, doc *document, resource *resource) erro
 
 func addService(model *api.API, doc *document, resource *resource) error {
 	id := fmt.Sprintf(".%s.%s", model.PackageName, resource.Name)
-	methods, err := makeServiceMethods(model, id, doc, resource)
+	methods, requests, err := makeServiceMethods(model, resource.Name, id, doc, resource)
 	if err != nil {
 		return err
 	}
@@ -51,6 +51,7 @@ func addService(model *api.API, doc *document, resource *resource) error {
 			Documentation: fmt.Sprintf("Service for the `%s` resource.", resource.Name),
 			DefaultHost:   strings.TrimSuffix(strings.TrimPrefix(doc.RootURL, "https://"), "/"),
 			Methods:       methods,
+			Requests:      requests,
 		}
 		model.Services = append(model.Services, service)
 		model.State.ServiceByID[id] = service

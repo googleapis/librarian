@@ -15,10 +15,12 @@
 package discovery
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
 )
 
 func TestMakeServiceMethods(t *testing.T) {
@@ -26,8 +28,19 @@ func TestMakeServiceMethods(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	id := "..zones.get"
+	// The `model.Messages` is is automatically generated. We want the synthetic
+	// request messages to require ad-hoc generation. Each codec may need to
+	// do something special to avoid clashes.
+	index := slices.IndexFunc(model.Messages, func(a *api.Message) bool { return a.ID == id })
+	if index != -1 {
+		t.Errorf("synthetic request messages should not be in the `model.Messages` list")
+	}
+	index = slices.IndexFunc(model.Messages, func(a *api.Message) bool { return a.ID == "..zones" })
+	if index != -1 {
+		t.Errorf("synthetic container for request messages should not be in the `model.Messages` list")
+	}
+
 	got, ok := model.State.MethodByID[id]
 	if !ok {
 		t.Fatalf("expected method %s in the API model", id)
@@ -36,7 +49,7 @@ func TestMakeServiceMethods(t *testing.T) {
 		ID:            "..zones.get",
 		Name:          "get",
 		Documentation: "Returns the specified Zone resource.",
-		InputTypeID:   ".google.protobuf.Empty",
+		InputTypeID:   "..zones.getRequest",
 		OutputTypeID:  "..Zone",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
@@ -52,12 +65,173 @@ func TestMakeServiceMethods(t *testing.T) {
 					QueryParameters: map[string]bool{},
 				},
 			},
-			BodyFieldPath: "*",
+			BodyFieldPath: "",
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
+}
+
+func TestMethodEmptyBody(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &api.Message{
+		Name:          "getRequest",
+		ID:            "..zones.getRequest",
+		Documentation: "Synthetic request message for the [get()][.zones.get] method.",
+		Fields: []*api.Field{
+			{
+				Name:          "project",
+				JSONName:      "project",
+				Documentation: "Project ID for this request.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+			},
+			{
+				Name:          "zone",
+				JSONName:      "zone",
+				Documentation: "Name of the zone resource to return.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+			},
+		},
+	}
+	gotGetRequest, ok := model.State.MessageByID[want.ID]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", want.ID)
+	}
+	apitest.CheckMessage(t, gotGetRequest, want)
+}
+
+func TestMethodWithQueryParameters(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &api.Message{
+		Name:          "listRequest",
+		ID:            "..zones.listRequest",
+		Documentation: "Synthetic request message for the [list()][.zones.list] method.",
+		Fields: []*api.Field{
+			{
+				Name:          "filter",
+				JSONName:      "filter",
+				Documentation: "A filter expression that filters resources listed in the response. Most Compute resources support two types of filter expressions: expressions that support regular expressions and expressions that follow API improvement proposal AIP-160. These two types of filter expressions cannot be mixed in one request. If you want to use AIP-160, your expression must specify the field name, an operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The operator must be either `=`, `!=`, `>`, `<`, `<=`, `>=` or `:`. For example, if you are filtering Compute Engine instances, you can exclude instances named `example-instance` by specifying `name != example-instance`. The `:*` comparison can be used to test whether a key has been defined. For example, to find all objects with `owner` label use: ``` labels.owner:* ``` You can also filter nested fields. For example, you could specify `scheduling.automaticRestart = false` to include instances only if they are not scheduled for automatic restarts. You can use filtering on nested fields to filter based on resource labels. To filter on multiple expressions, provide each separate expression within parentheses. For example: ``` (scheduling.automaticRestart = true) (cpuPlatform = \"Intel Skylake\") ``` By default, each expression is an `AND` expression. However, you can include `AND` and `OR` expressions explicitly. For example: ``` (cpuPlatform = \"Intel Skylake\") OR (cpuPlatform = \"Intel Broadwell\") AND (scheduling.automaticRestart = true) ``` If you want to use a regular expression, use the `eq` (equal) or `ne` (not equal) operator against a single un-parenthesized expression with or without quotes or against multiple parenthesized expressions. Examples: `fieldname eq unquoted literal` `fieldname eq 'single quoted literal'` `fieldname eq \"double quoted literal\"` `(fieldname1 eq literal) (fieldname2 ne \"literal\")` The literal value is interpreted as a regular expression using Google RE2 library syntax. The literal value must match the entire field. For example, to filter for instances that do not end with name \"instance\", you would use `name ne .*instance`. You cannot combine constraints on multiple fields using regular expressions.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+				Optional:      true,
+			},
+			{
+				Name:          "maxResults",
+				JSONName:      "maxResults",
+				Documentation: "The maximum number of results per page that should be returned. If the number of available results is larger than `maxResults`, Compute Engine returns a `nextPageToken` that can be used to get the next page of results in subsequent list requests. Acceptable values are `0` to `500`, inclusive. (Default: `500`)",
+				Typez:         api.UINT32_TYPE,
+				TypezID:       "uint32",
+				Synthetic:     true,
+				Optional:      true,
+			},
+			{
+				Name:          "orderBy",
+				JSONName:      "orderBy",
+				Documentation: "Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name. You can also sort results in descending order based on the creation timestamp using `orderBy=\"creationTimestamp desc\"`. This sorts results based on the `creationTimestamp` field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first. Currently, only sorting by `name` or `creationTimestamp desc` is supported.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+				Optional:      true,
+			},
+			{
+				Name:          "pageToken",
+				JSONName:      "pageToken",
+				Documentation: "Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+				Optional:      true,
+			},
+			{
+				Name:          "project",
+				JSONName:      "project",
+				Documentation: "Project ID for this request.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+			},
+			{
+				Name:          "returnPartialSuccess",
+				JSONName:      "returnPartialSuccess",
+				Documentation: "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false. For example, when partial success behavior is enabled, aggregatedList for a single zone scope either returns all resources in the zone or no resources, with an error code.",
+				Typez:         api.BOOL_TYPE,
+				TypezID:       "bool",
+				Synthetic:     true,
+				Optional:      true,
+			},
+		},
+	}
+	gotListRequest, ok := model.State.MessageByID[want.ID]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", want.ID)
+	}
+	apitest.CheckMessage(t, gotListRequest, want)
+}
+
+func TestMethodWithBody(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantInsertRequest := &api.Message{
+		Name:          "insertRequest",
+		ID:            "..addresses.insertRequest",
+		Documentation: "Synthetic request message for the [insert()][.addresses.insert] method.",
+		Fields: []*api.Field{
+			{
+				Name:          "body",
+				JSONName:      "body",
+				ID:            "..addresses.insertRequest.body",
+				Documentation: "Synthetic request body field for the [insert()][.addresses.insert] method.",
+				Typez:         api.MESSAGE_TYPE,
+				TypezID:       "..Address",
+				Optional:      true,
+			},
+			{
+				Name:          "project",
+				JSONName:      "project",
+				Documentation: "Project ID for this request.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+			},
+			{
+				Name:          "region",
+				JSONName:      "region",
+				Documentation: "Name of the region for this request.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+			},
+			{
+				Name:          "requestId",
+				JSONName:      "requestId",
+				Documentation: "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported ( 00000000-0000-0000-0000-000000000000).",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Synthetic:     true,
+				Optional:      true,
+			},
+		},
+	}
+	gotGetRequest, ok := model.State.MessageByID[wantInsertRequest.ID]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", wantInsertRequest.ID)
+	}
+	apitest.CheckMessage(t, gotGetRequest, wantInsertRequest)
 }
 
 func TestMakeServiceMethodsError(t *testing.T) {
@@ -75,8 +249,8 @@ func TestMakeServiceMethodsError(t *testing.T) {
 			},
 		},
 	}
-	if methods, err := makeServiceMethods(model, "..testResource", &doc, input); err == nil {
-		t.Errorf("expected error on method with media upload, got=%v", methods)
+	if methods, requests, err := makeServiceMethods(model, "testResource", "..testResource", &doc, input); err == nil {
+		t.Errorf("expected error on method with media upload, gotMethods=%v, gotRequests=%v", methods, requests)
 	}
 }
 
@@ -94,9 +268,13 @@ func TestMakeMethodError(t *testing.T) {
 		{"requestMustHaveRef", method{Request: &schema{}}},
 		{"responseMustHaveRef", method{Response: &schema{}}},
 		{"badPath", method{Path: "{+var"}},
+		{"badParameter", method{Path: "a/b", Parameters: []*parameter{
+			{Name: "badParameter", schema: schema{Type: "--invalid--"}},
+		}}},
 	} {
 		doc := document{}
-		if method, err := makeMethod(model, "..Test", &doc, &test.Input); err == nil {
+		parent := &api.Message{ID: "..testOnly"}
+		if method, err := makeMethod(model, "..Test", &doc, parent, &test.Input); err == nil {
 			t.Errorf("expected error on method[%s], got=%v", test.Name, method)
 		}
 	}

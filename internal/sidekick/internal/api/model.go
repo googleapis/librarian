@@ -191,11 +191,30 @@ type Service struct {
 	DefaultHost string
 	// The Protobuf package this service belongs to.
 	Package string
+
+	// Synthetic messages for the parameters and body of each request.
+	//
+	// When using discovery docs or OpenAPI:
+	// 1. Not all methods have a request message.
+	// 2. The request message does not include the path and query parameters.
+	// 3. The request message may be shared, so it is risky to modify it.
+	//
+	// Sidekick creates synthetic messages for these specifications. The codecs
+	// need to generate these messages separate from "normal" messages. They
+	// should keep in mind that name clashes are possible.
+	Requests []*Message
+
 	// The model this service belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
 	// Language specific annotations
 	Codec any
+}
+
+// HasRequests is used by mustache templates to optional emit code depending on
+// whether a service has synthetic request messages.
+func (service *Service) HasRequests() bool {
+	return len(service.Requests) != 0
 }
 
 // Method defines a RPC belonging to a Service.
