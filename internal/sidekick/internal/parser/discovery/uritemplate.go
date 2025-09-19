@@ -62,6 +62,9 @@ func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
 		}
 		pos++ // Skip slash
 	}
+	if pos != len(uriTemplate) {
+		return nil, fmt.Errorf("trailing data (%q) cannot be parsed as a URI template", uriTemplate[pos:])
+	}
 	return template, nil
 }
 
@@ -71,10 +74,10 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 	}
 	tail := input[1:]
 	if strings.IndexAny(tail, "+#") == 0 {
-		return nil, 0, fmt.Errorf("level 2 expressions unsupposed input=%q", input)
+		return nil, 0, fmt.Errorf("level 2 expressions unsupported input=%q", input)
 	}
 	if strings.IndexAny(tail, "./?&") == 0 {
-		return nil, 0, fmt.Errorf("level 3 expressions unsupposed input=%q", input)
+		return nil, 0, fmt.Errorf("level 3 expressions unsupported input=%q", input)
 	}
 	if strings.IndexAny(tail, "=,!@|") == 0 {
 		return nil, 0, fmt.Errorf("reserved character on expression %q", input)

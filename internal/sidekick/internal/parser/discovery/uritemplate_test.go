@@ -48,6 +48,12 @@ func TestParseUriTemplateError(t *testing.T) {
 	}{
 		{"v1/{+parent}/externalAccountKeys"},
 		{"a/b/c/"},
+		{"a/b/c|"},
+		{"a/b/{c}|"},
+		{"a/b/{c}}/d"},
+		{"a/b/{c}}"},
+		{"a/b/{c}/"},
+		{"{foo}}bar"},
 	} {
 		if got, err := ParseUriTemplate(test.input); err == nil {
 			t.Errorf("expected a parsing error with input=%s, got=%v", test.input, got)
