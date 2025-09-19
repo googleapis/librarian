@@ -81,7 +81,6 @@ func TestRunGenerateCommand(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				api:             test.api,
-				apiSource:       t.TempDir(),
 				repo:            test.repo,
 				sourceRepo:      newTestGitRepo(t),
 				ghClient:        test.ghClient,
@@ -326,10 +325,8 @@ func TestRunConfigureCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			sourcePath := t.TempDir()
 			r := &generateRunner{
 				api:             test.api,
-				apiSource:       sourcePath,
 				repo:            test.repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
@@ -962,13 +959,11 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			apiSource := t.TempDir()
 			repo := newTestGitRepoWithState(t, test.state, true)
 
 			r := &generateRunner{
 				api:             test.api,
 				library:         test.library,
-				apiSource:       apiSource,
 				build:           test.build,
 				repo:            repo,
 				sourceRepo:      newTestGitRepo(t),
