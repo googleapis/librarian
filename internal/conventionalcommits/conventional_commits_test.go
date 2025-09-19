@@ -454,7 +454,7 @@ END_COMMIT_OVERRIDE`,
 			},
 		},
 		{
-			name: "parse multiple lines message inside nested commit, multi-line headers",
+			name: "parse_multiple_lines_message_inside_nested_commit_multi_line_headers",
 			message: `
 chore: Update generation configuration at Tue Aug 26 02:31:23 UTC 2025 (#11734)
 
