@@ -47,8 +47,14 @@ func TestService(t *testing.T) {
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							Verb:            "GET",
-							PathTemplate:    api.NewPathTemplate().WithLiteral("compute").WithLiteral("v1").WithLiteral("projects").WithVariable(api.NewPathVariable("project")).WithLiteral("zones").WithVariable(api.NewPathVariable("zone")),
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("compute").
+								WithLiteral("v1").
+								WithLiteral("projects").
+								WithVariableNamed("project").
+								WithLiteral("zones").
+								WithVariableNamed("zone"),
 							QueryParameters: map[string]bool{},
 						},
 					},
@@ -64,8 +70,13 @@ func TestService(t *testing.T) {
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							Verb:         "GET",
-							PathTemplate: api.NewPathTemplate().WithLiteral("compute").WithLiteral("v1").WithLiteral("projects").WithVariable(api.NewPathVariable("project")).WithLiteral("zones"),
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("compute").
+								WithLiteral("v1").
+								WithLiteral("projects").
+								WithVariableNamed("project").
+								WithLiteral("zones"),
 							QueryParameters: map[string]bool{
 								"filter":               true,
 								"maxResults":           true,
