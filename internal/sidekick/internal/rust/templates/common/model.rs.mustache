@@ -37,3 +37,14 @@ mod serialize;
 {{#Enums}}
 {{> enum}}
 {{/Enums}}
+{{#Services}}
+{{#HasRequests}}
+
+pub mod {{Codec.ModuleName}} {
+    use super::*;
+    {{#Requests}}
+    {{> message}}
+    {{/Requests}}
+}
+{{/HasRequests}}
+{{/Services}}
