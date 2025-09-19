@@ -59,7 +59,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 	}
 
-	return &API{
+	model := &API{
 		Name:        "Test",
 		PackageName: packageName,
 		Messages:    messages,
@@ -67,6 +67,8 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		Services:    services,
 		State:       state,
 	}
+	model.LoadWellKnownTypes()
+	return model
 }
 
 // parentName returns the parent's name from a fully qualified identifier.
