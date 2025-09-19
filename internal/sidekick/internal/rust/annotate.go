@@ -55,6 +55,8 @@ type modelAnnotations struct {
 	PerServiceFeatures bool
 	// If true, at lease one service has a method we cannot wrap (yet).
 	Incomplete bool
+	// If true, the generator will produce reference documentation samples for message fields setters.
+	GenerateSetterSamples bool
 }
 
 // IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
@@ -531,6 +533,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
 			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),
+		GenerateSetterSamples: codec.generateSetterSamples,
 	}
 
 	codec.addFeatureAnnotations(model, ann)
