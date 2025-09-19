@@ -345,22 +345,20 @@ func validateLibrarianDir(dir, requestFile string) error {
 // readConfigureRequest reads the configure request file and creates a librarianState
 // object.
 func readConfigureRequest(path string) (*librarianState, error) {
-	state := &librarianState{}
+	library := &libraryState{}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal(data, state); err != nil {
+	if err := json.Unmarshal(data, library); err != nil {
 		return nil, err
 	}
 
-	for _, library := range state.Libraries {
-		if library.ID == simulateCommandErrorID {
-			return nil, errors.New("simulate command error")
-		}
+	if library.ID == simulateCommandErrorID {
+		return nil, errors.New("simulate command error")
 	}
 
-	return state, nil
+	return &librarianState{Libraries: []*libraryState{library}}, nil
 }
 
 func writeConfigureResponse(option *configureOption, state *librarianState) error {
