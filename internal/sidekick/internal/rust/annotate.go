@@ -331,6 +331,23 @@ func (b *pathBindingAnnotation) HasVariablePath() bool {
 	return len(b.Substitutions) != 0
 }
 
+// PathTemplate produces a path template suitable for instrumentation and logging.
+// Variable parts are replaced with {field_name}.
+func (b *pathBindingAnnotation) PathTemplate() string {
+	if len(b.Substitutions) == 0 {
+		return b.PathFmt
+	}
+
+	template := b.PathFmt
+	for _, s := range b.Substitutions {
+		// Construct the placeholder e.g., "{field_name}"
+		placeholder := "{" + s.FieldName + "}"
+		// Replace the first instance of "{}" with the field name placeholder
+		template = strings.Replace(template, "{}", placeholder, 1)
+	}
+	return template
+}
+
 type oneOfAnnotation struct {
 	// In Rust, `oneof` fields are fields inside a struct. These must be
 	// `snake_case`. Possibly mangled with `r#` if the name is a Rust reserved

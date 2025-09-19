@@ -659,14 +659,7 @@ libraries:
 				// Mock endpoint for GET /.librarian/state.yaml
 				if r.Method == "GET" && strings.HasSuffix(r.URL.Path, ".librarian/state.yaml") {
 					w.WriteHeader(http.StatusOK)
-					fmt.Fprint(w, `
-image: gcr.io/some-project/some-image:latest
-libraries:
-- id: go-google-cloud-pubsub-v1
-  source_roots:
-  - google-cloud-pubsub/v1
-  tag_format: go-google-cloud-pubsub-v1-{version}
-`)
+					fmt.Fprint(w, stateYAMLContent)
 					return
 				}
 

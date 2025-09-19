@@ -1608,8 +1608,106 @@ func TestPathBindingAnnotations(t *testing.T) {
 	if diff := cmp.Diff(want_b2, b2.Codec); diff != "" {
 		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
 	}
+
 	if diff := cmp.Diff(want_b3, b3.Codec); diff != "" {
 		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestPathTemplateGeneration(t *testing.T) {
+	tests := []struct {
+		name    string
+		binding *pathBindingAnnotation
+		want    string
+	}{
+		{
+			name: "Simple Literal",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/things",
+			},
+			want: "/v1/things",
+		},
+		{
+			name: "Single Variable",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/things/{}",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "thing_id"},
+				},
+			},
+			want: "/v1/things/{thing_id}",
+		},
+		{
+			name: "Multiple Variables",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/projects/{}/locations/{}",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "project"},
+					{FieldName: "location"},
+				},
+			},
+			want: "/v1/projects/{project}/locations/{location}",
+		},
+		{
+			name: "Variable with Complex Segment Match",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/{}/databases",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "name"},
+				},
+			},
+			want: "/v1/{name}/databases",
+		},
+		{
+			name: "Variable Capturing Remaining Path",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/objects/{}",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "object"},
+				},
+			},
+			want: "/v1/objects/{object}",
+		},
+		{
+			name: "Top-Level Single Wildcard",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/{}",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "field"},
+				},
+			},
+			want: "/{field}",
+		},
+		{
+			name: "Path with Custom Verb",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/things/{}:customVerb",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "thing_id"},
+				},
+			},
+			want: "/v1/things/{thing_id}:customVerb",
+		},
+		{
+			name: "Nested fields",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/projects/{}/locations/{}/ids/{}:actionOnChild",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "child.project"},
+					{FieldName: "child.location"},
+					{FieldName: "child.id"},
+				},
+			},
+			want: "/v1/projects/{child.project}/locations/{child.location}/ids/{child.id}:actionOnChild",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.binding.PathTemplate(); got != tt.want {
+				t.Errorf("PathTemplate() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
