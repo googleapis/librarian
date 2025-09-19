@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"regexp"
 	"slices"
 	"strconv"
@@ -55,6 +56,15 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 		return nil, err
 	}
 	ghClient := github.NewClient(cfg.GitHubToken, repo)
+	// If a custom GitHub API endpoint is provided (for testing),
+	// parse it and set it as the BaseURL on the GitHub client.
+	if cfg.GitHubAPIEndpoint != "" {
+		endpoint, err := url.Parse(cfg.GitHubAPIEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse github-api-endpoint: %w", err)
+		}
+		ghClient.BaseURL = endpoint
+	}
 	return &tagAndReleaseRunner{
 		ghClient:    ghClient,
 		pullRequest: cfg.PullRequest,
@@ -200,8 +210,9 @@ func parsePullRequestBody(body string) []libraryRelease {
 				Library: library,
 				Body:    content,
 			})
+		} else {
+			slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 		}
-		slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 	}
 
 	return parsedBodies
