@@ -91,7 +91,7 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 	if tail == "" || tail[0] != endExpression {
 		return nil, 0, fmt.Errorf("missing `}` character at the end of the expression %q", input)
 	}
-	return &api.PathSegment{Variable: api.NewPathVariable(id)}, match[1] + 2, nil
+	return &api.PathSegment{Variable: api.NewPathVariable(id).WithMatch()}, match[1] + 2, nil
 }
 
 // parseLiteral() extracts a literal value from `input`.
