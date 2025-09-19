@@ -33,7 +33,6 @@ const (
 
 type generateRunner struct {
 	api             string
-	apiSource       string
 	branch          string
 	build           bool
 	commit          bool
@@ -57,7 +56,6 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	}
 	return &generateRunner{
 		api:             cfg.API,
-		apiSource:       cfg.APISource,
 		branch:          cfg.Branch,
 		build:           cfg.Build,
 		commit:          cfg.Commit,
@@ -333,7 +331,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 // it returns an empty string and an error.
 func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
 
-	apiRoot, err := filepath.Abs(r.apiSource)
+	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
 	if err != nil {
 		return "", err
 	}
@@ -347,7 +345,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 
 	if err := populateServiceConfigIfEmpty(
 		r.state,
-		r.apiSource); err != nil {
+		apiRoot); err != nil {
 		return "", err
 	}
 

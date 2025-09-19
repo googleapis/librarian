@@ -81,7 +81,6 @@ func TestRunGenerateCommand(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				api:             test.api,
-				apiSource:       t.TempDir(),
 				repo:            test.repo,
 				sourceRepo:      newTestGitRepo(t),
 				ghClient:        test.ghClient,
@@ -326,29 +325,28 @@ func TestRunConfigureCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			sourcePath := t.TempDir()
 			r := &generateRunner{
 				api:             test.api,
-				apiSource:       sourcePath,
 				repo:            test.repo,
+				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
 				containerClient: test.container,
 			}
 
 			// Create a service config
-			if err := os.MkdirAll(filepath.Join(r.apiSource, test.api), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Join(r.sourceRepo.GetDir(), test.api), 0755); err != nil {
 				t.Fatal(err)
 			}
 
 			data := []byte("type: google.api.Service")
-			if err := os.WriteFile(filepath.Join(r.apiSource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+			if err := os.WriteFile(filepath.Join(r.sourceRepo.GetDir(), test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
 
 			if test.name == "configures library with non-existent api source" {
 				// This test verifies the scenario of no service config is found
 				// in api path.
-				if err := os.RemoveAll(filepath.Join(r.apiSource)); err != nil {
+				if err := os.RemoveAll(filepath.Join(r.sourceRepo.GetDir())); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -961,13 +959,11 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			apiSource := t.TempDir()
 			repo := newTestGitRepoWithState(t, test.state, true)
 
 			r := &generateRunner{
 				api:             test.api,
 				library:         test.library,
-				apiSource:       apiSource,
 				build:           test.build,
 				repo:            repo,
 				sourceRepo:      newTestGitRepo(t),
@@ -979,11 +975,11 @@ func TestGenerateScenarios(t *testing.T) {
 			}
 
 			// Create a service config in api path.
-			if err := os.MkdirAll(filepath.Join(r.apiSource, test.api), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Join(r.sourceRepo.GetDir(), test.api), 0755); err != nil {
 				t.Fatal(err)
 			}
 			data := []byte("type: google.api.Service")
-			if err := os.WriteFile(filepath.Join(r.apiSource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+			if err := os.WriteFile(filepath.Join(r.sourceRepo.GetDir(), test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
 
