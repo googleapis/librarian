@@ -219,6 +219,12 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 		})
 	}
 
+	// If only one conventional commit is found, i.e., only one header line is
+	// in the commit message, assign the body field.
+	if len(commits) == 1 {
+		commits[0].Body = strings.TrimSpace(strings.Join(bodyLines[1:], "\n"))
+	}
+
 	return commits, nil
 }
 
