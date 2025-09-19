@@ -868,8 +868,8 @@ func TestInitRun(t *testing.T) {
 			// Check how many times the container has been called. If a release is to proceed we expect
 			// this to be 1. Otherwise, the releaseInitCalls should be 0. Run this check even if there
 			// is an error that is wanted to ensure that a request is only made when we want it to.
-			if diff := cmp.Diff(test.containerClient.initCalls, test.releaseInitCalls); diff != "" {
-				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.containerClient.releaseInitCalls, test.releaseInitCalls); diff != "" {
+				t.Errorf("release init calls mismatch (-want +got):\n%s", diff)
 			}
 
 			if test.wantErr {

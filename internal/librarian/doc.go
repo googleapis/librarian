@@ -17,7 +17,7 @@
 /*
 Package librarian contains the business logic for the Librarian CLI.
 Implementation details for interacting with other systems (Git, GitHub,
-Container Engine etc.) are abstracted into other packages.
+Container Engine, etc.) are abstracted into other packages.
 
 Usage:
 
