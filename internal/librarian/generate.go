@@ -333,7 +333,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 // it returns an empty string and an error.
 func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
 
-	apiRoot, err := filepath.Abs(r.apiSource)
+	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
 	if err != nil {
 		return "", err
 	}
@@ -347,7 +347,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 
 	if err := populateServiceConfigIfEmpty(
 		r.state,
-		r.apiSource); err != nil {
+		apiRoot); err != nil {
 		return "", err
 	}
 
