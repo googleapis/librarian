@@ -491,6 +491,10 @@ func (r *LocalRepository) CleanUntracked(paths []string) error {
 	}
 
 	statue, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+
 	// Remove an untracked file if it lives within one of the given paths.
 	for _, path := range paths {
 		for file, fileStatue := range statue {
