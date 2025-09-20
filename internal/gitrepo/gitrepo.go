@@ -343,10 +343,10 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 
 		return nil
 	})
-	if err != nil && errors.Is(err, ErrStopIterating) {
+	if err != nil && !errors.Is(err, ErrStopIterating) {
 		return nil, err
 	}
-	if sinceCommit != "" && errors.Is(err, ErrStopIterating) {
+	if sinceCommit != "" && !errors.Is(err, ErrStopIterating) {
 		return nil, fmt.Errorf("did not find commit %s when iterating", sinceCommit)
 	}
 	return commits, nil
