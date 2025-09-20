@@ -288,7 +288,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
-	commits := []*Commit{}
+	var commits []*Commit
 	finalHash := plumbing.NewHash(sinceCommit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
 	logIterator, err := r.repo.Log(&logOptions)
@@ -343,10 +343,10 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 
 		return nil
 	})
-	if err != nil && err != ErrStopIterating {
+	if err != nil && errors.Is(err, ErrStopIterating) {
 		return nil, err
 	}
-	if sinceCommit != "" && err != ErrStopIterating {
+	if sinceCommit != "" && errors.Is(err, ErrStopIterating) {
 		return nil, fmt.Errorf("did not find commit %s when iterating", sinceCommit)
 	}
 	return commits, nil
@@ -360,7 +360,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 		return "", err
 	}
 	treeEntry, err := tree.FindEntry(path)
-	if err == object.ErrEntryNotFound || err == object.ErrDirectoryNotFound {
+	if errors.Is(err, object.ErrEntryNotFound) || errors.Is(err, object.ErrDirectoryNotFound) {
 		return "", nil
 	}
 	if err != nil {
