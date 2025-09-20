@@ -58,7 +58,6 @@ type GitHubClient interface {
 	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
 	CreateIssueComment(ctx context.Context, number int, comment string) error
 	CreateTag(ctx context.Context, tag, commitish string) error
-	GetRepository() *github.Repository
 }
 
 // ContainerClient is an abstraction over the Docker client.
@@ -128,31 +127,12 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	image := deriveImage(cfg.Image, state)
 
-	// Use our new, swappable function to get the repository object.
-	gitRepo, err := GetGitHubRepository(cfg, languageRepo)
+	gitHubRepo, err := GetGitHubRepository(cfg, languageRepo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get GitHub repository: %w", err)
 	}
 
-	ghClient := github.NewClient(cfg.GitHubToken, gitRepo)
-
-	// The logic to configure the client's BaseURL for a test server can remain,
-	// as it's a separate concern from creating the repository object.
-	if cfg.GitHubAPIEndpoint != "" {
-		// Test setup, as GitHubAPIEndpoint is provided for test only.
-		slog.Info("Custom GitHub API endpoint provided, configuring for testing", "endpoint", cfg.GitHubAPIEndpoint)
-		endpoint, err := url.Parse(cfg.GitHubAPIEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse github-api-endpoint: %w", err)
-		}
-		// Ensure the endpoint URL has a trailing slash.
-		if !strings.HasSuffix(endpoint.Path, "/") {
-			endpoint.Path += "/"
-		}
-		ghClient.BaseURL = endpoint
-		slog.Info("GitHub client configured for testing", "owner", gitRepo.Owner, "repo", gitRepo.Name, "base_url", ghClient.BaseURL.String())
-	}
-
+	ghClient := github.NewClient(cfg.GitHubToken, gitHubRepo)
 	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
@@ -379,28 +359,9 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return nil
 	}
 
-	var gitHubRepo *github.Repository
-	// Check if a custom endpoint is being used by looking at the BaseURL.
-	isTest := false
-	if client, ok := info.ghClient.(*github.Client); ok {
-		if client.BaseURL != nil && client.BaseURL.String() != "https://api.github.com/" {
-			isTest = true
-		}
-	}
-
-	if isTest {
-		slog.Info("Detected custom GitHub endpoint, using client's configured repo for PR")
-		gitHubRepo = info.ghClient.GetRepository()
-		if gitHubRepo == nil {
-			return fmt.Errorf("github client has nil repository in test mode")
-		}
-	} else {
-		slog.Info("Fetching GitHub repo from remote for PR")
-		var err error
-		gitHubRepo, err = github.FetchGitHubRepoFromRemote(info.repo)
-		if err != nil {
-			return err
-		}
+	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.repo)
+	if err != nil {
+		return fmt.Errorf("failed to get GitHub repository: %w", err)
 	}
 
 	title := fmt.Sprintf("chore: librarian %s pull request: %s", info.prType, datetimeNow)

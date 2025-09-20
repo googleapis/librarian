@@ -12,19 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build e2e
+//go:build e2etest
+
+// This file contains mock implementations of repository getters for use in
+// end-to-end tests. It is compiled only when the 'e2e-test' build tag is specified.
 
 package librarian
 
 import (
 	"log/slog"
+	"os"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+// GetGitHubRepository returns a mock github.Repository object for e2e tests.
+// It reads the LIBRARIAN_GITHUB_BASE_URL environment variable to configure
+// the mock repository's BaseURL, allowing the test client to connect to a
+// local httptest.Server.
 var GetGitHubRepository = func(cfg *config.Config, languageRepo gitrepo.Repository) (*github.Repository, error) {
 	slog.Info("Using mock GitHub repository for e2e test")
-	return &github.Repository{Owner: "test-owner", Name: "test-repo"}, nil
+	baseURL := os.Getenv("LIBRARIAN_GITHUB_BASE_URL")
+	return &github.Repository{Owner: "test-owner", Name: "test-repo", BaseURL: baseURL}, nil
+}
+
+// GetGitHubRepositoryFromGitRepo returns a mock github.Repository object for e2e tests.
+// It reads the LIBRARIAN_GITHUB_BASE_URL environment variable to configure
+// the mock repository's BaseURL.
+var GetGitHubRepositoryFromGitRepo = func(languageRepo gitrepo.Repository) (*github.Repository, error) {
+	slog.Info("Using mock GitHub repository for e2e test")
+	baseURL := os.Getenv("LIBRARIAN_GITHUB_BASE_URL")
+	return &github.Repository{Owner: "test-owner", Name: "test-repo", BaseURL: baseURL}, nil
 }

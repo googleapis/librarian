@@ -22,6 +22,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/google/go-github/v69/github"
@@ -61,6 +62,14 @@ func NewClient(accessToken string, repo *Repository) *Client {
 
 func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) *Client {
 	client := github.NewClient(httpClient)
+	if repo.BaseURL != "" {
+		baseURL, _ := url.Parse(repo.BaseURL)
+		// Ensure the endpoint URL has a trailing slash.
+		if !strings.HasSuffix(baseURL.Path, "/") {
+			baseURL.Path += "/"
+		}
+		client.BaseURL = baseURL
+	}
 	if accessToken != "" {
 		client = client.WithAuthToken(accessToken)
 	}
@@ -76,11 +85,6 @@ func (c *Client) Token() string {
 	return c.accessToken
 }
 
-// GetRepository returns the Repository associated with the Client.
-func (c *Client) GetRepository() *Repository {
-	return c.repo
-}
-
 // Repository represents a GitHub repository with an owner (e.g. an organization or a user)
 // and a repository name.
 type Repository struct {
@@ -88,6 +92,8 @@ type Repository struct {
 	Owner string
 	// The name of the repository.
 	Name string
+	// Base URL for API requests.
+	BaseURL string
 }
 
 // PullRequestMetadata identifies a pull request within a repository.

@@ -180,6 +180,7 @@ func TestCleanAndCopy(t *testing.T) {
 	cmd := exec.Command(
 		"go",
 		"run",
+		"-tags", "e2etest",
 		"github.com/googleapis/librarian/cmd/librarian",
 		"generate",
 		fmt.Sprintf("--api=%s", apiToGenerate),
@@ -490,44 +491,41 @@ END_COMMIT_OVERRIDE
 			runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
 
 			// Setup mock GitHub server for --push case
-			var server *httptest.Server
-			if test.push {
-				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Header.Get("Authorization") != "Bearer fake-token" {
-						t.Errorf("missing or wrong authorization header: got %q", r.Header.Get("Authorization"))
-					}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Header.Get("Authorization") != "Bearer fake-token" {
+					t.Errorf("missing or wrong authorization header: got %q", r.Header.Get("Authorization"))
+				}
 
-					// Mock endpoint for POST /repos/{owner}/{repo}/pulls
-					if r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/pulls") {
-						var newPR github.NewPullRequest
-						if err := json.NewDecoder(r.Body).Decode(&newPR); err != nil {
-							t.Fatalf("failed to decode request body: %v", err)
-						}
-						if !strings.Contains(*newPR.Title, "chore: librarian release pull request") {
-							t.Errorf("unexpected PR title: got %q", *newPR.Title)
-						}
-						if *newPR.Base != "main" { // Assuming default branch
-							t.Errorf("unexpected PR base: got %q", *newPR.Base)
-						}
-						w.WriteHeader(http.StatusCreated)
-						fmt.Fprint(w, `{"number": 123, "html_url": "https://github.com/googleapis/librarian/pull/123"}`)
-						return
+				// Mock endpoint for POST /repos/{owner}/{repo}/pulls
+				if r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/pulls") {
+					var newPR github.NewPullRequest
+					if err := json.NewDecoder(r.Body).Decode(&newPR); err != nil {
+						t.Fatalf("failed to decode request body: %v", err)
 					}
+					if !strings.Contains(*newPR.Title, "chore: librarian release pull request") {
+						t.Errorf("unexpected PR title: got %q", *newPR.Title)
+					}
+					if *newPR.Base != "main" { // Assuming default branch
+						t.Errorf("unexpected PR base: got %q", *newPR.Base)
+					}
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprint(w, `{"number": 123, "html_url": "https://github.com/googleapis/librarian/pull/123"}`)
+					return
+				}
 
-					// Mock endpoint for POST /repos/{owner}/{repo}/issues/{number}/labels
-					if r.Method == "POST" && strings.Contains(r.URL.Path, "/issues/123/labels") {
-						w.WriteHeader(http.StatusOK)
-						fmt.Fprint(w, `[]`)
-						return
-					}
-					t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
-				}))
-				defer server.Close()
-			}
+				// Mock endpoint for POST /repos/{owner}/{repo}/issues/{number}/labels
+				if r.Method == "POST" && strings.Contains(r.URL.Path, "/issues/123/labels") {
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprint(w, `[]`)
+					return
+				}
+				t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			}))
+			defer server.Close()
 
 			cmdArgs := []string{
 				"run",
-				"-tags", "e2e",
+				"-tags", "e2etest",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
 				"init",
@@ -537,11 +535,13 @@ END_COMMIT_OVERRIDE
 			}
 			if test.push {
 				cmdArgs = append(cmdArgs, "--push")
-				cmdArgs = append(cmdArgs, fmt.Sprintf("--github-api-endpoint=%s/", server.URL))
+				t.Logf("zle: server.URL: %s", server.URL)
 			}
 
 			cmd := exec.Command("go", cmdArgs...)
-			cmd.Env = append(os.Environ(), "LIBRARIAN_GITHUB_TOKEN=fake-token")
+			cmd.Env = os.Environ()
+			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_TOKEN=fake-token")
+			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
 			err := cmd.Run()
