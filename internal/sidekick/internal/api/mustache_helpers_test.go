@@ -14,7 +14,9 @@
 
 package api
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestHasMessages(t *testing.T) {
 	m := &Message{
@@ -36,5 +38,32 @@ func TestHasMessages(t *testing.T) {
 	model = NewTestAPI([]*Message{}, []*Enum{e}, []*Service{})
 	if model.HasMessages() {
 		t.Errorf("expected HasMessages() == false for: %v", model)
+	}
+}
+
+func TestHasRequests(t *testing.T) {
+	m := &Message{
+		Name:    "CreateFooRequest",
+		Package: "test",
+		ID:      ".test.Service.CreateFooRequest",
+	}
+	s := &Service{
+		Name:     "Service",
+		Package:  "test",
+		ID:       ".test.Message",
+		Requests: []*Message{m},
+	}
+	if !s.HasRequests() {
+		t.Errorf("expected HasRequests() == true for: %v", s)
+	}
+
+	s = &Service{
+		Name:     "Service",
+		Package:  "test",
+		ID:       ".test.Message",
+		Requests: []*Message{},
+	}
+	if s.HasRequests() {
+		t.Errorf("expected HasRequests() != true for: %v", s)
 	}
 }
