@@ -16,6 +16,7 @@ package discovery
 
 import (
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -25,6 +26,19 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
+
+func TestSorted(t *testing.T) {
+	got, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.IsSortedFunc(got.Messages, compareMessages) {
+		t.Fatalf("unsorted messages after parsing")
+	}
+	if !slices.IsSortedFunc(got.Services, compareServices) {
+		t.Fatalf("unsorted messages after parsing")
+	}
+}
 
 func TestInfo(t *testing.T) {
 	got, err := ComputeDisco(t, nil)
