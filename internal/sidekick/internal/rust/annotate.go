@@ -55,6 +55,8 @@ type modelAnnotations struct {
 	PerServiceFeatures bool
 	// If true, at lease one service has a method we cannot wrap (yet).
 	Incomplete bool
+	// If true, the generator will produce reference documentation samples for message fields setters.
+	GenerateSetterSamples bool
 }
 
 // IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
@@ -168,6 +170,10 @@ type messageAnnotation struct {
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
 	RelativeName string
+	// The fully qualified name for examples. For messages in external packages
+	// this is basically `QualifiedName`. For messages in the current package
+	// this includes `modelAnnotations.PackageName`.
+	NameInExamples string
 	// The package name mapped to Rust modules. That is, `google.service.v1`
 	// becomes `google::service::v1`.
 	PackageModuleName string
@@ -431,6 +437,10 @@ type enumAnnotation struct {
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
 	RelativeName string
+	// The fully qualified name for examples. For messages in external packages
+	// this is basically `QualifiedName`. For messages in the current package
+	// this includes `modelAnnotations.PackageName`.
+	NameInExamples string
 	// If set, this enum is only enabled when some features are enabled
 	FeatureGates   []string
 	FeatureGatesOp string
@@ -451,14 +461,29 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 	codec.hasServices = len(model.State.ServiceByID) > 0
 
 	resolveUsedPackages(model, codec.extraPackages)
-	// Only annotate enums and messages that we intend to generate. In the
+	// Annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of
 	// packages used by this API.
+	// This API's enums and messages get full annotations.
 	for _, e := range model.Enums {
-		codec.annotateEnum(e, model)
+		codec.annotateEnum(e, model, true)
 	}
 	for _, m := range model.Messages {
-		codec.annotateMessage(m, model)
+		codec.annotateMessage(m, model, true)
+	}
+	// External enums and messages get only basic annotations
+	// used for sample generation.
+	// External enums and messages are the ones that have yet
+	// to be annotated.
+	for _, e := range model.State.EnumByID {
+		if e.Codec == nil {
+			codec.annotateEnum(e, model, false)
+		}
+	}
+	for _, m := range model.State.MessageByID {
+		if m.Codec == nil {
+			codec.annotateMessage(m, model, false)
+		}
 	}
 	hasLROs := false
 	for _, s := range model.Services {
@@ -471,10 +496,10 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 			}
 			codec.annotateMethod(m)
 			if m := m.InputType; m != nil {
-				codec.annotateMessage(m, model)
+				codec.annotateMessage(m, model, true)
 			}
 			if m := m.OutputType; m != nil {
-				codec.annotateMessage(m, model)
+				codec.annotateMessage(m, model, true)
 			}
 		}
 		codec.annotateService(s)
@@ -527,6 +552,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
 			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),
+		GenerateSetterSamples: codec.generateSetterSamples,
 	}
 
 	codec.addFeatureAnnotations(model, ann)
@@ -651,9 +677,28 @@ func (c *codec) annotateService(s *api.Service) {
 	s.Codec = ann
 }
 
-// annotateMessage annotates the message, its fields, its nested
-// messages, and its nested enums.
-func (c *codec) annotateMessage(m *api.Message, model *api.API) {
+// annotateMessage annotates the message with basic or full annotations.
+// When fully annotating a message, its fields, its nested messages, and its nested enums
+// are also annotated.
+// Basic annotations are useful for annotating external messages with information used in samples.
+func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
+	qualifiedName := fullyQualifiedMessageName(m, c.modulePath, model.PackageName, c.packageMapping)
+	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
+	nameInExamples := qualifiedName
+	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
+		nameInExamples = fmt.Sprintf("%s::model::%s", c.packageNamespace(model), relativeName)
+	}
+	annotations := &messageAnnotation{
+		Name:              toPascal(m.Name),
+		ModuleName:        toSnake(m.Name),
+		QualifiedName:     qualifiedName,
+		RelativeName:      relativeName,
+		NameInExamples:    nameInExamples,
+		PackageModuleName: packageToModuleName(m.Package),
+		SourceFQN:         strings.TrimPrefix(m.ID, "."),
+	}
+
+	if full {
 	for _, f := range m.Fields {
 		c.annotateField(f, m, model)
 	}
@@ -661,10 +706,10 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API) {
 		c.annotateOneOf(o, m, model)
 	}
 	for _, e := range m.Enums {
-		c.annotateEnum(e, model)
+			c.annotateEnum(e, model, true)
 	}
 	for _, child := range m.Messages {
-		c.annotateMessage(child, model)
+			c.annotateMessage(child, model, true)
 	}
 	hasSyntheticFields := false
 	for _, f := range m.Fields {
@@ -676,21 +721,14 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API) {
 	basicFields := language.FilterSlice(m.Fields, func(f *api.Field) bool {
 		return !f.IsOneOf
 	})
-	qualifiedName := fullyQualifiedMessageName(m, c.modulePath, model.PackageName, c.packageMapping)
-	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	m.Codec = &messageAnnotation{
-		Name:               toPascal(m.Name),
-		ModuleName:         toSnake(m.Name),
-		QualifiedName:      qualifiedName,
-		RelativeName:       relativeName,
-		PackageModuleName:  packageToModuleName(m.Package),
-		SourceFQN:          strings.TrimPrefix(m.ID, "."),
-		DocLines:           c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes()),
-		HasNestedTypes:     language.HasNestedTypes(m),
-		BasicFields:        basicFields,
-		HasSyntheticFields: hasSyntheticFields,
-		Internal:           slices.Contains(c.internalTypes, m.ID),
+
+		annotations.DocLines = c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes())
+		annotations.HasNestedTypes = language.HasNestedTypes(m)
+		annotations.BasicFields = basicFields
+		annotations.HasSyntheticFields = hasSyntheticFields
+		annotations.Internal = slices.Contains(c.internalTypes, m.ID)
 	}
+	m.Codec = annotations
 }
 
 func (c *codec) annotateMethod(m *api.Method) {
@@ -996,10 +1034,26 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	}
 }
 
-func (c *codec) annotateEnum(e *api.Enum, model *api.API) {
+func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 	for _, ev := range e.Values {
-		c.annotateEnumValue(ev, model)
+		c.annotateEnumValue(ev, model, full)
 	}
+
+	qualifiedName := fullyQualifiedEnumName(e, c.modulePath, model.PackageName, c.packageMapping)
+	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
+	nameInExamples := qualifiedName
+	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
+		nameInExamples = fmt.Sprintf("%s::model::%s", c.packageNamespace(model), relativeName)
+	}
+	annotations := &enumAnnotation{
+		Name:           enumName(e),
+		ModuleName:     toSnake(enumName(e)),
+		QualifiedName:  qualifiedName,
+		RelativeName:   relativeName,
+		NameInExamples: nameInExamples,
+	}
+
+	if full {
 	// For BigQuery (and so far only BigQuery), the enum values conflict when
 	// converted to the Rust style [1]. Basically, there are several enum values
 	// in this service that differ only in case, such as `FULL` vs. `full`.
@@ -1023,25 +1077,22 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API) {
 		}
 	}
 
-	qualifiedName := fullyQualifiedEnumName(e, c.modulePath, model.PackageName, c.packageMapping)
-	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	e.Codec = &enumAnnotation{
-		Name:          enumName(e),
-		ModuleName:    toSnake(enumName(e)),
-		DocLines:      c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes()),
-		UniqueNames:   unique,
-		QualifiedName: qualifiedName,
-		RelativeName:  relativeName,
+		annotations.DocLines = c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes())
+		annotations.UniqueNames = unique
 	}
+	e.Codec = annotations
 }
 
-func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API) {
-	ev.Codec = &enumValueAnnotation{
-		DocLines:    c.formatDocComments(ev.Documentation, ev.ID, model.State, ev.Scopes()),
+func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) {
+	annotations := &enumValueAnnotation{
 		Name:        enumValueName(ev),
 		EnumType:    enumName(ev.Parent),
 		VariantName: enumValueVariantName(ev),
 	}
+	if full {
+		annotations.DocLines = c.formatDocComments(ev.Documentation, ev.ID, model.State, ev.Scopes())
+	}
+	ev.Codec = annotations
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.

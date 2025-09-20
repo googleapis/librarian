@@ -638,12 +638,13 @@ func TestEnumAnnotations(t *testing.T) {
 	annotateModel(model, codec)
 
 	want := &enumAnnotation{
-		Name:          "TestEnum",
-		ModuleName:    "test_enum",
-		QualifiedName: "crate::model::TestEnum",
-		RelativeName:  "TestEnum",
-		DocLines:      []string{"/// The enum is documented."},
-		UniqueNames:   []*api.EnumValue{v0, v1, v2, v3, v4},
+		Name:           "TestEnum",
+		ModuleName:     "test_enum",
+		QualifiedName:  "crate::model::TestEnum",
+		RelativeName:   "TestEnum",
+		DocLines:       []string{"/// The enum is documented."},
+		UniqueNames:    []*api.EnumValue{v0, v1, v2, v3, v4},
+		NameInExamples: "crate::model::TestEnum",
 	}
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
@@ -729,11 +730,12 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 	annotateModel(model, codec)
 
 	want := &enumAnnotation{
-		Name:          "TestEnum",
-		ModuleName:    "test_enum",
-		QualifiedName: "crate::model::TestEnum",
-		RelativeName:  "TestEnum",
-		UniqueNames:   []*api.EnumValue{v0, v2},
+		Name:           "TestEnum",
+		ModuleName:     "test_enum",
+		QualifiedName:  "crate::model::TestEnum",
+		RelativeName:   "TestEnum",
+		UniqueNames:    []*api.EnumValue{v0, v2},
+		NameInExamples: "crate::model::TestEnum",
 	}
 
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
@@ -1811,5 +1813,79 @@ func TestRoutingRequired(t *testing.T) {
 
 	if !method.Codec.(*methodAnnotation).RoutingRequired {
 		t.Errorf("codec setting `routing-required` not respected")
+	}
+}
+
+func TestGenerateSetterSamples(t *testing.T) {
+	model := serviceAnnotationsModel()
+	codec, err := newCodec(true, map[string]string{
+		"generate-setter-samples": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	if !model.Codec.(*modelAnnotations).GenerateSetterSamples {
+		t.Errorf("GenerateSetterSamples should be true")
+	}
+}
+
+func TestSetterSampleAnnotations(t *testing.T) {
+	enum := &api.Enum{
+		Name:    "TestEnum",
+		ID:      ".test.TestEnum",
+		Package: "test",
+	}
+	message := &api.Message{
+		Name:    "TestMessage",
+		ID:      ".test.TestMessage",
+		Package: "test",
+		Fields: []*api.Field{
+			{
+				Name:    "enum_field",
+				ID:      ".test.TestMessage.enum_field",
+				Typez:   api.ENUM_TYPE,
+				TypezID: ".test.TestEnum",
+			},
+			{
+				Name:    "message_field",
+				ID:      ".test.TestMessage.message_field",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".test.TestMessage",
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
+	api.CrossReference(model)
+	codec, err := newCodec(true, map[string]string{
+		"generate-setter-samples": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+
+	if message.Codec.(*messageAnnotation).NameInExamples != "crate::model::TestMessage" {
+		t.Errorf("mismatch in message NameInExamples: got %q", message.Codec.(*messageAnnotation).NameInExamples)
+	}
+	if enum.Codec.(*enumAnnotation).NameInExamples != "crate::model::TestEnum" {
+		t.Errorf("mismatch in enum NameInExamples: got %q", enum.Codec.(*enumAnnotation).NameInExamples)
+	}
+
+	enumField := message.Fields[0]
+	if enumField.Parent != message {
+		t.Errorf("mismatch in enum_field.Parent")
+	}
+	if enumField.EnumType != enum {
+		t.Errorf("mismatch in enum_field.EnumType")
+	}
+
+	messageField := message.Fields[1]
+	if messageField.Parent != message {
+		t.Errorf("mismatch in message_field.Parent")
+	}
+	if messageField.MessageType != message {
+		t.Errorf("mismatch in message_field.MessageType")
 	}
 }
