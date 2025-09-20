@@ -16,6 +16,7 @@ package discovery
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
@@ -48,6 +49,7 @@ func addService(model *api.API, doc *document, resource *resource) error {
 			Name:          resource.Name,
 			Package:       model.PackageName,
 			Documentation: fmt.Sprintf("Service for the `%s` resource.", resource.Name),
+			DefaultHost:   strings.TrimSuffix(strings.TrimPrefix(doc.RootURL, "https://"), "/"),
 			Methods:       methods,
 		}
 		model.Services = append(model.Services, service)
