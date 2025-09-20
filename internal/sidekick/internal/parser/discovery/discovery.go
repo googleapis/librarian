@@ -86,12 +86,18 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		result.Messages = append(result.Messages, message)
 		result.State.MessageByID[id] = message
 	}
+	// The messages must be sorted otherwise the generated code gets different
+	// output on each run.
+	slices.SortStableFunc(result.Messages, compareMessages)
 
 	for _, resource := range doc.Resources {
 		if err := addServiceRecursive(result, doc, resource); err != nil {
 			return nil, err
 		}
 	}
+	// The services must be sorted otherwise the generated code gets different
+	// output on each run.
+	slices.SortStableFunc(result.Services, compareServices)
 
 	return result, nil
 }
