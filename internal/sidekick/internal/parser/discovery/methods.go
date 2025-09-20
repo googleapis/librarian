@@ -81,6 +81,7 @@ func makeMethod(model *api.API, serviceID string, doc *document, input *method) 
 			BodyFieldPath: "*",
 		},
 	}
+	model.State.MethodByID[id] = method
 	return method, nil
 }
 
