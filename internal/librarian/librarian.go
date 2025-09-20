@@ -94,6 +94,7 @@ func newCmdGenerate() *cli.Command {
 	addFlagBranch(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagWorkRoot(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagPush(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagGitHubAPIEndpoint(cmdGenerate.Flags, cmdGenerate.Config)
 	return cmdGenerate
 }
 
