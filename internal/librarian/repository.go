@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !e2e
+//go:build !e2etest
+
+// This file contains the production implementations for functions that get
+// GitHub repository details.
 
 package librarian
 
@@ -22,9 +25,17 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+// GetGitHubRepository determines the GitHub repository from the configuration
+// or the local git remote.
 var GetGitHubRepository = func(cfg *config.Config, languageRepo gitrepo.Repository) (*github.Repository, error) {
 	if isURL(cfg.Repo) {
 		return github.ParseRemote(cfg.Repo)
 	}
+	return github.FetchGitHubRepoFromRemote(languageRepo)
+}
+
+// GetGitHubRepositoryFromGitRepo determines the GitHub repository from the
+// local git remote.
+var GetGitHubRepositoryFromGitRepo = func(languageRepo gitrepo.Repository) (*github.Repository, error) {
 	return github.FetchGitHubRepoFromRemote(languageRepo)
 }
