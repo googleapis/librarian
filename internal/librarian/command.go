@@ -128,36 +128,19 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	image := deriveImage(cfg.Image, state)
 
-	var (
-		gitRepo  *github.Repository
-		ghClient *github.Client
-	)
+	// Use our new, swappable function to get the repository object.
+	gitRepo, err := GetGitHubRepository(cfg, languageRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get GitHub repository: %w", err)
+	}
 
-	if cfg.GitHubAPIEndpoint == "" {
-		// Production setup
-		if isURL(cfg.Repo) {
-			gitRepo, err = github.ParseRemote(cfg.Repo)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse repo url: %w", err)
-			}
-		} else {
-			gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
-			}
-		}
-		// Create the client with the determined repository.
-		ghClient = github.NewClient(cfg.GitHubToken, gitRepo)
-	} else {
+	ghClient := github.NewClient(cfg.GitHubToken, gitRepo)
+
+	// The logic to configure the client's BaseURL for a test server can remain,
+	// as it's a separate concern from creating the repository object.
+	if cfg.GitHubAPIEndpoint != "" {
 		// Test setup, as GitHubAPIEndpoint is provided for test only.
 		slog.Info("Custom GitHub API endpoint provided, configuring for testing", "endpoint", cfg.GitHubAPIEndpoint)
-
-		// Use a dummy repository as owner/repo are not crucial for mock server routing in tests.
-		gitRepo = &github.Repository{Owner: "test-owner", Name: "test-repo"}
-		// Create the client with the dummy repo.
-		ghClient = github.NewClient(cfg.GitHubToken, gitRepo)
-
-		// Parse and set the custom BaseURL for the GitHub client.
 		endpoint, err := url.Parse(cfg.GitHubAPIEndpoint)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse github-api-endpoint: %w", err)

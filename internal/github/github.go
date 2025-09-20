@@ -31,6 +31,9 @@ import (
 // PullRequest is a type alias for the go-github type.
 type PullRequest = github.PullRequest
 
+// NewPullRequest is a type alias for the go-github type.
+type NewPullRequest = github.NewPullRequest
+
 // RepositoryCommit is a type alias for the go-github type.
 type RepositoryCommit = github.RepositoryCommit
 

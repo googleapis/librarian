@@ -30,8 +30,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/github"
 	"gopkg.in/yaml.v3"
 )
 
@@ -527,6 +527,7 @@ END_COMMIT_OVERRIDE
 
 			cmdArgs := []string{
 				"run",
+				"-tags", "e2e",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
 				"init",
