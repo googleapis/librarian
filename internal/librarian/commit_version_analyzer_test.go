@@ -152,7 +152,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		wantErrPhrase string
 	}{
 		{
-			name: "get commits for foo",
+			name: "get_commits_for_foo",
 			repo: repoWithCommits,
 			library: &config.LibraryState{
 				ID:                  "foo",
