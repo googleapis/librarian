@@ -23,6 +23,7 @@ import (
 )
 
 func TestMakeMessageFields(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	input := &schema{
 		Properties: []*property{
 			{
@@ -45,7 +46,7 @@ func TestMakeMessageFields(t *testing.T) {
 			},
 		},
 	}
-	got, err := makeMessageFields(".package.Message", input)
+	got, err := makeMessageFields(model, ".package.Message", input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,6 +73,7 @@ func TestMakeMessageFields(t *testing.T) {
 }
 
 func TestMakeMessageFieldsError(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	input := &schema{
 		Properties: []*property{
 			{
@@ -85,12 +87,13 @@ func TestMakeMessageFieldsError(t *testing.T) {
 			},
 		},
 	}
-	if got, err := makeMessageFields(".package.Message", input); err == nil {
+	if got, err := makeMessageFields(model, ".package.Message", input); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
 }
 
 func TestMakeScalarFieldError(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	input := &property{
 		Name: "field",
 		Schema: &schema{
@@ -100,7 +103,7 @@ func TestMakeScalarFieldError(t *testing.T) {
 			Format:      "--unused--",
 		},
 	}
-	if got, err := makeScalarField(".package.Message", input); err == nil {
+	if got, err := makeScalarField(model, ".package.Message", input); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
 }
@@ -128,7 +131,11 @@ func TestScalarTypes(t *testing.T) {
 		{"string", "google-fieldmask", api.MESSAGE_TYPE, ".google.protobuf.FieldMask"},
 		{"string", "int64", api.INT64_TYPE, "int64"},
 		{"string", "uint64", api.UINT64_TYPE, "uint64"},
+		{"any", "google.protobuf.Value", api.MESSAGE_TYPE, ".google.protobuf.Value"},
+		{"object", "google.protobuf.Struct", api.MESSAGE_TYPE, ".google.protobuf.Struct"},
+		{"object", "google.protobuf.Any", api.MESSAGE_TYPE, ".google.protobuf.Any"},
 	} {
+		model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 		input := &property{
 			Name: "field",
 			Schema: &schema{
@@ -138,7 +145,7 @@ func TestScalarTypes(t *testing.T) {
 				Format:      test.Format,
 			},
 		}
-		gotTypez, gotTypeID, err := scalarType(".package.Message", input)
+		gotTypez, gotTypeID, err := scalarType(model, ".package.Message", input)
 		if err != nil {
 			t.Errorf("error in scalarType(), Type=%q, Format=%q: %v", test.Type, test.Format, err)
 		}
@@ -154,6 +161,7 @@ func TestScalarTypes(t *testing.T) {
 }
 
 func TestScalarUnknownType(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	input := &property{
 		Name: "field",
 		Schema: &schema{
@@ -163,18 +171,21 @@ func TestScalarUnknownType(t *testing.T) {
 			Format:      "--unused--",
 		},
 	}
-	if gotTypez, gotTypeID, err := scalarType(".package.Message", input); err == nil {
+	if gotTypez, gotTypeID, err := scalarType(model, ".package.Message", input); err == nil {
 		t.Errorf("expected error scalarType(), gotTypez=%d, gotTypezID=%q, Input=%v", gotTypez, gotTypeID, input)
 	}
 }
 
 func TestScalarUnknownFormats(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	for _, test := range []struct {
 		Type string
 	}{
 		{"integer"},
 		{"number"},
 		{"string"},
+		{"any"},
+		{"object"},
 	} {
 		input := &property{
 			Name: "field",
@@ -185,7 +196,7 @@ func TestScalarUnknownFormats(t *testing.T) {
 				Format:      "--invalid--",
 			},
 		}
-		if gotTypez, gotTypeID, err := scalarType(".package.Message", input); err == nil {
+		if gotTypez, gotTypeID, err := scalarType(model, ".package.Message", input); err == nil {
 			t.Errorf("expected error scalarType(), gotTypez=%d, gotTypezID=%q, Input=%v", gotTypez, gotTypeID, input)
 		}
 	}

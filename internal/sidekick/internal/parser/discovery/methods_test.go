@@ -271,7 +271,7 @@ func TestMakeMethodError(t *testing.T) {
 		{"responseMustHaveRef", method{Response: &schema{}}},
 		{"badPath", method{Path: "{+var"}},
 		{"badParameter", method{Path: "a/b", Parameters: []*parameter{
-			{Name: "badParameter", schema: schema{Type: "--invalid--"}},
+			{Name: "badParameter", schema: schema{Type: "string", Format: "--invalid--"}},
 		}}},
 		{"badParameterName", method{
 			Path:    "a/b",

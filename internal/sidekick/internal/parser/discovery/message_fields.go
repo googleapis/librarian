@@ -20,10 +20,10 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
-func makeMessageFields(messageID string, schema *schema) ([]*api.Field, error) {
+func makeMessageFields(model *api.API, messageID string, schema *schema) ([]*api.Field, error) {
 	var fields []*api.Field
 	for _, input := range schema.Properties {
-		field, err := makeField(messageID, input)
+		field, err := makeField(model, messageID, input)
 		if err != nil {
 			return nil, err
 		}
@@ -35,21 +35,24 @@ func makeMessageFields(messageID string, schema *schema) ([]*api.Field, error) {
 	return fields, nil
 }
 
-func makeField(messageID string, input *property) (*api.Field, error) {
-	switch input.Schema.Type {
-	case "":
+func makeField(model *api.API, messageID string, input *property) (*api.Field, error) {
+	if input.Schema.Type == "array" {
+		// TODO(#2266) - handle array fields
 		return nil, nil
-	case "array":
-		return nil, nil
-	case "object":
-		return nil, nil
-	default:
-		return makeScalarField(messageID, input)
 	}
+	if input.Schema.AdditionalProperties != nil {
+		// TODO(#2283) - handle map fields
+		return nil, nil
+	}
+	if input.Schema.Type == "object" && input.Schema.Properties != nil {
+		// TODO(#2265) - handle inline object...
+		return nil, nil
+	}
+	return makeScalarField(model, messageID, input)
 }
 
-func makeScalarField(messageID string, input *property) (*api.Field, error) {
-	typez, typezID, err := scalarType(messageID, input)
+func makeScalarField(model *api.API, messageID string, input *property) (*api.Field, error) {
+	typez, typezID, err := scalarType(model, messageID, input)
 	if err != nil {
 		return nil, err
 	}
@@ -59,14 +62,18 @@ func makeScalarField(messageID string, input *property) (*api.Field, error) {
 		Documentation: input.Schema.Description,
 		Typez:         typez,
 		TypezID:       typezID,
-		// TODO(#1850) - deprecated fields?
-		// TODO(#1850) - optional fields?
+		// TODO(#2268) - deprecated fields?
+		// TODO(#2270) - optional fields?
+		Optional: typez == api.MESSAGE_TYPE,
 	}, nil
 }
 
-func scalarType(messageID string, input *property) (api.Typez, string, error) {
+func scalarType(model *api.API, messageID string, input *property) (api.Typez, string, error) {
+	if input.Schema.Type == "" && input.Schema.Ref != "" {
+		typezID := fmt.Sprintf(".%s.%s", model.PackageName, input.Schema.Ref)
+		return api.MESSAGE_TYPE, typezID, nil
+	}
 	switch input.Schema.Type {
-	// TODO(#1850) - handle "any", "object":
 	case "boolean":
 		return api.BOOL_TYPE, "bool", nil
 	case "integer":
@@ -75,8 +82,12 @@ func scalarType(messageID string, input *property) (api.Typez, string, error) {
 		return scalarTypeForNumberFormats(messageID, input)
 	case "string":
 		return scalarTypeForStringFormats(messageID, input)
+	case "any":
+		return scalarTypeForAny(messageID, input)
+	case "object":
+		return scalarTypeForObject(messageID, input)
 	}
-	return 0, "", fmt.Errorf("unknown scalar type for field %s.%s: %v", messageID, input.Name, input.Schema.Type)
+	return unknownFormat("scalar", messageID, input)
 }
 
 func scalarTypeForIntegerFormats(messageID string, input *property) (api.Typez, string, error) {
@@ -123,6 +134,24 @@ func scalarTypeForStringFormats(messageID string, input *property) (api.Typez, s
 		return api.UINT64_TYPE, "uint64", nil
 	}
 	return unknownFormat("string", messageID, input)
+}
+
+func scalarTypeForAny(messageID string, input *property) (api.Typez, string, error) {
+	switch input.Schema.Format {
+	case "google.protobuf.Value":
+		return api.MESSAGE_TYPE, ".google.protobuf.Value", nil
+	}
+	return unknownFormat("any", messageID, input)
+}
+
+func scalarTypeForObject(messageID string, input *property) (api.Typez, string, error) {
+	switch input.Schema.Format {
+	case "google.protobuf.Struct":
+		return api.MESSAGE_TYPE, ".google.protobuf.Struct", nil
+	case "google.protobuf.Any":
+		return api.MESSAGE_TYPE, ".google.protobuf.Any", nil
+	}
+	return unknownFormat("object", messageID, input)
 }
 
 func unknownFormat(baseType, messageID string, input *property) (api.Typez, string, error) {
