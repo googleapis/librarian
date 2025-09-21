@@ -24,6 +24,7 @@ import (
 
 func TestMakeMessageFields(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "package"
 	input := &schema{
 		Properties: []*property{
 			{
@@ -42,6 +43,28 @@ func TestMakeMessageFields(t *testing.T) {
 					Description: "The field description.",
 					Type:        "integer",
 					Format:      "int32",
+				},
+			},
+			{
+				Name: "arrayFieldString",
+				Schema: &schema{
+					ID:          ".package.Message.arrayFieldString",
+					Description: "The field description.",
+					Type:        "array",
+					ItemSchema: &schema{
+						Type: "string",
+					},
+				},
+			},
+			{
+				Name: "arrayFieldObject",
+				Schema: &schema{
+					ID:          ".package.Message.arrayFieldObject",
+					Description: "The field description.",
+					Type:        "array",
+					ItemSchema: &schema{
+						Ref: "AnotherMessage",
+					},
 				},
 			},
 		},
@@ -64,6 +87,22 @@ func TestMakeMessageFields(t *testing.T) {
 			Documentation: "The field description.",
 			Typez:         api.UINT64_TYPE,
 			TypezID:       "uint64",
+		},
+		{
+			Name:          "arrayFieldString",
+			JSONName:      "arrayFieldString",
+			Documentation: "The field description.",
+			Typez:         api.STRING_TYPE,
+			TypezID:       "string",
+			Repeated:      true,
+		},
+		{
+			Name:          "arrayFieldObject",
+			JSONName:      "arrayFieldObject",
+			Documentation: "The field description.",
+			Typez:         api.MESSAGE_TYPE,
+			TypezID:       ".package.AnotherMessage",
+			Repeated:      true,
 		},
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
@@ -88,6 +127,25 @@ func TestMakeMessageFieldsError(t *testing.T) {
 		},
 	}
 	if got, err := makeMessageFields(model, ".package.Message", input); err == nil {
+		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
+	}
+}
+
+func TestMakeArrayFieldError(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	input := &property{
+		Name: "field",
+		Schema: &schema{
+			Type: "array",
+			ItemSchema: &schema{
+				ID:          ".package.Message.field",
+				Description: "The field description.",
+				Type:        "--invalid--",
+				Format:      "--unused--",
+			},
+		},
+	}
+	if got, err := makeArrayField(model, ".package.Message", input); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
 }
@@ -136,16 +194,13 @@ func TestScalarTypes(t *testing.T) {
 		{"object", "google.protobuf.Any", api.MESSAGE_TYPE, ".google.protobuf.Any"},
 	} {
 		model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-		input := &property{
-			Name: "field",
-			Schema: &schema{
-				ID:          ".package.Message.field",
-				Description: "The field description.",
-				Type:        test.Type,
-				Format:      test.Format,
-			},
+		input := &schema{
+			ID:          ".package.Message.field",
+			Description: "The field description.",
+			Type:        test.Type,
+			Format:      test.Format,
 		}
-		gotTypez, gotTypeID, err := scalarType(model, ".package.Message", input)
+		gotTypez, gotTypeID, err := scalarType(model, ".package.Message", "field", input)
 		if err != nil {
 			t.Errorf("error in scalarType(), Type=%q, Format=%q: %v", test.Type, test.Format, err)
 		}
@@ -162,16 +217,13 @@ func TestScalarTypes(t *testing.T) {
 
 func TestScalarUnknownType(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	input := &property{
-		Name: "field",
-		Schema: &schema{
-			ID:          ".package.Message.field",
-			Description: "The field description.",
-			Type:        "--invalid--",
-			Format:      "--unused--",
-		},
+	input := &schema{
+		ID:          ".package.Message.field",
+		Description: "The field description.",
+		Type:        "--invalid--",
+		Format:      "--unused--",
 	}
-	if gotTypez, gotTypeID, err := scalarType(model, ".package.Message", input); err == nil {
+	if gotTypez, gotTypeID, err := scalarType(model, ".package.Message", "field", input); err == nil {
 		t.Errorf("expected error scalarType(), gotTypez=%d, gotTypezID=%q, Input=%v", gotTypez, gotTypeID, input)
 	}
 }
@@ -187,16 +239,13 @@ func TestScalarUnknownFormats(t *testing.T) {
 		{"any"},
 		{"object"},
 	} {
-		input := &property{
-			Name: "field",
-			Schema: &schema{
-				ID:          ".package.Message.field",
-				Description: "The field description.",
-				Type:        test.Type,
-				Format:      "--invalid--",
-			},
+		input := &schema{
+			ID:          ".package.Message.field",
+			Description: "The field description.",
+			Type:        test.Type,
+			Format:      "--invalid--",
 		}
-		if gotTypez, gotTypeID, err := scalarType(model, ".package.Message", input); err == nil {
+		if gotTypez, gotTypeID, err := scalarType(model, ".package.Message", "field", input); err == nil {
 			t.Errorf("expected error scalarType(), gotTypez=%d, gotTypezID=%q, Input=%v", gotTypez, gotTypeID, input)
 		}
 	}
