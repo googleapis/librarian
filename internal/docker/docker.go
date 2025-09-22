@@ -193,6 +193,14 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		return err
 	}
 	defer func(name string) {
+		if filepath.Base(name) == config.GenerateRequest {
+			content, err := os.ReadFile(name)
+			if err != nil {
+				slog.Warn("failed to read file for debugging", "name", name, "err", err)
+			} else {
+				slog.Debug("generate-request.json:", "content", string(content))
+			}
+		}
 		err := os.Remove(name)
 		if err != nil {
 			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
@@ -225,6 +233,14 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		return err
 	}
 	defer func(name string) {
+		if filepath.Base(name) == config.BuildRequest {
+			content, err := os.ReadFile(name)
+			if err != nil {
+				slog.Warn("failed to read file for debugging", "name", name, "err", err)
+			} else {
+				slog.Debug("build-request.json:", "content", string(content))
+			}
+		}
 		err := os.Remove(name)
 		if err != nil {
 			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
@@ -288,6 +304,14 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		return err
 	}
 	defer func() {
+		if filepath.Base(requestFilePath) == config.ReleaseInitRequest {
+			content, err := os.ReadFile(requestFilePath)
+			if err != nil {
+				slog.Warn("failed to read file for debugging", "name", requestFilePath, "err", err)
+			} else {
+				slog.Debug("release-init-request.json:", "content", string(content))
+			}
+		}
 		err := os.Remove(requestFilePath)
 		if err != nil {
 			slog.Warn("fail to remove file", slog.String("name", requestFilePath), slog.Any("err", err))

@@ -174,6 +174,35 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
+			name: "Generate with file read failure warning",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				generateRequest := &GenerateRequest{
+					State:     state,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					LibraryID: testLibraryID,
+				}
+				return d.Generate(ctx, generateRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandGenerate),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--source=/source",
+			},
+		},
+		{
 			name: "Build",
 			docker: &Docker{
 				Image: testImage,
@@ -231,6 +260,30 @@ func TestDockerRun(t *testing.T) {
 			want:       []string{},
 			wantErr:    true,
 			wantErrMsg: simulateDockerErrMsg,
+		},
+		{
+			name: "Build with file read failure warning",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				buildRequest := &BuildRequest{
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   repoDir,
+				}
+
+				return d.Build(ctx, buildRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				testImage,
+				string(CommandBuild),
+				"--librarian=/librarian",
+				"--repo=/repo",
+			},
 		},
 		{
 			name: "Configure",
@@ -361,6 +414,40 @@ func TestDockerRun(t *testing.T) {
 			want:       []string{},
 			wantErr:    true,
 			wantErrMsg: simulateDockerErrMsg,
+		},
+		{
+			name: "Release init with file read failure warning",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				partialRepoDir := filepath.Join(repoDir, "release-init-all-libraries")
+				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				releaseInitRequest := &ReleaseInitRequest{
+					State:           state,
+					Output:          testOutput,
+					LibrarianConfig: &config.LibrarianConfig{},
+					PartialRepoDir:  partialRepoDir,
+				}
+
+				defer os.RemoveAll(partialRepoDir)
+
+				return d.ReleaseInit(ctx, releaseInitRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", filepath.Join(repoDir, "release-init-all-libraries")),
+				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-init-all-libraries")),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				testImage,
+				string(CommandReleaseInit),
+				"--librarian=/librarian",
+				"--repo=/repo",
+				"--output=/output",
+			},
 		},
 		{
 			name: "Release init for all libraries",
@@ -515,6 +602,42 @@ func TestDockerRun(t *testing.T) {
 					t.Errorf("mismatch(-want +got):\n%s", diff)
 				}
 				return nil
+			}
+			if test.name == "Generate with file read failure warning" {
+				test.docker.run = func(args ...string) error {
+					if diff := cmp.Diff(test.want, args); diff != "" {
+						t.Errorf("mismatch(-want +got):\n%s", diff)
+					}
+					jsonFilePath := filepath.Join(repoDir, config.LibrarianDir, config.GenerateRequest)
+					if err := os.Remove(jsonFilePath); err != nil {
+						t.Fatalf("os.Remove(%q): %v", jsonFilePath, err)
+					}
+					return nil
+				}
+			}
+			if test.name == "Build with file read failure warning" {
+				test.docker.run = func(args ...string) error {
+					if diff := cmp.Diff(test.want, args); diff != "" {
+						t.Errorf("mismatch(-want +got):\n%s", diff)
+					}
+					jsonFilePath := filepath.Join(repoDir, config.LibrarianDir, config.BuildRequest)
+					if err := os.Remove(jsonFilePath); err != nil {
+						t.Fatalf("os.Remove(%q): %v", jsonFilePath, err)
+					}
+					return nil
+				}
+			}
+			if test.name == "Release init with file read failure warning" {
+				test.docker.run = func(args ...string) error {
+					if diff := cmp.Diff(test.want, args); diff != "" {
+						t.Errorf("mismatch(-want +got):\n%s", diff)
+					}
+					jsonFilePath := filepath.Join(repoDir, config.LibrarianDir, config.ReleaseInitRequest)
+					if err := os.Remove(jsonFilePath); err != nil {
+						t.Fatalf("os.Remove(%q): %v", jsonFilePath, err)
+					}
+					return nil
+				}
 			}
 			ctx := t.Context()
 			err := test.runCommand(ctx, test.docker)
