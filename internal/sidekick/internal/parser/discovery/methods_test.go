@@ -14,13 +14,58 @@
 
 package discovery
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+)
+
+func TestMakeServiceMethods(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id := "..zones.get"
+	got, ok := model.State.MethodByID[id]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", id)
+	}
+	want := &api.Method{
+		ID:            "..zones.get",
+		Name:          "get",
+		Documentation: "Returns the specified Zone resource.",
+		InputTypeID:   ".google.protobuf.Empty",
+		OutputTypeID:  "..Zone",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: "GET",
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("compute").
+						WithLiteral("v1").
+						WithLiteral("projects").
+						WithVariableNamed("project").
+						WithLiteral("zones").
+						WithVariableNamed("zone"),
+					QueryParameters: map[string]bool{},
+				},
+			},
+			BodyFieldPath: "*",
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
 
 func TestMakeServiceMethodsError(t *testing.T) {
 	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	doc := document{}
 	input := &resource{
 		Name: "testResource",
 		Methods: []*method{
@@ -30,7 +75,7 @@ func TestMakeServiceMethodsError(t *testing.T) {
 			},
 		},
 	}
-	if methods, err := makeServiceMethods(model, "..testResource", input); err == nil {
+	if methods, err := makeServiceMethods(model, "..testResource", &doc, input); err == nil {
 		t.Errorf("expected error on method with media upload, got=%v", methods)
 	}
 }
@@ -48,8 +93,10 @@ func TestMakeMethodError(t *testing.T) {
 		{"mediaUploadMustBeNil", method{MediaUpload: &mediaUpload{}}},
 		{"requestMustHaveRef", method{Request: &schema{}}},
 		{"responseMustHaveRef", method{Response: &schema{}}},
+		{"badPath", method{Path: "{+var"}},
 	} {
-		if method, err := makeMethod(model, "..Test", &test.Input); err == nil {
+		doc := document{}
+		if method, err := makeMethod(model, "..Test", &doc, &test.Input); err == nil {
 			t.Errorf("expected error on method[%s], got=%v", test.Name, method)
 		}
 	}
