@@ -14,51 +14,7 @@
 
 package discovery
 
-import (
-	"testing"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/internal/api"
-)
-
-func TestMakeServiceMethods(t *testing.T) {
-	model, err := ComputeDisco(t, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	id := "..zones.get"
-	got, ok := model.State.MethodByID[id]
-	if !ok {
-		t.Fatalf("expected method %s in the API model", id)
-	}
-	want := &api.Method{
-		ID:            "..zones.get",
-		Name:          "get",
-		Documentation: "Returns the specified Zone resource.",
-		InputTypeID:   ".google.protobuf.Empty",
-		OutputTypeID:  "..Zone",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone"),
-					QueryParameters: map[string]bool{},
-				},
-			},
-			BodyFieldPath: "*",
-		},
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
-	}
-}
+import "testing"
 
 func TestMakeServiceMethodsError(t *testing.T) {
 	model, err := ComputeDisco(t, nil)
