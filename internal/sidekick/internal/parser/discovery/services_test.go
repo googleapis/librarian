@@ -37,7 +37,6 @@ func TestService(t *testing.T) {
 		ID:            id,
 		Package:       "",
 		Documentation: "Service for the `zones` resource.",
-		DefaultHost:   "compute.googleapis.com",
 		Methods: []*api.Method{
 			{
 				ID:            "..zones.get",
