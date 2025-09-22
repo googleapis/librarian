@@ -25,8 +25,7 @@ import (
 
 var (
 	testdataDir, _            = filepath.Abs("../../testdata")
-	discoSourceFileRelative   = "disco/compute.v1.json"
-	discoSourceFile           = path.Join(testdataDir, discoSourceFileRelative)
+	discoSourceFile           = path.Join(testdataDir, "disco/compute.v1.json")
 	secretManagerYamlRelative = "google/cloud/secretmanager/v1/secretmanager_v1.yaml"
 	secretManagerYamlFullPath = path.Join(testdataDir, "googleapis", secretManagerYamlRelative)
 )

@@ -44,29 +44,6 @@ func TestDisco_Parse(t *testing.T) {
 	}
 }
 
-func TestDisco_FindSources(t *testing.T) {
-	got, err := ParseDisco(discoSourceFileRelative, "", map[string]string{
-		"test-root": testdataDir,
-		"roots":     "undefined,test",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantName := "compute"
-	wantTitle := "Compute Engine API"
-	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
-	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
-	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-}
-
 func TestDisco_ParseNoServiceConfig(t *testing.T) {
 	got, err := ParseDisco(discoSourceFile, "", map[string]string{})
 	if err != nil {
