@@ -17,7 +17,7 @@ package discovery
 import "testing"
 
 func TestMakeServiceMethodsError(t *testing.T) {
-	model, err := ComputeDisco(t, nil)
+	model, err := PublicCaDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestMakeServiceMethodsError(t *testing.T) {
 }
 
 func TestMakeMethodError(t *testing.T) {
-	model, err := ComputeDisco(t, nil)
+	model, err := PublicCaDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
