@@ -183,6 +183,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
+	slog.Info("commit", "message", trimmedMessage)
 
 	lines := strings.Split(trimmedMessage, "\n")
 	bodyLines, footerLines := separateBodyAndFooters(lines)
@@ -197,7 +198,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
-			slog.Warn("bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
+			slog.Debug("WARN: bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
 			if len(commits) == 0 {
 				// This should not happen as we expect a conventional commit message inside a nested commit.
 				continue

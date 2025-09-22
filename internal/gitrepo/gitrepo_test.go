@@ -975,6 +975,13 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			wantErr:       true,
 			wantErrPhrase: "did not find commit",
 		},
+		{
+			name:        "root path matches all commits",
+			paths:       []string{"."},
+			sinceCommit: "",
+			// The current implementation skips the initial commit.
+			wantCommits: []string{"feat: commit 3", "feat: commit 2"},
+		},
 	} {
 
 		t.Run(test.name, func(t *testing.T) {

@@ -51,6 +51,8 @@ type Repository interface {
 	pushRefSpec(refSpec string) error
 }
 
+const RootPath = "."
+
 // LocalRepository represents a git repository.
 type LocalRepository struct {
 	Dir         string
@@ -259,6 +261,7 @@ func (r *LocalRepository) GetCommit(commitHash string) (*Commit, error) {
 //
 // If tagName empty, all commits for the given paths are returned.
 func (r *LocalRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error) {
+	slog.Info("GetCommitsForPathsSinceTag", slog.Any("paths", paths), "tagName", tagName)
 	var hash string
 	if tagName == "" {
 		return r.GetCommitsForPathsSinceCommit(paths, "")
@@ -269,6 +272,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceTag(paths []string, tagName str
 	}
 
 	tagCommit, err := r.repo.CommitObject(tagRef.Hash())
+	slog.Debug("Found tagRef", "tagRef", tagRef, slog.Any("tagCommit", tagCommit))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 	}
@@ -288,6 +292,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
+	slog.Info("GetCommitsForPathsSinceCommit", "sinceCommit", sinceCommit)
 	var commits []*Commit
 	finalHash := plumbing.NewHash(sinceCommit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
@@ -331,7 +336,6 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 			// If we've found a change (including a path being added or removed),
 			// add it to our list of commits and proceed to the next commit.
 			if currentPathHash != parentPathHash {
-
 				commits = append(commits, &Commit{
 					Hash:    commit.Hash,
 					Message: commit.Message,
@@ -355,6 +359,13 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 // getHashForPathOrEmpty returns the hash for a path at a given commit, or an
 // empty string if the path (file or directory) did not exist.
 func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
+	slog.Debug("getHashForPathOrEmpty", "path", path, "commit", commit.Hash.String())
+
+	// If looking for the root path ".", return the commit's tree hash
+	if path == RootPath {
+		return commit.TreeHash.String(), nil
+	}
+
 	tree, err := commit.Tree()
 	if err != nil {
 		return "", err

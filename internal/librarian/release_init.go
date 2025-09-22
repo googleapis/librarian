@@ -169,11 +169,11 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	if err := copyLibrarianDir(dst, src); err != nil {
-		return fmt.Errorf("failed to copy librarian dir from %s to %s: %w", src, dst, err)
+		slog.Warn("failed to copy librarian dir", "src", src, "dst", dst, slog.Any("err", err))
 	}
 
 	if err := copyGlobalAllowlist(r.librarianConfig, dst, src, true); err != nil {
-		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
+		slog.Warn("failed to copy global allowlist", "src", src, "dst", dst, slog.Any("err", err))
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
@@ -213,6 +213,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 // processLibrary wrapper to process the library for release. Helps retrieve latest commits
 // since the last release and passing the changes to updateLibrary.
 func (r *initRunner) processLibrary(library *config.LibraryState) error {
+	slog.Info("Processing library", "library", library.ID)
 	commits, err := GetConventionalCommitsSinceLastRelease(r.repo, library)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
@@ -270,6 +271,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 // determineNextVersion determines the next valid SemVer version from the commits or from
 // the next_version override value in the config.yaml file.
 func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+	slog.Debug("Determining commits from", slog.Any("commits", commits))
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
 	if err != nil {
 		return "", err

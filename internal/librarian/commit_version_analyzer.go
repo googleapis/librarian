@@ -35,6 +35,7 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}
+	slog.Info("Found commits", slog.Int("num", len(commits)))
 
 	return convertToConventionalCommits(repo, library, commits)
 }
