@@ -127,12 +127,30 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	image := deriveImage(cfg.Image, state)
 
-	gitHubRepo, err := GetGitHubRepository(cfg, languageRepo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get GitHub repository: %w", err)
+	var gitRepo *github.Repository
+	if isURL(cfg.Repo) {
+		gitRepo, err = github.ParseRemote(cfg.Repo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse repo url: %w", err)
+		}
+	} else {
+		gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
+		}
+	}
+	ghClient := github.NewClient(cfg.GitHubToken, gitRepo)
+
+	// If a custom GitHub API endpoint is provided (for testing),
+	// parse it and set it as the BaseURL on the GitHub client.
+	if cfg.GitHubAPIEndpoint != "" {
+		endpoint, err := url.Parse(cfg.GitHubAPIEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse github-api-endpoint: %w", err)
+		}
+		ghClient.BaseURL = endpoint
 	}
 
-	ghClient := github.NewClient(cfg.GitHubToken, gitHubRepo)
 	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
@@ -359,13 +377,14 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return nil
 	}
 
-	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.repo)
+	// Ensure we have a GitHub repository
+	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
 	if err != nil {
-		return fmt.Errorf("failed to get GitHub repository: %w", err)
+		return err
 	}
 
 	title := fmt.Sprintf("chore: librarian %s pull request: %s", info.prType, datetimeNow)
-	prBody, err := createPRBody(info, gitHubRepo)
+	prBody, err := createPRBody(info)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
@@ -395,12 +414,12 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 	return nil
 }
 
-func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, error) {
+func createPRBody(info *commitInfo) (string, error) {
 	switch info.prType {
 	case generate:
 		return formatGenerationPRBody(info.sourceRepo, info.state, info.idToCommits, info.failedLibraries)
 	case release:
-		return formatReleaseNotes(info.state, gitHubRepo)
+		return formatReleaseNotes(info.repo, info.state)
 	default:
 		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
 	}

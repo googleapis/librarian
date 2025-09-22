@@ -29,7 +29,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -489,7 +488,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		state           *config.LibrarianState
-		ghRepo          *github.Repository
+		repo            gitrepo.Repository
 		wantReleaseNote string
 		wantErr         bool
 		wantErrPhrase   string
@@ -520,7 +519,9 @@ func TestFormatReleaseNotes(t *testing.T) {
 					},
 				},
 			},
-			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
@@ -570,7 +571,9 @@ Language Image: go:1.21
 					},
 				},
 			},
-			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
@@ -614,7 +617,9 @@ Language Image: go:1.21
 					},
 				},
 			},
-			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
@@ -665,7 +670,9 @@ Language Image: go:1.21
 					},
 				},
 			},
-			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
 <details><summary>lib-a: 1.1.0</summary>
@@ -716,7 +723,9 @@ Language Image: go:1.21
 					},
 				},
 			},
-			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			repo: &MockRepository{
+				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+			},
 			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
@@ -736,13 +745,31 @@ Language Image: go:1.21
 				Image:     "go:1.21",
 				Libraries: []*config.LibraryState{},
 			},
-			ghRepo:          &github.Repository{},
+			repo:            &MockRepository{},
 			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21", librarianVersion),
+		},
+		{
+			name: "error getting commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:               "my-library",
+						Version:          "1.0.0",
+						ReleaseTriggered: true,
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesError: errors.New("no remote repo"),
+			},
+			wantErr:       true,
+			wantErrPhrase: "failed to format release notes",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := formatReleaseNotes(test.state, test.ghRepo)
+			got, err := formatReleaseNotes(test.repo, test.state)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)

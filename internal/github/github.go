@@ -22,7 +22,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/google/go-github/v69/github"
@@ -31,9 +30,6 @@ import (
 
 // PullRequest is a type alias for the go-github type.
 type PullRequest = github.PullRequest
-
-// NewPullRequest is a type alias for the go-github type.
-type NewPullRequest = github.NewPullRequest
 
 // RepositoryCommit is a type alias for the go-github type.
 type RepositoryCommit = github.RepositoryCommit
@@ -62,14 +58,6 @@ func NewClient(accessToken string, repo *Repository) *Client {
 
 func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) *Client {
 	client := github.NewClient(httpClient)
-	if repo.BaseURL != "" {
-		baseURL, _ := url.Parse(repo.BaseURL)
-		// Ensure the endpoint URL has a trailing slash.
-		if !strings.HasSuffix(baseURL.Path, "/") {
-			baseURL.Path += "/"
-		}
-		client.BaseURL = baseURL
-	}
 	if accessToken != "" {
 		client = client.WithAuthToken(accessToken)
 	}
@@ -92,8 +80,6 @@ type Repository struct {
 	Owner string
 	// The name of the repository.
 	Name string
-	// Base URL for API requests.
-	BaseURL string
 }
 
 // PullRequestMetadata identifies a pull request within a repository.

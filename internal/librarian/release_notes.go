@@ -238,7 +238,7 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 }
 
 // formatReleaseNotes generates the body for a release pull request.
-func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
+func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
 	librarianVersion := cli.Version()
 	var releaseSections []*releaseNoteSection
 	for _, library := range state.Libraries {
@@ -246,7 +246,10 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 			continue
 		}
 
-		section := formatLibraryReleaseNotes(library, ghRepo)
+		section, err := formatLibraryReleaseNotes(repo, library)
+		if err != nil {
+			return "", fmt.Errorf("failed to format release notes for library %s: %w", library.ID, err)
+		}
 		releaseSections = append(releaseSections, section)
 	}
 
@@ -266,7 +269,12 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
-func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repository) *releaseNoteSection {
+func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState) (*releaseNoteSection, error) {
+	ghRepo, err := github.FetchGitHubRepoFromRemote(repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch github repo from remote: %w", err)
+	}
+
 	// The version should already be updated to the next version.
 	newVersion := library.Version
 	newTag := formatTag(library.TagFormat, library.ID, newVersion)
@@ -301,5 +309,5 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 		CommitSections: sections,
 	}
 
-	return section
+	return section, nil
 }
