@@ -294,14 +294,22 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 		State:     r.state,
 	}
 	slog.Info("Performing build for library", "id", libraryID)
-	if err := r.containerClient.Build(ctx, buildRequest); err != nil {
-		return err
+	if containerErr := r.containerClient.Build(ctx, buildRequest); containerErr != nil {
+		if restoreErr := r.restoreLibrary(libraryID); restoreErr != nil {
+			return errors.Join(containerErr, restoreErr)
+		}
+
+		return errors.Join(containerErr)
 	}
 
 	// Read the library state from the response.
-	if _, err := readLibraryState(
-		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse)); err != nil {
-		return err
+	if _, responseErr := readLibraryState(
+		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse)); responseErr != nil {
+		if restoreErr := r.restoreLibrary(libraryID); restoreErr != nil {
+			return errors.Join(responseErr, restoreErr)
+		}
+
+		return responseErr
 	}
 
 	slog.Info("Build succeeds", "id", libraryID)
@@ -386,6 +394,16 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	return libraryState.ID, nil
+}
+
+func (r *generateRunner) restoreLibrary(libraryID string) error {
+	// At this point, we should have a library in the state.
+	library := findLibraryByID(r.state, libraryID)
+	if err := r.repo.Restore(library.SourceRoots); err != nil {
+		return err
+	}
+
+	return r.repo.CleanUntracked(library.SourceRoots)
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {
