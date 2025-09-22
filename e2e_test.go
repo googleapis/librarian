@@ -18,7 +18,10 @@
 package librarian
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,6 +30,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/config"
 	"gopkg.in/yaml.v3"
 )
@@ -517,6 +521,152 @@ END_COMMIT_OVERRIDE
 			}
 			if diff := cmp.Diff(string(wantChangelogBytes), string(gotChangelog)); diff != "" {
 				t.Fatalf("Generated changelog mismatch (-want +got): %s", diff)
+			}
+		})
+	}
+}
+
+func TestReleaseTagAndRelease(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		prBody  string
+		push    bool
+		wantErr bool
+	}{
+		{
+			name: "runs successfully",
+			prBody: `<details><summary>go-google-cloud-pubsub-v1: v1.0.1</summary>
+### Features
+- feat: new feature
+</details>`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			headSHA := "abcdef123456"
+
+			// Set up a mock GitHub API server using httptest.
+			// This server will intercept HTTP requests made by the librarian command
+			// and provide canned responses, avoiding any real calls to the GitHub API.
+			// The handlers below simulate the endpoints that 'release tag-and-release' interacts with.
+			var server *httptest.Server
+			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Verify that the GitHub token is being sent correctly.
+				if r.Header.Get("Authorization") != "Bearer fake-token" {
+					t.Errorf("missing or wrong authorization header: got %q", r.Header.Get("Authorization"))
+				}
+
+				const stateYAMLContent = `
+image: gcr.io/some-project/some-image:latest
+libraries:
+- id: go-google-cloud-pubsub-v1
+  source_roots:
+  - google-cloud-pubsub/v1
+  tag_format: go-google-cloud-pubsub-v1-{version}
+`
+				// The download URL can be any unique path. The mock server will handle it.
+				downloadURL := server.URL + "/raw/librarian/state.yaml"
+
+				// Handler for the .librarian DIRECTORY listing request.
+				// The client sends this to find the state.yaml file.
+				if r.Method == "GET" && r.URL.Path == "/repos/googleapis/librarian/contents/.librarian" {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusOK)
+					// CRITICAL: The response for the directory listing must include the `download_url` for the file.
+					fmt.Fprintf(w, `[{"name": "state.yaml", "path": ".librarian/state.yaml", "type": "file", "download_url": %q}]`, downloadURL)
+					return
+				}
+
+				// Handler for the raw CONTENT download request.
+				// The client hits this endpoint after extracting the download_url from the directory listing.
+				if r.Method == "GET" && r.URL.Path == "/raw/librarian/state.yaml" {
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprint(w, stateYAMLContent)
+					return
+				}
+
+				// Mock endpoint for the .librarian directory listing.
+				// This handles the preliminary request the GitHub client makes before fetching a file.
+				if r.Method == "GET" && r.URL.Path == "/repos/googleapis/librarian/contents/.librarian" {
+					w.WriteHeader(http.StatusOK)
+					// This response tells the client that the directory contains a file named state.yaml
+					fmt.Fprint(w, `[{"name": "state.yaml", "path": ".librarian/state.yaml", "type": "file"}]`)
+					return
+				}
+
+				// Mock endpoint for GET /.librarian/state.yaml
+				if r.Method == "GET" && strings.HasSuffix(r.URL.Path, ".librarian/state.yaml") {
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprint(w, stateYAMLContent)
+					return
+				}
+
+				// Mock endpoint for GET /repos/{owner}/{repo}/pulls/{number}
+				if r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/pulls/123") {
+					w.WriteHeader(http.StatusOK)
+					// Return a minimal PR object with the body and merge commit SHA.
+					fmt.Fprintf(w, `{"number": 123, "body": %q, "merge_commit_sha": %q, "base": {"ref": "main"}}`, test.prBody, headSHA)
+					return
+				}
+
+				// Mock endpoint for POST /repos/{owner}/{repo}/git/refs (creating the release-please tag)
+				if r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/git/refs") {
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprint(w, `{"ref": "refs/tags/release-please-123"}`)
+					return
+				}
+
+				// Mock endpoint for POST /repos/{owner}/{repo}/releases (creating the GitHub Release)
+				if r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/releases") {
+					var newRelease github.RepositoryRelease
+					if err := json.NewDecoder(r.Body).Decode(&newRelease); err != nil {
+						t.Fatalf("failed to decode request body: %v", err)
+					}
+					expectedTagName := "go-google-cloud-pubsub-v1-v1.0.1"
+					if *newRelease.TagName != expectedTagName {
+						t.Errorf("unexpected tag name: got %q, want %q", *newRelease.TagName, expectedTagName)
+					}
+					if *newRelease.TargetCommitish != headSHA {
+						t.Errorf("unexpected commitish: got %q, want %q", *newRelease.TargetCommitish, headSHA)
+					}
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprint(w, `{"name": "v1.0.1"}`)
+					return
+				}
+
+				// Mock endpoint for PUT /repos/{owner}/{repo}/issues/{number}/labels (updating labels)
+				if r.Method == "PUT" && strings.HasSuffix(r.URL.Path, "/issues/123/labels") {
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprint(w, `[]`)
+					return
+				}
+
+				// If any other request is made, fail the test.
+				t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			}))
+			defer server.Close()
+
+			cmdArgs := []string{
+				"run",
+				"github.com/googleapis/librarian/cmd/librarian",
+				"release",
+				"tag-and-release",
+				"--repo=https://github.com/googleapis/librarian",
+				fmt.Sprintf("--github-api-endpoint=%s/", server.URL),
+				"--pr=https://github.com/googleapis/librarian/pull/123",
+			}
+			if test.push {
+				cmdArgs = append(cmdArgs, "--push")
+			}
+
+			cmd := exec.Command("go", cmdArgs...)
+			cmd.Env = append(os.Environ(), "LIBRARIAN_GITHUB_TOKEN=fake-token")
+			cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+			if err := cmd.Run(); err != nil {
+				if !test.wantErr {
+					t.Fatalf("Failed to run release tag-and-release: %v", err)
+				}
 			}
 		})
 	}

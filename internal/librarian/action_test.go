@@ -35,10 +35,6 @@ func TestLibrarianAction(t *testing.T) {
 			name: "init",
 			fn:   newCmdInit,
 		},
-		{
-			name: "tag-and-release",
-			fn:   newCmdTagAndRelease,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testActionConfig(t, test.fn())

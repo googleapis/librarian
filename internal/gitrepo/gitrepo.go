@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -44,6 +46,9 @@ type Repository interface {
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
 	Push(branchName string) error
+	Restore(paths []string) error
+	CleanUntracked(paths []string) error
+	pushRefSpec(refSpec string) error
 }
 
 // LocalRepository represents a git repository.
@@ -283,7 +288,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
-	commits := []*Commit{}
+	var commits []*Commit
 	finalHash := plumbing.NewHash(sinceCommit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
 	logIterator, err := r.repo.Log(&logOptions)
@@ -338,10 +343,10 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 
 		return nil
 	})
-	if err != nil && err != ErrStopIterating {
+	if err != nil && !errors.Is(err, ErrStopIterating) {
 		return nil, err
 	}
-	if sinceCommit != "" && err != ErrStopIterating {
+	if sinceCommit != "" && !errors.Is(err, ErrStopIterating) {
 		return nil, fmt.Errorf("did not find commit %s when iterating", sinceCommit)
 	}
 	return commits, nil
@@ -355,7 +360,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 		return "", err
 	}
 	treeEntry, err := tree.FindEntry(path)
-	if err == object.ErrEntryNotFound || err == object.ErrDirectoryNotFound {
+	if errors.Is(err, object.ErrEntryNotFound) || errors.Is(err, object.ErrDirectoryNotFound) {
 		return "", nil
 	}
 	if err != nil {
@@ -427,8 +432,19 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 // Push pushes the local branch to the origin remote.
 func (r *LocalRepository) Push(branchName string) error {
 	// https://stackoverflow.com/a/75727620
-	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
+	refSpec := fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName)
 	slog.Info("Pushing changes", "branch name", branchName, slog.Any("refspec", refSpec))
+	return r.pushRefSpec(refSpec)
+}
+
+// DeleteBranch deletes a branch on the origin remote.
+func (r *LocalRepository) DeleteBranch(branchName string) error {
+	refSpec := fmt.Sprintf(":refs/heads/%s", branchName)
+	return r.pushRefSpec(refSpec)
+}
+
+func (r *LocalRepository) pushRefSpec(refSpec string) error {
+	slog.Info("Pushing changes", "refSpec", refSpec)
 	var auth *httpAuth.BasicAuth
 	if r.gitPassword != "" {
 		slog.Info("Authenticating with basic auth")
@@ -441,11 +457,57 @@ func (r *LocalRepository) Push(branchName string) error {
 	}
 	if err := r.repo.Push(&git.PushOptions{
 		RemoteName: "origin",
-		RefSpecs:   []config.RefSpec{refSpec},
+		RefSpecs:   []config.RefSpec{config.RefSpec(refSpec)},
 		Auth:       auth,
 	}); err != nil {
 		return err
 	}
-	slog.Info("Successfully pushed branch to remote 'origin", "branch", branchName)
+	slog.Info("Successfully pushed changes", "refSpec", refSpec)
+	return nil
+}
+
+// Restore restores changes in the working tree, leaving staged area untouched.
+// Note that untracked files, if any, are not touched.
+//
+// Wrap git operations in exec, because [git.Worktree.Restore] does not support
+// this operation.
+func (r *LocalRepository) Restore(paths []string) error {
+	args := []string{"restore"}
+	args = append(args, paths...)
+	slog.Info("Restoring uncommitted changes", "paths", strings.Join(paths, ","))
+	cmd := exec.Command("git", args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Dir = r.Dir
+	return cmd.Run()
+}
+
+// CleanUntracked removes untracked files within the given paths.
+func (r *LocalRepository) CleanUntracked(paths []string) error {
+	slog.Info("Cleaning untracked files", "paths", strings.Join(paths, ","))
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+
+	// Remove an untracked file if it lives within one of the given paths.
+	for _, path := range paths {
+		for file, fileStatue := range status {
+			if !strings.Contains(file, path) || fileStatue.Worktree != git.Untracked {
+				continue
+			}
+
+			relPath := filepath.Join(r.Dir, file)
+			if err := os.Remove(relPath); err != nil {
+				return fmt.Errorf("failed to remove untracked file, %s: %q", relPath, err)
+			}
+		}
+	}
+
 	return nil
 }

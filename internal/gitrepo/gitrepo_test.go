@@ -15,6 +15,7 @@
 package gitrepo
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1112,6 +1113,152 @@ func TestCreateBranchAndCheckout(t *testing.T) {
 			head, _ := repo.repo.Head()
 			if diff := cmp.Diff(test.branchName, head.Name().Short()); diff != "" {
 				t.Errorf("CreateBranchAndCheckout() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRestore(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		paths         []string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "restore files in paths",
+			paths: []string{
+				"first/path",
+				"second/path",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+			// Create files in test.paths and commit the change.
+			for _, path := range test.paths {
+				file := filepath.Join(path, "example.txt")
+				createAndCommit(t, repo, file, []byte("old content"), fmt.Sprintf("commit path, %s", path))
+			}
+
+			// Change file contents.
+			for _, path := range test.paths {
+				file := filepath.Join(dir, path, "example.txt")
+				if err := os.WriteFile(file, []byte("new content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				// Create untracked files.
+				untrackedFile := filepath.Join(dir, path, "untracked.txt")
+				if err := os.WriteFile(untrackedFile, []byte("new content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			err := localRepo.Restore(test.paths)
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("Restore() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, path := range test.paths {
+				got, err := os.ReadFile(filepath.Join(dir, path, "example.txt"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				// Verify file contents are restored.
+				if diff := cmp.Diff("old content", string(got)); diff != "" {
+					t.Errorf("Restore() mismatch (-want +got):\n%s", diff)
+				}
+				// Verify the untracked files are untouched.
+				untrackedFile := filepath.Join(dir, path, "untracked.txt")
+				if _, err := os.Stat(untrackedFile); err != nil {
+					t.Errorf("untracked file, %s should not be removed", untrackedFile)
+				}
+			}
+		})
+	}
+}
+
+func TestCleanUntracked(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		paths []string
+	}{
+		{
+			name: "remove_untracked_files_in_paths",
+			paths: []string{
+				"first/path",
+				"second/path",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+
+			// Create tracked files.
+			for _, path := range test.paths {
+				relPath := filepath.Join(dir, path)
+				if err := os.MkdirAll(relPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+				trackedFile := filepath.Join(relPath, "tracked.txt")
+				if err := os.WriteFile(trackedFile, []byte("new content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if _, err := localRepo.AddAll(); err != nil {
+				t.Fatal(err)
+			}
+
+			// Create untracked files.
+			for _, path := range test.paths {
+				relPath := filepath.Join(dir, path)
+				if err := os.MkdirAll(relPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+				untrackedFile := filepath.Join(relPath, "untracked.txt")
+				if err := os.WriteFile(untrackedFile, []byte("new content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := localRepo.CleanUntracked(test.paths); err != nil {
+				t.Error(err)
+
+				return
+			}
+
+			for _, path := range test.paths {
+				// Verify the untracked files are removed.
+				untrackedFile := filepath.Join(dir, path, "untracked.txt")
+				if _, err := os.Stat(untrackedFile); !os.IsNotExist(err) {
+					t.Errorf("untracked file, %s should be removed", untrackedFile)
+				}
+				// Verify the tracked files are untouched.
+				trackedFile := filepath.Join(dir, path, "tracked.txt")
+				if _, err := os.Stat(trackedFile); err != nil {
+					t.Errorf("tracked file, %s should not be touched: %q", trackedFile, err)
+				}
 			}
 		})
 	}

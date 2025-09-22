@@ -22,31 +22,73 @@ import (
 )
 
 func TestService(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := model.State.ServiceByID["..projects"]; ok {
-		t.Errorf("expected no service for `projects` resource as it has no methods")
-	}
 
-	id := "..externalAccountKeys"
+	id := "..zones"
 	got, ok := model.State.ServiceByID[id]
 	if !ok {
 		t.Fatalf("expected service %s in the API model", id)
 	}
 	want := &api.Service{
-		Name:          "externalAccountKeys",
+		Name:          "zones",
 		ID:            id,
 		Package:       "",
-		Documentation: "Service for the `externalAccountKeys` resource.",
+		Documentation: "Service for the `zones` resource.",
+		DefaultHost:   "compute.googleapis.com",
 		Methods: []*api.Method{
 			{
-				ID:            "..externalAccountKeys.create",
-				Name:          "create",
-				Documentation: "Creates a new ExternalAccountKey bound to the project.",
-				InputTypeID:   "..ExternalAccountKey",
-				OutputTypeID:  "..ExternalAccountKey",
+				ID:            "..zones.get",
+				Name:          "get",
+				Documentation: "Returns the specified Zone resource.",
+				InputTypeID:   ".google.protobuf.Empty",
+				OutputTypeID:  "..Zone",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("compute").
+								WithLiteral("v1").
+								WithLiteral("projects").
+								WithVariableNamed("project").
+								WithLiteral("zones").
+								WithVariableNamed("zone"),
+							QueryParameters: map[string]bool{},
+						},
+					},
+					BodyFieldPath: "*",
+				},
+			},
+			{
+				ID:            "..zones.list",
+				Name:          "list",
+				Documentation: "Retrieves the list of Zone resources available to the specified project.",
+				InputTypeID:   ".google.protobuf.Empty",
+				OutputTypeID:  "..ZoneList",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("compute").
+								WithLiteral("v1").
+								WithLiteral("projects").
+								WithVariableNamed("project").
+								WithLiteral("zones"),
+							QueryParameters: map[string]bool{
+								"filter":               true,
+								"maxResults":           true,
+								"orderBy":              true,
+								"pageToken":            true,
+								"returnPartialSuccess": true,
+							},
+						},
+					},
+					BodyFieldPath: "*",
+				},
 			},
 		},
 	}
@@ -54,25 +96,27 @@ func TestService(t *testing.T) {
 }
 
 func TestServiceTopLevelMethodErrors(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	doc := document{}
 	input := resource{
 		Methods: []*method{
 			{MediaUpload: &mediaUpload{}},
 		},
 	}
-	if err := addServiceRecursive(model, &input); err == nil {
+	if err := addServiceRecursive(model, &doc, &input); err == nil {
 		t.Errorf("expected error in addServiceRecursive invalid top-level method, got=%v", model.Services)
 	}
 }
 
 func TestServiceChildMethodErrors(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	doc := document{}
 	input := resource{
 		Resources: []*resource{
 			{
@@ -82,7 +126,7 @@ func TestServiceChildMethodErrors(t *testing.T) {
 			},
 		},
 	}
-	if err := addServiceRecursive(model, &input); err == nil {
+	if err := addServiceRecursive(model, &doc, &input); err == nil {
 		t.Errorf("expected error in addServiceRecursive invalid child method, got=%v", model.Services)
 	}
 }

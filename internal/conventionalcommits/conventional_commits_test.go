@@ -411,7 +411,7 @@ END_NESTED_COMMIT`,
 			},
 		},
 		{
-			name: "parse multiple lines message inside nested commit",
+			name: "parse multiple lines message inside nested commit, one line header",
 			message: `
 chore: Update generation configuration at Tue Aug 26 02:31:23 UTC 2025 (#11734)
 
@@ -468,6 +468,60 @@ END_COMMIT_OVERRIDE`,
 						"PiperOrigin-RevId": "799242210",
 						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
 					},
+					SHA:        sha.String(),
+					CommitHash: sha.String(),
+					When:       now,
+				},
+			},
+		},
+		{
+			name: "parse_multiple_lines_message_inside_nested_commit_multi_line_headers",
+			message: `
+chore: Update generation configuration at Tue Aug 26 02:31:23 UTC 2025 (#11734)
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@525c95a](https://github.com/googleapis/googleapis/commit/525c95a7a122ec2869ae06cd02fa5013819463f6)
+(exclusive) and
+[googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
+(inclusive).
+
+BEGIN_COMMIT_OVERRIDE
+BEGIN_NESTED_COMMIT
+feat: [texttospeech] Support promptable voices by specifying a model
+name and a prompt
+feat: [texttospeech] Add enum value M4A to enum AudioEncoding
+docs: [texttospeech] A comment for method 'StreamingSynthesize' in
+service 'TextToSpeech' is changed
+
+END_NESTED_COMMIT
+END_COMMIT_OVERRIDE`,
+			want: []*ConventionalCommit{
+				{
+					Type:       "feat",
+					Subject:    "[texttospeech] Support promptable voices by specifying a model name and a prompt",
+					LibraryID:  "example-id",
+					IsNested:   true,
+					Footers:    map[string]string{},
+					SHA:        sha.String(),
+					CommitHash: sha.String(),
+					When:       now,
+				},
+				{
+					Type:       "feat",
+					Subject:    "[texttospeech] Add enum value M4A to enum AudioEncoding",
+					LibraryID:  "example-id",
+					IsNested:   true,
+					Footers:    map[string]string{},
+					SHA:        sha.String(),
+					CommitHash: sha.String(),
+					When:       now,
+				},
+				{
+					Type:       "docs",
+					Subject:    "[texttospeech] A comment for method 'StreamingSynthesize' in service 'TextToSpeech' is changed",
+					LibraryID:  "example-id",
+					IsNested:   true,
+					Footers:    map[string]string{},
 					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,

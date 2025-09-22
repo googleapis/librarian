@@ -54,7 +54,8 @@ const (
 	// ReleaseInitResponse is a JSON file that describes which library to change
 	// after release.
 	ReleaseInitResponse = "release-init-response.json"
-	pipelineStateFile   = "state.yaml"
+	// LibrarianStateFile is the name of the pipeline state file.
+	LibrarianStateFile = "state.yaml"
 )
 
 // are variables so it can be replaced during testing.
@@ -125,6 +126,12 @@ type Config struct {
 	//
 	// This flag is ignored if Push is set to true.
 	Commit bool
+
+	// GitHubAPIEndpoint is the GitHub API endpoint to use for all GitHub API
+	// operations.
+	//
+	// This is intended for testing and should not be used in production.
+	GitHubAPIEndpoint string
 
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
@@ -294,7 +301,7 @@ func (c *Config) deriveRepo() error {
 	if err != nil {
 		return fmt.Errorf("getting working directory: %w", err)
 	}
-	stateFile := filepath.Join(wd, LibrarianDir, pipelineStateFile)
+	stateFile := filepath.Join(wd, LibrarianDir, LibrarianStateFile)
 	if _, err := os.Stat(stateFile); err != nil {
 		return fmt.Errorf("repo flag not specified and no state file found in current working directory: %w", err)
 	}

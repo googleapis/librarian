@@ -307,7 +307,7 @@ global file edits. The libraries that are being released will be marked by the `
   "error": "An optional field to share error context back to Librarian."
 }
 ```
-
+[config-schema.md]:config-schema.md
 [state-schema.md]: state-schema.md
 
 ## Language repository settings

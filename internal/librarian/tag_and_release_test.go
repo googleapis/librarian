@@ -35,7 +35,7 @@ func TestNewTagAndReleaseRunner(t *testing.T) {
 			name: "valid config",
 			cfg: &config.Config{
 				GitHubToken: "some-token",
-				Repo:        newTestGitRepo(t).GetDir(),
+				Repo:        "https://github.com/googleapis/some-test-repo",
 				WorkRoot:    t.TempDir(),
 				CommandName: tagAndReleaseCmdName,
 			},
@@ -341,11 +341,15 @@ func TestProcessPullRequest(t *testing.T) {
 	prBody := `<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>`
 	prNumber := 123
 	mergeCommitSHA := "abcdef"
+	branch := "main"
 	prWithRelease := &github.PullRequest{
 		Body:           &prBody,
 		Number:         &prNumber,
 		MergeCommitSHA: &mergeCommitSHA,
 		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Base: &gh.PullRequestBranch{
+			Ref: &branch,
+		},
 	}
 	body := "no release details"
 	prWithoutRelease := &github.PullRequest{
@@ -353,11 +357,17 @@ func TestProcessPullRequest(t *testing.T) {
 		Number:         &prNumber,
 		MergeCommitSHA: &mergeCommitSHA,
 		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Base: &gh.PullRequestBranch{
+			Ref: &branch,
+		},
 	}
 	state := &config.LibrarianState{
+		Image: "gcr.io/some-project-id/some-test-image:latest",
 		Libraries: []*config.LibraryState{
 			{
-				ID: "google-cloud-storage",
+				ID:          "google-cloud-storage",
+				SourceRoots: []string{"some/path"},
+				TagFormat:   "v{version}",
 			},
 		},
 	}
@@ -366,41 +376,67 @@ func TestProcessPullRequest(t *testing.T) {
 		name                   string
 		pr                     *github.PullRequest
 		ghClient               *mockGitHubClient
-		state                  *config.LibrarianState
 		wantErrMsg             string
 		wantCreateReleaseCalls int
 		wantReplaceLabelsCalls int
 		wantCreateTagCalls     int
 	}{
 		{
-			name:                   "happy path",
-			pr:                     prWithRelease,
-			ghClient:               &mockGitHubClient{},
-			state:                  state,
+			name: "happy path",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				librarianState: state,
+			},
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 			wantCreateTagCalls:     1,
 		},
 		{
-			name:     "no release details",
-			pr:       prWithoutRelease,
-			ghClient: &mockGitHubClient{},
-			state:    state,
+			name: "no release details",
+			pr:   prWithoutRelease,
+			ghClient: &mockGitHubClient{
+				librarianState: state,
+			}},
+		{
+			name: "library not found",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				librarianState: &config.LibrarianState{
+					Image: "gcr.io/some-project-id/some-test-image:latest",
+					Libraries: []*config.LibraryState{
+						{
+							ID:          "other-library",
+							SourceRoots: []string{"some/path"},
+							TagFormat:   "v{version}",
+						},
+					},
+				},
+			},
+			wantErrMsg: "library google-cloud-storage not found",
 		},
 		{
-			name:       "library not found",
-			pr:         prWithRelease,
-			ghClient:   &mockGitHubClient{},
-			state:      &config.LibrarianState{},
-			wantErrMsg: "library google-cloud-storage not found",
+			name: "missing tag format",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				librarianState: &config.LibrarianState{
+					Image: "gcr.io/some-project-id/some-test-image:latest",
+					Libraries: []*config.LibraryState{
+						{
+							ID:          "google-cloud-storage",
+							SourceRoots: []string{"some/path"},
+						},
+					},
+				},
+			},
+			wantErrMsg: "library google-cloud-storage did not configure tag_format",
 		},
 		{
 			name: "create release fails",
 			pr:   prWithRelease,
 			ghClient: &mockGitHubClient{
 				createReleaseErr: errors.New("create release error"),
+				librarianState:   state,
 			},
-			state:                  state,
 			wantErrMsg:             "failed to create release",
 			wantCreateReleaseCalls: 1,
 			wantCreateTagCalls:     1,
@@ -410,8 +446,8 @@ func TestProcessPullRequest(t *testing.T) {
 			pr:   prWithRelease,
 			ghClient: &mockGitHubClient{
 				replaceLabelsErr: errors.New("replace labels error"),
+				librarianState:   state,
 			},
-			state:                  state,
 			wantErrMsg:             "failed to replace labels",
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
@@ -421,9 +457,9 @@ func TestProcessPullRequest(t *testing.T) {
 			name: "create tag fails",
 			pr:   prWithRelease,
 			ghClient: &mockGitHubClient{
-				createTagErr: errors.New("create tag error"),
+				createTagErr:   errors.New("create tag error"),
+				librarianState: state,
 			},
-			state:              state,
 			wantErrMsg:         "failed to create tag",
 			wantCreateTagCalls: 1,
 		},
@@ -431,7 +467,6 @@ func TestProcessPullRequest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r := &tagAndReleaseRunner{
 				ghClient: test.ghClient,
-				state:    test.state,
 			}
 			err := r.processPullRequest(t.Context(), test.pr)
 			if err != nil {
@@ -511,11 +546,15 @@ func TestReplacePendingLabel(t *testing.T) {
 }
 
 func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
+	branch := "main"
 	pr1 := &github.PullRequest{
 		Body:           gh.Ptr(`<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>`),
 		Number:         gh.Ptr(123),
 		MergeCommitSHA: gh.Ptr("abc123"),
 		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Base: &gh.PullRequestBranch{
+			Ref: &branch,
+		},
 	}
 	// This one will fail because the library details are not parsable.
 	pr2 := &github.PullRequest{
@@ -523,20 +562,26 @@ func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
 		Number:         gh.Ptr(456),
 		MergeCommitSHA: gh.Ptr("xyz456"),
 		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Base: &gh.PullRequestBranch{
+			Ref: &branch,
+		},
 	}
 	ghClient := &mockGitHubClient{
 		pullRequests: []*github.PullRequest{pr1, pr2},
+		librarianState: &config.LibrarianState{
+			Image: "gcr.io/some-project/some-image:latest",
+			Libraries: []*config.LibraryState{
+				{
+					ID:          "google-cloud-storage",
+					SourceRoots: []string{"some/path"},
+					TagFormat:   "v{version}",
+				},
+			},
+		},
 	}
 
 	r := &tagAndReleaseRunner{
 		ghClient: ghClient,
-		state: &config.LibrarianState{
-			Libraries: []*config.LibraryState{
-				{
-					ID: "google-cloud-storage",
-				},
-			},
-		},
 	}
 	err := r.run(t.Context())
 	if err == nil || !strings.Contains(err.Error(), "failed to process some pull requests") {

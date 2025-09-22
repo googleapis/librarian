@@ -45,6 +45,11 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 			EnumByID:    make(map[string]*api.Enum),
 		},
 	}
+	// Discovery docs use some well-known types inspired by Protobuf. With
+	// protoc these types are automatically included via `import` statements.
+	// In the Discovery docs JSON inputs, these types are not automatically
+	// included.
+	result.LoadWellKnownTypes()
 
 	// Discovery docs do not define a service name or package name. The service
 	// config may provide one.
@@ -81,12 +86,18 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		result.Messages = append(result.Messages, message)
 		result.State.MessageByID[id] = message
 	}
+	// The messages must be sorted otherwise the generated code gets different
+	// output on each run.
+	slices.SortStableFunc(result.Messages, compareMessages)
 
 	for _, resource := range doc.Resources {
-		if err := addServiceRecursive(result, resource); err != nil {
+		if err := addServiceRecursive(result, doc, resource); err != nil {
 			return nil, err
 		}
 	}
+	// The services must be sorted otherwise the generated code gets different
+	// output on each run.
+	slices.SortStableFunc(result.Services, compareServices)
 
 	return result, nil
 }

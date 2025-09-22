@@ -81,7 +81,6 @@ func TestRunGenerateCommand(t *testing.T) {
 			t.Parallel()
 			r := &generateRunner{
 				api:             test.api,
-				apiSource:       t.TempDir(),
 				repo:            test.repo,
 				sourceRepo:      newTestGitRepo(t),
 				ghClient:        test.ghClient,
@@ -326,29 +325,28 @@ func TestRunConfigureCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			sourcePath := t.TempDir()
 			r := &generateRunner{
 				api:             test.api,
-				apiSource:       sourcePath,
 				repo:            test.repo,
+				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
 				containerClient: test.container,
 			}
 
 			// Create a service config
-			if err := os.MkdirAll(filepath.Join(r.apiSource, test.api), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Join(r.sourceRepo.GetDir(), test.api), 0755); err != nil {
 				t.Fatal(err)
 			}
 
 			data := []byte("type: google.api.Service")
-			if err := os.WriteFile(filepath.Join(r.apiSource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+			if err := os.WriteFile(filepath.Join(r.sourceRepo.GetDir(), test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
 
 			if test.name == "configures library with non-existent api source" {
 				// This test verifies the scenario of no service config is found
 				// in api path.
-				if err := os.RemoveAll(filepath.Join(r.apiSource)); err != nil {
+				if err := os.RemoveAll(filepath.Join(r.sourceRepo.GetDir())); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -551,6 +549,7 @@ func TestGenerateScenarios(t *testing.T) {
 		api                string
 		library            string
 		state              *config.LibrarianState
+		librarianConfig    *config.LibrarianConfig
 		container          *mockContainerClient
 		ghClient           GitHubClient
 		build              bool
@@ -831,6 +830,92 @@ func TestGenerateScenarios(t *testing.T) {
 			wantBuildCalls:    1,
 		},
 		{
+			name: "generate skips blocked libraries",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "google.cloud.texttospeech.v1",
+						APIs: []*config.API{{Path: "google/cloud/texttospeech/v1"}},
+					},
+					{
+						ID:   "google.cloud.vision.v1",
+						APIs: []*config.API{{Path: "google/cloud/vision/v1"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{LibraryID: "google.cloud.texttospeech.v1"},
+					{LibraryID: "google.cloud.vision.v1", GenerateBlocked: true},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:          &mockGitHubClient{},
+			build:             true,
+			wantGenerateCalls: 1,
+			wantBuildCalls:    1,
+		},
+		{
+			name:    "generate runs blocked libraries if explicitly requested",
+			library: "google.cloud.vision.v1",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "google.cloud.texttospeech.v1",
+						APIs: []*config.API{{Path: "google/cloud/texttospeech/v1"}},
+					},
+					{
+						ID:   "google.cloud.vision.v1",
+						APIs: []*config.API{{Path: "google/cloud/vision/v1"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{LibraryID: "google.cloud.texttospecech.v1"},
+					{LibraryID: "google.cloud.vision.v1", GenerateBlocked: true},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:          &mockGitHubClient{},
+			build:             true,
+			wantGenerateCalls: 1,
+			wantBuildCalls:    1,
+		},
+		{
+			name: "generate skips a blocked library and the rest fail. should report error",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "google.cloud.texttospeech.v1",
+						APIs: []*config.API{{Path: "google/cloud/texttospeech/v1"}},
+					},
+					{
+						ID:   "google.cloud.vision.v1",
+						APIs: []*config.API{{Path: "google/cloud/vision/v1"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{LibraryID: "google.cloud.texttospeech.v1"},
+					{LibraryID: "google.cloud.vision.v1", GenerateBlocked: true},
+				},
+			},
+			container:  &mockContainerClient{generateErr: errors.New("generate error")},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantErr:    true,
+			wantErrMsg: "all 1 libraries failed to generate (blocked: 1)",
+		},
+		{
 			name: "generate all, all fail should report error",
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
@@ -874,28 +959,27 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			apiSource := t.TempDir()
 			repo := newTestGitRepoWithState(t, test.state, true)
 
 			r := &generateRunner{
 				api:             test.api,
 				library:         test.library,
-				apiSource:       apiSource,
 				build:           test.build,
 				repo:            repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
+				librarianConfig: test.librarianConfig,
 				containerClient: test.container,
 				ghClient:        test.ghClient,
 				workRoot:        t.TempDir(),
 			}
 
 			// Create a service config in api path.
-			if err := os.MkdirAll(filepath.Join(r.apiSource, test.api), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Join(r.sourceRepo.GetDir(), test.api), 0755); err != nil {
 				t.Fatal(err)
 			}
 			data := []byte("type: google.api.Service")
-			if err := os.WriteFile(filepath.Join(r.apiSource, test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+			if err := os.WriteFile(filepath.Join(r.sourceRepo.GetDir(), test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
 

@@ -208,7 +208,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 
 // findLatestGenerationCommit returns the latest commit among the last generated
 // commit of all the libraries.
-// A libray is skipped if the last generated commit is empty.
+// A library is skipped if the last generated commit is empty.
 //
 // Note that it is possible that the returned commit is nil.
 func findLatestGenerationCommit(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string) (*gitrepo.Commit, error) {
@@ -277,8 +277,8 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 
 	// The version should already be updated to the next version.
 	newVersion := library.Version
-	newTag := formatTag(library, newVersion)
-	previousTag := formatTag(library, library.PreviousVersion)
+	newTag := formatTag(library.TagFormat, library.ID, newVersion)
+	previousTag := formatTag(library.TagFormat, library.ID, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
 	for _, commit := range library.Changes {

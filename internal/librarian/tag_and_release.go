@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"regexp"
 	"slices"
 	"strconv"
@@ -27,7 +28,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const (
@@ -45,23 +45,29 @@ var (
 type tagAndReleaseRunner struct {
 	ghClient    GitHubClient
 	pullRequest string
-	repo        gitrepo.Repository
-	state       *config.LibrarianState
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
-	runner, err := newCommandRunner(cfg)
-	if err != nil {
-		return nil, err
-	}
 	if cfg.GitHubToken == "" {
 		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
 	}
+	repo, err := github.ParseRemote(cfg.Repo)
+	if err != nil {
+		return nil, err
+	}
+	ghClient := github.NewClient(cfg.GitHubToken, repo)
+	// If a custom GitHub API endpoint is provided (for testing),
+	// parse it and set it as the BaseURL on the GitHub client.
+	if cfg.GitHubAPIEndpoint != "" {
+		endpoint, err := url.Parse(cfg.GitHubAPIEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse github-api-endpoint: %w", err)
+		}
+		ghClient.BaseURL = endpoint
+	}
 	return &tagAndReleaseRunner{
-		ghClient:    runner.ghClient,
+		ghClient:    ghClient,
 		pullRequest: cfg.PullRequest,
-		repo:        runner.repo,
-		state:       runner.state,
 	}, nil
 }
 
@@ -130,24 +136,30 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		return nil
 	}
 
+	// Load library state from remote repo
+	libraryState, err := loadRepoStateFromGitHub(ctx, r.ghClient, *p.Base.Ref)
+	if err != nil {
+		return err
+	}
+
 	// Add a tag to the release commit to trigger louhi flow: "release-please-{pr number}"
-	//TODO: remove this logic as part of https://github.com/googleapis/librarian/issues/2044
+	// TODO: remove this logic as part of https://github.com/googleapis/librarian/issues/2044
 	commitSha := p.GetMergeCommitSHA()
 	tagName := fmt.Sprintf("release-please-%d", p.GetNumber())
 	if err := r.ghClient.CreateTag(ctx, tagName, commitSha); err != nil {
 		return fmt.Errorf("failed to create tag %s: %w", tagName, err)
 	}
-
 	for _, release := range releases {
 		slog.Info("creating release", "library", release.Library, "version", release.Version)
 
-		lib := r.state.LibraryByID(release.Library)
-		if lib == nil {
-			return fmt.Errorf("library %s not found", release.Library)
+		tagFormat, err := determineTagFormat(release.Library, libraryState)
+		if err != nil {
+			slog.Warn("could not determine tag format", "library", release.Library)
+			return err
 		}
 
 		// Create the release.
-		tagName := formatTag(lib, release.Version)
+		tagName := formatTag(tagFormat, release.Library, release.Version)
 		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
 		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
 			return fmt.Errorf("failed to create release: %w", err)
@@ -155,6 +167,18 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 
 	}
 	return r.replacePendingLabel(ctx, p)
+}
+
+func determineTagFormat(libraryID string, librarianState *config.LibrarianState) (string, error) {
+	// TODO(#2177): read from LibrarianConfig
+	libraryState := librarianState.LibraryByID(libraryID)
+	if libraryState == nil {
+		return "", fmt.Errorf("library %s not found", libraryID)
+	}
+	if libraryState.TagFormat != "" {
+		return libraryState.TagFormat, nil
+	}
+	return "", fmt.Errorf("library %s did not configure tag_format", libraryID)
 }
 
 // libraryRelease holds the parsed information from a pull request body.
@@ -186,8 +210,9 @@ func parsePullRequestBody(body string) []libraryRelease {
 				Library: library,
 				Body:    content,
 			})
+		} else {
+			slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 		}
-		slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 	}
 
 	return parsedBodies
