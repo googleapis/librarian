@@ -119,7 +119,6 @@ func newCmdTagAndRelease() *cli.Command {
 	cmdTagAndRelease.Init()
 	addFlagRepo(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
 	addFlagPR(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
-	addFlagGitHubAPIEndpoint(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
 	return cmdTagAndRelease
 }
 
