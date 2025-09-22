@@ -68,21 +68,6 @@ func makeMethod(model *api.API, serviceID string, doc *document, requestsParent 
 	model.State.MessageByID[requestMessage.ID] = requestMessage
 	requestsParent.Messages = append(requestsParent.Messages, requestMessage)
 
-	bodyPathField := ""
-	if bodyID != ".google.protobuf.Empty" {
-		body := &api.Field{
-			Documentation: fmt.Sprintf("Synthetic request body field for the [%s()][%s] method.", input.Name, id[1:]),
-			Name:          "body",
-			JSONName:      "body",
-			ID:            fmt.Sprintf("%s.%s", requestMessage.ID, "body"),
-			Typez:         api.MESSAGE_TYPE,
-			TypezID:       bodyID,
-			Optional:      true,
-		}
-		requestMessage.Fields = append(requestMessage.Fields, body)
-		bodyPathField = "body"
-	}
-
 	var uriTemplate string
 	if strings.HasSuffix(doc.ServicePath, "/") {
 		uriTemplate = fmt.Sprintf("%s%s", doc.ServicePath, input.Path)
@@ -100,6 +85,7 @@ func makeMethod(model *api.API, serviceID string, doc *document, requestsParent 
 		PathTemplate:    path,
 		QueryParameters: map[string]bool{},
 	}
+	fieldNames := map[string]bool{}
 	for _, p := range input.Parameters {
 		if p.Location != "path" {
 			binding.QueryParameters[p.Name] = true
@@ -115,7 +101,25 @@ func makeMethod(model *api.API, serviceID string, doc *document, requestsParent 
 		field.Synthetic = true
 		field.Optional = !p.Required
 		requestMessage.Fields = append(requestMessage.Fields, field)
+		fieldNames[field.Name] = true
 	}
+
+	bodyPathField := ""
+	if bodyID != ".google.protobuf.Empty" {
+		name := bodyFieldName(fieldNames)
+		body := &api.Field{
+			Documentation: fmt.Sprintf("Synthetic request body field for the [%s()][%s] method.", input.Name, id[1:]),
+			Name:          name,
+			JSONName:      name,
+			ID:            fmt.Sprintf("%s.%s", requestMessage.ID, name),
+			Typez:         api.MESSAGE_TYPE,
+			TypezID:       bodyID,
+			Optional:      true,
+		}
+		requestMessage.Fields = append(requestMessage.Fields, body)
+		bodyPathField = name
+	}
+
 	method := &api.Method{
 		ID:            id,
 		Name:          input.Name,
@@ -131,6 +135,19 @@ func makeMethod(model *api.API, serviceID string, doc *document, requestsParent 
 	}
 	model.State.MethodByID[id] = method
 	return method, nil
+}
+
+func bodyFieldName(fieldNames map[string]bool) string {
+	// Keep adding trailing `_` until there is no conflict. Most of the time
+	// this returns `body` or `body_`
+	name := "body"
+	for count := 0; count != len(fieldNames); count += 1 {
+		if _, ok := fieldNames[name]; !ok {
+			return name
+		}
+		name = name + "_"
+	}
+	return name
 }
 
 func getMethodType(model *api.API, methodID, name string, typez *schema) (string, error) {

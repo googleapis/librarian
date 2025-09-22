@@ -280,3 +280,24 @@ func TestMakeMethodError(t *testing.T) {
 	}
 
 }
+
+func TestBodyFieldName(t *testing.T) {
+	for _, test := range []struct {
+		Input []string
+		Want  string
+	}{
+		{[]string{"a", "b", "c"}, "body"},
+		{[]string{"body", "b", "c"}, "body_"},
+		{[]string{"body", "body_", "c"}, "body__"},
+		{[]string{"body", "body_", "body__"}, "body___"},
+	} {
+		fieldNames := map[string]bool{}
+		for _, n := range test.Input {
+			fieldNames[n] = true
+		}
+		got := bodyFieldName(fieldNames)
+		if test.Want != got {
+			t.Errorf("mismatch want=%s, got=%s", test.Want, got)
+		}
+	}
+}
