@@ -10,7 +10,7 @@ Usage:
 go test ./...
 ```
 
-## End-to-end (e3e) Tests
+## End-to-End (e2e) Tests
 
 These tests are designed to test the CLI interface for each supported Librarian command
 on a local system. It tests the interface with docker using a fake repo and test docker
