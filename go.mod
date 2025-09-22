@@ -12,7 +12,7 @@ require (
 	github.com/google/go-github/v69 v69.2.0
 	github.com/googleapis/gax-go/v2 v2.15.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/pb33f/libopenapi v0.25.9
+	github.com/pb33f/libopenapi v0.28.0
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
 	github.com/yuin/goldmark v1.7.13
@@ -50,7 +50,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
-	github.com/pb33f/ordered-map/v2 v2.2.0 // indirect
+	github.com/pb33f/ordered-map/v2 v2.3.0 // indirect
 	github.com/pjbgf/sha1cd v0.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
