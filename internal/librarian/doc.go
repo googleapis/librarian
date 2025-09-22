@@ -154,6 +154,12 @@ according to semver rules. It then delegates all language-specific file
 modifications, such as updating a CHANGELOG.md or bumping the version in a pom.xml,
 to the configured language-specific container.
 
+If a specific library is configured for release via the '--library' flag, a single
+releasable change is needed to automatically calculate a version bump. If there are
+no releasable changes since the last release, the '--version' flag should be included
+to set a new version for the library. The new version must be "SemVer" greater than the
+current version.
+
 By default, 'release init' leaves the changes in your local working directory
 for inspection. Use the '--push' flag to automatically commit the changes to
 a new branch and create a pull request on GitHub. The '--commit' flag may be
@@ -206,6 +212,7 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	-v	enables verbose logging
 
 # release tag-and-release
 
@@ -239,6 +246,9 @@ Usage:
 
 Flags:
 
+	-github-api-endpoint string
+	  	The GitHub API endpoint to use for all GitHub API operations.
+	  	This is intended for testing and should not be used in production.
 	-pr string
 	  	The URL of a pull request to operate on.
 	  	It should be in the format of https://github.com/{owner}/{repo}/pull/{number}.
@@ -250,6 +260,7 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	-v	enables verbose logging
 
 # version
 
