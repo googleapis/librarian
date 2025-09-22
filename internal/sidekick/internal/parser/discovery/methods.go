@@ -16,15 +16,14 @@ package discovery
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
-func makeServiceMethods(model *api.API, serviceID string, doc *document, resource *resource) ([]*api.Method, error) {
+func makeServiceMethods(model *api.API, serviceID string, resource *resource) ([]*api.Method, error) {
 	var methods []*api.Method
 	for _, input := range resource.Methods {
-		method, err := makeMethod(model, serviceID, doc, input)
+		method, err := makeMethod(model, serviceID, input)
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +33,7 @@ func makeServiceMethods(model *api.API, serviceID string, doc *document, resourc
 	return methods, nil
 }
 
-func makeMethod(model *api.API, serviceID string, doc *document, input *method) (*api.Method, error) {
+func makeMethod(model *api.API, serviceID string, input *method) (*api.Method, error) {
 	id := fmt.Sprintf("%s.%s", serviceID, input.Name)
 	if input.MediaUpload != nil {
 		return nil, fmt.Errorf("media upload methods are not supported, id=%s", id)
@@ -47,27 +46,6 @@ func makeMethod(model *api.API, serviceID string, doc *document, input *method) 
 	if err != nil {
 		return nil, err
 	}
-	var uriTemplate string
-	if strings.HasSuffix(doc.ServicePath, "/") {
-		uriTemplate = fmt.Sprintf("%s%s", doc.ServicePath, input.Path)
-	} else {
-		uriTemplate = fmt.Sprintf("%s/%s", doc.ServicePath, input.Path)
-	}
-	uriTemplate = strings.TrimPrefix(uriTemplate, "/")
-	path, err := ParseUriTemplate(uriTemplate)
-	if err != nil {
-		return nil, err
-	}
-	binding := &api.PathBinding{
-		Verb:            input.HTTPMethod,
-		PathTemplate:    path,
-		QueryParameters: map[string]bool{},
-	}
-	for _, p := range input.Parameters {
-		if p.Location != "path" {
-			binding.QueryParameters[p.Name] = true
-		}
-	}
 	method := &api.Method{
 		ID:            id,
 		Name:          input.Name,
@@ -76,10 +54,6 @@ func makeMethod(model *api.API, serviceID string, doc *document, input *method) 
 		// Deprecated: ...,
 		InputTypeID:  inputID,
 		OutputTypeID: outputID,
-		PathInfo: &api.PathInfo{
-			Bindings:      []*api.PathBinding{binding},
-			BodyFieldPath: "*",
-		},
 	}
 	return method, nil
 }

@@ -44,22 +44,6 @@ func TestService(t *testing.T) {
 				Documentation: "Returns the specified Zone resource.",
 				InputTypeID:   ".google.protobuf.Empty",
 				OutputTypeID:  "..Zone",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
-								WithLiteral("compute").
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("zones").
-								WithVariableNamed("zone"),
-							QueryParameters: map[string]bool{},
-						},
-					},
-					BodyFieldPath: "*",
-				},
 			},
 			{
 				ID:            "..zones.list",
@@ -67,27 +51,6 @@ func TestService(t *testing.T) {
 				Documentation: "Retrieves the list of Zone resources available to the specified project.",
 				InputTypeID:   ".google.protobuf.Empty",
 				OutputTypeID:  "..ZoneList",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{
-						{
-							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
-								WithLiteral("compute").
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("zones"),
-							QueryParameters: map[string]bool{
-								"filter":               true,
-								"maxResults":           true,
-								"orderBy":              true,
-								"pageToken":            true,
-								"returnPartialSuccess": true,
-							},
-						},
-					},
-					BodyFieldPath: "*",
-				},
 			},
 		},
 	}
@@ -99,13 +62,12 @@ func TestServiceTopLevelMethodErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc := document{}
 	input := resource{
 		Methods: []*method{
 			{MediaUpload: &mediaUpload{}},
 		},
 	}
-	if err := addServiceRecursive(model, &doc, &input); err == nil {
+	if err := addServiceRecursive(model, &input); err == nil {
 		t.Errorf("expected error in addServiceRecursive invalid top-level method, got=%v", model.Services)
 	}
 }
@@ -115,7 +77,6 @@ func TestServiceChildMethodErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc := document{}
 	input := resource{
 		Resources: []*resource{
 			{
@@ -125,7 +86,7 @@ func TestServiceChildMethodErrors(t *testing.T) {
 			},
 		},
 	}
-	if err := addServiceRecursive(model, &doc, &input); err == nil {
+	if err := addServiceRecursive(model, &input); err == nil {
 		t.Errorf("expected error in addServiceRecursive invalid child method, got=%v", model.Services)
 	}
 }

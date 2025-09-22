@@ -21,7 +21,6 @@ func TestMakeServiceMethodsError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	doc := document{}
 	input := &resource{
 		Name: "testResource",
 		Methods: []*method{
@@ -31,7 +30,7 @@ func TestMakeServiceMethodsError(t *testing.T) {
 			},
 		},
 	}
-	if methods, err := makeServiceMethods(model, "..testResource", &doc, input); err == nil {
+	if methods, err := makeServiceMethods(model, "..testResource", input); err == nil {
 		t.Errorf("expected error on method with media upload, got=%v", methods)
 	}
 }
@@ -49,10 +48,8 @@ func TestMakeMethodError(t *testing.T) {
 		{"mediaUploadMustBeNil", method{MediaUpload: &mediaUpload{}}},
 		{"requestMustHaveRef", method{Request: &schema{}}},
 		{"responseMustHaveRef", method{Response: &schema{}}},
-		{"badPath", method{Path: "{+var"}},
 	} {
-		doc := document{}
-		if method, err := makeMethod(model, "..Test", &doc, &test.Input); err == nil {
+		if method, err := makeMethod(model, "..Test", &test.Input); err == nil {
 			t.Errorf("expected error on method[%s], got=%v", test.Name, method)
 		}
 	}
