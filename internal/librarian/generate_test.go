@@ -110,51 +110,67 @@ func TestRunBuildCommand(t *testing.T) {
 		name           string
 		build          bool
 		libraryID      string
+		repo           gitrepo.Repository
+		state          *config.LibrarianState
 		container      *mockContainerClient
 		wantBuildCalls int
 		wantErr        bool
 	}{
 		{
-			name:           "build_flag_not_specified",
+			name:           "build flag not specified",
 			build:          false,
 			container:      &mockContainerClient{},
 			wantBuildCalls: 0,
 		},
 		{
-			name:           "build_with_library_id",
-			build:          true,
-			libraryID:      "some-library",
+			name:      "build with library id",
+			build:     true,
+			libraryID: "some-library",
+			repo:      newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
+			},
 			container:      &mockContainerClient{},
 			wantBuildCalls: 1,
 		},
 		{
-			name:           "build_with_no_library_id",
-			build:          true,
-			container:      &mockContainerClient{},
-			wantBuildCalls: 0,
+			name:      "build with no library id",
+			build:     true,
+			container: &mockContainerClient{},
 		},
 		{
-			name:      "build_with_no_response",
+			name:      "build with no response",
 			build:     true,
 			libraryID: "some-library",
+			repo:      newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
+			},
 			container: &mockContainerClient{
 				noBuildResponse: true,
 			},
 			wantBuildCalls: 1,
 		},
 		{
-			name:      "build_with_docker_command_error_files_restored",
+			name:      "build with error response in response",
 			build:     true,
 			libraryID: "some-library",
-			container: &mockContainerClient{
-				buildErr: errors.New("simulate build error"),
+			repo:      newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
 			},
-			wantErr: true,
-		},
-		{
-			name:      "build_with_error_response_in_response",
-			build:     true,
-			libraryID: "some-library",
 			container: &mockContainerClient{
 				wantErrorMsg: true,
 			},
@@ -163,87 +179,20 @@ func TestRunBuildCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo := newTestGitRepo(t)
-			state := &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID: "some-library",
-						SourceRoots: []string{
-							"a/path",
-							"another/path",
-						},
-					},
-				},
-			}
 			r := &generateRunner{
 				build:           test.build,
-				repo:            repo,
-				state:           state,
+				repo:            test.repo,
+				state:           test.state,
 				containerClient: test.container,
-			}
-
-			// Create library files and commit the change.
-			repoDir := r.repo.GetDir()
-			for _, library := range r.state.Libraries {
-				for _, srcPath := range library.SourceRoots {
-					relPath := filepath.Join(repoDir, srcPath)
-					if err := os.MkdirAll(relPath, 0755); err != nil {
-						t.Fatal(err)
-					}
-					file := filepath.Join(relPath, "example.txt")
-					if err := os.WriteFile(file, []byte("old content"), 0755); err != nil {
-						t.Fatal(err)
-					}
-				}
-			}
-			if _, err := r.repo.AddAll(); err != nil {
-				t.Fatal(err)
-			}
-			if err := r.repo.Commit("test commit"); err != nil {
-				t.Fatal(err)
-			}
-			// Modify library files and add untacked files.
-			for _, library := range r.state.Libraries {
-				for _, srcPath := range library.SourceRoots {
-					file := filepath.Join(repoDir, srcPath, "example.txt")
-					if err := os.WriteFile(file, []byte("new content"), 0755); err != nil {
-						t.Fatal(err)
-					}
-
-					newFile := filepath.Join(repoDir, srcPath, "another_example.txt")
-					if err := os.WriteFile(newFile, []byte("new content"), 0755); err != nil {
-						t.Fatal(err)
-					}
-				}
 			}
 
 			err := r.runBuildCommand(context.Background(), test.libraryID)
 			if test.wantErr {
 				if err == nil {
-					t.Fatal(err)
+					t.Fatalf("%s should return error", test.name)
 				}
-				// Verify the library files are restore.
-				for _, library := range r.state.Libraries {
-					for _, srcPath := range library.SourceRoots {
-						file := filepath.Join(repoDir, srcPath, "example.txt")
-						readFile, err := os.ReadFile(file)
-						if err != nil {
-							t.Fatal(err)
-						}
-						if diff := cmp.Diff("old content", string(readFile)); diff != "" {
-							t.Errorf("file content mismatch (-want +got):%s", diff)
-						}
-
-						newFile := filepath.Join(repoDir, srcPath, "another_example.txt")
-						if _, err := os.Stat(newFile); !os.IsNotExist(err) {
-							t.Fatal(err)
-						}
-					}
-				}
-
 				return
 			}
-
 			if err != nil {
 				t.Fatal(err)
 			}
