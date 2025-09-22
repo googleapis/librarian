@@ -1065,7 +1065,7 @@ func TestInitRun(t *testing.T) {
 			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0. Run this check even
 			// if there is an error that is wanted to ensure that a docker request is only made when
 			// we want it to.
-			if diff := cmp.Diff(test.dockerInitCalls, test.containerClient.initCalls); diff != "" {
+			if diff := cmp.Diff(test.containerClient.initCalls, test.dockerInitCalls); diff != "" {
 				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
 			}
 
