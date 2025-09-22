@@ -115,26 +115,26 @@ func TestRunBuildCommand(t *testing.T) {
 		wantErr        bool
 	}{
 		{
-			name:           "build flag not specified",
+			name:           "build_flag_not_specified",
 			build:          false,
 			container:      &mockContainerClient{},
 			wantBuildCalls: 0,
 		},
 		{
-			name:           "build with library id",
+			name:           "build_with_library_id",
 			build:          true,
 			libraryID:      "some-library",
 			container:      &mockContainerClient{},
 			wantBuildCalls: 1,
 		},
 		{
-			name:           "build with no library id",
+			name:           "build_with_no_library_id",
 			build:          true,
 			container:      &mockContainerClient{},
 			wantBuildCalls: 0,
 		},
 		{
-			name:      "build with no response",
+			name:      "build_with_no_response",
 			build:     true,
 			libraryID: "some-library",
 			container: &mockContainerClient{
@@ -152,7 +152,7 @@ func TestRunBuildCommand(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:      "build with error response in response",
+			name:      "build_with_error_response_in_response",
 			build:     true,
 			libraryID: "some-library",
 			container: &mockContainerClient{
