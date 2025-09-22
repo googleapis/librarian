@@ -35,7 +35,6 @@ type LibraryConfig struct {
 	LibraryID       string `yaml:"id"`
 	NextVersion     string `yaml:"next_version"`
 	GenerateBlocked bool   `yaml:"generate_blocked"`
-	ReleaseBlocked  bool   `yaml:"release_blocked"`
 }
 
 // GlobalFile defines the global files in language repositories.
