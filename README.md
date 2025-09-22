@@ -34,9 +34,14 @@ there are no such images published at the moment.
 See https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian for
 additional documentation.
 
+## Running Tests
+
+See [testing.md] for more information.
+
 ## License
 
 Apache 2.0 - See [LICENSE] for more information.
 
 [contributing]: CONTRIBUTING.md
 [license]: LICENSE
+[testing.md]: doc/testing.md
