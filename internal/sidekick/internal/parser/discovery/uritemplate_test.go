@@ -27,22 +27,9 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 		input string
 		want  *api.PathTemplate
 	}{
-		{"locations/global/firewallPolicies", api.NewPathTemplate().
-			WithLiteral("locations").
-			WithLiteral("global").
-			WithLiteral("firewallPolicies")},
-		{"locations/global/operations/{operation}", api.NewPathTemplate().
-			WithLiteral("locations").
-			WithLiteral("global").
-			WithLiteral("operations").
-			WithVariableNamed("operation")},
-		{"projects/{project}/zones/{zone}/{parentName}/reservationSubBlocks", api.NewPathTemplate().
-			WithLiteral("projects").
-			WithVariableNamed("project").
-			WithLiteral("zones").
-			WithVariableNamed("zone").
-			WithVariableNamed("parentName").
-			WithLiteral("reservationSubBlocks")},
+		{"locations/global/firewallPolicies", api.NewPathTemplate().WithLiteral("locations").WithLiteral("global").WithLiteral("firewallPolicies")},
+		{"locations/global/operations/{operation}", api.NewPathTemplate().WithLiteral("locations").WithLiteral("global").WithLiteral("operations").WithVariable(api.NewPathVariable("operation"))},
+		{"projects/{project}/zones/{zone}/{parentName}/reservationSubBlocks", api.NewPathTemplate().WithLiteral("projects").WithVariable(api.NewPathVariable("project")).WithLiteral("zones").WithVariable(api.NewPathVariable("zone")).WithVariable(api.NewPathVariable("parentName")).WithLiteral("reservationSubBlocks")},
 	} {
 		got, err := ParseUriTemplate(test.input)
 		if err != nil {
@@ -90,7 +77,7 @@ func TestParseExpression(t *testing.T) {
 			t.Errorf("expected a successful parse with input=%s, err=%v", test.input, err)
 			continue
 		}
-		if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariable(test.want).WithMatch()}, gotSegment); diff != "" {
+		if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariable(test.want)}, gotSegment); diff != "" {
 			t.Errorf("mismatch [%s] (-want, +got):\n%s", test.input, diff)
 		}
 		if len(test.want)+2 != gotWidth {
