@@ -43,7 +43,7 @@ var (
 	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
 	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
 	// libraryIDRegex extracts the libraryID from the commit message in a generation PR.
-	// For a generation PR, each commit is expected to will have the libraryID in brackets
+	// For a generation PR, each commit is expected to have the libraryID in brackets
 	// ('[]').
 	libraryIDRegex = regexp.MustCompile(`\[([^\]]+)\]`)
 )
