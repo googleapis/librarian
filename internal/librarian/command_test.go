@@ -1405,6 +1405,7 @@ func TestCommitAndPush(t *testing.T) {
 			},
 			prType:         "generate",
 			push:           true,
+			state:          &config.LibrarianState{},
 			wantErr:        true,
 			expectedErrMsg: "could not find an 'origin' remote",
 		},
