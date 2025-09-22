@@ -294,12 +294,12 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 		State:     r.state,
 	}
 	slog.Info("Performing build for library", "id", libraryID)
-	if buildErr := r.containerClient.Build(ctx, buildRequest); buildErr != nil {
+	if containerErr := r.containerClient.Build(ctx, buildRequest); containerErr != nil {
 		if restoreErr := r.restoreLibrary(libraryID); restoreErr != nil {
-			return errors.Join(buildErr, restoreErr)
+			return errors.Join(containerErr, restoreErr)
 		}
 
-		return buildErr
+		return errors.Join(containerErr)
 	}
 
 	// Read the library state from the response.
