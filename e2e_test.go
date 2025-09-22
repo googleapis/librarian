@@ -535,6 +535,7 @@ END_COMMIT_OVERRIDE
 			}
 			if test.push {
 				cmdArgs = append(cmdArgs, "--push")
+				t.Logf("zle: server.URL: %s", server.URL)
 			}
 
 			cmd := exec.Command("go", cmdArgs...)
