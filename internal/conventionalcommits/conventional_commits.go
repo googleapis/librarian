@@ -190,17 +190,25 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	processFooters(footers)
 
 	var commits []*ConventionalCommit
-	// If the body lines have multiple headers, separate them into  different conventional
-	// commit, all associated with the same commit sha.
-	// Note that we assume single line headers, the 2nd line of headers, if exists,
-	// will be discarded.
+	// Hold the subjects of each commit.
+	var subjects [][]string
+	// If the body lines have multiple headers, separate them into different conventional commit, all associated with
+	// the same commit sha.
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
 			slog.Warn("bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
+			if len(commits) == 0 {
+				// This should not happen as we expect a conventional commit message inside a nested commit.
+				continue
+			}
+
+			// This might be a multi-line header, append the line to the subject of the last commit.
+			subjects[len(subjects)-1] = append(subjects[len(subjects)-1], strings.TrimSpace(bodyLine))
 			continue
 		}
 
+		subjects = append(subjects, []string{})
 		commits = append(commits, &ConventionalCommit{
 			Type:       header.Type,
 			Scope:      header.Scope,
@@ -214,10 +222,17 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 		})
 	}
 
-	// If only one conventional commit is found, i.e., only one header line is
-	// in the commit message, assign the body field.
 	if len(commits) == 1 {
+		// If only one conventional commit is found, i.e., only one header line is
+		// in the commit message, assign the body field.
 		commits[0].Body = strings.TrimSpace(strings.Join(bodyLines[1:], "\n"))
+	} else {
+		// Otherwise, concatenate all lines as the subject of the corresponding commit.
+		// This is a workaround when GitHub inserts line breaks in the middle of a long line after squash and merge.
+		for i, commit := range commits {
+			sub := fmt.Sprintf("%s %s", commit.Subject, strings.Join(subjects[i], " "))
+			commit.Subject = strings.TrimSpace(sub)
+		}
 	}
 
 	return commits, nil

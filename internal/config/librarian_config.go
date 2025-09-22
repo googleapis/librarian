@@ -36,6 +36,7 @@ type LibraryConfig struct {
 	GenerateBlocked bool   `yaml:"generate_blocked"`
 	LibraryID       string `yaml:"id"`
 	NextVersion     string `yaml:"next_version"`
+	ReleaseBlocked  bool   `yaml:"release_blocked"`
 	TagFormat       string `yaml:"tag_format"`
 }
 

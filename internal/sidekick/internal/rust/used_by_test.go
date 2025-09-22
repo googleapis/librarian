@@ -35,7 +35,6 @@ func TestUsedByServicesWithServices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -64,7 +63,6 @@ func TestUsedByServicesNoServices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -101,7 +99,6 @@ func TestUsedByLROsWithLRO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -138,7 +135,6 @@ func TestUsedByLROsWithoutLRO(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -179,7 +175,6 @@ func TestUsedByUuidWithAutoPopulation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -217,7 +212,6 @@ func TestUsedByUuidWithoutAutoPopulation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -323,7 +317,6 @@ func TestFindUsedPackages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	findUsedPackages(model, c)
 	want := []*packagez{
 		{

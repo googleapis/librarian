@@ -79,6 +79,11 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 			EnumByID:    make(map[string]*api.Enum),
 		},
 	}
+	// OpenAPI (for Google) uses some well-known types inspired by Protobuf.
+	// With protoc these types are automatically included via `import`
+	// statements. In the OpenAPI JSON inputs, these types are not automatically
+	// included.
+	result.LoadWellKnownTypes()
 
 	if serviceConfig != nil {
 		result.Name = strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")

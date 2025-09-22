@@ -296,6 +296,136 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
+			name:            "run release init command, skips blocked libraries!",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID:      "blocked-example-id",
+								Version: "1.0.0",
+							},
+							{
+								ID:      "example-id",
+								Version: "2.0.0",
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"blocked-example-id-1.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: another new feature",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Hash:    plumbing.NewHash("abcdefg"),
+									Message: "feat: a new feature",
+								},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"dir1/file1.txt",
+							},
+							plumbing.NewHash("abcdefg").String(): {
+								"dir1/file2.txt",
+							},
+						},
+					},
+					librarianConfig: &config.LibrarianConfig{
+						Libraries: []*config.LibraryConfig{
+							{LibraryID: "blocked-example-id", ReleaseBlocked: true},
+							{LibraryID: "example-id"},
+						},
+					},
+					partialRepo: t.TempDir(),
+				}
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:            "blocked-example-id",
+						Version:       "1.0.0", // version is NOT bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "example-id",
+						Version:       "2.1.0", // version is bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
+			name:            "run release init command, does not skip blocked library if explicitly specified",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					// The library is explicitly specified.
+					library: "blocked-example-id",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID:      "blocked-example-id",
+								Version: "1.0.0",
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"blocked-example-id-1.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: another new feature",
+								},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"dir1/file1.txt",
+							},
+						},
+					},
+					librarianConfig: &config.LibrarianConfig{
+						Libraries: []*config.LibraryConfig{
+							{LibraryID: "blocked-example-id", ReleaseBlocked: true},
+						},
+					},
+					partialRepo: t.TempDir(),
+				}
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:            "blocked-example-id",
+						Version:       "1.1.0",
+						APIs:          []*config.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
 			name:            "run release init command for one invalid library (invalid library id in cfg)",
 			containerClient: &mockContainerClient{},
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
@@ -935,7 +1065,7 @@ func TestInitRun(t *testing.T) {
 			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0. Run this check even
 			// if there is an error that is wanted to ensure that a docker request is only made when
 			// we want it to.
-			if diff := cmp.Diff(test.containerClient.initCalls, test.dockerInitCalls); diff != "" {
+			if diff := cmp.Diff(test.dockerInitCalls, test.containerClient.initCalls); diff != "" {
 				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
 			}
 
