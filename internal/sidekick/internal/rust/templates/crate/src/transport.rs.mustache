@@ -80,7 +80,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             true,
         );
         {{/HasAutoPopulatedFields}}
-        let (builder, method) = None
+        let (builder, method, path_template) = None
         {{#PathInfo.Bindings}}
         .or_else(|| {
             {{#Codec.HasVariablePath}}
@@ -94,6 +94,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{^Codec.HasVariablePath}}
             let path = "{{Codec.PathFmt}}".to_string();
             {{/Codec.HasVariablePath}}
+            let path_template = "{{Codec.PathTemplate}}";
 
             let builder = self
                 .inner
@@ -112,7 +113,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/Codec.QueryParams}}
             let builder = Ok(builder);
             {{/Codec.QueryParamsCanFail}}
-            Some(builder.map(|b| (b, reqwest::Method::{{Verb}})))
+            Some(builder.map(|b| (b, reqwest::Method::{{Verb}}, path_template)))
         })
         {{/PathInfo.Bindings}}
         .ok_or_else(|| {
@@ -132,6 +133,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/PathInfo.Bindings}}
             gax::error::Error::binding(BindingError { paths })
         })??;
+        let options = gax::options::internal::set_path_template(options, path_template);
         let options = gax::options::internal::set_default_idempotency(
             options,
             {{! TODO(#2588) - return idempotency from the above closure }}
