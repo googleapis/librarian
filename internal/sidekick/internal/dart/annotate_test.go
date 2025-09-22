@@ -410,7 +410,7 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	payload := sample.SecretPayload()
 	model := api.NewTestAPI(
 		[]*api.Message{r, a, sample.CustomerManagedEncryption(), secretVersion,
-			updateRequest, sample.Secret(), payload},
+			updateRequest, sample.Secret(), fieldMaskMessage(), payload},
 		[]*api.Enum{sample.EnumState()},
 		[]*api.Service{})
 	model.PackageName = "test"
@@ -463,5 +463,21 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	}
+}
+
+func fieldMaskMessage() *api.Message {
+	return &api.Message{
+		Name:    "FieldMask",
+		ID:      ".google.protobuf.FieldMask",
+		Package: sample.Package,
+		Fields: []*api.Field{
+			{
+				Name:     "paths",
+				JSONName: "paths",
+				Typez:    api.STRING_TYPE,
+				Repeated: true,
+			},
+		},
 	}
 }

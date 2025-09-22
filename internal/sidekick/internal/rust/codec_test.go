@@ -283,6 +283,7 @@ func checkRustPackages(t *testing.T, got *codec, want *codec) {
 
 func TestWellKnownTypesExist(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	loadWellKnownTypes(model.State)
 	for _, name := range []string{"Any", "Duration", "Empty", "FieldMask", "Timestamp"} {
 		if _, ok := model.State.MessageByID[fmt.Sprintf(".google.protobuf.%s", name)]; !ok {
 			t.Errorf("cannot find well-known message %s in API", name)
@@ -293,6 +294,7 @@ func TestWellKnownTypesExist(t *testing.T) {
 func TestWellKnownTypesAsMethod(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
+	loadWellKnownTypes(model.State)
 
 	want := "wkt::Empty"
 	got := c.methodInOutTypeName(".google.protobuf.Empty", model.State, model.PackageName)
@@ -369,6 +371,7 @@ func TestMethodInOut(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message, nested}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
+	loadWellKnownTypes(model.State)
 
 	want := "crate::model::Target"
 	got := c.methodInOutTypeName("..Target", model.State, model.PackageName)
@@ -531,6 +534,7 @@ func TestFieldType(t *testing.T) {
 		"f_map":                    "std::collections::HashMap<i32,i32>",
 	}
 	c := createRustCodec()
+	loadWellKnownTypes(model.State)
 	for _, field := range message.Fields {
 		want, ok := expectedTypes[field.Name]
 		if !ok {
@@ -575,6 +579,7 @@ func TestOneOfFieldType(t *testing.T) {
 		"f_map":                    "std::collections::HashMap<i32,i32>",
 	}
 	c := createRustCodec()
+	loadWellKnownTypes(model.State)
 	for _, field := range message.Fields {
 		want, ok := expectedTypes[field.Name]
 		if !ok {
@@ -650,6 +655,7 @@ func TestFieldMapTypeValues(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, other_message, map_thing}, []*api.Enum{}, []*api.Service{})
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
+		loadWellKnownTypes(model.State)
 		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
 		if got != test.want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
@@ -710,6 +716,7 @@ func TestFieldMapTypeKey(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, map_thing}, []*api.Enum{enum}, []*api.Service{})
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
+		loadWellKnownTypes(model.State)
 		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
 		if got != test.want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
@@ -718,11 +725,16 @@ func TestFieldMapTypeKey(t *testing.T) {
 }
 
 func TestAsQueryParameter(t *testing.T) {
+	options := &api.Message{
+		Name:   "Options",
+		ID:     "..Options",
+		Fields: []*api.Field{},
+	}
 	optionsField := &api.Field{
 		Name:     "options_field",
 		JSONName: "optionsField",
 		Typez:    api.MESSAGE_TYPE,
-		TypezID:  "..Options",
+		TypezID:  options.ID,
 		Optional: true,
 	}
 	requiredField := &api.Field{
@@ -774,6 +786,21 @@ func TestAsQueryParameter(t *testing.T) {
 		TypezID:  ".google.protobuf.FieldMask",
 		Optional: true,
 	}
+	request := &api.Message{
+		Name: "TestRequest",
+		ID:   "..TestRequest",
+		Fields: []*api.Field{
+			optionsField,
+			requiredField, optionalField, repeatedField,
+			requiredEnumField, optionalEnumField, repeatedEnumField,
+			requiredFieldMaskField, optionalFieldMaskField,
+		},
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{options, request},
+		[]*api.Enum{},
+		[]*api.Service{})
+	loadWellKnownTypes(model.State)
 
 	for _, test := range []struct {
 		field *api.Field
@@ -874,6 +901,7 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 		[]*api.Enum{},
 		[]*api.Service{})
 	api.CrossReference(model)
+	loadWellKnownTypes(model.State)
 
 	for _, test := range []struct {
 		field *api.Field
@@ -1287,6 +1315,7 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 	// To test the mappings we need a fairly complex model.API instance. Create it
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
+	loadWellKnownTypes(model.State)
 
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -1346,6 +1375,7 @@ func TestFormatDocCommentsRelativeCrossLinks(t *testing.T) {
 	// To test the mappings we need a fairly complex model.API instance. Create it
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
+	loadWellKnownTypes(model.State)
 
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -1405,6 +1435,7 @@ implied enum value reference [SomeMessage.SomeEnum.ENUM_VALUE][]
 	// To test the mappings we need a fairly complex model.API instance. Create it
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
+	loadWellKnownTypes(model.State)
 
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1.Message", "test.v1"})
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -1628,6 +1659,7 @@ Hyperlink: <a href="https://hyperlink.com">Content</a>`
 	// To test the mappings we need a fairly complex model.API instance. Create it
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
+	loadWellKnownTypes(model.State)
 
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
 	if diff := cmp.Diff(want, got); diff != "" {

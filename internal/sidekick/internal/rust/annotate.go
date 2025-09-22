@@ -450,6 +450,7 @@ type enumValueAnnotation struct {
 func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 	codec.hasServices = len(model.State.ServiceByID) > 0
 
+	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, codec.extraPackages)
 	// Only annotate enums and messages that we intend to generate. In the
 	// process we discover the external dependencies and trim the list of

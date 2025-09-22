@@ -45,11 +45,6 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 			EnumByID:    make(map[string]*api.Enum),
 		},
 	}
-	// Discovery docs use some well-known types inspired by Protobuf. With
-	// protoc these types are automatically included via `import` statements.
-	// In the Discovery docs JSON inputs, these types are not automatically
-	// included.
-	result.LoadWellKnownTypes()
 
 	// Discovery docs do not define a service name or package name. The service
 	// config may provide one.

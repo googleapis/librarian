@@ -140,6 +140,7 @@ func serviceAnnotationsModel() *api.API {
 		[]*api.Message{request, response},
 		[]*api.Enum{usedEnum, extraEnum},
 		[]*api.Service{service})
+	loadWellKnownTypes(model.State)
 	api.CrossReference(model)
 	return model
 }
@@ -1140,6 +1141,7 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 			Fields:        []*api.Field{singular_field},
 		}
 		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+		loadWellKnownTypes(model.State)
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
 		codec := createRustCodec()

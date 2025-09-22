@@ -284,6 +284,68 @@ type packagez struct {
 	usedIf []string
 }
 
+var wellKnownMessages = []*api.Message{
+	{
+		ID:      ".google.protobuf.Any",
+		Name:    "Any",
+		Package: "google.protobuf",
+	},
+	{
+		ID:      ".google.protobuf.Struct",
+		Name:    "Struct",
+		Package: "google.protobuf",
+	},
+	{
+		ID:      ".google.protobuf.Value",
+		Name:    "Value",
+		Package: "google.protobuf",
+	},
+	{
+		ID:      ".google.protobuf.ListValue",
+		Name:    "ListValue",
+		Package: "google.protobuf",
+	},
+	{
+		ID:      ".google.protobuf.Empty",
+		Name:    "Empty",
+		Package: "google.protobuf",
+	},
+	{
+		ID:      ".google.protobuf.FieldMask",
+		Name:    "FieldMask",
+		Package: "google.protobuf",
+	},
+	{
+		ID:      ".google.protobuf.Duration",
+		Name:    "Duration",
+		Package: "google.protobuf",
+	},
+	{
+		ID:      ".google.protobuf.Timestamp",
+		Name:    "Timestamp",
+		Package: "google.protobuf",
+	},
+	{ID: ".google.protobuf.BytesValue", Name: "BytesValue", Package: "google.protobuf"},
+	{ID: ".google.protobuf.UInt64Value", Name: "UInt64Value", Package: "google.protobuf"},
+	{ID: ".google.protobuf.Int64Value", Name: "Int64Value", Package: "google.protobuf"},
+	{ID: ".google.protobuf.UInt32Value", Name: "UInt32Value", Package: "google.protobuf"},
+	{ID: ".google.protobuf.Int32Value", Name: "Int32Value", Package: "google.protobuf"},
+	{ID: ".google.protobuf.FloatValue", Name: "FloatValue", Package: "google.protobuf"},
+	{ID: ".google.protobuf.DoubleValue", Name: "DoubleValue", Package: "google.protobuf"},
+	{ID: ".google.protobuf.BoolValue", Name: "BoolValue", Package: "google.protobuf"},
+}
+
+func loadWellKnownTypes(s *api.APIState) {
+	for _, message := range wellKnownMessages {
+		s.MessageByID[message.ID] = message
+	}
+	s.EnumByID[".google.protobuf.NullValue"] = &api.Enum{
+		Name:    "NullValue",
+		Package: "google.protobuf",
+		ID:      ".google.protobuf.NullValue",
+	}
+}
+
 func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 	hasServices := len(model.State.ServiceByID) > 0
 	hasLROs := false
