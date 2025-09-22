@@ -138,9 +138,10 @@ func TestRunBuildCommand(t *testing.T) {
 			wantBuildCalls: 1,
 		},
 		{
-			name:      "build with no library id",
-			build:     true,
-			container: &mockContainerClient{},
+			name:           "build with no library id",
+			build:          true,
+			container:      &mockContainerClient{},
+			wantBuildCalls: 0,
 		},
 		{
 			name:      "build with no response",
