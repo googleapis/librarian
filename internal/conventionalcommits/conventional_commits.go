@@ -42,6 +42,9 @@ var (
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
 	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
 	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
+	// For a generation PR, each commit will have the libraryID in brackets ('[]') inside
+	// the commit description.
+	libraryIDRegex = regexp.MustCompile(`\[([^\]]+)\]`)
 )
 
 // ConventionalCommit represents a parsed conventional commit message.
@@ -78,6 +81,17 @@ type parsedHeader struct {
 	Scope       string
 	Description string
 	IsBreaking  bool
+}
+
+// extractLibraryID pulls the text between '[]' as the commit's libraryID
+// A non generation PR may not have the associated libraryID between [] and
+// will return an empty libraryID.
+func (header *parsedHeader) extractLibraryID() string {
+	matches := libraryIDRegex.FindStringSubmatch(header.Description)
+	if len(matches) == 0 {
+		return ""
+	}
+	return matches[1]
 }
 
 // commitPart holds the raw string of a commit message and whether it's nested.
@@ -211,7 +225,17 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			continue
 		}
 
+<<<<<<< HEAD
 		subjects = append(subjects, []string{})
+=======
+		// If there is an association for the commit (i.e. the commit has '[LIBRARY_ID]' in the
+		// description), then use that libraryID. Otherwise, use the libraryID passed as the default.
+		headerLibraryID := header.extractLibraryID()
+		if headerLibraryID != "" {
+			libraryID = headerLibraryID
+		}
+
+>>>>>>> 85e8f830 (fix: Use correct library association when parsing commits)
 		commits = append(commits, &ConventionalCommit{
 			Type:       header.Type,
 			Scope:      header.Scope,

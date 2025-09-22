@@ -85,7 +85,7 @@ func TestNewInitRunner(t *testing.T) {
 	}
 }
 
-func TestInitRun(t *testing.T) {
+func TestRunReleaseCommand(t *testing.T) {
 	t.Parallel()
 	gitStatus := make(git.Status)
 	gitStatus["file.txt"] = &git.FileStatus{Worktree: git.Modified}
