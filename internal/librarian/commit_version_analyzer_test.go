@@ -386,3 +386,40 @@ func TestNextVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestThing(t *testing.T) {
+	repo, _ := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir: "/Users/lawrenceqiu/IdeaProjects/google-cloud-python",
+	})
+	commits, _ := GetConventionalCommitsSinceLastRelease(repo, &config.LibraryState{
+		ID:                  "google-cloud-dlp",
+		Version:             "3.32.0",
+		LastGeneratedCommit: "b7e013ac0b9896cf89de48706221ec22212d8d0e",
+		APIs: []*config.API{
+			{
+				Path:          "google/privacy/dlp/v2",
+				ServiceConfig: "dlp_v2.yaml",
+			},
+		},
+		SourceRoots: []string{"packages/google-cloud-dlp"},
+		PreserveRegex: []string{
+			"packages/google-cloud-dlp/CHANGELOG.md",
+			"docs/CHANGELOG.md",
+			"docs/README.rst",
+			"samples/README.txt",
+			"tar.gz",
+			"gapic_version.py",
+			"scripts/client-post-processing",
+			"samples/snippets/README.rst",
+			"tests/system",
+		},
+		RemoveRegex: []string{"packages/google-cloud-dlp"},
+		TagFormat:   "{id}-v{version}",
+	})
+
+	for _, commit := range commits {
+		fmt.Printf("%s\n", commit.LibraryID)
+	}
+
+	t.Errorf("errror")
+}

@@ -225,9 +225,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			continue
 		}
 
-<<<<<<< HEAD
 		subjects = append(subjects, []string{})
-=======
 		// If there is an association for the commit (i.e. the commit has '[LIBRARY_ID]' in the
 		// description), then use that libraryID. Otherwise, use the libraryID passed as the default.
 		headerLibraryID := header.extractLibraryID()
@@ -235,7 +233,6 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			libraryID = headerLibraryID
 		}
 
->>>>>>> 85e8f830 (fix: Use correct library association when parsing commits)
 		commits = append(commits, &ConventionalCommit{
 			Type:       header.Type,
 			Scope:      header.Scope,
