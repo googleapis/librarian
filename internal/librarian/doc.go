@@ -124,6 +124,7 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	-v	enables verbose logging
 
 # release
 

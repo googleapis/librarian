@@ -17,6 +17,8 @@ package librarian
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/googleapis/librarian/internal/cli"
 )
@@ -25,6 +27,16 @@ import (
 func Run(ctx context.Context, arg ...string) error {
 	cmd := newLibrarianCommand()
 	return cmd.Run(ctx, arg)
+}
+
+func setupLogger(verbose bool) {
+	level := slog.LevelInfo
+	if verbose {
+		level = slog.LevelDebug
+	}
+	opts := &slog.HandlerOptions{Level: level}
+	handler := slog.NewTextHandler(os.Stderr, opts)
+	slog.SetDefault(slog.New(handler))
 }
 
 func newLibrarianCommand() *cli.Command {
@@ -65,11 +77,14 @@ func newLibrarianCommand() *cli.Command {
 }
 
 func newCmdGenerate() *cli.Command {
+	var verbose bool
 	cmdGenerate := &cli.Command{
 		Short:     "generate onboards and generates client library code",
 		UsageLine: "librarian generate [flags]",
 		Long:      generateLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			setupLogger(verbose)
+			slog.Debug("generate command verbose logging")
 			if err := cmd.Config.SetDefaults(); err != nil {
 				return fmt.Errorf("failed to initialize config: %w", err)
 			}
@@ -94,15 +109,19 @@ func newCmdGenerate() *cli.Command {
 	addFlagBranch(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagWorkRoot(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagPush(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagVerbose(cmdGenerate.Flags, &verbose)
 	return cmdGenerate
 }
 
 func newCmdTagAndRelease() *cli.Command {
+	var verbose bool
 	cmdTagAndRelease := &cli.Command{
 		Short:     "tag-and-release tags and creates a GitHub release for a merged pull request.",
 		UsageLine: "librarian release tag-and-release [arguments]",
 		Long:      tagAndReleaseLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			setupLogger(verbose)
+			slog.Debug("tag-and-release command verbose logging")
 			if err := cmd.Config.SetDefaults(); err != nil {
 				return fmt.Errorf("failed to initialize config: %w", err)
 			}
@@ -120,15 +139,19 @@ func newCmdTagAndRelease() *cli.Command {
 	addFlagRepo(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
 	addFlagPR(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
 	addFlagGitHubAPIEndpoint(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
+	addFlagVerbose(cmdTagAndRelease.Flags, &verbose)
 	return cmdTagAndRelease
 }
 
 func newCmdInit() *cli.Command {
+	var verbose bool
 	cmdInit := &cli.Command{
 		Short:     "init initiates a release by creating a release pull request.",
 		UsageLine: "librarian release init [flags]",
 		Long:      releaseInitLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			setupLogger(verbose)
+			slog.Debug("init command verbose logging")
 			if err := cmd.Config.SetDefaults(); err != nil {
 				return fmt.Errorf("failed to initialize config: %w", err)
 			}
@@ -151,5 +174,6 @@ func newCmdInit() *cli.Command {
 	addFlagRepo(cmdInit.Flags, cmdInit.Config)
 	addFlagBranch(cmdInit.Flags, cmdInit.Config)
 	addFlagWorkRoot(cmdInit.Flags, cmdInit.Config)
+	addFlagVerbose(cmdInit.Flags, &verbose)
 	return cmdInit
 }
