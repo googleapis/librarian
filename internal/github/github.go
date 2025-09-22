@@ -309,6 +309,11 @@ func hasLabel(pr *PullRequest, labelName string) bool {
 
 // FindMergedPullRequestsWithPendingReleaseLabel finds all merged pull requests with the "release:pending" label.
 func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*PullRequest, error) {
+	return c.FindMergedPullRequestsWithLabel(ctx, owner, repo, "release:pending")
+}
+
+// FindMergedPullRequestsWithLabel finds all merged pull requests with the "release:pending" label.
+func (c *Client) FindMergedPullRequestsWithLabel(ctx context.Context, owner, repo, label string) ([]*PullRequest, error) {
 	var allPRs []*PullRequest
 	opt := &github.PullRequestListOptions{
 		State: "closed",
@@ -322,7 +327,7 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 			return nil, err
 		}
 		for _, pr := range prs {
-			if !pr.GetMergedAt().IsZero() && hasLabel(pr, "release:pending") {
+			if !pr.GetMergedAt().IsZero() && hasLabel(pr, label) {
 				allPRs = append(allPRs, pr)
 			}
 		}
