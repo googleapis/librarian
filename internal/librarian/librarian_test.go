@@ -38,8 +38,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// TODO(https://github.com/googleapis/librarian/issues/202): add better tests
-// for librarian.Run.
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
 		log.Fatal(err)
