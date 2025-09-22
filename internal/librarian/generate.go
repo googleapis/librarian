@@ -46,7 +46,6 @@ type generateRunner struct {
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
-	librarianConfig *config.LibrarianConfig
 	workRoot        string
 }
 
@@ -70,7 +69,6 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
-		librarianConfig: runner.librarianConfig,
 		workRoot:        runner.workRoot,
 	}, nil
 }
@@ -103,16 +101,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	} else {
 		succeededGenerations := 0
 		failedGenerations := 0
-		blockedGenerations := 0
 		for _, library := range r.state.Libraries {
-			if r.librarianConfig != nil {
-				libConfig := r.librarianConfig.LibraryConfigFor(library.ID)
-				if libConfig != nil && libConfig.GenerateBlocked {
-					slog.Info("library has generate_blocked, skipping", "id", library.ID)
-					blockedGenerations++
-					continue
-				}
-			}
 			oldCommit, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
 			if err != nil {
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
@@ -130,11 +119,9 @@ func (r *generateRunner) run(ctx context.Context) error {
 			"generation statistics",
 			"all", len(r.state.Libraries),
 			"successes", succeededGenerations,
-			"blocked", blockedGenerations,
 			"failures", failedGenerations)
-		if failedGenerations > 0 && failedGenerations+blockedGenerations == len(r.state.Libraries) {
-			return fmt.Errorf("all %d libraries failed to generate (blocked: %d)",
-				failedGenerations, blockedGenerations)
+		if failedGenerations > 0 && failedGenerations == len(r.state.Libraries) {
+			return fmt.Errorf("all %d libraries failed to generate", failedGenerations)
 		}
 	}
 

@@ -32,9 +32,8 @@ type LibrarianConfig struct {
 
 // LibraryConfig defines configuration for a single library, identified by its ID.
 type LibraryConfig struct {
-	LibraryID       string `yaml:"id"`
-	NextVersion     string `yaml:"next_version"`
-	GenerateBlocked bool   `yaml:"generate_blocked"`
+	LibraryID   string `yaml:"id"`
+	NextVersion string `yaml:"next_version"`
 }
 
 // GlobalFile defines the global files in language repositories.
