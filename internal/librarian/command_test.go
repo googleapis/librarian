@@ -1293,15 +1293,16 @@ func TestCompileRegexps(t *testing.T) {
 
 func TestCommitAndPush(t *testing.T) {
 	for _, test := range []struct {
-		name            string
-		setupMockRepo   func(t *testing.T) gitrepo.Repository
-		setupMockClient func(t *testing.T) GitHubClient
-		state           *config.LibrarianState
-		prType          string
-		commit          bool
-		push            bool
-		wantErr         bool
-		expectedErrMsg  string
+		name              string
+		setupMockRepo     func(t *testing.T) gitrepo.Repository
+		setupMockClient   func(t *testing.T) GitHubClient
+		state             *config.LibrarianState
+		prType            string
+		failedGenerations int
+		commit            bool
+		push              bool
+		wantErr           bool
+		expectedErrMsg    string
 	}{
 		{
 			name: "Push flag and Commit flag are not specified",
@@ -1576,19 +1577,48 @@ func TestCommitAndPush(t *testing.T) {
 			prType: "generate",
 			push:   true,
 		},
+		{
+			name: "create_a_comment_on_generation_pr_error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				})
+				status := make(git.Status)
+				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: status,
+					RemotesValue: []*git.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{
+					createdPR:      &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
+					createIssueErr: errors.New("simulate comment creation error"),
+				}
+			},
+			state:             &config.LibrarianState{},
+			prType:            "generate",
+			failedGenerations: 1,
+			push:              true,
+			wantErr:           true,
+			expectedErrMsg:    "failed to add pull request comment",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
 
 			commitInfo := &commitInfo{
-				commit:        test.commit,
-				commitMessage: "",
-				ghClient:      client,
-				prType:        test.prType,
-				push:          test.push,
-				repo:          repo,
-				state:         test.state,
+				commit:            test.commit,
+				commitMessage:     "",
+				ghClient:          client,
+				prType:            test.prType,
+				push:              test.push,
+				repo:              repo,
+				state:             test.state,
+				failedGenerations: test.failedGenerations,
 			}
 
 			err := commitAndPush(context.Background(), commitInfo)
