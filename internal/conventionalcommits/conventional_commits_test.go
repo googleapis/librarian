@@ -35,7 +35,7 @@ func TestParseCommits(t *testing.T) {
 		wantErrPhrase string
 	}{
 		{
-			name:    "simple commit with no library association",
+			name:    "simple_commit_with_no_library_association",
 			message: "feat: add new feature",
 			want: []*ConventionalCommit{
 				{
@@ -51,7 +51,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "simple commit with scope",
+			name:    "simple_commit_with_scope",
 			message: "feat(scope): add new feature",
 			want: []*ConventionalCommit{
 				{
@@ -68,7 +68,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "simple commit with breaking change",
+			name:    "simple_commit_with_breaking_change",
 			message: "feat!: add new feature",
 			want: []*ConventionalCommit{
 				{
@@ -85,7 +85,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "commit with single footer",
+			name:    "commit_with_single_footer",
 			message: "feat: add new feature\n\nCo-authored-by: John Doe <john.doe@example.com>",
 			want: []*ConventionalCommit{
 				{
@@ -101,7 +101,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "commit with multiple footers",
+			name:    "commit_with_multiple_footers",
 			message: "feat: add new feature\n\nCo-authored-by: John Doe <john.doe@example.com>\nReviewed-by: Jane Smith <jane.smith@example.com>",
 			want: []*ConventionalCommit{
 				{
@@ -120,7 +120,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "commit with multiple footers for generated changes",
+			name:    "commit_with_multiple_footers_for_generated_changes",
 			message: "feat: [library-name] add new feature\nThis is the body.\n...\n\nPiperOrigin-RevId: piper_cl_number\n\nSource-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/abcdefg1234567)",
 			want: []*ConventionalCommit{
 				{
@@ -141,7 +141,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "commit with breaking change footer",
+			name:    "commit_with_breaking_change_footer",
 			message: "feat: add new feature\n\nBREAKING CHANGE: this is a breaking change",
 			want: []*ConventionalCommit{
 				{
@@ -159,7 +159,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "commit with wrong breaking change footer",
+			name:    "commit_with_wrong_breaking_change_footer",
 			message: "feat: add new feature\n\nBreaking change: this is a breaking change",
 			want: []*ConventionalCommit{
 				{
@@ -177,7 +177,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "commit with body and footers",
+			name:    "commit_with_body_and_footers",
 			message: "feat: add new feature\n\nThis is the body of the commit message.\nIt can span multiple lines.\n\nCo-authored-by: John Doe <john.doe@example.com>",
 			want: []*ConventionalCommit{
 				{
@@ -194,7 +194,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name:    "commit with multi-line footer",
+			name:    "commit_with_multi-line_footer",
 			message: "feat: add new feature\n\nThis is the body.\n\nBREAKING CHANGE: this is a breaking change\nthat spans multiple lines.",
 			want: []*ConventionalCommit{
 				{
@@ -212,7 +212,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name: "commit override",
+			name: "commit_override",
 			message: `feat: original message
 
 BEGIN_COMMIT_OVERRIDE
@@ -238,13 +238,13 @@ END_COMMIT_OVERRIDE`,
 			},
 		},
 		{
-			name:    "invalid conventional commit",
+			name:    "invalid_conventional_commit",
 			message: "this is not a conventional commit",
 			wantErr: false,
 			want:    nil,
 		},
 		{
-			name:          "empty commit message",
+			name:          "empty_commit_message",
 			message:       "",
 			wantErr:       true,
 			wantErrPhrase: "empty commit",
@@ -303,7 +303,7 @@ END_NESTED_COMMIT
 			},
 		},
 		{
-			name: "commit with empty nested commit",
+			name: "commit_with_empty_nested_commit",
 			message: `feat(parser): main feature
 main commit body
 
@@ -326,7 +326,7 @@ END_NESTED_COMMIT
 			},
 		},
 		{
-			name: "commit override with nested commits",
+			name: "commit_override_with_nested_commits",
 			message: `feat: API regeneration main commit
 
 This pull request is generated with proto changes between
@@ -382,7 +382,7 @@ END_COMMIT_OVERRIDE
 			},
 		},
 		{
-			name: "nest commit outside of override ignored",
+			name: "nest_commit_outside_of_override_ignored",
 			message: `feat: original message
 
 BEGIN_NESTED_COMMIT
@@ -411,7 +411,7 @@ END_NESTED_COMMIT`,
 			},
 		},
 		{
-			name: "parse multiple lines message inside nested commit, one line header",
+			name: "parse_multiple_lines_message_inside_nested_commit,_one_line_header",
 			message: `
 chore: Update generation configuration at Tue Aug 26 02:31:23 UTC 2025 (#11734)
 
@@ -529,7 +529,7 @@ END_COMMIT_OVERRIDE`,
 			},
 		},
 		{
-			name: "generation commit has incorrect libraryID passed in",
+			name: "generation_commit_has_incorrect_libraryID_passed_in",
 			message: `
 chore: librarian generate pull request: 20250919T072957Z (#14501)
 

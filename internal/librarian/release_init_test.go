@@ -1155,7 +1155,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 		want      []*conventionalcommits.ConventionalCommit
 	}{
 		{
-			name: "commits all match library id",
+			name: "commits_all_match_libraryId",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{
 					LibraryID: "library-one",
@@ -1187,7 +1187,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 			},
 		},
 		{
-			name: "some commits match library id",
+			name: "some_commits_match_libraryId",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{
 					LibraryID: "library-one",
@@ -1211,7 +1211,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 			},
 		},
 		{
-			name: "no commits match library id",
+			name: "no_commits_match_libraryID",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{
 					LibraryID: "library-one",
