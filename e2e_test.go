@@ -434,23 +434,62 @@ func TestReleaseInit(t *testing.T) {
 		updatedState        string
 		wantChangelog       string
 		libraryID           string
+		commitMsgPath       string
+		changePath          string
+		tagID               string
+		tagVersion          string
+		tagFormat           string
 		push                bool
 		wantErr             bool
 	}{
 		{
-			name:                "runs successfully without push",
+			name:                "go release without push",
 			initialRepoStateDir: "testdata/e2e/release/init/repo_init",
 			updatedState:        "testdata/e2e/release/init/updated-state.yaml",
 			wantChangelog:       "testdata/e2e/release/init/CHANGELOG.md",
 			libraryID:           "go-google-cloud-pubsub-v1",
+			commitMsgPath:       "testdata/e2e/release/init/commit_msg.txt",
+			changePath:          "google-cloud-pubsub/v1",
+			tagID:               "go-google-cloud-pubsub-v1",
+			tagVersion:          "1.0.0",
+			tagFormat:           "%s/v%s",
 		},
 		{
-			name:                "runs successfully with push",
+			name:                "go release with push",
 			initialRepoStateDir: "testdata/e2e/release/init/repo_init",
 			updatedState:        "testdata/e2e/release/init/updated-state.yaml",
 			wantChangelog:       "testdata/e2e/release/init/CHANGELOG.md",
 			libraryID:           "go-google-cloud-pubsub-v1",
-			push:                true, // Enable --push for this case
+			commitMsgPath:       "testdata/e2e/release/init/commit_msg.txt",
+			changePath:          "google-cloud-pubsub/v1",
+			tagID:               "go-google-cloud-pubsub-v1",
+			tagVersion:          "1.0.0",
+			tagFormat:           "%s/v%s",
+			push:                true,
+		},
+		{
+			name:                "python live-stream release",
+			initialRepoStateDir: "testdata/e2e/release/init/repo_init_python",
+			updatedState:        "testdata/e2e/release/init/updated-state-python.yaml",
+			wantChangelog:       "testdata/e2e/release/init/CHANGELOG_PYTHON.md",
+			libraryID:           "python-google-cloud-video-live-stream-v1",
+			commitMsgPath:       "testdata/e2e/release/init/python_commit_msg.txt",
+			changePath:          "packages/google-cloud-video-live-stream",
+			tagID:               "python-google-cloud-video-live-stream-v1",
+			tagVersion:          "v1.12.0",
+			tagFormat:           "%s-%s", // Format for {id}-{version}
+		},
+		{
+			name:                "dlp release",
+			initialRepoStateDir: "testdata/e2e/release/init/repo_init_dlp",
+			updatedState:        "testdata/e2e/release/init/updated-state-dlp.yaml",
+			wantChangelog:       "testdata/e2e/release/init/CHANGELOG_DLP.md",
+			libraryID:           "dlp",
+			commitMsgPath:       "testdata/e2e/release/init/dlp_commit_msg.txt",
+			changePath:          "dlp",
+			tagID:               "dlp",
+			tagVersion:          "1.24.0",
+			tagFormat:           "%s/v%s",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -471,51 +510,26 @@ func TestReleaseInit(t *testing.T) {
 				runGit(t, repo, "remote", "set-url", "origin", bareRepoDir)
 			}
 
-			runGit(t, repo, "tag", "go-google-cloud-pubsub-v1-1.0.0")
+			// Dynamically create the tag based on the format string
+			tagName := fmt.Sprintf(test.tagFormat, test.tagID, test.tagVersion)
+			runGit(t, repo, "tag", tagName)
+
 			// Add a new commit to simulate a change.
-			newFilePath := filepath.Join(repo, "google-cloud-pubsub/v1", "new-file.txt")
+			newFilePath := filepath.Join(repo, test.changePath, "new-file.txt")
+			if err := os.MkdirAll(filepath.Dir(newFilePath), 0755); err != nil {
+				t.Fatalf("Failed to create directory for new file: %v", err)
+			}
 			if err := os.WriteFile(newFilePath, []byte("new file"), 0644); err != nil {
 				t.Fatal(err)
 			}
 			runGit(t, repo, "add", newFilePath)
-			commitMsg := `
-chore: Update generation configuration at Tue Aug 26 02:31:23 UTC 2025 (#11734)
-
-This pull request is generated with proto changes between
-[googleapis/googleapis@525c95a](https://github.com/googleapis/googleapis/commit/525c95a7a122ec2869ae06cd02fa5013819463f6)
-(exclusive) and
-[googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
-(inclusive).
-
-BEGIN_COMMIT_OVERRIDE
-BEGIN_NESTED_COMMIT
-feat: [go-google-cloud-pubsub-v1] Support promptable voices by specifying a model name and a prompt
-feat: [go-google-cloud-pubsub-v1] Add enum value M4A to enum AudioEncoding
-docs: [go-google-cloud-pubsub-v1] A comment for method 'StreamingSynthesize' in service 'TextToSpeech' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for enum value 'AUDIO_ENCODING_UNSPECIFIED' in enum 'AudioEncoding' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for enum value 'OGG_OPUS' in enum 'AudioEncoding' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for enum value 'PCM' in enum 'AudioEncoding' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for field 'low_latency_journey_synthesis' in message '.google.cloud.texttospeech.v1beta1.AdvancedVoiceOptions' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for enum value 'PHONETIC_ENCODING_IPA' in enum 'PhoneticEncoding' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for enum value 'PHONETIC_ENCODING_X_SAMPA' in enum 'PhoneticEncoding' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for field 'phrase' in message '.google.cloud.texttospeech.v1beta1.CustomPronunciationParams' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for field 'pronunciations' in message '.google.cloud.texttospeech.v1beta1.CustomPronunciations' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for message 'MultiSpeakerMarkup' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for field 'custom_pronunciations' in message '.google.cloud.texttospeech.v1beta1.SynthesisInput' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for field 'voice_clone' in message '.google.cloud.texttospeech.v1beta1.VoiceSelectionParams' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for field 'speaking_rate' in message '.google.cloud.texttospeech.v1beta1.AudioConfig' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for field 'audio_encoding' in message '.google.cloud.texttospeech.v1beta1.StreamingAudioConfig' is changed
-docs: [go-google-cloud-pubsub-v1] A comment for field 'text' in message '.google.cloud.texttospeech.v1beta1.StreamingSynthesisInput' is changed
-
-PiperOrigin-RevId: 799242210
-
-Source Link:
-[googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
-END_NESTED_COMMIT
-END_COMMIT_OVERRIDE
-`
+			commitMsgBytes, err := os.ReadFile(test.commitMsgPath)
+			if err != nil {
+				t.Fatalf("Failed to read commit message file: %v", err)
+			}
+			commitMsg := string(commitMsgBytes)
 			runGit(t, repo, "commit", "-m", commitMsg)
-			runGit(t, repo, "log", "--oneline", "go-google-cloud-pubsub-v1-1.0.0..HEAD", "--", "google-cloud-pubsub/v1")
+			runGit(t, repo, "log", "--oneline", fmt.Sprintf("%s..HEAD", tagName), "--", test.changePath)
 
 			server := newMockGitHubServer(t, "release")
 			defer server.Close()
@@ -540,8 +554,7 @@ END_COMMIT_OVERRIDE
 			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
-			err := cmd.Run()
-			if err != nil {
+			if err := cmd.Run(); err != nil {
 				t.Fatalf("Failed to run release init: %v", err)
 			}
 
@@ -565,12 +578,13 @@ END_COMMIT_OVERRIDE
 				t.Fatalf("Failed to unmarshal expected state: %v", err)
 			}
 
-			if diff := cmp.Diff(wantState, gotState); diff != "" {
+			// Use cmpopts.IgnoreFields to ignore the dynamic commit hash.
+			if diff := cmp.Diff(wantState, gotState, cmpopts.IgnoreFields(config.LibraryState{}, "LastGeneratedCommit")); diff != "" {
 				t.Fatalf("Generated yaml mismatch (-want +got): %s", diff)
 			}
 
 			// Verify the CHANGELOG.md file content
-			gotChangelog, err := os.ReadFile(filepath.Join(outputDir, "google-cloud-pubsub/v1", "CHANGELOG.md"))
+			gotChangelog, err := os.ReadFile(filepath.Join(outputDir, test.changePath, "CHANGELOG.md"))
 			if err != nil {
 				t.Fatalf("Failed to read CHANGELOG.md from output directory: %v", err)
 			}
