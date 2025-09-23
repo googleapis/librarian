@@ -590,19 +590,29 @@ func TestReleaseInit(t *testing.T) {
 }
 
 func TestReleaseTagAndRelease(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
-		name    string
-		prBody  string
-		push    bool
-		wantErr bool
+		name     string
+		prBody   string
+		repoPath string
+		repoURL  string
+		push     bool
+		wantErr  bool
 	}{
 		{
 			name: "runs successfully",
 			prBody: `<details><summary>go-google-cloud-pubsub-v1: v1.0.1</summary>
+		### Features
+		- feat: new feature
+		</details>`,
+			repoURL: "https://github.com/googleapis/librarian",
+		},
+		{
+			name: "runs successfully from cloned repo",
+			prBody: `<details><summary>go-google-cloud-pubsub-v1: v1.0.1</summary>
 ### Features
 - feat: new feature
 </details>`,
+			repoPath: "testdata/e2e/release/init/single_commit",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -709,12 +719,20 @@ libraries:
 			}))
 			defer server.Close()
 
+			repo := test.repoURL
+			if test.repoPath != "" {
+				repo = t.TempDir()
+				err := initRepo(t, repo, test.repoPath)
+				if err != nil {
+					t.Fatalf("error initializing fake git repo %s", err)
+				}
+			}
 			cmdArgs := []string{
 				"run",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
 				"tag-and-release",
-				"--repo=https://github.com/googleapis/librarian",
+				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--github-api-endpoint=%s/", server.URL),
 				"--pr=https://github.com/googleapis/librarian/pull/123",
 			}
@@ -775,6 +793,7 @@ func newMockGitHubServer(t *testing.T, prTitleFragment string) *httptest.Server 
 // initRepo initiates a git repo in the given directory, copy
 // files from source directory and create a commit.
 func initRepo(t *testing.T, dir, source string) error {
+	t.Logf("initializing repo, dir %s, source %s", dir, source)
 	if err := os.CopyFS(dir, os.DirFS(source)); err != nil {
 		return err
 	}
