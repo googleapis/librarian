@@ -40,7 +40,7 @@ var (
 	// A footer key consists of letters and hyphens, or is the "BREAKING CHANGE"
 	// literal. The key is followed by ": " and then the value.
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
-	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
+	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s*(.*)`)
 	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
 )
 

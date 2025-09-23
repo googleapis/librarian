@@ -619,3 +619,84 @@ func TestConventionalCommit_MarshalJSON(t *testing.T) {
 		t.Errorf("MarshalJSON() mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestParseFooters(t *testing.T) {
+	for _, tt := range []struct {
+		name           string
+		footerLines    []string
+		wantFooters    map[string]string
+		wantIsBreaking bool
+	}{
+		{
+			name: "single footer",
+			footerLines: []string{
+				"Reviewed-by: G. Gemini",
+			},
+			wantFooters: map[string]string{
+				"Reviewed-by": "G. Gemini",
+			},
+		},
+		{
+			name: "multiple footers",
+			footerLines: []string{
+				"Reviewed-by: G. Gemini",
+				"Co-authored-by: Another Person <another@person.com>",
+			},
+			wantFooters: map[string]string{
+				"Reviewed-by":    "G. Gemini",
+				"Co-authored-by": "Another Person <another@person.com>",
+			},
+		},
+		{
+			name: "multiline footer",
+			footerLines: []string{
+				"BREAKING CHANGE: something broke",
+				"  and it was a big deal",
+			},
+			wantFooters: map[string]string{
+				"BREAKING CHANGE": "something broke\n  and it was a big deal",
+			},
+			wantIsBreaking: true,
+		},
+		{
+			name: "empty lines",
+			footerLines: []string{
+				"Reviewed-by: G. Gemini",
+				"",
+				"",
+				"Co-authored-by: Another Person <another@person.com>",
+			},
+			wantFooters: map[string]string{
+				"Reviewed-by":    "G. Gemini",
+				"Co-authored-by": "Another Person <another@person.com>",
+			},
+		},
+		{
+			name: "multiple footers with key on one line, value on the next",
+			footerLines: []string{
+				"PiperOrigin-RevId: 802200836",
+				"",
+				"Source-Link:",
+				"googleapis/googleapis@d300b15",
+				"",
+				"",
+				"Copy-Tag:",
+				"eyJwIjoic",
+			},
+			wantFooters: map[string]string{
+				"PiperOrigin-RevId": "802200836",
+				"Source-Link":       "\ngoogleapis/googleapis@d300b15",
+				"Copy-Tag":          "\neyJwIjoic"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			gotFooters, gotIsBreaking := parseFooters(tt.footerLines)
+			if diff := cmp.Diff(tt.wantFooters, gotFooters); diff != "" {
+				t.Errorf("parseFooters() footers mismatch (-want +got):%s", diff)
+			}
+			if gotIsBreaking != tt.wantIsBreaking {
+				t.Errorf("parseFooters() isBreaking = %v, want %v", gotIsBreaking, tt.wantIsBreaking)
+			}
+		})
+	}
+}
