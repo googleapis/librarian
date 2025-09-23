@@ -110,7 +110,10 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 
 	bodyPathField := ""
 	if bodyID != ".google.protobuf.Empty" {
-		name := bodyFieldName(fieldNames)
+		name, err := bodyFieldName(fieldNames)
+		if err != nil {
+			return nil, err
+		}
 		body := &api.Field{
 			Documentation: fmt.Sprintf("Synthetic request body field for the [%s()][%s] method.", input.Name, id[1:]),
 			Name:          name,
@@ -140,17 +143,11 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 	return method, nil
 }
 
-func bodyFieldName(fieldNames map[string]bool) string {
-	// Keep adding trailing `_` until there is no conflict. Most of the time
-	// this returns `body_`.
-	name := "body_"
-	for count := 0; count != len(fieldNames); count += 1 {
-		if _, ok := fieldNames[name]; !ok {
-			return name
-		}
-		name = name + "_"
+func bodyFieldName(fieldNames map[string]bool) (string, error) {
+	if _, ok := fieldNames["body"]; ok {
+		return "", fmt.Errorf("body is a request or path parameter")
 	}
-	return name
+	return "body", nil
 }
 
 func getMethodType(model *api.API, methodID, name string, typez *schema) (string, error) {

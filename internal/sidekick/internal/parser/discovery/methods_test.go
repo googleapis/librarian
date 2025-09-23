@@ -190,9 +190,9 @@ func TestMethodWithBody(t *testing.T) {
 		SyntheticRequest: true,
 		Fields: []*api.Field{
 			{
-				Name:          "body_",
-				JSONName:      "body_",
-				ID:            "..addresses.insertRequest.body_",
+				Name:          "body",
+				JSONName:      "body",
+				ID:            "..addresses.insertRequest.body",
 				Documentation: "Synthetic request body field for the [insert()][.addresses.insert] method.",
 				Typez:         api.MESSAGE_TYPE,
 				TypezID:       "..Address",
@@ -273,6 +273,12 @@ func TestMakeMethodError(t *testing.T) {
 		{"badParameter", method{Path: "a/b", Parameters: []*parameter{
 			{Name: "badParameter", schema: schema{Type: "--invalid--"}},
 		}}},
+		{"badParameterName", method{
+			Path:    "a/b",
+			Request: &schema{Ref: "Zone"},
+			Parameters: []*parameter{
+				{Name: "body", schema: schema{Type: "string"}},
+			}}},
 	} {
 		doc := document{}
 		parent := &api.Message{
@@ -291,18 +297,30 @@ func TestBodyFieldName(t *testing.T) {
 		Input []string
 		Want  string
 	}{
-		{[]string{"a", "b", "c"}, "body_"},
-		{[]string{"body", "b", "c"}, "body_"},
-		{[]string{"body", "body_", "c"}, "body__"},
-		{[]string{"body", "body_", "body__"}, "body___"},
+		{[]string{"a", "b", "c"}, "body"},
+		{[]string{"a", "body_", "c"}, "body"},
+		{[]string{"a", "body_", "body__"}, "body"},
 	} {
 		fieldNames := map[string]bool{}
 		for _, n := range test.Input {
 			fieldNames[n] = true
 		}
-		got := bodyFieldName(fieldNames)
+		got, err := bodyFieldName(fieldNames)
+		if err != nil {
+			t.Errorf("expected successful body field name, err=%v", err)
+		}
 		if test.Want != got {
 			t.Errorf("mismatch want=%s, got=%s", test.Want, got)
 		}
+	}
+}
+
+func TestBodyFieldError(t *testing.T) {
+	fieldNames := map[string]bool{}
+	for _, n := range []string{"a", "b", "body"} {
+		fieldNames[n] = true
+	}
+	if got, err := bodyFieldName(fieldNames); err == nil {
+		t.Errorf("expected an error  got=%s", got)
 	}
 }
