@@ -90,20 +90,7 @@ Language Image: {{.ImageVersion}}
 
 	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
-	}).Parse(`BEGIN_COMMIT_OVERRIDE
-{{ range .Commits }}
-BEGIN_NESTED_COMMIT
-{{.Type}}: [{{.LibraryID}}] {{.Subject}}
-{{.Body}}
-
-PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
-
-Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{.CommitHash}})
-END_NESTED_COMMIT
-{{ end }}
-END_COMMIT_OVERRIDE
-
-This pull request is generated with proto changes between
+	}).Parse(`This pull request is generated with proto changes between
 [googleapis/googleapis@{{shortSHA .StartSHA}}](https://github.com/googleapis/googleapis/commit/{{.StartSHA}})
 (exclusive) and
 [googleapis/googleapis@{{shortSHA .EndSHA}}](https://github.com/googleapis/googleapis/commit/{{.EndSHA}})
@@ -119,6 +106,19 @@ Language Image: {{.ImageVersion}}
 - {{ . }}
 {{- end -}}
 {{- end }}
+
+BEGIN_COMMIT_OVERRIDE
+{{ range .Commits }}
+BEGIN_NESTED_COMMIT
+{{.Type}}: [{{.LibraryID}}] {{.Subject}}
+{{.Body}}
+
+PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
+
+Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{.CommitHash}})
+END_NESTED_COMMIT
+{{ end }}
+END_COMMIT_OVERRIDE
 `))
 )
 

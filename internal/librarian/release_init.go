@@ -21,8 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/conventionalcommits"
-	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/semver"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -176,7 +176,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
 	}
 
-	initRequest := &docker.ReleaseInitRequest{
+	initRequest := &container.ReleaseInitRequest{
 		Branch:          r.branch,
 		Commit:          r.commit,
 		LibrarianConfig: r.librarianConfig,

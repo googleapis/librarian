@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -246,7 +246,7 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 		return "", err
 	}
 
-	generateRequest := &docker.GenerateRequest{
+	generateRequest := &container.GenerateRequest{
 		ApiRoot:   apiRoot,
 		HostMount: r.hostMount,
 		LibraryID: libraryID,
@@ -288,7 +288,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 		return nil
 	}
 
-	buildRequest := &docker.BuildRequest{
+	buildRequest := &container.BuildRequest{
 		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		RepoDir:   r.repo.GetDir(),
@@ -358,7 +358,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		return "", err
 	}
 
-	configureRequest := &docker.ConfigureRequest{
+	configureRequest := &container.ConfigureRequest{
 		ApiRoot:   apiRoot,
 		HostMount: r.hostMount,
 		LibraryID: r.library,

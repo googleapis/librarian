@@ -23,7 +23,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/container"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
@@ -119,14 +119,14 @@ func (m *mockGitHubClient) CreateTag(ctx context.Context, tagName, commitish str
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.
 type mockContainerClient struct {
 	ContainerClient
-	generateCalls  int
-	buildCalls     int
-	configureCalls int
-	initCalls      int
-	generateErr    error
-	buildErr       error
-	configureErr   error
-	initErr        error
+	generateCalls    int
+	buildCalls       int
+	configureCalls   int
+	releaseInitCalls int
+	generateErr      error
+	buildErr         error
+	configureErr     error
+	initErr          error
 	// Set this value if you want an error when
 	// generate a library with a specific id.
 	failGenerateForID string
@@ -148,7 +148,7 @@ type mockContainerClient struct {
 	configureLibraryPaths []string
 }
 
-func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
+func (m *mockContainerClient) Build(ctx context.Context, request *container.BuildRequest) error {
 	m.buildCalls++
 	if m.noBuildResponse {
 		return m.buildErr
@@ -168,7 +168,7 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	return m.buildErr
 }
 
-func (m *mockContainerClient) Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error) {
+func (m *mockContainerClient) Configure(ctx context.Context, request *container.ConfigureRequest) (string, error) {
 	m.configureCalls++
 
 	if m.noConfigureResponse {
@@ -221,7 +221,7 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 	return "", m.configureErr
 }
 
-func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
+func (m *mockContainerClient) Generate(ctx context.Context, request *container.GenerateRequest) error {
 	m.generateCalls++
 
 	if m.noGenerateResponse {
@@ -275,8 +275,8 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	return m.generateErr
 }
 
-func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error {
-	m.initCalls++
+func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *container.ReleaseInitRequest) error {
+	m.releaseInitCalls++
 	if m.noReleaseResponse {
 		return m.initErr
 	}

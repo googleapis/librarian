@@ -144,9 +144,9 @@ type Config struct {
 	// LIBRARIAN_GITHUB_TOKEN environment variable.
 	GitHubToken string
 
-	// HostMount is used to remap Docker mount paths when running in environments
-	// where Docker containers are siblings (e.g., Kokoro).
-	// It specifies a mount point from the Docker host into the Docker container.
+	// HostMount is used to remap the mount paths when running in environments
+	// where containers are siblings (e.g., Kokoro).
+	// It specifies a mount point from the host into the container.
 	// The format is "{host-dir}:{local-dir}".
 	//
 	// HostMount is specified with the -host-mount flag.
@@ -221,16 +221,15 @@ type Config struct {
 	// Repo is specified with the -repo flag.
 	Repo string
 
-	// UserGID is the group ID of the current user. It is used to run Docker
-	// containers with the same user, so that created files have the correct
-	// ownership.
+	// UserGID is the group ID of the current user. It is used to run containers
+	// with the same user, so that created files have the correct ownership.
 	//
 	// This is populated automatically after flag parsing. No user setup is
 	// expected.
 	UserGID string
 
-	// UserUID is the user ID of the current user. It is used to run Docker
-	// containers with the same user, so that created files have the correct
+	// UserUID is the user ID of the current user. It is used to run containers
+	// with the same user, so that created files have the correct
 	// ownership.
 	//
 	// This is populated automatically after flag parsing. No user setup is

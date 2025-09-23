@@ -143,7 +143,7 @@ func TestRunBuildCommand(t *testing.T) {
 			wantBuildCalls: 1,
 		},
 		{
-			name:      "build_with_docker_command_error_files_restored",
+			name:      "build_with_container_command_error_files_restored",
 			build:     true,
 			libraryID: "some-library",
 			container: &mockContainerClient{
