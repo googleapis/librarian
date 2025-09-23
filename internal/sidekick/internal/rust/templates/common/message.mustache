@@ -251,7 +251,7 @@ impl gax::paginator::internal::PageableResponse for {{Codec.Name}} {
 {{/Pagination}}
 {{#Codec.HasNestedTypes}}
 
-/// Defines additional types related to [{{Name}}].
+/// Defines additional types related to [{{Codec.Name}}].
 {{> /templates/common/feature_gate}}
 pub mod {{Codec.ModuleName}} {
     {{! Very rarely, this is unused. It is easier to always disable the warning. }}
