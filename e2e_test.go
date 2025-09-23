@@ -429,74 +429,64 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 func TestReleaseInit(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name                string
-		initialRepoStateDir string
-		updatedState        string
-		wantChangelog       string
-		libraryID           string
-		commitMsgPath       string
-		changePath          string
-		tagID               string
-		tagVersion          string
-		tagFormat           string
-		push                bool
-		wantErr             bool
+		name        string
+		testDataDir string
+		libraryID   string
+		changePath  string
+		tagID       string
+		tagVersion  string
+		tagFormat   string
+		push        bool
+		wantErr     bool
 	}{
 		{
-			name:                "go release without push",
-			initialRepoStateDir: "testdata/e2e/release/init/repo_init",
-			updatedState:        "testdata/e2e/release/init/updated-state.yaml",
-			wantChangelog:       "testdata/e2e/release/init/CHANGELOG.md",
-			libraryID:           "go-google-cloud-pubsub-v1",
-			commitMsgPath:       "testdata/e2e/release/init/commit_msg.txt",
-			changePath:          "google-cloud-pubsub/v1",
-			tagID:               "go-google-cloud-pubsub-v1",
-			tagVersion:          "1.0.0",
-			tagFormat:           "%s/v%s",
+			name:        "release with multiple commits",
+			testDataDir: "testdata/e2e/release/init/multiple_commits",
+			libraryID:   "go-google-cloud-pubsub-v1",
+			changePath:  "google-cloud-pubsub/v1",
+			tagID:       "go-google-cloud-pubsub-v1",
+			tagVersion:  "1.0.0",
+			tagFormat:   "%s/v%s",
 		},
 		{
-			name:                "go release with push",
-			initialRepoStateDir: "testdata/e2e/release/init/repo_init",
-			updatedState:        "testdata/e2e/release/init/updated-state.yaml",
-			wantChangelog:       "testdata/e2e/release/init/CHANGELOG.md",
-			libraryID:           "go-google-cloud-pubsub-v1",
-			commitMsgPath:       "testdata/e2e/release/init/commit_msg.txt",
-			changePath:          "google-cloud-pubsub/v1",
-			tagID:               "go-google-cloud-pubsub-v1",
-			tagVersion:          "1.0.0",
-			tagFormat:           "%s/v%s",
-			push:                true,
+			name:        "release with multiple commits with push",
+			testDataDir: "testdata/e2e/release/init/multiple_commits",
+			libraryID:   "go-google-cloud-pubsub-v1",
+			changePath:  "google-cloud-pubsub/v1",
+			tagID:       "go-google-cloud-pubsub-v1",
+			tagVersion:  "1.0.0",
+			tagFormat:   "%s/v%s",
+			push:        true,
 		},
 		{
-			name:                "python live-stream release",
-			initialRepoStateDir: "testdata/e2e/release/init/repo_init_python",
-			updatedState:        "testdata/e2e/release/init/updated-state-python.yaml",
-			wantChangelog:       "testdata/e2e/release/init/CHANGELOG_PYTHON.md",
-			libraryID:           "python-google-cloud-video-live-stream-v1",
-			commitMsgPath:       "testdata/e2e/release/init/python_commit_msg.txt",
-			changePath:          "packages/google-cloud-video-live-stream",
-			tagID:               "python-google-cloud-video-live-stream-v1",
-			tagVersion:          "v1.12.0",
-			tagFormat:           "%s-%s", // Format for {id}-{version}
+			name:        "release with multiple nested commits",
+			testDataDir: "testdata/e2e/release/init/multiple_nested_commits",
+			libraryID:   "python-google-cloud-video-live-stream-v1",
+			changePath:  "packages/google-cloud-video-live-stream",
+			tagID:       "python-google-cloud-video-live-stream-v1",
+			tagVersion:  "v1.12.0",
+			tagFormat:   "%s-%s", // Format for {id}-{version}
 		},
 		{
-			name:                "dlp release",
-			initialRepoStateDir: "testdata/e2e/release/init/repo_init_dlp",
-			updatedState:        "testdata/e2e/release/init/updated-state-dlp.yaml",
-			wantChangelog:       "testdata/e2e/release/init/CHANGELOG_DLP.md",
-			libraryID:           "dlp",
-			commitMsgPath:       "testdata/e2e/release/init/dlp_commit_msg.txt",
-			changePath:          "dlp",
-			tagID:               "dlp",
-			tagVersion:          "1.24.0",
-			tagFormat:           "%s/v%s",
+			name:        "release with single commit",
+			testDataDir: "testdata/e2e/release/init/single_commit",
+			libraryID:   "dlp",
+			changePath:  "dlp",
+			tagID:       "dlp",
+			tagVersion:  "1.24.0",
+			tagFormat:   "%s/v%s",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			workRoot := t.TempDir()
 			repo := t.TempDir()
 
-			if err := initRepo(t, repo, test.initialRepoStateDir); err != nil {
+			initialRepoStateDir := filepath.Join(test.testDataDir, "repo_init")
+			updatedState := filepath.Join(test.testDataDir, "state.yaml")
+			wantChangelog := filepath.Join(test.testDataDir, "CHANGELOG.md")
+			commitMsgPath := filepath.Join(test.testDataDir, "commit_msg.txt")
+
+			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
 
@@ -523,7 +513,7 @@ func TestReleaseInit(t *testing.T) {
 				t.Fatal(err)
 			}
 			runGit(t, repo, "add", newFilePath)
-			commitMsgBytes, err := os.ReadFile(test.commitMsgPath)
+			commitMsgBytes, err := os.ReadFile(commitMsgPath)
 			if err != nil {
 				t.Fatalf("Failed to read commit message file: %v", err)
 			}
@@ -565,7 +555,7 @@ func TestReleaseInit(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to read updated state.yaml from output directory: %v", err)
 			}
-			wantBytes, readErr := os.ReadFile(test.updatedState)
+			wantBytes, readErr := os.ReadFile(updatedState)
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
@@ -588,7 +578,7 @@ func TestReleaseInit(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to read CHANGELOG.md from output directory: %v", err)
 			}
-			wantChangelogBytes, err := os.ReadFile(test.wantChangelog)
+			wantChangelogBytes, err := os.ReadFile(wantChangelog)
 			if err != nil {
 				t.Fatalf("Failed to read expected changelog for comparison: %v", err)
 			}
