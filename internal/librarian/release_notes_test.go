@@ -99,16 +99,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				"another-library": "abcdefg",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s
-
-BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
 fix: [one-library] a bug fix
@@ -119,7 +110,16 @@ PiperOrigin-RevId: 573342
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE`,
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s`,
 				librarianVersion, "go:1.21"),
 		},
 		{
@@ -171,20 +171,7 @@ END_COMMIT_OVERRIDE`,
 				"failed-library-a",
 				"failed-library-b",
 			},
-			want: fmt.Sprintf(`This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s
-
-## Generation failed for
-- failed-library-a
-- failed-library-b
-
-BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
 fix: [one-library] a bug fix
@@ -195,7 +182,20 @@ PiperOrigin-RevId: 573342
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE`,
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s
+
+## Generation failed for
+- failed-library-a
+- failed-library-b`,
 				librarianVersion, "go:1.21"),
 		},
 		{
@@ -244,16 +244,7 @@ END_COMMIT_OVERRIDE`,
 				"one-library": "1234567890",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`This pull request is generated with proto changes between
-[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s
-
-BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
 fix: [one-library] a bug fix
@@ -273,7 +264,16 @@ PiperOrigin-RevId: 98765
 Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890abcdef000000000000000000000000)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE`,
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s`,
 				librarianVersion, "go:1.21"),
 		},
 		{

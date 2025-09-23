@@ -188,20 +188,21 @@ type messageAnnotation struct {
 }
 
 type methodAnnotation struct {
-	Name                string
-	BuilderName         string
-	DocLines            []string
-	PathInfo            *api.PathInfo
-	Body                string
-	ServiceNameToPascal string
-	ServiceNameToCamel  string
-	ServiceNameToSnake  string
-	OperationInfo       *operationInfo
-	SystemParameters    []systemParameter
-	ReturnType          string
-	HasVeneer           bool
-	Attributes          []string
-	RoutingRequired     bool
+	Name                      string
+	BuilderName               string
+	DocLines                  []string
+	PathInfo                  *api.PathInfo
+	Body                      string
+	ServiceNameToPascal       string
+	ServiceNameToCamel        string
+	ServiceNameToSnake        string
+	OperationInfo             *operationInfo
+	SystemParameters          []systemParameter
+	ReturnType                string
+	HasVeneer                 bool
+	Attributes                []string
+	RoutingRequired           bool
+	DetailedTracingAttributes bool
 }
 
 type pathInfoAnnotation struct {
@@ -312,6 +313,9 @@ type pathBindingAnnotation struct {
 
 	// The variables to be substituted into the path
 	Substitutions []*bindingSubstitution
+
+	// The codec is configured to generated detailed tracing attributes.
+	DetailedTracingAttributes bool
 }
 
 // QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
@@ -694,7 +698,7 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API) {
 }
 
 func (c *codec) annotateMethod(m *api.Method) {
-	annotatePathInfo(m)
+	c.annotatePathInfo(m)
 	for _, routing := range m.Routing {
 		for _, variant := range routing.Variants {
 			routingVariantAnnotations := &routingVariantAnnotations{
@@ -712,18 +716,19 @@ func (c *codec) annotateMethod(m *api.Method) {
 	}
 	serviceName := c.ServiceName(m.Service)
 	annotation := &methodAnnotation{
-		Name:                strcase.ToSnake(m.Name),
-		BuilderName:         toPascal(m.Name),
-		Body:                bodyAccessor(m),
-		DocLines:            c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes()),
-		PathInfo:            m.PathInfo,
-		ServiceNameToPascal: toPascal(serviceName),
-		ServiceNameToCamel:  toCamel(serviceName),
-		ServiceNameToSnake:  toSnake(serviceName),
-		SystemParameters:    c.systemParameters,
-		ReturnType:          returnType,
-		HasVeneer:           c.hasVeneer,
-		RoutingRequired:     c.routingRequired,
+		Name:                      strcase.ToSnake(m.Name),
+		BuilderName:               toPascal(m.Name),
+		Body:                      bodyAccessor(m),
+		DocLines:                  c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes()),
+		PathInfo:                  m.PathInfo,
+		ServiceNameToPascal:       toPascal(serviceName),
+		ServiceNameToCamel:        toCamel(serviceName),
+		ServiceNameToSnake:        toSnake(serviceName),
+		SystemParameters:          c.systemParameters,
+		ReturnType:                returnType,
+		HasVeneer:                 c.hasVeneer,
+		RoutingRequired:           c.routingRequired,
+		DetailedTracingAttributes: c.detailedTracingAttributes,
 	}
 	if annotation.Name == "clone" {
 		// Some methods look too similar to standard Rust traits. Clippy makes
@@ -831,7 +836,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) bindingSubstitu
 	}
 }
 
-func annotatePathBinding(b *api.PathBinding, m *api.Method) *pathBindingAnnotation {
+func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) *pathBindingAnnotation {
 	var subs []*bindingSubstitution
 	for _, s := range b.PathTemplate.Segments {
 		if s.Variable != nil {
@@ -840,19 +845,20 @@ func annotatePathBinding(b *api.PathBinding, m *api.Method) *pathBindingAnnotati
 		}
 	}
 	return &pathBindingAnnotation{
-		PathFmt:       httpPathFmt(b.PathTemplate),
-		QueryParams:   language.QueryParams(m, b),
-		Substitutions: subs,
+		PathFmt:                   httpPathFmt(b.PathTemplate),
+		QueryParams:               language.QueryParams(m, b),
+		Substitutions:             subs,
+		DetailedTracingAttributes: c.detailedTracingAttributes,
 	}
 }
 
 // annotatePathInfo annotates the `PathInfo` and all of its `PathBinding`s.
-func annotatePathInfo(m *api.Method) {
+func (c *codec) annotatePathInfo(m *api.Method) {
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
 
 	for _, b := range m.PathInfo.Bindings {
-		ann := annotatePathBinding(b, m)
+		ann := c.annotatePathBinding(b, m)
 
 		// We need to keep track of unique path parameters to support
 		// implicit routing over gRPC. This is go/aip/4222.
