@@ -44,9 +44,10 @@ const docTemplate = `// Copyright 2025 Google LLC
 //go:generate go run -tags docgen doc_generate.go
 
 /*
-Package librarian contains the business logic for the Librarian CLI.
-Implementation details for interacting with other systems (Git, GitHub,
-Docker etc.) are abstracted into other packages.
+Librarian manages Google API client libraries by automating onboarding,
+regeneration, and release. It runs language-agnostic workflows while
+delegating language-specific tasks—such as code generation, building, and
+testing—to Docker images.
 
 Usage:
 
@@ -55,7 +56,7 @@ Usage:
 The commands are:
 {{range .Commands}}{{template "command" .}}{{end}}
 */
-package librarian
+package main
 
 {{define "command"}}
 
@@ -118,7 +119,7 @@ func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
 	}
 
 	// Get help text for parent to find subcommands.
-	args := []string{"run", "../../cmd/librarian/"}
+	args := []string{"run", "main.go"}
 	args = append(args, parentParts...)
 	cmd := exec.Command("go", args...)
 	var out bytes.Buffer
