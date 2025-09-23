@@ -731,7 +731,7 @@ Language Image: go:1.21
 				librarianVersion, today),
 		},
 		{
-			name: "release with commit description and body",
+			name: "release_with_commit_description_and_body",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
