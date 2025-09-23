@@ -302,7 +302,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	devDependencies = append(devDependencies, "lints")
 
 	// Add the import for the google_cloud_gax package.
-	annotate.imports[commonImport] = true
+	annotate.imports[commonImport] = false
 
 	packageDependencies, err := calculateDependencies(annotate.imports, annotate.dependencyConstraints)
 	if err != nil {
@@ -422,7 +422,7 @@ func calculateImports(imports map[string]bool) []string {
 
 func (annotate *annotateModel) annotateService(s *api.Service) {
 	// Add a package:http import if we're generating a service.
-	annotate.imports[httpImport] = true
+	annotate.imports[httpImport] = false
 
 	// Some methods are skipped.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
@@ -445,7 +445,7 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
 	// Add the import for the common JSON helpers.
-	annotate.imports[commonHelpersImport] = true
+	annotate.imports[commonHelpersImport] = false
 
 	for _, f := range m.Fields {
 		annotate.annotateField(f)
