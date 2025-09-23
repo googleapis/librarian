@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{^IsMap}}
-{{^ChildrenOnly}}
+{{^ServicePlaceholder}}
 
 {{#Codec.DocLines}}
 {{{.}}}
@@ -250,17 +250,17 @@ impl gax::paginator::internal::PageableResponse for {{Codec.Name}} {
     {{/NextPageToken}}
 }
 {{/Pagination}}
-{{/ChildrenOnly}}
+{{/ServicePlaceholder}}
 {{#Codec.HasNestedTypes}}
 
-{{#ChildrenOnly}}
+{{#ServicePlaceholder}}
 {{#Codec.DocLines}}
 {{{.}}}
 {{/Codec.DocLines}}
-{{/ChildrenOnly}}
-{{^ChildrenOnly}}
+{{/ServicePlaceholder}}
+{{^ServicePlaceholder}}
 /// Defines additional types related to [{{Codec.Name}}].
-{{/ChildrenOnly}}
+{{/ServicePlaceholder}}
 {{> /templates/common/feature_gate}}
 pub mod {{Codec.ModuleName}} {
     {{! Very rarely, this is unused. It is easier to always disable the warning. }}

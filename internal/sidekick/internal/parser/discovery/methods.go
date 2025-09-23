@@ -25,11 +25,11 @@ func makeServiceMethods(model *api.API, service *api.Service, doc *document, res
 	// It is Okay to reuse the ID, sidekick uses different the namespaces
 	// for messages vs. services.
 	parent := &api.Message{
-		Name:          service.Name,
-		ID:            service.ID,
-		Package:       service.Package,
-		Documentation: fmt.Sprintf("Synthetic messages for the [%s][%s] service", service.Name, service.ID[1:]),
-		ChildrenOnly:  true,
+		Name:               service.Name,
+		ID:                 service.ID,
+		Package:            service.Package,
+		Documentation:      fmt.Sprintf("Synthetic messages for the [%s][%s] service", service.Name, service.ID[1:]),
+		ServicePlaceholder: true,
 	}
 	model.State.MessageByID[parent.ID] = parent
 	model.Messages = append(model.Messages, parent)

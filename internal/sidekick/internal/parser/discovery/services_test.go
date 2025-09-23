@@ -111,12 +111,12 @@ func TestServiceMessages(t *testing.T) {
 	}
 
 	want := &api.Message{
-		Name:          "zones",
-		ID:            "..zones",
-		Package:       "",
-		Documentation: "Synthetic messages for the [zones][.zones] service",
-		ChildrenOnly:  true,
-		Messages:      []*api.Message{getMessage, listMessage},
+		Name:               "zones",
+		ID:                 "..zones",
+		Package:            "",
+		Documentation:      "Synthetic messages for the [zones][.zones] service",
+		ServicePlaceholder: true,
+		Messages:           []*api.Message{getMessage, listMessage},
 	}
 
 	got, ok := model.State.MessageByID[want.ID]

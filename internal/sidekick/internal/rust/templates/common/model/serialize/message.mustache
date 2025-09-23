@@ -15,7 +15,7 @@ limitations under the License.
 }}
 
 {{^IsMap}}
-{{^ChildrenOnly}}
+{{^ServicePlaceholder}}
 {{> /templates/common/feature_gate}}
 #[doc(hidden)]
 impl serde::ser::Serialize for super::{{Codec.RelativeName}} {
@@ -50,5 +50,5 @@ impl serde::ser::Serialize for super::{{Codec.RelativeName}} {
 {{> /templates/common/model/serialize/message}}
 {{/Messages}}
 {{/Codec.HasNestedTypes}}
-{{/ChildrenOnly}}
+{{/ServicePlaceholder}}
 {{/IsMap}}

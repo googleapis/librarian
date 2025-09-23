@@ -15,7 +15,7 @@ limitations under the License.
 }}
 
 {{^IsMap}}
-{{^ChildrenOnly}}
+{{^ServicePlaceholder}}
 {{> /templates/common/feature_gate}}
 impl std::fmt::Debug for super::{{Codec.RelativeName}} {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -32,10 +32,10 @@ impl std::fmt::Debug for super::{{Codec.RelativeName}} {
         debug_struct.finish()
     }
 }
+{{/ServicePlaceholder}}
+{{/IsMap}}
 {{#Codec.HasNestedTypes}}
 {{#Messages}}
 {{> /templates/common/model/debug/message}}
 {{/Messages}}
 {{/Codec.HasNestedTypes}}
-{{/ChildrenOnly}}
-{{/IsMap}}
