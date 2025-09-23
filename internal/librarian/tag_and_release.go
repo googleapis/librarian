@@ -85,6 +85,9 @@ func parseRemote(repo string) (*github.Repository, error) {
 	githubRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 		Dir: absRepoRoot,
 	})
+	if err != nil {
+		return nil, err
+	}
 	return github.FetchGitHubRepoFromRemote(githubRepo)
 }
 
