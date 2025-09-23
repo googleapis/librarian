@@ -249,10 +249,13 @@ func TestPullRequestSystem(t *testing.T) {
 		}
 		for _, pullRequest := range foundPullRequests {
 			// Look for the PR we created
-			if *pullRequest.Number == createdPullRequest.Number {
+			if pullRequest.Number != nil && *pullRequest.Number == createdPullRequest.Number {
 				found = true
 
 				// Expect that we found a comment
+				if pullRequest.Comments == nil {
+					t.Fatal("pull request comments not set")
+				}
 				if *pullRequest.Comments == 0 {
 					t.Fatalf("Expected to have created a comment on the pull request.")
 				}
@@ -281,8 +284,14 @@ func TestPullRequestSystem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error in GetPullRequest() %s", err)
 	}
+	if foundPullRequest.Number == nil {
+		t.Fatal("pull request number not set")
+	}
 	if diff := cmp.Diff(*foundPullRequest.Number, createdPullRequest.Number); diff != "" {
 		t.Fatalf("pull request number mismatch (-want + got):\n%s", diff)
+	}
+	if foundPullRequest.State == nil {
+		t.Fatal("pull request state not set")
 	}
 	if diff := cmp.Diff(*foundPullRequest.State, "closed"); diff != "" {
 		t.Fatalf("pull request state mismatch (-want + got):\n%s", diff)
@@ -342,7 +351,7 @@ func TestFindMergedPullRequest(t *testing.T) {
 				found := false
 				for _, pr := range prs {
 					t.Logf("Found PR %d", *pr.Number)
-					if *pr.Number == test.want {
+					if pr.Number != nil && *pr.Number == test.want {
 						found = true
 					}
 				}
