@@ -529,6 +529,38 @@ END_COMMIT_OVERRIDE`,
 			},
 		},
 		{
+			name: "parse_multiple_lines_message_inside_nested_commit_multi_line_headers",
+			message: `
+chore: Update generation configuration at Tue Aug 26 02:31:23 UTC 2025 (#11734)
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@525c95a](https://github.com/googleapis/googleapis/commit/525c95a7a122ec2869ae06cd02fa5013819463f6)
+(exclusive) and
+[googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
+(inclusive).
+
+BEGIN_COMMIT_OVERRIDE
+BEGIN_NESTED_COMMIT
+docs: [texttospeech] A comment for method 'StreamingSynthesize' in
+service 'TextToSpeech' is changed
+
+END_NESTED_COMMIT
+END_COMMIT_OVERRIDE`,
+			want: []*ConventionalCommit{
+				{
+					Type:       "docs",
+					Subject:    "[texttospeech] A comment for method 'StreamingSynthesize' in",
+					Body:       "service 'TextToSpeech' is changed",
+					LibraryID:  "texttospeech",
+					IsNested:   true,
+					Footers:    map[string]string{},
+					SHA:        sha.String(),
+					CommitHash: sha.String(),
+					When:       now,
+				},
+			},
+		},
+		{
 			name: "generation_commit_has_incorrect_libraryID_passed_in",
 			message: `
 chore: librarian generate pull request: 20250919T072957Z (#14501)
