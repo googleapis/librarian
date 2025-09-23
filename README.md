@@ -1,5 +1,7 @@
-[![codecov](https://codecov.io/github/googleapis/librarian/graph/badge.svg?token=33d3L7Y0gN)](https://codecov.io/github/googleapis/librarian)
 # Librarian CLI
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/googleapis/librarian/cmd/librarian.svg)](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian)
+[![codecov](https://codecov.io/github/googleapis/librarian/graph/badge.svg?token=33d3L7Y0gN)](https://codecov.io/github/googleapis/librarian)
 
 This repository contains code for a unified command line tool for
 Google Cloud SDK client library configuration, generation and releasing.
@@ -13,35 +15,53 @@ intended to discourage anyone from reading the code and documentation;
 it's only to set expectations. (For example, we're unlikely to accept
 feature requests for external use cases.)
 
+## Installation
+
+Install [Go](https://go.dev/doc/install) and make sure you have you have the
+following in your `PATH`:
+
+```sh
+export PATH="$(go env GOPATH)/bin:$PATH"
+```
+
+Next install the CLI
+
+```sh
+go install github.com/googleapis/librarian/cmd/librarian@latest
+```
+
 ## Running Librarian
 
 To see the current set of commands available, run:
 
 ```sh
-go run ./cmd/librarian
+librarian -help
 ```
 
-Use the `-h` flag for any individual command to see detailed
+Use the `-help` or `-h` flag for any individual command to see detailed
 documentation for its purpose and associated flags. For example:
 
 ```sh
-go run ./cmd/librarian generate -h
+librarian generate -h
 ```
 
-Most commands require a language-specific image to be available;
-there are no such images published at the moment.
+Alternatively, if you prefer not to have librarian installed you can use the Go
+command to run the latest released version:
 
-See https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian for
-additional documentation.
+```sh
+go run github.com/googleapis/librarian/cmd/librarian@latest -help
+```
 
-## Running Tests
+## Documentation
 
-See [testing.md] for more information.
+- [CLI Documentation](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian)
+- [Language Onboarding Guide](doc/language-onboarding.md)
+- [How We Write Go](doc/howwewritego.md)
+- [State Schema](doc/state-schema.md)
+- [Config Schema](doc/config-schema.md))
+- [Running Tests](doc/testing.md)
+- [sidekick](doc/sidekick.md)
 
 ## License
 
-Apache 2.0 - See [LICENSE] for more information.
-
-[contributing]: CONTRIBUTING.md
-[license]: LICENSE
-[testing.md]: doc/testing.md
+Apache 2.0 - See [LICENSE](LICENSE) for more information.
