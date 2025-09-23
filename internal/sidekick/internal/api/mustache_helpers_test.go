@@ -14,9 +14,7 @@
 
 package api
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestHasMessages(t *testing.T) {
 	m := &Message{
