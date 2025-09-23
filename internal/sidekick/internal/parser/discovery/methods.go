@@ -142,8 +142,8 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 
 func bodyFieldName(fieldNames map[string]bool) string {
 	// Keep adding trailing `_` until there is no conflict. Most of the time
-	// this returns `body` or `body_`
-	name := "body"
+	// this returns `body_`.
+	name := "body_"
 	for count := 0; count != len(fieldNames); count += 1 {
 		if _, ok := fieldNames[name]; !ok {
 			return name

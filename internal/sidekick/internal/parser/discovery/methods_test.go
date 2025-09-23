@@ -190,9 +190,9 @@ func TestMethodWithBody(t *testing.T) {
 		SyntheticRequest: true,
 		Fields: []*api.Field{
 			{
-				Name:          "body",
-				JSONName:      "body",
-				ID:            "..addresses.insertRequest.body",
+				Name:          "body_",
+				JSONName:      "body_",
+				ID:            "..addresses.insertRequest.body_",
 				Documentation: "Synthetic request body field for the [insert()][.addresses.insert] method.",
 				Typez:         api.MESSAGE_TYPE,
 				TypezID:       "..Address",
@@ -291,7 +291,7 @@ func TestBodyFieldName(t *testing.T) {
 		Input []string
 		Want  string
 	}{
-		{[]string{"a", "b", "c"}, "body"},
+		{[]string{"a", "b", "c"}, "body_"},
 		{[]string{"body", "b", "c"}, "body_"},
 		{[]string{"body", "body_", "c"}, "body__"},
 		{[]string{"body", "body_", "body__"}, "body___"},
