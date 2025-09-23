@@ -566,6 +566,24 @@ type Message struct {
 	// IsLocalToPackage is true if the message is defined in the current
 	// namespace.
 	IsLocalToPackage bool
+	// If true, this is a synthetic request message.
+	//
+	// These messages are created by sidekick when parsing Discovery docs and
+	// OpenAPI specifications. The query and request parameters for each method
+	// are grouped into a synthetic message.
+	SyntheticRequest bool
+	// If true, this message is only intended as a namespace to group child
+	// messages.
+	//
+	// These messages are created by sidekick when parsing Discovery docs and
+	// OpenAPI specifications. All the synthetic messages for a service need to
+	// be grouped under a unique namespace to avoid clashes with similar
+	// synthetic messages in other service.
+	//
+	// That is, `service1` and `service2` may both have a synthetic `getRequest`
+	// message, with different attributes. We need these to be different
+	// messages, with different names.
+	ChildrenOnly bool
 	// Enums associated with the Message.
 	Enums []*Enum
 	// Messages associated with the Message. In protobuf these are referred to as
@@ -575,8 +593,6 @@ type Message struct {
 	OneOfs []*OneOf
 	// Parent returns the ancestor of this message, if any.
 	Parent *Message
-	// Service points to the service holding a synthetic request message.
-	Service *Service
 	// The Protobuf package this message belongs to.
 	Package string
 	IsMap   bool
@@ -590,11 +606,6 @@ type Message struct {
 // HasFields returns true if the message has fields.
 func (m *Message) HasFields() bool {
 	return len(m.Fields) != 0
-}
-
-// NamespaceOnly returns true if the message is intended only as a namespace.
-func (m *Message) SyntheticRequest() bool {
-	return m.Service != nil
 }
 
 // PaginationInfo contains information related to pagination aka [AIP-4233](https://google.aip.dev/client-libraries/4233).

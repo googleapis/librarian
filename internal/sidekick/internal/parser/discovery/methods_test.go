@@ -15,7 +15,6 @@
 package discovery
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,18 +28,6 @@ func TestMakeServiceMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..zones.get"
-	// The `model.Messages` is is automatically generated. We want the synthetic
-	// request messages to require ad-hoc generation. Each codec may need to
-	// do something special to avoid clashes.
-	index := slices.IndexFunc(model.Messages, func(a *api.Message) bool { return a.ID == id })
-	if index != -1 {
-		t.Errorf("synthetic request messages should not be in the `model.Messages` list")
-	}
-	index = slices.IndexFunc(model.Messages, func(a *api.Message) bool { return a.ID == "..zones" })
-	if index != -1 {
-		t.Errorf("synthetic container for request messages should not be in the `model.Messages` list")
-	}
-
 	got, ok := model.State.MethodByID[id]
 	if !ok {
 		t.Fatalf("expected method %s in the API model", id)
@@ -79,9 +66,10 @@ func TestMethodEmptyBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &api.Message{
-		Name:          "getRequest",
-		ID:            "..zones.getRequest",
-		Documentation: "Synthetic request message for the [get()][.zones.get] method.",
+		Name:             "getRequest",
+		ID:               "..zones.getRequest",
+		Documentation:    "Synthetic request message for the [get()][.zones.get] method.",
+		SyntheticRequest: true,
 		Fields: []*api.Field{
 			{
 				Name:          "project",
@@ -101,17 +89,19 @@ func TestMethodEmptyBody(t *testing.T) {
 			},
 		},
 	}
-	gotGetRequest, ok := model.State.MessageByID[want.ID]
+	got, ok := model.State.MessageByID[want.ID]
 	if !ok {
 		t.Fatalf("expected message %s in the API model", want.ID)
 	}
-	apitest.CheckMessage(t, gotGetRequest, want)
+	apitest.CheckMessage(t, got, want)
 
-	wantService, ok := model.State.ServiceByID["..zones"]
+	wantParent, ok := model.State.MessageByID["..zones"]
 	if !ok {
-		t.Fatalf("expected service %s in the API model", "..zones")
+		t.Fatalf("expected message %s in the API model", "..zones")
 	}
-	apitest.CheckService(t, wantService, gotGetRequest.Service)
+	if wantParent != got.Parent {
+		t.Errorf("mismatched parent for synthetic request message")
+	}
 }
 
 func TestMethodWithQueryParameters(t *testing.T) {
@@ -121,9 +111,10 @@ func TestMethodWithQueryParameters(t *testing.T) {
 	}
 
 	want := &api.Message{
-		Name:          "listRequest",
-		ID:            "..zones.listRequest",
-		Documentation: "Synthetic request message for the [list()][.zones.list] method.",
+		Name:             "listRequest",
+		ID:               "..zones.listRequest",
+		Documentation:    "Synthetic request message for the [list()][.zones.list] method.",
+		SyntheticRequest: true,
 		Fields: []*api.Field{
 			{
 				Name:          "filter",
@@ -193,9 +184,10 @@ func TestMethodWithBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantInsertRequest := &api.Message{
-		Name:          "insertRequest",
-		ID:            "..addresses.insertRequest",
-		Documentation: "Synthetic request message for the [insert()][.addresses.insert] method.",
+		Name:             "insertRequest",
+		ID:               "..addresses.insertRequest",
+		Documentation:    "Synthetic request message for the [insert()][.addresses.insert] method.",
+		SyntheticRequest: true,
 		Fields: []*api.Field{
 			{
 				Name:          "body",
@@ -283,12 +275,12 @@ func TestMakeMethodError(t *testing.T) {
 		}}},
 	} {
 		doc := document{}
-		service := &api.Service{
+		parent := &api.Message{
 			Name: "Service",
 			ID:   ".test.Service",
 		}
-		if err := makeMethod(model, service, &doc, &test.Input); err == nil {
-			t.Errorf("expected error on method[%s], service=%v", test.Name, service)
+		if got, err := makeMethod(model, parent, &doc, &test.Input); err == nil {
+			t.Errorf("expected error on method[%s], got=%v", test.Name, got)
 		}
 	}
 

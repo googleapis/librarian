@@ -22,39 +22,55 @@ import (
 )
 
 func makeServiceMethods(model *api.API, service *api.Service, doc *document, resource *resource) error {
+	// It is Okay to reuse the ID, sidekick uses different the namespaces
+	// for messages vs. services.
+	parent := &api.Message{
+		Name:          service.Name,
+		ID:            service.ID,
+		Package:       service.Package,
+		Documentation: fmt.Sprintf("Synthetic messages for the [%s][%s] service", service.Name, service.ID[1:]),
+		ChildrenOnly:  true,
+	}
+	model.State.MessageByID[parent.ID] = parent
+	model.Messages = append(model.Messages, parent)
 	for _, input := range resource.Methods {
-		if err := makeMethod(model, service, doc, input); err != nil {
+		method, err := makeMethod(model, parent, doc, input)
+		if err != nil {
 			return err
 		}
+		model.State.MethodByID[method.ID] = method
+		service.Methods = append(service.Methods, method)
 	}
 
 	return nil
 }
 
-func makeMethod(model *api.API, service *api.Service, doc *document, input *method) error {
-	id := fmt.Sprintf("%s.%s", service.ID, input.Name)
+func makeMethod(model *api.API, parent *api.Message, doc *document, input *method) (*api.Method, error) {
+	id := fmt.Sprintf("%s.%s", parent.ID, input.Name)
 	if input.MediaUpload != nil {
-		return fmt.Errorf("media upload methods are not supported, id=%s", id)
+		return nil, fmt.Errorf("media upload methods are not supported, id=%s", id)
 	}
 	bodyID, err := getMethodType(model, id, "request type", input.Request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	outputID, err := getMethodType(model, id, "response type", input.Response)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Discovery doc methods get a synthetic request message.
 	requestMessage := &api.Message{
-		Name:          fmt.Sprintf("%sRequest", input.Name),
-		ID:            fmt.Sprintf("%s.%sRequest", service.ID, input.Name),
-		Package:       model.PackageName,
-		Documentation: fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", input.Name, id[1:]),
-		Service:       service,
+		Name:             fmt.Sprintf("%sRequest", input.Name),
+		ID:               fmt.Sprintf("%s.%sRequest", parent.ID, input.Name),
+		Package:          model.PackageName,
+		SyntheticRequest: true,
+		Documentation:    fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", input.Name, id[1:]),
+		Parent:           parent,
 		// TODO(#2268) - deprecated if method is deprecated.
 	}
 	model.State.MessageByID[requestMessage.ID] = requestMessage
+	parent.Messages = append(parent.Messages, requestMessage)
 
 	var uriTemplate string
 	if strings.HasSuffix(doc.ServicePath, "/") {
@@ -65,7 +81,7 @@ func makeMethod(model *api.API, service *api.Service, doc *document, input *meth
 	uriTemplate = strings.TrimPrefix(uriTemplate, "/")
 	path, err := ParseUriTemplate(uriTemplate)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	binding := &api.PathBinding{
@@ -84,7 +100,7 @@ func makeMethod(model *api.API, service *api.Service, doc *document, input *meth
 		}
 		field, err := makeField(fmt.Sprintf(requestMessage.ID, id), prop)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		field.Synthetic = true
 		field.Optional = !p.Required
@@ -121,9 +137,7 @@ func makeMethod(model *api.API, service *api.Service, doc *document, input *meth
 			BodyFieldPath: bodyPathField,
 		},
 	}
-	model.State.MethodByID[id] = method
-	service.Methods = append(service.Methods, method)
-	return nil
+	return method, nil
 }
 
 func bodyFieldName(fieldNames map[string]bool) string {

@@ -32,20 +32,6 @@ func TestService(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected service %s in the API model", id)
 	}
-	getMessage, ok := model.State.MessageByID["..zones.getRequest"]
-	if !ok {
-		t.Fatalf("expected message %s in the API model", "..zones.getRequest")
-	}
-	if getMessage.Service != got {
-		t.Errorf("mismatch want=%v, got=%v", getMessage.Service, got)
-	}
-	listMessage, ok := model.State.MessageByID["..zones.listRequest"]
-	if !ok {
-		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
-	}
-	if listMessage.Service != got {
-		t.Errorf("mismatch want=%v, got=%v", listMessage.Service, got)
-	}
 	want := &api.Service{
 		Name:          "zones",
 		ID:            id,
@@ -107,6 +93,37 @@ func TestService(t *testing.T) {
 		},
 	}
 	apitest.CheckService(t, got, want)
+}
+
+func TestServiceMessages(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	getMessage, ok := model.State.MessageByID["..zones.getRequest"]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", "..zones.getRequest")
+	}
+	listMessage, ok := model.State.MessageByID["..zones.listRequest"]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
+	}
+
+	want := &api.Message{
+		Name:          "zones",
+		ID:            "..zones",
+		Package:       "",
+		Documentation: "Synthetic messages for the [zones][.zones] service",
+		ChildrenOnly:  true,
+		Messages:      []*api.Message{getMessage, listMessage},
+	}
+
+	got, ok := model.State.MessageByID[want.ID]
+	if !ok {
+		t.Fatalf("expected service %s in the API model", want.ID)
+	}
+	apitest.CheckMessage(t, got, want)
 }
 
 func TestServiceTopLevelMethodErrors(t *testing.T) {

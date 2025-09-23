@@ -40,29 +40,3 @@ func TestHasMessages(t *testing.T) {
 		t.Errorf("expected HasMessages() == false for: %v", model)
 	}
 }
-
-func TestMessageSyntheticRequest(t *testing.T) {
-	m := &Message{
-		Name:    "Message",
-		Package: "test",
-		ID:      ".test.Message",
-	}
-	if m.SyntheticRequest() {
-		t.Errorf("expected m.SyntheticRequest() == false for %v", m)
-	}
-
-	service := &Service{
-		Name:    "Zones",
-		Package: "compute",
-		ID:      ".compute.Zones",
-	}
-	m = &Message{
-		Name:    "GetRequest",
-		Package: "compute",
-		ID:      ".compute.Zones.Message",
-		Service: service,
-	}
-	if !m.SyntheticRequest() {
-		t.Errorf("expected m.SyntheticRequest() == true for %v", m)
-	}
-}
