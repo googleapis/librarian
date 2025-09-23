@@ -76,9 +76,9 @@ Language Image: {{.ImageVersion}}
 ### {{.Heading}}
 {{ range .Commits }}
 {{ if index .Footers "PiperOrigin-RevId" -}}
-* {{.Subject}} {{.Body}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.CommitHash}}))
+* {{.Subject}} {{.Body}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
 {{- else -}}
-* {{.Subject}} {{.Body}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.CommitHash}}))
+* {{.Subject}} {{.Body}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
 {{- end }}
 {{ end }}
 

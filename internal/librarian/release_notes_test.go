@@ -529,11 +529,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
 
 ### Bug Fixes
 
-* a bug fix  ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+* a bug fix  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -579,11 +579,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature  (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
 
 ### Bug Fixes
 
-* a bug fix  (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+* a bug fix  (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -623,9 +623,9 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
 
-* another new feature  ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+* another new feature  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -674,7 +674,7 @@ Language Image: go:1.21
 
 ### Features
 
-* feature for a  ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* feature for a  ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>
 
@@ -685,7 +685,7 @@ Language Image: go:1.21
 
 ### Bug Fixes
 
-* fix for b  ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+* fix for b  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today, today),
@@ -725,7 +725,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>`,
 				librarianVersion, today),
@@ -761,7 +761,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature this is the body ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature this is the body ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>`,
 				librarianVersion, today),
