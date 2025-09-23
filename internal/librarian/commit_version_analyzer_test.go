@@ -27,49 +27,84 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-func TestShouldExclude(t *testing.T) {
+func TestShouldInclude(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name         string
 		files        []string
+		sourceRoots  []string
 		excludePaths []string
 		want         bool
 	}{
 		{
-			name:         "no exclude paths",
+			name:         "file in source root, not excluded",
 			files:        []string{"a/b/c.go"},
+			sourceRoots:  []string{"a"},
+			excludePaths: []string{},
+			want:         true,
+		},
+		{
+			name:         "file in source root, and excluded",
+			files:        []string{"a/b/c.go"},
+			sourceRoots:  []string{"a"},
+			excludePaths: []string{"a/b"},
+			want:         false,
+		},
+		{
+			name:         "file not in source root",
+			files:        []string{"x/y/z.go"},
+			sourceRoots:  []string{"a"},
 			excludePaths: []string{},
 			want:         false,
 		},
 		{
-			name:         "file in exclude path",
-			files:        []string{"a/b/c.go"},
-			excludePaths: []string{"a/b"},
+			name:         "one file included, one file not in source root",
+			files:        []string{"a/b/c.go", "x/y/z.go"},
+			sourceRoots:  []string{"a"},
+			excludePaths: []string{},
 			want:         true,
 		},
 		{
-			name:         "file not in exclude path",
-			files:        []string{"a/b/c.go"},
-			excludePaths: []string{"d/e"},
+			name:         "one file included, one file excluded",
+			files:        []string{"a/b/c.go", "a/d/e.go"},
+			sourceRoots:  []string{"a"},
+			excludePaths: []string{"a/d"},
+			want:         true,
+		},
+		{
+			name:         "all files excluded",
+			files:        []string{"a/b/c.go", "a/d/e.go"},
+			sourceRoots:  []string{"a"},
+			excludePaths: []string{"a/b", "a/d"},
 			want:         false,
 		},
 		{
-			name:         "one file in exclude path, one not",
-			files:        []string{"a/b/c.go", "d/e/f.go"},
+			name:         "all files not in source root",
+			files:        []string{"x/y/c.go", "w/z/e.go"},
+			sourceRoots:  []string{"a"},
+			excludePaths: []string{},
+			want:         false,
+		},
+		{
+			name:         "some files not in source root",
+			files:        []string{"a/b/c.go", "w/z/e.go"},
+			sourceRoots:  []string{"a"},
 			excludePaths: []string{"a/b"},
 			want:         false,
 		},
 		{
-			name:         "all files in exclude paths",
-			files:        []string{"a/b/c.go", "d/e/f.go"},
-			excludePaths: []string{"a/b", "d/e"},
-			want:         true,
+			name:         "no source roots",
+			files:        []string{"a/b/c.go"},
+			sourceRoots:  []string{},
+			excludePaths: []string{},
+			want:         false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := shouldExclude(test.files, test.excludePaths)
+			t.Parallel()
+			got := shouldInclude(test.files, test.sourceRoots, test.excludePaths)
 			if got != test.want {
-				t.Errorf("shouldExclude(%v, %v) = %v, want %v", test.files, test.excludePaths, got, test.want)
+				t.Errorf("shouldInclude(%v, %v, %v) = %v, want %v", test.files, test.sourceRoots, test.excludePaths, got, test.want)
 			}
 		})
 	}
@@ -207,7 +242,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 				},
 				ChangedFilesInCommitValue: []string{"foo/a.txt"},
 			},
-			library:       &config.LibraryState{ID: "foo"},
+			library:       &config.LibraryState{ID: "foo", SourceRoots: []string{"foo"}},
 			wantErr:       true,
 			wantErrPhrase: "failed to parse commit",
 		},

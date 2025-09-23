@@ -59,10 +59,12 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 					},
 				},
 			},
@@ -128,10 +130,12 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 					},
 				},
 			},
@@ -204,7 +208,8 @@ Language Image: %s
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 					},
 				},
 			},
@@ -285,6 +290,7 @@ Language Image: %s`,
 						ID: "one-library",
 						// Intentionally set this value to verify the test can pass.
 						LastGeneratedCommit: "randomCommit",
+						SourceRoots:         []string{"path/to"},
 					},
 				},
 			},

@@ -97,7 +97,7 @@ func TestInitRun(t *testing.T) {
 			Name: "origin",
 			URLs: []string{"https://github.com/googleapis/librarian.git"},
 		})},
-		ChangedFilesInCommitValue: []string{"file.txt"},
+		ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 		GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 			{
 				Message: "feat: a feature",
@@ -306,12 +306,14 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID:      "blocked-example-id",
-								Version: "1.0.0",
+								ID:          "blocked-example-id",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								ID:      "example-id",
-								Version: "2.0.0",
+								ID:          "example-id",
+								Version:     "2.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -355,7 +357,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "blocked-example-id",
 						Version:       "1.0.0", // version is NOT bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -363,7 +365,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "example-id",
 						Version:       "2.1.0", // version is bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -383,8 +385,9 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID:      "blocked-example-id",
-								Version: "1.0.0",
+								ID:          "blocked-example-id",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -418,7 +421,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "blocked-example-id",
 						Version:       "1.1.0",
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -539,8 +542,9 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -566,8 +570,9 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -605,7 +610,8 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID: "example-id",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -629,7 +635,8 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID: "example-id",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -653,7 +660,8 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -693,18 +701,20 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "another-example-id",
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version: "2.0.0",
-								ID:      "example-id",
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir:                       t.TempDir(),
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -729,7 +739,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "another-example-id",
 						Version:       "1.0.0", // version is NOT bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -737,7 +747,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "example-id",
 						Version:       "2.1.0", // version is bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -757,18 +767,20 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "another-example-id",
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version: "2.0.0",
-								ID:      "example-id",
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir:                       t.TempDir(),
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -793,7 +805,7 @@ func TestInitRun(t *testing.T) {
 						Version:       "3.0.0",
 						ID:            "another-example-id",
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -801,7 +813,7 @@ func TestInitRun(t *testing.T) {
 						Version:       "2.0.0",
 						ID:            "example-id",
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -820,18 +832,20 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "another-example-id",
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version: "2.0.0",
-								ID:      "example-id",
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir:                       t.TempDir(),
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -865,8 +879,9 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -877,7 +892,7 @@ func TestInitRun(t *testing.T) {
 							Name: "origin",
 							URLs: []string{"https://github.com/googleapis/librarian.git"},
 						})},
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 							{
 								Message: "feat: a feature",

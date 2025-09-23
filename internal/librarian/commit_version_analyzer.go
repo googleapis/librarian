@@ -67,7 +67,7 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 		if err != nil {
 			return nil, fmt.Errorf("failed to get changed files for commit %s: %w", commit.Hash.String(), err)
 		}
-		if shouldExclude(files, library.ReleaseExcludePaths) {
+		if !shouldInclude(files, library.SourceRoots, library.ReleaseExcludePaths) {
 			continue
 		}
 		parsedCommits, err := conventionalcommits.ParseCommits(commit, library.ID)
@@ -85,22 +85,38 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 	return conventionalCommits, nil
 }
 
-// shouldExclude determines if a commit should be excluded from a release.
-// It returns true if all files in the commit match one of exclude paths.
-func shouldExclude(files, excludePaths []string) bool {
+// shouldInclude determines if a commit should be included in a release.
+// It returns true if there is at least one file in the commit that is under a source_root
+// and not under a release_exclude_path.
+func shouldInclude(files, sourceRoots, excludePaths []string) bool {
 	for _, file := range files {
-		excluded := false
-		for _, excludePath := range excludePaths {
-			if strings.HasPrefix(file, excludePath) {
-				excluded = true
+		var isUnderSourceRoot bool
+		for _, sourceRoot := range sourceRoots {
+			if strings.HasPrefix(file, sourceRoot) {
+				isUnderSourceRoot = true
 				break
 			}
 		}
-		if !excluded {
-			return false
+
+		if !isUnderSourceRoot {
+			continue
+		}
+
+		var isExcluded bool
+		for _, excludePath := range excludePaths {
+			if strings.HasPrefix(file, excludePath) {
+				isExcluded = true
+				break
+			}
+		}
+
+		if !isExcluded {
+			// Found a file that is under a source root and not excluded.
+			return true
 		}
 	}
-	return true
+	// No file met the inclusion criteria.
+	return false
 }
 
 // formatTag returns the git tag for a given library version.
