@@ -563,9 +563,6 @@ type Message struct {
 	Deprecated bool
 	// Fields associated with the Message.
 	Fields []*Field
-	// IsLocalToPackage is true if the message is defined in the current
-	// namespace.
-	IsLocalToPackage bool
 	// If true, this is a synthetic request message.
 	//
 	// These messages are created by sidekick when parsing Discovery docs and
