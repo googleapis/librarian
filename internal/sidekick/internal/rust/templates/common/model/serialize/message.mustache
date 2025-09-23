@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 
+{{^IsMap}}
+{{^ChildrenOnly}}
 {{> /templates/common/feature_gate}}
 #[doc(hidden)]
 impl serde::ser::Serialize for super::{{Codec.RelativeName}} {
@@ -45,8 +47,8 @@ impl serde::ser::Serialize for super::{{Codec.RelativeName}} {
 }
 {{#Codec.HasNestedTypes}}
 {{#Messages}}
-{{^IsMap}}
 {{> /templates/common/model/serialize/message}}
-{{/IsMap}}
 {{/Messages}}
 {{/Codec.HasNestedTypes}}
+{{/ChildrenOnly}}
+{{/IsMap}}
