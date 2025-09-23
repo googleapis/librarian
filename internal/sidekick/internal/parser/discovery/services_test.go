@@ -32,16 +32,19 @@ func TestService(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected service %s in the API model", id)
 	}
-	if got.HasRequests() == false {
-		t.Errorf("service should have synthetic request messages")
-	}
-	wantGet, ok := model.State.MessageByID["..zones.getRequest"]
+	getMessage, ok := model.State.MessageByID["..zones.getRequest"]
 	if !ok {
 		t.Fatalf("expected message %s in the API model", "..zones.getRequest")
 	}
-	wantList, ok := model.State.MessageByID["..zones.listRequest"]
+	if getMessage.Service != got {
+		t.Errorf("mismatch want=%v, got=%v", getMessage.Service, got)
+	}
+	listMessage, ok := model.State.MessageByID["..zones.listRequest"]
 	if !ok {
 		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
+	}
+	if listMessage.Service != got {
+		t.Errorf("mismatch want=%v, got=%v", listMessage.Service, got)
 	}
 	want := &api.Service{
 		Name:          "zones",
@@ -102,7 +105,6 @@ func TestService(t *testing.T) {
 				},
 			},
 		},
-		Requests: []*api.Message{wantGet, wantList},
 	}
 	apitest.CheckService(t, got, want)
 }

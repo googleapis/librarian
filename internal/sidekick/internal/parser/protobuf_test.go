@@ -439,9 +439,6 @@ func TestProtobuf_Comments(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.Service")
 	}
-	if service.HasRequests() {
-		t.Errorf("protobuf services should not have synthetic request messages")
-	}
 	apitest.CheckService(t, service, &api.Service{
 		Name:          "Service",
 		ID:            ".test.Service",
@@ -835,9 +832,6 @@ func TestProtobuf_Service(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	if service.HasRequests() {
-		t.Errorf("protobuf services should not have synthetic request messages")
-	}
 	apitest.CheckService(t, service, &api.Service{
 		Name:          "TestService",
 		Package:       "test",
@@ -1089,9 +1083,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
-	}
-	if service.HasRequests() {
-		t.Errorf("protobuf services should not have synthetic request messages")
 	}
 	apitest.CheckService(t, service, &api.Service{
 		Name:        "TestService",
@@ -1437,9 +1428,6 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.LroService")
 	}
-	if service.HasRequests() {
-		t.Errorf("protobuf services should not have synthetic request messages")
-	}
 	apitest.CheckService(t, service, &api.Service{
 		Documentation: "A service to unit test the protobuf translator.",
 		DefaultHost:   "test.googleapis.com",
@@ -1700,9 +1688,6 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceA")
 	}
-	if s.HasRequests() {
-		t.Errorf("protobuf services should not have synthetic request messages")
-	}
 	apitest.CheckService(t, s, &api.Service{
 		Name:       "ServiceA",
 		ID:         ".test.ServiceA",
@@ -1713,9 +1698,6 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	s, ok = test.State.ServiceByID[".test.ServiceB"]
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceB")
-	}
-	if s.HasRequests() {
-		t.Errorf("protobuf services should not have synthetic request messages")
 	}
 	apitest.CheckService(t, s, &api.Service{
 		Name:       "ServiceB",

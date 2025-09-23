@@ -106,6 +106,12 @@ func TestMethodEmptyBody(t *testing.T) {
 		t.Fatalf("expected message %s in the API model", want.ID)
 	}
 	apitest.CheckMessage(t, gotGetRequest, want)
+
+	wantService, ok := model.State.ServiceByID["..zones"]
+	if !ok {
+		t.Fatalf("expected service %s in the API model", "..zones")
+	}
+	apitest.CheckService(t, wantService, gotGetRequest.Service)
 }
 
 func TestMethodWithQueryParameters(t *testing.T) {
@@ -249,8 +255,12 @@ func TestMakeServiceMethodsError(t *testing.T) {
 			},
 		},
 	}
-	if methods, requests, err := makeServiceMethods(model, "testResource", "..testResource", &doc, input); err == nil {
-		t.Errorf("expected error on method with media upload, gotMethods=%v, gotRequests=%v", methods, requests)
+	service := &api.Service{
+		Name: "Service",
+		ID:   ".test.Service",
+	}
+	if err := makeServiceMethods(model, service, &doc, input); err == nil {
+		t.Errorf("expected error on method with media upload, service=%v", service)
 	}
 }
 
@@ -273,9 +283,12 @@ func TestMakeMethodError(t *testing.T) {
 		}}},
 	} {
 		doc := document{}
-		parent := &api.Message{ID: "..testOnly"}
-		if method, err := makeMethod(model, "..Test", &doc, parent, &test.Input); err == nil {
-			t.Errorf("expected error on method[%s], got=%v", test.Name, method)
+		service := &api.Service{
+			Name: "Service",
+			ID:   ".test.Service",
+		}
+		if err := makeMethod(model, service, &doc, &test.Input); err == nil {
+			t.Errorf("expected error on method[%s], service=%v", test.Name, service)
 		}
 	}
 

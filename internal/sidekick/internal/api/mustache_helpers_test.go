@@ -41,29 +41,28 @@ func TestHasMessages(t *testing.T) {
 	}
 }
 
-func TestHasRequests(t *testing.T) {
+func TestMessageSyntheticRequest(t *testing.T) {
 	m := &Message{
-		Name:    "CreateFooRequest",
+		Name:    "Message",
 		Package: "test",
-		ID:      ".test.Service.CreateFooRequest",
+		ID:      ".test.Message",
 	}
-	s := &Service{
-		Name:     "Service",
-		Package:  "test",
-		ID:       ".test.Message",
-		Requests: []*Message{m},
-	}
-	if !s.HasRequests() {
-		t.Errorf("expected HasRequests() == true for: %v", s)
+	if m.SyntheticRequest() {
+		t.Errorf("expected m.SyntheticRequest() == false for %v", m)
 	}
 
-	s = &Service{
-		Name:     "Service",
-		Package:  "test",
-		ID:       ".test.Message",
-		Requests: []*Message{},
+	service := &Service{
+		Name:    "Zones",
+		Package: "compute",
+		ID:      ".compute.Zones",
 	}
-	if s.HasRequests() {
-		t.Errorf("expected HasRequests() != true for: %v", s)
+	m = &Message{
+		Name:    "GetRequest",
+		Package: "compute",
+		ID:      ".compute.Zones.Message",
+		Service: service,
+	}
+	if !m.SyntheticRequest() {
+		t.Errorf("expected m.SyntheticRequest() == true for %v", m)
 	}
 }

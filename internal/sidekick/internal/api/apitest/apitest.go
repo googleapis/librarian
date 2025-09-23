@@ -26,7 +26,7 @@ import (
 func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 	t.Helper()
 	// Checking Parent, Messages, Fields, and OneOfs requires special handling.
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Service", "Messages")); diff != "" {
 		t.Errorf("message attributes mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
@@ -54,16 +54,11 @@ func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 // CheckService compares two `Service` instances ignoring method order.
 func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 	t.Helper()
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Service{}, "Methods", "Requests")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
 		t.Errorf("mismatched service attributes (-want, +got):\n%s", diff)
 	}
 	less := func(a, b *api.Method) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(want.Methods, got.Methods, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("method mismatch (-want, +got):\n%s", diff)
-	}
-
-	lessRequests := func(a, b *api.Method) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want.Requests, got.Requests, cmpopts.SortSlices(lessRequests), cmpopts.IgnoreFields(api.Message{}, "Parent")); diff != "" {
 		t.Errorf("method mismatch (-want, +got):\n%s", diff)
 	}
 }
