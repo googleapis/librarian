@@ -47,12 +47,13 @@ type modelAnnotations struct {
 	DefaultHost       string
 	DocLines          []string
 	// A reference to an optional hand-written part file.
-	PartFileReference   string
-	PackageDependencies []packageDependency
-	Imports             []string
-	DevDependencies     []string
-	DoNotPublish        bool
-	RepositoryURL       string
+	PartFileReference    string
+	PackageDependencies  []packageDependency
+	Imports              []string
+	DevDependencies      []string
+	DoNotPublish         bool
+	RepositoryURL        string
+	ReadMeAfterTitleText string
 }
 
 // HasServices returns true if the model has services.
@@ -206,13 +207,14 @@ func newAnnotateModel(model *api.API) *annotateModel {
 // [Template.Services] field.
 func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	var (
-		packageNameOverride string
-		generationYear      string
-		packageVersion      string
-		partFileReference   string
-		doNotPublish        bool
-		devDependencies     = []string{}
-		repositoryURL       string
+		packageNameOverride  string
+		generationYear       string
+		packageVersion       string
+		partFileReference    string
+		doNotPublish         bool
+		devDependencies      = []string{}
+		repositoryURL        string
+		readMeAfterTitleText string
 	)
 
 	for key, definition := range options {
@@ -237,6 +239,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 				)
 			}
 			doNotPublish = value
+		case key == "readme-after-title-text":
+			// Markdown that will be inserted into the README.md after the title section.
+			readMeAfterTitleText = definition
 		case key == "repository-url":
 			repositoryURL = definition
 		case strings.HasPrefix(key, "proto:"):
@@ -314,13 +319,14 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:            formatDocComments(model.Description, model.State),
-		Imports:             calculateImports(annotate.imports),
-		PartFileReference:   partFileReference,
-		PackageDependencies: packageDependencies,
-		DevDependencies:     devDependencies,
-		DoNotPublish:        doNotPublish,
-		RepositoryURL:       repositoryURL,
+		DocLines:             formatDocComments(model.Description, model.State),
+		Imports:              calculateImports(annotate.imports),
+		PartFileReference:    partFileReference,
+		PackageDependencies:  packageDependencies,
+		DevDependencies:      devDependencies,
+		DoNotPublish:         doNotPublish,
+		RepositoryURL:        repositoryURL,
+		ReadMeAfterTitleText: readMeAfterTitleText,
 	}
 
 	model.Codec = ann
