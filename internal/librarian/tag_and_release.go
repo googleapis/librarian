@@ -165,7 +165,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 
 	librarianConfig, err := loadLibrarianConfigFromGitHub(ctx, r.ghClient, targetBranch)
 	if err != nil {
-		return err
+		slog.Warn("error loading .librarian/config.yaml", slog.Any("err", err))
 	}
 
 	// Add a tag to the release commit to trigger louhi flow: "release-please-{pr number}"
