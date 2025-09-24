@@ -25,8 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-const defaultTagFormat = "{id}-{version}"
-
 // GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file.
 func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState, tagName string) ([]*conventionalcommits.ConventionalCommit, error) {
@@ -100,15 +98,6 @@ func shouldExclude(files, excludePaths []string) bool {
 		}
 	}
 	return true
-}
-
-// formatTag returns the git tag for a given library version.
-func formatTag(tagFormat string, libraryID string, version string) string {
-	if tagFormat == "" {
-		tagFormat = defaultTagFormat
-	}
-	r := strings.NewReplacer("{id}", libraryID, "{version}", version)
-	return r.Replace(tagFormat)
 }
 
 // NextVersion calculates the next semantic version based on a slice of conventional commits.

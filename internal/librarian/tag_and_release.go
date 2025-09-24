@@ -178,14 +178,14 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 	for _, release := range releases {
 		slog.Info("creating release", "library", release.Library, "version", release.Version)
 
-		tagFormat, err := determineTagFormat(release.Library, librarianState, librarianConfig)
+		tagFormat, err := config.DetermineTagFormat(release.Library, librarianState, librarianConfig)
 		if err != nil {
 			slog.Warn("could not determine tag format", "library", release.Library)
 			return err
 		}
 
 		// Create the release.
-		tagName := formatTag(tagFormat, release.Library, release.Version)
+		tagName := config.FormatTag(tagFormat, release.Library, release.Version)
 		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
 		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
 			return fmt.Errorf("failed to create release: %w", err)
@@ -193,34 +193,6 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 
 	}
 	return r.replacePendingLabel(ctx, p)
-}
-
-func determineTagFormat(libraryID string, librarianState *config.LibrarianState, librarianConfig *config.LibrarianConfig) (string, error) {
-	// Order of preference:
-	// 1. per-library from config.yaml
-	// 2. top-level from config.yaml
-	// 3. per-library from state.yaml (deprecated)
-	if librarianConfig != nil {
-		// prefer per-library config
-		libraryConfig := librarianConfig.LibraryConfigFor(libraryID)
-		if libraryConfig != nil && libraryConfig.TagFormat != "" {
-			return libraryConfig.TagFormat, nil
-		}
-		// top-level from config
-		if librarianConfig.TagFormat != "" {
-			return librarianConfig.TagFormat, nil
-		}
-	}
-
-	libraryState := librarianState.LibraryByID(libraryID)
-	if libraryState == nil {
-		return "", fmt.Errorf("library %s not found", libraryID)
-	}
-	if libraryState.TagFormat != "" {
-		return libraryState.TagFormat, nil
-	}
-	slog.Warn("library %s did not configure tag_format, using default %s", libraryID, defaultTagFormat)
-	return defaultTagFormat, nil
 }
 
 // libraryRelease holds the parsed information from a pull request body.
