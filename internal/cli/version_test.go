@@ -15,11 +15,14 @@
 package cli
 
 import (
+	"fmt"
 	"runtime/debug"
+	"strings"
 	"testing"
 )
 
 func TestVersion(t *testing.T) {
+	baseVersion := strings.TrimSpace(versionString)
 	for _, test := range []struct {
 		name      string
 		want      string
@@ -36,7 +39,7 @@ func TestVersion(t *testing.T) {
 		},
 		{
 			name: "pseudoversion",
-			want: "0.0.0-123456789000-20230125195754",
+			want: fmt.Sprintf("%s-123456789000-20230125195754", baseVersion),
 			buildinfo: &debug.BuildInfo{
 				Settings: []debug.BuildSetting{
 					{Key: "vcs.revision", Value: "1234567890001234"},
@@ -46,7 +49,7 @@ func TestVersion(t *testing.T) {
 		},
 		{
 			name: "pseudoversion only revision",
-			want: "0.0.0-123456789000",
+			want: fmt.Sprintf("%s-123456789000", baseVersion),
 			buildinfo: &debug.BuildInfo{
 				Settings: []debug.BuildSetting{
 					{Key: "vcs.revision", Value: "1234567890001234"},
@@ -55,7 +58,7 @@ func TestVersion(t *testing.T) {
 		},
 		{
 			name: "pseudoversion only time",
-			want: "0.0.0-20230102150405",
+			want: fmt.Sprintf("%s-20230102150405", baseVersion),
 			buildinfo: &debug.BuildInfo{
 				Settings: []debug.BuildSetting{
 					{Key: "vcs.time", Value: "2023-01-02T15:04:05Z"},
@@ -64,7 +67,7 @@ func TestVersion(t *testing.T) {
 		},
 		{
 			name: "pseudoversion invalid time",
-			want: "0.0.0-123456789000",
+			want: fmt.Sprintf("%s-123456789000", baseVersion),
 			buildinfo: &debug.BuildInfo{
 				Settings: []debug.BuildSetting{
 					{Key: "vcs.revision", Value: "123456789000"},
@@ -74,7 +77,7 @@ func TestVersion(t *testing.T) {
 		},
 		{
 			name: "revision less than 12 chars",
-			want: "0.0.0-shortrev-20230125195754",
+			want: fmt.Sprintf("%s-shortrev-20230125195754", baseVersion),
 			buildinfo: &debug.BuildInfo{
 				Settings: []debug.BuildSetting{
 					{Key: "vcs.revision", Value: "shortrev"},

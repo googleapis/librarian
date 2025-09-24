@@ -15,10 +15,14 @@
 package cli
 
 import (
+	_ "embed"
 	"runtime/debug"
 	"strings"
 	"time"
 )
+
+//go:embed version.txt
+var versionString string
 
 // Version return the version information for the binary, which is constructed
 // following https://go.dev/ref/mod#versions.
@@ -52,7 +56,7 @@ func version(info *debug.BuildInfo) string {
 	// Construct the pseudo-version string per
 	// https://go.dev/ref/mod#pseudo-versions.
 	var buf strings.Builder
-	buf.WriteString("0.0.0")
+	buf.WriteString(strings.TrimSpace(versionString))
 	if revision != "" {
 		buf.WriteString("-")
 		// Per https://go.dev/ref/mod#pseudo-versions, only use the first 12
