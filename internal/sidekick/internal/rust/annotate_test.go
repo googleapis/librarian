@@ -625,6 +625,7 @@ func TestEnumAnnotations(t *testing.T) {
 	enum := &api.Enum{
 		Name:          "TestEnum",
 		ID:            ".test.v1.TestEnum",
+		Package:       "test.v1",
 		Documentation: "The enum is documented.",
 		Values:        []*api.EnumValue{v0, v1, v2, v3, v4},
 	}
@@ -644,7 +645,7 @@ func TestEnumAnnotations(t *testing.T) {
 		RelativeName:   "TestEnum",
 		DocLines:       []string{"/// The enum is documented."},
 		UniqueNames:    []*api.EnumValue{v0, v1, v2, v3, v4},
-		NameInExamples: "google_cloud_Test::model::TestEnum",
+		NameInExamples: "google_cloud_test_v1::model::TestEnum",
 	}
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
@@ -716,9 +717,10 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 		Number: 3,
 	}
 	enum := &api.Enum{
-		Name:   "TestEnum",
-		ID:     ".test.v1.TestEnum",
-		Values: []*api.EnumValue{v0, v1, v2, v3},
+		Name:    "TestEnum",
+		ID:      ".test.v1.TestEnum",
+		Package: "test.v1",
+		Values:  []*api.EnumValue{v0, v1, v2, v3},
 	}
 
 	model := api.NewTestAPI(
@@ -735,7 +737,7 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 		QualifiedName:  "crate::model::TestEnum",
 		RelativeName:   "TestEnum",
 		UniqueNames:    []*api.EnumValue{v0, v2},
-		NameInExamples: "google_cloud_Test::model::TestEnum",
+		NameInExamples: "google_cloud_test_v1::model::TestEnum",
 	}
 
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
@@ -928,44 +930,44 @@ func TestFieldAnnotations(t *testing.T) {
 	value_field := &api.Field{Name: "value", Typez: api.INT64_TYPE}
 	map_message := &api.Message{
 		Name:    "$Map",
-		ID:      ".test.$Map",
+		ID:      ".test.v1.$Map",
 		IsMap:   true,
-		Package: "test",
+		Package: "test.v1",
 		Fields:  []*api.Field{key_field, value_field},
 	}
 	singular_field := &api.Field{
 		Name:     "singular_field",
 		JSONName: "singularField",
-		ID:       ".test.Message.singular_field",
+		ID:       ".test.v1.Message.singular_field",
 		Typez:    api.STRING_TYPE,
 	}
 	repeated_field := &api.Field{
 		Name:     "repeated_field",
 		JSONName: "repeatedField",
-		ID:       ".test.Message.repeated_field",
+		ID:       ".test.v1.Message.repeated_field",
 		Typez:    api.STRING_TYPE,
 		Repeated: true,
 	}
 	map_field := &api.Field{
 		Name:     "map_field",
 		JSONName: "mapField",
-		ID:       ".test.Message.map_field",
+		ID:       ".test.v1.Message.map_field",
 		Typez:    api.MESSAGE_TYPE,
-		TypezID:  ".test.$Map",
+		TypezID:  ".test.v1.$Map",
 		Repeated: false,
 	}
 	boxed_field := &api.Field{
 		Name:     "boxed_field",
 		JSONName: "boxedField",
-		ID:       ".test.Message.boxed_field",
+		ID:       ".test.v1.Message.boxed_field",
 		Typez:    api.MESSAGE_TYPE,
-		TypezID:  ".test.TestMessage",
+		TypezID:  ".test.v1.TestMessage",
 		Optional: true,
 	}
 	message := &api.Message{
 		Name:          "TestMessage",
-		Package:       "test",
-		ID:            ".test.TestMessage",
+		Package:       "test.v1",
+		ID:            ".test.v1.TestMessage",
 		Documentation: "A test message.",
 		Fields:        []*api.Field{singular_field, repeated_field, map_field, boxed_field},
 	}
@@ -984,9 +986,9 @@ func TestFieldAnnotations(t *testing.T) {
 		ModuleName:        "test_message",
 		QualifiedName:     "crate::model::TestMessage",
 		RelativeName:      "TestMessage",
-		NameInExamples:    "google_cloud_test::model::TestMessage",
-		PackageModuleName: "test",
-		SourceFQN:         "test.TestMessage",
+		NameInExamples:    "google_cloud_test_v1::model::TestMessage",
+		PackageModuleName: "test::v1",
+		SourceFQN:         "test.v1.TestMessage",
 		DocLines:          []string{"/// A test message."},
 		BasicFields:       []*api.Field{singular_field, repeated_field, map_field, boxed_field},
 	}
@@ -1173,70 +1175,71 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 func TestEnumFieldAnnotations(t *testing.T) {
 	enumz := &api.Enum{
 		Name:    "TestEnum",
-		Package: "test",
-		ID:      ".test.TestEnum",
+		Package: "test.v1",
+		ID:      ".test.v1.TestEnum",
 	}
 	singular_field := &api.Field{
 		Name:     "singular_field",
 		JSONName: "singularField",
-		ID:       ".test.Message.singular_field",
+		ID:       ".test.v1.Message.singular_field",
 		Typez:    api.ENUM_TYPE,
-		TypezID:  ".test.TestEnum",
+		TypezID:  ".test.v1.TestEnum",
 	}
 	repeated_field := &api.Field{
 		Name:     "repeated_field",
 		JSONName: "repeatedField",
-		ID:       ".test.Message.repeated_field",
+		ID:       ".test.v1.Message.repeated_field",
 		Typez:    api.ENUM_TYPE,
-		TypezID:  ".test.TestEnum",
+		TypezID:  ".test.v1.TestEnum",
 		Repeated: true,
 	}
 	optional_field := &api.Field{
 		Name:     "optional_field",
 		JSONName: "optionalField",
-		ID:       ".test.Message.optional_field",
+		ID:       ".test.v1.Message.optional_field",
 		Typez:    api.ENUM_TYPE,
-		TypezID:  ".test.TestEnum",
+		TypezID:  ".test.v1.TestEnum",
 		Optional: true,
 	}
 	null_value_field := &api.Field{
 		Name:     "null_value_field",
 		JSONName: "nullValueField",
-		ID:       ".test.Message.null_value_field",
+		ID:       ".test.v1.Message.null_value_field",
 		Typez:    api.ENUM_TYPE,
 		TypezID:  ".google.protobuf.NullValue",
 	}
 	map_field := &api.Field{
 		Name:     "map_field",
 		JSONName: "mapField",
-		ID:       ".test.Message.map_field",
+		ID:       ".test.v1.Message.map_field",
 		Typez:    api.MESSAGE_TYPE,
-		TypezID:  "$map<string, .test.TestEnum>",
+		TypezID:  "$map<string, .test.v1.TestEnum>",
 	}
 	// TODO(#1381) - this is closer to what map message should be called.
 	key_field := &api.Field{
 		Name:     "key",
 		JSONName: "key",
-		ID:       "$map<string, .test.TestEnum>.key",
+		ID:       "$map<string, .test.v1.TestEnum>.key",
 		Typez:    api.STRING_TYPE,
 	}
 	value_field := &api.Field{
 		Name:     "value",
 		JSONName: "value",
-		ID:       "$map<string, .test.TestEnum>.value",
+		ID:       "$map<string, .test.v1.TestEnum>.value",
 		Typez:    api.ENUM_TYPE,
-		TypezID:  ".test.TestEnum",
+		TypezID:  ".test.v1.TestEnum",
 	}
 	map_message := &api.Message{
-		Name:   "$map<string, .test.TestEnum>",
-		ID:     "$map<string, .test.TestEnum>",
-		IsMap:  true,
-		Fields: []*api.Field{key_field, value_field},
+		Name:    "$map<string, .test.v1.TestEnum>",
+		ID:      "$map<string, .test.v1.TestEnum>",
+		Package: "test.v1",
+		IsMap:   true,
+		Fields:  []*api.Field{key_field, value_field},
 	}
 	message := &api.Message{
 		Name:          "TestMessage",
-		Package:       "test",
-		ID:            ".test.TestMessage",
+		Package:       "test.v1",
+		ID:            ".test.v1.TestMessage",
 		Documentation: "A test message.",
 		Fields:        []*api.Field{singular_field, repeated_field, optional_field, null_value_field, map_field},
 	}
@@ -1257,9 +1260,9 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		ModuleName:        "test_message",
 		QualifiedName:     "crate::model::TestMessage",
 		RelativeName:      "TestMessage",
-		NameInExamples:    "google_cloud_test::model::TestMessage",
-		PackageModuleName: "test",
-		SourceFQN:         "test.TestMessage",
+		NameInExamples:    "google_cloud_test_v1::model::TestMessage",
+		PackageModuleName: "test::v1",
+		SourceFQN:         "test.v1.TestMessage",
 		DocLines:          []string{"/// A test message."},
 		BasicFields:       []*api.Field{singular_field, repeated_field, optional_field, null_value_field, map_field},
 	}
@@ -1842,25 +1845,25 @@ func TestGenerateSetterSamples(t *testing.T) {
 func TestSetterSampleAnnotations(t *testing.T) {
 	enum := &api.Enum{
 		Name:    "TestEnum",
-		ID:      ".test.TestEnum",
-		Package: "test",
+		ID:      ".test.v1.TestEnum",
+		Package: "test.v1",
 	}
 	message := &api.Message{
 		Name:    "TestMessage",
-		ID:      ".test.TestMessage",
-		Package: "test",
+		ID:      ".test.v1.TestMessage",
+		Package: "test.v1",
 		Fields: []*api.Field{
 			{
 				Name:    "enum_field",
-				ID:      ".test.TestMessage.enum_field",
+				ID:      ".test.v1.TestMessage.enum_field",
 				Typez:   api.ENUM_TYPE,
-				TypezID: ".test.TestEnum",
+				TypezID: ".test.v1.TestEnum",
 			},
 			{
 				Name:    "message_field",
-				ID:      ".test.TestMessage.message_field",
+				ID:      ".test.v1.TestMessage.message_field",
 				Typez:   api.MESSAGE_TYPE,
-				TypezID: ".test.TestMessage",
+				TypezID: ".test.v1.TestMessage",
 			},
 		},
 	}
@@ -1875,10 +1878,10 @@ func TestSetterSampleAnnotations(t *testing.T) {
 	}
 	annotateModel(model, codec)
 
-	if message.Codec.(*messageAnnotation).NameInExamples != "google_cloud_test::model::TestMessage" {
+	if message.Codec.(*messageAnnotation).NameInExamples != "google_cloud_test_v1::model::TestMessage" {
 		t.Errorf("mismatch in message NameInExamples: got %q", message.Codec.(*messageAnnotation).NameInExamples)
 	}
-	if enum.Codec.(*enumAnnotation).NameInExamples != "google_cloud_test::model::TestEnum" {
+	if enum.Codec.(*enumAnnotation).NameInExamples != "google_cloud_test_v1::model::TestEnum" {
 		t.Errorf("mismatch in enum NameInExamples: got %q", enum.Codec.(*enumAnnotation).NameInExamples)
 	}
 

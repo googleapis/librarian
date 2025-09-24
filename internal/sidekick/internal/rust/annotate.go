@@ -701,38 +701,41 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
 		PackageModuleName: packageToModuleName(m.Package),
 		SourceFQN:         strings.TrimPrefix(m.ID, "."),
 	}
-
-	if full {
-		for _, f := range m.Fields {
-			c.annotateField(f, m, model)
-		}
-		for _, o := range m.OneOfs {
-			c.annotateOneOf(o, m, model)
-		}
-		for _, e := range m.Enums {
-			c.annotateEnum(e, model, true)
-		}
-		for _, child := range m.Messages {
-			c.annotateMessage(child, model, true)
-		}
-		hasSyntheticFields := false
-		for _, f := range m.Fields {
-			if f.Synthetic {
-				hasSyntheticFields = true
-				break
-			}
-		}
-		basicFields := language.FilterSlice(m.Fields, func(f *api.Field) bool {
-			return !f.IsOneOf
-		})
-
-		annotations.DocLines = c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes())
-		annotations.HasNestedTypes = language.HasNestedTypes(m)
-		annotations.BasicFields = basicFields
-		annotations.HasSyntheticFields = hasSyntheticFields
-		annotations.Internal = slices.Contains(c.internalTypes, m.ID)
-	}
 	m.Codec = annotations
+
+	if !full {
+		// We have basic annotations, we are done.
+		return
+	}
+
+	for _, f := range m.Fields {
+		c.annotateField(f, m, model)
+	}
+	for _, o := range m.OneOfs {
+		c.annotateOneOf(o, m, model)
+	}
+	for _, e := range m.Enums {
+		c.annotateEnum(e, model, true)
+	}
+	for _, child := range m.Messages {
+		c.annotateMessage(child, model, true)
+	}
+	hasSyntheticFields := false
+	for _, f := range m.Fields {
+		if f.Synthetic {
+			hasSyntheticFields = true
+			break
+		}
+	}
+	basicFields := language.FilterSlice(m.Fields, func(f *api.Field) bool {
+		return !f.IsOneOf
+	})
+
+	annotations.DocLines = c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes())
+	annotations.HasNestedTypes = language.HasNestedTypes(m)
+	annotations.BasicFields = basicFields
+	annotations.HasSyntheticFields = hasSyntheticFields
+	annotations.Internal = slices.Contains(c.internalTypes, m.ID)
 }
 
 func (c *codec) annotateMethod(m *api.Method) {
@@ -1058,35 +1061,38 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 		RelativeName:   relativeName,
 		NameInExamples: nameInExamples,
 	}
-
-	if full {
-		// For BigQuery (and so far only BigQuery), the enum values conflict when
-		// converted to the Rust style [1]. Basically, there are several enum values
-		// in this service that differ only in case, such as `FULL` vs. `full`.
-		//
-		// We create a list with the duplicates removed to avoid conflicts in the
-		// generated code.
-		//
-		// [1]: Both Rust and Protobuf use `SCREAMING_SNAKE_CASE` for these, but
-		//      some services do not follow the Protobuf convention.
-		seen := map[string]*api.EnumValue{}
-		var unique []*api.EnumValue
-		for _, ev := range e.Values {
-			name := enumValueVariantName(ev)
-			if existing, ok := seen[name]; ok {
-				if existing.Number != ev.Number {
-					slog.Warn("conflicting names for enum values", "enum.ID", e.ID)
-				}
-			} else {
-				unique = append(unique, ev)
-				seen[name] = ev
-			}
-		}
-
-		annotations.DocLines = c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes())
-		annotations.UniqueNames = unique
-	}
 	e.Codec = annotations
+
+	if !full {
+		// We have basic annotations, we are done.
+		return
+	}
+
+	// For BigQuery (and so far only BigQuery), the enum values conflict when
+	// converted to the Rust style [1]. Basically, there are several enum values
+	// in this service that differ only in case, such as `FULL` vs. `full`.
+	//
+	// We create a list with the duplicates removed to avoid conflicts in the
+	// generated code.
+	//
+	// [1]: Both Rust and Protobuf use `SCREAMING_SNAKE_CASE` for these, but
+	//      some services do not follow the Protobuf convention.
+	seen := map[string]*api.EnumValue{}
+	var unique []*api.EnumValue
+	for _, ev := range e.Values {
+		name := enumValueVariantName(ev)
+		if existing, ok := seen[name]; ok {
+			if existing.Number != ev.Number {
+				slog.Warn("conflicting names for enum values", "enum.ID", e.ID)
+			}
+		} else {
+			unique = append(unique, ev)
+			seen[name] = ev
+		}
+	}
+
+	annotations.DocLines = c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes())
+	annotations.UniqueNames = unique
 }
 
 func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) {
@@ -1095,10 +1101,14 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 		EnumType:    enumName(ev.Parent),
 		VariantName: enumValueVariantName(ev),
 	}
-	if full {
-		annotations.DocLines = c.formatDocComments(ev.Documentation, ev.ID, model.State, ev.Scopes())
-	}
 	ev.Codec = annotations
+
+	if !full {
+		// We have basic annotations, we are done.
+		return
+	}
+
+	annotations.DocLines = c.formatDocComments(ev.Documentation, ev.ID, model.State, ev.Scopes())
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.

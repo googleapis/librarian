@@ -727,7 +727,7 @@ type Field struct {
 	Parent *Message
 	// The message type for this field, can be nil.
 	MessageType *Message
-	// The enum type for this field, canl be nil.
+	// The enum type for this field, can be nil.
 	EnumType *Enum
 	// A placeholder to put language specific annotations.
 	Codec any
