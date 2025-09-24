@@ -17,6 +17,7 @@ package librarian
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -92,7 +93,8 @@ func shouldInclude(files, sourceRoots, excludePaths []string) bool {
 	for _, file := range files {
 		var isUnderSourceRoot bool
 		for _, sourceRoot := range sourceRoots {
-			if strings.HasPrefix(file, sourceRoot) {
+			rel, err := filepath.Rel(sourceRoot, file)
+			if err == nil && !strings.HasPrefix(rel, "..") {
 				isUnderSourceRoot = true
 				break
 			}
@@ -104,7 +106,8 @@ func shouldInclude(files, sourceRoots, excludePaths []string) bool {
 
 		var isExcluded bool
 		for _, excludePath := range excludePaths {
-			if strings.HasPrefix(file, excludePath) {
+			rel, err := filepath.Rel(excludePath, file)
+			if err == nil && !strings.HasPrefix(rel, "..") {
 				isExcluded = true
 				break
 			}

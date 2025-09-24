@@ -99,6 +99,48 @@ func TestShouldInclude(t *testing.T) {
 			excludePaths: []string{},
 			want:         false,
 		},
+		{
+			name:         "source root as prefix of another source root",
+			files:        []string{"aiplatform/file.go"},
+			sourceRoots:  []string{"ai"},
+			excludePaths: []string{},
+			want:         false,
+		},
+		{
+			name:         "file in source root with similar name",
+			files:        []string{"ai/file.go"},
+			sourceRoots:  []string{"ai"},
+			excludePaths: []string{},
+			want:         true,
+		},
+		{
+			name:         "excluded path is a directory",
+			files:        []string{"foo/bar/baz.go"},
+			sourceRoots:  []string{"foo"},
+			excludePaths: []string{"foo/bar"},
+			want:         false,
+		},
+		{
+			name:         "excluded path is a file, file matching it",
+			files:        []string{"foo/bar/go.mod"},
+			sourceRoots:  []string{"foo"},
+			excludePaths: []string{"foo/bar/go.mod"},
+			want:         false,
+		},
+		{
+			name:         "excluded path is a file, file does not match it",
+			files:        []string{"foo/go.mod"},
+			sourceRoots:  []string{"foo"},
+			excludePaths: []string{"foo/bar/go.mod"},
+			want:         true,
+		},
+		{
+			name:         "excluded path is a file with similar name",
+			files:        []string{"foo/bar/go.mod.bak"},
+			sourceRoots:  []string{"foo"},
+			excludePaths: []string{"foo/bar/go.mod"},
+			want:         true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
