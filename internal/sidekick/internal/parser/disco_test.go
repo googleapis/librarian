@@ -99,12 +99,11 @@ func TestDisco_ParsePagination(t *testing.T) {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
 	wantPagination := &api.Field{
-		Name:      "pageToken",
-		JSONName:  "pageToken",
-		Typez:     api.STRING_TYPE,
-		TypezID:   "string",
-		Optional:  true,
-		Synthetic: true,
+		Name:     "pageToken",
+		JSONName: "pageToken",
+		Typez:    api.STRING_TYPE,
+		TypezID:  "string",
+		Optional: true,
 	}
 	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

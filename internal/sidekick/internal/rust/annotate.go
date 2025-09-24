@@ -183,9 +183,6 @@ type messageAnnotation struct {
 	HasNestedTypes bool
 	// All the fields except OneOfs.
 	BasicFields []*api.Field
-	// If true, this is a synthetic message, some generation is skipped for
-	// synthetic messages
-	HasSyntheticFields bool
 	// If set, this message is only enabled when some features are enabled.
 	FeatureGates   []string
 	FeatureGatesOp string
@@ -720,13 +717,6 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
 	for _, child := range m.Messages {
 		c.annotateMessage(child, model, true)
 	}
-	hasSyntheticFields := false
-	for _, f := range m.Fields {
-		if f.Synthetic {
-			hasSyntheticFields = true
-			break
-		}
-	}
 	basicFields := language.FilterSlice(m.Fields, func(f *api.Field) bool {
 		return !f.IsOneOf
 	})
@@ -734,7 +724,6 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
 	annotations.DocLines = c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes())
 	annotations.HasNestedTypes = language.HasNestedTypes(m)
 	annotations.BasicFields = basicFields
-	annotations.HasSyntheticFields = hasSyntheticFields
 	annotations.Internal = slices.Contains(c.internalTypes, m.ID)
 }
 

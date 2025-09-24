@@ -291,7 +291,6 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 			Optional:      openapiFieldIsOptional(p),
 			Typez:         typez,
 			TypezID:       typezID,
-			Synthetic:     true,
 			AutoPopulated: openapiIsAutoPopulated(typez, schema, p),
 			Behavior:      openapiParameterBehavior(p),
 		}

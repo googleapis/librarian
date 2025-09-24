@@ -658,7 +658,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -668,10 +667,9 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 					"\nThe filtering language accepts strings like `\"displayName=tokyo" +
 					"\"`, and\nis documented in more detail in [AIP-160](https://google" +
 					".aip.dev/160).",
-				Typez:     api.STRING_TYPE,
-				TypezID:   "string",
-				Optional:  true,
-				Synthetic: true,
+				Typez:    api.STRING_TYPE,
+				TypezID:  "string",
+				Optional: true,
 			},
 			{
 				Name:          "pageSize",
@@ -680,7 +678,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Typez:         api.INT32_TYPE,
 				TypezID:       "int32",
 				Optional:      true,
-				Synthetic:     true,
 			},
 			{
 				Name:          "pageToken",
@@ -689,7 +686,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
 				Optional:      true,
-				Synthetic:     true,
 			},
 		},
 	}
@@ -753,7 +749,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			Typez:         api.STRING_TYPE,
 			TypezID:       "string",
 			Optional:      true,
-			Synthetic:     true,
 		},
 	})
 
@@ -864,7 +859,6 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -873,7 +867,6 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				Documentation: "The `{location}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -882,7 +875,6 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -914,7 +906,6 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -923,7 +914,6 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -992,7 +982,6 @@ func TestOpenAPI_Pagination(t *testing.T) {
 					Typez:         api.STRING_TYPE,
 					TypezID:       "string",
 					Optional:      true,
-					Synthetic:     true,
 				},
 			},
 		},
@@ -1087,7 +1076,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		Documentation: "Test-only Description",
 		Typez:         api.STRING_TYPE,
 		TypezID:       "string",
-		Synthetic:     true,
 		Optional:      true,
 		AutoPopulated: true,
 	}
@@ -1097,7 +1085,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		Documentation: "Test-only Description",
 		Typez:         api.STRING_TYPE,
 		TypezID:       "string",
-		Synthetic:     true,
 		Optional:      true,
 		AutoPopulated: true,
 	}
@@ -1114,7 +1101,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -1123,7 +1109,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Documentation: "Test-only Description",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			request_id,
@@ -1134,7 +1119,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
 				JSONName:      "notRequestIdRequired",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -1143,7 +1127,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
 				JSONName:      "notRequestIdMissingFormat",
-				Synthetic:     true,
 				Optional:      true,
 			},
 			{
@@ -1152,7 +1135,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
 				JSONName:      "notRequestIdMissingServiceConfig",
-				Synthetic:     true,
 				Optional:      true,
 				// This just denotes that the field is eligible
 				// to be auto-populated

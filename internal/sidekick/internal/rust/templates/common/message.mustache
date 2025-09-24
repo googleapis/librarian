@@ -214,7 +214,7 @@ impl {{Codec.Name}} {
     {{/Fields}}
     {{/OneOfs}}
 }
-{{^Codec.HasSyntheticFields}}
+{{^SyntheticRequest}}
 
 {{> /templates/common/feature_gate}}
 impl wkt::message::Message for {{Codec.Name}} {
@@ -222,7 +222,7 @@ impl wkt::message::Message for {{Codec.Name}} {
         "type.googleapis.com/{{Codec.SourceFQN}}"
     }
 }
-{{/Codec.HasSyntheticFields}}
+{{/SyntheticRequest}}
 {{#Pagination}}
 
 {{> /templates/common/feature_gate}}

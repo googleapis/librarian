@@ -102,7 +102,6 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		if err != nil {
 			return nil, err
 		}
-		field.Synthetic = true
 		field.Optional = !p.Required
 		requestMessage.Fields = append(requestMessage.Fields, field)
 		fieldNames[field.Name] = true
