@@ -50,11 +50,11 @@ go run ./contrib/test-gcr \
   --librarian-path $(pwd) \
   --gcr-branch v0.16.0
 
-# Pass arguments to sidekick refresh
+# Pass arguments to sidekick refresh (e.g., enable detailed tracing)
 go run ./contrib/test-gcr \
   --gcr-path /path/to/your/google-cloud-rust \
   --librarian-path $(pwd) \
-  --sidekick-args "--verbose"
+  --sidekick-args "--codec-option=detailed-tracing-attributes=true"
 
 # Pass arguments to cargo test
 go run ./contrib/test-gcr \
