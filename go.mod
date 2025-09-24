@@ -17,6 +17,7 @@ require (
 	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
+	golang.org/x/mod v0.28.0
 	google.golang.org/genproto v0.0.0-20250908214217-97024824d090
 	google.golang.org/genproto/googleapis/api v0.0.0-20250908214217-97024824d090
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250908214217-97024824d090
