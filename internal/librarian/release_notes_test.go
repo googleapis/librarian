@@ -529,11 +529,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
 ### Bug Fixes
 
-* a bug fix  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -579,17 +579,17 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
 
 ### Bug Fixes
 
-* a bug fix  (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
 		},
 		{
-			name: "single library with multiple features",
+			name: "single_library_with_multiple_features",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
@@ -623,9 +623,9 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
-* another new feature  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -674,7 +674,7 @@ Language Image: go:1.21
 
 ### Features
 
-* feature for a  ([1234567](https://github.com/owner/repo/commit/1234567))
+* feature for a ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>
 
@@ -685,7 +685,7 @@ Language Image: go:1.21
 
 ### Bug Fixes
 
-* fix for b  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today, today),
@@ -725,7 +725,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>`,
 				librarianVersion, today),
@@ -761,7 +761,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature this is the body ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>`,
 				librarianVersion, today),
