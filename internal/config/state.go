@@ -137,7 +137,7 @@ type LibraryState struct {
 	// Whether including this library in a release.
 	// This field is ignored when writing to state.yaml.
 	ReleaseTriggered bool `yaml:"-" json:"release_triggered,omitempty"`
-	// An error message from the docker response.
+	// An error message in the response from the container.
 	// This field is ignored when writing to state.yaml.
 	ErrorMessage string `yaml:"-" json:"error,omitempty"`
 }

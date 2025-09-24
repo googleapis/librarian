@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docker
+package container
 
 import (
 	"context"
@@ -53,32 +53,32 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestDockerRun(t *testing.T) {
+func TestContainerRun(t *testing.T) {
 	const (
-		mockImage            = "mockImage"
-		testAPIRoot          = "testAPIRoot"
-		testImage            = "testImage"
-		testLibraryID        = "testLibraryID"
-		testOutput           = "testOutput"
-		simulateDockerErrMsg = "simulate docker command failure for testing"
+		mockImage               = "mockImage"
+		testAPIRoot             = "testAPIRoot"
+		testImage               = "testImage"
+		testLibraryID           = "testLibraryID"
+		testOutput              = "testOutput"
+		simulateContainerErrMsg = "simulate container command failure for testing"
 	)
 
 	state := &config.LibrarianState{}
 	repoDir := filepath.Join(os.TempDir())
 	for _, test := range []struct {
 		name       string
-		docker     *Docker
-		runCommand func(ctx context.Context, d *Docker) error
+		container  *Container
+		runCommand func(ctx context.Context, d *Container) error
 		want       []string
 		wantErr    bool
 		wantErrMsg string
 	}{
 		{
 			name: "Generate",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				generateRequest := &GenerateRequest{
 					State:     state,
 					RepoDir:   repoDir,
@@ -105,10 +105,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Generate with invalid repo root",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				generateRequest := &GenerateRequest{
 					State:     state,
 					RepoDir:   "/non-existed-dir",
@@ -124,10 +124,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Generate with mock image",
-			docker: &Docker{
+			container: &Container{
 				Image: mockImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				generateRequest := &GenerateRequest{
 					State:     state,
 					RepoDir:   repoDir,
@@ -140,14 +140,14 @@ func TestDockerRun(t *testing.T) {
 			},
 			want:       []string{},
 			wantErr:    true,
-			wantErrMsg: simulateDockerErrMsg,
+			wantErrMsg: simulateContainerErrMsg,
 		},
 		{
-			name: "Generate runs in docker",
-			docker: &Docker{
+			name: "Generate runs in container",
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				generateRequest := &GenerateRequest{
 					State:     state,
 					RepoDir:   repoDir,
@@ -175,10 +175,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Build",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				buildRequest := &BuildRequest{
 					State:     state,
 					LibraryID: testLibraryID,
@@ -199,10 +199,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Build with invalid repo dir",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				buildRequest := &BuildRequest{
 					State:     state,
 					LibraryID: testLibraryID,
@@ -216,10 +216,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Build with mock image",
-			docker: &Docker{
+			container: &Container{
 				Image: mockImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				buildRequest := &BuildRequest{
 					State:     state,
 					LibraryID: testLibraryID,
@@ -230,14 +230,14 @@ func TestDockerRun(t *testing.T) {
 			},
 			want:       []string{},
 			wantErr:    true,
-			wantErrMsg: simulateDockerErrMsg,
+			wantErrMsg: simulateContainerErrMsg,
 		},
 		{
 			name: "Configure",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				configureRequest := &ConfigureRequest{
 					State:     state,
 					LibraryID: testLibraryID,
@@ -265,10 +265,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Configure with multiple libraries in librarian state",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				curState := &config.LibrarianState{
 					Image: testImage,
 					Libraries: []*config.LibraryState{
@@ -324,10 +324,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Configure with invalid repo dir",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				configureRequest := &ConfigureRequest{
 					State:     state,
 					LibraryID: testLibraryID,
@@ -343,10 +343,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Configure with mock image",
-			docker: &Docker{
+			container: &Container{
 				Image: mockImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				configureRequest := &ConfigureRequest{
 					State:     state,
 					LibraryID: testLibraryID,
@@ -360,14 +360,14 @@ func TestDockerRun(t *testing.T) {
 			},
 			want:       []string{},
 			wantErr:    true,
-			wantErrMsg: simulateDockerErrMsg,
+			wantErrMsg: simulateContainerErrMsg,
 		},
 		{
 			name: "Release init for all libraries",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				partialRepoDir := filepath.Join(repoDir, "release-init-all-libraries")
 				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
@@ -398,10 +398,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Release init returns error",
-			docker: &Docker{
+			container: &Container{
 				Image: mockImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				partialRepoDir := filepath.Join(repoDir, "release-init-returns-error")
 				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
@@ -418,14 +418,14 @@ func TestDockerRun(t *testing.T) {
 				return d.ReleaseInit(ctx, releaseInitRequest)
 			},
 			wantErr:    true,
-			wantErrMsg: simulateDockerErrMsg,
+			wantErrMsg: simulateContainerErrMsg,
 		},
 		{
 			name: "Release init with invalid partial repo dir",
-			docker: &Docker{
+			container: &Container{
 				Image: mockImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				releaseInitRequest := &ReleaseInitRequest{
 					State:          state,
 					PartialRepoDir: "/non-exist-dir",
@@ -439,10 +439,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Release init for one library",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				partialRepoDir := filepath.Join(repoDir, "release-init-one-library")
 				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
@@ -472,10 +472,10 @@ func TestDockerRun(t *testing.T) {
 		},
 		{
 			name: "Release init for one library with version",
-			docker: &Docker{
+			container: &Container{
 				Image: testImage,
 			},
-			runCommand: func(ctx context.Context, d *Docker) error {
+			runCommand: func(ctx context.Context, d *Container) error {
 				partialRepoDir := filepath.Join(repoDir, "release-init-one-library-with-version")
 				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
@@ -507,9 +507,9 @@ func TestDockerRun(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			test.docker.run = func(args ...string) error {
-				if test.docker.Image == mockImage {
-					return errors.New("simulate docker command failure for testing")
+			test.container.run = func(args ...string) error {
+				if test.container.Image == mockImage {
+					return errors.New("simulate container command failure for testing")
 				}
 				if diff := cmp.Diff(test.want, args); diff != "" {
 					t.Errorf("mismatch(-want +got):\n%s", diff)
@@ -517,7 +517,7 @@ func TestDockerRun(t *testing.T) {
 				return nil
 			}
 			ctx := t.Context()
-			err := test.runCommand(ctx, test.docker)
+			err := test.runCommand(ctx, test.container)
 
 			if test.wantErr {
 				if err == nil {
@@ -759,7 +759,7 @@ func TestWriteLibrarianState(t *testing.T) {
 	}
 }
 
-func TestDocker_runCommand(t *testing.T) {
+func TestContainer_runCommand(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		cmdName string
@@ -780,9 +780,9 @@ func TestDocker_runCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			c := &Docker{}
+			c := &Container{}
 			if err := c.runCommand(test.cmdName, test.args...); (err != nil) != test.wantErr {
-				t.Errorf("Docker.runCommand() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("Container.runCommand() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -846,7 +846,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 			t.Fatalf("ReadFile failed: %v", err)
 		}
 
-		wantFile := filepath.Join("..", "..", "testdata", "docker", "release-init-request", "release-init-request.json")
+		wantFile := filepath.Join("..", "..", "testdata", "container", "release-init-request", "release-init-request.json")
 		wantBytes, err := os.ReadFile(wantFile)
 		if err != nil {
 			t.Fatalf("ReadFile for want file failed: %v", err)

@@ -113,7 +113,7 @@ func TestRunGenerate(t *testing.T) {
 				}
 
 				// the exact message is not populated here, but we can check it's
-				// indeed an error returned from docker container.
+				// indeed an error returned from a container.
 				if g, w := err.Error(), "exit status 1"; !strings.Contains(g, w) {
 					t.Fatalf("got %q, wanted it to contain %q", g, w)
 				}
@@ -304,7 +304,7 @@ func TestRunConfigure(t *testing.T) {
 				}
 
 				// the exact message is not populated here, but we can check it's
-				// indeed an error returned from docker container.
+				// indeed an error returned from a container.
 				if g, w := err.Error(), "exit status 1"; !strings.Contains(g, w) {
 					t.Errorf("got %q, wanted it to contain %q", g, w)
 				}

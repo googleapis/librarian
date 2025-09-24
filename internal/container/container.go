@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package docker provides the interface for running language-specific
-// Docker containers which conform to the Librarian container contract.
+// Package container provides the interface for running language-specific
+// containers which conform to the Librarian container contract.
 // TODO(https://github.com/googleapis/librarian/issues/330): link to
 // the documentation when it's written.
-package docker
+package container
 
 import (
 	"context"
@@ -47,10 +47,9 @@ const (
 	CommandReleaseInit Command = "release-init"
 )
 
-// Docker contains all the information required to run language-specific
-// Docker containers.
-type Docker struct {
-	// The Docker image to run.
+// Container contains all the information required to run language-specific containers.
+type Container struct {
+	// The image to run.
 	Image string
 
 	// The user ID to run the container as.
@@ -59,15 +58,15 @@ type Docker struct {
 	// The group ID to run the container as.
 	gid string
 
-	// run runs the docker command.
+	// run runs the command.
 	run func(args ...string) error
 }
 
 // BuildRequest contains all the information required for a language
 // container to run the build command.
 type BuildRequest struct {
-	// HostMount specifies a mount point from the Docker host into the Docker
-	// container. The format is "{host-dir}:{local-dir}".
+	// HostMount specifies a mount point from the host into the container.
+	// The format is "{host-dir}:{local-dir}".
 	HostMount string
 
 	// LibraryID specifies the ID of the library to build.
@@ -87,8 +86,8 @@ type ConfigureRequest struct {
 	// ApiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
 
-	// HostMount specifies a mount point from the Docker host into the Docker
-	// container. The format is "{host-dir}:{local-dir}".
+	// HostMount specifies a mount point from the host into the container.
+	// The format is "{host-dir}:{local-dir}".
 	HostMount string
 
 	// libraryID specifies the ID of the library to configure.
@@ -108,8 +107,8 @@ type GenerateRequest struct {
 	// ApiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
 
-	// HostMount specifies a mount point from the Docker host into the Docker
-	// container. The format is "{host-dir}:{local-dir}".
+	// HostMount specifies a mount point from the host into the container.
+	// The format is "{host-dir}:{local-dir}".
 	HostMount string
 
 	// LibraryID specifies the ID of the library to generate.
@@ -137,9 +136,9 @@ type ReleaseInitRequest struct {
 	// create a pull request. This flag is ignored if Push is set to true.
 	Commit bool
 
-	// HostMount is used to remap Docker mount paths when running in environments
-	// where Docker containers are siblings (e.g., Kokoro).
-	// It specifies a mount point from the Docker host into the Docker container.
+	// HostMount is used to remap mount paths when running in environments
+	// where containers are siblings (e.g., Kokoro).
+	// It specifies a mount point from the host into the container.
 	// The format is "{host-dir}:{local-dir}".
 	HostMount string
 
@@ -170,24 +169,25 @@ type ReleaseInitRequest struct {
 	State *config.LibrarianState
 }
 
-// New constructs a Docker instance which will invoke the specified
-// Docker image as required to implement language-specific commands,
-// providing the container with required environment variables.
-func New(workRoot, image, uid, gid string) (*Docker, error) {
-	docker := &Docker{
+// New constructs a container instance which will invoke the specified
+// image as required to implement language-specific commands, providing
+// the container with required environment variables.
+func New(workRoot, image, uid, gid string) (*Container, error) {
+	container := &Container{
 		Image: image,
 		uid:   uid,
 		gid:   gid,
 	}
-	docker.run = func(args ...string) error {
-		return docker.runCommand("docker", args...)
+	defaultContainerEngine := "docker"
+	container.run = func(args ...string) error {
+		return container.runCommand(defaultContainerEngine, args...)
 	}
-	return docker, nil
+	return container, nil
 }
 
 // Generate performs generation for an API which is configured as part of a
 // library.
-func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
+func (c *Container) Generate(ctx context.Context, request *GenerateRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
 	if err := writeLibraryState(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
@@ -214,12 +214,12 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
-	return c.runDocker(ctx, request.HostMount, CommandGenerate, mounts, commandArgs)
+	return c.runInContainerEngine(ctx, request.HostMount, CommandGenerate, mounts, commandArgs)
 }
 
 // Build builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
-func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
+func (c *Container) Build(ctx context.Context, request *BuildRequest) error {
 	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
 	if err := writeLibraryState(request.State, request.LibraryID, jsonFilePath); err != nil {
 		return err
@@ -241,14 +241,14 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		"--repo=/repo",
 	}
 
-	return c.runDocker(ctx, request.HostMount, CommandBuild, mounts, commandArgs)
+	return c.runInContainerEngine(ctx, request.HostMount, CommandBuild, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
 // existing library or creating a new library.
 //
 // Returns the configured library id if the command succeeds.
-func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (string, error) {
+func (c *Container) Configure(ctx context.Context, request *ConfigureRequest) (string, error) {
 	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
 	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return "", err
@@ -274,7 +274,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
 
-	if err := c.runDocker(ctx, request.HostMount, CommandConfigure, mounts, commandArgs); err != nil {
+	if err := c.runInContainerEngine(ctx, request.HostMount, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
 
@@ -282,7 +282,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 }
 
 // ReleaseInit initiates a release for a given language repository.
-func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
+func (c *Container) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
 	requestFilePath := filepath.Join(request.PartialRepoDir, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
 		return err
@@ -306,14 +306,14 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
-	if err := c.runDocker(ctx, request.HostMount, CommandReleaseInit, mounts, commandArgs); err != nil {
+	if err := c.runInContainerEngine(ctx, request.HostMount, CommandReleaseInit, mounts, commandArgs); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Docker) runDocker(_ context.Context, hostMount string, command Command, mounts []string, commandArgs []string) (err error) {
+func (c *Container) runInContainerEngine(_ context.Context, hostMount string, command Command, mounts []string, commandArgs []string) (err error) {
 	mounts = maybeRelocateMounts(hostMount, mounts)
 	args := []string{
 		"run",
@@ -353,15 +353,15 @@ func maybeRelocateMounts(hostMount string, mounts []string) []string {
 	return relocatedMounts
 }
 
-func (c *Docker) runCommand(cmdName string, args ...string) error {
+func (c *Container) runCommand(cmdName string, args ...string) error {
 	cmd := exec.Command(cmdName, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	slog.Info(fmt.Sprintf("=== Docker start %s", strings.Repeat("=", 63)))
+	slog.Info(fmt.Sprintf("=== Container start %s", strings.Repeat("=", 63)))
 	slog.Info(cmd.String())
 	slog.Info(strings.Repeat("-", 80))
 	err := cmd.Run()
-	slog.Info(fmt.Sprintf("=== Docker end %s", strings.Repeat("=", 65)))
+	slog.Info(fmt.Sprintf("=== Container end %s", strings.Repeat("=", 65)))
 	return err
 }
 

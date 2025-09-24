@@ -47,7 +47,7 @@ const docTemplate = `// Copyright 2025 Google LLC
 Librarian manages Google API client libraries by automating onboarding,
 regeneration, and release. It runs language-agnostic workflows while
 delegating language-specific tasks—such as code generation, building, and
-testing—to Docker images.
+testing to images.
 
 Usage:
 

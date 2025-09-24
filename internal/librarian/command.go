@@ -30,7 +30,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/docker"
+	"github.com/googleapis/librarian/internal/container"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
@@ -64,12 +64,12 @@ type GitHubClient interface {
 	CreateTag(ctx context.Context, tag, commitish string) error
 }
 
-// ContainerClient is an abstraction over the Docker client.
+// ContainerClient is an abstraction over the container commands.
 type ContainerClient interface {
-	Build(ctx context.Context, request *docker.BuildRequest) error
-	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
-	Generate(ctx context.Context, request *docker.GenerateRequest) error
-	ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error
+	Build(ctx context.Context, request *container.BuildRequest) error
+	Configure(ctx context.Context, request *container.ConfigureRequest) (string, error)
+	Generate(ctx context.Context, request *container.GenerateRequest) error
+	ReleaseInit(ctx context.Context, request *container.ReleaseInitRequest) error
 }
 
 type commitInfo struct {
@@ -136,7 +136,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}
 
 	ghClient := github.NewClient(cfg.GitHubToken, gitHubRepo)
-	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	container, err := container.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
 	if err != nil {
 		return nil, err
 	}
