@@ -72,7 +72,7 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		if schema.Type != "object" {
 			return nil, fmt.Errorf("schema %s is not an object: %q", id, schema.Type)
 		}
-		fields, err := makeMessageFields(id, schema)
+		fields, err := makeMessageFields(result, id, schema)
 		if err != nil {
 			return nil, err
 		}

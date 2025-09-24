@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 )
 
 const (
@@ -62,7 +61,6 @@ const (
 
 // are variables so it can be replaced during testing.
 var (
-	now         = time.Now
 	tempDir     = os.TempDir
 	currentUser = user.Current
 )
@@ -274,19 +272,9 @@ func (c *Config) createWorkRoot() error {
 		slog.Info("Using specified working directory", "dir", c.WorkRoot)
 		return nil
 	}
-	t := now()
-	path := filepath.Join(tempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(t)))
-
-	_, err := os.Stat(path)
-	switch {
-	case os.IsNotExist(err):
-		if err := os.Mkdir(path, 0755); err != nil {
-			return fmt.Errorf("unable to create temporary working directory '%s': %w", path, err)
-		}
-	case err == nil:
-		return fmt.Errorf("temporary working directory already exists: %s", path)
-	default:
-		return fmt.Errorf("unable to check directory '%s': %w", path, err)
+	path, err := os.MkdirTemp(tempDir(), "librarian-*")
+	if err != nil {
+		return err
 	}
 
 	slog.Info("Temporary working directory", "dir", path)
@@ -365,9 +353,4 @@ func validateHostMount(hostMount, defaultValue string) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func formatTimestamp(t time.Time) string {
-	const yyyyMMddHHmmss = "20060102T150405Z" // Expected format by time library
-	return t.Format(yyyyMMddHHmmss)
 }

@@ -41,6 +41,7 @@ type mockGitHubClient struct {
 	searchPullRequestsCalls int
 	getPullRequestCalls     int
 	createReleaseCalls      int
+	createIssueCalls        int
 	createTagCalls          int
 	createPullRequestErr    error
 	addLabelsToIssuesErr    error
@@ -49,6 +50,7 @@ type mockGitHubClient struct {
 	searchPullRequestsErr   error
 	getPullRequestErr       error
 	createReleaseErr        error
+	createIssueErr          error
 	createTagErr            error
 	createdPR               *github.PullRequestMetadata
 	labels                  []string
@@ -102,6 +104,11 @@ func (m *mockGitHubClient) GetPullRequest(ctx context.Context, number int) (*git
 func (m *mockGitHubClient) CreateRelease(ctx context.Context, tagName, releaseName, body, commitish string) (*github.RepositoryRelease, error) {
 	m.createReleaseCalls++
 	return m.createdRelease, m.createReleaseErr
+}
+
+func (m *mockGitHubClient) CreateIssueComment(ctx context.Context, number int, comment string) error {
+	m.createIssueCalls++
+	return m.createIssueErr
 }
 
 func (m *mockGitHubClient) CreateTag(ctx context.Context, tagName, commitish string) error {

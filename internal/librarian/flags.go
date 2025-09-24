@@ -112,3 +112,7 @@ func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 		`Working directory root. When this is not specified, a working directory
 will be created in /tmp.`)
 }
+
+func addFlagVerbose(fs *flag.FlagSet, p *bool) {
+	fs.BoolVar(p, "v", false, "enables verbose logging")
+}

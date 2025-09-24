@@ -602,14 +602,13 @@ func makeMapMessage(state *api.APIState, messageName, name string, schema *base.
 			TypezID: "string",
 		}
 		placeholder := &api.Message{
-			Name:             id,
-			Documentation:    id,
-			ID:               id,
-			IsLocalToPackage: false,
-			IsMap:            true,
-			Fields:           []*api.Field{key, value},
-			Parent:           nil,
-			Package:          "$",
+			Name:          id,
+			Documentation: id,
+			ID:            id,
+			IsMap:         true,
+			Fields:        []*api.Field{key, value},
+			Parent:        nil,
+			Package:       "$",
 		}
 		state.MessageByID[id] = placeholder
 		message = placeholder

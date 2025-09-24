@@ -44,29 +44,36 @@ const docTemplate = `// Copyright 2025 Google LLC
 //go:generate go run -tags docgen doc_generate.go
 
 /*
-Package librarian contains the business logic for the Librarian CLI.
-Implementation details for interacting with other systems (Git, GitHub,
-Docker etc.) are abstracted into other packages.
+Librarian manages Google API client libraries by automating onboarding,
+regeneration, and release. It runs language-agnostic workflows while
+delegating language-specific tasks—such as code generation, building, and
+testing—to Docker images.
 
 Usage:
 
 	librarian <command> [arguments]
 
 The commands are:
-{{range .Commands}}
+{{range .Commands}}{{template "command" .}}{{end}}
+*/
+package main
+
+{{define "command"}}
 
 # {{.Name}}
 
 {{.HelpText}}
+{{if .Commands}}
+{{range .Commands}}{{template "command" .}}{{end}}
 {{end}}
-*/
-package librarian
+{{end}}
 `
 
 // CommandDoc holds the documentation for a single CLI command.
 type CommandDoc struct {
 	Name     string
 	HelpText string
+	Commands []CommandDoc
 }
 
 func main() {
@@ -87,34 +94,9 @@ func run() error {
 }
 
 func processFile() error {
-	// Get the help text.
-	cmd := exec.Command("go", "run", "../../cmd/librarian/")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
-	err := cmd.Run()
-	if err != nil {
-		// The command exits with status 1 if no subcommand is given, which is
-		// the case when we are generating the help text. We can ignore the
-		// error if there is output.
-		if out.Len() == 0 {
-			return fmt.Errorf("cmd.Run() failed with %s\n%s", err, out.String())
-		}
-	}
-	helpText := out.Bytes()
-
-	commandNames, err := extractCommandNames(helpText)
+	commands, err := buildCommandDocs("")
 	if err != nil {
 		return err
-	}
-
-	var commands []CommandDoc
-	for _, name := range commandNames {
-		help, err := getCommandHelp(name)
-		if err != nil {
-			return fmt.Errorf("getting help for command %s: %w", name, err)
-		}
-		commands = append(commands, CommandDoc{Name: name, HelpText: help})
 	}
 
 	docFile, err := os.Create("doc.go")
@@ -130,8 +112,62 @@ func processFile() error {
 	return nil
 }
 
-func getCommandHelp(command string) (string, error) {
-	cmd := exec.Command("go", "run", "../../cmd/librarian/", command, "--help")
+func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
+	var parentParts []string
+	if parentCommand != "" {
+		parentParts = strings.Fields(parentCommand)
+	}
+
+	// Get help text for parent to find subcommands.
+	args := []string{"run", "main.go"}
+	args = append(args, parentParts...)
+	cmd := exec.Command("go", args...)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	// Ignore error, help text is printed on error when no subcommand is provided.
+	_ = cmd.Run()
+
+	commandNames, err := extractCommandNames(out.Bytes())
+	if err != nil {
+		// Not an error, just means no subcommands.
+		return nil, nil
+	}
+
+	var commands []CommandDoc
+	for _, name := range commandNames {
+		fullCommandName := name
+		if parentCommand != "" {
+			fullCommandName = parentCommand + " " + name
+		}
+
+		helpText, err := getCommandHelpText(fullCommandName)
+		if err != nil {
+			return nil, fmt.Errorf("getting help text for command %s: %w", fullCommandName, err)
+		}
+
+		// Recurse.
+		subCommands, err := buildCommandDocs(fullCommandName)
+		if err != nil {
+			return nil, err
+		}
+
+		commands = append(commands, CommandDoc{
+			Name:     fullCommandName,
+			HelpText: helpText,
+			Commands: subCommands,
+		})
+	}
+
+	return commands, nil
+}
+
+func getCommandHelpText(command string) (string, error) {
+	parts := strings.Fields(command)
+	args := []string{"run", "../../cmd/librarian/"}
+	args = append(args, parts...)
+	args = append(args, "--help")
+	cmd := exec.Command("go", args...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out

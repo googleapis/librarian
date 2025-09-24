@@ -200,7 +200,7 @@ func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 // readLibraryState reads the library state from a container response, if it exists.
 // If the response file does not exist, readLibraryState succeeds but returns a nil pointer.
 //
-// The response file is removed afterwards.
+// The response file is removed afterward.
 func readLibraryState(jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
 	defer func() {

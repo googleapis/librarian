@@ -226,7 +226,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "Body", "IsBreaking", "When")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
 				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})

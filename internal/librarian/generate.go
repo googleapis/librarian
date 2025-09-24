@@ -86,8 +86,9 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// The last generated commit is changed after library generation,
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
-	idToCommits := make(map[string]string, 0)
+	idToCommits := make(map[string]string)
 	var failedLibraries []string
+	failedGenerations := 0
 	if r.api != "" || r.library != "" {
 		libraryID := r.library
 		if libraryID == "" {
@@ -100,7 +101,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 		idToCommits[libraryID] = oldCommit
 	} else {
 		succeededGenerations := 0
-		failedGenerations := 0
 		blockedGenerations := 0
 		for _, library := range r.state.Libraries {
 			if r.librarianConfig != nil {
@@ -141,17 +141,18 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		branch:          r.branch,
-		commit:          r.commit,
-		commitMessage:   "feat: generate libraries",
-		failedLibraries: failedLibraries,
-		ghClient:        r.ghClient,
-		idToCommits:     idToCommits,
-		prType:          generate,
-		push:            r.push,
-		repo:            r.repo,
-		sourceRepo:      r.sourceRepo,
-		state:           r.state,
+		branch:            r.branch,
+		commit:            r.commit,
+		commitMessage:     "feat: generate libraries",
+		failedLibraries:   failedLibraries,
+		ghClient:          r.ghClient,
+		idToCommits:       idToCommits,
+		prType:            generate,
+		push:              r.push,
+		repo:              r.repo,
+		sourceRepo:        r.sourceRepo,
+		state:             r.state,
+		failedGenerations: failedGenerations,
 	}
 
 	return commitAndPush(ctx, commitInfo)
@@ -294,14 +295,22 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 		State:     r.state,
 	}
 	slog.Info("Performing build for library", "id", libraryID)
-	if err := r.containerClient.Build(ctx, buildRequest); err != nil {
-		return err
+	if containerErr := r.containerClient.Build(ctx, buildRequest); containerErr != nil {
+		if restoreErr := r.restoreLibrary(libraryID); restoreErr != nil {
+			return errors.Join(containerErr, restoreErr)
+		}
+
+		return errors.Join(containerErr)
 	}
 
 	// Read the library state from the response.
-	if _, err := readLibraryState(
-		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse)); err != nil {
-		return err
+	if _, responseErr := readLibraryState(
+		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse)); responseErr != nil {
+		if restoreErr := r.restoreLibrary(libraryID); restoreErr != nil {
+			return errors.Join(responseErr, restoreErr)
+		}
+
+		return responseErr
 	}
 
 	slog.Info("Build succeeds", "id", libraryID)
@@ -386,6 +395,16 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	return libraryState.ID, nil
+}
+
+func (r *generateRunner) restoreLibrary(libraryID string) error {
+	// At this point, we should have a library in the state.
+	library := findLibraryByID(r.state, libraryID)
+	if err := r.repo.Restore(library.SourceRoots); err != nil {
+		return err
+	}
+
+	return r.repo.CleanUntracked(library.SourceRoots)
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {

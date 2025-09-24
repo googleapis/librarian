@@ -85,6 +85,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
+			map[string]string{"readme-after-title-text": "> [!TIP] Still beta!"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("> [!TIP] Still beta!", codec.ReadMeAfterTitleText); diff != "" {
+					t.Errorf("mismatch in Codec.ReadMeAfterTitleText (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
 			map[string]string{"repository-url": "http://example.com/repo"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
