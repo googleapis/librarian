@@ -32,6 +32,7 @@ const (
 	endNestedCommit     = "END_NESTED_COMMIT"
 	breakingChangeKey   = "BREAKING CHANGE"
 	sourceLinkKey       = "Source-Link"
+	empty               = ""
 )
 
 var (
@@ -90,7 +91,7 @@ type parsedHeader struct {
 func (header *parsedHeader) extractLibraryID() string {
 	matches := libraryIDRegex.FindStringSubmatch(header.Description)
 	if len(matches) == 0 {
-		return ""
+		return empty
 	}
 	return matches[1]
 }
@@ -127,7 +128,7 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 // conventional commit is logged and skipped.
 func ParseCommits(commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
 	message := commit.Message
-	if strings.TrimSpace(message) == "" {
+	if strings.TrimSpace(message) == empty {
 		return nil, fmt.Errorf("empty commit message")
 	}
 	message = extractCommitMessageOverride(message)
@@ -167,7 +168,7 @@ func extractCommitParts(message string) []commitPart {
 	var commitParts []commitPart
 
 	// The first part is the primary commit.
-	if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
+	if len(parts) > 0 && strings.TrimSpace(parts[0]) != empty {
 		commitParts = append(commitParts, commitPart{
 			message:  strings.TrimSpace(parts[0]),
 			isNested: false,
@@ -198,7 +199,7 @@ func extractCommitParts(message string) []commitPart {
 // A simple commit message is commit that does not include override or nested commits.
 func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
 	trimmedMessage := strings.TrimSpace(commitPart.message)
-	if trimmedMessage == "" {
+	if trimmedMessage == empty {
 		return nil, fmt.Errorf("empty commit message")
 	}
 
@@ -210,6 +211,10 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	var commits []*ConventionalCommit
 	// Hold the subjects of each commit.
 	var subjects [][]string
+	// Hold the body of each commit.
+	var body [][]string
+	// Whether it has seen an empty line.
+	seenSeparator := false
 	// If the body lines have multiple headers, separate them into different conventional commit, all associated with
 	// the same commit sha.
 	for _, bodyLine := range bodyLines {
@@ -221,12 +226,26 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 				continue
 			}
 
-			// This might be a multi-line header, append the line to the subject of the last commit.
-			subjects[len(subjects)-1] = append(subjects[len(subjects)-1], strings.TrimSpace(bodyLine))
+			bodyLine = strings.TrimSpace(bodyLine)
+			if bodyLine == empty {
+				seenSeparator = true
+				continue
+			}
+
+			if seenSeparator {
+				// Since we have seen a separator, the rest of the lines are body lines of the commit.
+				body[len(body)-1] = append(body[len(body)-1], bodyLine)
+			} else {
+				// We haven't seen a separator, this line is the continuation of the title.
+				subjects[len(subjects)-1] = append(subjects[len(subjects)-1], bodyLine)
+			}
+
 			continue
 		}
 
 		subjects = append(subjects, []string{})
+		body = append(body, []string{})
+		seenSeparator = false
 		// If there is an association for the commit (i.e. the commit has '[LIBRARY_ID]' in the
 		// description), then use that libraryID. Otherwise, use the libraryID passed as the default.
 		headerLibraryID := header.extractLibraryID()
@@ -248,17 +267,10 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 		})
 	}
 
-	if len(commits) == 1 {
-		// If only one conventional commit is found, i.e., only one header line is
-		// in the commit message, assign the body field.
-		commits[0].Body = strings.TrimSpace(strings.Join(bodyLines[1:], "\n"))
-	} else {
-		// Otherwise, concatenate all lines as the subject of the corresponding commit.
-		// This is a workaround when GitHub inserts line breaks in the middle of a long line after squash and merge.
-		for i, commit := range commits {
-			sub := fmt.Sprintf("%s %s", commit.Subject, strings.Join(subjects[i], " "))
-			commit.Subject = strings.TrimSpace(sub)
-		}
+	for i, commit := range commits {
+		sub := fmt.Sprintf("%s %s", commit.Subject, strings.Join(subjects[i], " "))
+		commit.Subject = strings.TrimSpace(sub)
+		commit.Body = strings.Join(body[i], "\n")
 	}
 
 	return commits, nil
@@ -294,11 +306,11 @@ func separateBodyAndFooters(lines []string) (bodyLines, footerLines []string) {
 			footerLines = append(footerLines, line)
 			continue
 		}
-		if strings.TrimSpace(line) == "" {
+		if strings.TrimSpace(line) == empty {
 			isSeparator := false
 			// Look ahead at the next non-blank line.
 			for j := i + 1; j < len(lines); j++ {
-				if strings.TrimSpace(lines[j]) != "" {
+				if strings.TrimSpace(lines[j]) != empty {
 					if footerRegex.MatchString(lines[j]) {
 						isSeparator = true
 					}
@@ -326,7 +338,7 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 		if len(footerMatches) == 0 {
 			// Not a new footer. If we have a previous key and the line is not
 			// empty, append it to the last value.
-			if lastKey != "" && strings.TrimSpace(line) != "" {
+			if lastKey != empty && strings.TrimSpace(line) != empty {
 				footers[lastKey] += "\n" + line
 			}
 			continue
