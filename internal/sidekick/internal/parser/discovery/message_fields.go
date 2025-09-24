@@ -38,9 +38,8 @@ func makeField(model *api.API, message *api.Message, input *property) (*api.Fiel
 	if input.Schema.Type == "array" {
 		return makeArrayField(model, message, input)
 	}
-	if input.Schema.AdditionalProperties != nil {
-		// TODO(#2283) - handle map fields
-		return nil, nil
+	if field, err := maybeMapField(model, message, input); err != nil || field != nil {
+		return field, err
 	}
 	if input.Schema.Type == "object" && input.Schema.Properties != nil {
 		// TODO(#2265) - handle inline object...
