@@ -42,6 +42,10 @@ var (
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
 	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
 	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
+	// libraryIDRegex extracts the libraryID from the commit message in a generation PR.
+	// For a generation PR, each commit is expected to have the libraryID in brackets
+	// ('[]').
+	libraryIDRegex = regexp.MustCompile(`\[([^\]]+)\]`)
 )
 
 // ConventionalCommit represents a parsed conventional commit message.
@@ -64,7 +68,10 @@ type ConventionalCommit struct {
 	// IsNested indicates if the commit is a nested commit.
 	IsNested bool `yaml:"-" json:"-"`
 	// SHA is the full commit hash.
+	// Deprecated: use CommitHash instead.
 	SHA string `yaml:"-" json:"source_commit_hash,omitempty"`
+	// CommitHash is the full commit hash.
+	CommitHash string `yaml:"-" json:"commit_hash,omitempty"`
 	// When is the timestamp of the commit.
 	When time.Time `yaml:"-" json:"-"`
 }
@@ -75,6 +82,17 @@ type parsedHeader struct {
 	Scope       string
 	Description string
 	IsBreaking  bool
+}
+
+// extractLibraryID pulls the text between '[]' as the commit's libraryID
+// A non generation PR may not have the associated libraryID between [] and
+// will return an empty libraryID.
+func (header *parsedHeader) extractLibraryID() string {
+	matches := libraryIDRegex.FindStringSubmatch(header.Description)
+	if len(matches) == 0 {
+		return ""
+	}
+	return matches[1]
 }
 
 // commitPart holds the raw string of a commit message and whether it's nested.
@@ -209,6 +227,13 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 		}
 
 		subjects = append(subjects, []string{})
+		// If there is an association for the commit (i.e. the commit has '[LIBRARY_ID]' in the
+		// description), then use that libraryID. Otherwise, use the libraryID passed as the default.
+		headerLibraryID := header.extractLibraryID()
+		if headerLibraryID != "" {
+			libraryID = headerLibraryID
+		}
+
 		commits = append(commits, &ConventionalCommit{
 			Type:       header.Type,
 			Scope:      header.Scope,
@@ -218,6 +243,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			IsBreaking: header.IsBreaking || footerIsBreaking,
 			IsNested:   commitPart.isNested,
 			SHA:        commit.Hash.String(),
+			CommitHash: commit.Hash.String(),
 			When:       commit.When,
 		})
 	}

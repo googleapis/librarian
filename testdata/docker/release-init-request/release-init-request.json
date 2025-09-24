@@ -4,13 +4,12 @@
     {
       "id": "my-library",
       "version": "1.1.0",
-      "last_generated_commit": "",
       "changes": [
         {
           "type": "feat",
           "subject": "new feature",
           "body": "body of feature",
-          "source_commit_hash": "1234",
+          "commit_hash": "1234",
           "piper_cl_number": "12345"
         }
       ],

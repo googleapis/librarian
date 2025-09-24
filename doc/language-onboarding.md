@@ -272,14 +272,14 @@ global file edits. The libraries that are being released will be marked by the `
           "subject": "add new UpdateRepository API",
           "body": "This adds the ability to update a repository's properties.",
           "piper_cl_number": "786353207",
-          "source_commit_hash": "9461532e7d19c8d71709ec3b502e5d81340fb661"
+          "commit_hash": "9461532e7d19c8d71709ec3b502e5d81340fb661"
         },
         {
           "type": "docs",
           "subject": "fix typo in BranchRule comment",
           "body": "",
           "piper_cl_number": "786353207",
-          "source_commit_hash": "9461532e7d19c8d71709ec3b502e5d81340fb661"
+          "commit_hash": "9461532e7d19c8d71709ec3b502e5d81340fb661"
         }
       ],
       "apis": [

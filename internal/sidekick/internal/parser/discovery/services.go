@@ -37,23 +37,17 @@ func addServiceRecursive(model *api.API, doc *document, resource *resource) erro
 
 func addService(model *api.API, doc *document, resource *resource) error {
 	id := fmt.Sprintf(".%s.%s", model.PackageName, resource.Name)
-	methods, err := makeServiceMethods(model, id, doc, resource)
-	if err != nil {
+	service := &api.Service{
+		ID:            id,
+		Name:          resource.Name,
+		Package:       model.PackageName,
+		Documentation: fmt.Sprintf("Service for the `%s` resource.", resource.Name),
+		DefaultHost:   strings.TrimSuffix(strings.TrimPrefix(doc.RootURL, "https://"), "/"),
+	}
+	if err := makeServiceMethods(model, service, doc, resource); err != nil {
 		return err
 	}
-
-	var service *api.Service
-	if _, ok := model.State.ServiceByID[id]; !ok {
-		service = &api.Service{
-			ID:            id,
-			Name:          resource.Name,
-			Package:       model.PackageName,
-			Documentation: fmt.Sprintf("Service for the `%s` resource.", resource.Name),
-			DefaultHost:   strings.TrimSuffix(strings.TrimPrefix(doc.RootURL, "https://"), "/"),
-			Methods:       methods,
-		}
-		model.Services = append(model.Services, service)
-		model.State.ServiceByID[id] = service
-	}
+	model.Services = append(model.Services, service)
+	model.State.ServiceByID[id] = service
 	return nil
 }

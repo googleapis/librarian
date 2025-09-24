@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const (
@@ -51,7 +53,7 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 	if cfg.GitHubToken == "" {
 		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
 	}
-	repo, err := github.ParseRemote(cfg.Repo)
+	repo, err := parseRemote(cfg.Repo)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +71,24 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 		ghClient:    ghClient,
 		pullRequest: cfg.PullRequest,
 	}, nil
+}
+
+func parseRemote(repo string) (*github.Repository, error) {
+	if isURL(repo) {
+		return github.ParseRemote(repo)
+	}
+	// repo is a directory
+	absRepoRoot, err := filepath.Abs(repo)
+	if err != nil {
+		return nil, err
+	}
+	githubRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir: absRepoRoot,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return github.FetchGitHubRepoFromRemote(githubRepo)
 }
 
 func (r *tagAndReleaseRunner) run(ctx context.Context) error {

@@ -360,5 +360,92 @@ func TestFindMergedPullRequest(t *testing.T) {
 				}
 			}
 		})
+  }
+}
+
+func TestCreateTag(t *testing.T) {
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
+	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	if testRepoName == "" {
+		t.Skip("TEST_GITHUB_REPO not set, skipping GitHub integration test")
+	}
+	repo, err := github.ParseRemote(testRepoName)
+	if err != nil {
+		t.Fatalf("unexpected error in ParseRemote() %s", err)
+	}
+	// Clone a repo
+	workdir := path.Join(t.TempDir(), "test-repo")
+	localRepository, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir:          workdir,
+		MaybeClone:   true,
+		RemoteURL:    testRepoName,
+		RemoteBranch: "main",
+		GitPassword:  testToken,
+		Depth:        1,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error in NewRepository() %s", err)
+	}
+
+	now := time.Now()
+	tagName := fmt.Sprintf("create-tag-test-%s", now.Format("20060102150405"))
+	commitSHA, err := localRepository.HeadHash()
+	if err != nil {
+		t.Fatalf("unexpected error fetching head commit %s", err)
+	}
+
+	client := github.NewClient(testToken, repo)
+	err = client.CreateTag(t.Context(), tagName, commitSHA)
+	if err != nil {
+		t.Fatalf("unexpected error in CreateTag() %s", err)
+	}
+}
+
+func TestCreateRelease(t *testing.T) {
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
+	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	if testRepoName == "" {
+		t.Skip("TEST_GITHUB_REPO not set, skipping GitHub integration test")
+	}
+	repo, err := github.ParseRemote(testRepoName)
+	if err != nil {
+		t.Fatalf("unexpected error in ParseRemote() %s", err)
+	}
+	// Clone a repo
+	workdir := path.Join(t.TempDir(), "test-repo")
+	localRepository, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir:          workdir,
+		MaybeClone:   true,
+		RemoteURL:    testRepoName,
+		RemoteBranch: "main",
+		GitPassword:  testToken,
+		Depth:        1,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error in NewRepository() %s", err)
+	}
+
+	now := time.Now()
+	tagName := fmt.Sprintf("create-release-test-%s", now.Format("20060102150405"))
+	commitSHA, err := localRepository.HeadHash()
+	if err != nil {
+		t.Fatalf("unexpected error fetching head commit %s", err)
+	}
+
+	client := github.NewClient(testToken, repo)
+	body := "some release body"
+	release, err := client.CreateRelease(t.Context(), tagName, tagName, body, commitSHA)
+	if err != nil {
+		t.Fatalf("unexpected error in CreateTag() %s", err)
+	}
+	if release.Body == nil {
+		t.Fatalf("release body is not set")
+	}
+	if diff := cmp.Diff(*release.Body, body); diff != "" {
+		t.Fatalf("release body mismatch (-want + got):\n%s", diff)
 	}
 }

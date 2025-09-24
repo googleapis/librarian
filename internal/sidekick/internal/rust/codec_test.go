@@ -183,6 +183,26 @@ func TestParseOptionsTemplateOverride(t *testing.T) {
 	checkRustPackages(t, got, want)
 }
 
+func TestParseOptionsDetailedTracingAttributes(t *testing.T) {
+	options := map[string]string{
+		"detailed-tracing-attributes": "true",
+	}
+	got, err := newCodec(false, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.detailedTracingAttributes {
+		t.Errorf("expected tracing attributes to be enabled")
+	}
+
+	options = map[string]string{
+		"detailed-tracing-attributes": "--invalid--",
+	}
+	if got, err := newCodec(false, options); err == nil {
+		t.Errorf("expected an error with an invalid detailed-tracing-attributes flag, got=%v", got)
+	}
+}
+
 func TestPackageName(t *testing.T) {
 	rustPackageNameImpl(t, "test-only-overridden", map[string]string{
 		"package-name-override": "test-only-overridden",

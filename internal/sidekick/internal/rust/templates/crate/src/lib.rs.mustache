@@ -119,6 +119,15 @@ pub(crate) mod info {
             ac.rest_header_value()
         };
     }
+{{#Codec.DetailedTracingAttributes}}
+    pub(crate) static INSTRUMENTATION_CLIENT_INFO: gaxi::options::InstrumentationClientInfo = gaxi::options::InstrumentationClientInfo {
+        service_name: "{{Name}}",
+        client_version: VERSION,
+        client_artifact: NAME,
+        default_host: "{{Codec.DefaultHostShort}}",
+        ..Default::default()
+    };
+{{/Codec.DetailedTracingAttributes}}
 }
 
 {{/Codec.HasServices}}

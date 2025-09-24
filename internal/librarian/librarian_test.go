@@ -15,13 +15,17 @@
 package librarian
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"log/slog"
 	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
@@ -34,11 +38,84 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// TODO(https://github.com/googleapis/librarian/issues/202): add better tests
-// for librarian.Run.
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func TestVerboseFlag(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		args              []string
+		expectDebugLog    bool
+		expectDebugSubstr string
+	}{
+		{
+			name:              "generate with -v flag",
+			args:              []string{"generate", "-v"},
+			expectDebugLog:    true,
+			expectDebugSubstr: "generate command verbose logging",
+		},
+		{
+			name:           "generate without -v flag",
+			args:           []string{"generate"},
+			expectDebugLog: false,
+		},
+		{
+			name:              "release init with -v flag",
+			args:              []string{"release", "init", "-v"},
+			expectDebugLog:    true,
+			expectDebugSubstr: "init command verbose logging",
+		},
+		{
+			name:           "release init without -v flag",
+			args:           []string{"release", "init"},
+			expectDebugLog: false,
+		},
+		{
+			name:              "release tag-and-release with -v flag",
+			args:              []string{"release", "tag-and-release", "-v"},
+			expectDebugLog:    true,
+			expectDebugSubstr: "tag-and-release command verbose logging",
+		},
+		{
+			name:           "release tag-and-release without -v flag",
+			args:           []string{"release", "tag-and-release"},
+			expectDebugLog: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			// Redirect stderr to capture logs.
+			oldStderr := os.Stderr
+			r, w, _ := os.Pipe()
+			os.Stderr = w
+			// Reset logger to default for test isolation.
+			slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+
+			_ = Run(context.Background(), test.args...)
+
+			// Restore stderr and read the output.
+			w.Close()
+			os.Stderr = oldStderr
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+			output := buf.String()
+
+			hasDebugLog := strings.Contains(output, "level=DEBUG")
+			if test.expectDebugLog {
+				if !hasDebugLog {
+					t.Errorf("expected debug log to be present, but it wasn't. Output:\n%s", output)
+				}
+				if !strings.Contains(output, test.expectDebugSubstr) {
+					t.Errorf("expected debug log to contain %q, but it didn't. Output:\n%s", test.expectDebugSubstr, output)
+				}
+			} else {
+				if hasDebugLog {
+					t.Errorf("expected debug log to be absent, but it was present. Output:\n%s", output)
+				}
+			}
+		})
 	}
 }
 

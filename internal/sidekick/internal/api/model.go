@@ -191,6 +191,7 @@ type Service struct {
 	DefaultHost string
 	// The Protobuf package this service belongs to.
 	Package string
+
 	// The model this service belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
@@ -562,9 +563,25 @@ type Message struct {
 	Deprecated bool
 	// Fields associated with the Message.
 	Fields []*Field
-	// IsLocalToPackage is true if the message is defined in the current
-	// namespace.
-	IsLocalToPackage bool
+	// If true, this is a synthetic request message.
+	//
+	// These messages are created by sidekick when parsing Discovery docs and
+	// OpenAPI specifications. The query and request parameters for each method
+	// are grouped into a synthetic message.
+	SyntheticRequest bool
+	// If true, this message is a placeholder / doppelganger for a `api.Service`.
+	//
+	// These messages are created by sidekick when parsing Discovery docs and
+	// OpenAPI specifications. All the synthetic messages for a service need to
+	// be grouped under a unique namespace to avoid clashes with similar
+	// synthetic messages in other service. Sidekick creates a placeholder
+	// message that represents "the service".
+	//
+	// That is, `service1` and `service2` may both have a synthetic `getRequest`
+	// message, with different attributes. We need these to be different
+	// messages, with different names. So we create a different parent message
+	// for each.
+	ServicePlaceholder bool
 	// Enums associated with the Message.
 	Enums []*Enum
 	// Messages associated with the Message. In protobuf these are referred to as
