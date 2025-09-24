@@ -121,7 +121,7 @@ func TestParseCommits(t *testing.T) {
 		},
 		{
 			name:    "commit_with_multiple_footers_for_generated_changes",
-			message: "feat: [library-name] add new feature\nThis is the body.\n...\n\nPiperOrigin-RevId: piper_cl_number\n\nSource-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/abcdefg1234567)",
+			message: "feat: [library-name] add new feature\n\nThis is the body.\n...\n\nPiperOrigin-RevId: piper_cl_number\n\nSource-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/abcdefg1234567)",
 			want: []*ConventionalCommit{
 				{
 					Type:       "feat",
@@ -250,8 +250,9 @@ END_COMMIT_OVERRIDE`,
 			wantErrPhrase: "empty commit",
 		},
 		{
-			name: "commit with nested commit",
+			name: "commit_with_nested_commit",
 			message: `feat(parser): main feature
+
 main commit body
 
 BEGIN_NESTED_COMMIT
@@ -305,7 +306,7 @@ END_NESTED_COMMIT
 		{
 			name: "commit_with_empty_nested_commit",
 			message: `feat(parser): main feature
-main commit body
+2nd line of title
 
 BEGIN_NESTED_COMMIT
 END_NESTED_COMMIT
@@ -314,8 +315,7 @@ END_NESTED_COMMIT
 				{
 					Type:       "feat",
 					Scope:      "parser",
-					Subject:    "main feature",
-					Body:       "main commit body",
+					Subject:    "main feature 2nd line of title",
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    map[string]string{},
@@ -338,6 +338,7 @@ Language Image: {language_image_name_and_digest}
 BEGIN_COMMIT_OVERRIDE
 BEGIN_NESTED_COMMIT
 feat: [abc] nested commit 1
+
 body of nested commit 1
 ...
 
@@ -347,6 +348,7 @@ Source-Link: fake-link
 END_NESTED_COMMIT
 BEGIN_NESTED_COMMIT
 feat: [abc] nested commit 2
+
 body of nested commit 2
 ...
 
