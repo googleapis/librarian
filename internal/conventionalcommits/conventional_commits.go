@@ -214,7 +214,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	// Hold the body of each commit.
 	var body [][]string
 	// Whether it has seen an empty line.
-	seenSeparator := false
+	findSeparator := false
 	// If the body lines have multiple headers, separate them into different conventional commit, all associated with
 	// the same commit sha.
 	for _, bodyLine := range bodyLines {
@@ -228,11 +228,11 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 
 			bodyLine = strings.TrimSpace(bodyLine)
 			if bodyLine == empty {
-				seenSeparator = true
+				findSeparator = true
 				continue
 			}
 
-			if seenSeparator {
+			if findSeparator {
 				// Since we have seen a separator, the rest of the lines are body lines of the commit.
 				body[len(body)-1] = append(body[len(body)-1], bodyLine)
 			} else {
@@ -245,7 +245,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 
 		subjects = append(subjects, []string{})
 		body = append(body, []string{})
-		seenSeparator = false
+		findSeparator = false
 		// If there is an association for the commit (i.e. the commit has '[LIBRARY_ID]' in the
 		// description), then use that libraryID. Otherwise, use the libraryID passed as the default.
 		headerLibraryID := header.extractLibraryID()
