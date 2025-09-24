@@ -249,14 +249,11 @@ func TestPullRequestSystem(t *testing.T) {
 		}
 		for _, pullRequest := range foundPullRequests {
 			// Look for the PR we created
-			if pullRequest.Number != nil && *pullRequest.Number == createdPullRequest.Number {
+			if pullRequest.GetNumber() == createdPullRequest.Number {
 				found = true
 
 				// Expect that we found a comment
-				if pullRequest.Comments == nil {
-					t.Fatal("pull request comments not set")
-				}
-				if *pullRequest.Comments == 0 {
+				if pullRequest.GetComments() == 0 {
 					t.Fatalf("Expected to have created a comment on the pull request.")
 				}
 				break
@@ -284,16 +281,10 @@ func TestPullRequestSystem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error in GetPullRequest() %s", err)
 	}
-	if foundPullRequest.Number == nil {
-		t.Fatal("pull request number not set")
-	}
-	if diff := cmp.Diff(*foundPullRequest.Number, createdPullRequest.Number); diff != "" {
+	if diff := cmp.Diff(foundPullRequest.GetNumber(), createdPullRequest.Number); diff != "" {
 		t.Fatalf("pull request number mismatch (-want + got):\n%s", diff)
 	}
-	if foundPullRequest.State == nil {
-		t.Fatal("pull request state not set")
-	}
-	if diff := cmp.Diff(*foundPullRequest.State, "closed"); diff != "" {
+	if diff := cmp.Diff(foundPullRequest.GetState(), "closed"); diff != "" {
 		t.Fatalf("pull request state mismatch (-want + got):\n%s", diff)
 	}
 }
@@ -350,8 +341,9 @@ func TestFindMergedPullRequest(t *testing.T) {
 			} else {
 				found := false
 				for _, pr := range prs {
-					t.Logf("Found PR %d", *pr.Number)
-					if pr.Number != nil && *pr.Number == test.want {
+					pullNumber := pr.GetNumber()
+					t.Logf("Found PR %d", pullNumber)
+					if pr.Number != nil && pullNumber == test.want {
 						found = true
 					}
 				}
@@ -442,10 +434,7 @@ func TestCreateRelease(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error in CreateTag() %s", err)
 	}
-	if release.Body == nil {
-		t.Fatalf("release body is not set")
-	}
-	if diff := cmp.Diff(*release.Body, body); diff != "" {
+	if diff := cmp.Diff(release.GetBody(), body); diff != "" {
 		t.Fatalf("release body mismatch (-want + got):\n%s", diff)
 	}
 }
