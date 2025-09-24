@@ -15,7 +15,6 @@
 package config
 
 import (
-	"fmt"
 	"log/slog"
 	"strings"
 )
@@ -23,7 +22,7 @@ import (
 const defaultTagFormat = "{id}-{version}"
 
 // DetermineTagFormat finds the tag_format config given a library ID.
-func DetermineTagFormat(libraryID string, librarianState *LibrarianState, librarianConfig *LibrarianConfig) (string, error) {
+func DetermineTagFormat(libraryID string, libraryState *LibraryState, librarianConfig *LibrarianConfig) (string, error) {
 	// Order of preference:
 	// 1. per-library from config.yaml
 	// 2. top-level from config.yaml
@@ -40,12 +39,10 @@ func DetermineTagFormat(libraryID string, librarianState *LibrarianState, librar
 		}
 	}
 
-	libraryState := librarianState.LibraryByID(libraryID)
-	if libraryState == nil {
-		return "", fmt.Errorf("library %s not found", libraryID)
-	}
-	if libraryState.TagFormat != "" {
-		return libraryState.TagFormat, nil
+	if libraryState != nil {
+		if libraryState.TagFormat != "" {
+			return libraryState.TagFormat, nil
+		}
 	}
 	slog.Warn("library did not configure tag_format, using default", "libraryID", libraryID, "format", defaultTagFormat)
 	return defaultTagFormat, nil

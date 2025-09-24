@@ -177,8 +177,11 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 	}
 	for _, release := range releases {
 		slog.Info("creating release", "library", release.Library, "version", release.Version)
-
-		tagFormat, err := config.DetermineTagFormat(release.Library, librarianState, librarianConfig)
+		libraryState := librarianState.LibraryByID(release.Library)
+		if libraryState == nil {
+			return fmt.Errorf("library %s not found", release.Library)
+		}
+		tagFormat, err := config.DetermineTagFormat(release.Library, libraryState, librarianConfig)
 		if err != nil {
 			slog.Warn("could not determine tag format", "library", release.Library)
 			return err

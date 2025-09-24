@@ -24,32 +24,24 @@ import (
 func TestDetermineTagFormat(t *testing.T) {
 	for _, test := range []struct {
 		name            string
-		librarianState  *LibrarianState
+		libraryState    *LibraryState
 		librarianConfig *LibrarianConfig
 		want            string
 		wantErrMsg      string
 	}{
 		{
 			name: "uses default",
-			librarianState: &LibrarianState{
-				Libraries: []*LibraryState{
-					{
-						ID: "example-library",
-					},
-				},
+			libraryState: &LibraryState{
+				ID: "example-library",
 			},
 			librarianConfig: &LibrarianConfig{},
 			want:            defaultTagFormat,
 		},
 		{
 			name: "prefers per-library from config",
-			librarianState: &LibrarianState{
-				Libraries: []*LibraryState{
-					{
-						ID:        "example-library",
-						TagFormat: "per-library-tag-format-from-state",
-					},
-				},
+			libraryState: &LibraryState{
+				ID:        "example-library",
+				TagFormat: "per-library-tag-format-from-state",
 			},
 			librarianConfig: &LibrarianConfig{
 				TagFormat: "from-config",
@@ -64,13 +56,9 @@ func TestDetermineTagFormat(t *testing.T) {
 		},
 		{
 			name: "prefers from config",
-			librarianState: &LibrarianState{
-				Libraries: []*LibraryState{
-					{
-						ID:        "example-library",
-						TagFormat: "per-library-tag-format-from-state",
-					},
-				},
+			libraryState: &LibraryState{
+				ID:        "example-library",
+				TagFormat: "per-library-tag-format-from-state",
 			},
 			librarianConfig: &LibrarianConfig{
 				TagFormat: "from-config",
@@ -84,20 +72,16 @@ func TestDetermineTagFormat(t *testing.T) {
 		},
 		{
 			name: "falls back to per-library from state",
-			librarianState: &LibrarianState{
-				Libraries: []*LibraryState{
-					{
-						ID:        "example-library",
-						TagFormat: "per-library-tag-format-from-state",
-					},
-				},
+			libraryState: &LibraryState{
+				ID:        "example-library",
+				TagFormat: "per-library-tag-format-from-state",
 			},
 			librarianConfig: &LibrarianConfig{},
 			want:            "per-library-tag-format-from-state",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := DetermineTagFormat("example-library", test.librarianState, test.librarianConfig)
+			got, err := DetermineTagFormat("example-library", test.libraryState, test.librarianConfig)
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error in determineTagFormat() %s", err)
