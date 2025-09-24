@@ -360,7 +360,7 @@ func TestFindMergedPullRequest(t *testing.T) {
 				}
 			}
 		})
-  }
+	}
 }
 
 func TestCreateTag(t *testing.T) {
