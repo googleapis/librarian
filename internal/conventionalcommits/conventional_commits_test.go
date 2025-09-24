@@ -621,7 +621,7 @@ func TestConventionalCommit_MarshalJSON(t *testing.T) {
 }
 
 func TestParseFooters(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name           string
 		footerLines    []string
 		wantFooters    map[string]string
@@ -677,6 +677,7 @@ func TestParseFooters(t *testing.T) {
 				"PiperOrigin-RevId: 802200836",
 				"",
 				"Source-Link:",
+				"",
 				"googleapis/googleapis@d300b15",
 				"",
 				"",
@@ -689,13 +690,13 @@ func TestParseFooters(t *testing.T) {
 				"Copy-Tag":          "\neyJwIjoic"},
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			gotFooters, gotIsBreaking := parseFooters(tt.footerLines)
-			if diff := cmp.Diff(tt.wantFooters, gotFooters); diff != "" {
+		t.Run(test.name, func(t *testing.T) {
+			gotFooters, gotIsBreaking := parseFooters(test.footerLines)
+			if diff := cmp.Diff(test.wantFooters, gotFooters); diff != "" {
 				t.Errorf("parseFooters() footers mismatch (-want +got):%s", diff)
 			}
-			if gotIsBreaking != tt.wantIsBreaking {
-				t.Errorf("parseFooters() isBreaking = %v, want %v", gotIsBreaking, tt.wantIsBreaking)
+			if gotIsBreaking != test.wantIsBreaking {
+				t.Errorf("parseFooters() isBreaking = %v, want %v", gotIsBreaking, test.wantIsBreaking)
 			}
 		})
 	}
