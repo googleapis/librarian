@@ -126,7 +126,7 @@ type LibraryState struct {
 	// If not set, this defaults to the `source_roots`.
 	// A more specific `preserve_regex` takes precedence.
 	RemoveRegex []string `yaml:"remove_regex" json:"remove_regex"`
-	// Path of commits to be excluded from parsing while calculating library changes.
+	// A list of directories to exclude from the release.
 	// Files matching these paths will not be considered part of a commit for this library.
 	ReleaseExcludePaths []string `yaml:"release_exclude_paths,omitempty" json:"release_exclude_paths,omitempty"`
 	// Specifying a tag format allows librarian to honor this format when creating
