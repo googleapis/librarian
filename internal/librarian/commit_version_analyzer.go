@@ -86,39 +86,26 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 	return conventionalCommits, nil
 }
 
+// isUnderAnyPath returns true if the file is under any of the given paths.
+func isUnderAnyPath(file string, paths []string) bool {
+	for _, p := range paths {
+		rel, err := filepath.Rel(p, file)
+		if err == nil && !strings.HasPrefix(rel, "..") {
+			return true
+		}
+	}
+	return false
+}
+
 // shouldInclude determines if a commit should be included in a release.
 // It returns true if there is at least one file in the commit that is under a source_root
 // and not under a release_exclude_path.
 func shouldInclude(files, sourceRoots, excludePaths []string) bool {
 	for _, file := range files {
-		var isUnderSourceRoot bool
-		for _, sourceRoot := range sourceRoots {
-			rel, err := filepath.Rel(sourceRoot, file)
-			if err == nil && !strings.HasPrefix(rel, "..") {
-				isUnderSourceRoot = true
-				break
-			}
-		}
-
-		if !isUnderSourceRoot {
-			continue
-		}
-
-		var isExcluded bool
-		for _, excludePath := range excludePaths {
-			rel, err := filepath.Rel(excludePath, file)
-			if err == nil && !strings.HasPrefix(rel, "..") {
-				isExcluded = true
-				break
-			}
-		}
-
-		if !isExcluded {
-			// Found a file that is under a source root and not excluded.
+		if isUnderAnyPath(file, sourceRoots) && !isUnderAnyPath(file, excludePaths) {
 			return true
 		}
 	}
-	// No file met the inclusion criteria.
 	return false
 }
 
