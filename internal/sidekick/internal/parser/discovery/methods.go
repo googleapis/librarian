@@ -98,7 +98,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 			Name:   p.Name,
 			Schema: &p.schema,
 		}
-		field, err := makeField(model, fmt.Sprintf(requestMessage.ID, id), prop)
+		field, err := makeField(model, requestMessage, prop)
 		if err != nil {
 			return nil, err
 		}
