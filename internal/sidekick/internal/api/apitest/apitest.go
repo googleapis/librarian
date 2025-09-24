@@ -26,7 +26,7 @@ import (
 func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 	t.Helper()
 	// Checking Parent, Messages, Fields, and OneOfs requires special handling.
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages", "Enums")); diff != "" {
 		t.Errorf("message attributes mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }

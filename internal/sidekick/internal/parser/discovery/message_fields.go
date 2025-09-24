@@ -65,6 +65,9 @@ func makeArrayField(model *api.API, message *api.Message, input *property) (*api
 }
 
 func makeScalarField(model *api.API, message *api.Message, name string, schema *schema) (*api.Field, error) {
+	if err := makeMessageEnum(model, message, name, schema); err != nil {
+		return nil, err
+	}
 	typez, typezID, err := scalarType(model, message.ID, name, schema)
 	if err != nil {
 		return nil, err
@@ -128,6 +131,9 @@ func scalarTypeForNumberFormats(messageID, name string, input *schema) (api.Type
 }
 
 func scalarTypeForStringFormats(messageID, name string, input *schema) (api.Typez, string, error) {
+	if input.Enums != nil {
+		return api.ENUM_TYPE, fmt.Sprintf("%s.%s", messageID, name), nil
+	}
 	switch input.Format {
 	case "":
 		return api.STRING_TYPE, "string", nil
