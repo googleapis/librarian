@@ -27,7 +27,7 @@ export PATH="$(go env GOPATH)/bin:$PATH"
 Next install the CLI
 
 ```sh
-go install github.com/googleapis/librarian/cmd/librarian@latest
+go install github.com/googleapis/librarian/cmd/librarian@latestzzz
 ```
 
 ## Running Librarian
