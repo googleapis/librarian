@@ -15,7 +15,6 @@
 package config
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -81,16 +80,7 @@ func TestDetermineTagFormat(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := DetermineTagFormat("example-library", test.libraryState, test.librarianConfig)
-			if err != nil {
-				if test.wantErrMsg == "" {
-					t.Fatalf("unexpected error in determineTagFormat() %s", err)
-				}
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Fatalf("got %q, want contains %q", err, test.wantErrMsg)
-				}
-				return
-			}
+			got := DetermineTagFormat("example-library", test.libraryState, test.librarianConfig)
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("determineTagFormat() mismatch (-want +got):\n%s", diff)

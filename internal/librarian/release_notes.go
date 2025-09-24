@@ -269,10 +269,7 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repository) *releaseNoteSection {
 	// The version should already be updated to the next version.
 	newVersion := library.Version
-	tagFormat, err := config.DetermineTagFormat(library.ID, library, nil)
-	if err != nil {
-		tagFormat = ""
-	}
+	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
 	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
 	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 

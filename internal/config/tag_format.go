@@ -22,7 +22,7 @@ import (
 const defaultTagFormat = "{id}-{version}"
 
 // DetermineTagFormat finds the tag_format config given a library ID.
-func DetermineTagFormat(libraryID string, libraryState *LibraryState, librarianConfig *LibrarianConfig) (string, error) {
+func DetermineTagFormat(libraryID string, libraryState *LibraryState, librarianConfig *LibrarianConfig) string {
 	// Order of preference:
 	// 1. per-library from config.yaml
 	// 2. top-level from config.yaml
@@ -31,21 +31,21 @@ func DetermineTagFormat(libraryID string, libraryState *LibraryState, librarianC
 		// prefer per-library config
 		libraryConfig := librarianConfig.LibraryConfigFor(libraryID)
 		if libraryConfig != nil && libraryConfig.TagFormat != "" {
-			return libraryConfig.TagFormat, nil
+			return libraryConfig.TagFormat
 		}
 		// top-level from config
 		if librarianConfig.TagFormat != "" {
-			return librarianConfig.TagFormat, nil
+			return librarianConfig.TagFormat
 		}
 	}
 
 	if libraryState != nil {
 		if libraryState.TagFormat != "" {
-			return libraryState.TagFormat, nil
+			return libraryState.TagFormat
 		}
 	}
 	slog.Warn("library did not configure tag_format, using default", "libraryID", libraryID, "format", defaultTagFormat)
-	return defaultTagFormat, nil
+	return defaultTagFormat
 }
 
 // FormatTag returns the git tag for a given library version.

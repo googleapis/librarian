@@ -181,13 +181,9 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		if libraryState == nil {
 			return fmt.Errorf("library %s not found", release.Library)
 		}
-		tagFormat, err := config.DetermineTagFormat(release.Library, libraryState, librarianConfig)
-		if err != nil {
-			slog.Warn("could not determine tag format", "library", release.Library)
-			return err
-		}
 
 		// Create the release.
+		tagFormat := config.DetermineTagFormat(release.Library, libraryState, librarianConfig)
 		tagName := config.FormatTag(tagFormat, release.Library, release.Version)
 		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
 		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
