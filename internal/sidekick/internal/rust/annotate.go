@@ -442,6 +442,12 @@ type enumAnnotation struct {
 	// this is basically `QualifiedName`. For messages in the current package
 	// this includes `modelAnnotations.PackageName`.
 	NameInExamples string
+	// These are some of the enum values that can be used in examples,
+	// accompanied by an index to facilitate generating code that can
+	// distinctly reference each value. These attempts to avoid deprecated
+	// and the default values. Contains at most 3 elements. Will be empty iff
+	// the enum has no values.
+	ValuesForExamples []*enumValueForExamples
 	// If set, this enum is only enabled when some features are enabled
 	FeatureGates   []string
 	FeatureGatesOp string
@@ -452,6 +458,11 @@ type enumValueAnnotation struct {
 	VariantName string
 	EnumType    string
 	DocLines    []string
+}
+
+type enumValueForExamples struct {
+	EnumValue *api.EnumValue
+	Index     int
 }
 
 // annotateModel creates a struct used as input for Mustache templates.
@@ -1048,19 +1059,6 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
 		nameInExamples = fmt.Sprintf("%s::model::%s", c.packageNamespace(model), relativeName)
 	}
-	annotations := &enumAnnotation{
-		Name:           enumName(e),
-		ModuleName:     toSnake(enumName(e)),
-		QualifiedName:  qualifiedName,
-		RelativeName:   relativeName,
-		NameInExamples: nameInExamples,
-	}
-	e.Codec = annotations
-
-	if !full {
-		// We have basic annotations, we are done.
-		return
-	}
 
 	// For BigQuery (and so far only BigQuery), the enum values conflict when
 	// converted to the Rust style [1]. Basically, there are several enum values
@@ -1083,6 +1081,49 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 			unique = append(unique, ev)
 			seen[name] = ev
 		}
+	}
+
+	// We try to pick some good enum values to show in examples.
+	// - We pick from the already computed unique values, even though that applies to BigQuery only.
+	// - We pick values that are not deprecated.
+	// - We don't pick the default value.
+	// - We limit the picked values to 3, examples do not need to be exhaustive.
+	var forExamples []*enumValueForExamples
+	found := 0
+	for i := 0; i < len(unique) && found < 3; i++ {
+		if !unique[i].Deprecated && unique[i].Number != 0 {
+			forExamples = append(forExamples, &enumValueForExamples{
+				EnumValue: unique[i],
+				Index:     found,
+			})
+			found++
+		}
+	}
+	// If we couldn't find any good enum values for examples, then we pick at most
+	// 3 (bad) enum values for examples. We still pick from within the unique values,
+	// but now we will maybe choose the default value and some that are deprecated.
+	if found == 0 {
+		for i := 0; i < len(unique) && i < 3; i++ {
+			forExamples = append(forExamples, &enumValueForExamples{
+				EnumValue: unique[i],
+				Index:     i,
+			})
+		}
+	}
+
+	annotations := &enumAnnotation{
+		Name:              enumName(e),
+		ModuleName:        toSnake(enumName(e)),
+		QualifiedName:     qualifiedName,
+		RelativeName:      relativeName,
+		NameInExamples:    nameInExamples,
+		ValuesForExamples: forExamples,
+	}
+	e.Codec = annotations
+
+	if !full {
+		// We have basic annotations, we are done.
+		return
 	}
 
 	annotations.DocLines = c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes())
