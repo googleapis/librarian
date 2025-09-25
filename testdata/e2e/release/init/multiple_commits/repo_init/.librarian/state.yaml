@@ -6,3 +6,4 @@ libraries:
       - path: google/cloud/pubsub/v1
     source_roots:
       - google-cloud-pubsub/v1
+    tag_format: "{id}/v{version}"

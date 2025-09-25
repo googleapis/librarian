@@ -38,8 +38,12 @@ import (
 )
 
 const (
-	generate = "generate"
-	release  = "release"
+	generate                = "generate"
+	release                 = "release"
+	defaultAPISourceBranch  = "master"
+	failedGenerationComment = `One or more libraries have failed to generate, please review PR description for a list of failed libraries.
+For each failed library, open a ticket in that library’s repository and then you may resolve this comment and merge.
+`
 )
 
 var globalPreservePatterns = []string{
@@ -83,6 +87,7 @@ type commitInfo struct {
 	repo              gitrepo.Repository
 	sourceRepo        gitrepo.Repository
 	state             *config.LibrarianState
+	failedGenerations int
 }
 
 type commandRunner struct {
@@ -95,8 +100,6 @@ type commandRunner struct {
 	image           string
 	workRoot        string
 }
-
-const defaultAPISourceBranch = "master"
 
 func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken)
@@ -373,6 +376,12 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, info.branch, title, prBody)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
+	}
+
+	if info.failedGenerations != 0 {
+		if err := info.ghClient.CreateIssueComment(ctx, pullRequestMetadata.Number, failedGenerationComment); err != nil {
+			return fmt.Errorf("failed to add pull request comment: %w", err)
+		}
 	}
 
 	return addLabelsToPullRequest(ctx, info.ghClient, info.pullRequestLabels, pullRequestMetadata)

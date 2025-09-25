@@ -42,6 +42,10 @@ var (
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
 	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
 	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
+	// libraryIDRegex extracts the libraryID from the commit message in a generation PR.
+	// For a generation PR, each commit is expected to have the libraryID in brackets
+	// ('[]').
+	libraryIDRegex = regexp.MustCompile(`\[([^\]]+)\]`)
 )
 
 // ConventionalCommit represents a parsed conventional commit message.
@@ -64,7 +68,10 @@ type ConventionalCommit struct {
 	// IsNested indicates if the commit is a nested commit.
 	IsNested bool `yaml:"-" json:"-"`
 	// SHA is the full commit hash.
+	// Deprecated: use CommitHash instead.
 	SHA string `yaml:"-" json:"source_commit_hash,omitempty"`
+	// CommitHash is the full commit hash.
+	CommitHash string `yaml:"-" json:"commit_hash,omitempty"`
 	// When is the timestamp of the commit.
 	When time.Time `yaml:"-" json:"-"`
 }
@@ -75,6 +82,17 @@ type parsedHeader struct {
 	Scope       string
 	Description string
 	IsBreaking  bool
+}
+
+// extractLibraryID pulls the text between '[]' as the commit's libraryID
+// A non generation PR may not have the associated libraryID between [] and
+// will return an empty libraryID.
+func (header *parsedHeader) extractLibraryID() string {
+	matches := libraryIDRegex.FindStringSubmatch(header.Description)
+	if len(matches) == 0 {
+		return ""
+	}
+	return matches[1]
 }
 
 // commitPart holds the raw string of a commit message and whether it's nested.
@@ -193,6 +211,10 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	var commits []*ConventionalCommit
 	// Hold the subjects of each commit.
 	var subjects [][]string
+	// Hold the body of each commit.
+	var body [][]string
+	// Whether it has seen an empty line.
+	var foundSeparator bool
 	// If the body lines have multiple headers, separate them into different conventional commit, all associated with
 	// the same commit sha.
 	for _, bodyLine := range bodyLines {
@@ -204,12 +226,33 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 				continue
 			}
 
-			// This might be a multi-line header, append the line to the subject of the last commit.
-			subjects[len(subjects)-1] = append(subjects[len(subjects)-1], strings.TrimSpace(bodyLine))
+			bodyLine = strings.TrimSpace(bodyLine)
+			if bodyLine == "" {
+				foundSeparator = true
+				continue
+			}
+
+			if foundSeparator {
+				// Since we have seen a separator, the rest of the lines are body lines of the commit.
+				body[len(body)-1] = append(body[len(body)-1], bodyLine)
+			} else {
+				// We haven't seen a separator, this line is the continuation of the title.
+				subjects[len(subjects)-1] = append(subjects[len(subjects)-1], bodyLine)
+			}
+
 			continue
 		}
 
 		subjects = append(subjects, []string{})
+		body = append(body, []string{})
+		foundSeparator = false
+		// If there is an association for the commit (i.e. the commit has '[LIBRARY_ID]' in the
+		// description), then use that libraryID. Otherwise, use the libraryID passed as the default.
+		headerLibraryID := header.extractLibraryID()
+		if headerLibraryID != "" {
+			libraryID = headerLibraryID
+		}
+
 		commits = append(commits, &ConventionalCommit{
 			Type:       header.Type,
 			Scope:      header.Scope,
@@ -219,21 +262,15 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			IsBreaking: header.IsBreaking || footerIsBreaking,
 			IsNested:   commitPart.isNested,
 			SHA:        commit.Hash.String(),
+			CommitHash: commit.Hash.String(),
 			When:       commit.When,
 		})
 	}
 
-	if len(commits) == 1 {
-		// If only one conventional commit is found, i.e., only one header line is
-		// in the commit message, assign the body field.
-		commits[0].Body = strings.TrimSpace(strings.Join(bodyLines[1:], "\n"))
-	} else {
-		// Otherwise, concatenate all lines as the subject of the corresponding commit.
-		// This is a workaround when GitHub inserts line breaks in the middle of a long line after squash and merge.
-		for i, commit := range commits {
-			sub := fmt.Sprintf("%s %s", commit.Subject, strings.Join(subjects[i], " "))
-			commit.Subject = strings.TrimSpace(sub)
-		}
+	for i, commit := range commits {
+		sub := fmt.Sprintf("%s %s", commit.Subject, strings.Join(subjects[i], " "))
+		commit.Subject = strings.TrimSpace(sub)
+		commit.Body = strings.Join(body[i], "\n")
 	}
 
 	return commits, nil

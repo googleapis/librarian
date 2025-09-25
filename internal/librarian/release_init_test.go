@@ -1140,10 +1140,101 @@ func TestProcessLibrary(t *testing.T) {
 			}
 			return
 		}
-
 		if err != nil {
 			t.Errorf("failed to run processLibrary(): %q", err.Error())
 		}
+	}
+}
+
+func TestFilterCommitsByLibraryID(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		commits   []*conventionalcommits.ConventionalCommit
+		LibraryID string
+		want      []*conventionalcommits.ConventionalCommit
+	}{
+		{
+			name: "commits_all_match_libraryID",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+				{
+					LibraryID: "library-one",
+					Type:      "chore",
+				},
+				{
+					LibraryID: "library-one",
+					Type:      "deps",
+				},
+			},
+			LibraryID: "library-one",
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+				{
+					LibraryID: "library-one",
+					Type:      "chore",
+				},
+				{
+					LibraryID: "library-one",
+					Type:      "deps",
+				},
+			},
+		},
+		{
+			name: "some_commits_match_libraryID",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+				{
+					LibraryID: "library-two",
+					Type:      "chore",
+				},
+				{
+					LibraryID: "library-three",
+					Type:      "deps",
+				},
+			},
+			LibraryID: "library-one",
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+			},
+		},
+		{
+			name: "no_commits_match_libraryID",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+				{
+					LibraryID: "library-two",
+					Type:      "chore",
+				},
+				{
+					LibraryID: "library-three",
+					Type:      "deps",
+				},
+			},
+			LibraryID: "invalid-library",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := filterCommitsByLibraryID(test.commits, test.LibraryID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("commit filter mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -1307,7 +1398,6 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:      "one-id",
 				Version: "1.2.3",
 			},
-			commits: []*conventionalcommits.ConventionalCommit{},
 			want: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",

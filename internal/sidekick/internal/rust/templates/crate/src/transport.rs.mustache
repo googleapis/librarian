@@ -53,8 +53,20 @@ impl std::fmt::Debug for {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> gax::client_builder::Result<Self> {
+        {{#Codec.DetailedTracingAttributes}}
+        let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
+        let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
+        let inner = if tracing_is_enabled {
+            inner.with_instrumentation(Some(crate::info::INSTRUMENTATION_CLIENT_INFO))
+        } else {
+            inner
+        };
+        Ok(Self { inner })
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
         Ok(Self { inner })
+        {{/Codec.DetailedTracingAttributes}}
     }
 }
 
@@ -80,7 +92,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             true,
         );
         {{/HasAutoPopulatedFields}}
+        {{#Codec.DetailedTracingAttributes}}
         let (builder, method, path_template) = None
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
+        let (builder, method) = None
+        {{/Codec.DetailedTracingAttributes}}
         {{#PathInfo.Bindings}}
         .or_else(|| {
             {{#Codec.HasVariablePath}}
@@ -94,7 +111,9 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{^Codec.HasVariablePath}}
             let path = "{{Codec.PathFmt}}".to_string();
             {{/Codec.HasVariablePath}}
+            {{#Codec.DetailedTracingAttributes}}
             let path_template = "{{Codec.PathTemplate}}";
+            {{/Codec.DetailedTracingAttributes}}
 
             let builder = self
                 .inner
@@ -113,7 +132,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/Codec.QueryParams}}
             let builder = Ok(builder);
             {{/Codec.QueryParamsCanFail}}
+            {{#Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, reqwest::Method::{{Verb}}, path_template)))
+            {{/Codec.DetailedTracingAttributes}}
+            {{^Codec.DetailedTracingAttributes}}
+            Some(builder.map(|b| (b, reqwest::Method::{{Verb}})))
+            {{/Codec.DetailedTracingAttributes}}
         })
         {{/PathInfo.Bindings}}
         .ok_or_else(|| {
@@ -133,7 +157,9 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/PathInfo.Bindings}}
             gax::error::Error::binding(BindingError { paths })
         })??;
+        {{#Codec.DetailedTracingAttributes}}
         let options = gax::options::internal::set_path_template(options, path_template);
+        {{/Codec.DetailedTracingAttributes}}
         let options = gax::options::internal::set_default_idempotency(
             options,
             {{! TODO(#2588) - return idempotency from the above closure }}

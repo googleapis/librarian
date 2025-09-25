@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/httprule"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/svcconfig"
@@ -143,20 +142,16 @@ func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], pack
 		return nil
 	}
 	sID := fmt.Sprintf(".%s.%s", packageName, serviceName)
-	methods, err := makeMethods(a, model, packageName, sID)
-	if err != nil {
-		return err
-	}
-	if len(methods) == 0 {
-		return nil
-	}
 	service := &api.Service{
 		Name:          serviceName,
-		ID:            fmt.Sprintf(".%s.%s", packageName, serviceName),
+		ID:            sID,
 		Package:       packageName,
 		Documentation: a.Description,
 		DefaultHost:   defaultHost(model),
-		Methods:       methods,
+	}
+	err := makeMethods(a, service, model, packageName, sID)
+	if err != nil {
+		return err
 	}
 	a.Services = append(a.Services, service)
 	a.State.ServiceByID[service.ID] = service
@@ -177,15 +172,28 @@ func defaultHost(model *libopenapi.DocumentModel[v3.Document]) string {
 	return strings.TrimPrefix(defaultHost, "https://")
 }
 
-func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], packageName, serviceID string) ([]*api.Method, error) {
-	var methods []*api.Method
+func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentModel[v3.Document], packageName, serviceID string) error {
 	if model.Model.Paths == nil {
-		return methods, nil
+		// The method has no path, there is nothing to generate.
+		return nil
 	}
+
+	// It is Okay to reuse the ID, sidekick uses different the namespaces
+	// for messages vs. services.
+	parent := &api.Message{
+		Name:               service.Name,
+		ID:                 service.ID,
+		Package:            service.Package,
+		Documentation:      fmt.Sprintf("Synthetic messages for the [%s][%s] service.", service.Name, service.ID[1:]),
+		ServicePlaceholder: true,
+	}
+	a.State.MessageByID[parent.ID] = parent
+	a.Messages = append(a.Messages, parent)
+
 	for pattern, item := range model.Model.Paths.PathItems.FromOldest() {
 		pathTemplate, err := httprule.ParseSegments(pattern)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		type NamedOperation struct {
@@ -206,13 +214,13 @@ func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], packa
 			if op.Operation == nil {
 				continue
 			}
-			requestMessage, bodyFieldPath, err := makeRequestMessage(a, op.Operation, packageName, pattern)
+			requestMessage, bodyFieldPath, err := makeRequestMessage(a, parent, op.Operation, packageName, pattern)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			responseMessage, err := makeResponseMessage(a, op.Operation, packageName)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			queryParameters := makeQueryParameters(op.Operation)
 			pathInfo := &api.PathInfo{
@@ -236,79 +244,27 @@ func makeMethods(a *api.API, model *libopenapi.DocumentModel[v3.Document], packa
 				PathInfo:      pathInfo,
 			}
 			a.State.MethodByID[m.ID] = m
-			methods = append(methods, m)
+			service.Methods = append(service.Methods, m)
 		}
 	}
-	return methods, nil
+	return nil
 }
 
 // makeRequestMessage creates (if needed) the request message for `operation`. Returns the message
 // and the body field path (if any) for the request.
-func makeRequestMessage(a *api.API, operation *v3.Operation, packageName, template string) (*api.Message, string, error) {
+func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation, packageName, template string) (*api.Message, string, error) {
 	messageName := fmt.Sprintf("%sRequest", operation.OperationId)
-	id := fmt.Sprintf(".%s.%s", packageName, messageName)
+	id := fmt.Sprintf("%s.%s", parent.ID, messageName)
+	methodID := fmt.Sprintf("%s.%s", parent.ID, operation.OperationId)
 	message := &api.Message{
-		Name:          messageName,
-		ID:            id,
-		Package:       packageName,
-		Documentation: fmt.Sprintf("The request message for %s.", operation.OperationId),
+		Name:             messageName,
+		ID:               id,
+		Package:          packageName,
+		Documentation:    fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", operation.OperationId, methodID[1:]),
+		SyntheticRequest: true,
+		Parent:           parent,
 	}
-
-	bodyFieldPath := ""
-	if operation.RequestBody != nil {
-		reference, err := findReferenceInContentMap(operation.RequestBody.Content)
-		if err != nil {
-			return nil, "", err
-		}
-		bid := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
-		msg, ok := a.State.MessageByID[bid]
-		if !ok {
-			return nil, "", fmt.Errorf("cannot find referenced type (%s) in API messages", reference)
-		}
-		// Our OpenAPI specs do this weird thing: sometimes the `*Request`
-		// message appears in the list of known messages. But sometimes only
-		// the payload appears. I have not found any attribute to tell apart
-		// between the two. Only the name suffix.
-		if strings.HasSuffix(reference, "Request") {
-			// If the message ends in `Request` then we can assume it is fine
-			// adding more fields to it.
-			message = msg
-			bodyFieldPath = "*"
-		} else {
-			// The OpenAPI discovery docs do not preserve the original field
-			// name for the request body. We need to create a synthetic name,
-			// which may clash with other fields in the message. Let's try a
-			// couple of different names.
-			inserted := false
-			for _, name := range []string{"requestBody", "openapiRequestBody"} {
-				field := &api.Field{
-					Name:          name,
-					JSONName:      name,
-					Documentation: "The request body.",
-					Typez:         api.MESSAGE_TYPE,
-					TypezID:       bid,
-					Optional:      true,
-				}
-				inserted = addFieldIfNew(message, field)
-				if inserted {
-					// The the request body field path accordingly.
-					bodyFieldPath = name
-					break
-				}
-			}
-			if !inserted {
-				return nil, "", fmt.Errorf("cannot insert the request body to message %s", message.Name)
-			}
-			// We need to create the message.
-			a.Messages = append(a.Messages, message)
-			a.State.MessageByID[message.ID] = message
-		}
-	} else {
-		// The message is new
-		a.Messages = append(a.Messages, message)
-		a.State.MessageByID[message.ID] = message
-	}
-
+	fieldNames := map[string]bool{}
 	for _, p := range operation.Parameters {
 		schema, err := p.Schema.BuildSchema()
 		if err != nil {
@@ -335,13 +291,51 @@ func makeRequestMessage(a *api.API, operation *v3.Operation, packageName, templa
 			Optional:      openapiFieldIsOptional(p),
 			Typez:         typez,
 			TypezID:       typezID,
-			Synthetic:     true,
 			AutoPopulated: openapiIsAutoPopulated(typez, schema, p),
 			Behavior:      openapiParameterBehavior(p),
 		}
-		addFieldIfNew(message, field)
+		message.Fields = append(message.Fields, field)
+		fieldNames[p.Name] = true
 	}
+
+	bodyFieldPath := ""
+	if operation.RequestBody != nil {
+		reference, err := findReferenceInContentMap(operation.RequestBody.Content)
+		if err != nil {
+			return nil, "", err
+		}
+		bid := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
+		_, ok := a.State.MessageByID[bid]
+		if !ok {
+			return nil, "", fmt.Errorf("cannot find referenced type (%s) in API messages", reference)
+		}
+		name, err := openapiBodyFieldName(fieldNames)
+		if err != nil {
+			return nil, "", err
+		}
+		bodyFieldPath = name
+		field := &api.Field{
+			Name:          name,
+			JSONName:      name,
+			Documentation: "The request body.",
+			Typez:         api.MESSAGE_TYPE,
+			TypezID:       bid,
+			Optional:      true,
+		}
+		message.Fields = append(message.Fields, field)
+	}
+	// Add the message to the symbol table and the parent.
+	parent.Messages = append(parent.Messages, message)
+	a.State.MessageByID[message.ID] = message
+
 	return message, bodyFieldPath, nil
+}
+
+func openapiBodyFieldName(fieldNames map[string]bool) (string, error) {
+	if _, ok := fieldNames["body"]; ok {
+		return "", fmt.Errorf("body is a request or path parameter")
+	}
+	return "body", nil
 }
 
 func openapiFieldIsOptional(p *v3.Parameter) bool {
@@ -350,17 +344,6 @@ func openapiFieldIsOptional(p *v3.Parameter) bool {
 
 func openapiIsAutoPopulated(typez api.Typez, schema *base.Schema, p *v3.Parameter) bool {
 	return typez == api.STRING_TYPE && schema.Format == "uuid" && openapiFieldIsOptional(p)
-}
-
-func addFieldIfNew(message *api.Message, field *api.Field) bool {
-	for _, f := range message.Fields {
-		if f.Name == field.Name {
-			// If the exact same field exists, treat that as a success.
-			return cmp.Equal(f, field)
-		}
-	}
-	message.Fields = append(message.Fields, field)
-	return true
 }
 
 func makeResponseMessage(api *api.API, operation *v3.Operation, packageName string) (*api.Message, error) {
@@ -602,14 +585,13 @@ func makeMapMessage(state *api.APIState, messageName, name string, schema *base.
 			TypezID: "string",
 		}
 		placeholder := &api.Message{
-			Name:             id,
-			Documentation:    id,
-			ID:               id,
-			IsLocalToPackage: false,
-			IsMap:            true,
-			Fields:           []*api.Field{key, value},
-			Parent:           nil,
-			Package:          "$",
+			Name:          id,
+			Documentation: id,
+			ID:            id,
+			IsMap:         true,
+			Fields:        []*api.Field{key, value},
+			Parent:        nil,
+			Package:       "$",
 		}
 		state.MessageByID[id] = placeholder
 		message = placeholder

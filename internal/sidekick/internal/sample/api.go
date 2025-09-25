@@ -84,7 +84,7 @@ func MethodCreate() *api.Method {
 					QueryParameters: map[string]bool{"secretId": true},
 				},
 			},
-			BodyFieldPath: "requestBody",
+			BodyFieldPath: "body",
 		},
 	}
 }
@@ -119,7 +119,7 @@ func MethodAddSecretVersion() *api.Method {
 		Name:          "AddSecretVersion",
 		ID:            "..Service.AddSecretVersion",
 		Documentation: "Creates a new SecretVersion containing secret data and attaches\nit to an existing Secret.",
-		InputTypeID:   "..AddSecretVersionRequest",
+		InputTypeID:   "..Service.AddSecretVersionRequest",
 		OutputTypeID:  "..SecretVersion",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
@@ -135,7 +135,7 @@ func MethodAddSecretVersion() *api.Method {
 					QueryParameters: map[string]bool{},
 				},
 			},
-			BodyFieldPath: "*",
+			BodyFieldPath: "body",
 		},
 	}
 }
@@ -173,7 +173,7 @@ func MethodListSecretVersions() *api.Method {
 func CreateRequest() *api.Message {
 	return &api.Message{
 		Name:          "CreateSecretRequest",
-		ID:            "..CreateSecretRequest",
+		ID:            "..Service.CreateSecretRequest",
 		Documentation: "Request message for SecretManagerService.CreateSecret",
 		Package:       Package,
 		Fields: []*api.Field{

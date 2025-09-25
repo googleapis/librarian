@@ -353,9 +353,8 @@ func TestReadLibraryState(t *testing.T) {
 			name:     "successful load content",
 			filename: "successful-unmarshal-libraryState.json",
 			want: &config.LibraryState{
-				ID:                  "google-cloud-go",
-				Version:             "1.0.0",
-				LastGeneratedCommit: "abcd123",
+				ID:      "google-cloud-go",
+				Version: "1.0.0",
 				APIs: []*config.API{
 					{
 						Path:          "google/cloud/compute/v1",

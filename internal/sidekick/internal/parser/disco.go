@@ -51,5 +51,11 @@ func ParseDisco(source, serviceConfigFile string, options map[string]string) (*a
 		}
 		serviceConfig = cfg
 	}
-	return discovery.NewAPI(serviceConfig, contents)
+	result, err := discovery.NewAPI(serviceConfig, contents)
+	if err != nil {
+		return nil, err
+	}
+	updateMethodPagination(result)
+	updateAutoPopulatedFields(serviceConfig, result)
+	return result, nil
 }

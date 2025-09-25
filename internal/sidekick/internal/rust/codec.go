@@ -130,6 +130,12 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 				return nil, fmt.Errorf("cannot convert `per-service-features` value %q to boolean: %w", definition, err)
 			}
 			codec.perServiceFeatures = value
+		case key == "detailed-tracing-attributes":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
+			}
+			codec.detailedTracingAttributes = value
 		case key == "has-veneer":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -144,6 +150,12 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 				return nil, fmt.Errorf("cannot convert `routing-required` value %q to boolean: %w", definition, err)
 			}
 			codec.routingRequired = value
+		case key == "generate-setter-samples":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `generate-setter-samples` value %q to boolean: %w", definition, err)
+			}
+			codec.generateSetterSamples = value
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -243,6 +255,12 @@ type codec struct {
 	includeGrpcOnlyMethods bool
 	// If true, the generator will produce per-client features.
 	perServiceFeatures bool
+	// If true, the generated code includes detailed tracing attributes on HTTP
+	// requests. This feature flag exists to reduce unexpected changes to the
+	// generated code until the feature is ready and well-tested.
+	// TODO(https://github.com/googleapis/google-cloud-rust/issues/3239) -
+	//   remove this flag once we switch the default.
+	detailedTracingAttributes bool
 	// If true, there is a handwritten client surface.
 	hasVeneer bool
 	// A list of types which should only be `pub(crate)`.
@@ -257,6 +275,8 @@ type codec struct {
 	// If true, fail requests locally that do not yield a gRPC routing
 	// header.
 	routingRequired bool
+	// If true, the generator will produce reference documentation samples for message fields setters.
+	generateSetterSamples bool
 }
 
 type systemParameter struct {

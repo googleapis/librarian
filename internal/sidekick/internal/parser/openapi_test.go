@@ -523,7 +523,8 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 	})
 }
 
-func TestOpenAPI_MakeAPI(t *testing.T) {
+func openapiSecretManagerAPI(t *testing.T) *api.API {
+	t.Helper()
 	contents, err := os.ReadFile("../../testdata/openapi/secretmanager_openapi_v1.json")
 	if err != nil {
 		t.Fatal(err)
@@ -536,6 +537,11 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
+	return test
+}
+
+func TestOpenAPI_MakeAPI(t *testing.T) {
+	test := openapiSecretManagerAPI(t)
 
 	location := test.State.MessageByID["..Location"]
 	if location == nil {
@@ -640,15 +646,11 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 
 	// This is a synthetic message, the OpenAPI spec does not contain requests
 	// messages for messages without a body.
-	listLocationsRequest, ok := test.State.MessageByID["..ListLocationsRequest"]
-	if !ok {
-		t.Errorf("missing message (ListLocationsRequest) in MessageByID index")
-		return
-	}
-	apitest.CheckMessage(t, listLocationsRequest, &api.Message{
-		Name:          "ListLocationsRequest",
-		ID:            "..ListLocationsRequest",
-		Documentation: "The request message for ListLocations.",
+	want := &api.Message{
+		Name:             "ListLocationsRequest",
+		ID:               "..Service.ListLocationsRequest",
+		Documentation:    "Synthetic request message for the [ListLocations()][.Service.ListLocations] method.",
+		SyntheticRequest: true,
 		Fields: []*api.Field{
 			{
 				Name:          "project",
@@ -656,7 +658,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -666,10 +667,9 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 					"\nThe filtering language accepts strings like `\"displayName=tokyo" +
 					"\"`, and\nis documented in more detail in [AIP-160](https://google" +
 					".aip.dev/160).",
-				Typez:     api.STRING_TYPE,
-				TypezID:   "string",
-				Optional:  true,
-				Synthetic: true,
+				Typez:    api.STRING_TYPE,
+				TypezID:  "string",
+				Optional: true,
 			},
 			{
 				Name:          "pageSize",
@@ -678,7 +678,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Typez:         api.INT32_TYPE,
 				TypezID:       "int32",
 				Optional:      true,
-				Synthetic:     true,
 			},
 			{
 				Name:          "pageToken",
@@ -687,10 +686,15 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
 				Optional:      true,
-				Synthetic:     true,
 			},
 		},
-	})
+	}
+	listLocationsRequest, ok := test.State.MessageByID[want.ID]
+	if !ok {
+		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		return
+	}
+	apitest.CheckMessage(t, listLocationsRequest, want)
 
 	// This message has a weirdly named field that gets tricky to serialize.
 	sp := sample.SecretPayload()
@@ -719,7 +723,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		Name:          "ListLocations",
 		ID:            "..Service.ListLocations",
 		Documentation: "Lists information about the supported locations for this service.",
-		InputTypeID:   "..ListLocationsRequest",
+		InputTypeID:   "..Service.ListLocationsRequest",
 		OutputTypeID:  "..ListLocationsResponse",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
@@ -745,7 +749,6 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			Typez:         api.STRING_TYPE,
 			TypezID:       "string",
 			Optional:      true,
-			Synthetic:     true,
 		},
 	})
 
@@ -754,6 +757,23 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 
 	asv := sample.MethodAddSecretVersion()
 	apitest.CheckMethod(t, service, asv.Name, asv)
+}
+
+func TestOpenAPI_ServicePlaceholder(t *testing.T) {
+	test := openapiSecretManagerAPI(t)
+	want := &api.Message{
+		Name:               "Service",
+		ID:                 "..Service",
+		Package:            "",
+		Documentation:      "Synthetic messages for the [Service][.Service] service.",
+		ServicePlaceholder: true,
+	}
+	got, ok := test.State.MessageByID["..Service"]
+	if !ok {
+		t.Errorf("missing service placeholder message in MessageById index")
+		return
+	}
+	apitest.CheckMessage(t, got, want)
 }
 
 func TestOpenAPI_MakeApiWithServiceConfig(t *testing.T) {
@@ -799,7 +819,7 @@ func TestOpenAPI_MakeApiServiceConfigOverridesDescription(t *testing.T) {
 
 }
 
-func TestOpenAPI_SyntheticMessageWithExistingRequest(t *testing.T) {
+func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 	contents, err := os.ReadFile("../../testdata/openapi/secretmanager_openapi_v1.json")
 	if err != nil {
 		t.Fatal(err)
@@ -813,50 +833,32 @@ func TestOpenAPI_SyntheticMessageWithExistingRequest(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	// This message has a weirdly named field that gets tricky to serialize.
-	id := "..SetIamPolicyRequest"
-	setIamPolicyRequest, ok := test.State.MessageByID["..SetIamPolicyRequest"]
+	want := &api.Message{
+		Name:               "Service",
+		ID:                 "..Service",
+		Documentation:      "Synthetic messages for the [Service][.Service] service.",
+		ServicePlaceholder: true,
+	}
+	got, ok := test.State.MessageByID[want.ID]
 	if !ok {
-		t.Errorf("missing message (%s) in MessageByID index", id)
+		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
-	apitest.CheckMessage(t, setIamPolicyRequest, &api.Message{
-		Name:          "SetIamPolicyRequest",
-		ID:            "..SetIamPolicyRequest",
-		Documentation: "Request message for `SetIamPolicy` method.",
+	apitest.CheckMessage(t, got, want)
+
+	// Methods that share a body should create separate requests.
+	want = &api.Message{
+		Name:             "SetIamPolicyByProjectAndLocationAndSecretRequest",
+		ID:               "..Service.SetIamPolicyByProjectAndLocationAndSecretRequest",
+		Documentation:    "Synthetic request message for the [SetIamPolicyByProjectAndLocationAndSecret()][.Service.SetIamPolicyByProjectAndLocationAndSecret] method.",
+		SyntheticRequest: true,
 		Fields: []*api.Field{
-			{
-				Name:          "policy",
-				JSONName:      "policy",
-				Documentation: "REQUIRED: The complete policy to be applied to the `resource`. The size of\nthe policy is limited to a few 10s of KB. An empty policy is a\nvalid policy but certain Google Cloud services (such as Projects)\nmight reject them.",
-				Typez:         api.MESSAGE_TYPE,
-				TypezID:       "..Policy",
-				Optional:      true,
-			},
-			{
-				Name:          "updateMask",
-				JSONName:      "updateMask",
-				Documentation: "OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only\nthe fields in the mask will be modified. If no mask is provided, the\nfollowing default mask is used:\n\n`paths: \"bindings, etag\"`",
-				Typez:         api.MESSAGE_TYPE,
-				TypezID:       ".google.protobuf.FieldMask",
-				Optional:      true,
-			},
 			{
 				Name:          "project",
 				JSONName:      "project",
-				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
+				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
-			},
-			{
-				Name:          "secret",
-				JSONName:      "secret",
-				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.STRING_TYPE,
-				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -865,11 +867,71 @@ func TestOpenAPI_SyntheticMessageWithExistingRequest(t *testing.T) {
 				Documentation: "The `{location}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
+			{
+				Name:          "secret",
+				JSONName:      "secret",
+				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+			},
+			{
+				Name:          "body",
+				JSONName:      "body",
+				Documentation: "The request body.",
+				Typez:         api.MESSAGE_TYPE,
+				TypezID:       "..SetIamPolicyRequest",
+				Optional:      true,
+			},
 		},
-	})
+	}
+	got, ok = test.State.MessageByID[want.ID]
+	if !ok {
+		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		return
+	}
+	apitest.CheckMessage(t, got, want)
+
+	want = &api.Message{
+		Name:             "SetIamPolicyRequest",
+		ID:               "..Service.SetIamPolicyRequest",
+		Documentation:    "Synthetic request message for the [SetIamPolicy()][.Service.SetIamPolicy] method.",
+		SyntheticRequest: true,
+		Fields: []*api.Field{
+			{
+				Name:          "project",
+				JSONName:      "project",
+				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+			},
+			{
+				Name:          "secret",
+				JSONName:      "secret",
+				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
+				Typez:         api.STRING_TYPE,
+				TypezID:       "string",
+				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+			},
+			{
+				Name:          "body",
+				JSONName:      "body",
+				Documentation: "The request body.",
+				Typez:         api.MESSAGE_TYPE,
+				TypezID:       "..SetIamPolicyRequest",
+				Optional:      true,
+			},
+		},
+	}
+	got, ok = test.State.MessageByID[want.ID]
+	if !ok {
+		t.Errorf("missing message (%s) in MessageByID index", want.ID)
+		return
+	}
+	apitest.CheckMessage(t, got, want)
 }
 
 func TestOpenAPI_Pagination(t *testing.T) {
@@ -898,7 +960,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 			{
 				Name:         "ListFoos",
 				ID:           "..Service.ListFoos",
-				InputTypeID:  "..ListFoosRequest",
+				InputTypeID:  "..Service.ListFoosRequest",
 				OutputTypeID: "..ListFoosResponse",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
@@ -920,7 +982,6 @@ func TestOpenAPI_Pagination(t *testing.T) {
 					Typez:         api.STRING_TYPE,
 					TypezID:       "string",
 					Optional:      true,
-					Synthetic:     true,
 				},
 			},
 		},
@@ -1009,17 +1070,12 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	message, ok := test.State.MessageByID[".test.CreateFooRequest"]
-	if !ok {
-		t.Fatalf("Cannot find message %s in API State", ".test.CreateFooRequest")
-	}
 	request_id := &api.Field{
 		Name:          "requestId",
 		JSONName:      "requestId",
 		Documentation: "Test-only Description",
 		Typez:         api.STRING_TYPE,
 		TypezID:       "string",
-		Synthetic:     true,
 		Optional:      true,
 		AutoPopulated: true,
 	}
@@ -1029,15 +1085,15 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		Documentation: "Test-only Description",
 		Typez:         api.STRING_TYPE,
 		TypezID:       "string",
-		Synthetic:     true,
 		Optional:      true,
 		AutoPopulated: true,
 	}
-	apitest.CheckMessage(t, message, &api.Message{
-		Name:          "CreateFooRequest",
-		ID:            ".test.CreateFooRequest",
-		Package:       "test",
-		Documentation: "The request message for CreateFoo.",
+	wantMessage := &api.Message{
+		Name:             "CreateFooRequest",
+		ID:               ".test.TestService.CreateFooRequest",
+		Package:          "test",
+		Documentation:    "Synthetic request message for the [CreateFoo()][test.TestService.CreateFoo] method.",
+		SyntheticRequest: true,
 		Fields: []*api.Field{
 			{
 				Name:          "project",
@@ -1045,7 +1101,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -1054,7 +1109,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Documentation: "Test-only Description",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			request_id,
@@ -1065,7 +1119,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
 				JSONName:      "notRequestIdRequired",
-				Synthetic:     true,
 				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
 			},
 			{
@@ -1074,7 +1127,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
 				JSONName:      "notRequestIdMissingFormat",
-				Synthetic:     true,
 				Optional:      true,
 			},
 			{
@@ -1083,21 +1135,25 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
 				JSONName:      "notRequestIdMissingServiceConfig",
-				Synthetic:     true,
 				Optional:      true,
 				// This just denotes that the field is eligible
 				// to be auto-populated
 				AutoPopulated: true,
 			},
 		},
-	})
+	}
+	message, ok := test.State.MessageByID[wantMessage.ID]
+	if !ok {
+		t.Fatalf("Cannot find message %s in API State", wantMessage.ID)
+	}
+	apitest.CheckMessage(t, message, wantMessage)
 
 	method, ok := test.State.MethodByID[".test.TestService.CreateFoo"]
 	if !ok {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
-	want := []*api.Field{request_id, request_id_explicit}
-	if diff := cmp.Diff(want, method.AutoPopulated); diff != "" {
+	wantField := []*api.Field{request_id, request_id_explicit}
+	if diff := cmp.Diff(wantField, method.AutoPopulated); diff != "" {
 		t.Errorf("incorrect auto-populated fields on method (-want, +got)\n:%s", diff)
 	}
 }
@@ -1124,7 +1180,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 	apitest.CheckMethod(t, service, "RpcA", &api.Method{
 		Name:         "RpcA",
 		ID:           "..Service.RpcA",
-		InputTypeID:  "..RpcARequest",
+		InputTypeID:  "..Service.RpcARequest",
 		OutputTypeID: "..Response",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
@@ -1146,7 +1202,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		Name:         "RpcB",
 		ID:           "..Service.RpcB",
 		Deprecated:   true,
-		InputTypeID:  "..RpcBRequest",
+		InputTypeID:  "..Service.RpcBRequest",
 		OutputTypeID: "..Response",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{

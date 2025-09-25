@@ -1,7 +1,6 @@
 {
   "id": "google-cloud-go",
   "version": "1.0.0",
-  "last_generated_commit": "abcd123",
   "apis": [
     {
       "path": "google/cloud/compute/v1",

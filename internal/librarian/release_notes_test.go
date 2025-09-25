@@ -99,16 +99,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				"another-library": "abcdefg",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s
-
-BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
 fix: [one-library] a bug fix
@@ -119,7 +110,16 @@ PiperOrigin-RevId: 573342
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE`,
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s`,
 				librarianVersion, "go:1.21"),
 		},
 		{
@@ -171,20 +171,7 @@ END_COMMIT_OVERRIDE`,
 				"failed-library-a",
 				"failed-library-b",
 			},
-			want: fmt.Sprintf(`This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s
-
-## Generation failed for
-- failed-library-a
-- failed-library-b
-
-BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
 fix: [one-library] a bug fix
@@ -195,7 +182,20 @@ PiperOrigin-RevId: 573342
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE`,
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s
+
+## Generation failed for
+- failed-library-a
+- failed-library-b`,
 				librarianVersion, "go:1.21"),
 		},
 		{
@@ -244,16 +244,7 @@ END_COMMIT_OVERRIDE`,
 				"one-library": "1234567890",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`This pull request is generated with proto changes between
-[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s
-
-BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
 fix: [one-library] a bug fix
@@ -273,7 +264,16 @@ PiperOrigin-RevId: 98765
 Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890abcdef000000000000000000000000)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE`,
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s`,
 				librarianVersion, "go:1.21"),
 		},
 		{
@@ -506,14 +506,14 @@ func TestFormatReleaseNotes(t *testing.T) {
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "new feature",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
 							},
 							{
-								Type:    "fix",
-								Subject: "a bug fix",
-								SHA:     hash2.String(),
+								Type:       "fix",
+								Subject:    "a bug fix",
+								CommitHash: hash2.String(),
 							},
 						},
 						ReleaseTriggered: true,
@@ -529,11 +529,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
 ### Bug Fixes
 
-* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -550,17 +550,17 @@ Language Image: go:1.21
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "new feature",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
 								Footers: map[string]string{
 									"PiperOrigin-RevId": "123456",
 								},
 							},
 							{
-								Type:    "fix",
-								Subject: "a bug fix",
-								SHA:     hash2.String(),
+								Type:       "fix",
+								Subject:    "a bug fix",
+								CommitHash: hash2.String(),
 								Footers: map[string]string{
 									"PiperOrigin-RevId": "987654",
 								},
@@ -579,17 +579,17 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
 
 ### Bug Fixes
 
-* a bug fix (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+* a bug fix (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
 		},
 		{
-			name: "single library with multiple features",
+			name: "single_library_with_multiple_features",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
@@ -600,14 +600,14 @@ Language Image: go:1.21
 						PreviousVersion: "1.0.0",
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "new feature",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
 							},
 							{
-								Type:    "feat",
-								Subject: "another new feature",
-								SHA:     hash2.String(),
+								Type:       "feat",
+								Subject:    "another new feature",
+								CommitHash: hash2.String(),
 							},
 						},
 						ReleaseTriggered: true,
@@ -623,9 +623,9 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
-* another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+* another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -643,9 +643,9 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "feature for a",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "feature for a",
+								CommitHash: hash1.String(),
 							},
 						},
 					},
@@ -657,9 +657,9 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "fix",
-								Subject: "fix for b",
-								SHA:     hash2.String(),
+								Type:       "fix",
+								Subject:    "fix for b",
+								CommitHash: hash2.String(),
 							},
 						},
 					},
@@ -674,7 +674,7 @@ Language Image: go:1.21
 
 ### Features
 
-* feature for a ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* feature for a ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>
 
@@ -685,7 +685,7 @@ Language Image: go:1.21
 
 ### Bug Fixes
 
-* fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0987654321000000000000000000000000))
+* fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today, today),
@@ -703,14 +703,14 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*conventionalcommits.ConventionalCommit{
 							{
-								Type:    "feat",
-								Subject: "new feature",
-								SHA:     hash1.String(),
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
 							},
 							{
-								Type:    "ci",
-								Subject: "a ci change",
-								SHA:     hash2.String(),
+								Type:       "ci",
+								Subject:    "a ci change",
+								CommitHash: hash2.String(),
 							},
 						},
 					},
@@ -725,7 +725,43 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567890abcdef000000000000000000000000))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+
+</details>`,
+				librarianVersion, today),
+		},
+		{
+			name: "release_with_commit_description_and_body",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the newVersion in the release note.
+						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
+						ReleaseTriggered: true,
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:       "feat",
+								Subject:    "new feature",
+								Body:       "this is the body",
+								CommitHash: hash1.String(),
+							},
+						},
+					},
+				},
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+### Features
+
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>`,
 				librarianVersion, today),

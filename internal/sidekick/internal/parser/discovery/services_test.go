@@ -43,7 +43,7 @@ func TestService(t *testing.T) {
 				ID:            "..zones.get",
 				Name:          "get",
 				Documentation: "Returns the specified Zone resource.",
-				InputTypeID:   ".google.protobuf.Empty",
+				InputTypeID:   "..zones.getRequest",
 				OutputTypeID:  "..Zone",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
@@ -59,14 +59,14 @@ func TestService(t *testing.T) {
 							QueryParameters: map[string]bool{},
 						},
 					},
-					BodyFieldPath: "*",
+					BodyFieldPath: "",
 				},
 			},
 			{
 				ID:            "..zones.list",
 				Name:          "list",
 				Documentation: "Retrieves the list of Zone resources available to the specified project.",
-				InputTypeID:   ".google.protobuf.Empty",
+				InputTypeID:   "..zones.listRequest",
 				OutputTypeID:  "..ZoneList",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
@@ -87,12 +87,43 @@ func TestService(t *testing.T) {
 							},
 						},
 					},
-					BodyFieldPath: "*",
+					BodyFieldPath: "",
 				},
 			},
 		},
 	}
 	apitest.CheckService(t, got, want)
+}
+
+func TestServiceMessages(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	getMessage, ok := model.State.MessageByID["..zones.getRequest"]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", "..zones.getRequest")
+	}
+	listMessage, ok := model.State.MessageByID["..zones.listRequest"]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
+	}
+
+	want := &api.Message{
+		Name:               "zones",
+		ID:                 "..zones",
+		Package:            "",
+		Documentation:      "Synthetic messages for the [zones][.zones] service",
+		ServicePlaceholder: true,
+		Messages:           []*api.Message{getMessage, listMessage},
+	}
+
+	got, ok := model.State.MessageByID[want.ID]
+	if !ok {
+		t.Fatalf("expected service %s in the API model", want.ID)
+	}
+	apitest.CheckMessage(t, got, want)
 }
 
 func TestServiceTopLevelMethodErrors(t *testing.T) {

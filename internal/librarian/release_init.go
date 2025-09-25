@@ -218,7 +218,20 @@ func (r *initRunner) processLibrary(library *config.LibraryState) error {
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
+	// Filter specifically for commits relevant to a library
+	commits = filterCommitsByLibraryID(commits, library.ID)
 	return r.updateLibrary(library, commits)
+}
+
+// filterCommitsByLibraryID keeps the conventional commits that match a libaryID.
+func filterCommitsByLibraryID(commits []*conventionalcommits.ConventionalCommit, libraryID string) []*conventionalcommits.ConventionalCommit {
+	var filteredCommits []*conventionalcommits.ConventionalCommit
+	for _, commit := range commits {
+		if commit.LibraryID == libraryID {
+			filteredCommits = append(filteredCommits, commit)
+		}
+	}
+	return filteredCommits
 }
 
 // updateLibrary updates the library's state with the new release information:

@@ -811,7 +811,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 						Footers: map[string]string{
 							"PiperOrigin-RevId": "12345",
 						},
-						SHA: "1234",
+						CommitHash: "1234",
 					},
 				},
 			},

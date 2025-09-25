@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{^IsMap}}
+{{^ServicePlaceholder}}
 
 {{#Codec.DocLines}}
 {{{.}}}
@@ -58,12 +59,9 @@ impl {{Codec.Name}} {
     }
     {{#Codec.BasicFields}}
 
-    /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
-    {{#Deprecated}}
-    #[deprecated]
-    {{/Deprecated}}
     {{#Singular}}
     {{^Optional}}
+    {{> /templates/common/setter_preamble/singular_value}}
     pub fn set_{{Codec.SetterName}}<T: std::convert::Into<{{{Codec.FieldType}}}>>(mut self, v: T) -> Self {
         self.{{Codec.FieldName}} = v.into();
         self
@@ -71,6 +69,7 @@ impl {{Codec.Name}} {
     {{/Optional}}
     {{#Optional}}
     {{^Codec.IsBoxed}}
+    {{> /templates/common/setter_preamble/singular_value}}
     pub fn set_{{Codec.SetterName}}<T>(mut self, v: T) -> Self
     where T: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
     {
@@ -78,10 +77,7 @@ impl {{Codec.Name}} {
         self
     }
 
-    /// Sets or clears the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
-    {{#Deprecated}}
-    #[deprecated]
-    {{/Deprecated}}
+    {{> /templates/common/setter_preamble/singular_option}}
     pub fn set_or_clear_{{Codec.SetterName}}<T>(mut self, v: std::option::Option<T>) -> Self
     where T: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
     {
@@ -90,6 +86,7 @@ impl {{Codec.Name}} {
     }
     {{/Codec.IsBoxed}}
     {{#Codec.IsBoxed}}
+    {{> /templates/common/setter_preamble/singular_value}}
     pub fn set_{{Codec.SetterName}}<T>(mut self, v: T) -> Self
     where T: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
     {
@@ -97,10 +94,7 @@ impl {{Codec.Name}} {
         self
     }
 
-    /// Sets or clears the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
-    {{#Deprecated}}
-    #[deprecated]
-    {{/Deprecated}}
+    {{> /templates/common/setter_preamble/singular_option}}
     pub fn set_or_clear_{{Codec.SetterName}}<T>(mut self, v: std::option::Option<T>) -> Self
     where T: std::convert::Into<{{{Codec.PrimitiveFieldType}}}>
     {
@@ -109,6 +103,12 @@ impl {{Codec.Name}} {
     }
     {{/Codec.IsBoxed}}
     {{/Optional}}
+    {{/Singular}}
+    {{^Singular}}
+    /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
+    {{#Deprecated}}
+    #[deprecated]
+    {{/Deprecated}}
     {{/Singular}}
     {{#Repeated}}
     pub fn set_{{Codec.SetterName}}<T, V>(mut self, v: T) -> Self
@@ -214,7 +214,7 @@ impl {{Codec.Name}} {
     {{/Fields}}
     {{/OneOfs}}
 }
-{{^Codec.HasSyntheticFields}}
+{{^SyntheticRequest}}
 
 {{> /templates/common/feature_gate}}
 impl wkt::message::Message for {{Codec.Name}} {
@@ -222,7 +222,7 @@ impl wkt::message::Message for {{Codec.Name}} {
         "type.googleapis.com/{{Codec.SourceFQN}}"
     }
 }
-{{/Codec.HasSyntheticFields}}
+{{/SyntheticRequest}}
 {{#Pagination}}
 
 {{> /templates/common/feature_gate}}
@@ -249,9 +249,17 @@ impl gax::paginator::internal::PageableResponse for {{Codec.Name}} {
     {{/NextPageToken}}
 }
 {{/Pagination}}
+{{/ServicePlaceholder}}
 {{#Codec.HasNestedTypes}}
 
-/// Defines additional types related to [{{Name}}].
+{{#ServicePlaceholder}}
+{{#Codec.DocLines}}
+{{{.}}}
+{{/Codec.DocLines}}
+{{/ServicePlaceholder}}
+{{^ServicePlaceholder}}
+/// Defines additional types related to [{{Codec.Name}}].
+{{/ServicePlaceholder}}
 {{> /templates/common/feature_gate}}
 pub mod {{Codec.ModuleName}} {
     {{! Very rarely, this is unused. It is easier to always disable the warning. }}

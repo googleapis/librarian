@@ -162,6 +162,15 @@ func (api *API) HasMessages() bool {
 	return len(api.Messages) != 0
 }
 
+// ModelCodec returns the Codec field with an alternative name.
+//
+// In some mustache templates we want to access the annotations for the
+// enclosing model. In mustache you can get a field from an enclosing context
+// *if* the name is unique.
+func (a *API) ModelCodec() any {
+	return a.Codec
+}
+
 // APIState contains helpful information that can be used when generating
 // clients.
 type APIState struct {
@@ -191,6 +200,7 @@ type Service struct {
 	DefaultHost string
 	// The Protobuf package this service belongs to.
 	Package string
+
 	// The model this service belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
@@ -562,9 +572,25 @@ type Message struct {
 	Deprecated bool
 	// Fields associated with the Message.
 	Fields []*Field
-	// IsLocalToPackage is true if the message is defined in the current
-	// namespace.
-	IsLocalToPackage bool
+	// If true, this is a synthetic request message.
+	//
+	// These messages are created by sidekick when parsing Discovery docs and
+	// OpenAPI specifications. The query and request parameters for each method
+	// are grouped into a synthetic message.
+	SyntheticRequest bool
+	// If true, this message is a placeholder / doppelganger for a `api.Service`.
+	//
+	// These messages are created by sidekick when parsing Discovery docs and
+	// OpenAPI specifications. All the synthetic messages for a service need to
+	// be grouped under a unique namespace to avoid clashes with similar
+	// synthetic messages in other service. Sidekick creates a placeholder
+	// message that represents "the service".
+	//
+	// That is, `service1` and `service2` may both have a synthetic `getRequest`
+	// message, with different attributes. We need these to be different
+	// messages, with different names. So we create a different parent message
+	// for each.
+	ServicePlaceholder bool
 	// Enums associated with the Message.
 	Enums []*Enum
 	// Messages associated with the Message. In protobuf these are referred to as
@@ -671,10 +697,6 @@ type Field struct {
 	// IsOneOf is true if the field is related to a one-of and not
 	// a proto3 optional field.
 	IsOneOf bool
-	// The OpenAPI specifications have incomplete `*Request` messages. We inject
-	// some helper fields. These need to be marked so they can be excluded
-	// from serialized messages and in other places.
-	Synthetic bool
 	// Some fields have a type that refers (sometimes indirectly) to the
 	// containing message. That triggers slightly different code generation for
 	// some languages.
@@ -697,6 +719,12 @@ type Field struct {
 	// For fields that are part of a OneOf, the group of fields that makes the
 	// OneOf.
 	Group *OneOf
+	// The message that contains this field.
+	Parent *Message
+	// The message type for this field, can be nil.
+	MessageType *Message
+	// The enum type for this field, can be nil.
+	EnumType *Enum
 	// A placeholder to put language specific annotations.
 	Codec any
 }
@@ -714,6 +742,74 @@ func (f *Field) Singular() bool {
 // NameEqualJSONName returns true if the field's name is the same as its JSON name.
 func (f *Field) NameEqualJSONName() bool {
 	return f.JSONName == f.Name
+}
+
+// IsString returns true if the primitive type of a field is `STRING_TYPE`.
+//
+// This is useful for mustache templates that differ only
+// in the broad category of field type involved.
+func (f *Field) IsString() bool {
+	return f.Typez == STRING_TYPE
+}
+
+// IsBytes returns true if the primitive type of a field is `BYTES_TYPE`.
+//
+// This is useful for mustache templates that differ only
+// in the broad category of field type involved.
+func (f *Field) IsBytes() bool {
+	return f.Typez == BYTES_TYPE
+}
+
+// IsBool returns true if the primitive type of a field is `BOOL_TYPE`.
+//
+// This is useful for mustache templates that differ only
+// in the broad category of field type involved.
+func (f *Field) IsBool() bool {
+	return f.Typez == BOOL_TYPE
+}
+
+// IsLikeInt returns true if the primitive type of a field is one of the
+// integer types.
+//
+// This is useful for mustache templates that differ only
+// in the broad category of field type involved.
+func (f *Field) IsLikeInt() bool {
+	switch f.Typez {
+	case UINT32_TYPE, UINT64_TYPE, INT32_TYPE, INT64_TYPE, SINT32_TYPE, SINT64_TYPE:
+		return true
+	case FIXED32_TYPE, FIXED64_TYPE, SFIXED32_TYPE, SFIXED64_TYPE:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsLikeFloat returns true if the primitive type of a field is a float or
+// double.
+//
+// This is useful for mustache templates that differ only
+// in the broad category of field type involved.
+func (f *Field) IsLikeFloat() bool {
+	return f.Typez == DOUBLE_TYPE || f.Typez == FLOAT_TYPE
+}
+
+// IsEnum returns true if the primitive type of a field is `ENUM_TYPE`.
+//
+// This is useful for mustache templates that differ only
+// in the broad category of field type involved.
+func (f *Field) IsEnum() bool {
+	return f.Typez == ENUM_TYPE
+}
+
+// IsObject returns true if the primitive type of a field is `OBJECT_TYPE`.
+//
+// This is useful for mustache templates that differ only
+// in the broad category of field type involved.
+//
+// The templates *should* first check if the field is singular, as all maps are
+// also objects.
+func (f *Field) IsObject() bool {
+	return f.Typez == MESSAGE_TYPE
 }
 
 // Pair is a key-value pair.

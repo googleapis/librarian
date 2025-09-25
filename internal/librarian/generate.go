@@ -86,8 +86,9 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// The last generated commit is changed after library generation,
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
-	idToCommits := make(map[string]string, 0)
+	idToCommits := make(map[string]string)
 	var failedLibraries []string
+	failedGenerations := 0
 	if r.api != "" || r.library != "" {
 		libraryID := r.library
 		if libraryID == "" {
@@ -100,7 +101,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 		idToCommits[libraryID] = oldCommit
 	} else {
 		succeededGenerations := 0
-		failedGenerations := 0
 		blockedGenerations := 0
 		for _, library := range r.state.Libraries {
 			if r.librarianConfig != nil {
@@ -141,17 +141,18 @@ func (r *generateRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		branch:          r.branch,
-		commit:          r.commit,
-		commitMessage:   "feat: generate libraries",
-		failedLibraries: failedLibraries,
-		ghClient:        r.ghClient,
-		idToCommits:     idToCommits,
-		prType:          generate,
-		push:            r.push,
-		repo:            r.repo,
-		sourceRepo:      r.sourceRepo,
-		state:           r.state,
+		branch:            r.branch,
+		commit:            r.commit,
+		commitMessage:     "feat: generate libraries",
+		failedLibraries:   failedLibraries,
+		ghClient:          r.ghClient,
+		idToCommits:       idToCommits,
+		prType:            generate,
+		push:              r.push,
+		repo:              r.repo,
+		sourceRepo:        r.sourceRepo,
+		state:             r.state,
+		failedGenerations: failedGenerations,
 	}
 
 	return commitAndPush(ctx, commitInfo)

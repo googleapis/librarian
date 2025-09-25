@@ -111,7 +111,7 @@ type LibraryState struct {
 	// The last released version of the library, following SemVer.
 	Version string `yaml:"version" json:"version"`
 	// The commit hash from the API definition repository at which the library was last generated.
-	LastGeneratedCommit string `yaml:"last_generated_commit" json:"last_generated_commit"`
+	LastGeneratedCommit string `yaml:"last_generated_commit" json:"-"`
 	// The changes from the language repository since the library was last released.
 	// This field is ignored when writing to state.yaml.
 	Changes []*conventionalcommits.ConventionalCommit `yaml:"-" json:"changes,omitempty"`

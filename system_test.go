@@ -102,9 +102,11 @@ func TestPullRequestSystem(t *testing.T) {
 	// Clone a repo
 	// Create a commit and push
 	// Create a pull request
-	// Add a label to the issue
+	// Add a label to the pull request
 	// Fetch labels for the issue and verify
 	// Replace the issue labels
+	// Fetch labels for the issue and verify
+	// Add a comment
 	// Search for the pull request
 	// Fetch the pull request
 	// Close the pull request
@@ -232,6 +234,12 @@ func TestPullRequestSystem(t *testing.T) {
 		t.Fatalf("GetLabels() mismatch (-want + got):\n%s", diff)
 	}
 
+	// Add a comment
+	err = client.CreateIssueComment(t.Context(), createdPullRequest.Number, "some comment body")
+	if err != nil {
+		t.Fatalf("unexpected error in CreateIssueComment() %s", err)
+	}
+
 	// Search for pull requests (this may take a bit of time, so try 5 times)
 	found := false
 	for i := 0; i < 5; i++ {
@@ -241,10 +249,18 @@ func TestPullRequestSystem(t *testing.T) {
 		}
 		for _, pullRequest := range foundPullRequests {
 			// Look for the PR we created
-			if *pullRequest.Number == createdPullRequest.Number {
+			if pullRequest.GetNumber() == createdPullRequest.Number {
 				found = true
+
+				// Expect that we found a comment
+				if pullRequest.GetComments() == 0 {
+					t.Fatalf("Expected to have created a comment on the pull request.")
+				}
 				break
 			}
+		}
+		if found {
+			break
 		}
 		delay := time.Duration(2 * time.Second)
 		t.Logf("Retrying in %v...\n", delay)
@@ -265,10 +281,160 @@ func TestPullRequestSystem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error in GetPullRequest() %s", err)
 	}
-	if diff := cmp.Diff(*foundPullRequest.Number, createdPullRequest.Number); diff != "" {
+	if diff := cmp.Diff(foundPullRequest.GetNumber(), createdPullRequest.Number); diff != "" {
 		t.Fatalf("pull request number mismatch (-want + got):\n%s", diff)
 	}
-	if diff := cmp.Diff(*foundPullRequest.State, "closed"); diff != "" {
+	if diff := cmp.Diff(foundPullRequest.GetState(), "closed"); diff != "" {
 		t.Fatalf("pull request state mismatch (-want + got):\n%s", diff)
+	}
+}
+
+func TestFindMergedPullRequest(t *testing.T) {
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
+	repoName := "https://github.com/googleapis/librarian"
+	repo, err := github.ParseRemote(repoName)
+	if err != nil {
+		t.Fatalf("unexpected error in ParseRemote() %s", err)
+	}
+
+	for _, test := range []struct {
+		name          string
+		label         string
+		want          int
+		wantErr       bool
+		wantErrSubstr string
+	}{
+		{
+			name:    "existing label",
+			label:   "cla: yes",
+			want:    2210,
+			wantErr: false,
+		},
+		{
+			name:    "non-existing label",
+			label:   "non-existing-label",
+			want:    0,
+			wantErr: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			client := github.NewClient(testToken, repo)
+			prs, err := client.FindMergedPullRequestsWithLabel(t.Context(), repo.Owner, repo.Name, test.label)
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("FindMergedPullRequestsWithLabel() err = nil, want error containing %q", test.wantErrSubstr)
+				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("FindMergedPullRequestsWithLabel() err = %v, want error containing %q", err, test.wantErrSubstr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("FindMergedPullRequestsWithLabel() err = %v, want nil", err)
+			}
+			if test.want == 0 {
+				// expect to not find any
+				if len(prs) > 0 {
+					t.Fatalf("FindMergedPullRequestWithLabel() expected to not find any PRs, found %d", len(prs))
+				}
+			} else {
+				found := false
+				for _, pr := range prs {
+					pullNumber := pr.GetNumber()
+					t.Logf("Found PR %d", pullNumber)
+					if pr.Number != nil && pullNumber == test.want {
+						found = true
+					}
+				}
+				if !found {
+					t.Fatalf("FindMergedPullRequestsWithLabel() expected to find PR #%d", test.want)
+				}
+			}
+		})
+	}
+}
+
+func TestCreateTag(t *testing.T) {
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
+	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	if testRepoName == "" {
+		t.Skip("TEST_GITHUB_REPO not set, skipping GitHub integration test")
+	}
+	repo, err := github.ParseRemote(testRepoName)
+	if err != nil {
+		t.Fatalf("unexpected error in ParseRemote() %s", err)
+	}
+	// Clone a repo
+	workdir := path.Join(t.TempDir(), "test-repo")
+	localRepository, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir:          workdir,
+		MaybeClone:   true,
+		RemoteURL:    testRepoName,
+		RemoteBranch: "main",
+		GitPassword:  testToken,
+		Depth:        1,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error in NewRepository() %s", err)
+	}
+
+	now := time.Now()
+	tagName := fmt.Sprintf("create-tag-test-%s", now.Format("20060102150405"))
+	commitSHA, err := localRepository.HeadHash()
+	if err != nil {
+		t.Fatalf("unexpected error fetching head commit %s", err)
+	}
+
+	client := github.NewClient(testToken, repo)
+	err = client.CreateTag(t.Context(), tagName, commitSHA)
+	if err != nil {
+		t.Fatalf("unexpected error in CreateTag() %s", err)
+	}
+}
+
+func TestCreateRelease(t *testing.T) {
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
+	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	if testRepoName == "" {
+		t.Skip("TEST_GITHUB_REPO not set, skipping GitHub integration test")
+	}
+	repo, err := github.ParseRemote(testRepoName)
+	if err != nil {
+		t.Fatalf("unexpected error in ParseRemote() %s", err)
+	}
+	// Clone a repo
+	workdir := path.Join(t.TempDir(), "test-repo")
+	localRepository, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir:          workdir,
+		MaybeClone:   true,
+		RemoteURL:    testRepoName,
+		RemoteBranch: "main",
+		GitPassword:  testToken,
+		Depth:        1,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error in NewRepository() %s", err)
+	}
+
+	now := time.Now()
+	tagName := fmt.Sprintf("create-release-test-%s", now.Format("20060102150405"))
+	commitSHA, err := localRepository.HeadHash()
+	if err != nil {
+		t.Fatalf("unexpected error fetching head commit %s", err)
+	}
+
+	client := github.NewClient(testToken, repo)
+	body := "some release body"
+	release, err := client.CreateRelease(t.Context(), tagName, tagName, body, commitSHA)
+	if err != nil {
+		t.Fatalf("unexpected error in CreateTag() %s", err)
+	}
+	if diff := cmp.Diff(release.GetBody(), body); diff != "" {
+		t.Fatalf("release body mismatch (-want + got):\n%s", diff)
 	}
 }

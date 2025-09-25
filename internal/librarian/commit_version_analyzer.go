@@ -78,6 +78,9 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 		if parsedCommits == nil {
 			continue
 		}
+		for _, pc := range parsedCommits {
+			pc.CommitHash = commit.Hash.String()
+		}
 		conventionalCommits = append(conventionalCommits, parsedCommits...)
 	}
 	return conventionalCommits, nil
