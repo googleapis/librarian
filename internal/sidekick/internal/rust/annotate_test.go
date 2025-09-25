@@ -1638,6 +1638,87 @@ func TestPathBindingAnnotations(t *testing.T) {
 	}
 }
 
+func TestPathBindingAnnotationsStyle(t *testing.T) {
+	for _, test := range []struct {
+		FieldName     string
+		WantFieldName string
+		WantAccessor  string
+	}{
+		{"machine", "machine", "Some(&req).map(|m| &m.machine).map(|s| s.as_str())"},
+		{"machineType", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())"},
+		{"machine_type", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())"},
+		{"type", "r#type", "Some(&req).map(|m| &m.r#type).map(|s| s.as_str())"},
+	} {
+		field := &api.Field{
+			Name:     test.FieldName,
+			JSONName: test.FieldName,
+			ID:       fmt.Sprintf(".test.Request.%s", test.FieldName),
+			Typez:    api.STRING_TYPE,
+		}
+		request := &api.Message{
+			Name:    "Request",
+			Package: "test",
+			ID:      ".test.Request",
+			Fields:  []*api.Field{field},
+		}
+		response := &api.Message{
+			Name:    "Response",
+			Package: "test",
+			ID:      ".test.Response",
+		}
+		binding := &api.PathBinding{
+			Verb: "GET",
+			PathTemplate: api.NewPathTemplate().
+				WithLiteral("v1").
+				WithLiteral("machines").
+				WithVariable(api.NewPathVariable(test.FieldName).
+					WithMatch()).
+				WithVerb("create"),
+			QueryParameters: map[string]bool{},
+		}
+		wantBinding := &pathBindingAnnotation{
+			PathFmt: "/v1/machines/{}:create",
+			Substitutions: []*bindingSubstitution{
+				{
+					FieldAccessor: test.WantAccessor,
+					FieldName:     test.WantFieldName,
+					Template:      []string{"*"},
+				},
+			},
+		}
+		method := &api.Method{
+			Name:         "Create",
+			ID:           ".test.Service.Create",
+			InputType:    request,
+			InputTypeID:  ".test.Request",
+			OutputTypeID: ".test.Response",
+			PathInfo: &api.PathInfo{
+				Bindings: []*api.PathBinding{binding},
+			},
+		}
+		service := &api.Service{
+			Name:    "Service",
+			ID:      ".test.Service",
+			Package: "test",
+			Methods: []*api.Method{method},
+		}
+		model := api.NewTestAPI(
+			[]*api.Message{request, response},
+			[]*api.Enum{},
+			[]*api.Service{service})
+		api.CrossReference(model)
+		codec, err := newCodec(true, map[string]string{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		annotateModel(model, codec)
+		if diff := cmp.Diff(wantBinding, binding.Codec); diff != "" {
+			t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+		}
+
+	}
+}
+
 func TestPathTemplateGeneration(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -794,14 +794,15 @@ func makeAccessors(fields []string, m *api.Method) []string {
 	message := m.InputType
 	for _, name := range fields {
 		field := findField(name, message)
+		rustFieldName := toSnake(name)
 		if field == nil {
-			slog.Error("invalid routing/path field for request message", "field", name, "message ID", message.ID)
+			slog.Error("invalid routing/path field for request message", "field", rustFieldName, "message ID", message.ID)
 			continue
 		}
 		if field.Optional {
-			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", name))
+			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", rustFieldName))
 		} else {
-			accessors = append(accessors, fmt.Sprintf(".map(|m| &m.%s)", name))
+			accessors = append(accessors, fmt.Sprintf(".map(|m| &m.%s)", rustFieldName))
 		}
 		if field.Typez == api.STRING_TYPE {
 			accessors = append(accessors, ".map(|s| s.as_str())")
@@ -859,9 +860,13 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) bindingSubstitu
 	for _, a := range makeAccessors(v.FieldPath, m) {
 		fieldAccessor += a
 	}
+	var rustNames []string
+	for _, n := range v.FieldPath {
+		rustNames = append(rustNames, toSnake(n))
+	}
 	return bindingSubstitution{
 		FieldAccessor: fieldAccessor,
-		FieldName:     strings.Join(v.FieldPath, "."),
+		FieldName:     strings.Join(rustNames, "."),
 		Template:      v.Segments,
 	}
 }
