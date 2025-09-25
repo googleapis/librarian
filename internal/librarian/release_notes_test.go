@@ -23,8 +23,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 
-	"github.com/go-git/go-git/v5"
-	gitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/cli"
@@ -69,7 +67,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
 						Hash: plumbing.NewHash("1234567890"),
@@ -140,7 +138,7 @@ Language Image: %s`,
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
 						Hash: plumbing.NewHash("1234567890"),
@@ -214,7 +212,7 @@ Language Image: %s
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
 						Hash: plumbing.NewHash("1234567890"),
@@ -295,7 +293,7 @@ Language Image: %s`,
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue:   []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				RemotesValue:   []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitError: errors.New("simulated get commit error"),
 				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
 					"1234567890": {

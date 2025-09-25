@@ -307,7 +307,7 @@ type MockRepository struct {
 	AddAllStatus                           git.Status
 	AddAllError                            error
 	CommitError                            error
-	RemotesValue                           []*git.Remote
+	RemotesValue                           []*gitrepo.Remote
 	RemotesError                           error
 	CommitCalls                            int
 	GetCommitError                         error
@@ -346,7 +346,7 @@ func (m *MockRepository) Commit(msg string) error {
 	return m.CommitError
 }
 
-func (m *MockRepository) Remotes() ([]*git.Remote, error) {
+func (m *MockRepository) Remotes() ([]*gitrepo.Remote, error) {
 	if m.RemotesError != nil {
 		return nil, m.RemotesError
 	}

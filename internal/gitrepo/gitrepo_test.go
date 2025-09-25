@@ -588,7 +588,7 @@ func TestRemotes(t *testing.T) {
 
 			gotRemotes := make(map[string][]string)
 			for _, r := range got {
-				gotRemotes[r.Config().Name] = r.Config().URLs
+				gotRemotes[r.Name] = r.URLs
 			}
 			if diff := cmp.Diff(test.setupRemotes, gotRemotes); diff != "" {
 				t.Errorf("Remotes() mismatch (-want +got):\n%s", diff)
