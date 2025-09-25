@@ -261,6 +261,8 @@ func parseHeader(headerLine string) (*parsedHeader, bool) {
 }
 
 // separateBodyAndFooters splits the lines after the header into body and footer sections.
+// It identifies the footer section by looking for a blank line followed by a
+// line that matches the conventional commit footer format.
 func separateBodyAndFooters(lines []string) (bodyLines, footerLines []string) {
 	inFooterSection := false
 	for i, line := range lines {
