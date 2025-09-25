@@ -34,7 +34,7 @@ import (
 
 // Repository defines the interface for git repository operations.
 type Repository interface {
-	AddAll() (git.Status, error)
+	AddAll() error
 	Commit(msg string) error
 	IsClean() (bool, error)
 	Remotes() ([]*Remote, error)
@@ -173,16 +173,16 @@ func clone(dir, url, branch, ci string, depth int) (*LocalRepository, error) {
 
 // AddAll adds all pending changes from the working tree to the index,
 // so that the changes can later be committed.
-func (r *LocalRepository) AddAll() (git.Status, error) {
+func (r *LocalRepository) AddAll() error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
-		return git.Status{}, err
+		return err
 	}
 	err = worktree.AddWithOptions(&git.AddOptions{All: true})
 	if err != nil {
-		return git.Status{}, err
+		return err
 	}
-	return worktree.Status()
+	return nil
 }
 
 // Commit creates a new commit with the provided message and author

@@ -22,7 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
@@ -80,12 +79,9 @@ func TestNewInitRunner(t *testing.T) {
 
 func TestInitRun(t *testing.T) {
 	t.Parallel()
-	gitStatus := make(git.Status)
-	gitStatus["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 
 	mockRepoWithReleasableUnit := &MockRepository{
-		Dir:          t.TempDir(),
-		AddAllStatus: gitStatus,
+		Dir: t.TempDir(),
 		RemotesValue: []*gitrepo.Remote{
 			{
 				Name: "origin",
@@ -883,8 +879,7 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 					repo: &MockRepository{
-						Dir:          t.TempDir(),
-						AddAllStatus: gitStatus,
+						Dir: t.TempDir(),
 						RemotesValue: []*gitrepo.Remote{
 							{
 								Name: "origin",
