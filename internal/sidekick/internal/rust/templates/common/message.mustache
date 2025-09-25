@@ -116,15 +116,8 @@ impl {{Codec.Name}} {
         self
     }
     {{/Repeated}}
-    {{^Singular}}
-    {{^Repeated}}
-    /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
-    {{#Deprecated}}
-    #[deprecated]
-    {{/Deprecated}}
-    {{/Repeated}}
-    {{/Singular}}
     {{#Map}}
+    {{> /templates/common/setter_preamble/map}}
     pub fn set_{{Codec.SetterName}}<T, K, V>(mut self, v: T) -> Self
     where
         T: std::iter::IntoIterator<Item = (K, V)>,
