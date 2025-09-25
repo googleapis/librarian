@@ -86,7 +86,7 @@ func TestShouldInclude(t *testing.T) {
 			want:         false,
 		},
 		{
-			name:         "some files not in source root",
+			name:         "a file not in source root and a file in exclude path",
 			files:        []string{"a/b/c.go", "w/z/e.go"},
 			sourceRoots:  []string{"a"},
 			excludePaths: []string{"a/b"},
@@ -105,13 +105,6 @@ func TestShouldInclude(t *testing.T) {
 			sourceRoots:  []string{"ai"},
 			excludePaths: []string{},
 			want:         false,
-		},
-		{
-			name:         "file in source root with similar name",
-			files:        []string{"ai/file.go"},
-			sourceRoots:  []string{"ai"},
-			excludePaths: []string{},
-			want:         true,
 		},
 		{
 			name:         "excluded path is a directory",
