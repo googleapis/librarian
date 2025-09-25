@@ -180,12 +180,12 @@ func (l *LibraryState) Validate() error {
 		return fmt.Errorf("source_roots cannot be empty")
 	}
 	for i, p := range l.SourceRoots {
-		if !isValidDirPath(p) {
+		if !isValidRelativePath(p) {
 			return fmt.Errorf("invalid source_path at index %d: %q", i, p)
 		}
 	}
 	for i, p := range l.ReleaseExcludePaths {
-		if !isValidDirPath(p) {
+		if !isValidRelativePath(p) {
 			return fmt.Errorf("invalid release_exclude_path at index %d: %q", i, p)
 		}
 	}
@@ -226,7 +226,7 @@ type API struct {
 
 // Validate checks that the API is valid.
 func (a *API) Validate() error {
-	if !isValidDirPath(a.Path) {
+	if !isValidRelativePath(a.Path) {
 		return fmt.Errorf("invalid path: %q", a.Path)
 	}
 	return nil
@@ -236,7 +236,7 @@ func (a *API) Validate() error {
 // plus path separators and the null byte.
 const invalidPathChars = "<>:\"|?*/\\\x00"
 
-func isValidDirPath(pathString string) bool {
+func isValidRelativePath(pathString string) bool {
 	if pathString == "" {
 		return false
 	}

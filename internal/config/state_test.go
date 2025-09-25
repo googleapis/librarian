@@ -397,7 +397,7 @@ func TestIsValidDirPath(t *testing.T) {
 		{"invalid null byte", "a/b\x00c", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if got := isValidDirPath(test.path); got != test.want {
+			if got := isValidRelativePath(test.path); got != test.want {
 				t.Errorf("isValidDirPath(%q) = %v, want %v", test.path, got, test.want)
 			}
 		})
