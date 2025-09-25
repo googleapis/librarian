@@ -55,6 +55,8 @@ const (
 	ReleaseInitResponse = "release-init-response.json"
 	// LibrarianStateFile is the name of the pipeline state file.
 	LibrarianStateFile = "state.yaml"
+	// LibrarianGithubToken is the name of the env var used to store the github token.
+	LibrarianGithubToken = "LIBRARIAN_GITHUB_TOKEN"
 )
 
 // are variables so it can be replaced during testing.
@@ -248,7 +250,7 @@ type Config struct {
 func New(cmdName string) *Config {
 	return &Config{
 		CommandName: cmdName,
-		GitHubToken: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		GitHubToken: os.Getenv(LibrarianGithubToken),
 	}
 }
 
