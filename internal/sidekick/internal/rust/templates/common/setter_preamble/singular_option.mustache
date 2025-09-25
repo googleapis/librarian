@@ -67,7 +67,7 @@ limitations under the License.
 /// # Example
 /// ```
 /// # use {{Parent.Codec.NameInExamples}};
-/// # use {{EnumType.Codec.NameInExamples}};
+/// use {{EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}({{EnumType.Codec.Name}}::default());
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{EnumType.Codec.Name}}>);
 /// ```
@@ -77,7 +77,7 @@ limitations under the License.
 /// # Example
 /// ```
 /// # use {{Parent.Codec.NameInExamples}};
-/// # use {{MessageType.Codec.NameInExamples}};
+/// use {{MessageType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some({{MessageType.Codec.Name}}::default()/* use setters */));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{MessageType.Codec.Name}}>);
 /// ```
