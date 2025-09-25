@@ -51,6 +51,8 @@ type Repository interface {
 	pushRefSpec(refSpec string) error
 }
 
+const RootPath = "."
+
 // LocalRepository represents a git repository.
 type LocalRepository struct {
 	Dir         string
@@ -320,18 +322,13 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 		// In theory, we should be able to remember our "current" commit for each
 		// path, but that's likely to be significantly more complex.
 		for _, candidatePath := range paths {
-			currentPathHash, err := getHashForPathOrEmpty(commit, candidatePath)
-			if err != nil {
-				return err
-			}
-			parentPathHash, err := getHashForPathOrEmpty(parentCommit, candidatePath)
+			matching, err := commitMatchesPath(candidatePath, commit, parentCommit)
 			if err != nil {
 				return err
 			}
 			// If we've found a change (including a path being added or removed),
 			// add it to our list of commits and proceed to the next commit.
-			if currentPathHash != parentPathHash {
-
+			if matching {
 				commits = append(commits, &Commit{
 					Hash:    commit.Hash,
 					Message: commit.Message,
@@ -350,6 +347,21 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 		return nil, fmt.Errorf("did not find commit %s when iterating", sinceCommit)
 	}
 	return commits, nil
+}
+
+func commitMatchesPath(path string, commit *object.Commit, parentCommit *object.Commit) (bool, error) {
+	if path == RootPath {
+		return true, nil
+	}
+	currentPathHash, err := getHashForPathOrEmpty(commit, path)
+	if err != nil {
+		return false, err
+	}
+	parentPathHash, err := getHashForPathOrEmpty(parentCommit, path)
+	if err != nil {
+		return false, err
+	}
+	return currentPathHash != parentPathHash, nil
 }
 
 // getHashForPathOrEmpty returns the hash for a path at a given commit, or an

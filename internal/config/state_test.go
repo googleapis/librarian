@@ -392,7 +392,7 @@ func TestIsValidDirPath(t *testing.T) {
 		{"absolute", "/a/b", false},
 		{"up traversal", "../a", false},
 		{"double dot", "..", false},
-		{"single dot", ".", false},
+		{"single dot", ".", true},
 		{"invalid chars", "a/b<c", false},
 		{"invalid null byte", "a/b\x00c", false},
 	} {
