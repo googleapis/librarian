@@ -188,16 +188,19 @@ func New(workRoot, image, uid, gid string) (*Docker, error) {
 // Generate performs generation for an API which is configured as part of a
 // library.
 func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
-	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
-	if err := writeLibraryState(request.State, request.LibraryID, jsonFilePath); err != nil {
+	reqFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.GenerateRequest)
+	if err := writeLibraryState(request.State, request.LibraryID, reqFilePath); err != nil {
 		return err
 	}
-	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+	defer func() {
+		if b, err := os.ReadFile(reqFilePath); err == nil {
+			slog.Debug("generate request", "content", string(b))
 		}
-	}(jsonFilePath)
+		err := os.Remove(reqFilePath)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", reqFilePath), slog.Any("err", err))
+		}
+	}()
 
 	commandArgs := []string{
 		"--librarian=/librarian",
@@ -220,16 +223,19 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 // Build builds the library with an ID of libraryID, as configured in
 // the Librarian state file for the repository with a root of repoRoot.
 func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
-	jsonFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
-	if err := writeLibraryState(request.State, request.LibraryID, jsonFilePath); err != nil {
+	reqFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.BuildRequest)
+	if err := writeLibraryState(request.State, request.LibraryID, reqFilePath); err != nil {
 		return err
 	}
-	defer func(name string) {
-		err := os.Remove(name)
-		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", name), slog.Any("err", err))
+	defer func() {
+		if b, err := os.ReadFile(reqFilePath); err == nil {
+			slog.Debug("build request", "content", string(b))
 		}
-	}(jsonFilePath)
+		err := os.Remove(reqFilePath)
+		if err != nil {
+			slog.Warn("fail to remove file", slog.String("name", reqFilePath), slog.Any("err", err))
+		}
+	}()
 
 	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
 	mounts := []string{
@@ -249,14 +255,17 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 //
 // Returns the configured library id if the command succeeds.
 func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (string, error) {
-	requestFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
-	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
+	reqFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ConfigureRequest)
+	if err := writeLibrarianState(request.State, reqFilePath); err != nil {
 		return "", err
 	}
 	defer func() {
-		err := os.Remove(requestFilePath)
+		if b, err := os.ReadFile(reqFilePath); err == nil {
+			slog.Debug("configure request", "content", string(b))
+		}
+		err := os.Remove(reqFilePath)
 		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", requestFilePath), slog.Any("err", err))
+			slog.Warn("fail to remove file", slog.String("name", reqFilePath), slog.Any("err", err))
 		}
 	}()
 	commandArgs := []string{
@@ -283,14 +292,17 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 
 // ReleaseInit initiates a release for a given language repository.
 func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
-	requestFilePath := filepath.Join(request.PartialRepoDir, config.LibrarianDir, config.ReleaseInitRequest)
-	if err := writeLibrarianState(request.State, requestFilePath); err != nil {
+	reqFilePath := filepath.Join(request.PartialRepoDir, config.LibrarianDir, config.ReleaseInitRequest)
+	if err := writeLibrarianState(request.State, reqFilePath); err != nil {
 		return err
 	}
 	defer func() {
-		err := os.Remove(requestFilePath)
+		if b, err := os.ReadFile(reqFilePath); err == nil {
+			slog.Debug("release init request", "content", string(b))
+		}
+		err := os.Remove(reqFilePath)
 		if err != nil {
-			slog.Warn("fail to remove file", slog.String("name", requestFilePath), slog.Any("err", err))
+			slog.Warn("fail to remove file", slog.String("name", reqFilePath), slog.Any("err", err))
 		}
 	}()
 	commandArgs := []string{
