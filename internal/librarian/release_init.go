@@ -38,7 +38,6 @@ type initRunner struct {
 	librarianConfig *config.LibrarianConfig
 	library         string
 	libraryVersion  string
-	partialRepo     string
 	push            bool
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
@@ -60,7 +59,6 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		library:         cfg.Library,
 		libraryVersion:  cfg.LibraryVersion,
-		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
@@ -125,11 +123,6 @@ func hasLibrariesToRelease(libraryStates []*config.LibraryState) bool {
 }
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
-	dst := r.partialRepo
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return fmt.Errorf("failed to make directory: %w", err)
-	}
-
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
 	if r.library != "" {
@@ -157,23 +150,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		// Copy the library files over if a release is needed
 		if library.ReleaseTriggered {
 			foundReleasableLibrary = true
-			if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
-				return err
-			}
 		}
 	}
 
 	if !foundReleasableLibrary {
 		slog.Info("No libraries need to be released")
 		return nil
-	}
-
-	if err := copyLibrarianDir(dst, src); err != nil {
-		return fmt.Errorf("failed to copy librarian dir from %s to %s: %w", src, dst, err)
-	}
-
-	if err := copyGlobalAllowlist(r.librarianConfig, dst, src, true); err != nil {
-		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
@@ -183,7 +165,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		LibraryID:       r.library,
 		LibraryVersion:  r.libraryVersion,
 		Output:          outputDir,
-		PartialRepoDir:  dst,
+		RepoDir:         src,
 		Push:            r.push,
 		State:           r.state,
 	}
@@ -194,7 +176,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 	// Read the response file.
 	if _, err := readLibraryState(
-		filepath.Join(initRequest.PartialRepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
+		filepath.Join(initRequest.RepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
 		return err
 	}
 
@@ -325,10 +307,4 @@ func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadO
 		}
 	}
 	return nil
-}
-
-func copyLibrarianDir(dst, src string) error {
-	return os.CopyFS(
-		filepath.Join(dst, config.LibrarianDir),
-		os.DirFS(filepath.Join(src, config.LibrarianDir)))
 }
