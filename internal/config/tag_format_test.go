@@ -29,7 +29,7 @@ func TestDetermineTagFormat(t *testing.T) {
 		wantErrMsg      string
 	}{
 		{
-			name: "uses default",
+			name: "uses_default",
 			libraryState: &LibraryState{
 				ID: "example-library",
 			},
@@ -37,7 +37,7 @@ func TestDetermineTagFormat(t *testing.T) {
 			want:            defaultTagFormat,
 		},
 		{
-			name: "prefers per-library from config",
+			name: "prefers_per-library_from_config",
 			libraryState: &LibraryState{
 				ID:        "example-library",
 				TagFormat: "per-library-tag-format-from-state",
@@ -54,7 +54,7 @@ func TestDetermineTagFormat(t *testing.T) {
 			want: "per-library-tag-format-from-config",
 		},
 		{
-			name: "prefers from config",
+			name: "prefers_from_config",
 			libraryState: &LibraryState{
 				ID:        "example-library",
 				TagFormat: "per-library-tag-format-from-state",
@@ -70,7 +70,7 @@ func TestDetermineTagFormat(t *testing.T) {
 			want: "from-config",
 		},
 		{
-			name: "falls back to per-library from state",
+			name: "falls_back_to_per-library_from_state",
 			libraryState: &LibraryState{
 				ID:        "example-library",
 				TagFormat: "per-library-tag-format-from-state",
@@ -97,7 +97,7 @@ func TestFormatTag(t *testing.T) {
 		want    string
 	}{
 		{
-			name: "default format",
+			name: "default_format",
 			library: &LibraryState{
 				ID:      "google.cloud.foo.v1",
 				Version: "1.2.3",
@@ -105,7 +105,7 @@ func TestFormatTag(t *testing.T) {
 			want: "google.cloud.foo.v1-1.2.3",
 		},
 		{
-			name: "custom format",
+			name: "custom_format",
 			library: &LibraryState{
 				ID:        "google.cloud.foo.v1",
 				Version:   "1.2.3",
@@ -114,7 +114,7 @@ func TestFormatTag(t *testing.T) {
 			want: "v1.2.3-google.cloud.foo.v1",
 		},
 		{
-			name: "custom format -- version only",
+			name: "custom_format_version_only",
 			library: &LibraryState{
 				ID:        "google.cloud.foo.v1",
 				Version:   "1.2.3",
