@@ -282,8 +282,11 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian", librarianDir),
 		fmt.Sprintf("%s:/input", generatorInput),
-		fmt.Sprintf("%s:/repo", request.RepoDir),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
+	}
+	// Mount global files as a readonly volume.
+	for _, globalFile := range request.GlobalFiles {
+		mounts = append(mounts, fmt.Sprintf("%s/%s:/repo/%s:ro", request.RepoDir, globalFile, globalFile))
 	}
 
 	if err := c.runDocker(ctx, request.HostMount, CommandConfigure, mounts, commandArgs); err != nil {
