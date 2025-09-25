@@ -1719,6 +1719,33 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 	}
 }
 
+func TestPathBindingAnnotationsErrors(t *testing.T) {
+	field := &api.Field{
+		Name:     "field",
+		JSONName: "field",
+		ID:       ".test.Request.field",
+		Typez:    api.STRING_TYPE,
+	}
+	request := &api.Message{
+		Name:    "Request",
+		Package: "test",
+		ID:      ".test.Request",
+		Fields:  []*api.Field{field},
+	}
+	method := &api.Method{
+		Name:         "Create",
+		ID:           ".test.Service.Create",
+		InputType:    request,
+		InputTypeID:  ".test.Request",
+		OutputTypeID: ".test.Response",
+	}
+	got := makeAccessors([]string{"not-a-field-name"}, method)
+	var want []string
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
 func TestPathTemplateGeneration(t *testing.T) {
 	tests := []struct {
 		name    string
