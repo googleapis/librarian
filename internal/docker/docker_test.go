@@ -304,6 +304,10 @@ func TestDockerRun(t *testing.T) {
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
+					GlobalFiles: []string{
+						"a/b/go.mod",
+						"go.mod",
+					},
 				}
 
 				configuredLibrary, err := d.Configure(ctx, configureRequest)
@@ -317,8 +321,9 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
-				"-v", fmt.Sprintf("%s:/repo", repoDir),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				"-v", fmt.Sprintf("%s/a/b/go.mod:/repo/a/b/go.mod:ro", repoDir),
+				"-v", fmt.Sprintf("%s/go.mod:/repo/go.mod:ro", repoDir),
 				testImage,
 				string(CommandConfigure),
 				"--librarian=/librarian",
