@@ -32,7 +32,6 @@ const (
 	endNestedCommit     = "END_NESTED_COMMIT"
 	breakingChangeKey   = "BREAKING CHANGE"
 	sourceLinkKey       = "Source-Link"
-	empty               = ""
 )
 
 var (
@@ -91,7 +90,7 @@ type parsedHeader struct {
 func (header *parsedHeader) extractLibraryID() string {
 	matches := libraryIDRegex.FindStringSubmatch(header.Description)
 	if len(matches) == 0 {
-		return empty
+		return ""
 	}
 	return matches[1]
 }
@@ -128,7 +127,7 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 // conventional commit is logged and skipped.
 func ParseCommits(commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
 	message := commit.Message
-	if strings.TrimSpace(message) == empty {
+	if strings.TrimSpace(message) == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
 	message = extractCommitMessageOverride(message)
@@ -168,7 +167,7 @@ func extractCommitParts(message string) []commitPart {
 	var commitParts []commitPart
 
 	// The first part is the primary commit.
-	if len(parts) > 0 && strings.TrimSpace(parts[0]) != empty {
+	if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
 		commitParts = append(commitParts, commitPart{
 			message:  strings.TrimSpace(parts[0]),
 			isNested: false,
@@ -199,7 +198,7 @@ func extractCommitParts(message string) []commitPart {
 // A simple commit message is commit that does not include override or nested commits.
 func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
 	trimmedMessage := strings.TrimSpace(commitPart.message)
-	if trimmedMessage == empty {
+	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
 
@@ -227,7 +226,7 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 			}
 
 			bodyLine = strings.TrimSpace(bodyLine)
-			if bodyLine == empty {
+			if bodyLine == "" {
 				foundSeparator = true
 				continue
 			}
@@ -306,11 +305,11 @@ func separateBodyAndFooters(lines []string) (bodyLines, footerLines []string) {
 			footerLines = append(footerLines, line)
 			continue
 		}
-		if strings.TrimSpace(line) == empty {
+		if strings.TrimSpace(line) == "" {
 			isSeparator := false
 			// Look ahead at the next non-blank line.
 			for j := i + 1; j < len(lines); j++ {
-				if strings.TrimSpace(lines[j]) != empty {
+				if strings.TrimSpace(lines[j]) != "" {
 					if footerRegex.MatchString(lines[j]) {
 						isSeparator = true
 					}
@@ -338,7 +337,7 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 		if len(footerMatches) == 0 {
 			// Not a new footer. If we have a previous key and the line is not
 			// empty, append it to the last value.
-			if lastKey != empty && strings.TrimSpace(line) != empty {
+			if lastKey != "" && strings.TrimSpace(line) != "" {
 				footers[lastKey] += "\n" + line
 			}
 			continue
