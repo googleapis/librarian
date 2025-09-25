@@ -97,6 +97,9 @@ type ConfigureRequest struct {
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
 
+	// GlobalFiles are global files of the language repository.
+	GlobalFiles []string
+
 	// State is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
