@@ -335,7 +335,7 @@ func TestSaveLibrarianState(t *testing.T) {
 	}
 	// API status should be ignored when writing to yaml.
 	state.Libraries[0].APIs[0].Status = ""
-	if diff := cmp.Diff(state, gotState); diff != "" {
+	if diff := cmp.Diff(state, gotState, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("saveLibrarianState() mismatch (-want +got): %s", diff)
 	}
 }

@@ -160,7 +160,7 @@ type ReleaseInitRequest struct {
 	// PartialRepoDir is the local root directory of language repository contains
 	// files that make up libraries and global files.
 	// This is the directory that container can access.
-	PartialRepoDir string
+	RepoDir string
 
 	// Push determines whether to push changes to GitHub.
 	Push bool
@@ -292,7 +292,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 
 // ReleaseInit initiates a release for a given language repository.
 func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
-	reqFilePath := filepath.Join(request.PartialRepoDir, config.LibrarianDir, config.ReleaseInitRequest)
+	reqFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeLibrarianState(request.State, reqFilePath); err != nil {
 		return err
 	}
@@ -311,10 +311,10 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		"--output=/output",
 	}
 
-	librarianDir := filepath.Join(request.PartialRepoDir, config.LibrarianDir)
+	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian", librarianDir),
-		fmt.Sprintf("%s:/repo:ro", request.PartialRepoDir), // readonly volume
+		fmt.Sprintf("%s:/repo:ro", request.RepoDir), // readonly volume
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 

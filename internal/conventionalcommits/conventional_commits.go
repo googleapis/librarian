@@ -201,7 +201,6 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
-	slog.Info("commit", "message", trimmedMessage)
 
 	lines := strings.Split(trimmedMessage, "\n")
 	bodyLines, footerLines := separateBodyAndFooters(lines)

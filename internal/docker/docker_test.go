@@ -377,7 +377,7 @@ func TestDockerRun(t *testing.T) {
 					State:           state,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 				}
 
 				defer os.RemoveAll(partialRepoDir)
@@ -409,7 +409,7 @@ func TestDockerRun(t *testing.T) {
 
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
 				}
@@ -427,9 +427,9 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseInitRequest{
-					State:          state,
-					PartialRepoDir: "/non-exist-dir",
-					Output:         testOutput,
+					State:   state,
+					RepoDir: "/non-exist-dir",
+					Output:  testOutput,
 				}
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
@@ -449,7 +449,7 @@ func TestDockerRun(t *testing.T) {
 				}
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 					Output:          testOutput,
 					LibraryID:       testLibraryID,
 					LibrarianConfig: &config.LibrarianConfig{},
@@ -476,20 +476,20 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				partialRepoDir := filepath.Join(repoDir, "release-init-one-library-with-version")
+				repoDir := filepath.Join(repoDir, "release-init-one-library-with-version")
 				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
 				}
 
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         repoDir,
 					Output:          testOutput,
 					LibraryID:       testLibraryID,
 					LibraryVersion:  "1.2.3",
 					LibrarianConfig: &config.LibrarianConfig{},
 				}
-				defer os.RemoveAll(partialRepoDir)
+				defer os.RemoveAll(repoDir)
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
 			},
@@ -790,8 +790,8 @@ func TestDocker_runCommand(t *testing.T) {
 
 func TestReleaseInitRequestContent(t *testing.T) {
 	tmpDir := t.TempDir()
-	partialRepoDir := filepath.Join(tmpDir, "partial-repo")
-	librarianDir := filepath.Join(partialRepoDir, config.LibrarianDir)
+	repoDir := filepath.Join(tmpDir, "partial-repo")
+	librarianDir := filepath.Join(repoDir, config.LibrarianDir)
 	if err := os.MkdirAll(librarianDir, 0755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
@@ -860,7 +860,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 
 	req := &ReleaseInitRequest{
 		State:           stateWithChanges,
-		PartialRepoDir:  partialRepoDir,
+		RepoDir:         repoDir,
 		Output:          filepath.Join(tmpDir, "output"),
 		LibrarianConfig: &config.LibrarianConfig{},
 	}

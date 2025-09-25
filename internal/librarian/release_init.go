@@ -38,7 +38,6 @@ type initRunner struct {
 	librarianConfig *config.LibrarianConfig
 	library         string
 	libraryVersion  string
-	partialRepo     string
 	push            bool
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
@@ -60,7 +59,6 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		library:         cfg.Library,
 		libraryVersion:  cfg.LibraryVersion,
-		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
@@ -167,7 +165,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		LibraryID:       r.library,
 		LibraryVersion:  r.libraryVersion,
 		Output:          outputDir,
-		PartialRepoDir:  src,
+		RepoDir:         src,
 		Push:            r.push,
 		State:           r.state,
 	}
@@ -178,7 +176,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 	// Read the response file.
 	if _, err := readLibraryState(
-		filepath.Join(initRequest.PartialRepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
+		filepath.Join(initRequest.RepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
 		return err
 	}
 
@@ -311,10 +309,4 @@ func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadO
 		}
 	}
 	return nil
-}
-
-func copyLibrarianDir(dst, src string) error {
-	return os.CopyFS(
-		filepath.Join(dst, config.LibrarianDir),
-		os.DirFS(filepath.Join(src, config.LibrarianDir)))
 }

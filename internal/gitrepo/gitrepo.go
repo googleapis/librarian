@@ -261,7 +261,6 @@ func (r *LocalRepository) GetCommit(commitHash string) (*Commit, error) {
 //
 // If tagName empty, all commits for the given paths are returned.
 func (r *LocalRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error) {
-	slog.Info("GetCommitsForPathsSinceTag", slog.Any("paths", paths), "tagName", tagName)
 	var hash string
 	if tagName == "" {
 		return r.GetCommitsForPathsSinceCommit(paths, "")
@@ -272,7 +271,6 @@ func (r *LocalRepository) GetCommitsForPathsSinceTag(paths []string, tagName str
 	}
 
 	tagCommit, err := r.repo.CommitObject(tagRef.Hash())
-	slog.Debug("Found tagRef", "tagRef", tagRef, slog.Any("tagCommit", tagCommit))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for tag %s: %w", tagName, err)
 	}
@@ -292,7 +290,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
-	slog.Info("GetCommitsForPathsSinceCommit", "sinceCommit", sinceCommit)
+
 	var commits []*Commit
 	finalHash := plumbing.NewHash(sinceCommit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
@@ -325,17 +323,14 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 		// In theory, we should be able to remember our "current" commit for each
 		// path, but that's likely to be significantly more complex.
 		for _, candidatePath := range paths {
-			currentPathHash, err := getHashForPathOrEmpty(commit, candidatePath)
+			matching, err := commitMatchesPath(candidatePath, commit, parentCommit)
 			if err != nil {
 				return err
 			}
-			parentPathHash, err := getHashForPathOrEmpty(parentCommit, candidatePath)
-			if err != nil {
-				return err
-			}
+
 			// If we've found a change (including a path being added or removed),
 			// add it to our list of commits and proceed to the next commit.
-			if currentPathHash != parentPathHash {
+			if matching {
 				commits = append(commits, &Commit{
 					Hash:    commit.Hash,
 					Message: commit.Message,
@@ -356,15 +351,25 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 	return commits, nil
 }
 
+func commitMatchesPath(path string, commit *object.Commit, parentCommit *object.Commit) (bool, error) {
+	if path == RootPath {
+		return true, nil
+	}
+	currentPathHash, err := getHashForPathOrEmpty(commit, path)
+	if err != nil {
+		return false, err
+	}
+	parentPathHash, err := getHashForPathOrEmpty(parentCommit, path)
+	if err != nil {
+		return false, err
+	}
+	return currentPathHash != parentPathHash, nil
+}
+
 // getHashForPathOrEmpty returns the hash for a path at a given commit, or an
 // empty string if the path (file or directory) did not exist.
 func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 	slog.Debug("getHashForPathOrEmpty", "path", path, "commit", commit.Hash.String())
-
-	// If looking for the root path ".", return the commit's tree hash
-	if path == RootPath {
-		return commit.TreeHash.String(), nil
-	}
 
 	tree, err := commit.Tree()
 	if err != nil {
