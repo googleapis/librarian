@@ -48,14 +48,12 @@ func TestShouldInclude(t *testing.T) {
 			files:        []string{"a/b/c.go"},
 			sourceRoots:  []string{"a"},
 			excludePaths: []string{"a/b"},
-			want:         false,
 		},
 		{
 			name:         "file not in source root",
 			files:        []string{"x/y/z.go"},
 			sourceRoots:  []string{"a"},
 			excludePaths: []string{},
-			want:         false,
 		},
 		{
 			name:         "one file included, one file not in source root",
@@ -76,49 +74,42 @@ func TestShouldInclude(t *testing.T) {
 			files:        []string{"a/b/c.go", "a/d/e.go"},
 			sourceRoots:  []string{"a"},
 			excludePaths: []string{"a/b", "a/d"},
-			want:         false,
 		},
 		{
 			name:         "all files not in source root",
 			files:        []string{"x/y/c.go", "w/z/e.go"},
 			sourceRoots:  []string{"a"},
 			excludePaths: []string{},
-			want:         false,
 		},
 		{
 			name:         "a file not in source root and a file in exclude path",
 			files:        []string{"a/b/c.go", "w/z/e.go"},
 			sourceRoots:  []string{"a"},
 			excludePaths: []string{"a/b"},
-			want:         false,
 		},
 		{
 			name:         "no source roots",
 			files:        []string{"a/b/c.go"},
 			sourceRoots:  []string{},
 			excludePaths: []string{},
-			want:         false,
 		},
 		{
 			name:         "source root as prefix of another source root",
 			files:        []string{"aiplatform/file.go"},
 			sourceRoots:  []string{"ai"},
 			excludePaths: []string{},
-			want:         false,
 		},
 		{
 			name:         "excluded path is a directory",
 			files:        []string{"foo/bar/baz.go"},
 			sourceRoots:  []string{"foo"},
 			excludePaths: []string{"foo/bar"},
-			want:         false,
 		},
 		{
 			name:         "excluded path is a file, file matching it",
 			files:        []string{"foo/bar/go.mod"},
 			sourceRoots:  []string{"foo"},
 			excludePaths: []string{"foo/bar/go.mod"},
-			want:         false,
 		},
 		{
 			name:         "excluded path is a file, file does not match it",
@@ -413,7 +404,6 @@ func TestNextVersion(t *testing.T) {
 			},
 			currentVersion: "1.0.0",
 			wantVersion:    "1.1.0",
-			wantErr:        false,
 		},
 		{
 			name: "derive next returns error",
@@ -431,7 +421,6 @@ func TestNextVersion(t *testing.T) {
 			},
 			currentVersion: "1.2.3",
 			wantVersion:    "1.3.0",
-			wantErr:        false,
 		},
 		{
 			name: "major change before nested commit results in major bump",
@@ -441,7 +430,6 @@ func TestNextVersion(t *testing.T) {
 			},
 			currentVersion: "1.2.3",
 			wantVersion:    "2.0.0",
-			wantErr:        false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
