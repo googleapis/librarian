@@ -358,12 +358,17 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		return "", err
 	}
 
+	var globalFiles []string
+	if r.librarianConfig != nil {
+		globalFiles = r.librarianConfig.GetGlobalFiles()
+	}
+
 	configureRequest := &docker.ConfigureRequest{
 		ApiRoot:     apiRoot,
 		HostMount:   r.hostMount,
 		LibraryID:   r.library,
 		RepoDir:     r.repo.GetDir(),
-		GlobalFiles: r.librarianConfig.GetGlobalFiles(),
+		GlobalFiles: globalFiles,
 		State:       r.state,
 	}
 	slog.Info("Performing configuration for library", "id", r.library)
