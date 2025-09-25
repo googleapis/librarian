@@ -44,6 +44,7 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 			Parent:        enum,
 		}
 		enum.Values = append(enum.Values, value)
+		enum.UniqueNumberValues = append(enum.UniqueNumberValues, value)
 	}
 	model.State.EnumByID[enum.ID] = enum
 	message.Enums = append(message.Enums, enum)

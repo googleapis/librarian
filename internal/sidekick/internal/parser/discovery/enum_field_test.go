@@ -85,6 +85,7 @@ func TestMakeEnumFields(t *testing.T) {
 			},
 		},
 	}
+	wantEnum.UniqueNumberValues = wantEnum.Values
 	gotEnum, ok := model.State.EnumByID[wantEnum.ID]
 	if !ok {
 		t.Fatalf("missing enum %s", wantEnum.ID)
