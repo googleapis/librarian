@@ -125,11 +125,6 @@ func hasLibrariesToRelease(libraryStates []*config.LibraryState) bool {
 }
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
-	dst := r.partialRepo
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return fmt.Errorf("failed to make directory: %w", err)
-	}
-
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
 	if r.library != "" {
@@ -157,23 +152,12 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		// Copy the library files over if a release is needed
 		if library.ReleaseTriggered {
 			foundReleasableLibrary = true
-			if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
-				return err
-			}
 		}
 	}
 
 	if !foundReleasableLibrary {
 		slog.Info("No libraries need to be released")
 		return nil
-	}
-
-	if err := copyLibrarianDir(dst, src); err != nil {
-		slog.Warn("failed to copy librarian dir", "src", src, "dst", dst, slog.Any("err", err))
-	}
-
-	if err := copyGlobalAllowlist(r.librarianConfig, dst, src, true); err != nil {
-		slog.Warn("failed to copy global allowlist", "src", src, "dst", dst, slog.Any("err", err))
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
@@ -183,7 +167,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		LibraryID:       r.library,
 		LibraryVersion:  r.libraryVersion,
 		Output:          outputDir,
-		PartialRepoDir:  dst,
+		PartialRepoDir:  src,
 		Push:            r.push,
 		State:           r.state,
 	}

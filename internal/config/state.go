@@ -116,17 +116,17 @@ type LibraryState struct {
 	// This field is ignored when writing to state.yaml.
 	Changes []*conventionalcommits.ConventionalCommit `yaml:"-" json:"changes,omitempty"`
 	// A list of APIs that are part of this library.
-	APIs []*API `yaml:"apis" json:"apis"`
+	APIs []*API `yaml:"apis,omitempty" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
 	SourceRoots []string `yaml:"source_roots" json:"source_roots"`
 	// The previous release version, this field is only for bookkeeping.
 	PreviousVersion string `yaml:"-" json:"-"`
 	// A list of regular expressions for files and directories to preserve during the copy and remove process.
-	PreserveRegex []string `yaml:"preserve_regex" json:"preserve_regex"`
+	PreserveRegex []string `yaml:"preserve_regex,omitempty" json:"preserve_regex"`
 	// A list of regular expressions for files and directories to remove before copying generated code.
 	// If not set, this defaults to the `source_roots`.
 	// A more specific `preserve_regex` takes precedence.
-	RemoveRegex []string `yaml:"remove_regex" json:"remove_regex"`
+	RemoveRegex []string `yaml:"remove_regex,omitempty" json:"remove_regex"`
 	// Path of commits to be excluded from parsing while calculating library changes.
 	// If all files from commit belong to one of the paths it will be skipped.
 	ReleaseExcludePaths []string `yaml:"release_exclude_paths,omitempty" json:"release_exclude_paths,omitempty"`
