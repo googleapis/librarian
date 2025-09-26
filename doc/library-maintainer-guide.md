@@ -175,8 +175,9 @@ trigger a release, you *must* specify the `-library-version` flag.
 
 ### Manual release PR creation
 
-If you expect to need to edit the release notes, it's simplest to run `librarian`
-*without* the `-push` flag, and create the pull request yourself:
+If you expect to need to edit the release notes, it's simplest to run
+`librarian` *without* the `-push` flag (and using a local repo),
+then create the pull request yourself:
 
 1. Make sure your local clone is up-to-date
 2. Create a new branch for the release (e.g. `git checkout -b release-bigtable-1.2.3`)
@@ -185,8 +186,8 @@ If you expect to need to edit the release notes, it's simplest to run `librarian
   $ librarian release init -library=bigtable -library-version=1.2.3
   ```
 4. Note the line of the `librarian` output near the end, which tells you where
-  it has written a `pr-body.txt` file (split by key below, but all on one line in the
-  output):
+  it has written a `pr-body.txt` file (split by key below, but all on one line
+  in the output):
   ```text
   time=2025-09-26T15:35:23.124Z
   level=INFO
