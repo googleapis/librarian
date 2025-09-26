@@ -53,12 +53,11 @@ go run github.com/googleapis/librarian/cmd/librarian@latest -help
 ```
 
 ### Setup and Configuration
-To run librarian, you will need to configure a Github Token and set it to the `LIBRARIAN_GITHUB_TOKEN` environment variable. This will use the Github token to authenticate for pushing to Github and running Github API commands (e.g. Creating a PR and Adding Labels to a PR).
+To run librarian, you will need to configure a Github Token and set it to the `LIBRARIAN_GITHUB_TOKEN` environment variable. This will use the Github token as authentication to push to Github and to run Github API commands (e.g. Creating a PR and Adding Labels to a PR).
 
-Unless specifically configured, Librarian will use HTTPS for pushing to remote. See the [SSH](#using-ssh) section to push to remote via SSH.
+Unless specifically configured, Librarian will use HTTPS for pushing to remote. See the [SSH](#using-ssh) section for push to remote via SSH.
 
 ### Github Token
-
 There are two main options to get a Github token:
 1. Use the [gh cli](https://cli.github.com/) tool to easily authenticate with github. Run the following commands once the tool is installed:
 ```shell

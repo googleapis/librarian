@@ -90,7 +90,7 @@ type RepositoryOptions struct {
 	CI string
 	// GitPassword is used for HTTP basic auth.
 	GitPassword string
-	// UseSSH flag to determine if HTTPS or SSH will be used for git operations
+	// UseSSH flag to determine if HTTPS (default) or SSH will be used for git operations
 	UseSSH bool
 	// Depth controls the cloning depth if the repository needs to be cloned.
 	Depth int
@@ -490,7 +490,6 @@ func (r *LocalRepository) pushRefSpec(refSpec string) error {
 func (r *LocalRepository) authCreds() (transport.AuthMethod, error) {
 	if r.useSSH {
 		slog.Info("Authenticating with SSH")
-		var err error
 		// This is the generic `git` username when cloning via SSH. It is the value
 		// that exists before the URL. e.g. git@github.com:googleapis/librarian.git
 		auth, err := ssh.DefaultAuthBuilder("git")

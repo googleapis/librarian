@@ -224,9 +224,8 @@ type Config struct {
 	Repo string
 
 	// UseSSH is flag to determine if SSH should be used to authenticate to the remote repo.
-	// If enabled, SSH will be used to push to the remote repo.
-	//
-	// If enabled, Librarian will use ssh-agent manage the configured private keys.
+	// If enabled, SSH will be used to push to the remote repo. Librarian will use ssh-agent
+	// to manage the private keys.
 	//
 	// UseSSH is not specified by a flag, but from the LIBRARIAN_USE_SSH environment variable.
 	// This environment variable allows for all the librarian commands to use SSH without
