@@ -1301,21 +1301,25 @@ func TestCommitAndPush(t *testing.T) {
 		push              bool
 		wantErr           bool
 		expectedErrMsg    string
+		check             func(t *testing.T, repo gitrepo.Repository)
 	}{
 		{
 			name: "Push flag and Commit flag are not specified",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				repoDir := newTestGitRepoWithCommit(t, "")
-				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
-				if err != nil {
-					t.Fatalf("Failed to create test repo: %v", err)
+				return &MockRepository{
+					Dir: t.TempDir(),
 				}
-				return repo
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
 			prType: "generate",
+			check: func(t *testing.T, repo gitrepo.Repository) {
+				mockRepo := repo.(*MockRepository)
+				if mockRepo.PushCalls != 0 {
+					t.Errorf("Push was called %d times, expected 0", mockRepo.PushCalls)
+				}
+			},
 		},
 		{
 			name: "create a commit",
@@ -1339,6 +1343,12 @@ func TestCommitAndPush(t *testing.T) {
 			},
 			prType: "generate",
 			commit: true,
+			check: func(t *testing.T, repo gitrepo.Repository) {
+				mockRepo := repo.(*MockRepository)
+				if mockRepo.PushCalls != 0 {
+					t.Errorf("Push was called %d times, expected 0", mockRepo.PushCalls)
+				}
+			},
 		},
 		{
 			name: "create a generate pull request",
@@ -1635,6 +1645,10 @@ func TestCommitAndPush(t *testing.T) {
 				t.Errorf("%s: commitAndPush() returned unexpected error: %v", test.name, err)
 				return
 			}
+
+			if test.check != nil {
+				test.check(t, repo)
+			}
 		})
 	}
 }
@@ -1651,7 +1665,7 @@ func TestWritePRBody(t *testing.T) {
 				repo: &MockRepository{
 					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
-						&gitrepo.Remote{
+						{
 							Name: "origin",
 							URLs: []string{"https://github.com/googleapis/librarian.git"},
 						},
@@ -1669,7 +1683,7 @@ func TestWritePRBody(t *testing.T) {
 				repo: &MockRepository{
 					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
-						&gitrepo.Remote{
+						{
 							Name: "not-origin",
 							URLs: []string{"https://github.com/googleapis/librarian.git"},
 						},
@@ -1685,7 +1699,7 @@ func TestWritePRBody(t *testing.T) {
 				repo: &MockRepository{
 					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
-						&gitrepo.Remote{
+						{
 							Name: "origin",
 							URLs: []string{"https://github.com/googleapis/librarian.git"},
 						},
@@ -1702,7 +1716,7 @@ func TestWritePRBody(t *testing.T) {
 					Dir:          t.TempDir(),
 					AddAllStatus: make(git.Status),
 					RemotesValue: []*gitrepo.Remote{
-						&gitrepo.Remote{
+						{
 							Name: "origin",
 							URLs: []string{"https://github.com/googleapis/librarian.git"},
 						},
