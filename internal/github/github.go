@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v69/github"
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 // PullRequest is a type alias for the go-github type.
@@ -213,27 +212,6 @@ func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number 
 	slog.Info("Labels added to issue", "number", number, "labels", labels)
 	_, _, err := c.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, number, labels)
 	return err
-}
-
-// FetchGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
-// There must be a remote named 'origin' with a GitHub URL (as the first URL), in order to
-// provide an unambiguous result.
-// Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
-func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
-	remotes, err := repo.Remotes()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, remote := range remotes {
-		if remote.Name == "origin" {
-			if len(remote.URLs) > 0 {
-				return ParseRemote(remote.URLs[0])
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("could not find an 'origin' remote pointing to a GitHub https URL")
 }
 
 // SearchPullRequests searches for pull requests in the repository using the provided raw query.

@@ -20,6 +20,8 @@
 package librarian
 
 import (
+	"fmt"
+
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -31,11 +33,24 @@ var GetGitHubRepository = func(cfg *config.Config, languageRepo gitrepo.Reposito
 	if isURL(cfg.Repo) {
 		return github.ParseRemote(cfg.Repo)
 	}
-	return github.FetchGitHubRepoFromRemote(languageRepo)
+	return GetGitHubRepositoryFromGitRepo(languageRepo)
 }
 
 // GetGitHubRepositoryFromGitRepo determines the GitHub repository from the
 // local git remote.
 var GetGitHubRepositoryFromGitRepo = func(languageRepo gitrepo.Repository) (*github.Repository, error) {
-	return github.FetchGitHubRepoFromRemote(languageRepo)
+	remotes, err := languageRepo.Remotes()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, remote := range remotes {
+		if remote.Name == "origin" {
+			if len(remote.URLs) > 0 {
+				return github.ParseRemote(remote.URLs[0])
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("could not find an 'origin' remote pointing to a GitHub https URL")
 }
