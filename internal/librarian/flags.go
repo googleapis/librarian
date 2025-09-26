@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -86,9 +87,9 @@ If not specified, will search for all merged pull requests with the label
 
 func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Push, "push", false,
-		`If true, Librarian will create a commit and a pull request for the changes.
+		fmt.Sprintf(`If true, Librarian will create a commit and a pull request for the changes.
 A GitHub token with push access must be provided via the
-LIBRARIAN_GITHUB_TOKEN environment variable.`)
+%s environment variable.`, config.LibrarianGithubToken))
 }
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {

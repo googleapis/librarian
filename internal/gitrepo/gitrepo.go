@@ -39,7 +39,7 @@ type Repository interface {
 	AddAll() (git.Status, error)
 	Commit(msg string) error
 	IsClean() (bool, error)
-	Remotes() ([]*git.Remote, error)
+	Remotes() ([]*Remote, error)
 	GetDir() string
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
@@ -66,6 +66,12 @@ type Commit struct {
 	Hash    plumbing.Hash
 	Message string
 	When    time.Time
+}
+
+// Remote represent a git remote.
+type Remote struct {
+	Name string
+	URLs []string
 }
 
 // RepositoryOptions are used to configure a [LocalRepository].
@@ -228,8 +234,17 @@ func (r *LocalRepository) IsClean() (bool, error) {
 }
 
 // Remotes returns the remotes within the repository.
-func (r *LocalRepository) Remotes() ([]*git.Remote, error) {
-	return r.repo.Remotes()
+func (r *LocalRepository) Remotes() ([]*Remote, error) {
+	gitRemotes, err := r.repo.Remotes()
+	if err != nil {
+		return nil, err
+	}
+	var remotes []*Remote
+	for _, remote := range gitRemotes {
+		remotes = append(remotes, &Remote{Name: remote.Config().Name, URLs: remote.Config().URLs})
+	}
+
+	return remotes, nil
 }
 
 // HeadHash returns hash of the commit for the repository's HEAD.

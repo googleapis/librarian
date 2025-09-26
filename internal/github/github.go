@@ -226,10 +226,9 @@ func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
 	}
 
 	for _, remote := range remotes {
-		if remote.Config().Name == "origin" {
-			urls := remote.Config().URLs
-			if len(urls) > 0 {
-				return ParseRemote(urls[0])
+		if remote.Name == "origin" {
+			if len(remote.URLs) > 0 {
+				return ParseRemote(remote.URLs[0])
 			}
 		}
 	}

@@ -102,7 +102,7 @@ func TestRunGenerate(t *testing.T) {
 			}
 
 			cmd := exec.Command("go", cmdArgs...)
-			cmd.Env = append(os.Environ(), "LIBRARIAN_GITHUB_TOKEN=fake-token")
+			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
 			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
@@ -540,7 +540,7 @@ func TestReleaseInit(t *testing.T) {
 
 			cmd := exec.Command("go", cmdArgs...)
 			cmd.Env = os.Environ()
-			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_TOKEN=fake-token")
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
 			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
@@ -741,7 +741,7 @@ libraries:
 			}
 
 			cmd := exec.Command("go", cmdArgs...)
-			cmd.Env = append(os.Environ(), "LIBRARIAN_GITHUB_TOKEN=fake-token")
+			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
 			if err := cmd.Run(); err != nil {

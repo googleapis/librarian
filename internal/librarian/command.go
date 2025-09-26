@@ -41,6 +41,7 @@ const (
 	generate                = "generate"
 	release                 = "release"
 	defaultAPISourceBranch  = "master"
+	prBodyFile              = "pr-body.txt"
 	failedGenerationComment = `One or more libraries have failed to generate, please review PR description for a list of failed libraries.
 For each failed library, open a ticket in that library’s repository and then you may resolve this comment and merge.
 `
@@ -87,6 +88,7 @@ type commitInfo struct {
 	repo              gitrepo.Repository
 	sourceRepo        gitrepo.Repository
 	state             *config.LibrarianState
+	workRoot          string
 	failedGenerations int
 }
 
@@ -332,6 +334,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 func commitAndPush(ctx context.Context, info *commitInfo) error {
 	if !info.push && !info.commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
+		writePRBody(info)
 		return nil
 	}
 
@@ -387,6 +390,35 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	return addLabelsToPullRequest(ctx, info.ghClient, info.pullRequestLabels, pullRequestMetadata)
+}
+
+// writePRBody attempts to log the body of a PR that would have been created if the
+// -push flag had been specified. This logs any errors (e.g. if the GitHub repo can't be determined)
+// but deliberately does not return them, as a failure here should not interfere with the flow.
+func writePRBody(info *commitInfo) {
+	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.repo)
+	if err != nil {
+		slog.Warn("Unable to create PR body; could not determine GitHub repo", "error", err)
+		return
+	}
+
+	prBody, err := createPRBody(info, gitHubRepo)
+	if err != nil {
+		slog.Warn("Unable to create PR body", "error", err)
+		return
+	}
+	// Note: we can't accurately predict whether or not a PR would have been created,
+	// as we're not checking whether the repo is clean or not. The intention is to be
+	// as light-touch as possible.
+	fullPath := filepath.Join(info.workRoot, prBodyFile)
+	// Ensure that "cat [path-to-pr-body.txt]" gives useful output.
+	prBody = prBody + "\n"
+	err = os.WriteFile(fullPath, []byte(prBody), 0644)
+	if err == nil {
+		slog.Info("Wrote body of pull request that might have been created", "file", fullPath)
+	} else {
+		slog.Warn("Unable to save PR body", "error", err)
+	}
 }
 
 // addLabelsToPullRequest adds a list of labels to a single pull request (specified by the id number).
