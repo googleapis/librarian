@@ -249,7 +249,7 @@ global files that reference the libraries being released.
 | Context      | Type                | Description                                                                     |
 | :----------- | :------------------ | :------------------------------------------------------------------------------ |
 | `/librarian` | Mount (Read/Write)  | Contains `release-init-request.json`. Container writes back a `release-init-response.json`. |
-| `/repo`      | Mount (Read)        | Read-only contents of the language repo. This directory will contain all directories that make up a library, the .librarian folder, and any global file declared in the `config.yaml`. |
+| `/repo`      | Mount (Read)        | Read-only contents of the language repo including any global files declared in the `config.yaml`. |
 | `/output`    | Mount (Write)       | Any files updated during the release phase should be moved to this directory, preserving their original paths. |
 | `command`    | Positional Argument | The value will always be `release-init`. |
 | flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo`, `--output` |
