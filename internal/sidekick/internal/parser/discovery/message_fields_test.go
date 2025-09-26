@@ -69,7 +69,8 @@ func TestMakeMessageFields(t *testing.T) {
 			},
 		},
 	}
-	got, err := makeMessageFields(model, ".package.Message", input)
+	message := &api.Message{ID: ".package.Message"}
+	err := makeMessageFields(model, message, input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,6 +78,7 @@ func TestMakeMessageFields(t *testing.T) {
 		{
 			Name:          "intField",
 			JSONName:      "intField",
+			ID:            ".package.Message.intField",
 			Documentation: "The field description.",
 			Typez:         api.INT32_TYPE,
 			TypezID:       "int32",
@@ -84,6 +86,7 @@ func TestMakeMessageFields(t *testing.T) {
 		{
 			Name:          "longField",
 			JSONName:      "longField",
+			ID:            ".package.Message.longField",
 			Documentation: "The field description.",
 			Typez:         api.UINT64_TYPE,
 			TypezID:       "uint64",
@@ -91,6 +94,7 @@ func TestMakeMessageFields(t *testing.T) {
 		{
 			Name:          "arrayFieldString",
 			JSONName:      "arrayFieldString",
+			ID:            ".package.Message.arrayFieldString",
 			Documentation: "The field description.",
 			Typez:         api.STRING_TYPE,
 			TypezID:       "string",
@@ -99,6 +103,7 @@ func TestMakeMessageFields(t *testing.T) {
 		{
 			Name:          "arrayFieldObject",
 			JSONName:      "arrayFieldObject",
+			ID:            ".package.Message.arrayFieldObject",
 			Documentation: "The field description.",
 			Typez:         api.MESSAGE_TYPE,
 			TypezID:       ".package.AnotherMessage",
@@ -106,7 +111,7 @@ func TestMakeMessageFields(t *testing.T) {
 		},
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
-	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
+	if diff := cmp.Diff(want, message.Fields, cmpopts.SortSlices(less)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -126,8 +131,9 @@ func TestMakeMessageFieldsError(t *testing.T) {
 			},
 		},
 	}
-	if got, err := makeMessageFields(model, ".package.Message", input); err == nil {
-		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
+	message := &api.Message{ID: ".package.Message"}
+	if err := makeMessageFields(model, message, input); err == nil {
+		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", message, input)
 	}
 }
 
@@ -145,7 +151,8 @@ func TestMakeArrayFieldError(t *testing.T) {
 			},
 		},
 	}
-	if got, err := makeArrayField(model, ".package.Message", input); err == nil {
+	message := &api.Message{ID: ".package.Message"}
+	if got, err := makeArrayField(model, message, input); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
 }
@@ -161,7 +168,8 @@ func TestMakeScalarFieldError(t *testing.T) {
 			Format:      "--unused--",
 		},
 	}
-	if got, err := makeScalarField(model, ".package.Message", input); err == nil {
+	message := &api.Message{ID: ".package.Message"}
+	if got, err := makeScalarField(model, message, input.Name, input.Schema); err == nil {
 		t.Errorf("expected error makeScalarField(), got=%v, Input=%v", got, input)
 	}
 }

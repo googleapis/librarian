@@ -51,7 +51,7 @@ type tagAndReleaseRunner struct {
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 	if cfg.GitHubToken == "" {
-		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
+		return nil, fmt.Errorf("`%s` must be set", config.LibrarianGithubToken)
 	}
 	repo, err := parseRemote(cfg.Repo)
 	if err != nil {

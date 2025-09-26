@@ -17,6 +17,7 @@ package librarian
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -64,7 +65,7 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 		if err != nil {
 			return nil, fmt.Errorf("failed to get changed files for commit %s: %w", commit.Hash.String(), err)
 		}
-		if shouldExclude(files, library.ReleaseExcludePaths) {
+		if !shouldInclude(files, library.SourceRoots, library.ReleaseExcludePaths) {
 			continue
 		}
 		parsedCommits, err := conventionalcommits.ParseCommits(commit, library.ID)
@@ -82,22 +83,27 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 	return conventionalCommits, nil
 }
 
-// shouldExclude determines if a commit should be excluded from a release.
-// It returns true if all files in the commit match one of exclude paths.
-func shouldExclude(files, excludePaths []string) bool {
-	for _, file := range files {
-		excluded := false
-		for _, excludePath := range excludePaths {
-			if strings.HasPrefix(file, excludePath) {
-				excluded = true
-				break
-			}
-		}
-		if !excluded {
-			return false
+// isUnderAnyPath returns true if the file is under any of the given paths.
+func isUnderAnyPath(file string, paths []string) bool {
+	for _, p := range paths {
+		rel, err := filepath.Rel(p, file)
+		if err == nil && !strings.HasPrefix(rel, "..") {
+			return true
 		}
 	}
-	return true
+	return false
+}
+
+// shouldInclude determines if a commit should be included in a release.
+// It returns true if there is at least one file in the commit that is under a source_root
+// and not under a release_exclude_path.
+func shouldInclude(files, sourceRoots, excludePaths []string) bool {
+	for _, file := range files {
+		if isUnderAnyPath(file, sourceRoots) && !isUnderAnyPath(file, excludePaths) {
+			return true
+		}
+	}
+	return false
 }
 
 // NextVersion calculates the next semantic version based on a slice of conventional commits.

@@ -56,7 +56,7 @@ var validPermissions = map[string]bool{
 func (g *LibrarianConfig) Validate() error {
 	for i, globalFile := range g.GlobalFilesAllowlist {
 		path, permissions := globalFile.Path, globalFile.Permissions
-		if !isValidDirPath(path) {
+		if !isValidRelativePath(path) {
 			return fmt.Errorf("invalid global file path at index %d: %q", i, path)
 		}
 		if _, ok := validPermissions[permissions]; !ok {

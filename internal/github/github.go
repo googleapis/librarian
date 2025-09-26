@@ -226,10 +226,9 @@ func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
 	}
 
 	for _, remote := range remotes {
-		if remote.Config().Name == "origin" {
-			urls := remote.Config().URLs
-			if len(urls) > 0 {
-				return ParseRemote(urls[0])
+		if remote.Name == "origin" {
+			if len(remote.URLs) > 0 {
+				return ParseRemote(remote.URLs[0])
 			}
 		}
 	}
@@ -306,6 +305,11 @@ func hasLabel(pr *PullRequest, labelName string) bool {
 
 // FindMergedPullRequestsWithPendingReleaseLabel finds all merged pull requests with the "release:pending" label.
 func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*PullRequest, error) {
+	return c.FindMergedPullRequestsWithLabel(ctx, owner, repo, "release:pending")
+}
+
+// FindMergedPullRequestsWithLabel finds all merged pull requests with the "release:pending" label.
+func (c *Client) FindMergedPullRequestsWithLabel(ctx context.Context, owner, repo, label string) ([]*PullRequest, error) {
 	var allPRs []*PullRequest
 	opt := &github.PullRequestListOptions{
 		State: "closed",
@@ -319,7 +323,7 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 			return nil, err
 		}
 		for _, pr := range prs {
-			if !pr.GetMergedAt().IsZero() && hasLabel(pr, "release:pending") {
+			if !pr.GetMergedAt().IsZero() && hasLabel(pr, label) {
 				allPRs = append(allPRs, pr)
 			}
 		}

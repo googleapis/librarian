@@ -81,7 +81,7 @@ in '.librarian/state.yaml'.
 
 Example with build and push:
 
-	SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build
+	LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build
 
 Usage:
 

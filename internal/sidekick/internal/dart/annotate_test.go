@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,11 +23,17 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 )
 
+var (
+	requiredConfig = map[string]string{
+		"package:google_cloud_gax": "^1.2.3",
+		"package:http":             "^4.5.6"}
+)
+
 func TestAnnotateModel(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "test"
 	annotate := newAnnotateModel(model)
-	err := annotate.annotateModel(map[string]string{})
+	err := annotate.annotateModel(map[string]string{"package:google_cloud_gax": "^1.2.3"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,9 +110,9 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
-			map[string]string{"package:http": "1.2.0"},
+			map[string]string{"google_cloud_gax": "^1.2.3", "package:http": "1.2.0"},
 			func(t *testing.T, am *annotateModel) {
-				if diff := cmp.Diff(map[string]string{"http": "1.2.0"}, am.dependencyConstraints); diff != "" {
+				if diff := cmp.Diff(map[string]string{"google_cloud_gax": "^1.2.3", "http": "1.2.0"}, am.dependencyConstraints); diff != "" {
 					t.Errorf("mismatch in annotateModel.dependencyConstraints (-want, +got)\n:%s", diff)
 				}
 			},
@@ -114,7 +121,9 @@ func TestAnnotateModel_Options(t *testing.T) {
 
 	for _, tt := range tests {
 		annotate := newAnnotateModel(model)
-		err := annotate.annotateModel(tt.options)
+		options := maps.Clone(requiredConfig)
+		maps.Copy(options, tt.options)
+		err := annotate.annotateModel(maps.Clone(options))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -140,7 +149,7 @@ func TestAnnotateMethod(t *testing.T) {
 	)
 	api.Validate(model)
 	annotate := newAnnotateModel(model)
-	err := annotate.annotateModel(map[string]string{})
+	err := annotate.annotateModel(requiredConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,14 +189,17 @@ func TestCalculateDependencies(t *testing.T) {
 		{name: "package imports", imports: []string{
 			httpImport,
 			"package:google_cloud_foo/foo.dart",
-		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "any"}, {Name: "http", Constraint: "^1.3.0"}}},
+		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "^1.2.3"}, {Name: "http", Constraint: "^1.3.0"}}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			deps := map[string]bool{}
 			for _, imp := range test.imports {
 				deps[imp] = true
 			}
-			got := calculateDependencies(deps, map[string]string{"http": "^1.3.0"})
+			got, err := calculateDependencies(deps, map[string]string{"google_cloud_foo": "^1.2.3", "http": "^1.3.0"})
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in calculateDependencies (-want, +got)\n:%s", diff)

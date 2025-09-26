@@ -204,6 +204,9 @@ func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 func readLibraryState(jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
 	defer func() {
+		if b, err := os.ReadFile(jsonFilePath); err == nil {
+			slog.Debug("container response", "content", string(b))
+		}
 		if err := os.Remove(jsonFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
 			slog.Warn("fail to remove file", slog.String("name", jsonFilePath), slog.Any("err", err))
 		}

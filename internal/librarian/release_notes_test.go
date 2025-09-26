@@ -23,8 +23,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 
-	"github.com/go-git/go-git/v5"
-	gitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/cli"
@@ -59,15 +57,17 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 					},
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
 						Hash: plumbing.NewHash("1234567890"),
@@ -128,15 +128,17 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 					},
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
 						Hash: plumbing.NewHash("1234567890"),
@@ -204,12 +206,13 @@ Language Image: %s
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 					},
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue: []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
 						Hash: plumbing.NewHash("1234567890"),
@@ -285,11 +288,12 @@ Language Image: %s`,
 						ID: "one-library",
 						// Intentionally set this value to verify the test can pass.
 						LastGeneratedCommit: "randomCommit",
+						SourceRoots:         []string{"path/to"},
 					},
 				},
 			},
 			repo: &MockRepository{
-				RemotesValue:   []*git.Remote{git.NewRemote(nil, &gitconfig.RemoteConfig{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}})},
+				RemotesValue:   []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitError: errors.New("simulated get commit error"),
 				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
 					"1234567890": {
@@ -529,11 +533,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
 ### Bug Fixes
 
-* a bug fix  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -579,17 +583,17 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
 
 ### Bug Fixes
 
-* a bug fix  (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
 		},
 		{
-			name: "single library with multiple features",
+			name: "single_library_with_multiple_features",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
@@ -623,9 +627,9 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
-* another new feature  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today),
@@ -674,7 +678,7 @@ Language Image: go:1.21
 
 ### Features
 
-* feature for a  ([1234567](https://github.com/owner/repo/commit/1234567))
+* feature for a ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>
 
@@ -685,7 +689,7 @@ Language Image: go:1.21
 
 ### Bug Fixes
 
-* fix for b  ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
 
 </details>`,
 				librarianVersion, today, today),
@@ -725,7 +729,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature  ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>`,
 				librarianVersion, today),
@@ -761,7 +765,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature this is the body ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
 
 </details>`,
 				librarianVersion, today),

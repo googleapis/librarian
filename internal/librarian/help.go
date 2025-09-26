@@ -71,7 +71,7 @@ in '.librarian/state.yaml'.
   your local working directory for inspection.
 
 Example with build and push:
-  SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`
+  LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`
 
 	releaseInitLongHelp = `The 'release init' command is the primary entry point for initiating
 a new release. It automates the creation of a release pull request by parsing

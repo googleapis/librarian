@@ -178,6 +178,13 @@ type annotateModel struct {
 	state *api.APIState
 	// The set of required imports (e.g. "package:google_cloud_type/type.dart" or
 	// "package:http/http.dart as http") that have been calculated.
+	//
+	// The keys of this map are used to determine what imports to include
+	// in the generated Dart code and what dependencies to include in
+	// pubspec.yaml.
+	//
+	// Every import must have a corresponding entry in .sidekick.toml to specify
+	// its version constraints.
 	imports map[string]bool
 	// The mapping from protobuf packages to Dart import statements.
 	packageMapping map[string]string
@@ -302,8 +309,10 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	// Add the import for the google_cloud_gax package.
 	annotate.imports[commonImport] = true
 
-	packageDependencies := calculateDependencies(annotate.imports, annotate.dependencyConstraints)
-
+	packageDependencies, err := calculateDependencies(annotate.imports, annotate.dependencyConstraints)
+	if err != nil {
+		return err
+	}
 	ann := &modelAnnotations{
 		Parent:         model,
 		PackageName:    packageName(model, packageNameOverride),
@@ -359,7 +368,7 @@ func calculateRequiredFields(model *api.API) map[string]*api.Field {
 }
 
 // calculateDependencies calculates package dependencies based on `package:` imports.
-func calculateDependencies(imports map[string]bool, constraints map[string]string) []packageDependency {
+func calculateDependencies(imports map[string]bool, constraints map[string]string) ([]packageDependency, error) {
 	deps := []packageDependency{}
 
 	for imp := range imports {
@@ -371,9 +380,7 @@ func calculateDependencies(imports map[string]bool, constraints map[string]strin
 			}) {
 				constraint := constraints[name]
 				if len(constraint) == 0 {
-					// TODO(https://github.com/googleapis/librarian/issues/1989):
-					// Never emit "any" constraints.
-					constraint = "any"
+					return nil, fmt.Errorf("unknown version constraint for package %q (did you forget to add it to .sidekick.toml?)", name)
 				}
 				deps = append(deps, packageDependency{Name: name, Constraint: constraint})
 			}
@@ -384,7 +391,7 @@ func calculateDependencies(imports map[string]bool, constraints map[string]strin
 		return deps[i].Name < deps[j].Name
 	})
 
-	return deps
+	return deps, nil
 }
 
 func calculateImports(imports map[string]bool) []string {

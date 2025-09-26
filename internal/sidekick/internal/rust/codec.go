@@ -150,6 +150,12 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 				return nil, fmt.Errorf("cannot convert `routing-required` value %q to boolean: %w", definition, err)
 			}
 			codec.routingRequired = value
+		case key == "generate-setter-samples":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `generate-setter-samples` value %q to boolean: %w", definition, err)
+			}
+			codec.generateSetterSamples = value
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -269,6 +275,8 @@ type codec struct {
 	// If true, fail requests locally that do not yield a gRPC routing
 	// header.
 	routingRequired bool
+	// If true, the generator will produce reference documentation samples for message fields setters.
+	generateSetterSamples bool
 }
 
 type systemParameter struct {

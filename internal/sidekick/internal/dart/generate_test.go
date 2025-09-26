@@ -46,12 +46,16 @@ func TestFromProtobuf(t *testing.T) {
 			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
-			"copyright-year":              "2025",
-			"not-for-publication":         "true",
-			"version":                     "0.1.0",
-			"skip-format":                 "true",
-			"proto:google.protobuf":       "package:google_cloud_protobuf/protobuf.dart",
-			"proto:google.cloud.location": "package:google_cloud_location/location.dart",
+			"copyright-year":                "2025",
+			"not-for-publication":           "true",
+			"version":                       "0.1.0",
+			"skip-format":                   "true",
+			"package:google_cloud_gax":      "^1.2.3",
+			"package:http":                  "^4.5.6",
+			"package:google_cloud_location": "^7.8.9",
+			"package:google_cloud_protobuf": "^0.1.2",
+			"proto:google.protobuf":         "package:google_cloud_protobuf/protobuf.dart",
+			"proto:google.cloud.location":   "package:google_cloud_location/location.dart",
 		},
 	}
 	model, err := parser.CreateModel(cfg)
@@ -76,7 +80,7 @@ func TestFromProtobuf(t *testing.T) {
 func TestGeneratedFiles(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	annotate := newAnnotateModel(model)
-	annotate.annotateModel(map[string]string{})
+	annotate.annotateModel(map[string]string{"package:google_cloud_gax": "^1.2.3", "package:http": "^4.5.6"})
 	files := generatedFiles(model)
 	if len(files) == 0 {
 		t.Errorf("expected a non-empty list of template files from generatedFiles()")

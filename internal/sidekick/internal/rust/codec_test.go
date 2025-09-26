@@ -1868,3 +1868,16 @@ func TestBodyAccessor(t *testing.T) {
 		}
 	}
 }
+
+func TestParseOptionsGenerateSetterSamples(t *testing.T) {
+	options := map[string]string{
+		"generate-setter-samples": "true",
+	}
+	got, err := newCodec(false, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.generateSetterSamples {
+		t.Errorf("generateSetterSamples should be true")
+	}
+}

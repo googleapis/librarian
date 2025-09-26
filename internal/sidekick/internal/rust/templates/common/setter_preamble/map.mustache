@@ -1,0 +1,264 @@
+{{!
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+/// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
+{{#ModelCodec.GenerateSetterSamples}}
+{{#Codec.KeyField.IsString}}
+{{#Codec.ValueField.IsString}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     ("key0", "abc"),
+///     ("key1", "xyz"),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsString}}
+{{#Codec.ValueField.IsBytes}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     ("key0", bytes::Bytes::from_static(b"abc")),
+///     ("key1", bytes::Bytes::from_static(b"xyz")),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsBytes}}
+{{#Codec.ValueField.IsBool}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     ("key0", true),
+///     ("key1", false),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsBool}}
+{{#Codec.ValueField.IsLikeInt}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     ("key0", 123),
+///     ("key1", 456),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeFloat}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     ("key0", 123.5),
+///     ("key1", 456.5),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsLikeFloat}}
+{{#Codec.ValueField.IsEnum}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     ("key0", {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+///     ("key1", {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsEnum}}
+{{#Codec.ValueField.IsObject}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     ("key0", {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
+///     ("key1", {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsObject}}
+{{/Codec.KeyField.IsString}}
+{{#Codec.KeyField.IsBool}}
+{{#Codec.ValueField.IsString}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (true, "abc"),
+///     (false, "xyz"),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsString}}
+{{#Codec.ValueField.IsBytes}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (true, bytes::Bytes::from_static(b"abc")),
+///     (false, bytes::Bytes::from_static(b"xyz")),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsBytes}}
+{{#Codec.ValueField.IsBool}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (true, true),
+///     (false, false),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsBool}}
+{{#Codec.ValueField.IsLikeInt}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (true, 123),
+///     (false, 456),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeFloat}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (true, 123.5),
+///     (false, 456.5),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsLikeFloat}}
+{{#Codec.ValueField.IsEnum}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (true, {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+///     (false, {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsEnum}}
+{{#Codec.ValueField.IsObject}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (true, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
+///     (false, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsObject}}
+{{/Codec.KeyField.IsBool}}
+{{#Codec.KeyField.IsLikeInt}}
+{{#Codec.ValueField.IsString}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0, "abc"),
+///     (1, "xyz"),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsString}}
+{{#Codec.ValueField.IsBytes}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0, bytes::Bytes::from_static(b"abc")),
+///     (1, bytes::Bytes::from_static(b"xyz")),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsBytes}}
+{{#Codec.ValueField.IsBool}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0, true),
+///     (1, false),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsBool}}
+{{#Codec.ValueField.IsLikeInt}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0, 123),
+///     (1, 456),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeFloat}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0, 123.5),
+///     (1, 456.5),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsLikeFloat}}
+{{#Codec.ValueField.IsEnum}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0, {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+///     (1, {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsEnum}}
+{{#Codec.ValueField.IsObject}}
+///
+/// # Example
+/// ```
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
+///     (1, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+/// ]);
+/// ```
+{{/Codec.ValueField.IsObject}}
+{{/Codec.KeyField.IsLikeInt}}
+{{/ModelCodec.GenerateSetterSamples}}
+{{#Deprecated}}
+#[deprecated]
+{{/Deprecated}}

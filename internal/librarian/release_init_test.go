@@ -22,20 +22,13 @@ import (
 	"strings"
 	"testing"
 
-	gogitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/storage/memory"
-	"gopkg.in/yaml.v3"
-
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/go-git/go-git/v5"
-
-	"github.com/googleapis/librarian/internal/gitrepo"
-
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
-
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
+	"github.com/googleapis/librarian/internal/gitrepo"
+	"gopkg.in/yaml.v3"
 )
 
 func TestNewInitRunner(t *testing.T) {
@@ -93,11 +86,13 @@ func TestInitRun(t *testing.T) {
 	mockRepoWithReleasableUnit := &MockRepository{
 		Dir:          t.TempDir(),
 		AddAllStatus: gitStatus,
-		RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-			Name: "origin",
-			URLs: []string{"https://github.com/googleapis/librarian.git"},
-		})},
-		ChangedFilesInCommitValue: []string{"file.txt"},
+		RemotesValue: []*gitrepo.Remote{
+			{
+				Name: "origin",
+				URLs: []string{"https://github.com/googleapis/librarian.git"},
+			},
+		},
+		ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 		GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 			{
 				Message: "feat: a feature",
@@ -306,12 +301,14 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID:      "blocked-example-id",
-								Version: "1.0.0",
+								ID:          "blocked-example-id",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								ID:      "example-id",
-								Version: "2.0.0",
+								ID:          "example-id",
+								Version:     "2.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -355,7 +352,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "blocked-example-id",
 						Version:       "1.0.0", // version is NOT bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -363,7 +360,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "example-id",
 						Version:       "2.1.0", // version is bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -383,8 +380,9 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID:      "blocked-example-id",
-								Version: "1.0.0",
+								ID:          "blocked-example-id",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -418,7 +416,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "blocked-example-id",
 						Version:       "1.1.0",
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -539,8 +537,9 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -566,8 +565,9 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -605,7 +605,8 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID: "example-id",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -629,7 +630,8 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID: "example-id",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -653,16 +655,19 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir: t.TempDir(),
-						RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-							Name: "origin",
-							URLs: []string{"https://github.com/googleapis/librarian.git"},
-						})},
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
 						ChangedFilesInCommitValue: []string{"file.txt"},
 						GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 							{
@@ -693,18 +698,20 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "another-example-id",
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version: "2.0.0",
-								ID:      "example-id",
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir:                       t.TempDir(),
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -729,7 +736,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "another-example-id",
 						Version:       "1.0.0", // version is NOT bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -737,7 +744,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "example-id",
 						Version:       "2.1.0", // version is bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -757,18 +764,20 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "another-example-id",
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version: "2.0.0",
-								ID:      "example-id",
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir:                       t.TempDir(),
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -793,7 +802,7 @@ func TestInitRun(t *testing.T) {
 						Version:       "3.0.0",
 						ID:            "another-example-id",
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -801,7 +810,7 @@ func TestInitRun(t *testing.T) {
 						Version:       "2.0.0",
 						ID:            "example-id",
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -820,18 +829,20 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "another-example-id",
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version: "2.0.0",
-								ID:      "example-id",
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir:                       t.TempDir(),
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -865,19 +876,22 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir:          t.TempDir(),
 						AddAllStatus: gitStatus,
-						RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-							Name: "origin",
-							URLs: []string{"https://github.com/googleapis/librarian.git"},
-						})},
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 							{
 								Message: "feat: a feature",

@@ -126,8 +126,8 @@ type LibraryState struct {
 	// If not set, this defaults to the `source_roots`.
 	// A more specific `preserve_regex` takes precedence.
 	RemoveRegex []string `yaml:"remove_regex" json:"remove_regex"`
-	// Path of commits to be excluded from parsing while calculating library changes.
-	// If all files from commit belong to one of the paths it will be skipped.
+	// A list of paths to exclude from the release.
+	// Files matching these paths will not be considered part of a commit for this library.
 	ReleaseExcludePaths []string `yaml:"release_exclude_paths,omitempty" json:"release_exclude_paths,omitempty"`
 	// Specifying a tag format allows librarian to honor this format when creating
 	// a tag for the release of the library. The replacement values of {id} and {version}
@@ -180,12 +180,12 @@ func (l *LibraryState) Validate() error {
 		return fmt.Errorf("source_roots cannot be empty")
 	}
 	for i, p := range l.SourceRoots {
-		if !isValidDirPath(p) {
+		if !isValidRelativePath(p) {
 			return fmt.Errorf("invalid source_path at index %d: %q", i, p)
 		}
 	}
 	for i, p := range l.ReleaseExcludePaths {
-		if !isValidDirPath(p) {
+		if !isValidRelativePath(p) {
 			return fmt.Errorf("invalid release_exclude_path at index %d: %q", i, p)
 		}
 	}
@@ -226,7 +226,7 @@ type API struct {
 
 // Validate checks that the API is valid.
 func (a *API) Validate() error {
-	if !isValidDirPath(a.Path) {
+	if !isValidRelativePath(a.Path) {
 		return fmt.Errorf("invalid path: %q", a.Path)
 	}
 	return nil
@@ -236,7 +236,7 @@ func (a *API) Validate() error {
 // plus path separators and the null byte.
 const invalidPathChars = "<>:\"|?*/\\\x00"
 
-func isValidDirPath(pathString string) bool {
+func isValidRelativePath(pathString string) bool {
 	if pathString == "" {
 		return false
 	}

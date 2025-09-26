@@ -20,65 +20,62 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
-func makeMessageFields(model *api.API, messageID string, schema *schema) ([]*api.Field, error) {
-	var fields []*api.Field
+func makeMessageFields(model *api.API, message *api.Message, schema *schema) error {
 	for _, input := range schema.Properties {
-		field, err := makeField(model, messageID, input)
+		field, err := makeField(model, message, input)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if field == nil {
 			continue
 		}
-		fields = append(fields, field)
+		message.Fields = append(message.Fields, field)
 	}
-	return fields, nil
+	return nil
 }
 
-func makeField(model *api.API, messageID string, input *property) (*api.Field, error) {
+func makeField(model *api.API, message *api.Message, input *property) (*api.Field, error) {
 	if input.Schema.Type == "array" {
-		return makeArrayField(model, messageID, input)
+		return makeArrayField(model, message, input)
 	}
-	if input.Schema.AdditionalProperties != nil {
-		// TODO(#2283) - handle map fields
-		return nil, nil
+	if field, err := maybeMapField(model, message, input); err != nil || field != nil {
+		return field, err
 	}
 	if input.Schema.Type == "object" && input.Schema.Properties != nil {
 		// TODO(#2265) - handle inline object...
 		return nil, nil
 	}
-	return makeScalarField(model, messageID, input)
+	return makeScalarField(model, message, input.Name, input.Schema)
 }
 
-func makeArrayField(model *api.API, messageID string, input *property) (*api.Field, error) {
+func makeArrayField(model *api.API, message *api.Message, input *property) (*api.Field, error) {
 	if input.Schema.ItemSchema.Type == "object" && input.Schema.ItemSchema.Properties != nil {
 		// TODO(#2265) - handle inline object...
 		return nil, nil
 	}
-	typez, typezID, err := scalarType(model, messageID, input.Name, input.Schema.ItemSchema)
+	field, err := makeScalarField(model, message, input.Name, input.Schema.ItemSchema)
 	if err != nil {
 		return nil, err
 	}
-	return &api.Field{
-		Name:          input.Name,
-		JSONName:      input.Name, // OpenAPI field names are always camelCase
-		Documentation: input.Schema.Description,
-		Typez:         typez,
-		TypezID:       typezID,
-		Repeated:      true,
-		// TODO(#2268) - deprecated fields?
-	}, nil
+	field.Documentation = input.Schema.Description
+	field.Repeated = true
+	field.Optional = false
+	return field, nil
 }
 
-func makeScalarField(model *api.API, messageID string, input *property) (*api.Field, error) {
-	typez, typezID, err := scalarType(model, messageID, input.Name, input.Schema)
+func makeScalarField(model *api.API, message *api.Message, name string, schema *schema) (*api.Field, error) {
+	if err := makeMessageEnum(model, message, name, schema); err != nil {
+		return nil, err
+	}
+	typez, typezID, err := scalarType(model, message.ID, name, schema)
 	if err != nil {
 		return nil, err
 	}
 	return &api.Field{
-		Name:          input.Name,
-		JSONName:      input.Name, // OpenAPI field names are always camelCase
-		Documentation: input.Schema.Description,
+		Name:          name,
+		JSONName:      name, // Discovery doc field names are always camelCase
+		ID:            fmt.Sprintf("%s.%s", message.ID, name),
+		Documentation: schema.Description,
 		Typez:         typez,
 		TypezID:       typezID,
 		// TODO(#2268) - deprecated fields?
@@ -134,6 +131,9 @@ func scalarTypeForNumberFormats(messageID, name string, input *schema) (api.Type
 }
 
 func scalarTypeForStringFormats(messageID, name string, input *schema) (api.Typez, string, error) {
+	if input.Enums != nil {
+		return api.ENUM_TYPE, fmt.Sprintf("%s.%s", messageID, name), nil
+	}
 	switch input.Format {
 	case "":
 		return api.STRING_TYPE, "string", nil

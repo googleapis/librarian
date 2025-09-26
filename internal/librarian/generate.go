@@ -152,6 +152,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		repo:              r.repo,
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
+		workRoot:          r.workRoot,
 		failedGenerations: failedGenerations,
 	}
 
