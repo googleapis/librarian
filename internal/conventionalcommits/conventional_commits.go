@@ -38,9 +38,9 @@ var (
 	commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
 	// footerRegex defines the format for a conventional commit footer.
 	// A footer key consists of letters and hyphens, or is the "BREAKING CHANGE"
-	// literal. The key is followed by ": " and then the value.
+	// literal. The key is followed by ":" and then the value.
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
-	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s(.*)`)
+	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):(.*)`)
 	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
 	// libraryIDRegex extracts the libraryID from the commit message in a generation PR.
 	// For a generation PR, each commit is expected to have the libraryID in brackets
@@ -298,6 +298,8 @@ func parseHeader(headerLine string) (*parsedHeader, bool) {
 }
 
 // separateBodyAndFooters splits the lines after the header into body and footer sections.
+// It identifies the footer section by looking for a blank line followed by a
+// line that matches the conventional commit footer format.
 func separateBodyAndFooters(lines []string) (bodyLines, footerLines []string) {
 	inFooterSection := false
 	for i, line := range lines {
