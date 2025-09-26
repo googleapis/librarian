@@ -195,7 +195,7 @@ then create the pull request yourself:
   file=/tmp/librarian-837968205/pr-body.txt
   ```
 5. Perform any edits to the release notes, and commit the change using a "chore"
-   conventional commit, e.g. `git commit -a -m "chore: create release"
+   conventional commit, e.g. `git commit -a -m "chore: create release"`
 6. Push your change to GitHub *in the main fork* (rather than any personal fork you may use),
    and create a PR from the branch. Use the content of the `pr-body.txt` file as the body
    of the PR, editing it to be consistent with any changes you've made in the release notes.
