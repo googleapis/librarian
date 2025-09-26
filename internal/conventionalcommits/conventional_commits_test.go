@@ -672,7 +672,7 @@ func TestParseFooters(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple footers with key on one line, value on the next",
+			name: "multi-line footers with key on one line, value on the next",
 			footerLines: []string{
 				"PiperOrigin-RevId: 123456",
 				"",

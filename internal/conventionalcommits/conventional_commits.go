@@ -38,9 +38,9 @@ var (
 	commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
 	// footerRegex defines the format for a conventional commit footer.
 	// A footer key consists of letters and hyphens, or is the "BREAKING CHANGE"
-	// literal. The key is followed by ": " and then the value.
+	// literal. The key is followed by ":" and then the value.
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
-	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):\s*(.*)`)
+	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):(.*)`)
 	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
 )
 
