@@ -180,11 +180,10 @@ If you expect to need to edit the release notes, it's simplest to run `librarian
 
 1. Make sure your local clone is up-to-date
 2. Create a new branch for the release (e.g. `git checkout -b release-bigtable-1.2.3`)
-3. Run `librarian`
+3. Run `librarian`, specifying `-library-version` if you want/need to, as above:
   ```sh
-  $ librarian release init -library=bigtable
+  $ librarian release init -library=bigtable -library-version=1.2.3
   ```
-  (Specify `-library-version` if you want or need to, as above.)
 4. Note the line of the `librarian` output near the end, which tells you where
   it has written a `pr-body.txt` file (split by key below, but all on one line in the
   output):
