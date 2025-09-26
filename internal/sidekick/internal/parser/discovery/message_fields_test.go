@@ -78,6 +78,7 @@ func TestMakeMessageFields(t *testing.T) {
 		{
 			Name:          "intField",
 			JSONName:      "intField",
+			ID:            ".package.Message.intField",
 			Documentation: "The field description.",
 			Typez:         api.INT32_TYPE,
 			TypezID:       "int32",
@@ -85,6 +86,7 @@ func TestMakeMessageFields(t *testing.T) {
 		{
 			Name:          "longField",
 			JSONName:      "longField",
+			ID:            ".package.Message.longField",
 			Documentation: "The field description.",
 			Typez:         api.UINT64_TYPE,
 			TypezID:       "uint64",
@@ -92,6 +94,7 @@ func TestMakeMessageFields(t *testing.T) {
 		{
 			Name:          "arrayFieldString",
 			JSONName:      "arrayFieldString",
+			ID:            ".package.Message.arrayFieldString",
 			Documentation: "The field description.",
 			Typez:         api.STRING_TYPE,
 			TypezID:       "string",
@@ -100,6 +103,7 @@ func TestMakeMessageFields(t *testing.T) {
 		{
 			Name:          "arrayFieldObject",
 			JSONName:      "arrayFieldObject",
+			ID:            ".package.Message.arrayFieldObject",
 			Documentation: "The field description.",
 			Typez:         api.MESSAGE_TYPE,
 			TypezID:       ".package.AnotherMessage",

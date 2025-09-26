@@ -101,6 +101,7 @@ func TestDisco_ParsePagination(t *testing.T) {
 	wantPagination := &api.Field{
 		Name:     "pageToken",
 		JSONName: "pageToken",
+		ID:       "..zones.listRequest.pageToken",
 		Typez:    api.STRING_TYPE,
 		TypezID:  "string",
 		Optional: true,

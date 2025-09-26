@@ -106,6 +106,7 @@ func TestMakeEnumFields(t *testing.T) {
 			{
 				Name:          "networkTier",
 				JSONName:      "networkTier",
+				ID:            ".package.Message.networkTier",
 				Documentation: "The networking tier.",
 				Typez:         api.ENUM_TYPE,
 				TypezID:       ".package.Message.networkTier",
