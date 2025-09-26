@@ -269,8 +269,9 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repository) *releaseNoteSection {
 	// The version should already be updated to the next version.
 	newVersion := library.Version
-	newTag := formatTag(library.TagFormat, library.ID, newVersion)
-	previousTag := formatTag(library.TagFormat, library.ID, library.PreviousVersion)
+	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
+	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
+	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
 	for _, commit := range library.Changes {
