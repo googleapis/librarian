@@ -203,3 +203,32 @@ func TestMaybeInlineObjectErrors(t *testing.T) {
 		t.Errorf("expected an error with an invalid inline object, got=%v", field)
 	}
 }
+
+func TestArrayWithInlineObjectError(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "package"
+	input := &property{
+		Name: "arrayWithObject",
+		Schema: &schema{
+			Type:        "array",
+			Description: "An array field with an inline object.",
+			ItemSchema: &schema{
+				Type: "object",
+				Properties: []*property{
+					{
+						Name: "stringField",
+						Schema: &schema{
+							Type:        "string",
+							Format:      "--invalid--",
+							Description: "The stringField field.",
+						},
+					},
+				},
+			},
+		},
+	}
+	message := &api.Message{ID: ".package.Message"}
+	if field, err := makeArrayField(model, message, input); err == nil {
+		t.Errorf("expected an error with an invalid inline object, got=%v", field)
+	}
+}

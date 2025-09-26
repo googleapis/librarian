@@ -26,9 +26,6 @@ func makeMessageFields(model *api.API, message *api.Message, schema *schema) err
 		if err != nil {
 			return err
 		}
-		if field == nil {
-			continue
-		}
 		message.Fields = append(message.Fields, field)
 	}
 	return nil
