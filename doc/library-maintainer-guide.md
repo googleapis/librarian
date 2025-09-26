@@ -175,18 +175,32 @@ trigger a release, you *must* specify the `-library-version` flag.
 
 ### Manual release PR creation
 
-TODO(https://github.com/googleapis/librarian/issues/2389): Improve this
+If you expect to need to edit the release notes, it's simplest to run `librarian`
+*without* the `-push` flag, and create the pull request yourself:
 
-Currently, the simplest way of creating a release PR with customized release
-notes is to:
-
-1. Use the above "hands-off" flow to create a PR
-2. Pull the branch into a local clone
-3. Modify the release notes and create a new "chore" commit with the changes
-4. Push the branch back to GitHub
-5. Modify the release PR description to be consistent with the release notes
-
-We aim to simplify this flow in the future.
+1. Make sure your local clone is up-to-date
+2. Create a new branch for the release (e.g. `git checkout -b release-bigtable-1.2.3`)
+3. Run `librarian`
+  ```sh
+  $ librarian release init -library=bigtable
+  ```
+  (Specify `-library-version` if you want or need to, as above.)
+4. Note the line of the `librarian` output near the end, which tells you where
+  it has written a `pr-body.txt` file (split by key below, but all on one line in the
+  output):
+  ```text
+  time=2025-09-26T15:35:23.124Z
+  level=INFO
+  msg="Wrote body of pull request that might have been created"
+  file=/tmp/librarian-837968205/pr-body.txt
+  ```
+5. Perform any edits to the release notes, and commit the change using a "chore"
+   conventional commit, e.g. `git commit -a -m "chore: create release"
+6. Push your change to GitHub *in the main fork* (rather than any personal fork you may use),
+   and create a PR from the branch. Use the content of the `pr-body.txt` file as the body
+   of the PR, editing it to be consistent with any changes you've made in the release notes.
+7. Add the "release:pending" label to the PR.
+8. Ask a colleague to review and merge the PR.
 
 ## Updating generated code
 
