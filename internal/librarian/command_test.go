@@ -1617,6 +1617,7 @@ func TestCommitAndPush(t *testing.T) {
 				repo:              repo,
 				state:             test.state,
 				failedGenerations: test.failedGenerations,
+				workRoot:          t.TempDir(),
 			}
 
 			err := commitAndPush(context.Background(), commitInfo)
@@ -1633,6 +1634,96 @@ func TestCommitAndPush(t *testing.T) {
 			if err != nil {
 				t.Errorf("%s: commitAndPush() returned unexpected error: %v", test.name, err)
 				return
+			}
+		})
+	}
+}
+
+func TestWritePRBody(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		info     *commitInfo
+		wantFile bool
+	}{
+		{
+			name: "success",
+			info: &commitInfo{
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						&gitrepo.Remote{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:   "release",
+				state:    &config.LibrarianState{},
+				workRoot: t.TempDir(),
+			},
+			wantFile: true,
+		},
+		{
+			name: "invalid repo",
+			info: &commitInfo{
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						&gitrepo.Remote{
+							Name: "not-origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:   "release",
+				workRoot: t.TempDir(),
+			},
+		},
+		{
+			name: "invalid-pr-type",
+			info: &commitInfo{
+				repo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						&gitrepo.Remote{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:   "invalid-pr-type",
+				workRoot: t.TempDir(),
+			},
+		},
+		{
+			name: "unable to save file",
+			info: &commitInfo{
+				repo: &MockRepository{
+					Dir:          t.TempDir(),
+					AddAllStatus: make(git.Status),
+					RemotesValue: []*gitrepo.Remote{
+						&gitrepo.Remote{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:   "release",
+				state:    &config.LibrarianState{},
+				workRoot: filepath.Join(t.TempDir(), "missing-directory"),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			writePRBody(test.info)
+			possibleFilePath := filepath.Join(test.info.workRoot, prBodyFile)
+			_, err := os.Stat(possibleFilePath)
+			if err != nil && !os.IsNotExist(err) {
+				t.Fatalf("error other than IsNotExist finding status of %s", possibleFilePath)
+			}
+			gotFile := err == nil
+			if test.wantFile != gotFile {
+				t.Errorf("writePRBody() wantFile = %t, gotFile = %t", test.wantFile, gotFile)
 			}
 		})
 	}

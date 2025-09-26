@@ -105,6 +105,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		repo:              r.repo,
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
+		workRoot:          r.workRoot,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
