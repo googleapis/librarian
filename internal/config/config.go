@@ -219,6 +219,16 @@ type Config struct {
 	// Repo is specified with the -repo flag.
 	Repo string
 
+	// UseSSH is flag to determine if SSH should be used to authenticate to the remote repo.
+	// If enabled, SSH will be used to push to the remote repo.
+	//
+	// If enabled, Librarian will use ssh-agent manage the configured private keys.
+	//
+	// UseSSH is not specified by a flag, but from the LIBRARIAN_USE_SSH environment variable.
+	// This environment variable allows for all the librarian commands to use SSH without
+	// having to manually pass a flag on every invocation.
+	UseSSH bool
+
 	// UserGID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
 	// ownership.
@@ -246,9 +256,12 @@ type Config struct {
 
 // New returns a new Config populated with environment variables.
 func New(cmdName string) *Config {
+	useSSH := os.Getenv("LIBRARIAN_USE_SSH") == "true"
+	slog.Debug("Github SSH", "enabled", useSSH)
 	return &Config{
 		CommandName: cmdName,
 		GitHubToken: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		UseSSH:      useSSH,
 	}
 }
 
