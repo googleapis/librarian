@@ -58,7 +58,7 @@ go run github.com/googleapis/librarian/cmd/librarian@latest -help
 - [Language Onboarding Guide](doc/language-onboarding.md)
 - [How We Write Go](doc/howwewritego.md)
 - [State Schema](doc/state-schema.md)
-- [Config Schema](doc/config-schema.md))
+- [Config Schema](doc/config-schema.md)
 - [Running Tests](doc/testing.md)
 - [sidekick](doc/sidekick.md)
 
