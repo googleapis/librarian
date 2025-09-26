@@ -73,7 +73,7 @@ func makeScalarField(model *api.API, message *api.Message, name string, schema *
 	}
 	return &api.Field{
 		Name:          name,
-		JSONName:      name, // OpenAPI field names are always camelCase
+		JSONName:      name, // Discovery doc field names are always camelCase
 		ID:            fmt.Sprintf("%s.%s", message.ID, name),
 		Documentation: schema.Description,
 		Typez:         typez,
