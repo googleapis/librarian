@@ -32,6 +32,11 @@ rust-version.workspace = true
 {{#Codec.NotForPublication}}
 publish                = false
 {{/Codec.NotForPublication}}
+{{#Codec.DetailedTracingAttributes}}
+
+[lints]
+workspace = true
+{{/Codec.DetailedTracingAttributes}}
 {{#Codec.PerServiceFeatures}}
 
 [features]
