@@ -29,7 +29,9 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	httpAuth "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 // Repository defines the interface for git repository operations.
@@ -58,6 +60,7 @@ type LocalRepository struct {
 	Dir         string
 	repo        *git.Repository
 	gitPassword string
+	useSSH      bool
 }
 
 // Commit represents a git commit.
@@ -89,6 +92,8 @@ type RepositoryOptions struct {
 	CI string
 	// GitPassword is used for HTTP basic auth.
 	GitPassword string
+	// UseSSH flag to determine if HTTPS (default) or SSH will be used for git operations
+	UseSSH bool
 	// Depth controls the cloning depth if the repository needs to be cloned.
 	Depth int
 }
@@ -105,6 +110,7 @@ func NewRepository(opts *RepositoryOptions) (*LocalRepository, error) {
 		return repo, err
 	}
 	repo.gitPassword = opts.GitPassword
+	repo.useSSH = opts.UseSSH
 	return repo, nil
 }
 
@@ -472,15 +478,11 @@ func (r *LocalRepository) DeleteBranch(branchName string) error {
 
 func (r *LocalRepository) pushRefSpec(refSpec string) error {
 	slog.Info("Pushing changes", "refSpec", refSpec)
-	var auth *httpAuth.BasicAuth
-	if r.gitPassword != "" {
-		slog.Info("Authenticating with basic auth")
-		auth = &httpAuth.BasicAuth{
-			// GitHub's authentication needs the username set to a non-empty value, but
-			// it does not need to match the token
-			Username: "cloud-sdk-librarian",
-			Password: r.gitPassword,
-		}
+	// While cloning a public repo does not require any authCreds, pushing
+	// to it requires authentication and verification of identity
+	auth, err := r.authCreds()
+	if err != nil {
+		return err
 	}
 	if err := r.repo.Push(&git.PushOptions{
 		RemoteName: "origin",
@@ -491,6 +493,30 @@ func (r *LocalRepository) pushRefSpec(refSpec string) error {
 	}
 	slog.Info("Successfully pushed changes", "refSpec", refSpec)
 	return nil
+}
+
+// authCreds returns the configured AuthMethod to used to pushing to the
+// remote repository. By default, Https Basic Auth is used. If the
+// LIBRARIAN_USE_SSH environment variable is set to true, then Librarian
+// will attempt to use ssh-agent to configure a SSH connection.
+func (r *LocalRepository) authCreds() (transport.AuthMethod, error) {
+	if r.useSSH {
+		slog.Info("Authenticating with SSH")
+		// This is the generic `git` username when cloning via SSH. It is the value
+		// that exists before the URL. e.g. git@github.com:googleapis/librarian.git
+		auth, err := ssh.DefaultAuthBuilder("git")
+		if err != nil {
+			return nil, err
+		}
+		return auth, nil
+	}
+	slog.Info("Authenticating with basic auth")
+	return &httpAuth.BasicAuth{
+		// GitHub's authentication needs the username set to a non-empty value, but
+		// it does not need to match the token
+		Username: "cloud-sdk-librarian",
+		Password: r.gitPassword,
+	}, nil
 }
 
 // Restore restores changes in the working tree, leaving staged area untouched.
