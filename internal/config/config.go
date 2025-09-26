@@ -57,6 +57,8 @@ const (
 	LibrarianStateFile = "state.yaml"
 	// LibrarianGithubToken is the name of the env var used to store the github token.
 	LibrarianGithubToken = "LIBRARIAN_GITHUB_TOKEN"
+	// LibrarianUseSSH is the name of the env var used to enable git SSH operations.
+	LibrarianUseSSH = "LIBRARIAN_USE_SSH"
 )
 
 // are variables so it can be replaced during testing.
@@ -258,7 +260,7 @@ type Config struct {
 
 // New returns a new Config populated with environment variables.
 func New(cmdName string) *Config {
-	useSSH := os.Getenv("LIBRARIAN_USE_SSH") == "true"
+	useSSH := os.Getenv(LibrarianUseSSH) == "true"
 	slog.Debug("Github SSH", "enabled", useSSH)
 	return &Config{
 		CommandName: cmdName,
