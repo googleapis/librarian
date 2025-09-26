@@ -46,6 +46,16 @@ func TestMakeMessageFields(t *testing.T) {
 				},
 			},
 			{
+				Name: "deprecatedField",
+				Schema: &schema{
+					ID:          ".package.Message.deprecatedField",
+					Description: "The field description.",
+					Type:        "integer",
+					Format:      "uint32",
+					Deprecated:  true,
+				},
+			},
+			{
 				Name: "arrayFieldString",
 				Schema: &schema{
 					ID:          ".package.Message.arrayFieldString",
@@ -75,6 +85,15 @@ func TestMakeMessageFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []*api.Field{
+		{
+			Name:          "deprecatedField",
+			JSONName:      "deprecatedField",
+			ID:            ".package.Message.deprecatedField",
+			Documentation: "The field description.",
+			Typez:         api.UINT32_TYPE,
+			TypezID:       "uint32",
+			Deprecated:    true,
+		},
 		{
 			Name:          "intField",
 			JSONName:      "intField",

@@ -212,9 +212,11 @@ type schema struct {
 	Ref                  string  `json:"$ref"`
 	Default              string
 	Pattern              string
+	Deprecated           bool
 	Enums                []string `json:"enum"`
 	// Google extensions to JSON Schema
 	EnumDescriptions []string
+	EnumDeprecated   []bool
 	Variant          *variant
 
 	RefSchema *schema `json:"-"` // Schema referred to by $ref
@@ -373,10 +375,11 @@ func (rl *resourceList) UnmarshalJSON(data []byte) error {
 
 // A resource holds information about a Google API resource.
 type resource struct {
-	Name      string
-	FullName  string // {parent.FullName}.{Name}
-	Methods   methodList
-	Resources resourceList
+	Name       string
+	FullName   string // {parent.FullName}.{Name}
+	Methods    methodList
+	Resources  resourceList
+	Deprecated bool
 }
 
 func (r *resource) init(parentFullName string, topLevelSchemas map[string]*schema) error {
@@ -426,6 +429,7 @@ type method struct {
 	MediaUpload           *mediaUpload
 	SupportsMediaDownload bool
 	APIVersion            string
+	Deprecated            bool
 }
 
 type mediaUpload struct {

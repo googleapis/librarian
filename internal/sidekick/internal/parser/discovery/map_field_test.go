@@ -32,6 +32,7 @@ func TestMapFields(t *testing.T) {
 				Name: "labels",
 				Schema: &schema{
 					Description: "Lots of messages have labels.",
+					Deprecated:  true,
 					Type:        "object",
 					AdditionalProperties: &schema{
 						Type: "string",
@@ -53,6 +54,7 @@ func TestMapFields(t *testing.T) {
 				JSONName:      "labels",
 				ID:            ".package.Message.labels",
 				Documentation: "Lots of messages have labels.",
+				Deprecated:    true,
 				Typez:         api.MESSAGE_TYPE,
 				TypezID:       "$map<string, string>",
 			},
@@ -97,6 +99,7 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 				Name: "objectMapField",
 				Schema: &schema{
 					Description: "The description for objectMapField.",
+					Deprecated:  true,
 					Type:        "object",
 					AdditionalProperties: &schema{
 						Type: "object",
@@ -119,6 +122,7 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 				JSONName:      "objectMapField",
 				ID:            ".package.Message.objectMapField",
 				Documentation: "The description for objectMapField.",
+				Deprecated:    true,
 				Typez:         api.MESSAGE_TYPE,
 				TypezID:       "$map<string, .package.SomeOtherMessage>",
 			},
@@ -164,6 +168,7 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 				Schema: &schema{
 					Description: "The description for enumMapField.",
 					Type:        "object",
+					Deprecated:  true,
 					AdditionalProperties: &schema{
 						Type: "string",
 						Enums: []string{
@@ -192,6 +197,7 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 				JSONName:      "enumMapField",
 				ID:            ".package.Message.enumMapField",
 				Documentation: "The description for enumMapField.",
+				Deprecated:    true,
 				Typez:         api.MESSAGE_TYPE,
 				TypezID:       "$map<string, .package.Message.enumMapField>",
 			},

@@ -44,6 +44,7 @@ func maybeInlineObjectField(model *api.API, parent *api.Message, name string, in
 		JSONName:      name,
 		ID:            id,
 		Documentation: input.Description,
+		Deprecated:    input.Deprecated,
 		Optional:      true,
 		Typez:         api.MESSAGE_TYPE,
 		TypezID:       id,

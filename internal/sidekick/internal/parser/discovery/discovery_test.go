@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
@@ -167,6 +168,35 @@ func TestMessage(t *testing.T) {
 		},
 	}
 	apitest.CheckMessage(t, got, want)
+}
+
+func TestDeprecatedField(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := "..BackendService"
+	gotMessage, ok := model.State.MessageByID[id]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", id)
+	}
+	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name == "port" })
+	if idx == -1 {
+		t.Fatalf("expected a `port` field in the message, got=%v", gotMessage)
+	}
+	gotField := gotMessage.Fields[idx]
+	wantField := &api.Field{
+		Name:          "port",
+		JSONName:      "port",
+		ID:            "..BackendService.port",
+		Deprecated:    true,
+		Documentation: gotField.Documentation,
+		Typez:         api.INT32_TYPE,
+		TypezID:       "int32",
+	}
+	if diff := cmp.Diff(wantField, gotField, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
 }
 
 func TestMessageErrors(t *testing.T) {

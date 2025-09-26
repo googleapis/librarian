@@ -43,6 +43,7 @@ func addService(model *api.API, doc *document, resource *resource) error {
 		Package:       model.PackageName,
 		Documentation: fmt.Sprintf("Service for the `%s` resource.", resource.Name),
 		DefaultHost:   strings.TrimSuffix(strings.TrimPrefix(doc.RootURL, "https://"), "/"),
+		Deprecated:    resource.Deprecated,
 	}
 	if err := makeServiceMethods(model, service, doc, resource); err != nil {
 		return err

@@ -80,7 +80,7 @@ func makeScalarField(model *api.API, message *api.Message, name string, schema *
 		Documentation: schema.Description,
 		Typez:         typez,
 		TypezID:       typezID,
-		// TODO(#2268) - deprecated fields?
+		Deprecated:    schema.Deprecated,
 		// TODO(#2270) - optional fields?
 		Optional: typez == api.MESSAGE_TYPE,
 	}, nil

@@ -28,6 +28,7 @@ func TestMaybeInlineObject(t *testing.T) {
 	input := &schema{
 		Type:        "object",
 		Description: "A field with an inline object.",
+		Deprecated:  true,
 		Properties: []*property{
 			{
 				Name: "stringField",
@@ -57,6 +58,7 @@ func TestMaybeInlineObject(t *testing.T) {
 		JSONName:      "inline",
 		ID:            ".package.Message.inline",
 		Documentation: "A field with an inline object.",
+		Deprecated:    true,
 		Optional:      true,
 		Typez:         api.MESSAGE_TYPE,
 		TypezID:       ".package.Message.inline",
