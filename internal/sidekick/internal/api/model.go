@@ -729,6 +729,24 @@ type Field struct {
 	Codec any
 }
 
+// FieldParent returns the Parent field with an alternative name.
+//
+// In some mustache templates we want to access the parent for the
+// enclosing field. In mustache you can get a field from an enclosing context
+// *if* the name is unique.
+func (f *Field) FieldParent() *Message {
+	return f.Parent
+}
+
+// FieldCodec returns the Codec field with an alternative name.
+//
+// In some mustache templates we want to access the codec for the
+// enclosing field. In mustache you can get a field from an enclosing context
+// *if* the name is unique.
+func (f *Field) FieldCodec() any {
+	return f.Codec
+}
+
 // DocumentAsRequired returns true if the field should be documented as required.
 func (field *Field) DocumentAsRequired() bool {
 	return slices.Contains(field.Behavior, FIELD_BEHAVIOR_REQUIRED)
