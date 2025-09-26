@@ -334,11 +334,15 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	repo := info.repo
-	status, err := repo.AddAll()
+	if err := repo.AddAll(); err != nil {
+		return err
+	}
+	isClean, err := repo.IsClean()
 	if err != nil {
 		return err
 	}
-	if status.IsClean() {
+
+	if isClean {
 		slog.Info("No changes to commit, skipping commit and push.")
 		return nil
 	}

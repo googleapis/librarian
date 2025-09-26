@@ -356,7 +356,7 @@ func TestAddAll(t *testing.T) {
 
 			test.setup(t, dir)
 
-			status, err := r.AddAll()
+			err := r.AddAll()
 			if (err != nil) != test.wantErr {
 				t.Errorf("AddAll() error = %v, wantErr %v", err, test.wantErr)
 				return
@@ -364,9 +364,12 @@ func TestAddAll(t *testing.T) {
 			if err != nil {
 				return
 			}
-
-			if status.IsClean() != test.wantStatusIsClean {
-				t.Errorf("AddAll() status.IsClean() = %v, want %v", status.IsClean(), test.wantStatusIsClean)
+			isClean, err := r.IsClean()
+			if err != nil {
+				t.Fatalf("IsClean() returned an error: %v", err)
+			}
+			if isClean != test.wantStatusIsClean {
+				t.Errorf("AddAll() status.IsClean() = %v, want %v", isClean, test.wantStatusIsClean)
 			}
 		})
 	}
@@ -1226,7 +1229,7 @@ func TestCleanUntracked(t *testing.T) {
 				}
 			}
 
-			if _, err := localRepo.AddAll(); err != nil {
+			if err := localRepo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
 

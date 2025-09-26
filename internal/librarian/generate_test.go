@@ -196,7 +196,7 @@ func TestRunBuildCommand(t *testing.T) {
 					}
 				}
 			}
-			if _, err := r.repo.AddAll(); err != nil {
+			if err := r.repo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
 			if err := r.repo.Commit("test commit"); err != nil {
