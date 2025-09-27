@@ -630,6 +630,33 @@ func TestGenerateScenarios(t *testing.T) {
 			wantConfigureCalls: 1,
 		},
 		{
+			name:    "generate single library with librarian config",
+			api:     "some/api",
+			library: "some-library",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+				configureLibraryPaths: []string{
+					"src/a",
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "a/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			ghClient:           &mockGitHubClient{},
+			build:              true,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+			wantConfigureCalls: 1,
+		},
+		{
 			name:    "generate single existing library by library id",
 			library: "some-library",
 			state: &config.LibrarianState{
