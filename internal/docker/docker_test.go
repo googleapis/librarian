@@ -269,6 +269,37 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
+			name: "Configure with nil global files",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:       state,
+					LibraryID:   testLibraryID,
+					RepoDir:     repoDir,
+					ApiRoot:     testAPIRoot,
+					GlobalFiles: nil,
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
 			name: "Configure with multiple libraries in librarian state",
 			docker: &Docker{
 				Image: testImage,
