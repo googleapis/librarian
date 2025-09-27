@@ -448,10 +448,11 @@ type enumAnnotation struct {
 }
 
 type enumValueAnnotation struct {
-	Name        string
-	VariantName string
-	EnumType    string
-	DocLines    []string
+	Name              string
+	VariantName       string
+	EnumType          string
+	DocLines          []string
+	SerializeAsString bool
 }
 
 // annotateModel creates a struct used as input for Mustache templates.
@@ -1091,9 +1092,10 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 
 func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) {
 	annotations := &enumValueAnnotation{
-		Name:        enumValueName(ev),
-		EnumType:    enumName(ev.Parent),
-		VariantName: enumValueVariantName(ev),
+		Name:              enumValueName(ev),
+		EnumType:          enumName(ev.Parent),
+		VariantName:       enumValueVariantName(ev),
+		SerializeAsString: c.serializeEnumsAsStrings,
 	}
 	ev.Codec = annotations
 

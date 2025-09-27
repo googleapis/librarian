@@ -146,7 +146,12 @@ impl serde::ser::Serialize for {{Codec.Name}} {
     {
         match self {
             {{#Codec.UniqueNames}}
+            {{#Codec.SerializeAsString}}
+            Self::{{Codec.VariantName}} => serializer.serialize_str("{{Name}}"),
+            {{/Codec.SerializeAsString}}
+            {{^Codec.SerializeAsString}}
             Self::{{Codec.VariantName}} => serializer.serialize_i32({{Number}}),
+            {{/Codec.SerializeAsString}}
             {{/Codec.UniqueNames}}
             Self::UnknownValue(u) => u.0.serialize(serializer),
         }

@@ -128,6 +128,7 @@ func TestParseOptionsOpenAPI(t *testing.T) {
 		systemParameters: []systemParameter{
 			{Name: "$alt", Value: "json"},
 		},
+		serializeEnumsAsStrings: true,
 	}
 	sort.Slice(want.extraPackages, func(i, j int) bool {
 		return want.extraPackages[i].name < want.extraPackages[j].name
@@ -166,7 +167,8 @@ func TestParseOptionsTemplateOverride(t *testing.T) {
 		systemParameters: []systemParameter{
 			{Name: "$alt", Value: "json"},
 		},
-		templateOverride: "templates/fancy-templates",
+		serializeEnumsAsStrings: true,
+		templateOverride:        "templates/fancy-templates",
 	}
 	sort.Slice(want.extraPackages, func(i, j int) bool {
 		return want.extraPackages[i].name < want.extraPackages[j].name
