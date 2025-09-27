@@ -204,6 +204,11 @@ func TestGetGlobalFiles(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name:   "nil_global_files",
+			config: &LibrarianConfig{},
+			want:   nil,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.config.GetGlobalFiles()
