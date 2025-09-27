@@ -33,7 +33,7 @@ func TestPackageNames(t *testing.T) {
 	}
 	// Override the default name for test APIs ("Test").
 	model.Name = "workflows-v1"
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"per-service-features": "true",
 		"copyright-year":       "2035",
 	})
@@ -158,7 +158,7 @@ func TestServiceAnnotations(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService.DeleteResource")
 	}
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"per-service-features": "true",
 	})
 	if err != nil {
@@ -304,7 +304,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
 	if err != nil {
@@ -341,7 +341,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
 
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"name-overrides": ".test.v1.ResourceService=Renamed",
 	})
 	if err != nil {
@@ -566,7 +566,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"name-overrides": ".test.Message.nested_thing=NestedThingOneOf",
 	})
 	if err != nil {
@@ -632,7 +632,7 @@ func TestEnumAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -725,7 +725,7 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -787,7 +787,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -887,7 +887,7 @@ func TestMessageAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -976,7 +976,7 @@ func TestFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[map_message.ID] = map_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1095,7 +1095,7 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
-		codec, err := newCodec(true, map[string]string{})
+		codec, err := newCodec("protobuf", map[string]string{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1248,7 +1248,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[map_message.ID] = map_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"package:wkt": "force-used=true,package=google-cloud-wkt,source=google.protobuf",
 	})
 	if err != nil {
@@ -1407,7 +1407,7 @@ func TestPathInfoAnnotations(t *testing.T) {
 			[]*api.Enum{},
 			[]*api.Service{service})
 		api.CrossReference(model)
-		codec, err := newCodec(true, map[string]string{
+		codec, err := newCodec("protobuf", map[string]string{
 			"include-grpc-only-methods": "true",
 		})
 		if err != nil {
@@ -1617,7 +1617,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 		[]*api.Enum{},
 		[]*api.Service{service})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1707,7 +1707,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			[]*api.Enum{},
 			[]*api.Service{service})
 		api.CrossReference(model)
-		codec, err := newCodec(true, map[string]string{})
+		codec, err := newCodec("protobuf", map[string]string{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1879,7 +1879,7 @@ func TestInternalMessageOverrides(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{public, private1, private2},
 		[]*api.Enum{},
 		[]*api.Service{})
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"internal-types": ".test.Private1,.test.Private2",
 	})
 	if err != nil {
@@ -1922,7 +1922,7 @@ func TestRoutingRequired(t *testing.T) {
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"include-grpc-only-methods": "true",
 		"routing-required":          "true",
 	})
@@ -1938,7 +1938,7 @@ func TestRoutingRequired(t *testing.T) {
 
 func TestGenerateSetterSamples(t *testing.T) {
 	model := serviceAnnotationsModel()
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"generate-setter-samples": "true",
 	})
 	if err != nil {
@@ -1978,7 +1978,7 @@ func TestSetterSampleAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"generate-setter-samples": "true",
 	})
 	if err != nil {

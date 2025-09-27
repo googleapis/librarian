@@ -51,9 +51,9 @@ var commentUrlRegex = regexp.MustCompile(
 		`[a-zA-Z]{2,63}` + // The root domain is far more strict
 		`(/[-a-zA-Z0-9@:%_\+.~#?&/={}\$]*)?`) // Accept just about anything on the query and URL fragments
 
-func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
+func newCodec(specificationFormat string, options map[string]string) (*codec, error) {
 	var sysParams []systemParameter
-	if protobufSource {
+	if specificationFormat == "protobuf" {
 		sysParams = append(sysParams, systemParameter{
 			Name: "$alt", Value: "json;enum-encoding=int",
 		})
@@ -72,7 +72,7 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 		version:                 "0.0.0",
 		releaseLevel:            "preview",
 		systemParameters:        sysParams,
-		serializeEnumsAsStrings: !protobufSource,
+		serializeEnumsAsStrings: specificationFormat != "protobuf",
 	}
 
 	for key, definition := range options {
