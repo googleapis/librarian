@@ -269,7 +269,7 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: "Configure with nil global files",
+			name: "configure_with_nil_global_files",
 			docker: &Docker{
 				Image: testImage,
 			},
@@ -300,7 +300,7 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: "Configure with multiple libraries in librarian state",
+			name: "configure_with_multiple_libraries_in_librarian_state",
 			docker: &Docker{
 				Image: testImage,
 			},
