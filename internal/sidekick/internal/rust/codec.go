@@ -53,17 +53,14 @@ var commentUrlRegex = regexp.MustCompile(
 
 func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 	var sysParams []systemParameter
-	var serializeEnumsAsStrings bool
 	if protobufSource {
 		sysParams = append(sysParams, systemParameter{
 			Name: "$alt", Value: "json;enum-encoding=int",
 		})
-		serializeEnumsAsStrings = false
 	} else {
 		sysParams = append(sysParams, systemParameter{
 			Name: "$alt", Value: "json",
 		})
-		serializeEnumsAsStrings = true
 	}
 
 	year, _, _ := time.Now().Date()
@@ -75,7 +72,7 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 		version:                 "0.0.0",
 		releaseLevel:            "preview",
 		systemParameters:        sysParams,
-		serializeEnumsAsStrings: serializeEnumsAsStrings,
+		serializeEnumsAsStrings: !protobufSource,
 	}
 
 	for key, definition := range options {
