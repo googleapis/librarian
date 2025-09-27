@@ -93,6 +93,7 @@ func TestMakeMessageFields(t *testing.T) {
 			Typez:         api.UINT32_TYPE,
 			TypezID:       "uint32",
 			Deprecated:    true,
+			Optional:      true,
 		},
 		{
 			Name:          "intField",
@@ -101,6 +102,7 @@ func TestMakeMessageFields(t *testing.T) {
 			Documentation: "The field description.",
 			Typez:         api.INT32_TYPE,
 			TypezID:       "int32",
+			Optional:      true,
 		},
 		{
 			Name:          "longField",
@@ -109,6 +111,7 @@ func TestMakeMessageFields(t *testing.T) {
 			Documentation: "The field description.",
 			Typez:         api.UINT64_TYPE,
 			TypezID:       "uint64",
+			Optional:      true,
 		},
 		{
 			Name:          "arrayFieldString",

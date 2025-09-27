@@ -110,6 +110,7 @@ func TestMakeEnumFields(t *testing.T) {
 				Documentation: "The networking tier.",
 				Typez:         api.ENUM_TYPE,
 				TypezID:       ".package.Message.networkTier",
+				Optional:      true,
 			},
 		},
 	}
@@ -194,6 +195,7 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 				Deprecated:    true,
 				Typez:         api.ENUM_TYPE,
 				TypezID:       ".package.Message.networkTier",
+				Optional:      true,
 			},
 		},
 	}
@@ -299,6 +301,7 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 				Documentation: "The networking tier.",
 				Typez:         api.ENUM_TYPE,
 				TypezID:       ".package.Message.networkTier",
+				Optional:      true,
 			},
 		},
 	}

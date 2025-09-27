@@ -79,6 +79,7 @@ func TestMaybeInlineObject(t *testing.T) {
 				Documentation: "The stringField field.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
+				Optional:      true,
 			},
 			{
 				Name:          "intField",
@@ -87,6 +88,7 @@ func TestMaybeInlineObject(t *testing.T) {
 				Documentation: "The intField field.",
 				Typez:         api.UINT64_TYPE,
 				TypezID:       "uint64",
+				Optional:      true,
 			},
 		},
 		Parent: message,
@@ -162,6 +164,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 				Documentation: "The stringField field.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
+				Optional:      true,
 			},
 			{
 				Name:          "intField",
@@ -170,6 +173,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 				Documentation: "The intField field.",
 				Typez:         api.UINT64_TYPE,
 				TypezID:       "uint64",
+				Optional:      true,
 			},
 		},
 		Parent: message,

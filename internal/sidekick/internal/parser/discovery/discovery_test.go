@@ -147,6 +147,7 @@ func TestMessage(t *testing.T) {
 				Documentation: "The full or partial URL to the default BackendService resource. Before forwarding the request to backendService, the load balancer applies any relevant headerActions specified as part of this backendServiceWeight.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
+				Optional:      true,
 			},
 			{
 				Name:          "headerAction",
@@ -164,6 +165,7 @@ func TestMessage(t *testing.T) {
 				Documentation: "Specifies the fraction of traffic sent to a backend service, computed as weight / (sum of all weightedBackendService weights in routeAction) . The selection of a backend service is determined only for new traffic. Once a user's request has been directed to a backend service, subsequent requests are sent to the same backend service as determined by the backend service's session affinity policy. Don't configure session affinity if you're using weighted traffic splitting. If you do, the weighted traffic splitting configuration takes precedence. The value must be from 0 to 1000.",
 				Typez:         api.UINT32_TYPE,
 				TypezID:       "uint32",
+				Optional:      true,
 			},
 		},
 	}
@@ -193,6 +195,7 @@ func TestDeprecatedField(t *testing.T) {
 		Documentation: gotField.Documentation,
 		Typez:         api.INT32_TYPE,
 		TypezID:       "int32",
+		Optional:      true,
 	}
 	if diff := cmp.Diff(wantField, gotField, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
