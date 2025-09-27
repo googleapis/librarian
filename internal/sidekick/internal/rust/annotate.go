@@ -950,6 +950,9 @@ func (c *codec) primitiveSerdeAs(field *api.Field) string {
 	case api.DOUBLE_TYPE:
 		return "wkt::internal::F64"
 	case api.BYTES_TYPE:
+		if c.bytesUseUrlSafeAlphabet {
+			return "serde_with::base64::Base64<serde_with::base64::UrlSafe>"
+		}
 		return "serde_with::base64::Base64"
 	default:
 		return ""
@@ -973,6 +976,9 @@ func (c *codec) mapValueSerdeAs(field *api.Field) string {
 func (c *codec) messageFieldSerdeAs(field *api.Field) string {
 	switch field.TypezID {
 	case ".google.protobuf.BytesValue":
+		if c.bytesUseUrlSafeAlphabet {
+			return "serde_with::base64::Base64<serde_with::base64::UrlSafe>"
+		}
 		return "serde_with::base64::Base64"
 	case ".google.protobuf.UInt64Value":
 		return "wkt::internal::U64"

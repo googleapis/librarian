@@ -168,6 +168,7 @@ func TestParseOptionsTemplateOverride(t *testing.T) {
 			{Name: "$alt", Value: "json"},
 		},
 		serializeEnumsAsStrings: true,
+		bytesUseUrlSafeAlphabet: true,
 		templateOverride:        "templates/fancy-templates",
 	}
 	sort.Slice(want.extraPackages, func(i, j int) bool {

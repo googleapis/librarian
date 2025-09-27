@@ -73,6 +73,7 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 		releaseLevel:            "preview",
 		systemParameters:        sysParams,
 		serializeEnumsAsStrings: specificationFormat != "protobuf",
+		bytesUseUrlSafeAlphabet: specificationFormat == "disco",
 	}
 
 	for key, definition := range options {
@@ -251,6 +252,8 @@ type codec struct {
 	systemParameters []systemParameter
 	// If true, enums are serialized as strings.
 	serializeEnumsAsStrings bool
+	// If true, bytes are serialized using the url-safe alphabet.
+	bytesUseUrlSafeAlphabet bool
 	// Overrides the template subdirectory.
 	templateOverride string
 	// If true, this includes gRPC-only methods, such as methods without HTTP

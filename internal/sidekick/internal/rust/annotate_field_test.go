@@ -217,6 +217,55 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 	}
 }
 
+func TestBytesAnnotations(t *testing.T) {
+	for _, test := range []struct {
+		sourceSpecification string
+		wantType            string
+		wantSerdeAs         string
+	}{
+		{"protobuf", "::bytes::Bytes", "serde_with::base64::Base64"},
+		{"openapi", "::bytes::Bytes", "serde_with::base64::Base64"},
+		{"disco", "::bytes::Bytes", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+	} {
+		singular_field := &api.Field{
+			Name:     "singular_field",
+			JSONName: "singularField",
+			ID:       ".test.Message.singular_field",
+			Typez:    api.BYTES_TYPE,
+			TypezID:  "bytes",
+		}
+		message := &api.Message{
+			Name:          "TestMessage",
+			Package:       "test",
+			ID:            ".test.TestMessage",
+			Documentation: "A test message.",
+			Fields:        []*api.Field{singular_field},
+		}
+		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+		api.CrossReference(model)
+		api.LabelRecursiveFields(model)
+		codec, err := newCodec(test.sourceSpecification, map[string]string{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		annotateModel(model, codec)
+
+		wantField := &fieldAnnotations{
+			FieldName:          "singular_field",
+			SetterName:         "singular_field",
+			BranchName:         "SingularField",
+			FQMessageName:      "crate::model::TestMessage",
+			FieldType:          test.wantType,
+			PrimitiveFieldType: test.wantType,
+			SerdeAs:            test.wantSerdeAs,
+			AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
+		}
+		if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
+			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		}
+	}
+}
+
 func TestWrapperFieldAnnotations(t *testing.T) {
 	for _, test := range []struct {
 		wantType    string
