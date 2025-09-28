@@ -112,6 +112,29 @@ func TestDisco_ParsePagination(t *testing.T) {
 	}
 }
 
+func TestDisco_ParsePaginationAggregate(t *testing.T) {
+	model, err := ParseDisco(discoSourceFile, "", map[string]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantID := "..machineTypes.aggregatedList"
+	got, ok := model.State.MethodByID[wantID]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", wantID)
+	}
+	wantPagination := &api.Field{
+		Name:     "pageToken",
+		JSONName: "pageToken",
+		ID:       "..machineTypes.aggregatedListRequest.pageToken",
+		Typez:    api.STRING_TYPE,
+		TypezID:  "string",
+		Optional: true,
+	}
+	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
 func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 	model, err := ParseDisco(discoSourceFile, "", map[string]string{})
 	if err != nil {

@@ -122,12 +122,16 @@ func paginationResponseItem(overrides []config.PaginationOverride, methodID stri
 		return response.Fields[fieldIdx]
 	}
 
+	var mapItems *api.Field
 	for _, field := range response.Fields {
+		if field.Map {
+			mapItems = field
+		}
 		if field.Repeated && field.Typez == api.MESSAGE_TYPE {
 			return field
 		}
 	}
-	return nil
+	return mapItems
 }
 
 func paginationResponseNextPageToken(response *api.Message) *api.Field {

@@ -536,7 +536,87 @@ func TestPaginationResponseErrors(t *testing.T) {
 	}
 }
 
-func TestPaginationResponseItem(t *testing.T) {
+func TestPaginationResponseItemMatching(t *testing.T) {
+	for _, test := range []struct {
+		Repeated bool
+		Map      bool
+		Typez    api.Typez
+		Name     string
+	}{
+		{false, true, api.MESSAGE_TYPE, "items"},
+		{true, false, api.MESSAGE_TYPE, "items"},
+	} {
+		response := &api.Message{
+			Name: "Response",
+			ID:   ".package.Response",
+			Fields: []*api.Field{
+				{
+					Name:     test.Name,
+					JSONName: test.Name,
+					Typez:    test.Typez,
+					Repeated: test.Repeated,
+					Map:      test.Map,
+				},
+			},
+		}
+		got := paginationResponseItem(nil, "package.Service.List", response)
+		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
+func TestPaginationResponseItemMatchingMany(t *testing.T) {
+	response := &api.Message{
+		Name: "Response",
+		ID:   ".package.Response",
+		Fields: []*api.Field{
+			{
+				Name:     "first",
+				JSONName: "first",
+				Typez:    api.MESSAGE_TYPE,
+				Repeated: true,
+			},
+			{
+				Name:     "second",
+				JSONName: "second",
+				Typez:    api.MESSAGE_TYPE,
+				Repeated: true,
+			},
+		},
+	}
+	got := paginationResponseItem(nil, "package.Service.List", response)
+	if diff := cmp.Diff(response.Fields[0], got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestPaginationResponseItemMatchingPreferRepeatedOverMap(t *testing.T) {
+	response := &api.Message{
+		Name: "Response",
+		ID:   ".package.Response",
+		Fields: []*api.Field{
+			{
+				Name:     "map",
+				JSONName: "map",
+				Typez:    api.MESSAGE_TYPE,
+				Map:      true,
+			},
+			{
+				Name:     "first",
+				JSONName: "first",
+				Typez:    api.MESSAGE_TYPE,
+				Repeated: true,
+			},
+		},
+	}
+	got := paginationResponseItem(nil, "package.Service.List", response)
+	if diff := cmp.Diff(response.Fields[1], got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestPaginationResponseItemNotMatching(t *testing.T) {
 	overrides := []config.PaginationOverride{
 		{ID: ".package.Service.List", ItemField: "--invalid--"},
 	}
