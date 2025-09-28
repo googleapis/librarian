@@ -51,6 +51,7 @@ func maybeMapOfObjectField(model *api.API, message *api.Message, input *property
 		Typez:         api.MESSAGE_TYPE,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
+		Map:           true,
 	}
 	return field
 }
@@ -72,6 +73,7 @@ func maybeMapOfEnumField(model *api.API, message *api.Message, input *property) 
 		Typez:         api.MESSAGE_TYPE,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
+		Map:           true,
 	}
 	return field, nil
 }
@@ -90,6 +92,7 @@ func maybeMapOfPrimitiveField(model *api.API, message *api.Message, input *prope
 		Typez:         api.MESSAGE_TYPE,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
+		Map:           true,
 	}
 	return field, nil
 }
