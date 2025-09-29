@@ -567,27 +567,37 @@ func TestPaginationResponseItemMatching(t *testing.T) {
 }
 
 func TestPaginationResponseItemMatchingMany(t *testing.T) {
-	response := &api.Message{
-		Name: "Response",
-		ID:   ".package.Response",
-		Fields: []*api.Field{
-			{
-				Name:     "first",
-				JSONName: "first",
-				Typez:    api.MESSAGE_TYPE,
-				Repeated: true,
+	for _, test := range []struct {
+		Repeated bool
+		Map      bool
+	}{
+		{true, false},
+		{false, true},
+	} {
+		response := &api.Message{
+			Name: "Response",
+			ID:   ".package.Response",
+			Fields: []*api.Field{
+				{
+					Name:     "first",
+					JSONName: "first",
+					Typez:    api.MESSAGE_TYPE,
+					Repeated: test.Repeated,
+					Map:      test.Map,
+				},
+				{
+					Name:     "second",
+					JSONName: "second",
+					Typez:    api.MESSAGE_TYPE,
+					Repeated: test.Repeated,
+					Map:      test.Map,
+				},
 			},
-			{
-				Name:     "second",
-				JSONName: "second",
-				Typez:    api.MESSAGE_TYPE,
-				Repeated: true,
-			},
-		},
-	}
-	got := paginationResponseItem(nil, "package.Service.List", response)
-	if diff := cmp.Diff(response.Fields[0], got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+		got := paginationResponseItem(nil, "package.Service.List", response)
+		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
 	}
 }
 
