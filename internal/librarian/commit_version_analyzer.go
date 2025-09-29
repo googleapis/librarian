@@ -46,6 +46,18 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 	return convertToConventionalCommits(repo, library, commits, shouldIncludeFiles)
 }
 
+// shouldIncludeForRelease determines if a commit should be included in a release.
+// It returns true if there is at least one file in the commit that is under a source_root
+// and not under a release_exclude_path.
+func shouldIncludeForRelease(files, sourceRoots, excludePaths []string) bool {
+	for _, file := range files {
+		if isUnderAnyPath(file, sourceRoots) && !isUnderAnyPath(file, excludePaths) {
+			return true
+		}
+	}
+	return false
+}
+
 // getConventionalCommitsSinceLastGeneration returns all conventional commits for
 // all API paths in given library since the last generation. The repo input should
 // be the googleapis source repo.
@@ -68,28 +80,35 @@ func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library 
 	// checks that the files in the commit are in the api paths for the source repo.
 	// The generation change is for changes in the source repo and NOT the language repo.
 	shouldIncludeFiles := func(files []string) bool {
-		for _, file := range files {
-			if isUnderAnyPath(file, apiPaths) {
-				return true
-			}
-		}
-		return false
+		return shouldIncludeForGeneration(files, apiPaths)
 	}
 
 	return convertToConventionalCommits(repo, library, commits, shouldIncludeFiles)
 }
 
+// shouldIncludeForGeneration determines if a commit should be included in generation.
+// It returns true if there is at least one file in the commit that is under the
+// library's API(s) path (a library could have multiple APIs).
+func shouldIncludeForGeneration(files, apiPaths []string) bool {
+	for _, file := range files {
+		if isUnderAnyPath(file, apiPaths) {
+			return true
+		}
+	}
+	return false
+}
+
 // convertToConventionalCommits converts a list of commits in a git repo into a list
-// of conventional commits. The shouldIncludeFiles parameter is custom filter to exclude
-// non-matching files depending on a generation or a release change.
-func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, shouldIncludeFiles func(files []string) bool) ([]*conventionalcommits.ConventionalCommit, error) {
+// of conventional commits. The filesFilter parameter is custom filter out non-matching
+// files depending on a generation or a release change.
+func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, filesFilter func(files []string) bool) ([]*conventionalcommits.ConventionalCommit, error) {
 	var conventionalCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
 		files, err := repo.ChangedFilesInCommit(commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get changed files for commit %s: %w", commit.Hash.String(), err)
 		}
-		if !shouldIncludeFiles(files) {
+		if !filesFilter(files) {
 			continue
 		}
 		parsedCommits, err := conventionalcommits.ParseCommits(commit, library.ID)
@@ -112,18 +131,6 @@ func isUnderAnyPath(file string, paths []string) bool {
 	for _, p := range paths {
 		rel, err := filepath.Rel(p, file)
 		if err == nil && !strings.HasPrefix(rel, "..") {
-			return true
-		}
-	}
-	return false
-}
-
-// shouldIncludeForRelease determines if a commit should be included in a release.
-// It returns true if there is at least one file in the commit that is under a source_root
-// and not under a release_exclude_path.
-func shouldIncludeForRelease(files, sourceRoots, excludePaths []string) bool {
-	for _, file := range files {
-		if isUnderAnyPath(file, sourceRoots) && !isUnderAnyPath(file, excludePaths) {
 			return true
 		}
 	}

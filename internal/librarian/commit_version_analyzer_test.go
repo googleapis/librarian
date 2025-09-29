@@ -143,6 +143,42 @@ func TestShouldIncludeForRelease(t *testing.T) {
 	}
 }
 
+func TestShouldIncludeForGeneration(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name     string
+		files    []string
+		apiPaths []string
+		want     bool
+	}{
+		{
+			name:     "all_files_in_apiPaths",
+			files:    []string{"a/b/c.proto"},
+			apiPaths: []string{"a"},
+			want:     true,
+		},
+		{
+			name:     "some_files_in_apiPaths",
+			files:    []string{"a/b/c.proto", "e/f/g.proto"},
+			apiPaths: []string{"a"},
+			want:     true,
+		},
+		{
+			name:     "no_files_in_apiPaths",
+			files:    []string{"a/b/c.proto"},
+			apiPaths: []string{"b"},
+			want:     false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldIncludeForGeneration(test.files, test.apiPaths)
+			if got != test.want {
+				t.Errorf("shouldIncludeForGeneration(%v, %v) = %v, want %v", test.files, test.apiPaths, got, test.want)
+			}
+		})
+	}
+}
+
 func TestFormatTag(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
