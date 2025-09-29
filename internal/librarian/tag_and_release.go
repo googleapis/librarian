@@ -163,7 +163,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		return err
 	}
 
-  librarianConfig, err := loadLibrarianConfigFromGitHub(ctx, r.ghClient, targetBranch)
+	librarianConfig, err := loadLibrarianConfigFromGitHub(ctx, r.ghClient, targetBranch)
 	if err != nil {
 		slog.Warn("error loading .librarian/config.yaml", slog.Any("err", err))
 	}
