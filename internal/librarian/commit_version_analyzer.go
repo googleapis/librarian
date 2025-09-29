@@ -39,11 +39,11 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 
 	// checks that if the files in the commit are in the sources root. The release
 	// changes are in the language repo and NOT in the source repo.
-	filesFilter := func(files []string) bool {
+	shouldIncludeFiles := func(files []string) bool {
 		return shouldIncludeForRelease(files, library.SourceRoots, library.ReleaseExcludePaths)
 	}
 
-	return convertToConventionalCommits(repo, library, commits, filesFilter)
+	return convertToConventionalCommits(repo, library, commits, shouldIncludeFiles)
 }
 
 // getConventionalCommitsSinceLastGeneration returns all conventional commits for
@@ -65,10 +65,9 @@ func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library 
 		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)
 	}
 
-	// custom filter to check that if the files in the commit are in the api paths and
-	// not sources root. The generation change is for changes in the source repo and NOT
-	// the language repo.
-	filterFilter := func(files []string) bool {
+	// checks that the files in the commit are in the api paths for the source repo.
+	// The generation change is for changes in the source repo and NOT the language repo.
+	shouldIncludeFiles := func(files []string) bool {
 		for _, file := range files {
 			if isUnderAnyPath(file, apiPaths) {
 				return true
@@ -77,20 +76,20 @@ func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library 
 		return false
 	}
 
-	return convertToConventionalCommits(repo, library, commits, filterFilter)
+	return convertToConventionalCommits(repo, library, commits, shouldIncludeFiles)
 }
 
 // convertToConventionalCommits converts a list of commits in a git repo into a list
-// of conventional commits. The filesFilter is custom filter to exclude non-matching
-// files depending on a generation or a release change.
-func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, filesFilter func(files []string) bool) ([]*conventionalcommits.ConventionalCommit, error) {
+// of conventional commits. The shouldIncludeFiles parameter is custom filter to exclude
+// non-matching files depending on a generation or a release change.
+func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, shouldIncludeFiles func(files []string) bool) ([]*conventionalcommits.ConventionalCommit, error) {
 	var conventionalCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
 		files, err := repo.ChangedFilesInCommit(commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get changed files for commit %s: %w", commit.Hash.String(), err)
 		}
-		if !filesFilter(files) {
+		if !shouldIncludeFiles(files) {
 			continue
 		}
 		parsedCommits, err := conventionalcommits.ParseCommits(commit, library.ID)
