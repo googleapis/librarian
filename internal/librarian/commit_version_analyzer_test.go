@@ -317,7 +317,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := GetConventionalCommitsSinceLastRelease(test.repo, test.library)
+			got, err := getConventionalCommitsSinceLastRelease(test.repo, test.library)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("GetConventionalCommitsSinceLastRelease() should have failed")
