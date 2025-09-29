@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-func TestShouldInclude(t *testing.T) {
+func TestShouldIncludeForRelease(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name         string
@@ -135,9 +135,9 @@ func TestShouldInclude(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := shouldInclude(test.files, test.sourceRoots, test.excludePaths)
+			got := shouldIncludeForRelease(test.files, test.sourceRoots, test.excludePaths)
 			if got != test.want {
-				t.Errorf("shouldInclude(%v, %v, %v) = %v, want %v", test.files, test.sourceRoots, test.excludePaths, got, test.want)
+				t.Errorf("shouldIncludeForRelease(%v, %v, %v) = %v, want %v", test.files, test.sourceRoots, test.excludePaths, got, test.want)
 			}
 		})
 	}

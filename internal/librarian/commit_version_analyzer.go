@@ -29,7 +29,7 @@ import (
 const defaultTagFormat = "{id}-{version}"
 
 // GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
-// version specified in the state file.
+// version specified in the state file. The repo should be the language repo.
 func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
 	tag := formatTag(library.TagFormat, library.ID, library.Version)
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
@@ -37,11 +37,18 @@ func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 		return nil, fmt.Errorf("failed to get commits for library %s: %w", library.ID, err)
 	}
 
-	return convertToConventionalCommits(repo, library, commits)
+	// checks that if the files in the commit are in the sources root. The release
+	// changes are in the language repo and NOT in the source repo.
+	filesFilter := func(files []string) bool {
+		return shouldIncludeForRelease(files, library.SourceRoots, library.ReleaseExcludePaths)
+	}
+
+	return convertToConventionalCommits(repo, library, commits, filesFilter)
 }
 
 // getConventionalCommitsSinceLastGeneration returns all conventional commits for
-// all API paths in given library since the last generation.
+// all API paths in given library since the last generation. The repo input should
+// be the googleapis source repo.
 func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*conventionalcommits.ConventionalCommit, error) {
 	if lastGenCommit == "" {
 		slog.Info("the last generation commit is empty, skip fetching conventional commits", "library", library.ID)
@@ -58,17 +65,32 @@ func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library 
 		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)
 	}
 
-	return convertToConventionalCommits(repo, library, commits)
+	// custom filter to check that if the files in the commit are in the api paths and
+	// not sources root. The generation change is for changes in the source repo and NOT
+	// the language repo.
+	filterFilter := func(files []string) bool {
+		for _, file := range files {
+			if isUnderAnyPath(file, apiPaths) {
+				return true
+			}
+		}
+		return false
+	}
+
+	return convertToConventionalCommits(repo, library, commits, filterFilter)
 }
 
-func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit) ([]*conventionalcommits.ConventionalCommit, error) {
+// convertToConventionalCommits converts a list of commits in a git repo into a list
+// of conventional commits. The filesFilter is custom filter to exclude non-matching
+// files depending on a generation or a release change.
+func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, filesFilter func(files []string) bool) ([]*conventionalcommits.ConventionalCommit, error) {
 	var conventionalCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
 		files, err := repo.ChangedFilesInCommit(commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get changed files for commit %s: %w", commit.Hash.String(), err)
 		}
-		if !shouldInclude(files, library.SourceRoots, library.ReleaseExcludePaths) {
+		if !filesFilter(files) {
 			continue
 		}
 		parsedCommits, err := conventionalcommits.ParseCommits(commit, library.ID)
@@ -97,10 +119,10 @@ func isUnderAnyPath(file string, paths []string) bool {
 	return false
 }
 
-// shouldInclude determines if a commit should be included in a release.
+// shouldIncludeForRelease determines if a commit should be included in a release.
 // It returns true if there is at least one file in the commit that is under a source_root
 // and not under a release_exclude_path.
-func shouldInclude(files, sourceRoots, excludePaths []string) bool {
+func shouldIncludeForRelease(files, sourceRoots, excludePaths []string) bool {
 	for _, file := range files {
 		if isUnderAnyPath(file, sourceRoots) && !isUnderAnyPath(file, excludePaths) {
 			return true
