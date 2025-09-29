@@ -256,7 +256,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		wantErrPhrase string
 	}{
 		{
-			name: "get_commits_for_foo",
+			name: "found_matching_commits_for_foo",
 			repo: repoWithCommits,
 			library: &config.LibraryState{
 				ID:                  "foo",
@@ -279,6 +279,34 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 					Subject:   "a fix for foo",
 					LibraryID: "foo",
 					Footers:   make(map[string]string),
+				},
+			},
+		},
+		{
+			name: "no_matching_commits_for_foo",
+			repo: repoWithCommits,
+			library: &config.LibraryState{
+				ID:          "foo",
+				Version:     "1.0.0",
+				TagFormat:   "{id}-v{version}",
+				SourceRoots: []string{"no_matching_dir"},
+			},
+		},
+		{
+			name: "apiPaths_has_no_impact_on_release",
+			repo: repoWithCommits,
+			library: &config.LibraryState{
+				ID:          "foo",
+				Version:     "1.0.0",
+				TagFormat:   "{id}-v{version}",
+				SourceRoots: []string{"no_matching_dir"}, // For release, only this is considered
+				APIs: []*config.API{
+					{
+						Path: "foo",
+					},
+					{
+						Path: "bar",
+					},
 				},
 			},
 		},
@@ -383,6 +411,29 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 					{
 						Path: "foo",
 					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234": {
+						{Message: "feat(baz): a feature"},
+					},
+				},
+				ChangedFilesInCommitValue: []string{"baz/a.proto", "baz/b.proto", "bar/a.proto"}, // file changed is not in foo/*
+			},
+		},
+		{
+			name: "sources_root_has_no_impact",
+			library: &config.LibraryState{
+				ID: "foo",
+				APIs: []*config.API{
+					{
+						Path: "foo", // For generation, only this is considered
+					},
+				},
+				SourceRoots: []string{
+					"baz/",
+					"bar/",
 				},
 			},
 			repo: &MockRepository{
