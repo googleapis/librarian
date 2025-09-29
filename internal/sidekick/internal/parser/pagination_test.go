@@ -537,14 +537,19 @@ func TestPaginationResponseErrors(t *testing.T) {
 }
 
 func TestPaginationResponseItem(t *testing.T) {
+	overrides := []config.PaginationOverride{
+		{ID: ".package.Service.List", ItemField: "--invalid--"},
+	}
 	for _, test := range []struct {
-		Name     string
-		Repeated bool
-		Typez    api.Typez
+		Name      string
+		Repeated  bool
+		Typez     api.Typez
+		Overrides []config.PaginationOverride
 	}{
-		{"badRepeated", false, api.MESSAGE_TYPE},
-		{"badType", true, api.STRING_TYPE},
-		{"bothBad", false, api.ENUM_TYPE},
+		{"badRepeated", false, api.MESSAGE_TYPE, nil},
+		{"badType", true, api.STRING_TYPE, nil},
+		{"bothBad", false, api.ENUM_TYPE, nil},
+		{"badOverride", true, api.MESSAGE_TYPE, overrides},
 	} {
 		response := &api.Message{
 			Name: "Response",
@@ -558,7 +563,7 @@ func TestPaginationResponseItem(t *testing.T) {
 				},
 			},
 		}
-		got := paginationResponseItem(nil, ".package.Service.List", response)
+		got := paginationResponseItem(test.Overrides, ".package.Service.List", response)
 		if got != nil {
 			t.Errorf("the field should not be a pagination item, got=%v", got)
 		}
