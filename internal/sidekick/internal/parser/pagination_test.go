@@ -613,8 +613,8 @@ func TestPaginationResponseItemMatchingPreferRepeatedOverMap(t *testing.T) {
 				Map:      true,
 			},
 			{
-				Name:     "first",
-				JSONName: "first",
+				Name:     "repeated",
+				JSONName: "repeated",
 				Typez:    api.MESSAGE_TYPE,
 				Repeated: true,
 			},
