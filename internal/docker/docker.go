@@ -97,6 +97,9 @@ type ConfigureRequest struct {
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
 
+	// ExistingSourceRoots are existing source roots in the language repository.
+	ExistingSourceRoots []string
+
 	// GlobalFiles are global files of the language repository.
 	GlobalFiles []string
 
@@ -283,6 +286,10 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		fmt.Sprintf("%s:/librarian", librarianDir),
 		fmt.Sprintf("%s:/input", generatorInput),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
+	}
+	// Mount existing source roots as a readonly volume.
+	for _, sourceRoot := range request.ExistingSourceRoots {
+		mounts = append(mounts, fmt.Sprintf("%s/%s:/repo/%s:ro", request.RepoDir, sourceRoot, sourceRoot))
 	}
 	// Mount global files as a readonly volume.
 	for _, globalFile := range request.GlobalFiles {
