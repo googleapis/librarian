@@ -54,7 +54,7 @@ func TestParseOptionsProtobuf(t *testing.T) {
 		"include-grpc-only-methods": "true",
 		"per-service-features":      "true",
 	}
-	got, err := newCodec(true, options)
+	got, err := newCodec("protobuf", options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestParseOptionsOpenAPI(t *testing.T) {
 		"package-name-override": "test-only",
 		"copyright-year":        "2035",
 	}
-	got, err := newCodec(false, options)
+	got, err := newCodec("openapi", options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,6 +128,7 @@ func TestParseOptionsOpenAPI(t *testing.T) {
 		systemParameters: []systemParameter{
 			{Name: "$alt", Value: "json"},
 		},
+		serializeEnumsAsStrings: true,
 	}
 	sort.Slice(want.extraPackages, func(i, j int) bool {
 		return want.extraPackages[i].name < want.extraPackages[j].name
@@ -151,7 +152,7 @@ func TestParseOptionsTemplateOverride(t *testing.T) {
 		"copyright-year":        "2038",
 		"template-override":     "templates/fancy-templates",
 	}
-	got, err := newCodec(false, options)
+	got, err := newCodec("disco", options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +167,9 @@ func TestParseOptionsTemplateOverride(t *testing.T) {
 		systemParameters: []systemParameter{
 			{Name: "$alt", Value: "json"},
 		},
-		templateOverride: "templates/fancy-templates",
+		serializeEnumsAsStrings: true,
+		bytesUseUrlSafeAlphabet: true,
+		templateOverride:        "templates/fancy-templates",
 	}
 	sort.Slice(want.extraPackages, func(i, j int) bool {
 		return want.extraPackages[i].name < want.extraPackages[j].name
@@ -187,7 +190,7 @@ func TestParseOptionsDetailedTracingAttributes(t *testing.T) {
 	options := map[string]string{
 		"detailed-tracing-attributes": "true",
 	}
-	got, err := newCodec(false, options)
+	got, err := newCodec("", options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,7 +201,7 @@ func TestParseOptionsDetailedTracingAttributes(t *testing.T) {
 	options = map[string]string{
 		"detailed-tracing-attributes": "--invalid--",
 	}
-	if got, err := newCodec(false, options); err == nil {
+	if got, err := newCodec("", options); err == nil {
 		t.Errorf("expected an error with an invalid detailed-tracing-attributes flag, got=%v", got)
 	}
 }
@@ -222,7 +225,7 @@ func TestPackageName(t *testing.T) {
 
 func rustPackageNameImpl(t *testing.T, want string, opts map[string]string, api *api.API) {
 	t.Helper()
-	c, err := newCodec(true, opts)
+	c, err := newCodec("protobuf", opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +236,7 @@ func rustPackageNameImpl(t *testing.T, want string, opts map[string]string, api 
 }
 
 func TestServiceName(t *testing.T) {
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"name-overrides": ".google.testing.BadName=GoodName,.google.testing.Old=New",
 	})
 	if err != nil {
@@ -243,7 +246,7 @@ func TestServiceName(t *testing.T) {
 	testServiceNameImpl(t, c, "Old", "New")
 	testServiceNameImpl(t, c, "Unchanged", "Unchanged")
 
-	c2, err := newCodec(true, map[string]string{})
+	c2, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +267,7 @@ func testServiceNameImpl(t *testing.T, c *codec, serviceName string, want string
 }
 
 func TestOneOfEnumName(t *testing.T) {
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"name-overrides": ".google.testing.Message.conflict=ConflictOneOf",
 	})
 	if err != nil {
@@ -273,7 +276,7 @@ func TestOneOfEnumName(t *testing.T) {
 	testOneOfEnumNameImpl(t, c, "conflict", "ConflictOneOf")
 	testOneOfEnumNameImpl(t, c, "basic_case", "BasicCase")
 
-	c2, err := newCodec(true, map[string]string{})
+	c2, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1873,7 +1876,7 @@ func TestParseOptionsGenerateSetterSamples(t *testing.T) {
 	options := map[string]string{
 		"generate-setter-samples": "true",
 	}
-	got, err := newCodec(false, options)
+	got, err := newCodec("", options)
 	if err != nil {
 		t.Fatal(err)
 	}

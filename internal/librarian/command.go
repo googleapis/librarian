@@ -356,13 +356,13 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	if err := repo.Push(branch); err != nil {
-		return err
-	}
-
 	if !info.push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
 		return nil
+	}
+
+	if err := repo.Push(branch); err != nil {
+		return err
 	}
 
 	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.repo)

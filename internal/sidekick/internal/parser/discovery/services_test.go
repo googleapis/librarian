@@ -95,6 +95,32 @@ func TestService(t *testing.T) {
 	apitest.CheckService(t, got, want)
 }
 
+func TestServiceDeprecated(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := document{}
+	input := resource{
+		Name:       "TestDeprecated",
+		Deprecated: true,
+	}
+	if err := addService(model, &doc, &input); err != nil {
+		t.Fatal(err)
+	}
+	want := &api.Service{
+		ID:            "..TestDeprecated",
+		Name:          "TestDeprecated",
+		Documentation: "Service for the `TestDeprecated` resource.",
+		Deprecated:    true,
+	}
+	got, ok := model.State.ServiceByID[want.ID]
+	if !ok {
+		t.Fatalf("missing service %s", want.ID)
+	}
+	apitest.CheckService(t, got, want)
+}
+
 func TestServiceMessages(t *testing.T) {
 	model, err := ComputeDisco(t, nil)
 	if err != nil {

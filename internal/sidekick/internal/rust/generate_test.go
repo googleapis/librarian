@@ -72,6 +72,41 @@ var (
 	}
 )
 
+func TestCodecError(t *testing.T) {
+	outDir := t.TempDir()
+	goodConfig := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "openapi",
+			ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
+		},
+	}
+	errorConfig := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "openapi",
+			ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
+		},
+		Codec: map[string]string{
+			"--invalid--": "--invalid--",
+		},
+	}
+	model, err := parser.CreateModel(errorConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Generate(model, outDir, errorConfig); err == nil {
+		t.Errorf("expected an error with invalid Codec options")
+	}
+
+	if err := GenerateStorage(outDir, model, errorConfig, model, goodConfig); err == nil {
+		t.Errorf("expected an error with invalid Codec options for storage")
+	}
+	if err := GenerateStorage(outDir, model, goodConfig, model, errorConfig); err == nil {
+		t.Errorf("expected an error with invalid Codec options for control")
+	}
+}
+
 func TestRustFromOpenAPI(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()

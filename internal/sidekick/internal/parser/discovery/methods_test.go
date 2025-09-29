@@ -60,6 +60,44 @@ func TestMakeServiceMethods(t *testing.T) {
 	}
 }
 
+func TestMakeServiceMethodsDeprecated(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := "..projects.moveInstance"
+	got, ok := model.State.MethodByID[id]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", id)
+	}
+	want := &api.Method{
+		ID:            "..projects.moveInstance",
+		Name:          "moveInstance",
+		Documentation: "Moves an instance and its attached persistent disks from one zone to another. *Note*: Moving VMs or disks by using this method might cause unexpected behavior. For more information, see the [known issue](/compute/docs/troubleshooting/known-issues#moving_vms_or_disks_using_the_moveinstance_api_or_the_causes_unexpected_behavior). [Deprecated] This method is deprecated. See [moving instance across zones](/compute/docs/instances/moving-instance-across-zones) instead.",
+		Deprecated:    true,
+		InputTypeID:   "..projects.moveInstanceRequest",
+		OutputTypeID:  "..Operation",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: "POST",
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("compute").
+						WithLiteral("v1").
+						WithLiteral("projects").
+						WithVariableNamed("project").
+						WithLiteral("moveInstance"),
+					QueryParameters: map[string]bool{"requestId": true},
+				},
+			},
+			BodyFieldPath: "body",
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
 func TestMethodEmptyBody(t *testing.T) {
 	model, err := ComputeDisco(t, nil)
 	if err != nil {

@@ -67,7 +67,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		SyntheticRequest: true,
 		Documentation:    fmt.Sprintf("Synthetic request message for the [%s()][%s] method.", input.Name, id[1:]),
 		Parent:           parent,
-		// TODO(#2268) - deprecated if method is deprecated.
+		Deprecated:       input.Deprecated,
 	}
 	model.State.MessageByID[requestMessage.ID] = requestMessage
 	parent.Messages = append(parent.Messages, requestMessage)
@@ -130,10 +130,9 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		ID:            id,
 		Name:          input.Name,
 		Documentation: input.Description,
-		// TODO(#2268) - handle deprecated methods
-		// Deprecated: ...,
-		InputTypeID:  requestMessage.ID,
-		OutputTypeID: outputID,
+		Deprecated:    input.Deprecated,
+		InputTypeID:   requestMessage.ID,
+		OutputTypeID:  outputID,
 		PathInfo: &api.PathInfo{
 			Bindings:      []*api.PathBinding{binding},
 			BodyFieldPath: bodyPathField,

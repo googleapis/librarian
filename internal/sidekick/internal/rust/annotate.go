@@ -448,10 +448,11 @@ type enumAnnotation struct {
 }
 
 type enumValueAnnotation struct {
-	Name        string
-	VariantName string
-	EnumType    string
-	DocLines    []string
+	Name              string
+	VariantName       string
+	EnumType          string
+	DocLines          []string
+	SerializeAsString bool
 }
 
 // annotateModel creates a struct used as input for Mustache templates.
@@ -949,6 +950,9 @@ func (c *codec) primitiveSerdeAs(field *api.Field) string {
 	case api.DOUBLE_TYPE:
 		return "wkt::internal::F64"
 	case api.BYTES_TYPE:
+		if c.bytesUseUrlSafeAlphabet {
+			return "serde_with::base64::Base64<serde_with::base64::UrlSafe>"
+		}
 		return "serde_with::base64::Base64"
 	default:
 		return ""
@@ -972,6 +976,9 @@ func (c *codec) mapValueSerdeAs(field *api.Field) string {
 func (c *codec) messageFieldSerdeAs(field *api.Field) string {
 	switch field.TypezID {
 	case ".google.protobuf.BytesValue":
+		if c.bytesUseUrlSafeAlphabet {
+			return "serde_with::base64::Base64<serde_with::base64::UrlSafe>"
+		}
 		return "serde_with::base64::Base64"
 	case ".google.protobuf.UInt64Value":
 		return "wkt::internal::U64"
@@ -1091,9 +1098,10 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 
 func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) {
 	annotations := &enumValueAnnotation{
-		Name:        enumValueName(ev),
-		EnumType:    enumName(ev.Parent),
-		VariantName: enumValueVariantName(ev),
+		Name:              enumValueName(ev),
+		EnumType:          enumName(ev.Parent),
+		VariantName:       enumValueVariantName(ev),
+		SerializeAsString: c.serializeEnumsAsStrings,
 	}
 	ev.Codec = annotations
 

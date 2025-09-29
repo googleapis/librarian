@@ -26,9 +26,6 @@ func makeMessageFields(model *api.API, message *api.Message, schema *schema) err
 		if err != nil {
 			return err
 		}
-		if field == nil {
-			continue
-		}
 		message.Fields = append(message.Fields, field)
 	}
 	return nil
@@ -41,19 +38,24 @@ func makeField(model *api.API, message *api.Message, input *property) (*api.Fiel
 	if field, err := maybeMapField(model, message, input); err != nil || field != nil {
 		return field, err
 	}
-	if input.Schema.Type == "object" && input.Schema.Properties != nil {
-		// TODO(#2265) - handle inline object...
-		return nil, nil
+	if field, err := maybeInlineObjectField(model, message, input.Name, input.Schema); err != nil || field != nil {
+		return field, err
 	}
 	return makeScalarField(model, message, input.Name, input.Schema)
 }
 
 func makeArrayField(model *api.API, message *api.Message, input *property) (*api.Field, error) {
-	if input.Schema.ItemSchema.Type == "object" && input.Schema.ItemSchema.Properties != nil {
-		// TODO(#2265) - handle inline object...
-		return nil, nil
+	field, err := maybeInlineObjectField(model, message, input.Name, input.Schema.ItemSchema)
+	if err != nil {
+		return nil, err
 	}
-	field, err := makeScalarField(model, message, input.Name, input.Schema.ItemSchema)
+	if field != nil {
+		field.Documentation = input.Schema.Description
+		field.Repeated = true
+		field.Optional = false
+		return field, nil
+	}
+	field, err = makeScalarField(model, message, input.Name, input.Schema.ItemSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +80,8 @@ func makeScalarField(model *api.API, message *api.Message, name string, schema *
 		Documentation: schema.Description,
 		Typez:         typez,
 		TypezID:       typezID,
-		// TODO(#2268) - deprecated fields?
-		// TODO(#2270) - optional fields?
-		Optional: typez == api.MESSAGE_TYPE,
+		Deprecated:    schema.Deprecated,
+		Optional:      true,
 	}, nil
 }
 

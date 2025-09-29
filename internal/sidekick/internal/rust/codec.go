@@ -51,9 +51,9 @@ var commentUrlRegex = regexp.MustCompile(
 		`[a-zA-Z]{2,63}` + // The root domain is far more strict
 		`(/[-a-zA-Z0-9@:%_\+.~#?&/={}\$]*)?`) // Accept just about anything on the query and URL fragments
 
-func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
+func newCodec(specificationFormat string, options map[string]string) (*codec, error) {
 	var sysParams []systemParameter
-	if protobufSource {
+	if specificationFormat == "protobuf" {
 		sysParams = append(sysParams, systemParameter{
 			Name: "$alt", Value: "json;enum-encoding=int",
 		})
@@ -65,13 +65,15 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 
 	year, _, _ := time.Now().Date()
 	codec := &codec{
-		generationYear:   fmt.Sprintf("%04d", year),
-		modulePath:       "crate::model",
-		extraPackages:    []*packagez{},
-		packageMapping:   map[string]*packagez{},
-		version:          "0.0.0",
-		releaseLevel:     "preview",
-		systemParameters: sysParams,
+		generationYear:          fmt.Sprintf("%04d", year),
+		modulePath:              "crate::model",
+		extraPackages:           []*packagez{},
+		packageMapping:          map[string]*packagez{},
+		version:                 "0.0.0",
+		releaseLevel:            "preview",
+		systemParameters:        sysParams,
+		serializeEnumsAsStrings: specificationFormat != "protobuf",
+		bytesUseUrlSafeAlphabet: specificationFormat == "disco",
 	}
 
 	for key, definition := range options {
@@ -248,6 +250,10 @@ type codec struct {
 	disabledRustdocWarnings []string
 	// The default system parameters included in all requests.
 	systemParameters []systemParameter
+	// If true, enums are serialized as strings.
+	serializeEnumsAsStrings bool
+	// If true, bytes are serialized using the url-safe alphabet.
+	bytesUseUrlSafeAlphabet bool
 	// Overrides the template subdirectory.
 	templateOverride string
 	// If true, this includes gRPC-only methods, such as methods without HTTP

@@ -111,6 +111,26 @@ func TestDisco_ParsePagination(t *testing.T) {
 	}
 }
 
+func TestDisco_ParseDeprecatedEnum(t *testing.T) {
+	model, err := ParseDisco(discoSourceFile, "", map[string]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantEnum := &api.Enum{
+		ID: "..AcceleratorTypeAggregatedList.warning.code",
+	}
+	got, ok := model.State.EnumByID[wantEnum.ID]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", wantEnum.ID)
+	}
+	if len(got.Values) < 7 {
+		t.Fatalf("expected at least 7 values in the enum value list, got=%v", got)
+	}
+	if !got.Values[6].Deprecated {
+		t.Errorf("expected a deprecated enum value, got=%v", got.Values[6])
+	}
+}
+
 func TestDisco_ParseBadFiles(t *testing.T) {
 	if _, err := ParseDisco("-invalid-file-name-", secretManagerYamlFullPath, map[string]string{}); err == nil {
 		t.Fatalf("expected error with missing source file")

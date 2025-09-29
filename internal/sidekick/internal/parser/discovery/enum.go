@@ -27,21 +27,31 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 	if len(schema.Enums) != len(schema.EnumDescriptions) {
 		return fmt.Errorf("mismatched enum value list vs. enum value descriptions list")
 	}
+	if len(schema.EnumDeprecated) != 0 && len(schema.Enums) != len(schema.EnumDeprecated) {
+		// The list of deprecated enums is omitted in some cases.
+		return fmt.Errorf("mismatched enum value list vs. enum deprecated values list")
+	}
 	id := fmt.Sprintf("%s.%s", message.ID, name)
 	enum := &api.Enum{
 		Name:          name,
 		ID:            id,
 		Package:       message.Package,
 		Documentation: fmt.Sprintf("The enumerated type for the [%s][%s] field.", name, id[1:]),
+		Deprecated:    schema.Deprecated,
 		Parent:        message,
 	}
 	for number, name := range schema.Enums {
+		deprecated := false
+		if len(schema.EnumDeprecated) != 0 {
+			deprecated = schema.EnumDeprecated[number]
+		}
 		value := &api.EnumValue{
 			Name:          name,
 			Number:        int32(number),
 			ID:            fmt.Sprintf("%s.%s", enum.ID, name),
 			Documentation: schema.EnumDescriptions[number],
 			Parent:        enum,
+			Deprecated:    deprecated,
 		}
 		enum.Values = append(enum.Values, value)
 		enum.UniqueNumberValues = append(enum.UniqueNumberValues, value)

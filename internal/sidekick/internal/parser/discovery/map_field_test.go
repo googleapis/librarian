@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
 )
@@ -32,6 +33,7 @@ func TestMapFields(t *testing.T) {
 				Name: "labels",
 				Schema: &schema{
 					Description: "Lots of messages have labels.",
+					Deprecated:  true,
 					Type:        "object",
 					AdditionalProperties: &schema{
 						Type: "string",
@@ -53,8 +55,10 @@ func TestMapFields(t *testing.T) {
 				JSONName:      "labels",
 				ID:            ".package.Message.labels",
 				Documentation: "Lots of messages have labels.",
+				Deprecated:    true,
 				Typez:         api.MESSAGE_TYPE,
 				TypezID:       "$map<string, string>",
+				Map:           true,
 			},
 		},
 	}
@@ -97,6 +101,7 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 				Name: "objectMapField",
 				Schema: &schema{
 					Description: "The description for objectMapField.",
+					Deprecated:  true,
 					Type:        "object",
 					AdditionalProperties: &schema{
 						Type: "object",
@@ -119,8 +124,10 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 				JSONName:      "objectMapField",
 				ID:            ".package.Message.objectMapField",
 				Documentation: "The description for objectMapField.",
+				Deprecated:    true,
 				Typez:         api.MESSAGE_TYPE,
 				TypezID:       "$map<string, .package.SomeOtherMessage>",
+				Map:           true,
 			},
 		},
 	}
@@ -164,6 +171,7 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 				Schema: &schema{
 					Description: "The description for enumMapField.",
 					Type:        "object",
+					Deprecated:  true,
 					AdditionalProperties: &schema{
 						Type: "string",
 						Enums: []string{
@@ -192,8 +200,10 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 				JSONName:      "enumMapField",
 				ID:            ".package.Message.enumMapField",
 				Documentation: "The description for enumMapField.",
+				Deprecated:    true,
 				Typez:         api.MESSAGE_TYPE,
 				TypezID:       "$map<string, .package.Message.enumMapField>",
+				Map:           true,
 			},
 		},
 	}
@@ -284,9 +294,9 @@ func TestMapScalarTypes(t *testing.T) {
 		input := &schema{
 			Properties: []*property{
 				{
-					Name: "enumMapField",
+					Name: "mapField",
 					Schema: &schema{
-						Description: "The description for enumMapField.",
+						Description: "The description for mapField.",
 						Type:        "object",
 						AdditionalProperties: &schema{
 							Type:   test.Type,
@@ -301,8 +311,18 @@ func TestMapScalarTypes(t *testing.T) {
 			t.Error(err)
 			continue
 		}
-		if len(message.Fields) != 1 {
-			t.Errorf("expected exactly one field, got=%v", message.Fields)
+		wantFields := []*api.Field{
+			{
+				Name:          "mapField",
+				JSONName:      "mapField",
+				ID:            ".package.Message.mapField",
+				Documentation: "The description for mapField.",
+				Typez:         api.MESSAGE_TYPE,
+				Map:           true,
+			},
+		}
+		if diff := cmp.Diff(wantFields, message.Fields, cmpopts.IgnoreFields(api.Field{}, "TypezID")); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
 			continue
 		}
 		mapMessage, ok := model.State.MessageByID[message.Fields[0].TypezID]

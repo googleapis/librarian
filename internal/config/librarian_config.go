@@ -76,3 +76,13 @@ func (g *LibrarianConfig) LibraryConfigFor(LibraryID string) *LibraryConfig {
 	}
 	return nil
 }
+
+// GetGlobalFiles returns the global files defined in the librarian config.
+func (g *LibrarianConfig) GetGlobalFiles() []string {
+	var globalFiles []string
+	for _, globalFile := range g.GlobalFilesAllowlist {
+		globalFiles = append(globalFiles, globalFile.Path)
+	}
+
+	return globalFiles
+}

@@ -163,15 +163,15 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		return err
 	}
 
-	librarianConfig, err := loadLibrarianConfigFromGitHub(ctx, r.ghClient, targetBranch)
+  librarianConfig, err := loadLibrarianConfigFromGitHub(ctx, r.ghClient, targetBranch)
 	if err != nil {
 		slog.Warn("error loading .librarian/config.yaml", slog.Any("err", err))
 	}
 
-	// Add a tag to the release commit to trigger louhi flow: "release-please-{pr number}"
-	// TODO: remove this logic as part of https://github.com/googleapis/librarian/issues/2044
+	// Add a tag to the release commit to trigger louhi flow: "release-{pr number}".
+	// See: go/sdk-librarian:louhi-trigger for details.
 	commitSha := p.GetMergeCommitSHA()
-	tagName := fmt.Sprintf("release-please-%d", p.GetNumber())
+	tagName := fmt.Sprintf("release-%d", p.GetNumber())
 	if err := r.ghClient.CreateTag(ctx, tagName, commitSha); err != nil {
 		return fmt.Errorf("failed to create tag %s: %w", tagName, err)
 	}

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const (
@@ -239,6 +240,10 @@ const invalidPathChars = "<>:\"|?*/\\\x00"
 func isValidRelativePath(pathString string) bool {
 	if pathString == "" {
 		return false
+	}
+
+	if pathString == gitrepo.RootPath {
+		return true
 	}
 
 	// The paths are expected to be relative and use the OS-specific path separator.
