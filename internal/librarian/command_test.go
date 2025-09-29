@@ -1302,24 +1302,33 @@ func TestCommitAndPush(t *testing.T) {
 		wantErr           bool
 		expectedErrMsg    string
 		check             func(t *testing.T, repo gitrepo.Repository)
+		wantPRBodyFile    bool
 	}{
 		{
 			name: "Push flag and Commit flag are not specified",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				return &MockRepository{
 					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType: "generate",
+			state:  &config.LibrarianState{},
+			prType: "release",
 			check: func(t *testing.T, repo gitrepo.Repository) {
 				mockRepo := repo.(*MockRepository)
 				if mockRepo.PushCalls != 0 {
 					t.Errorf("Push was called %d times, expected 0", mockRepo.PushCalls)
 				}
 			},
+			wantPRBodyFile: true,
 		},
 		{
 			name: "create a commit",
@@ -1341,7 +1350,8 @@ func TestCommitAndPush(t *testing.T) {
 					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
 				}
 			},
-			prType: "generate",
+			state:  &config.LibrarianState{},
+			prType: "release",
 			commit: true,
 			check: func(t *testing.T, repo gitrepo.Repository) {
 				mockRepo := repo.(*MockRepository)
@@ -1349,6 +1359,7 @@ func TestCommitAndPush(t *testing.T) {
 					t.Errorf("Push was called %d times, expected 0", mockRepo.PushCalls)
 				}
 			},
+			wantPRBodyFile: true,
 		},
 		{
 			name: "create a generate pull request",
@@ -1649,6 +1660,11 @@ func TestCommitAndPush(t *testing.T) {
 			if test.check != nil {
 				test.check(t, repo)
 			}
+
+			gotPRBodyFile := gotPRBodyFile(t, commitInfo.workRoot)
+			if test.wantPRBodyFile != gotPRBodyFile {
+				t.Errorf("commitAndPush() wantPRBodyFile = %t, gotPRBodyFile = %t", test.wantPRBodyFile, gotPRBodyFile)
+			}
 		})
 	}
 }
@@ -1730,17 +1746,21 @@ func TestWritePRBody(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			writePRBody(test.info)
-			possibleFilePath := filepath.Join(test.info.workRoot, prBodyFile)
-			_, err := os.Stat(possibleFilePath)
-			if err != nil && !os.IsNotExist(err) {
-				t.Fatalf("error other than IsNotExist finding status of %s", possibleFilePath)
-			}
-			gotFile := err == nil
+			gotFile := gotPRBodyFile(t, test.info.workRoot)
 			if test.wantFile != gotFile {
 				t.Errorf("writePRBody() wantFile = %t, gotFile = %t", test.wantFile, gotFile)
 			}
 		})
 	}
+}
+
+func gotPRBodyFile(t *testing.T, workRoot string) bool {
+	possibleFilePath := filepath.Join(workRoot, prBodyFile)
+	_, err := os.Stat(possibleFilePath)
+	if err != nil && !os.IsNotExist(err) {
+		t.Fatalf("error other than IsNotExist finding status of %s", possibleFilePath)
+	}
+	return err == nil
 }
 
 func TestAddLabelsToPullRequest(t *testing.T) {
