@@ -30,8 +30,8 @@ const (
 func updateMethodPagination(a *api.API) {
 	for _, m := range a.State.MethodByID {
 		reqMsg := a.State.MessageByID[m.InputTypeID]
-		pageToken := paginationRequestInfo(reqMsg)
-		if pageToken == nil {
+		pageTokenField := paginationRequestInfo(reqMsg)
+		if pageTokenField == nil {
 			continue
 		}
 
@@ -40,7 +40,7 @@ func updateMethodPagination(a *api.API) {
 		if paginationInfo == nil {
 			continue
 		}
-		m.Pagination = pageToken
+		m.Pagination = pageTokenField
 		respMsg.Pagination = paginationInfo
 	}
 }
@@ -49,7 +49,7 @@ func paginationRequestInfo(request *api.Message) *api.Field {
 	if request == nil {
 		return nil
 	}
-	if pageSize := paginationRequestPageSize(request); pageSize == nil {
+	if pageSizeField := paginationRequestPageSize(request); pageSizeField == nil {
 		return nil
 	}
 	return paginationRequestToken(request)
