@@ -301,6 +301,85 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 	}
 }
 
+func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name          string
+		repo          gitrepo.Repository
+		library       *config.LibraryState
+		want          []*conventionalcommits.ConventionalCommit
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "found_matching_file_changes_for_foo",
+			library: &config.LibraryState{
+				ID: "foo",
+				APIs: []*config.API{
+					{
+						Path: "foo",
+					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234": {
+						{Message: "feat(foo): a feature"},
+					},
+				},
+				ChangedFilesInCommitValue: []string{"foo/a.proto"},
+			},
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:      "feat",
+					Scope:     "foo",
+					Subject:   "a feature",
+					LibraryID: "foo",
+					Footers:   map[string]string{},
+				},
+			},
+		},
+		{
+			name: "no_matching_file_changes_for_foo",
+			library: &config.LibraryState{
+				ID: "foo",
+				APIs: []*config.API{
+					{
+						Path: "foo",
+					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234": {
+						{Message: "feat(baz): a feature"},
+					},
+				},
+				ChangedFilesInCommitValue: []string{"baz/a.proto", "baz/b.proto", "bar/a.proto"}, // file changed is not in foo/*
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := getConventionalCommitsSinceLastGeneration(test.repo, test.library, "1234")
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("getConventionalCommitsSinceLastGeneration() should have failed")
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("GetConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
+				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestGetHighestChange(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
