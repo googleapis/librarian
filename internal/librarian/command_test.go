@@ -733,7 +733,7 @@ func TestClean(t *testing.T) {
 				"private/file1.txt": "",
 			},
 			sourceRoots: []string{"foo", "bar"},
-			// Regex outside of apiPaths should effectively no-op
+			// Regex outside of sourceRoots should effectively no-op
 			removePatterns: []string{"private"},
 			wantRemaining:  []string{"foo", "foo/file1.txt", "bar", "bar/file2.log", "private", "private/file1.txt"},
 		},
@@ -748,7 +748,7 @@ func TestClean(t *testing.T) {
 			sourceRoots: []string{"foo"},
 			// Remove everything from source roots
 			removePatterns: []string{".*"},
-			// Regex outside of apiPaths should effectively no-op
+			// Regex outside of sourceRoots should effectively no-op
 			preservePatterns: []string{"private"},
 			wantRemaining:    []string{"private", "private/file1.txt", "other_private", "other_private/file2.txt"},
 		},
@@ -761,7 +761,7 @@ func TestClean(t *testing.T) {
 				"other_private/file2.txt": "",
 			},
 			sourceRoots: []string{"foo"},
-			// Regex outside of apiPaths should effectively no-op
+			// Regex outside of sourceRoots should effectively no-op
 			removePatterns:   []string{"private"},
 			preservePatterns: []string{"private"},
 			wantRemaining:    []string{"foo", "foo/file1.txt", "foo/file2.log", "private", "private/file1.txt", "other_private", "other_private/file2.txt"},
