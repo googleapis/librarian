@@ -94,6 +94,10 @@ type ConfigureRequest struct {
 	// libraryID specifies the ID of the library to configure.
 	LibraryID string
 
+	// Output specifies the empty output directory into which the command should
+	// generate code
+	Output string
+
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
 
@@ -274,6 +278,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	commandArgs := []string{
 		"--librarian=/librarian",
 		"--input=/input",
+		"--output=/output",
 		"--repo=/repo",
 		"--source=/source",
 	}
@@ -282,6 +287,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian", librarianDir),
 		fmt.Sprintf("%s:/input", generatorInput),
+		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
 	// Mount global files as a readonly volume.
