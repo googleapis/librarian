@@ -358,6 +358,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 	if !info.push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
+		writePRBody(info)
 		return nil
 	}
 
