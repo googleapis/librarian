@@ -300,6 +300,39 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
+			name: "configure_with_output_dir",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
 			name: "configure_with_multiple_libraries_in_librarian_state",
 			docker: &Docker{
 				Image: testImage,
