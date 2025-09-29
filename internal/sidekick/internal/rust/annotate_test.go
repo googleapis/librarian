@@ -164,10 +164,11 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 	annotateModel(model, codec)
 	wantService := &serviceAnnotations{
-		Name:              "ResourceService",
-		PackageModuleName: "test::v1",
-		ModuleName:        "resource_service",
-		Incomplete:        true,
+		Name:                      "ResourceService",
+		PackageModuleName:         "test::v1",
+		ModuleName:                "resource_service",
+		Incomplete:                true,
+		DetailedTracingAttributes: false,
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
@@ -189,10 +190,11 @@ func TestServiceAnnotations(t *testing.T) {
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
-		ServiceNameToPascal: "ResourceService",
-		ServiceNameToCamel:  "resourceService",
-		ServiceNameToSnake:  "resource_service",
-		ReturnType:          "crate::model::Response",
+		ServiceNameToPascal:       "ResourceService",
+		ServiceNameToCamel:        "resourceService",
+		ServiceNameToSnake:        "resource_service",
+		ReturnType:                "crate::model::Response",
+		DetailedTracingAttributes: false,
 	}
 	if diff := cmp.Diff(wantMethod, method.Codec); diff != "" {
 		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
@@ -206,13 +208,52 @@ func TestServiceAnnotations(t *testing.T) {
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
-		ServiceNameToPascal: "ResourceService",
-		ServiceNameToCamel:  "resourceService",
-		ServiceNameToSnake:  "resource_service",
-		ReturnType:          "()",
+		ServiceNameToPascal:       "ResourceService",
+		ServiceNameToCamel:        "resourceService",
+		ServiceNameToSnake:        "resource_service",
+		ReturnType:                "()",
+		DetailedTracingAttributes: false,
 	}
 	if diff := cmp.Diff(wantMethod, emptyMethod.Codec); diff != "" {
 		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestServiceAnnotationsDetailedTracing(t *testing.T) {
+	model := serviceAnnotationsModel()
+	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
+	if !ok {
+		t.Fatal("cannot find .test.v1.ResourceService")
+	}
+	codec, err := newCodec("protobuf", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	got := service.Codec.(*serviceAnnotations)
+	if !got.DetailedTracingAttributes {
+		t.Errorf("serviceAnnotations.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
+	}
+}
+
+func TestMethodAnnotationsDetailedTracing(t *testing.T) {
+	model := serviceAnnotationsModel()
+	method, ok := model.State.MethodByID[".test.v1.ResourceService.GetResource"]
+	if !ok {
+		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
+	}
+	codec, err := newCodec("protobuf", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	got := method.Codec.(*methodAnnotation)
+	if !got.DetailedTracingAttributes {
+		t.Errorf("methodAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
 	}
 }
 
@@ -1086,6 +1127,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 				Template:      []string{"projects", "*", "locations", "*"},
 			},
 		},
+		DetailedTracingAttributes: false,
 	}
 
 	b1 := &api.PathBinding{
@@ -1119,6 +1161,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 				Template:      []string{"*"},
 			},
 		},
+		DetailedTracingAttributes: false,
 	}
 
 	b2 := &api.PathBinding{
@@ -1152,6 +1195,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 				Template:      []string{"*"},
 			},
 		},
+		DetailedTracingAttributes: false,
 	}
 
 	b3 := &api.PathBinding{
@@ -1166,10 +1210,10 @@ func TestPathBindingAnnotations(t *testing.T) {
 		},
 	}
 	want_b3 := &pathBindingAnnotation{
-		PathFmt:     "/v2/foos",
-		QueryParams: []*api.Field{f_name, f_optional, f_child},
+		PathFmt:                   "/v2/foos",
+		QueryParams:               []*api.Field{f_name, f_optional, f_child},
+		DetailedTracingAttributes: false,
 	}
-
 	method := &api.Method{
 		Name:         "DoFoo",
 		ID:           ".test.Service.DoFoo",
@@ -1210,6 +1254,68 @@ func TestPathBindingAnnotations(t *testing.T) {
 
 	if diff := cmp.Diff(want_b3, b3.Codec); diff != "" {
 		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
+	f_name := &api.Field{
+		Name:     "name",
+		JSONName: "name",
+		ID:       ".test.Request.name",
+		Typez:    api.STRING_TYPE,
+	}
+	request := &api.Message{
+		Name:    "Request",
+		Package: "test",
+		ID:      ".test.Request",
+		Fields:  []*api.Field{f_name},
+	}
+	response := &api.Message{
+		Name:    "Response",
+		Package: "test",
+		ID:      ".test.Response",
+	}
+	binding := &api.PathBinding{
+		Verb: "POST",
+		PathTemplate: api.NewPathTemplate().
+			WithLiteral("v2").
+			WithVariable(api.NewPathVariable("name").
+				WithLiteral("projects").
+				WithMatch()).
+			WithVerb("create"),
+	}
+	method := &api.Method{
+		Name:         "DoFoo",
+		ID:           ".test.Service.DoFoo",
+		InputType:    request,
+		InputTypeID:  ".test.Request",
+		OutputTypeID: ".test.Response",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{binding},
+		},
+	}
+	service := &api.Service{
+		Name:    "FooService",
+		ID:      ".test.FooService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{request, response},
+		[]*api.Enum{},
+		[]*api.Service{service})
+	api.CrossReference(model)
+	codec, err := newCodec("protobuf", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+
+	got := binding.Codec.(*pathBindingAnnotation)
+	if !got.DetailedTracingAttributes {
+		t.Errorf("pathBindingAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
 	}
 }
 
@@ -1522,6 +1628,44 @@ func TestGenerateSetterSamples(t *testing.T) {
 	annotateModel(model, codec)
 	if !model.Codec.(*modelAnnotations).GenerateSetterSamples {
 		t.Errorf("GenerateSetterSamples should be true")
+	}
+}
+
+func TestAnnotateModelWithDetailedTracing(t *testing.T) {
+	tests := []struct {
+		name    string
+		options map[string]string
+		want    bool
+	}{
+		{
+			name:    "DetailedTracingTrue",
+			options: map[string]string{"detailed-tracing-attributes": "true"},
+			want:    true,
+		},
+		{
+			name:    "DetailedTracingFalse",
+			options: map[string]string{"detailed-tracing-attributes": "false"},
+			want:    false,
+		},
+		{
+			name:    "DetailedTracingMissing",
+			options: map[string]string{},
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+			codec, err := newCodec("protobuf", tt.options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := annotateModel(model, codec)
+			if got.DetailedTracingAttributes != tt.want {
+				t.Errorf("annotateModel() DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, tt.want)
+			}
+		})
 	}
 }
 
