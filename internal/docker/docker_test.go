@@ -306,6 +306,73 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
+			name: "configure_with_source_roots",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+					ExistingSourceRoots: []string{
+						"a/path",
+						"b/path",
+					},
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				"-v", fmt.Sprintf("%s/a/path:/repo/a/path:ro", repoDir),
+				"-v", fmt.Sprintf("%s/b/path:/repo/b/path:ro", repoDir),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
+			name: "configure_with_nil_source_roots",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:               state,
+					LibraryID:           testLibraryID,
+					RepoDir:             repoDir,
+					ApiRoot:             testAPIRoot,
+					ExistingSourceRoots: nil,
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
 			name: "configure_with_multiple_libraries_in_librarian_state",
 			docker: &Docker{
 				Image: testImage,

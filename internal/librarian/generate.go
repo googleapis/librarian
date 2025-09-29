@@ -365,12 +365,13 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	configureRequest := &docker.ConfigureRequest{
-		ApiRoot:     apiRoot,
-		HostMount:   r.hostMount,
-		LibraryID:   r.library,
-		RepoDir:     r.repo.GetDir(),
-		GlobalFiles: globalFiles,
-		State:       r.state,
+		ApiRoot:             apiRoot,
+		HostMount:           r.hostMount,
+		LibraryID:           r.library,
+		RepoDir:             r.repo.GetDir(),
+		GlobalFiles:         globalFiles,
+		ExistingSourceRoots: r.getExistingSrc(r.library),
+		State:               r.state,
 	}
 	slog.Info("Performing configuration for library", "id", r.library)
 	if _, err := r.containerClient.Configure(ctx, configureRequest); err != nil {
@@ -412,6 +413,20 @@ func (r *generateRunner) restoreLibrary(libraryID string) error {
 	}
 
 	return r.repo.CleanUntracked(library.SourceRoots)
+}
+
+// getExistingSrc returns source roots as-is of a given library ID, if the source roots exist in the language repo.
+func (r *generateRunner) getExistingSrc(libraryID string) []string {
+	library := findLibraryByID(r.state, libraryID)
+	var existingSrc []string
+	for _, src := range library.SourceRoots {
+		relPath := filepath.Join(r.repo.GetDir(), src)
+		if _, err := os.Stat(relPath); err == nil {
+			existingSrc = append(existingSrc, src)
+		}
+	}
+
+	return existingSrc
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {
