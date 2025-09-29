@@ -164,11 +164,10 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 	annotateModel(model, codec)
 	wantService := &serviceAnnotations{
-		Name:                      "ResourceService",
-		PackageModuleName:         "test::v1",
-		ModuleName:                "resource_service",
-		Incomplete:                true,
-		DetailedTracingAttributes: false,
+		Name:              "ResourceService",
+		PackageModuleName: "test::v1",
+		ModuleName:        "resource_service",
+		Incomplete:        true,
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
 		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
@@ -190,11 +189,10 @@ func TestServiceAnnotations(t *testing.T) {
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
-		ServiceNameToPascal:       "ResourceService",
-		ServiceNameToCamel:        "resourceService",
-		ServiceNameToSnake:        "resource_service",
-		ReturnType:                "crate::model::Response",
-		DetailedTracingAttributes: false,
+		ServiceNameToPascal: "ResourceService",
+		ServiceNameToCamel:  "resourceService",
+		ServiceNameToSnake:  "resource_service",
+		ReturnType:          "crate::model::Response",
 	}
 	if diff := cmp.Diff(wantMethod, method.Codec); diff != "" {
 		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
@@ -208,11 +206,10 @@ func TestServiceAnnotations(t *testing.T) {
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
-		ServiceNameToPascal:       "ResourceService",
-		ServiceNameToCamel:        "resourceService",
-		ServiceNameToSnake:        "resource_service",
-		ReturnType:                "()",
-		DetailedTracingAttributes: false,
+		ServiceNameToPascal: "ResourceService",
+		ServiceNameToCamel:  "resourceService",
+		ServiceNameToSnake:  "resource_service",
+		ReturnType:          "()",
 	}
 	if diff := cmp.Diff(wantMethod, emptyMethod.Codec); diff != "" {
 		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
@@ -1127,7 +1124,6 @@ func TestPathBindingAnnotations(t *testing.T) {
 				Template:      []string{"projects", "*", "locations", "*"},
 			},
 		},
-		DetailedTracingAttributes: false,
 	}
 
 	b1 := &api.PathBinding{
@@ -1161,9 +1157,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 				Template:      []string{"*"},
 			},
 		},
-		DetailedTracingAttributes: false,
 	}
-
 	b2 := &api.PathBinding{
 		Verb: "POST",
 		PathTemplate: api.NewPathTemplate().
@@ -1195,9 +1189,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 				Template:      []string{"*"},
 			},
 		},
-		DetailedTracingAttributes: false,
 	}
-
 	b3 := &api.PathBinding{
 		Verb: "GET",
 		PathTemplate: api.NewPathTemplate().
@@ -1210,9 +1202,8 @@ func TestPathBindingAnnotations(t *testing.T) {
 		},
 	}
 	want_b3 := &pathBindingAnnotation{
-		PathFmt:                   "/v2/foos",
-		QueryParams:               []*api.Field{f_name, f_optional, f_child},
-		DetailedTracingAttributes: false,
+		PathFmt:     "/v2/foos",
+		QueryParams: []*api.Field{f_name, f_optional, f_child},
 	}
 	method := &api.Method{
 		Name:         "DoFoo",
