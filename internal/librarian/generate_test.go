@@ -261,6 +261,7 @@ func TestRunConfigureCommand(t *testing.T) {
 		api                string
 		repo               gitrepo.Repository
 		state              *config.LibrarianState
+		librarianConfig    *config.LibrarianConfig
 		container          *mockContainerClient
 		wantConfigureCalls int
 		wantErr            bool
@@ -354,6 +355,30 @@ func TestRunConfigureCommand(t *testing.T) {
 			wantConfigureCalls: 1,
 		},
 		{
+			name: "configure_library_without_global_files_in_output",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path: "a/path/example.txt",
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 1,
+			wantErr:            true,
+			wantErrMsg:         "failed to copy global file",
+		},
+		{
 			name: "configure command failed",
 			api:  "some/api",
 			repo: newTestGitRepo(t),
@@ -382,6 +407,7 @@ func TestRunConfigureCommand(t *testing.T) {
 				repo:            test.repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
+				librarianConfig: test.librarianConfig,
 				containerClient: test.container,
 			}
 
