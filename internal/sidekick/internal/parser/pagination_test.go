@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
 func TestPageSimple(t *testing.T) {
@@ -82,13 +83,98 @@ func TestPageSimple(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{request, response, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(model)
+	updateMethodPagination(nil, model)
 	if method.Pagination != request.Fields[1] {
 		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
 	}
 	want := &api.PaginationInfo{
 		NextPageToken: response.Fields[0],
 		PageableItem:  response.Fields[1],
+	}
+	if diff := cmp.Diff(want, response.Pagination); diff != "" {
+		t.Errorf("mismatch, (-want, +got):\n%s", diff)
+	}
+}
+
+func TestPageWithOverride(t *testing.T) {
+	resource := &api.Message{
+		Name: "Resource",
+		ID:   ".package.Resource",
+	}
+	request := &api.Message{
+		Name: "Request",
+		ID:   ".package.Request",
+		Fields: []*api.Field{
+			{
+				Name:     "parent",
+				JSONName: "parent",
+				ID:       ".package.Request.parent",
+				Typez:    api.STRING_TYPE,
+			},
+			{
+				Name:     "page_token",
+				JSONName: "pageToken",
+				ID:       ".package.Request.pageToken",
+				Typez:    api.STRING_TYPE,
+			},
+			{
+				Name:     "page_size",
+				JSONName: "pageSize",
+				ID:       ".package.Request.pageSize",
+				Typez:    api.INT32_TYPE,
+			},
+		},
+	}
+	response := &api.Message{
+		Name: "Response",
+		ID:   ".package.Response",
+		Fields: []*api.Field{
+			{
+				Name:     "next_page_token",
+				JSONName: "nextPageToken",
+				ID:       ".package.Request.nextPageToken",
+				Typez:    api.STRING_TYPE,
+			},
+			{
+				Name:     "warnings",
+				JSONName: "warnings",
+				ID:       ".package.Request.warnings",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  ".package.Warning",
+				Repeated: true,
+			},
+			{
+				Name:     "items",
+				JSONName: "items",
+				ID:       ".package.Request.items",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  ".package.Resource",
+				Repeated: true,
+			},
+		},
+	}
+	method := &api.Method{
+		Name:         "List",
+		ID:           ".package.Service.List",
+		InputTypeID:  ".package.Request",
+		OutputTypeID: ".package.Response",
+	}
+	service := &api.Service{
+		Name:    "Service",
+		ID:      ".package.Service",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{request, response, resource}, []*api.Enum{}, []*api.Service{service})
+	overrides := []config.PaginationOverride{
+		{ID: ".package.Service.List", ItemField: "items"},
+	}
+	updateMethodPagination(overrides, model)
+	if method.Pagination != request.Fields[1] {
+		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
+	}
+	want := &api.PaginationInfo{
+		NextPageToken: response.Fields[0],
+		PageableItem:  response.Fields[2],
 	}
 	if diff := cmp.Diff(want, response.Pagination); diff != "" {
 		t.Errorf("mismatch, (-want, +got):\n%s", diff)
@@ -132,7 +218,7 @@ func TestPageMissingInputType(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{response, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(model)
+	updateMethodPagination(nil, model)
 	if method.Pagination != nil {
 		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
 	}
@@ -179,7 +265,7 @@ func TestPageMissingOutputType(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{request, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(model)
+	updateMethodPagination(nil, model)
 	if method.Pagination != nil {
 		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
 	}
@@ -227,7 +313,7 @@ func TestPageBadRequest(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{request, response, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(model)
+	updateMethodPagination(nil, model)
 	if method.Pagination != nil {
 		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
 	}
@@ -279,7 +365,7 @@ func TestPageBadResponse(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{request, response, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(model)
+	updateMethodPagination(nil, model)
 	if method.Pagination != nil {
 		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
 	}
@@ -444,21 +530,116 @@ func TestPaginationResponseErrors(t *testing.T) {
 	}
 
 	for _, input := range []*api.Message{badToken, badItems, nil} {
-		if got := paginationResponseInfo(input); got != nil {
+		if got := paginationResponseInfo(nil, ".package.Service.List", input); got != nil {
 			t.Errorf("expected paginationResponseInfo(...) == nil, got=%v, input=%v", got, input)
 		}
 	}
 }
 
-func TestPaginationResponseItem(t *testing.T) {
+func TestPaginationResponseItemMatching(t *testing.T) {
 	for _, test := range []struct {
-		Name     string
 		Repeated bool
+		Map      bool
 		Typez    api.Typez
+		Name     string
 	}{
-		{"badRepeated", false, api.MESSAGE_TYPE},
-		{"badType", true, api.STRING_TYPE},
-		{"bothBad", false, api.ENUM_TYPE},
+		{false, true, api.MESSAGE_TYPE, "items"},
+		{true, false, api.MESSAGE_TYPE, "items"},
+	} {
+		response := &api.Message{
+			Name: "Response",
+			ID:   ".package.Response",
+			Fields: []*api.Field{
+				{
+					Name:     test.Name,
+					JSONName: test.Name,
+					Typez:    test.Typez,
+					Repeated: test.Repeated,
+					Map:      test.Map,
+				},
+			},
+		}
+		got := paginationResponseItem(nil, "package.Service.List", response)
+		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
+func TestPaginationResponseItemMatchingMany(t *testing.T) {
+	for _, test := range []struct {
+		Repeated bool
+		Map      bool
+	}{
+		{true, false},
+		{false, true},
+	} {
+		response := &api.Message{
+			Name: "Response",
+			ID:   ".package.Response",
+			Fields: []*api.Field{
+				{
+					Name:     "first",
+					JSONName: "first",
+					Typez:    api.MESSAGE_TYPE,
+					Repeated: test.Repeated,
+					Map:      test.Map,
+				},
+				{
+					Name:     "second",
+					JSONName: "second",
+					Typez:    api.MESSAGE_TYPE,
+					Repeated: test.Repeated,
+					Map:      test.Map,
+				},
+			},
+		}
+		got := paginationResponseItem(nil, "package.Service.List", response)
+		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
+func TestPaginationResponseItemMatchingPreferRepeatedOverMap(t *testing.T) {
+	response := &api.Message{
+		Name: "Response",
+		ID:   ".package.Response",
+		Fields: []*api.Field{
+			{
+				Name:     "map",
+				JSONName: "map",
+				Typez:    api.MESSAGE_TYPE,
+				Map:      true,
+			},
+			{
+				Name:     "repeated",
+				JSONName: "repeated",
+				Typez:    api.MESSAGE_TYPE,
+				Repeated: true,
+			},
+		},
+	}
+	got := paginationResponseItem(nil, "package.Service.List", response)
+	if diff := cmp.Diff(response.Fields[1], got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestPaginationResponseItemNotMatching(t *testing.T) {
+	overrides := []config.PaginationOverride{
+		{ID: ".package.Service.List", ItemField: "--invalid--"},
+	}
+	for _, test := range []struct {
+		Name      string
+		Repeated  bool
+		Typez     api.Typez
+		Overrides []config.PaginationOverride
+	}{
+		{"badRepeated", false, api.MESSAGE_TYPE, nil},
+		{"badType", true, api.STRING_TYPE, nil},
+		{"bothBad", false, api.ENUM_TYPE, nil},
+		{"badOverride", true, api.MESSAGE_TYPE, overrides},
 	} {
 		response := &api.Message{
 			Name: "Response",
@@ -472,7 +653,7 @@ func TestPaginationResponseItem(t *testing.T) {
 				},
 			},
 		}
-		got := paginationResponseItem(response)
+		got := paginationResponseItem(test.Overrides, ".package.Service.List", response)
 		if got != nil {
 			t.Errorf("the field should not be a pagination item, got=%v", got)
 		}

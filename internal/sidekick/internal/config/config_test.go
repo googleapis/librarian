@@ -260,6 +260,61 @@ func TestMergeLocalForDocumentationOverrides(t *testing.T) {
 	}
 }
 
+func TestMergeLocalForPaginationOverrides(t *testing.T) {
+	root := Config{
+		General: GeneralConfig{
+			Language:            "root-language",
+			SpecificationFormat: "root-specification-format",
+		},
+		PaginationOverrides: []PaginationOverride{
+			{
+				ID:        ".package.Service.FromGlobal",
+				ItemField: "features",
+			},
+		},
+	}
+
+	local := Config{
+		General: GeneralConfig{
+			Language:            "local-language",
+			SpecificationFormat: "local-specification-format",
+			SpecificationSource: "local-specification-source",
+			ServiceConfig:       "local-service-config",
+		},
+		PaginationOverrides: []PaginationOverride{
+			{
+				ID:        ".google.sql.v1.SqlAdmin.ListInstances",
+				ItemField: "items",
+			},
+		},
+	}
+
+	got, err := mergeTestConfigs(t, &root, &local)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &Config{
+		General: GeneralConfig{
+			Language:            "local-language",
+			SpecificationFormat: "local-specification-format",
+			SpecificationSource: "local-specification-source",
+			ServiceConfig:       "local-service-config",
+		},
+		Codec:  map[string]string{},
+		Source: map[string]string{},
+		PaginationOverrides: []PaginationOverride{
+			{
+				ID:        ".google.sql.v1.SqlAdmin.ListInstances",
+				ItemField: "items",
+			},
+		},
+	}
+
+	if diff := cmp.Diff(want, got); len(diff) != 0 {
+		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
+	}
+}
+
 func TestMergeConfigAndFileBadRead(t *testing.T) {
 	root := Config{
 		General: GeneralConfig{

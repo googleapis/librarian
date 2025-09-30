@@ -93,6 +93,7 @@ func TestDisco_ParsePagination(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	updateMethodPagination(nil, model)
 	wantID := "..zones.list"
 	got, ok := model.State.MethodByID[wantID]
 	if !ok {
@@ -102,6 +103,30 @@ func TestDisco_ParsePagination(t *testing.T) {
 		Name:     "pageToken",
 		JSONName: "pageToken",
 		ID:       "..zones.listRequest.pageToken",
+		Typez:    api.STRING_TYPE,
+		TypezID:  "string",
+		Optional: true,
+	}
+	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestDisco_ParsePaginationAggregate(t *testing.T) {
+	model, err := ParseDisco(discoSourceFile, "", map[string]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	updateMethodPagination(nil, model)
+	wantID := "..machineTypes.aggregatedList"
+	got, ok := model.State.MethodByID[wantID]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", wantID)
+	}
+	wantPagination := &api.Field{
+		Name:     "pageToken",
+		JSONName: "pageToken",
+		ID:       "..machineTypes.aggregatedListRequest.pageToken",
 		Typez:    api.STRING_TYPE,
 		TypezID:  "string",
 		Optional: true,
