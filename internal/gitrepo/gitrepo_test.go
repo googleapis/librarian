@@ -1365,11 +1365,9 @@ func setupRepoForGetCommitsTest(t *testing.T) (*LocalRepository, map[string]stri
 func TestCanUseSSH(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name       string
-		remoteURI  string
-		want       bool
-		wantErr    bool
-		wantErrMsg string
+		name      string
+		remoteURI string
+		want      bool
 	}{
 		{
 			name:      "remote_https_uri",
@@ -1387,25 +1385,13 @@ func TestCanUseSSH(t *testing.T) {
 			want:      true,
 		},
 		{
-			name:       "invalid_remote_uri",
-			remoteURI:  "nonsense-uri",
-			wantErr:    true,
-			wantErrMsg: "unable to parse the remote URI",
+			name:      "invalid_remote_uri",
+			remoteURI: "nonsense-uri",
+			want:      false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := canUseSSH(test.remoteURI)
-			if test.wantErr {
-				if err == nil {
-					t.Fatalf("%s should fail", test.name)
-				}
-
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
-				}
-				return
-			}
-
+			got := canUseSSH(test.remoteURI)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("canUseSSH() mismatch in %s (-want +got):\n%s", test.name, diff)
 			}

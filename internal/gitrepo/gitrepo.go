@@ -479,11 +479,7 @@ func (r *LocalRepository) pushRefSpec(refSpec string) error {
 		}
 	}
 
-	useSSH, err := canUseSSH(remoteURI)
-	if err != nil {
-		return err
-	}
-
+	useSSH := canUseSSH(remoteURI)
 	// While cloning a public repo does not require any authCreds, pushing
 	// to the repo requires authentication and verification of identity
 	auth, err := r.authCreds(useSSH)
@@ -502,9 +498,9 @@ func (r *LocalRepository) pushRefSpec(refSpec string) error {
 }
 
 // canUseSSH returns if the remote URI can connect via https ssh. It attempts to
-// automatically determine the type and returns an error if it's unable to make
-// a determination.
-func canUseSSH(remoteURI string) (bool, error) {
+// automatically determine the type and returns false as a default if it's unable
+// to make a determination.
+func canUseSSH(remoteURI string) bool {
 	// First, try to parse it as a standard URL
 	// e.g. "https://github.com/golang/go.git", "ssh://git@github.com/golang/go.git"
 	parsedURL, err := url.Parse(remoteURI)
@@ -512,9 +508,9 @@ func canUseSSH(remoteURI string) (bool, error) {
 		// Check the scheme directly
 		switch parsedURL.Scheme {
 		case "https":
-			return false, nil
+			return false
 		case "ssh":
-			return true, nil
+			return true
 		}
 	}
 
@@ -522,10 +518,10 @@ func canUseSSH(remoteURI string) (bool, error) {
 	// SSH syntax (e.g., "git@github.com:user/repo.git"). This format doesn't
 	// have a "://" and contains a ":"
 	if !strings.Contains(remoteURI, "://") && strings.Contains(remoteURI, ":") {
-		return true, nil
+		return true
 	}
 
-	return false, fmt.Errorf("unable to parse the remote URI: %s", remoteURI)
+	return false
 }
 
 // authCreds returns the configured AuthMethod to used to pushing to the
