@@ -1828,14 +1828,14 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 
 func TestCopyLibraryFiles(t *testing.T) {
 	t.Parallel()
-	setup := func(foo string, files []string) {
+	setup := func(foo, contents string, files []string) {
 		for _, relPath := range files {
 			fullPath := filepath.Join(foo, relPath)
 			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 				t.Error(err)
 			}
 
-			if _, err := os.Create(fullPath); err != nil {
+			if err := os.WriteFile(fullPath, []byte(contents), 0755); err != nil {
 				t.Error(err)
 			}
 		}
@@ -1846,6 +1846,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		outputDir     string
 		libraryID     string
 		state         *config.LibrarianState
+		existingFiles []string
 		filesToCreate []string
 		setup         func(t *testing.T, outputDir string)
 		verify        func(t *testing.T, repoDir string)
@@ -1991,10 +1992,40 @@ func TestCopyLibraryFiles(t *testing.T) {
 				"skipped/path/example.txt",
 			},
 		},
+		{
+			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			name:      "only_delta_files_are_copied",
+			outputDir: filepath.Join(t.TempDir(), "foo"),
+			libraryID: "example-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			},
+			existingFiles: []string{
+				"a/path/example.txt",
+			},
+			filesToCreate: []string{
+				"another/path/example.txt",
+			},
+			wantFiles: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if len(test.existingFiles) > 0 {
+				setup(test.repoDir, "old contents", test.existingFiles)
+			}
 			if len(test.filesToCreate) > 0 {
-				setup(test.outputDir, test.filesToCreate)
+				setup(test.outputDir, "new contents", test.filesToCreate)
 			}
 			if test.setup != nil {
 				test.setup(t, test.outputDir)
@@ -2021,12 +2052,24 @@ func TestCopyLibraryFiles(t *testing.T) {
 				}
 			}
 
+			for _, file := range test.existingFiles {
+				fullPath := filepath.Join(test.repoDir, file)
+				got, err := os.ReadFile(fullPath)
+				if err != nil {
+					t.Error(err)
+				}
+				if diff := cmp.Diff("old contents", string(got)); diff != "" {
+					t.Errorf("file contents mismatch (-want +got):\n%s", diff)
+				}
+			}
+
 			for _, file := range test.skipFiles {
 				fullPath := filepath.Join(test.repoDir, file)
 				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
 					t.Errorf("file %s should not be copied to %s", file, test.repoDir)
 				}
 			}
+
 			if test.verify != nil {
 				test.verify(t, test.repoDir)
 			}
