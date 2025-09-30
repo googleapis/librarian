@@ -243,6 +243,7 @@ func TestDockerRun(t *testing.T) {
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
 					GlobalFiles: []string{
 						"a/b/go.mod",
 						"go.mod",
@@ -257,6 +258,7 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				"-v", fmt.Sprintf("%s/a/b/go.mod:/repo/a/b/go.mod:ro", repoDir),
 				"-v", fmt.Sprintf("%s/go.mod:/repo/go.mod:ro", repoDir),
@@ -264,6 +266,7 @@ func TestDockerRun(t *testing.T) {
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
+				"--output=/output",
 				"--repo=/repo",
 				"--source=/source",
 			},
@@ -279,6 +282,7 @@ func TestDockerRun(t *testing.T) {
 					LibraryID:   testLibraryID,
 					RepoDir:     repoDir,
 					ApiRoot:     testAPIRoot,
+					Output:      testOutput,
 					GlobalFiles: nil,
 				}
 
@@ -290,11 +294,86 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				testImage,
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
+				"--output=/output",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
+			name: "configure_with_source_roots",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					ExistingSourceRoots: []string{
+						"a/path",
+						"b/path",
+					},
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				"-v", fmt.Sprintf("%s/a/path:/repo/a/path:ro", repoDir),
+				"-v", fmt.Sprintf("%s/b/path:/repo/b/path:ro", repoDir),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
+			name: "configure_with_nil_source_roots",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:               state,
+					LibraryID:           testLibraryID,
+					RepoDir:             repoDir,
+					ApiRoot:             testAPIRoot,
+					Output:              testOutput,
+					ExistingSourceRoots: nil,
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
 				"--repo=/repo",
 				"--source=/source",
 			},
@@ -335,6 +414,7 @@ func TestDockerRun(t *testing.T) {
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
 					GlobalFiles: []string{
 						"a/b/go.mod",
 						"go.mod",
@@ -352,6 +432,7 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
 				"-v", fmt.Sprintf("%s/a/b/go.mod:/repo/a/b/go.mod:ro", repoDir),
 				"-v", fmt.Sprintf("%s/go.mod:/repo/go.mod:ro", repoDir),
@@ -359,6 +440,7 @@ func TestDockerRun(t *testing.T) {
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
+				"--output=/output",
 				"--repo=/repo",
 				"--source=/source",
 			},
@@ -418,7 +500,7 @@ func TestDockerRun(t *testing.T) {
 					State:           state,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 				}
 
 				defer os.RemoveAll(partialRepoDir)
@@ -450,7 +532,7 @@ func TestDockerRun(t *testing.T) {
 
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
 				}
@@ -468,9 +550,9 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseInitRequest{
-					State:          state,
-					PartialRepoDir: "/non-exist-dir",
-					Output:         testOutput,
+					State:   state,
+					RepoDir: "/non-exist-dir",
+					Output:  testOutput,
 				}
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
@@ -490,7 +572,7 @@ func TestDockerRun(t *testing.T) {
 				}
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 					Output:          testOutput,
 					LibraryID:       testLibraryID,
 					LibrarianConfig: &config.LibrarianConfig{},
@@ -524,7 +606,7 @@ func TestDockerRun(t *testing.T) {
 
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 					Output:          testOutput,
 					LibraryID:       testLibraryID,
 					LibraryVersion:  "1.2.3",
@@ -901,7 +983,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 
 	req := &ReleaseInitRequest{
 		State:           stateWithChanges,
-		PartialRepoDir:  partialRepoDir,
+		RepoDir:         partialRepoDir,
 		Output:          filepath.Join(tmpDir, "output"),
 		LibrarianConfig: &config.LibrarianConfig{},
 	}

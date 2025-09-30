@@ -331,7 +331,6 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		result.Name = strings.TrimSuffix(serviceConfig.Name, ".googleapis.com")
 	}
 	updatePackageName(result)
-	updateMethodPagination(result)
 	updateAutoPopulatedFields(serviceConfig, result)
 	return result
 }

@@ -51,14 +51,23 @@ type DocumentationOverride struct {
 	Replace string `toml:"replace"`
 }
 
+// PaginationOverrides describes overrides for pagination config of a method.
+type PaginationOverride struct {
+	// The method ID.
+	ID string `toml:"id"`
+	// The name of the field used for `items`.
+	ItemField string `toml:"item-field"`
+}
+
 // Config is the main configuration struct.
 type Config struct {
 	General GeneralConfig `toml:"general"`
 
-	Source           map[string]string       `toml:"source,omitempty"`
-	Codec            map[string]string       `toml:"codec,omitempty"`
-	CommentOverrides []DocumentationOverride `toml:"documentation-overrides,omitempty"`
-	Release          *Release                `toml:"release,omitempty"`
+	Source              map[string]string       `toml:"source,omitempty"`
+	Codec               map[string]string       `toml:"codec,omitempty"`
+	CommentOverrides    []DocumentationOverride `toml:"documentation-overrides,omitempty"`
+	PaginationOverrides []PaginationOverride    `toml:"pagination-overrides,omitempty"`
+	Release             *Release                `toml:"release,omitempty"`
 
 	// Gcloud is used to pass data into gcloud.Generate. It does not use the
 	// normal .sidekick.toml file, but instead reads a gcloud.yaml file.
@@ -131,9 +140,10 @@ func mergeConfigs(rootConfig, local *Config) *Config {
 			SpecificationFormat: rootConfig.General.SpecificationFormat,
 			IgnoredDirectories:  rootConfig.General.IgnoredDirectories,
 		},
-		Source:           map[string]string{},
-		Codec:            map[string]string{},
-		CommentOverrides: local.CommentOverrides,
+		Source:              map[string]string{},
+		Codec:               map[string]string{},
+		CommentOverrides:    local.CommentOverrides,
+		PaginationOverrides: local.PaginationOverrides,
 		// Release does not accept local overrides
 		Release: rootConfig.Release,
 	}

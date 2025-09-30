@@ -322,6 +322,8 @@ func parseConfigureRequest(args []string) (*configureOption, error) {
 		switch strs[0] {
 		case inputDir:
 			configureOption.inputDir = strs[1]
+		case outputDir:
+			configureOption.outputDir = strs[1]
 		case librarian:
 			configureOption.librarianDir = strs[1]
 		case repoDir:
@@ -490,6 +492,7 @@ func generateLibrary(library *libraryState, outputDir string) error {
 
 type configureOption struct {
 	inputDir     string
+	outputDir    string
 	librarianDir string
 	repoDir      string
 	sourceDir    string

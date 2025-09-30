@@ -94,8 +94,15 @@ type ConfigureRequest struct {
 	// libraryID specifies the ID of the library to configure.
 	LibraryID string
 
+	// Output specifies the empty output directory into which the command should
+	// generate code
+	Output string
+
 	// RepoDir is the local root directory of the language repository.
 	RepoDir string
+
+	// ExistingSourceRoots are existing source roots in the language repository.
+	ExistingSourceRoots []string
 
 	// GlobalFiles are global files of the language repository.
 	GlobalFiles []string
@@ -160,10 +167,10 @@ type ReleaseInitRequest struct {
 	// generate code.
 	Output string
 
-	// PartialRepoDir is the local root directory of language repository contains
+	// RepoDir is the local root directory of language repository contains
 	// files that make up libraries and global files.
 	// This is the directory that container can access.
-	PartialRepoDir string
+	RepoDir string
 
 	// Push determines whether to push changes to GitHub.
 	Push bool
@@ -274,6 +281,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	commandArgs := []string{
 		"--librarian=/librarian",
 		"--input=/input",
+		"--output=/output",
 		"--repo=/repo",
 		"--source=/source",
 	}
@@ -282,7 +290,12 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian", librarianDir),
 		fmt.Sprintf("%s:/input", generatorInput),
+		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
+	}
+	// Mount existing source roots as a readonly volume.
+	for _, sourceRoot := range request.ExistingSourceRoots {
+		mounts = append(mounts, fmt.Sprintf("%s/%s:/repo/%s:ro", request.RepoDir, sourceRoot, sourceRoot))
 	}
 	// Mount global files as a readonly volume.
 	for _, globalFile := range request.GlobalFiles {
@@ -298,7 +311,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 
 // ReleaseInit initiates a release for a given language repository.
 func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
-	reqFilePath := filepath.Join(request.PartialRepoDir, config.LibrarianDir, config.ReleaseInitRequest)
+	reqFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseInitRequest)
 	if err := writeLibrarianState(request.State, reqFilePath); err != nil {
 		return err
 	}
@@ -317,10 +330,10 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		"--output=/output",
 	}
 
-	librarianDir := filepath.Join(request.PartialRepoDir, config.LibrarianDir)
+	librarianDir := filepath.Join(request.RepoDir, config.LibrarianDir)
 	mounts := []string{
 		fmt.Sprintf("%s:/librarian", librarianDir),
-		fmt.Sprintf("%s:/repo:ro", request.PartialRepoDir), // readonly volume
+		fmt.Sprintf("%s:/repo:ro", request.RepoDir), // readonly volume
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 

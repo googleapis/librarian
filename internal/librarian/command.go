@@ -358,6 +358,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 	if !info.push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
+		writePRBody(info)
 		return nil
 	}
 
@@ -405,7 +406,7 @@ func writePRBody(info *commitInfo) {
 		slog.Warn("Unable to create PR body", "error", err)
 		return
 	}
-	// Note: we can't accurately predict whether or not a PR would have been created,
+	// Note: we can't accurately predict whether a PR would have been created,
 	// as we're not checking whether the repo is clean or not. The intention is to be
 	// as light-touch as possible.
 	fullPath := filepath.Join(info.workRoot, prBodyFile)
@@ -445,6 +446,27 @@ func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, erro
 	default:
 		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
 	}
+}
+
+// copyGlobalAllowlist copies files in the global file allowlist from src to dst.
+func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadOnly bool) error {
+	if cfg == nil {
+		slog.Info("librarian config is not setup, skip copying global allowlist")
+		return nil
+	}
+	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
+	for _, globalFile := range cfg.GlobalFilesAllowlist {
+		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
+			slog.Debug("skipping read-only file", "path", globalFile.Path)
+			continue
+		}
+		srcPath := filepath.Join(src, globalFile.Path)
+		dstPath := filepath.Join(dst, globalFile.Path)
+		if err := copyFile(dstPath, srcPath); err != nil {
+			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
+		}
+	}
+	return nil
 }
 
 func copyFile(dst, src string) (err error) {

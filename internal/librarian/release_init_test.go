@@ -174,7 +174,6 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			files: map[string]string{
@@ -252,7 +251,6 @@ func TestInitRun(t *testing.T) {
 					},
 					repo:            mockRepoWithReleasableUnit,
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			files: map[string]string{
@@ -343,7 +341,6 @@ func TestInitRun(t *testing.T) {
 							{LibraryID: "example-id"},
 						},
 					},
-					partialRepo: t.TempDir(),
 				}
 			},
 			want: &config.LibrarianState{
@@ -407,7 +404,6 @@ func TestInitRun(t *testing.T) {
 							{LibraryID: "blocked-example-id", ReleaseBlocked: true},
 						},
 					},
-					partialRepo: t.TempDir(),
 				}
 			},
 			want: &config.LibrarianState{
@@ -445,7 +441,6 @@ func TestInitRun(t *testing.T) {
 						Dir: t.TempDir(),
 					},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			wantErr:    true,
@@ -484,8 +479,7 @@ func TestInitRun(t *testing.T) {
 							},
 						},
 					},
-					repo:        mockRepoWithReleasableUnit,
-					partialRepo: t.TempDir(),
+					repo: mockRepoWithReleasableUnit,
 				}
 			},
 			files: map[string]string{
@@ -544,7 +538,6 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 					repo:            mockRepoWithReleasableUnit,
-					partialRepo:     t.TempDir(),
 					librarianConfig: &config.LibrarianConfig{},
 				}
 			},
@@ -572,7 +565,6 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 					repo:            mockRepoWithReleasableUnit,
-					partialRepo:     t.TempDir(),
 					librarianConfig: &config.LibrarianConfig{},
 				}
 			},
@@ -614,7 +606,6 @@ func TestInitRun(t *testing.T) {
 						Dir:                             t.TempDir(),
 						GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
 					},
-					partialRepo: t.TempDir(),
 				}
 			},
 			wantErr:    true,
@@ -639,7 +630,6 @@ func TestInitRun(t *testing.T) {
 						Dir:                             t.TempDir(),
 						GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
 					},
-					partialRepo: t.TempDir(),
 				}
 			},
 			wantErr:    true,
@@ -683,7 +673,6 @@ func TestInitRun(t *testing.T) {
 					},
 					ghClient:        &mockGitHubClient{},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 		},
@@ -727,7 +716,6 @@ func TestInitRun(t *testing.T) {
 					},
 					ghClient:        &mockGitHubClient{},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			want: &config.LibrarianState{
@@ -793,7 +781,6 @@ func TestInitRun(t *testing.T) {
 					},
 					ghClient:        &mockGitHubClient{},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			want: &config.LibrarianState{
@@ -858,7 +845,6 @@ func TestInitRun(t *testing.T) {
 					},
 					ghClient:        &mockGitHubClient{},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			wantErr:    true,
@@ -902,27 +888,10 @@ func TestInitRun(t *testing.T) {
 						AddAllError: errors.New("unable to add all files"),
 					},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to commit and push",
-		},
-		{
-			name:            "failed to make partial repo",
-			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
-					workRoot:        t.TempDir(),
-					containerClient: containerClient,
-					repo: &MockRepository{
-						Dir: t.TempDir(),
-					},
-					partialRepo: "/invalid/path",
-				}
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to make directory",
 		},
 		{
 			name:            "run release init command with symbolic link",
@@ -946,7 +915,6 @@ func TestInitRun(t *testing.T) {
 					},
 					repo:            mockRepoWithReleasableUnit,
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			files: map[string]string{
@@ -967,65 +935,6 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:            "copy library files returns error",
-			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
-					workRoot:        t.TempDir(),
-					containerClient: containerClient,
-					library:         "example-id",
-					state: &config.LibrarianState{
-						Libraries: []*config.LibraryState{
-							{
-								Version: "1.0.0",
-								ID:      "example-id",
-								SourceRoots: []string{
-									"dir1",
-								},
-							},
-						},
-					},
-					repo:            mockRepoWithReleasableUnit,
-					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
-				}
-			},
-			files: map[string]string{
-				"dir1/file1.txt": "hello",
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to copy file",
-		},
-		{
-			name:            "copy library files returns error (no library id in cfg)",
-			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
-					workRoot:        t.TempDir(),
-					containerClient: containerClient,
-					state: &config.LibrarianState{
-						Libraries: []*config.LibraryState{
-							{
-								Version: "1.0.0",
-								ID:      "example-id",
-								SourceRoots: []string{
-									"dir1",
-								},
-							},
-						},
-					},
-					repo:            mockRepoWithReleasableUnit,
-					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
-				}
-			},
-			files: map[string]string{
-				"dir1/file1.txt": "hello",
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to copy file",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			runner := test.setupRunner(test.containerClient)
@@ -1044,12 +953,6 @@ func TestInitRun(t *testing.T) {
 					if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 						t.Fatalf("os.WriteFile() = %v", err)
 					}
-				}
-			}
-			if strings.HasPrefix(test.name, "copy library files returns error") {
-				// Make the directory non-writable so that the copy operations fail.
-				if err := os.Chmod(runner.partialRepo, 0555); err != nil {
-					t.Fatalf("os.Chmod() = %v", err)
 				}
 			}
 			// Create a symbolic link for the test case with symbolic links.
@@ -1488,213 +1391,6 @@ func TestUpdateLibrary(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, test.libraryState); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestCopyGlobalAllowlist(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name              string
-		cfg               *config.LibrarianConfig
-		files             []string
-		copied            []string
-		skipped           []string
-		doNotCreateOutput bool // do not create files in output dir.
-		wantErr           bool
-		wantErrMsg        string
-		copyReadOnly      bool
-	}{
-		{
-			name: "copied all global allowlist",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "write-only",
-					},
-				},
-			},
-			files: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-				"ignored/path/example.txt",
-			},
-			copied: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-			},
-			skipped: []string{
-				"ignored/path/example.txt",
-			},
-		},
-		{
-			name: "read only file is not copied",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "read-only",
-					},
-				},
-			},
-			files: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-				"ignored/path/example.txt",
-			},
-			copied: []string{
-				"one/path/example.txt",
-			},
-			skipped: []string{
-				"another/path/example.txt",
-				"ignored/path/example.txt",
-			},
-		},
-		{
-			name: "repo doesn't have the global file",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "read-only",
-					},
-				},
-			},
-			files: []string{
-				"another/path/example.txt",
-				"ignored/path/example.txt",
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to lstat file",
-		},
-		{
-			name: "output doesn't have the global file",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-				},
-			},
-			files: []string{
-				"one/path/example.txt",
-			},
-			doNotCreateOutput: true,
-			wantErr:           true,
-			wantErrMsg:        "failed to copy global file",
-		},
-		{
-			name:         "copies read-only files",
-			copyReadOnly: true,
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "read-only",
-					},
-				},
-			},
-			files: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-				"ignored/path/example.txt",
-			},
-			copied: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-			},
-			skipped: []string{
-				"ignored/path/example.txt",
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			output := t.TempDir()
-			repo := t.TempDir()
-			for _, oneFile := range test.files {
-				// Create files in repo directory.
-				file := filepath.Join(repo, oneFile)
-				dir := filepath.Dir(file)
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					t.Error(err)
-				}
-
-				err := os.WriteFile(file, []byte("old content"), 0755)
-				if err != nil {
-					t.Error(err)
-				}
-
-				if test.doNotCreateOutput {
-					continue
-				}
-
-				// Create files in output directory.
-				file = filepath.Join(output, oneFile)
-				dir = filepath.Dir(file)
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					t.Error(err)
-				}
-
-				err = os.WriteFile(file, []byte("new content"), 0755)
-				if err != nil {
-					t.Error(err)
-				}
-			}
-
-			err := copyGlobalAllowlist(test.cfg, repo, output, test.copyReadOnly)
-
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("cleanAndCopyGlobalAllowlist() should return error")
-				}
-
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
-				}
-
-				return
-			}
-			if err != nil {
-				t.Errorf("failed to run cleanAndCopyGlobalAllowlist(): %q", err.Error())
-			}
-
-			for _, wantFile := range test.copied {
-				got, err := os.ReadFile(filepath.Join(repo, wantFile))
-				if err != nil {
-					return
-				}
-				if diff := cmp.Diff("new content", string(got)); diff != "" {
-					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, wantFile)
-				}
-			}
-			// Make sure the skipped files are not changed.
-			for _, skippedFile := range test.skipped {
-				got, err := os.ReadFile(filepath.Join(repo, skippedFile))
-				if err != nil {
-					return
-				}
-				if diff := cmp.Diff("old content", string(got)); diff != "" {
-					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, skippedFile)
-				}
 			}
 		})
 	}

@@ -57,6 +57,9 @@ type modelAnnotations struct {
 	Incomplete bool
 	// If true, the generator will produce reference documentation samples for message fields setters.
 	GenerateSetterSamples bool
+	// If true, the generated code includes detailed tracing attributes on HTTP
+	// requests.
+	DetailedTracingAttributes bool
 }
 
 // IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
@@ -107,6 +110,9 @@ type serviceAnnotations struct {
 	HasVeneer bool
 	// If true, the service has a method we cannot wrap (yet).
 	Incomplete bool
+	// If true, the generated code includes detailed tracing attributes on HTTP
+	// requests.
+	DetailedTracingAttributes bool
 }
 
 // HasBindingSubstitutions returns true if the method has binding substitutions.
@@ -554,7 +560,8 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
 			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),
-		GenerateSetterSamples: codec.generateSetterSamples,
+		GenerateSetterSamples:     codec.generateSetterSamples,
+		DetailedTracingAttributes: codec.detailedTracingAttributes,
 	}
 
 	codec.addFeatureAnnotations(model, ann)
@@ -668,13 +675,14 @@ func (c *codec) annotateService(s *api.Service) {
 		ModuleName:        moduleName,
 		DocLines: c.formatDocComments(
 			s.Documentation, s.ID, s.Model.State, []string{s.ID, s.Package}),
-		Methods:            methods,
-		DefaultHost:        s.DefaultHost,
-		LROTypes:           lroTypes,
-		APITitle:           s.Model.Title,
-		PerServiceFeatures: c.perServiceFeatures,
-		HasVeneer:          c.hasVeneer,
-		Incomplete:         slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
+		Methods:                   methods,
+		DefaultHost:               s.DefaultHost,
+		LROTypes:                  lroTypes,
+		APITitle:                  s.Model.Title,
+		PerServiceFeatures:        c.perServiceFeatures,
+		HasVeneer:                 c.hasVeneer,
+		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
+		DetailedTracingAttributes: c.detailedTracingAttributes,
 	}
 	s.Codec = ann
 }

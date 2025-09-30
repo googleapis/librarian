@@ -70,15 +70,15 @@ The container is expected to produce up to two artifacts:
 
 **Contract:**
 
-| Context      | Type                | Description                                                                     |
-| :----------- | :------------------ |  :----------------------------------------------------------------------------- |
-| `/librarian` | Mount (Read/Write)  | Contains `configure-request.json`. The container must process this and write back `configure-response.json`. |
-| `/input`     | Mount (Read/Write)  | The contents of the `.librarian/generator-input` directory. The container can add new language-specific configuration here. |
-| `/repo`      | Mount (Read)        | Contains only the files specified in the `global_files_allowlist` from `config.yaml`. |
-| `/source`    | Mount (Read).       | Contains the complete contents of the API definition repository (e.g., [googleapis/googleapis](https://github.com/googleapis/googleapis)). |
-| `/output`    | Mount (Read/Write)  | An output directory for writing any global file edits allowed by `global_files_allowlist`. |
-| `command`    | Positional Argument | The value will always be `configure`. |
-| flags        | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--input`, `--source`, `--repo`, `--output` |
+| Context      | Type                | Description                                                                                                                                                                                                                                                   |
+| :----------- | :------------------ |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/librarian` | Mount (Read/Write)  | Contains `configure-request.json`. The container must process this and write back `configure-response.json`.                                                                                                                                                  |
+| `/input`     | Mount (Read/Write)  | The contents of the `.librarian/generator-input` directory. The container can add new language-specific configuration here.                                                                                                                                   |
+| `/repo`      | Mount (Read)        | Contains all of the files are specified in the libraries source_roots , if any already exist, as well as the files specified in the global_files_allowlist from `config.yaml`.                                                                                  |
+| `/source`    | Mount (Read).       | Contains the complete contents of the API definition repository (e.g., [googleapis/googleapis](https://github.com/googleapis/googleapis)).                                                                                                                    |
+| `/output`    | Mount (Read/Write)  | An output directory for writing any global file edits allowed by `global_files_allowlist`.<br/>Additionally, the container can write arbitrary files as long as they are contained within the library’s source_roots specified in the container's response message.|
+| `command`    | Positional Argument | The value will always be `configure`.                                                                                                                                                                                                                         |
+| flags        | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--input`, `--source`, `--repo`, `--output`                                                                                                                                                      |
 
 **Example `configure-request.json`:**
 
@@ -249,7 +249,7 @@ global files that reference the libraries being released.
 | Context      | Type                | Description                                                                     |
 | :----------- | :------------------ | :------------------------------------------------------------------------------ |
 | `/librarian` | Mount (Read/Write)  | Contains `release-init-request.json`. Container writes back a `release-init-response.json`. |
-| `/repo`      | Mount (Read)        | Parts of the language repo. This directory will contain all directories that make up a library, the .librarian folder, and any global file declared in the `config.yaml`. |
+| `/repo`      | Mount (Read)        | Read-only contents of the language repo including any global files declared in the `config.yaml`. |
 | `/output`    | Mount (Write)       | Any files updated during the release phase should be moved to this directory, preserving their original paths. |
 | `command`    | Positional Argument | The value will always be `release-init`. |
 | flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo`, `--output` |
@@ -307,10 +307,12 @@ global file edits. The libraries that are being released will be marked by the `
   "error": "An optional field to share error context back to Librarian."
 }
 ```
+
 [config-schema.md]:config-schema.md
 [state-schema.md]: state-schema.md
 
 ## Language repository settings
+
 To correctly parse the commit message of a merge commit, only allow squash merging
 and set the default commit message to **Pull request title and description**.
 ![Pull request settings](assets/setting-pull-requests.webp)

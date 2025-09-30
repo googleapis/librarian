@@ -281,7 +281,7 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 		return m.initErr
 	}
 	// Write a release-init-response.json unless we're configured not to.
-	if err := os.MkdirAll(filepath.Join(request.PartialRepoDir, ".librarian"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(request.RepoDir, ".librarian"), 0755); err != nil {
 		return err
 	}
 
@@ -293,7 +293,7 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(request.PartialRepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
 		return err
 	}
 	return m.initErr
