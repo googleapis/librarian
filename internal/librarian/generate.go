@@ -411,6 +411,10 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 		return "", err
 	}
 
+	if err := copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false); err != nil {
+		return "", err
+	}
+
 	return libraryState.ID, nil
 }
 
