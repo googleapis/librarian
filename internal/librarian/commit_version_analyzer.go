@@ -26,12 +26,9 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-const defaultTagFormat = "{id}-{version}"
-
 // GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file. The repo should be the language repo.
-func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState) ([]*conventionalcommits.ConventionalCommit, error) {
-	tag := formatTag(library.TagFormat, library.ID, library.Version)
+func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState, tag string) ([]*conventionalcommits.ConventionalCommit, error) {
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
 
 	if err != nil {
@@ -136,27 +133,6 @@ func isUnderAnyPath(file string, paths []string) bool {
 		}
 	}
 	return false
-}
-
-// shouldInclude determines if a commit should be included in a release.
-// It returns true if there is at least one file in the commit that is under a source_root
-// and not under a release_exclude_path.
-func shouldInclude(files, sourceRoots, excludePaths []string) bool {
-	for _, file := range files {
-		if isUnderAnyPath(file, sourceRoots) && !isUnderAnyPath(file, excludePaths) {
-			return true
-		}
-	}
-	return false
-}
-
-// formatTag returns the git tag for a given library version.
-func formatTag(tagFormat string, libraryID string, version string) string {
-	if tagFormat == "" {
-		tagFormat = defaultTagFormat
-	}
-	r := strings.NewReplacer("{id}", libraryID, "{version}", version)
-	return r.Replace(tagFormat)
 }
 
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
