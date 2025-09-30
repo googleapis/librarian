@@ -27,7 +27,6 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Setenv(LibrarianGithubToken, "")
-	t.Setenv(LibrarianUseSSH, "")
 	for _, test := range []struct {
 		name    string
 		envVars map[string]string
@@ -37,11 +36,9 @@ func TestNew(t *testing.T) {
 			name: "All environment variables set",
 			envVars: map[string]string{
 				LibrarianGithubToken: "gh_token",
-				LibrarianUseSSH:      "true",
 			},
 			want: Config{
 				GitHubToken: "gh_token",
-				UseSSH:      true,
 				CommandName: "test",
 			},
 		},

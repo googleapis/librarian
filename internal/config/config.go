@@ -57,8 +57,6 @@ const (
 	LibrarianStateFile = "state.yaml"
 	// LibrarianGithubToken is the name of the env var used to store the github token.
 	LibrarianGithubToken = "LIBRARIAN_GITHUB_TOKEN"
-	// LibrarianUseSSH is the name of the env var used to enable git SSH operations.
-	LibrarianUseSSH = "LIBRARIAN_USE_SSH"
 )
 
 // are variables so it can be replaced during testing.
@@ -223,15 +221,6 @@ type Config struct {
 	// Repo is specified with the -repo flag.
 	Repo string
 
-	// UseSSH is flag to determine if SSH should be used to authenticate to the remote repo.
-	// If enabled, SSH will be used to push to the remote repo. Librarian will use ssh-agent
-	// to manage the private keys.
-	//
-	// UseSSH is not specified by a flag, but from the LIBRARIAN_USE_SSH environment variable.
-	// This environment variable allows for all the librarian commands to use SSH without
-	// having to manually pass a flag on every invocation.
-	UseSSH bool
-
 	// UserGID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
 	// ownership.
@@ -259,12 +248,9 @@ type Config struct {
 
 // New returns a new Config populated with environment variables.
 func New(cmdName string) *Config {
-	useSSH := os.Getenv(LibrarianUseSSH) == "true"
-	slog.Debug("Github SSH", "enabled", useSSH)
 	return &Config{
 		CommandName: cmdName,
 		GitHubToken: os.Getenv(LibrarianGithubToken),
-		UseSSH:      useSSH,
 	}
 }
 

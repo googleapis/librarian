@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,7 +59,6 @@ type LocalRepository struct {
 	Dir         string
 	repo        *git.Repository
 	gitPassword string
-	useSSH      bool
 }
 
 // Commit represents a git commit.
@@ -90,8 +90,6 @@ type RepositoryOptions struct {
 	CI string
 	// GitPassword is used for HTTP basic auth.
 	GitPassword string
-	// UseSSH flag to determine if HTTPS (default) or SSH will be used for git operations
-	UseSSH bool
 	// Depth controls the cloning depth if the repository needs to be cloned.
 	Depth int
 }
@@ -108,7 +106,6 @@ func NewRepository(opts *RepositoryOptions) (*LocalRepository, error) {
 		return repo, err
 	}
 	repo.gitPassword = opts.GitPassword
-	repo.useSSH = opts.UseSSH
 	return repo, nil
 }
 
@@ -466,9 +463,30 @@ func (r *LocalRepository) DeleteBranch(branchName string) error {
 
 func (r *LocalRepository) pushRefSpec(refSpec string) error {
 	slog.Info("Pushing changes", "refSpec", refSpec)
+
+	// Check for the configured URI for the `origin` remote.
+	// If there are multiple URLs, the first one is selected.
+	var remoteURI string
+	remotes, err := r.Remotes()
+	if err != nil {
+		return err
+	}
+	for _, remote := range remotes {
+		if remote.Name == "origin" {
+			if len(remote.URLs) > 0 {
+				remoteURI = remote.URLs[0]
+			}
+		}
+	}
+
+	useSSH, err := canUseSSH(remoteURI)
+	if err != nil {
+		return err
+	}
+
 	// While cloning a public repo does not require any authCreds, pushing
-	// to it requires authentication and verification of identity
-	auth, err := r.authCreds()
+	// to the repo requires authentication and verification of identity
+	auth, err := r.authCreds(useSSH)
 	if err != nil {
 		return err
 	}
@@ -483,12 +501,37 @@ func (r *LocalRepository) pushRefSpec(refSpec string) error {
 	return nil
 }
 
+// canUseSSH returns if the remote URI can connect via https ssh. It attempts to
+// automatically determine the type and returns an error if it's unable to make
+// a determination.
+func canUseSSH(remoteURI string) (bool, error) {
+	// First, try to parse it as a standard URL
+	// e.g. "https://github.com/golang/go.git", "ssh://git@github.com/golang/go.git"
+	parsedURL, err := url.Parse(remoteURI)
+	if err == nil && parsedURL.Scheme != "" {
+		// Check the scheme directly
+		switch parsedURL.Scheme {
+		case "https":
+			return false, nil
+		case "ssh":
+			return true, nil
+		}
+	}
+
+	// If parsing fails or the scheme is not standard, check for the `user@hostname`
+	// SSH syntax (e.g., "git@github.com:user/repo.git"). This format doesn't
+	// have a "://" and contains a ":"
+	if !strings.Contains(remoteURI, "://") && strings.Contains(remoteURI, ":") {
+		return true, nil
+	}
+
+	return false, fmt.Errorf("unable to parse the remote URI: %s", remoteURI)
+}
+
 // authCreds returns the configured AuthMethod to used to pushing to the
-// remote repository. By default, Https Basic Auth is used. If the
-// LIBRARIAN_USE_SSH environment variable is set to true, then Librarian
-// will attempt to use ssh-agent to configure a SSH connection.
-func (r *LocalRepository) authCreds() (transport.AuthMethod, error) {
-	if r.useSSH {
+// remote repository. The useSSH determines if Basic Auth or SSH is used.
+func (r *LocalRepository) authCreds(useSSH bool) (transport.AuthMethod, error) {
+	if useSSH {
 		slog.Info("Authenticating with SSH")
 		// This is the generic `git` username when cloning via SSH. It is the value
 		// that exists before the URL. e.g. git@github.com:googleapis/librarian.git

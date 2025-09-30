@@ -104,7 +104,7 @@ type commandRunner struct {
 }
 
 func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
-	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken, cfg.UseSSH)
+	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		sourceRepoDir string
 	)
 	if cfg.CommandName == generateCmdName {
-		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken, cfg.UseSSH)
+		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +154,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}, nil
 }
 
-func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPassword string, useSSH bool) (*gitrepo.LocalRepository, error) {
+func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
 	if repo == "" {
 		return nil, fmt.Errorf("repo must be specified")
 	}
@@ -172,7 +172,6 @@ func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPas
 			RemoteBranch: branch,
 			CI:           ci,
 			GitPassword:  gitPassword,
-			UseSSH:       useSSH,
 			Depth:        depth,
 		})
 	}
@@ -185,7 +184,6 @@ func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPas
 		Dir:         absRepoRoot,
 		CI:          ci,
 		GitPassword: gitPassword,
-		UseSSH:      useSSH,
 	})
 	if err != nil {
 		return nil, err
