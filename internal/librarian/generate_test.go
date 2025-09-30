@@ -376,6 +376,7 @@ func TestRunConfigureCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			outputDir := t.TempDir()
 			r := &generateRunner{
 				api:             test.api,
 				repo:            test.repo,
@@ -402,7 +403,7 @@ func TestRunConfigureCommand(t *testing.T) {
 				}
 			}
 
-			_, err := r.runConfigureCommand(context.Background())
+			_, err := r.runConfigureCommand(context.Background(), outputDir)
 
 			if test.wantErr {
 				if err == nil {
