@@ -175,7 +175,11 @@ func (r *generateRunner) run(ctx context.Context) error {
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.library)
-		configuredLibraryID, err := r.runConfigureCommand(ctx)
+		configureOutputDir := filepath.Join(outputDir, libraryID, "configure")
+		if err := os.MkdirAll(configureOutputDir, 0755); err != nil {
+			return "", err
+		}
+		configuredLibraryID, err := r.runConfigureCommand(ctx, configureOutputDir)
 		if err != nil {
 			return "", err
 		}
@@ -339,7 +343,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 //
 // If successful, it returns the ID of the newly configured library; otherwise,
 // it returns an empty string and an error.
-func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
+func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir string) (string, error) {
 
 	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
 	if err != nil {
@@ -368,6 +372,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		ApiRoot:             apiRoot,
 		HostMount:           r.hostMount,
 		LibraryID:           r.library,
+		Output:              outputDir,
 		RepoDir:             r.repo.GetDir(),
 		GlobalFiles:         globalFiles,
 		ExistingSourceRoots: r.getExistingSrc(r.library),
