@@ -78,16 +78,12 @@ in '.librarian/state.yaml'.
   - If the '--push' flag is provided, the changes are committed to a new branch,
     and a pull request is created on GitHub. Otherwise, the changes are left in
     your local working directory for inspection. When pushing to a remote branch,
-    you have the option of using HTTPS or SSH. By default, HTTPS is used and SSH
-    is only enabled if the LIBRARIAN_USE_SSH environment variable is set to true.
+    you have the option of using HTTPS or SSH. Librarian will automatically determine
+    whether to use HTTPS or SSH based on the remote URI.
 
 Example with build and push:
 
 	LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build
-
-Example with build and push (using SSH):
-
-	LIBRARIAN_USE_SSH=true LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build
 
 Usage:
 
@@ -172,8 +168,8 @@ for inspection. Use the '--push' flag to automatically commit the changes to
 a new branch and create a pull request on GitHub. The '--commit' flag may be
 used to create a local commit without creating a pull request; this flag is
 ignored if '--push' is also specified. When pushing to a remote branch,
-you have the option of using HTTPS or SSH. By default, HTTPS is used and SSH
-is only enabled if the LIBRARIAN_USE_SSH environment variable is set to true.
+you have the option of using HTTPS or SSH. Librarian will automatically determine
+whether to use HTTPS or SSH based on the remote URI.
 
 Examples:
 

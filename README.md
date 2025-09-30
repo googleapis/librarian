@@ -100,9 +100,9 @@ ssh-add -l
 
 2. Follow the steps [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh). You will need to either create a new SSH key or using an existing one, add it to the ssh-agent, and then upload it to Github.
 
-Once everything has been configured, set the SSH environment variable to push to Github remote with SSH:
+Once everything has been configured, set the `origin` remote to the SSH URI:
 ```shell
-export LIBRARIAN_USE_SSH=true
+git remote set-url origin git@github.com:googleapis/librarian.git
 ```
 
 ## Documentation
