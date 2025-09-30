@@ -407,6 +407,10 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 		r.state.Libraries[i] = libraryState
 	}
 
+	if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), libraryState.ID, outputDir); err != nil {
+		return "", err
+	}
+
 	return libraryState.ID, nil
 }
 
