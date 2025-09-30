@@ -286,26 +286,3 @@ func (r *initRunner) determineNextVersion(commits []*conventionalcommits.Convent
 	// Compare versions and pick latest
 	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
 }
-
-// copyGlobalAllowlist copies files in the global file allowlist excluding
-//
-//	read-only files and copies global files from src.
-func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadOnly bool) error {
-	if cfg == nil {
-		slog.Info("librarian config is not setup, skip copying global allowlist")
-		return nil
-	}
-	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
-	for _, globalFile := range cfg.GlobalFilesAllowlist {
-		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
-			slog.Debug("skipping read-only file", "path", globalFile.Path)
-			continue
-		}
-		srcPath := filepath.Join(src, globalFile.Path)
-		dstPath := filepath.Join(dst, globalFile.Path)
-		if err := copyFile(dstPath, srcPath); err != nil {
-			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
-		}
-	}
-	return nil
-}
