@@ -38,7 +38,7 @@ type githubEndpoints struct {
 	Download string
 }
 
-// githubRepo splits the repository name
+// githubRepo represents a GitHub repository name.
 type githubRepo struct {
 	// Org defines the GitHub organization (or user), that owns the repository.
 	Org string
