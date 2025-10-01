@@ -1693,8 +1693,7 @@ func TestWritePRBody(t *testing.T) {
 			name: "unable to save file",
 			info: &commitInfo{
 				repo: &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: make(git.Status),
+					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
 						{
 							Name: "origin",
