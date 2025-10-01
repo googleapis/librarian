@@ -1118,3 +1118,42 @@ func TestCreateTag(t *testing.T) {
 		})
 	}
 }
+
+func TestNewClient(t *testing.T) {
+
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		token string
+		repo  *Repository
+	}{
+		{
+			name:  "with credentials",
+			token: "some-token",
+		},
+		{
+			name:  "with custom repo",
+			token: "some-token",
+			repo: &Repository{
+				Owner:   "some-owner",
+				Name:    "some-repo",
+				BaseURL: "https://example.com/",
+			},
+		},
+		{
+			name:  "with repo, without base url",
+			token: "some-token",
+			repo: &Repository{
+				Owner: "some-owner",
+				Name:  "some-repo",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			client := NewClient(test.token, nil)
+			if client == nil {
+				t.Fatalf("expected to create a new client")
+			}
+		})
+	}
+}
