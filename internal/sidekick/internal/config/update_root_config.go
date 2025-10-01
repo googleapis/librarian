@@ -25,75 +25,151 @@ import (
 
 const (
 	defaultGitHubApi = "https://api.github.com"
-	defaultGitHub    = "https://github.com"
-	repo             = "googleapis/googleapis"
+	defaultGitHubDn  = "https://github.com"
 	branch           = "master"
+	defaultRoot      = "googleapis"
 )
+
+// githubEndpoints defines the endpoints used to access GitHub.
+type githubEndpoints struct {
+	// Api defines the endpoint used to make API calls.
+	Api string
+	// Download defines the endpoint to download tarballs.
+	Download string
+}
+
+// githubRepo splits the repository name
+type githubRepo struct {
+	// Org defines the GitHub organization (or user), that owns the repository.
+	Org string
+	// Repo is the name of the repository, such as `googleapis` or `google-cloud-rust`.
+	Repo string
+}
 
 // UpdateRootConfig updates the root configuration file with the latest SHA from GitHub.
 func UpdateRootConfig(rootConfig *Config) error {
-	gitHubApi, ok := rootConfig.Source["github-api"]
-	if !ok {
-		gitHubApi = defaultGitHubApi
-	}
-	gitHub, ok := rootConfig.Source["github"]
-	if !ok {
-		gitHub = defaultGitHub
+	endpoints := githubConfig(rootConfig)
+	repo, err := githubRepoFromTarballLink(rootConfig, defaultRoot)
+	if err != nil {
+		return err
 	}
 
-	query := fmt.Sprintf("%s/repos/%s/commits/%s", gitHubApi, repo, branch)
+	query := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.Api, repo.Org, repo.Repo, branch)
 	fmt.Printf("getting latest SHA from %q\n", query)
 	latestSha, err := getLatestSha(query)
 	if err != nil {
 		return err
 	}
 
-	newRoot := fmt.Sprintf("%s/%s/archive/%s.tar.gz", gitHub, repo, latestSha)
-	fmt.Printf("computing SHA256 for %q\n", newRoot)
-	newSha256, err := getSha256(newRoot)
+	newLink := newTarballLink(endpoints, repo, latestSha)
+	fmt.Printf("computing SHA256 for %q\n", newLink)
+	newSha256, err := getSha256(newLink)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("updating .sidekick.toml\n")
+	fmt.Printf("updating %s\n", configName)
 
-	contents, err := os.ReadFile(".sidekick.toml")
+	contents, err := os.ReadFile(configName)
 	if err != nil {
 		return err
 	}
-	var newContents []string
-	for _, line := range strings.Split(string(contents), "\n") {
+	newContents, err := updateRootConfigContents(defaultRoot, contents, endpoints, repo, latestSha, newSha256)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(configName, newContents, 0644)
+}
+
+// githubConfig returns the API endpoint the browser endpoint for GitHub.
+// In tests, these are replaced with a fake.
+func githubConfig(rootConfig *Config) *githubEndpoints {
+	api, ok := rootConfig.Source["github-api"]
+	if !ok {
+		api = defaultGitHubApi
+	}
+	download, ok := rootConfig.Source["github"]
+	if !ok {
+		download = defaultGitHubDn
+	}
+	return &githubEndpoints{
+		Api:      api,
+		Download: download,
+	}
+}
+
+// githubRepoFromRoot extracts the gitHub account and repository (such as
+// `googleapis/googleapis`, or `googleapis/google-cloud-rust`) from the tarball
+// link.
+func githubRepoFromTarballLink(rootConfig *Config, rootName string) (*githubRepo, error) {
+	config := githubConfig(rootConfig)
+	root, ok := rootConfig.Source[fmt.Sprintf("%s-root", rootName)]
+	if !ok {
+		return nil, fmt.Errorf("missing %s root configuration", rootName)
+	}
+	urlPath := strings.TrimPrefix(root, config.Download)
+	urlPath = strings.TrimPrefix(urlPath, "/")
+	components := strings.Split(urlPath, "/")
+	if len(components) < 2 {
+		return nil, fmt.Errorf("url path for %s root configuration is missing components", rootName)
+	}
+	repo := &githubRepo{
+		Org:  components[0],
+		Repo: components[1],
+	}
+	return repo, nil
+}
+
+func newTarballLink(endpoints *githubEndpoints, repo *githubRepo, latestSha string) string {
+	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", endpoints.Download, repo.Org, repo.Repo, latestSha)
+}
+
+func updateRootConfigContents(rootName string, contents []byte, endpoints *githubEndpoints, repo *githubRepo, latestSha, newSha256 string) ([]byte, error) {
+	newLink := newTarballLink(endpoints, repo, latestSha)
+
+	var output strings.Builder
+	updatedRoot := 0
+	updatedSha256 := 0
+	updatedExtractedName := 0
+	lines := strings.Split(string(contents), "\n")
+	for idx, line := range lines {
 		switch {
-		case strings.HasPrefix(line, "googleapis-root "):
+		case strings.HasPrefix(line, fmt.Sprintf("%s-root ", rootName)):
 			s := strings.SplitN(line, "=", 2)
 			if len(s) != 2 {
-				return fmt.Errorf("invalid googleapis-root line, expected = separator, got=%q", line)
+				return nil, fmt.Errorf("invalid %s-root line, expected = separator, got=%q", rootName, line)
 			}
-			newContents = append(newContents, fmt.Sprintf("%s= '%s'", s[0], newRoot))
-		case strings.HasPrefix(line, "googleapis-sha256 "):
+			fmt.Fprintf(&output, "%s= '%s'\n", s[0], newLink)
+			updatedRoot += 1
+		case strings.HasPrefix(line, fmt.Sprintf("%s-sha256 ", rootName)):
 			s := strings.SplitN(line, "=", 2)
 			if len(s) != 2 {
-				return fmt.Errorf("invalid googleapis-sha256 line, expected = separator, got=%q", line)
+				return nil, fmt.Errorf("invalid %s-sha256 line, expected = separator, got=%q", rootName, line)
 			}
-			newContents = append(newContents, fmt.Sprintf("%s= '%s'", s[0], newSha256))
+			fmt.Fprintf(&output, "%s= '%s'\n", s[0], newSha256)
+			updatedSha256 += 1
+		case strings.HasPrefix(line, fmt.Sprintf("%s-extracted-name ", rootName)):
+			s := strings.SplitN(line, "=", 2)
+			if len(s) != 2 {
+				return nil, fmt.Errorf("invalid %s-extracted-name line, expected = separator, got=%q", rootName, line)
+			}
+			fmt.Fprintf(&output, "%s= '%s-%s'\n", s[0], repo.Repo, latestSha)
+			updatedExtractedName += 1
 		default:
-			newContents = append(newContents, line)
+			if idx != len(lines)-1 {
+				fmt.Fprintf(&output, "%s\n", line)
+			} else {
+				fmt.Fprintf(&output, "%s", line)
+			}
 		}
 	}
-
-	cwd, _ := os.Getwd()
-	fmt.Printf("%s\n", cwd)
-	f, err := os.Create(".sidekick.toml")
-	if err != nil {
-		return err
+	newContents := output.String()
+	if updatedRoot == 0 && updatedSha256 == 0 {
+		return []byte(newContents), nil
 	}
-	defer f.Close()
-	for i, line := range newContents {
-		f.Write([]byte(line))
-		if i != len(newContents)-1 {
-			f.Write([]byte("\n"))
-		}
+	if updatedRoot != 1 || updatedSha256 != 1 || updatedExtractedName > 1 {
+		return nil, fmt.Errorf("too many changes to Root or Sha256 for %s", rootName)
 	}
-	return f.Close()
+	return []byte(newContents), nil
 }
 
 func getSha256(query string) (string, error) {
