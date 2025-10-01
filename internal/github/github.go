@@ -59,7 +59,7 @@ func NewClient(accessToken string, repo *Repository) *Client {
 
 func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) *Client {
 	client := github.NewClient(httpClient)
-	if repo.BaseURL != "" {
+	if repo != nil && repo.BaseURL != "" {
 		baseURL, _ := url.Parse(repo.BaseURL)
 		// Ensure the endpoint URL has a trailing slash.
 		if !strings.HasSuffix(baseURL.Path, "/") {
