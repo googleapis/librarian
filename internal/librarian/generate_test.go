@@ -1217,3 +1217,34 @@ func TestGetExistingSrc(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSafeDirectoryName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		id   string
+		want string
+	}{
+		{
+			name: "simple",
+			id:   "pubsub",
+			want: "pubsub",
+		},
+		{
+			name: "nested",
+			id:   "pubsub/v2",
+			want: "pubsub-slash-v2",
+		},
+		{
+			name: "deeply nested",
+			id:   "compute/metadata/v2",
+			want: "compute-slash-metadata-slash-v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := getSafeDirectoryName(test.id)
+			if test.want != got {
+				t.Errorf("getSafeDirectoryName() = %q; want %q", got, test.want)
+			}
+		})
+	}
+}
