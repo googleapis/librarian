@@ -115,7 +115,7 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE
@@ -197,7 +197,7 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE
@@ -275,7 +275,7 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
 BEGIN_NESTED_COMMIT
@@ -284,7 +284,7 @@ This is body.
 
 PiperOrigin-RevId: 98765
 
-Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890abcdef000000000000000000000000)
+Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567)
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE

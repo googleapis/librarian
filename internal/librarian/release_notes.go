@@ -98,7 +98,7 @@ BEGIN_NESTED_COMMIT
 
 PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
 
-Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{.CommitHash}})
+Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{shortSHA .CommitHash}})
 END_NESTED_COMMIT
 {{ end }}
 END_COMMIT_OVERRIDE
