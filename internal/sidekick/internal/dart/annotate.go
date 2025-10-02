@@ -111,15 +111,16 @@ func (m *messageAnnotation) HasToStringLines() bool {
 type methodAnnotation struct {
 	Parent *api.Method
 	// The method name using Dart naming conventions.
-	Name              string
-	RequestMethod     string
-	RequestType       string
-	ResponseType      string
-	DocLines          []string
-	ReturnsValue      bool
-	BodyMessageName   string
-	QueryLines        []string
-	IsLROGetOperation bool
+	Name                string
+	RequestMethod       string
+	RequestType         string
+	ResponseType        string
+	DocLines            []string
+	ReturnsValue        bool
+	BodyMessageName     string
+	QueryLines          []string
+	IsLROGetOperation   bool
+	ServerSideStreaming bool
 }
 
 // HasBody returns true if the method has a body.
@@ -563,16 +564,17 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	}
 
 	annotation := &methodAnnotation{
-		Parent:            method,
-		Name:              strcase.ToLowerCamel(method.Name),
-		RequestMethod:     strings.ToLower(method.PathInfo.Bindings[0].Verb),
-		RequestType:       annotate.resolveTypeName(state.MessageByID[method.InputTypeID], true),
-		ResponseType:      annotate.resolveTypeName(state.MessageByID[method.OutputTypeID], true),
-		DocLines:          formatDocComments(method.Documentation, state),
-		ReturnsValue:      !method.ReturnsEmpty,
-		BodyMessageName:   bodyMessageName,
-		QueryLines:        queryLines,
-		IsLROGetOperation: isGetOperation,
+		Parent:              method,
+		Name:                strcase.ToLowerCamel(method.Name),
+		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
+		RequestType:         annotate.resolveTypeName(state.MessageByID[method.InputTypeID], true),
+		ResponseType:        annotate.resolveTypeName(state.MessageByID[method.OutputTypeID], true),
+		DocLines:            formatDocComments(method.Documentation, state),
+		ReturnsValue:        !method.ReturnsEmpty,
+		BodyMessageName:     bodyMessageName,
+		QueryLines:          queryLines,
+		IsLROGetOperation:   isGetOperation,
+		ServerSideStreaming: method.ServerSideStreaming,
 	}
 	method.Codec = annotation
 }
