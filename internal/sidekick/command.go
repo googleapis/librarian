@@ -147,6 +147,7 @@ func (c *command) parseCmdLine(args []string) (*CommandLine, error) {
 		Output:              output,
 		Codec:               codecOpts,
 		DryRun:              dryrun,
+		UpdatedRoot:         updatedRoot,
 	}, nil
 }
 

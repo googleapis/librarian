@@ -72,10 +72,10 @@ func TestUpdateRootConfig(t *testing.T) {
 			SpecificationFormat: "protobuf",
 		},
 		Source: map[string]string{
-			"github-api":        server.URL,
-			"github":            server.URL,
-			"googleapis-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/old.tar.gz", server.URL),
-			"googleapis-sha256": "old-sha-unused",
+			"github-api":  server.URL,
+			"github":      server.URL,
+			"test-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/old.tar.gz", server.URL),
+			"test-sha256": "old-sha-unused",
 		},
 		Codec: map[string]string{},
 	}
@@ -83,12 +83,12 @@ func TestUpdateRootConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := UpdateRootConfig(rootConfig); err != nil {
+	if err := UpdateRootConfig(rootConfig, "test"); err != nil {
 		t.Fatal(err)
 	}
 
 	got := &Config{}
-	contents, err := os.ReadFile(path.Join(tempDir, ".sidekick.toml"))
+	contents, err := os.ReadFile(path.Join(tempDir, configName))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,10 +98,10 @@ func TestUpdateRootConfig(t *testing.T) {
 	want := &Config{
 		General: rootConfig.General,
 		Source: map[string]string{
-			"github-api":        server.URL,
-			"github":            server.URL,
-			"googleapis-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/%s.tar.gz", server.URL, latestSha),
-			"googleapis-sha256": latestShaContentsHash,
+			"github-api":  server.URL,
+			"github":      server.URL,
+			"test-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/%s.tar.gz", server.URL, latestSha),
+			"test-sha256": latestShaContentsHash,
 		},
 	}
 
@@ -258,7 +258,7 @@ func TestUpdateRootConfigErrors(t *testing.T) {
 			rootConfig.Source[k] = v
 		}
 		test.Setup(rootConfig)
-		if err := UpdateRootConfig(rootConfig); err == nil {
+		if err := UpdateRootConfig(rootConfig, defaultRoot); err == nil {
 			t.Errorf("expected an error with configuration %v", rootConfig)
 			t.Fatal(err)
 		}

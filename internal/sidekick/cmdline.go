@@ -25,6 +25,7 @@ type CommandLine struct {
 	Output              string
 	Language            string
 	Codec               map[string]string
+	UpdatedRoot         string
 	DryRun              bool
 }
 
@@ -38,4 +39,5 @@ var (
 	flagLanguage    string
 	codecOpts       = map[string]string{}
 	dryrun          bool
+	updatedRoot     string
 )

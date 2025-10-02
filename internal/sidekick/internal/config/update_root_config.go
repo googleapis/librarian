@@ -47,9 +47,12 @@ type githubRepo struct {
 }
 
 // UpdateRootConfig updates the root configuration file with the latest SHA from GitHub.
-func UpdateRootConfig(rootConfig *Config) error {
+func UpdateRootConfig(rootConfig *Config, rootName string) error {
+	if rootName == "" {
+		rootName = defaultRoot
+	}
 	endpoints := githubConfig(rootConfig)
-	repo, err := githubRepoFromTarballLink(rootConfig, defaultRoot)
+	repo, err := githubRepoFromTarballLink(rootConfig, rootName)
 	if err != nil {
 		return err
 	}
@@ -73,7 +76,7 @@ func UpdateRootConfig(rootConfig *Config) error {
 	if err != nil {
 		return err
 	}
-	newContents, err := updateRootConfigContents(defaultRoot, contents, endpoints, repo, latestSha, newSha256)
+	newContents, err := updateRootConfigContents(rootName, contents, endpoints, repo, latestSha, newSha256)
 	if err != nil {
 		return err
 	}

@@ -31,7 +31,7 @@ This command will update the googleapis-root and googleapis-sha256 fields in the
 }
 
 func update(rootConfig *config.Config, cmdLine *CommandLine) error {
-	if err := config.UpdateRootConfig(rootConfig); err != nil {
+	if err := config.UpdateRootConfig(rootConfig, cmdLine.UpdatedRoot); err != nil {
 		return err
 	}
 	// Reload the freshly minted configuration.
