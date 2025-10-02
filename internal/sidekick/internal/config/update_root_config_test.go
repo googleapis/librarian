@@ -110,6 +110,161 @@ func TestUpdateRootConfig(t *testing.T) {
 	}
 }
 
+func TestUpdateRootConfigErrors(t *testing.T) {
+	const (
+		getLatestShaPath      = "/repos/googleapis/googleapis/commits/master"
+		latestSha             = "5d5b1bf126485b0e2c972bac41b376438601e266"
+		tarballPath           = "/googleapis/googleapis/archive/5d5b1bf126485b0e2c972bac41b376438601e266.tar.gz"
+		latestShaContents     = "The quick brown fox jumps over the lazy dog"
+		latestShaContentsHash = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"
+	)
+
+	badLatestSha := func() *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case getLatestShaPath:
+				got := r.Header.Get("Accept")
+				want := "application/vnd.github.VERSION.sha"
+				if got != want {
+					t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
+				}
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("ERROR - bad request"))
+			default:
+				t.Fatalf("unexpected request path %q", r.URL.Path)
+			}
+		}))
+	}
+	badGetSha256 := func() *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case getLatestShaPath:
+				got := r.Header.Get("Accept")
+				want := "application/vnd.github.VERSION.sha"
+				if got != want {
+					t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
+				}
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(latestSha))
+			case tarballPath:
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("ERROR - bad request"))
+			default:
+				t.Fatalf("unexpected request path %q", r.URL.Path)
+			}
+		}))
+	}
+	goodResponses := func() *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case getLatestShaPath:
+				got := r.Header.Get("Accept")
+				want := "application/vnd.github.VERSION.sha"
+				if got != want {
+					t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
+				}
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(latestSha))
+			case tarballPath:
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(latestShaContents))
+			default:
+				t.Fatalf("unexpected request path %q", r.URL.Path)
+			}
+		}))
+	}
+
+	for _, test := range []struct {
+		Server       func() *httptest.Server
+		ExtraOptions func(*httptest.Server) map[string]string
+		Setup        func(*Config)
+	}{
+		{
+			Server: badLatestSha,
+			ExtraOptions: func(*httptest.Server) map[string]string {
+				return map[string]string{
+					"error-reason":    "githubRepoFromTarballLink() fails.",
+					"googleapis-root": "--invalid--",
+				}
+			},
+			Setup: func(*Config) {},
+		},
+		{
+			Server: badLatestSha,
+			ExtraOptions: func(server *httptest.Server) map[string]string {
+				return map[string]string{
+					"error-reason":    "getLatestSha() fails.",
+					"googleapis-root": fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", server.URL),
+				}
+			},
+			Setup: func(*Config) {},
+		},
+		{
+			Server: badGetSha256,
+			ExtraOptions: func(server *httptest.Server) map[string]string {
+				return map[string]string{
+					"error-reason":    "getSha256() fails.",
+					"googleapis-root": fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", server.URL),
+				}
+			},
+			Setup: func(*Config) {},
+		},
+		{
+			Server: goodResponses,
+			ExtraOptions: func(server *httptest.Server) map[string]string {
+				return map[string]string{
+					"error-reason":    "ReadFile() fails.",
+					"googleapis-root": fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", server.URL),
+				}
+			},
+			Setup: func(*Config) {},
+		},
+		{
+			Server: goodResponses,
+			ExtraOptions: func(server *httptest.Server) map[string]string {
+				return map[string]string{
+					"error-reason":    "updateRootConfigContents() fails.",
+					"googleapis-root": fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", server.URL),
+				}
+			},
+			Setup: func(config *Config) {
+				t.Helper()
+				if err := WriteSidekickToml(".", config); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	} {
+		// update() normally writes `.sidekick.toml` to cwd. We need to change to a
+		// temporary directory to avoid changing the actual configuration, and any
+		// conflicts with other tests running at the same time.
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
+		server := test.Server()
+		defer server.Close()
+
+		rootConfig := &Config{
+			General: GeneralConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+			},
+			Source: map[string]string{
+				"github-api": server.URL,
+				"github":     server.URL,
+			},
+			Codec: map[string]string{},
+		}
+		for k, v := range test.ExtraOptions(server) {
+			rootConfig.Source[k] = v
+		}
+		test.Setup(rootConfig)
+		if err := UpdateRootConfig(rootConfig); err == nil {
+			t.Errorf("expected an error with configuration %v", rootConfig)
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestGithubConfig(t *testing.T) {
 	got := githubConfig(&Config{})
 	want := &githubEndpoints{
