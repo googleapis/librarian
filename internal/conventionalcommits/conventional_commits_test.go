@@ -722,6 +722,18 @@ func TestParseFooters(t *testing.T) {
 			},
 		},
 		{
+			name: "repeated footer keys, keep first",
+			footerLines: []string{
+				"PiperOrigin-RevId: 123456",
+				"Source-Link: first value",
+				"Source-Link: second value",
+			},
+			wantFooters: map[string]string{
+				"PiperOrigin-RevId": "123456",
+				"Source-Link":       "first value",
+			},
+		},
+		{
 			name: "multiline footer",
 			footerLines: []string{
 				"BREAKING CHANGE: something broke",
