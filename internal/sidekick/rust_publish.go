@@ -37,5 +37,5 @@ the dependency order.
 
 // rustBumpVersions increments the version numbers as needed.
 func rustPublish(rootConfig *config.Config, cmdLine *CommandLine) error {
-	return rustrelease.Publish(rootConfig.Release, true) // cmdLine.DryRun)
+	return rustrelease.Publish(rootConfig.Release, cmdLine.DryRun)
 }
