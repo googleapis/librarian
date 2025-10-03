@@ -258,7 +258,7 @@ func TestUpdateRootConfigErrors(t *testing.T) {
 			rootConfig.Source[k] = v
 		}
 		test.Setup(rootConfig)
-		if err := UpdateRootConfig(rootConfig, defaultRoot); err == nil {
+		if err := UpdateRootConfig(rootConfig, ""); err == nil {
 			t.Errorf("expected an error with configuration %v", rootConfig)
 			t.Fatal(err)
 		}
