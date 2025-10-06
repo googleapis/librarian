@@ -88,7 +88,7 @@ func parseRemote(repo string) (*github.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return github.FetchGitHubRepoFromRemote(githubRepo)
+	return GetGitHubRepositoryFromGitRepo(githubRepo)
 }
 
 func (r *tagAndReleaseRunner) run(ctx context.Context) error {

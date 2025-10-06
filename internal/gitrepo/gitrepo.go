@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,12 +30,14 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	httpAuth "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 // Repository defines the interface for git repository operations.
 type Repository interface {
-	AddAll() (git.Status, error)
+	AddAll() error
 	Commit(msg string) error
 	IsClean() (bool, error)
 	Remotes() ([]*Remote, error)
@@ -175,16 +178,16 @@ func clone(dir, url, branch, ci string, depth int) (*LocalRepository, error) {
 
 // AddAll adds all pending changes from the working tree to the index,
 // so that the changes can later be committed.
-func (r *LocalRepository) AddAll() (git.Status, error) {
+func (r *LocalRepository) AddAll() error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
-		return git.Status{}, err
+		return err
 	}
 	err = worktree.AddWithOptions(&git.AddOptions{All: true})
 	if err != nil {
-		return git.Status{}, err
+		return err
 	}
-	return worktree.Status()
+	return nil
 }
 
 // Commit creates a new commit with the provided message and author
@@ -472,15 +475,28 @@ func (r *LocalRepository) DeleteBranch(branchName string) error {
 
 func (r *LocalRepository) pushRefSpec(refSpec string) error {
 	slog.Info("Pushing changes", "refSpec", refSpec)
-	var auth *httpAuth.BasicAuth
-	if r.gitPassword != "" {
-		slog.Info("Authenticating with basic auth")
-		auth = &httpAuth.BasicAuth{
-			// GitHub's authentication needs the username set to a non-empty value, but
-			// it does not need to match the token
-			Username: "cloud-sdk-librarian",
-			Password: r.gitPassword,
+
+	// Check for the configured URI for the `origin` remote.
+	// If there are multiple URLs, the first one is selected.
+	var remoteURI string
+	remotes, err := r.Remotes()
+	if err != nil {
+		return err
+	}
+	for _, remote := range remotes {
+		if remote.Name == "origin" {
+			if len(remote.URLs) > 0 {
+				remoteURI = remote.URLs[0]
+			}
 		}
+	}
+
+	useSSH := canUseSSH(remoteURI)
+	// While cloning a public repo does not require any authCreds, pushing
+	// to the repo requires authentication and verification of identity
+	auth, err := r.authCreds(useSSH)
+	if err != nil {
+		return err
 	}
 	if err := r.repo.Push(&git.PushOptions{
 		RemoteName: "origin",
@@ -491,6 +507,55 @@ func (r *LocalRepository) pushRefSpec(refSpec string) error {
 	}
 	slog.Info("Successfully pushed changes", "refSpec", refSpec)
 	return nil
+}
+
+// canUseSSH returns if the remote URI can connect via https ssh. It attempts to
+// automatically determine the type and returns false as a default if it's unable
+// to make a determination.
+func canUseSSH(remoteURI string) bool {
+	// First, try to parse it as a standard URL
+	// e.g. "https://github.com/golang/go.git", "ssh://git@github.com/golang/go.git"
+	parsedURL, err := url.Parse(remoteURI)
+	if err == nil && parsedURL.Scheme != "" {
+		// Check the scheme directly
+		switch parsedURL.Scheme {
+		case "https":
+			return false
+		case "ssh":
+			return true
+		}
+	}
+
+	// If parsing fails or the scheme is not standard, check for the `user@hostname`
+	// SSH syntax (e.g., "git@github.com:user/repo.git"). This format doesn't
+	// have a "://" and contains a ":"
+	if !strings.Contains(remoteURI, "://") && strings.Contains(remoteURI, ":") {
+		return true
+	}
+
+	return false
+}
+
+// authCreds returns the configured AuthMethod to used to pushing to the
+// remote repository. The useSSH determines if Basic Auth or SSH is used.
+func (r *LocalRepository) authCreds(useSSH bool) (transport.AuthMethod, error) {
+	if useSSH {
+		slog.Info("Authenticating with SSH")
+		// This is the generic `git` username when cloning via SSH. It is the value
+		// that exists before the URL. e.g. git@github.com:googleapis/librarian.git
+		auth, err := ssh.DefaultAuthBuilder("git")
+		if err != nil {
+			return nil, err
+		}
+		return auth, nil
+	}
+	slog.Info("Authenticating with basic auth")
+	return &httpAuth.BasicAuth{
+		// GitHub's authentication needs the username set to a non-empty value, but
+		// it does not need to match the token
+		Username: "cloud-sdk-librarian",
+		Password: r.gitPassword,
+	}, nil
 }
 
 // Restore restores changes in the working tree, leaving staged area untouched.

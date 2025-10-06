@@ -24,11 +24,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	gogitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v69/github"
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestToken(t *testing.T) {
@@ -116,122 +113,6 @@ func TestGetRawContent(t *testing.T) {
 				}
 				if diff := cmp.Diff(test.wantContent, content); diff != "" {
 					t.Errorf("GetRawContent() content mismatch (-want +got):\n%s", diff)
-				}
-			}
-		})
-	}
-}
-
-// newTestGitRepo creates a new git repository in a temporary directory with the given remotes.
-func newTestGitRepo(t *testing.T, remotes map[string][]string) *gitrepo.LocalRepository {
-	t.Helper()
-	dir := t.TempDir()
-
-	r, err := git.PlainInit(dir, false)
-	if err != nil {
-		t.Fatalf("git.PlainInit failed: %v", err)
-	}
-
-	for name, urls := range remotes {
-		_, err := r.CreateRemote(&gogitConfig.RemoteConfig{
-			Name: name,
-			URLs: urls,
-		})
-		if err != nil {
-			t.Fatalf("CreateRemote failed: %v", err)
-		}
-	}
-
-	repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
-	if err != nil {
-		t.Fatalf("gitrepo.NewRepository failed: %v", err)
-	}
-	return repo
-}
-
-func TestFetchGitHubRepoFromRemote(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name          string
-		remotes       map[string][]string
-		wantRepo      *Repository
-		wantErr       bool
-		wantErrSubstr string
-	}{
-		{
-			name: "origin is a GitHub remote",
-			remotes: map[string][]string{
-				"origin": {"https://github.com/owner/repo.git"},
-			},
-			wantRepo: &Repository{Owner: "owner", Name: "repo"},
-		},
-		{
-			name:          "No remotes",
-			remotes:       map[string][]string{},
-			wantErr:       true,
-			wantErrSubstr: "could not find an 'origin' remote",
-		},
-		{
-			name: "origin is not a GitHub remote",
-			remotes: map[string][]string{
-				"origin": {"https://gitlab.com/owner/repo.git"},
-			},
-			wantErr:       true,
-			wantErrSubstr: "is not a GitHub remote",
-		},
-		{
-			name: "upstream is GitHub, but no origin",
-			remotes: map[string][]string{
-				"gitlab":   {"https://gitlab.com/owner/repo.git"},
-				"upstream": {"https://github.com/gh-owner/gh-repo.git"},
-			},
-			wantErr:       true,
-			wantErrSubstr: "could not find an 'origin' remote",
-		},
-		{
-			name: "origin and upstream are GitHub remotes, should use origin",
-			remotes: map[string][]string{
-				"origin":   {"https://github.com/owner/repo.git"},
-				"upstream": {"https://github.com/owner2/repo2.git"},
-			},
-			wantRepo: &Repository{Owner: "owner", Name: "repo"},
-		},
-		{
-			name: "origin is not GitHub, but upstream is",
-			remotes: map[string][]string{
-				"origin":   {"https://gitlab.com/owner/repo.git"},
-				"upstream": {"https://github.com/gh-owner/gh-repo.git"},
-			},
-			wantErr:       true,
-			wantErrSubstr: "is not a GitHub remote",
-		},
-		{
-			name: "origin has multiple URLs, first is GitHub",
-			remotes: map[string][]string{
-				"origin": {"https://github.com/owner/repo.git", "https://gitlab.com/owner/repo.git"},
-			},
-			wantRepo: &Repository{Owner: "owner", Name: "repo"},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			repo := newTestGitRepo(t, test.remotes)
-
-			got, err := FetchGitHubRepoFromRemote(repo)
-
-			if test.wantErr {
-				if err == nil {
-					t.Fatalf("FetchGitHubRepoFromRemote() err = nil, want error containing %q", test.wantErrSubstr)
-				}
-				if !strings.Contains(err.Error(), test.wantErrSubstr) {
-					t.Errorf("FetchGitHubRepoFromRemote() err = %v, want error containing %q", err, test.wantErrSubstr)
-				}
-			} else {
-				if err != nil {
-					t.Errorf("FetchGitHubRepoFromRemote() err = %v, want nil", err)
-				}
-				if diff := cmp.Diff(test.wantRepo, got); diff != "" {
-					t.Errorf("FetchGitHubRepoFromRemote() repo mismatch (-want +got): %s", diff)
 				}
 			}
 		})
@@ -1114,6 +995,45 @@ func TestCreateTag(t *testing.T) {
 				}
 			} else if err != nil {
 				t.Errorf("CreateTag() err = %v, want nil", err)
+			}
+		})
+	}
+}
+
+func TestNewClient(t *testing.T) {
+
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		token string
+		repo  *Repository
+	}{
+		{
+			name:  "with credentials",
+			token: "some-token",
+		},
+		{
+			name:  "with custom repo",
+			token: "some-token",
+			repo: &Repository{
+				Owner:   "some-owner",
+				Name:    "some-repo",
+				BaseURL: "https://example.com/",
+			},
+		},
+		{
+			name:  "with repo, without base url",
+			token: "some-token",
+			repo: &Repository{
+				Owner: "some-owner",
+				Name:  "some-repo",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			client := NewClient(test.token, nil)
+			if client == nil {
+				t.Fatalf("expected to create a new client")
 			}
 		})
 	}

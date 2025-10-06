@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
@@ -173,9 +174,10 @@ func (r *generateRunner) run(ctx context.Context) error {
 //
 // Returns the last generated commit before the generation and error, if any.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
+	safeLibraryDirectory := getSafeDirectoryName(libraryID)
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.library)
-		configureOutputDir := filepath.Join(outputDir, libraryID, "configure")
+		configureOutputDir := filepath.Join(outputDir, safeLibraryDirectory, "configure")
 		if err := os.MkdirAll(configureOutputDir, 0755); err != nil {
 			return "", err
 		}
@@ -201,7 +203,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	// For each library, create a separate output directory. This avoids
 	// libraries interfering with each other, and makes it easier to see what
 	// was generated for each library when debugging.
-	libraryOutputDir := filepath.Join(outputDir, libraryID)
+	libraryOutputDir := filepath.Join(outputDir, safeLibraryDirectory)
 	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
 		return "", err
 	}
@@ -448,4 +450,19 @@ func setAllAPIStatus(state *config.LibrarianState, status string) {
 			api.Status = status
 		}
 	}
+}
+
+// getSafeDirectoryName returns a directory name which doesn't contain slashes
+// based on a library ID. This avoids cases where a library ID contains
+// slashes but we want generateSingleLibrary to create a directory which
+// is not a subdirectory of some other directory. For example, if there
+// are library IDs of "pubsub" and "pubsub/v2" we don't want to create
+// "output/pubsub/v2" and then "output/pubsub" later. This function does
+// not protect against malicious library IDs, e.g. ".", ".." or deliberate
+// collisions (e.g. "pubsub/v2" and "pubsub-slash-v2").
+//
+// The exact implementation may change over time - nothing should rely on this.
+// The current implementation simply replaces any slashes with "-slash-".
+func getSafeDirectoryName(libraryID string) string {
+	return strings.ReplaceAll(libraryID, "/", "-slash-")
 }

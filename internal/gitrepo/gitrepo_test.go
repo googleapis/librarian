@@ -356,7 +356,7 @@ func TestAddAll(t *testing.T) {
 
 			test.setup(t, dir)
 
-			status, err := r.AddAll()
+			err := r.AddAll()
 			if (err != nil) != test.wantErr {
 				t.Errorf("AddAll() error = %v, wantErr %v", err, test.wantErr)
 				return
@@ -364,9 +364,12 @@ func TestAddAll(t *testing.T) {
 			if err != nil {
 				return
 			}
-
-			if status.IsClean() != test.wantStatusIsClean {
-				t.Errorf("AddAll() status.IsClean() = %v, want %v", status.IsClean(), test.wantStatusIsClean)
+			isClean, err := r.IsClean()
+			if err != nil {
+				t.Fatalf("IsClean() returned an error: %v", err)
+			}
+			if isClean != test.wantStatusIsClean {
+				t.Errorf("AddAll() status.IsClean() = %v, want %v", isClean, test.wantStatusIsClean)
 			}
 		})
 	}
@@ -1233,7 +1236,7 @@ func TestCleanUntracked(t *testing.T) {
 				}
 			}
 
-			if _, err := localRepo.AddAll(); err != nil {
+			if err := localRepo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
 
@@ -1367,4 +1370,41 @@ func setupRepoForGetCommitsTest(t *testing.T) (*LocalRepository, map[string]stri
 	commits["commit3"] = commit3.Hash.String()
 
 	return &LocalRepository{Dir: dir, repo: repo}, commits
+}
+
+func TestCanUseSSH(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		remoteURI string
+		want      bool
+	}{
+		{
+			name:      "remote_https_uri",
+			remoteURI: "https://github.com/googleapis/librarian.git",
+			want:      false,
+		},
+		{
+			name:      "remote_ssh_uri",
+			remoteURI: "git@github.com:googleapis/librarian.git",
+			want:      true,
+		},
+		{
+			name:      "remote_ssh_uri_with_scheme",
+			remoteURI: "ssh://git@github.com/googleapis/librarian.git",
+			want:      true,
+		},
+		{
+			name:      "invalid_remote_uri",
+			remoteURI: "nonsense-uri",
+			want:      false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := canUseSSH(test.remoteURI)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("canUseSSH() mismatch in %s (-want +got):\n%s", test.name, diff)
+			}
+		})
+	}
 }

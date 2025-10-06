@@ -148,7 +148,7 @@ func TestPullRequestSystem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error writing a file to git repo %s", err)
 	}
-	_, err = localRepository.AddAll()
+	err = localRepository.AddAll()
 	if err != nil {
 		t.Fatalf("unexepected error in AddAll() %s", err)
 	}

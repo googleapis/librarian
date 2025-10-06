@@ -57,7 +57,7 @@ impl {{Codec.Name}} {
         let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
         let inner = if tracing_is_enabled {
-            inner.with_instrumentation(&*crate::info::INSTRUMENTATION_CLIENT_INFO)
+            inner.with_instrumentation(&crate::info::INSTRUMENTATION_CLIENT_INFO)
         } else {
             inner
         };

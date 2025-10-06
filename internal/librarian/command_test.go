@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
@@ -1337,11 +1336,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1368,11 +1364,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1392,11 +1385,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1412,11 +1402,8 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "No GitHub Remote",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{}, // No remotes
 				}
 			},
@@ -1457,12 +1444,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:                          t.TempDir(),
-					AddAllStatus:                 status,
 					RemotesValue:                 []*gitrepo.Remote{remote},
 					CreateBranchAndCheckoutError: errors.New("create branch error"),
 				}
@@ -1482,12 +1465,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 					CommitError:  errors.New("commit error"),
 				}
@@ -1507,12 +1486,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 					PushError:    errors.New("push error"),
 				}
@@ -1532,12 +1507,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1557,12 +1528,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1586,7 +1553,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: git.Status{}, // Clean status
+					IsCleanValue: true,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1603,11 +1570,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1729,8 +1693,7 @@ func TestWritePRBody(t *testing.T) {
 			name: "unable to save file",
 			info: &commitInfo{
 				repo: &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: make(git.Status),
+					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
 						{
 							Name: "origin",

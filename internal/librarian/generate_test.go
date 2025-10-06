@@ -196,7 +196,7 @@ func TestRunBuildCommand(t *testing.T) {
 					}
 				}
 			}
-			if _, err := r.repo.AddAll(); err != nil {
+			if err := r.repo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
 			if err := r.repo.Commit("test commit"); err != nil {
@@ -1213,6 +1213,37 @@ func TestGetExistingSrc(t *testing.T) {
 			got := r.getExistingSrc("some-library")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("getExistingSrc() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetSafeDirectoryName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		id   string
+		want string
+	}{
+		{
+			name: "simple",
+			id:   "pubsub",
+			want: "pubsub",
+		},
+		{
+			name: "nested",
+			id:   "pubsub/v2",
+			want: "pubsub-slash-v2",
+		},
+		{
+			name: "deeply nested",
+			id:   "compute/metadata/v2",
+			want: "compute-slash-metadata-slash-v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := getSafeDirectoryName(test.id)
+			if test.want != got {
+				t.Errorf("getSafeDirectoryName() = %q; want %q", got, test.want)
 			}
 		})
 	}
