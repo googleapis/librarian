@@ -34,24 +34,33 @@ func TestPackageNames(t *testing.T) {
 	// Override the default name for test APIs ("Test").
 	model.Name = "workflows-v1"
 	codec, err := newCodec("protobuf", map[string]string{
-		"per-service-features": "true",
-		"copyright-year":       "2035",
+		"version":                     "1.2.3",
+		"release-level":               "stable",
+		"copyright-year":              "2035",
+		"per-service-features":        "true",
+		"extra-modules":               "operation",
+		"generate-setter-samples":     "true",
+		"detailed-tracing-attributes": "true",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := annotateModel(model, codec)
 	want := &modelAnnotations{
-		PackageName:        "google-cloud-workflows-v1",
-		PackageNamespace:   "google_cloud_workflows_v1",
-		PackageVersion:     "0.0.0",
-		ReleaseLevel:       "preview",
-		RequiredPackages:   []string{},
-		ExternPackages:     []string{},
-		CopyrightYear:      "2035",
-		Services:           []*api.Service{},
-		NameToLower:        "workflows-v1",
-		PerServiceFeatures: false,
+		PackageName:               "google-cloud-workflows-v1",
+		PackageVersion:            "1.2.3",
+		ReleaseLevel:              "stable",
+		PackageNamespace:          "google_cloud_workflows_v1",
+		RequiredPackages:          []string{},
+		ExternPackages:            []string{},
+		HasLROs:                   false,
+		CopyrightYear:             "2035",
+		Services:                  []*api.Service{},
+		NameToLower:               "workflows-v1",
+		PerServiceFeatures:        false, // no services
+		ExtraModules:              []string{"operation"},
+		GenerateSetterSamples:     true,
+		DetailedTracingAttributes: true,
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
 		t.Errorf("mismatch in modelAnnotations list (-want, +got)\n:%s", diff)

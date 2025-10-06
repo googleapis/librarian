@@ -144,6 +144,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `has-veneer` value %q to boolean: %w", definition, err)
 			}
 			codec.hasVeneer = value
+		case key == "extra-modules":
+			codec.extraModules = strings.Split(definition, ",")
 		case key == "internal-types":
 			codec.internalTypes = strings.Split(definition, ",")
 		case key == "routing-required":
@@ -269,6 +271,8 @@ type codec struct {
 	detailedTracingAttributes bool
 	// If true, there is a handwritten client surface.
 	hasVeneer bool
+	// Additional modules, maybe with hand-crafted code.
+	extraModules []string
 	// A list of types which should only be `pub(crate)`.
 	//
 	// In rare cases, it is easiest to manage type visibility via the codec
