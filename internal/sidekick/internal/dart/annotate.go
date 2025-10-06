@@ -120,7 +120,7 @@ type methodAnnotation struct {
 	BodyMessageName     string
 	QueryLines          []string
 	IsLROGetOperation   bool
-	ServerSideStreaming bool
+	ServerSideStreaming bool // Whether the server supports streaming via server-sent events (SSE).
 }
 
 // HasBody returns true if the method has a body.
