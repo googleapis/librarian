@@ -302,21 +302,21 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := GetConventionalCommitsSinceLastRelease(test.repo, test.library, "")
+			got, err := getConventionalCommitsSinceLastRelease(test.repo, test.library, "")
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("GetConventionalCommitsSinceLastRelease() should have failed")
+					t.Fatal("getConventionalCommitsSinceLastRelease() should have failed")
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("GetConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+					t.Errorf("getConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
+				t.Fatalf("getConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
-				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
+				t.Errorf("getConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -410,15 +410,15 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 					t.Fatal("getConventionalCommitsSinceLastGeneration() should have failed")
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("GetConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+					t.Errorf("getConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
+				t.Fatalf("getConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
-				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
+				t.Errorf("getConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

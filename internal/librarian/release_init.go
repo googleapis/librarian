@@ -198,7 +198,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 func (r *initRunner) processLibrary(library *config.LibraryState) error {
 	tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
 	tagName := config.FormatTag(tagFormat, library.ID, library.Version)
-	commits, err := GetConventionalCommitsSinceLastRelease(r.repo, library, tagName)
+	commits, err := getConventionalCommitsSinceLastRelease(r.repo, library, tagName)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}

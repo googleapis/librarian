@@ -26,9 +26,9 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-// GetConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
+// getConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file. The repo should be the language repo.
-func GetConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState, tag string) ([]*conventionalcommits.ConventionalCommit, error) {
+func getConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState, tag string) ([]*conventionalcommits.ConventionalCommit, error) {
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
 
 	if err != nil {
