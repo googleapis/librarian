@@ -506,6 +506,80 @@ func TestFindLatestCommit(t *testing.T) {
 	}
 }
 
+func TestGroupByPiperID(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		commits []*conventionalcommits.ConventionalCommit
+		want    []*conventionalcommits.ConventionalCommit
+	}{
+		{
+			name: "group_commits_with_same_piper_id",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-1",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "123456",
+					},
+				},
+				{
+					LibraryID: "library-2",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+					},
+				},
+				{
+					LibraryID: "library-3",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+					},
+				},
+				{
+					LibraryID: "library-4",
+				},
+				{
+					LibraryID: "library-5",
+					Footers: map[string]string{
+						"random-key": "random-value",
+					},
+				},
+			},
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-1",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "123456",
+						"Library-IDs":       "library-1",
+					},
+				},
+				{
+					LibraryID: "library-2",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+						"Library-IDs":       "library-2,library-3",
+					},
+				},
+				{
+					LibraryID: "library-4",
+				},
+				{
+					LibraryID: "library-5",
+					Footers: map[string]string{
+						"random-key": "random-value",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := groupByPiperID(test.commits)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("groupByPiperID() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFormatReleaseNotes(t *testing.T) {
 	t.Parallel()
 
