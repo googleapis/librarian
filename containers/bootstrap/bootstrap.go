@@ -31,6 +31,8 @@ type GenerateFlags struct {
 	Source    string
 }
 
+// LanguageContainerFunctions lists the functions a language container
+// defines to accept requests from Librarian CLI.
 type LanguageContainerFunctions struct {
 	GenerateFunc func(ctx context.Context, generateFlags *GenerateFlags)
 
@@ -41,14 +43,30 @@ type LanguageContainerFunctions struct {
 // calls the corresponding function in the functions passed by the caller
 // with the Flags object, for example, GenerateFlags object for the
 // generate command).
+//
+// A language container defines the following main function:
+//
+// ```
+//
+//	func main() {
+//		bootstrap.LanguageContainerMain(os.Args,
+//			bootstrap.LanguageContainerFunctions{
+//				GenerateFunc: generateFunc,
+//	            ... (omit) ...
+//			})
+//	}
+//
+// ```
 func LanguageContainerMain(args []string, functions LanguageContainerFunctions) {
 	// TODO: Call the generateFunc only when it's "generate" command.
-	// TODO: Parse the flags correctly.
-	generateFlags := GenerateFlags{
-		Librarian: "/dummy/librarian",
-		Input:     "/dummy/input",
-		Output:    "/dummy/output",
-		Source:    "/dummy/source",
+	// TODO: Parse the arguments correctly.
+	if args[0] == "generate" {
+		generateFlags := GenerateFlags{
+			Librarian: "/dummy/librarian",
+			Input:     "/dummy/input",
+			Output:    "/dummy/output",
+			Source:    "/dummy/source",
+		}
+		functions.GenerateFunc(nil, &generateFlags)
 	}
-	functions.GenerateFunc(nil, &generateFlags)
 }
