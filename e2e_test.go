@@ -42,10 +42,16 @@ func TestRunGenerate(t *testing.T) {
 	)
 	t.Parallel()
 	for _, test := range []struct {
-		name    string
-		api     string
-		push    bool
-		wantErr bool
+		name              string
+		api               string
+		push              bool
+		wantErr           bool
+		wantInPrBody      []string
+		doNotWantInPrBody []string
+		commits           []struct {
+			message   string
+			fileToAdd string
+		}
 	}{
 		{
 			name: "testRunSuccess",
@@ -60,6 +66,21 @@ func TestRunGenerate(t *testing.T) {
 			name: "testRunSuccess with push",
 			api:  "google/cloud/pubsub/v1",
 			push: true,
+			commits: []struct {
+				message   string
+				fileToAdd string
+			}{
+				{
+					message:   "feat: new feature pubsub",
+					fileToAdd: "google/cloud/pubsub/v1/pubsub.code",
+				},
+				{
+					message:   "feat: new feature future",
+					fileToAdd: "google/cloud/future/v2/future.code",
+				},
+			},
+			wantInPrBody:      []string{"feat: [go-google-cloud-pubsub-v1] new feature pubsub"},
+			doNotWantInPrBody: []string{"feat: [go-google-cloud-future-v2] new feature future"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -72,21 +93,26 @@ func TestRunGenerate(t *testing.T) {
 			if err := initRepo(t, apiSourceRepo, localAPISource, "initial commit"); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
-
-			// Create a local bare repository to act as the remote for the push.
 			if test.push {
+				// Create a local bare repository to act as the remote for the push.
 				bareRepoDir := filepath.Join(t.TempDir(), "remote.git")
 				if err := os.MkdirAll(bareRepoDir, 0755); err != nil {
 					t.Fatalf("Failed to create bare repo dir: %v", err)
 				}
 				runGit(t, bareRepoDir, "init", "--bare")
 				runGit(t, repo, "remote", "set-url", "origin", bareRepoDir)
+				// Setup state.yaml file with initial last_generated_commit, so it picks up the commits we create below.
+				apiSourceSHA := runGit(t, apiSourceRepo, "rev-parse", "HEAD")
+				setupStateFile(t, repo, apiSourceSHA)
+				runGit(t, repo, "commit", "-a", "-m", "populate yaml file with latest googleapis commit")
+				// Create commits in the api source repo to be picked in generation PR body.
+				for _, commit := range test.commits {
+					createCommit(t, apiSourceRepo, commit.fileToAdd, commit.message)
+				}
 			}
-
 			// Setup mock GitHub server.
-			server := newMockGitHubServer(t, "generate")
+			server := newMockGitHubServer(t, "generate", test.wantInPrBody, test.doNotWantInPrBody)
 			defer server.Close()
-
 			cmdArgs := []string{
 				"run",
 				"-tags", "e2etest",
@@ -160,39 +186,7 @@ func TestCleanAndCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// create a state file with remove and preserve regex.
-	state := &config.LibrarianState{
-		Image: "test-image:latest",
-		Libraries: []*config.LibraryState{
-			{
-				ID:      "go-google-cloud-pubsub-v1",
-				Version: "v1.0.0",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/pubsub/v1",
-					},
-				},
-				SourceRoots: []string{"pubsub"},
-				RemoveRegex: []string{
-					"pubsub/file_to_remove.txt",
-					"^pubsub/sub/.*.txt",
-				},
-				PreserveRegex: []string{
-					"pubsub/sub/file_to_preserve.txt",
-				},
-			},
-		},
-	}
-	stateBytes, err := yaml.Marshal(state)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(repoInitDir, ".librarian"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(repoInitDir, ".librarian", "state.yaml"), stateBytes, 0644); err != nil {
-		t.Fatal(err)
-	}
+	setupStateFile(t, repoInitDir, "")
 
 	workRoot := t.TempDir()
 	repo := t.TempDir()
@@ -521,7 +515,7 @@ func TestReleaseInit(t *testing.T) {
 			runGit(t, repo, "commit", "-m", commitMsg)
 			runGit(t, repo, "log", "--oneline", fmt.Sprintf("%s..HEAD", tagName), "--", test.changePath)
 
-			server := newMockGitHubServer(t, "release")
+			server := newMockGitHubServer(t, "release", []string{}, []string{})
 			defer server.Close()
 
 			cmdArgs := []string{
@@ -754,7 +748,7 @@ libraries:
 }
 
 // newMockGitHubServer creates a mock GitHub API server for testing --push functionality.
-func newMockGitHubServer(t *testing.T, prTitleFragment string) *httptest.Server {
+func newMockGitHubServer(t *testing.T, prTitleFragment string, expectedContentInPr []string, notExpectedContentInPr []string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer fake-token" {
@@ -770,6 +764,16 @@ func newMockGitHubServer(t *testing.T, prTitleFragment string) *httptest.Server 
 			expectedTitle := fmt.Sprintf("chore: librarian %s pull request", prTitleFragment)
 			if !strings.Contains(*newPR.Title, expectedTitle) {
 				t.Errorf("unexpected PR title: got %q, want to contain %q", *newPR.Title, expectedTitle)
+			}
+			for _, expectedContent := range expectedContentInPr {
+				if !strings.Contains(*newPR.Body, expectedContent) {
+					t.Errorf("unexpected PR description: got %q, missing %q", *newPR.Body, expectedContent)
+				}
+			}
+			for _, notExpectedContent := range notExpectedContentInPr {
+				if strings.Contains(*newPR.Body, notExpectedContent) {
+					t.Errorf("unexpected PR description: got %q,  should not contain %q", *newPR.Body, notExpectedContent)
+				}
 			}
 			if *newPR.Base != "main" {
 				t.Errorf("unexpected PR base: got %q", *newPR.Base)
@@ -810,11 +814,64 @@ type genResponse struct {
 	ErrorMessage string `json:"error,omitempty"`
 }
 
-func runGit(t *testing.T, dir string, args ...string) {
+func runGit(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("git %v: %v", args, err)
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("failed to get git commit SHA: %v", err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// createCommit creates a new commit in the given repo directory with a dummy file using the specified commit message.
+func createCommit(t *testing.T, dir, filePath string, commitMsg string) error {
+	fileToCommit := filepath.Join(dir, filePath)
+
+	file, err := os.OpenFile(fileToCommit, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s: %w", fileToCommit, err)
+	}
+	defer file.Close()
+	runGit(t, dir, "add", ".")
+	runGit(t, dir, "commit", "-m", commitMsg)
+	return nil
+}
+
+// setupStateFile creates a .librarian/state.yaml file in the given repo directory with the provided lastGeneratedCommit.
+func setupStateFile(t *testing.T, repoInitDir, lastGeneratedCommit string) {
+	state := &config.LibrarianState{
+		Image: "test-image:latest",
+		Libraries: []*config.LibraryState{
+			{
+				ID:      "go-google-cloud-pubsub-v1",
+				Version: "v1.0.0",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/pubsub/v1",
+					},
+				},
+				SourceRoots: []string{"pubsub"},
+				RemoveRegex: []string{
+					"pubsub/file_to_remove.txt",
+					"^pubsub/sub/.*.txt",
+				},
+				PreserveRegex: []string{
+					"pubsub/sub/file_to_preserve.txt",
+				},
+				LastGeneratedCommit: lastGeneratedCommit,
+			},
+		},
+	}
+	stateBytes, err := yaml.Marshal(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repoInitDir, ".librarian"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repoInitDir, ".librarian", "state.yaml"), stateBytes, 0644); err != nil {
+		t.Fatal(err)
 	}
 }
