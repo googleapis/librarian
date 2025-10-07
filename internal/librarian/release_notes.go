@@ -182,7 +182,6 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	// because this function will return early if no conventional commit is found
 	// since last generation.
 	startSHA := startCommit.Hash.String()
-
 	// Sort the slice by commit time in reverse order,
 	// so that the latest commit appears first.
 	sort.Slice(allCommits, func(i, j int) bool {
@@ -235,6 +234,42 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 	}
 
 	return res, nil
+}
+
+// groupByPiperID aggregates conventional commits for ones have the same Piper ID in the footer.
+func groupByPiperID(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
+	idToCommits := make(map[string][]*conventionalcommits.ConventionalCommit)
+	var singletons []*conventionalcommits.ConventionalCommit
+	for i := range len(commits) {
+		commit := commits[i]
+		// a commit is not considering for grouping if it doesn't have a footer or
+		// the footer doesn't have a Piper ID.
+		if commit.Footers == nil {
+			singletons = append(singletons, commit)
+			continue
+		}
+
+		id, ok := commit.Footers["PiperOrigin-RevId"]
+		if !ok {
+			singletons = append(singletons, commit)
+			continue
+		}
+
+		idToCommits[id] = append(idToCommits[id], commit)
+	}
+
+	var res []*conventionalcommits.ConventionalCommit
+	for _, groupCommits := range idToCommits {
+		var ids []string
+		for _, commit := range groupCommits {
+			ids = append(ids, commit.LibraryID)
+		}
+		firstCommit := groupCommits[0]
+		firstCommit.Footers["Library-IDs"] = strings.Join(ids, ",")
+		res = append(res, firstCommit)
+	}
+
+	return append(res, singletons...)
 }
 
 // formatReleaseNotes generates the body for a release pull request.
