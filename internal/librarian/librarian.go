@@ -139,6 +139,7 @@ func newCmdUpdateImage() *cli.Command {
 	cmdUpdateImage.Init()
 	addFlagAPISource(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagBuild(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagCommit(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagHostMount(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagImage(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagRepo(cmdUpdateImage.Flags, cmdUpdateImage.Config)

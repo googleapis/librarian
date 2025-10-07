@@ -37,6 +37,7 @@ type updateImageRunner struct {
 	state           *config.LibrarianState
 	generate        bool
 	push            bool
+	commit          bool
 	image           string
 	workRoot        string
 }
@@ -56,6 +57,7 @@ func newUpdateImageRunner(cfg *config.Config) (*updateImageRunner, error) {
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
 		generate:        true,
+		commit:          cfg.Commit,
 		push:            cfg.Push,
 		image:           cfg.Image,
 		workRoot:        runner.workRoot,
