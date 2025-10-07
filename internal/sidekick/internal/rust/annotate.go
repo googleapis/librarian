@@ -1102,12 +1102,9 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 	// - We pick from the already computed unique values, even though that applies to BigQuery only.
 	// - We pick values that are not deprecated.
 	// - We don't pick the default value.
-	var goodValues []*api.EnumValue
-	for _, ev := range unique {
-		if !ev.Deprecated && ev.Number != 0 {
-			goodValues = append(goodValues, ev)
-		}
-	}
+	goodValues := language.FilterSlice(unique, func(ev *api.EnumValue) bool {
+		return !ev.Deprecated && ev.Number != 0
+	})
 	// If we couldn't find any good enum values for examples, then we pick from all enum values.
 	if len(goodValues) == 0 {
 		goodValues = unique
@@ -1115,13 +1112,14 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 	// We pick at most 3 values as samples do not need to be exhaustive.
 	goodValues = goodValues[:min(3, len(goodValues))]
 
-	var forExamples []*enumValueForExamples
-	for i := 0; i < len(goodValues); i++ {
-		forExamples = append(forExamples, &enumValueForExamples{
-			EnumValue: goodValues[i],
+	i := -1
+	forExamples := language.MapSlice(goodValues, func(ev *api.EnumValue) *enumValueForExamples {
+		i++
+		return &enumValueForExamples{
+			EnumValue: ev,
 			Index:     i,
-		})
-	}
+		}
+	})
 
 	annotations := &enumAnnotation{
 		Name:              enumName(e),

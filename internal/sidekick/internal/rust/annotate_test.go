@@ -1770,7 +1770,7 @@ func TestEnumAnnotationsValuesForExamples(t *testing.T) {
 		{
 			name:         "no values",
 			values:       []*api.EnumValue{},
-			wantExamples: nil,
+			wantExamples: []*enumValueForExamples{},
 		},
 		{
 			name:   "mixed good and bad values",
