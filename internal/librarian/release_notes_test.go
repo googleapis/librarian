@@ -110,7 +110,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
-fix: [one-library] a bug fix
+fix: a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
@@ -195,7 +195,7 @@ Language Image: %s`,
 			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
-fix: [one-library] a bug fix
+fix: a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
@@ -277,7 +277,7 @@ Language Image: %s`,
 			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
-fix: [one-library] a bug fix
+fix: a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
@@ -355,7 +355,7 @@ Language Image: %s
 			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
-fix: [one-library] a bug fix
+fix: a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
@@ -364,7 +364,7 @@ Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googl
 END_NESTED_COMMIT
 
 BEGIN_NESTED_COMMIT
-feat: [one-library] new feature
+feat: new feature
 This is body.
 
 PiperOrigin-RevId: 98765

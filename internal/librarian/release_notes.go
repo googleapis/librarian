@@ -93,7 +93,7 @@ Language Image: {{.ImageVersion}}
 	}).Parse(`BEGIN_COMMIT_OVERRIDE
 {{ range .Commits }}
 BEGIN_NESTED_COMMIT
-{{.Type}}: [{{.LibraryID}}] {{.Subject}}
+{{.Type}}: {{.Subject}}
 {{.Body}}
 
 PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
