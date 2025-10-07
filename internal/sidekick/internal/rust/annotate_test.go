@@ -684,6 +684,11 @@ func TestEnumAnnotations(t *testing.T) {
 		DocLines:       []string{"/// The enum is documented."},
 		UniqueNames:    []*api.EnumValue{v0, v1, v2, v3, v4},
 		NameInExamples: "google_cloud_test_v1::model::TestEnum",
+		ValuesForExamples: []*enumValueForExamples{
+			{EnumValue: v0, Index: 0},
+			{EnumValue: v1, Index: 1},
+			{EnumValue: v3, Index: 2},
+		},
 	}
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
@@ -776,6 +781,10 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 		RelativeName:   "TestEnum",
 		UniqueNames:    []*api.EnumValue{v0, v2},
 		NameInExamples: "google_cloud_test_v1::model::TestEnum",
+		ValuesForExamples: []*enumValueForExamples{
+			{EnumValue: v0, Index: 0},
+			{EnumValue: v2, Index: 1},
+		},
 	}
 
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
@@ -1717,5 +1726,84 @@ func TestSetterSampleAnnotations(t *testing.T) {
 	}
 	if messageField.MessageType != message {
 		t.Errorf("mismatch in message_field.MessageType")
+	}
+}
+
+func TestEnumAnnotationsValuesForExamples(t *testing.T) {
+	v_good1 := &api.EnumValue{Name: "GOOD_1", Number: 1}
+	v_good2 := &api.EnumValue{Name: "GOOD_2", Number: 2}
+	v_good3 := &api.EnumValue{Name: "GOOD_3", Number: 3}
+	v_good4 := &api.EnumValue{Name: "GOOD_4", Number: 4}
+	v_bad_deprecated := &api.EnumValue{Name: "BAD_DEPRECATED", Number: 5, Deprecated: true}
+	v_bad_default := &api.EnumValue{Name: "BAD_DEFAULT", Number: 0}
+
+	testCases := []struct {
+		name         string
+		values       []*api.EnumValue
+		wantExamples []*enumValueForExamples
+	}{
+		{
+			name:   "more than 3 good values",
+			values: []*api.EnumValue{v_good1, v_good2, v_good3, v_good4},
+			wantExamples: []*enumValueForExamples{
+				{EnumValue: v_good1, Index: 0},
+				{EnumValue: v_good2, Index: 1},
+				{EnumValue: v_good3, Index: 2},
+			},
+		},
+		{
+			name:   "less than 3 good values",
+			values: []*api.EnumValue{v_good1, v_good2, v_bad_deprecated},
+			wantExamples: []*enumValueForExamples{
+				{EnumValue: v_good1, Index: 0},
+				{EnumValue: v_good2, Index: 1},
+			},
+		},
+		{
+			name:   "no good values",
+			values: []*api.EnumValue{v_bad_default, v_bad_deprecated},
+			wantExamples: []*enumValueForExamples{
+				{EnumValue: v_bad_default, Index: 0},
+				{EnumValue: v_bad_deprecated, Index: 1},
+			},
+		},
+		{
+			name:         "no values",
+			values:       []*api.EnumValue{},
+			wantExamples: nil,
+		},
+		{
+			name:   "mixed good and bad values",
+			values: []*api.EnumValue{v_bad_default, v_good1, v_bad_deprecated, v_good2},
+			wantExamples: []*enumValueForExamples{
+				{EnumValue: v_good1, Index: 0},
+				{EnumValue: v_good2, Index: 1},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			enum := &api.Enum{
+				Name:    "TestEnum",
+				ID:      ".test.v1.TestEnum",
+				Package: "test.v1",
+				Values:  tc.values,
+			}
+			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatalf("CrossReference() failed: %v", err)
+			}
+			codec, err := newCodec("protobuf", map[string]string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			annotateModel(model, codec)
+
+			got := enum.Codec.(*enumAnnotation).ValuesForExamples
+			if diff := cmp.Diff(tc.wantExamples, got, cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+				t.Errorf("mismatch in ValuesForExamples (-want, +got)\n:%s", diff)
+			}
+		})
 	}
 }

@@ -78,8 +78,9 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     ("key0", {{Codec.ValueField.EnumType.Codec.Name}}::default()),
-///     ("key1", {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+///     ("key{{Index}}", {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
+{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
 /// ]);
 /// ```
 {{/Codec.ValueField.IsEnum}}
@@ -159,8 +160,9 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     (true, {{Codec.ValueField.EnumType.Codec.Name}}::default()),
-///     (false, {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+///     (true, {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
+{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
 /// ]);
 /// ```
 {{/Codec.ValueField.IsEnum}}
@@ -240,8 +242,9 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     (0, {{Codec.ValueField.EnumType.Codec.Name}}::default()),
-///     (1, {{Codec.ValueField.EnumType.Codec.Name}}::default()),
+{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+///     ({{Index}}, {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
+{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
 /// ]);
 /// ```
 {{/Codec.ValueField.IsEnum}}
