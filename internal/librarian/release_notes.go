@@ -182,20 +182,20 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	// because this function will return early if no conventional commit is found
 	// since last generation.
 	startSHA := startCommit.Hash.String()
-	allCommits = groupByIDAndSubject(allCommits)
+	groupedCommits := groupByIDAndSubject(allCommits)
 	// Sort the slice by commit time in reverse order,
 	// so that the latest commit appears first.
-	sort.Slice(allCommits, func(i, j int) bool {
-		return allCommits[i].When.After(allCommits[j].When)
+	sort.Slice(groupedCommits, func(i, j int) bool {
+		return groupedCommits[i].When.After(groupedCommits[j].When)
 	})
-	endSHA := allCommits[0].CommitHash
+	endSHA := groupedCommits[0].CommitHash
 	librarianVersion := cli.Version()
 	data := &generationPRBody{
 		StartSHA:         startSHA,
 		EndSHA:           endSHA,
 		LibrarianVersion: librarianVersion,
 		ImageVersion:     state.Image,
-		Commits:          allCommits,
+		Commits:          groupedCommits,
 		FailedLibraries:  failedLibraries,
 	}
 	var out bytes.Buffer
