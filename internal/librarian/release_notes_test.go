@@ -646,11 +646,15 @@ func TestGroupByPiperID(t *testing.T) {
 				},
 				{
 					LibraryID: "library-4",
+					Footers: map[string]string{
+						"Library-IDs": "library-4",
+					},
 				},
 				{
 					LibraryID: "library-5",
 					Footers: map[string]string{
-						"random-key": "random-value",
+						"random-key":  "random-value",
+						"Library-IDs": "library-5",
 					},
 				},
 			},

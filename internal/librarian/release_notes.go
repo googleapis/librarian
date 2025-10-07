@@ -246,6 +246,7 @@ func groupByPiperID(commits []*conventionalcommits.ConventionalCommit) []*conven
 		// a commit is not considering for grouping if it doesn't have a footer or
 		// the footer doesn't have a Piper ID.
 		if commit.Footers == nil {
+			commit.Footers = make(map[string]string)
 			commit.Footers["Library-IDs"] = commit.LibraryID
 			singletons = append(singletons, commit)
 			continue
