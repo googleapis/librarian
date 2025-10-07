@@ -239,23 +239,22 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 
 // groupByIDAndSubject aggregates conventional commits for ones have the same Piper ID and subject in the footer.
 func groupByIDAndSubject(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
+	var res []*conventionalcommits.ConventionalCommit
 	idToCommits := make(map[string][]*conventionalcommits.ConventionalCommit)
-	var singletons []*conventionalcommits.ConventionalCommit
-	for i := range len(commits) {
-		commit := commits[i]
+	for _, commit := range commits {
 		// a commit is not considering for grouping if it doesn't have a footer or
 		// the footer doesn't have a Piper ID.
 		if commit.Footers == nil {
 			commit.Footers = make(map[string]string)
 			commit.Footers["Library-IDs"] = commit.LibraryID
-			singletons = append(singletons, commit)
+			res = append(res, commit)
 			continue
 		}
 
 		id, ok := commit.Footers["PiperOrigin-RevId"]
 		if !ok {
 			commit.Footers["Library-IDs"] = commit.LibraryID
-			singletons = append(singletons, commit)
+			res = append(res, commit)
 			continue
 		}
 
@@ -263,7 +262,6 @@ func groupByIDAndSubject(commits []*conventionalcommits.ConventionalCommit) []*c
 		idToCommits[key] = append(idToCommits[key], commit)
 	}
 
-	var res []*conventionalcommits.ConventionalCommit
 	for _, groupCommits := range idToCommits {
 		var ids []string
 		for _, commit := range groupCommits {
@@ -274,7 +272,7 @@ func groupByIDAndSubject(commits []*conventionalcommits.ConventionalCommit) []*c
 		res = append(res, firstCommit)
 	}
 
-	return append(res, singletons...)
+	return res
 }
 
 // formatReleaseNotes generates the body for a release pull request.
