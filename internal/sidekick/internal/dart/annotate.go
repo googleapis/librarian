@@ -54,6 +54,7 @@ type modelAnnotations struct {
 	DoNotPublish         bool
 	RepositoryURL        string
 	ReadMeAfterTitleText string
+	ReadMeQuickstartText string
 }
 
 // HasServices returns true if the model has services.
@@ -223,6 +224,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		devDependencies      = []string{}
 		repositoryURL        string
 		readMeAfterTitleText string
+		readMeQuickstartText string
 	)
 
 	for key, definition := range options {
@@ -250,6 +252,11 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		case key == "readme-after-title-text":
 			// Markdown that will be inserted into the README.md after the title section.
 			readMeAfterTitleText = definition
+		case key == "readme-quickstart-text":
+			// Markdown that will appear as a "Quickstart" section of README.md. Does not include
+			// the section title, i.e., you probably want it to start with "## Getting Started"`
+			// or similar.
+			readMeQuickstartText = definition
 		case key == "repository-url":
 			repositoryURL = definition
 		case strings.HasPrefix(key, "proto:"):
@@ -337,6 +344,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		DoNotPublish:         doNotPublish,
 		RepositoryURL:        repositoryURL,
 		ReadMeAfterTitleText: readMeAfterTitleText,
+		ReadMeQuickstartText: readMeQuickstartText,
 	}
 
 	model.Codec = ann
