@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -641,14 +642,6 @@ func TestGroupByPiperID(t *testing.T) {
 			},
 			want: []*conventionalcommits.ConventionalCommit{
 				{
-					LibraryID: "library-3",
-					Subject:   "the same subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "987654",
-						"Library-IDs":       "library-3,library-4",
-					},
-				},
-				{
 					LibraryID: "library-1",
 					Subject:   "one subject",
 					Footers: map[string]string{
@@ -662,6 +655,14 @@ func TestGroupByPiperID(t *testing.T) {
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "123456",
 						"Library-IDs":       "library-2",
+					},
+				},
+				{
+					LibraryID: "library-3",
+					Subject:   "the same subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+						"Library-IDs":       "library-3,library-4",
 					},
 				},
 				{
@@ -682,7 +683,11 @@ func TestGroupByPiperID(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := groupByIDAndSubject(test.commits)
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			// We don't care the order in the slice but sorting makes the test deterministic.
+			opts := cmpopts.SortSlices(func(a, b *conventionalcommits.ConventionalCommit) bool {
+				return a.LibraryID < b.LibraryID
+			})
+			if diff := cmp.Diff(test.want, got, opts); diff != "" {
 				t.Errorf("groupByIDAndSubject() mismatch (-want +got):\n%s", diff)
 			}
 		})
