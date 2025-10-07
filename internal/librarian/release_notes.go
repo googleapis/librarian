@@ -182,7 +182,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	// because this function will return early if no conventional commit is found
 	// since last generation.
 	startSHA := startCommit.Hash.String()
-	allCommits = groupByPiperID(allCommits)
+	allCommits = groupByIDAndSubject(allCommits)
 	// Sort the slice by commit time in reverse order,
 	// so that the latest commit appears first.
 	sort.Slice(allCommits, func(i, j int) bool {
@@ -237,8 +237,8 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 	return res, nil
 }
 
-// groupByPiperID aggregates conventional commits for ones have the same Piper ID and subject in the footer.
-func groupByPiperID(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
+// groupByIDAndSubject aggregates conventional commits for ones have the same Piper ID and subject in the footer.
+func groupByIDAndSubject(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
 	idToCommits := make(map[string][]*conventionalcommits.ConventionalCommit)
 	var singletons []*conventionalcommits.ConventionalCommit
 	for i := range len(commits) {

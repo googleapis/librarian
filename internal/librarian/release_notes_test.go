@@ -599,7 +599,7 @@ func TestGroupByPiperID(t *testing.T) {
 		want    []*conventionalcommits.ConventionalCommit
 	}{
 		{
-			name: "group_commits_with_same_piper_id",
+			name: "group_commits_with_same_piper_id_and_subject",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{
 					LibraryID: "library-1",
@@ -681,9 +681,9 @@ func TestGroupByPiperID(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := groupByPiperID(test.commits)
+			got := groupByIDAndSubject(test.commits)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("groupByPiperID() mismatch (-want +got):\n%s", diff)
+				t.Errorf("groupByIDAndSubject() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
