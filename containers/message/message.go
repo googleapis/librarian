@@ -20,6 +20,10 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// The Librarian State file of a repository
 type LibrarianState = config.LibrarianState
 
+// A library state. The Librarian CLI and language containers
+// excvhange messages of this type through JSON files, such as
+// generate-request.json and generate-response.json.
 type LibraryState = config.LibraryState
