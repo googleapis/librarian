@@ -113,7 +113,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		sourceRepo    gitrepo.Repository
 		sourceRepoDir string
 	)
-	if cfg.CommandName == generateCmdName {
+	if cfg.APISource != "" {
 		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
@@ -328,6 +328,26 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 		return nil, err
 	}
 	return fileNames, nil
+}
+
+func commit(ctx context.Context, repo gitrepo.Repository, message string) (bool, error) {
+	if err := repo.AddAll(); err != nil {
+		return false, err
+	}
+	isClean, err := repo.IsClean()
+	if err != nil {
+		return false, err
+	}
+	if isClean {
+		slog.Info("No changes to commit, skipping commit.")
+		return false, nil
+	}
+
+	if err := repo.Commit(message); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // commitAndPush creates a commit and push request to GitHub for the generated changes.

@@ -53,6 +53,7 @@ type Repository interface {
 	Restore(paths []string) error
 	CleanUntracked(paths []string) error
 	pushRefSpec(refSpec string) error
+	Checkout(commitHash string) error
 }
 
 const RootPath = "."
@@ -625,5 +626,10 @@ func (r *LocalRepository) CleanUntracked(paths []string) error {
 		}
 	}
 
+	return nil
+}
+
+func (r *LocalRepository) Checkout(commitSha string) error {
+	slog.Warn("Checkout is not yet implemented.")
 	return nil
 }

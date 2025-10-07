@@ -67,6 +67,7 @@ func newLibrarianCommand() *cli.Command {
 		UsageLine: "librarian <command> [arguments]",
 		Long:      librarianLongHelp,
 		Commands: []*cli.Command{
+			newCmdUpdateImage(),
 			newCmdGenerate(),
 			cmdRelease,
 			cmdVersion,
@@ -111,6 +112,41 @@ func newCmdGenerate() *cli.Command {
 	addFlagPush(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagVerbose(cmdGenerate.Flags, &verbose)
 	return cmdGenerate
+}
+
+func newCmdUpdateImage() *cli.Command {
+	var verbose bool
+	cmdUpdateImage := &cli.Command{
+		Short:     "update-image updates configured language image container",
+		UsageLine: "librarian update-image [flags]",
+		Long:      generateLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			setupLogger(verbose)
+			slog.Debug("generate command verbose logging")
+			if err := cmd.Config.SetDefaults(); err != nil {
+				return fmt.Errorf("failed to initialize config: %w", err)
+			}
+			if _, err := cmd.Config.IsValid(); err != nil {
+				return fmt.Errorf("failed to validate config: %s", err)
+			}
+			runner, err := newUpdateImageRunner(cmd.Config)
+			if err != nil {
+				return err
+			}
+			return runner.run(ctx)
+		},
+	}
+	cmdUpdateImage.Init()
+	addFlagAPISource(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagBuild(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagHostMount(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagImage(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagRepo(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagBranch(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagWorkRoot(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagPush(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagVerbose(cmdUpdateImage.Flags, &verbose)
+	return cmdUpdateImage
 }
 
 func newCmdTagAndRelease() *cli.Command {
