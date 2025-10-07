@@ -21,7 +21,7 @@ import (
 
 // GenerateFlags is the flags in Librarian's container contract for the
 // generate command. Each value represents the path of the context, such as
-// "/librarian" in which the CLI and the language container exchange
+// "/librarian", in which the CLI and the language container exchange
 // generate-request.json and generate-response.json.
 // https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#generate
 type GenerateFlags struct {

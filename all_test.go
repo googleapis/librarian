@@ -37,6 +37,8 @@ var noHeaderRequiredFiles = []string{
 	".gitignore",
 	"Dockerfile",
 	"LICENSE",
+	"containers/go.mod",
+	"containers/go.sum",
 	"coverage.out",
 	"go.mod",
 	"go.sum",
