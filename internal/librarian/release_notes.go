@@ -182,6 +182,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	// because this function will return early if no conventional commit is found
 	// since last generation.
 	startSHA := startCommit.Hash.String()
+	allCommits = groupByPiperID(allCommits)
 	// Sort the slice by commit time in reverse order,
 	// so that the latest commit appears first.
 	sort.Slice(allCommits, func(i, j int) bool {
