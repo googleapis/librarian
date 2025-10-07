@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
@@ -215,7 +216,8 @@ func filterCommitsByLibraryID(commits []*conventionalcommits.ConventionalCommit,
 	for _, commit := range commits {
 		if commit.Footers != nil {
 			ids, ok := commit.Footers["Library-IDs"]
-			if ok && strings.Contains(ids, libraryID) {
+			libraryIDs := strings.Split(ids, ",")
+			if ok && slices.Contains(libraryIDs, libraryID) {
 				filteredCommits = append(filteredCommits, commit)
 				continue
 			}
