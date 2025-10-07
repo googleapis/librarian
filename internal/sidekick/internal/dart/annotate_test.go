@@ -101,6 +101,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
+			map[string]string{"readme-quickstart-text": "## Getting Started\n..."},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("## Getting Started\n...", codec.ReadMeQuickstartText); diff != "" {
+					t.Errorf("mismatch in Codec.ReadMeQuickstartText (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
 			map[string]string{"repository-url": "http://example.com/repo"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
