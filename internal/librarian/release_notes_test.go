@@ -641,6 +641,14 @@ func TestGroupByPiperID(t *testing.T) {
 			},
 			want: []*conventionalcommits.ConventionalCommit{
 				{
+					LibraryID: "library-3",
+					Subject:   "the same subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+						"Library-IDs":       "library-3,library-4",
+					},
+				},
+				{
 					LibraryID: "library-1",
 					Subject:   "one subject",
 					Footers: map[string]string{
@@ -654,14 +662,6 @@ func TestGroupByPiperID(t *testing.T) {
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "123456",
 						"Library-IDs":       "library-2",
-					},
-				},
-				{
-					LibraryID: "library-3",
-					Subject:   "the same subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "987654",
-						"Library-IDs":       "library-3,library-4",
 					},
 				},
 				{
