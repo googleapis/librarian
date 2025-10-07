@@ -237,7 +237,7 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 	return res, nil
 }
 
-// groupByPiperID aggregates conventional commits for ones have the same Piper ID in the footer.
+// groupByPiperID aggregates conventional commits for ones have the same Piper ID and subject in the footer.
 func groupByPiperID(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
 	idToCommits := make(map[string][]*conventionalcommits.ConventionalCommit)
 	var singletons []*conventionalcommits.ConventionalCommit
@@ -259,7 +259,8 @@ func groupByPiperID(commits []*conventionalcommits.ConventionalCommit) []*conven
 			continue
 		}
 
-		idToCommits[id] = append(idToCommits[id], commit)
+		key := fmt.Sprintf("%s-%s", id, commit.Subject)
+		idToCommits[key] = append(idToCommits[key], commit)
 	}
 
 	var res []*conventionalcommits.ConventionalCommit

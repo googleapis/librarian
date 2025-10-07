@@ -603,27 +603,37 @@ func TestGroupByPiperID(t *testing.T) {
 			commits: []*conventionalcommits.ConventionalCommit{
 				{
 					LibraryID: "library-1",
+					Subject:   "one subject",
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "123456",
 					},
 				},
 				{
 					LibraryID: "library-2",
+					Subject:   "a different subject",
 					Footers: map[string]string{
-						"PiperOrigin-RevId": "987654",
+						"PiperOrigin-RevId": "123456",
 					},
 				},
 				{
 					LibraryID: "library-3",
+					Subject:   "the same subject",
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "987654",
 					},
 				},
 				{
 					LibraryID: "library-4",
+					Subject:   "the same subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+					},
 				},
 				{
 					LibraryID: "library-5",
+				},
+				{
+					LibraryID: "library-6",
 					Footers: map[string]string{
 						"random-key": "random-value",
 					},
@@ -632,6 +642,7 @@ func TestGroupByPiperID(t *testing.T) {
 			want: []*conventionalcommits.ConventionalCommit{
 				{
 					LibraryID: "library-1",
+					Subject:   "one subject",
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "123456",
 						"Library-IDs":       "library-1",
@@ -639,22 +650,31 @@ func TestGroupByPiperID(t *testing.T) {
 				},
 				{
 					LibraryID: "library-2",
+					Subject:   "a different subject",
 					Footers: map[string]string{
-						"PiperOrigin-RevId": "987654",
-						"Library-IDs":       "library-2,library-3",
+						"PiperOrigin-RevId": "123456",
+						"Library-IDs":       "library-2",
 					},
 				},
 				{
-					LibraryID: "library-4",
+					LibraryID: "library-3",
+					Subject:   "the same subject",
 					Footers: map[string]string{
-						"Library-IDs": "library-4",
+						"PiperOrigin-RevId": "987654",
+						"Library-IDs":       "library-3,library-4",
 					},
 				},
 				{
 					LibraryID: "library-5",
 					Footers: map[string]string{
-						"random-key":  "random-value",
 						"Library-IDs": "library-5",
+					},
+				},
+				{
+					LibraryID: "library-6",
+					Footers: map[string]string{
+						"random-key":  "random-value",
+						"Library-IDs": "library-6",
 					},
 				},
 			},
