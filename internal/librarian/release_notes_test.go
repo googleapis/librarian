@@ -114,7 +114,92 @@ fix: [one-library] a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
+Library-IDs: one-library
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+END_NESTED_COMMIT
 
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s`,
+				librarianVersion, "go:1.21"),
+		},
+		{
+			name: "group_commit_messages",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "one-library",
+						APIs: []*config.API{
+							{
+								Path: "path/to",
+							},
+						},
+					},
+					{
+						ID: "another-library",
+						APIs: []*config.API{
+							{
+								Path: "path/to",
+							},
+						},
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
+				GetCommitByHash: map[string]*gitrepo.Commit{
+					"1234567890": {
+						Hash: plumbing.NewHash("1234567890"),
+						When: time.UnixMilli(200),
+					},
+					"abcdefg": {
+						Hash: plumbing.NewHash("abcdefg"),
+						When: time.UnixMilli(300),
+					},
+				},
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234567890": {
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+					"abcdefg": {
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash2.String(): {
+						"path/to/file",
+					},
+				},
+			},
+			idToCommits: map[string]string{
+				"one-library":     "1234567890",
+				"another-library": "abcdefg",
+			},
+			failedLibraries: []string{},
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
+
+BEGIN_NESTED_COMMIT
+fix: [one-library] a bug fix
+This is another body.
+
+PiperOrigin-RevId: 573342
+Library-IDs: one-library,another-library
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
@@ -196,7 +281,7 @@ fix: [one-library] a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
-
+Library-IDs: one-library
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
@@ -274,7 +359,7 @@ fix: [one-library] a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
-
+Library-IDs: one-library
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
@@ -283,7 +368,7 @@ feat: [one-library] new feature
 This is body.
 
 PiperOrigin-RevId: 98765
-
+Library-IDs: one-library
 Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567)
 END_NESTED_COMMIT
 

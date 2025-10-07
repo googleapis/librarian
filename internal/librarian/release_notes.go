@@ -97,7 +97,7 @@ BEGIN_NESTED_COMMIT
 {{.Body}}
 
 PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
-
+Library-IDs: {{index .Footers "Library-IDs"}}
 Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{shortSHA .CommitHash}})
 END_NESTED_COMMIT
 {{ end }}
@@ -246,12 +246,14 @@ func groupByPiperID(commits []*conventionalcommits.ConventionalCommit) []*conven
 		// a commit is not considering for grouping if it doesn't have a footer or
 		// the footer doesn't have a Piper ID.
 		if commit.Footers == nil {
+			commit.Footers["Library-IDs"] = commit.LibraryID
 			singletons = append(singletons, commit)
 			continue
 		}
 
 		id, ok := commit.Footers["PiperOrigin-RevId"]
 		if !ok {
+			commit.Footers["Library-IDs"] = commit.LibraryID
 			singletons = append(singletons, commit)
 			continue
 		}
