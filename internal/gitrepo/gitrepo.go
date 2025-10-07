@@ -630,6 +630,11 @@ func (r *LocalRepository) CleanUntracked(paths []string) error {
 }
 
 func (r *LocalRepository) Checkout(commitSha string) error {
-	slog.Warn("Checkout is not yet implemented.")
-	return nil
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Hash: plumbing.NewHash(commitSha),
+	})
 }
