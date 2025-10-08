@@ -814,6 +814,7 @@ type genResponse struct {
 	ErrorMessage string `json:"error,omitempty"`
 }
 
+// runGit runs a git command in the specified directory and returns the trimmed output as a string.
 func runGit(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("git", args...)
