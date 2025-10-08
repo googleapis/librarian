@@ -41,7 +41,7 @@ language-specific container.`)
 
 func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Commit, "commit", false,
-		`If true, librarian will create a commit for the release but not create
+		`If true, librarian will create a commit for the change but not create
 a pull request. This flag is ignored if push is set to true.`)
 }
 
@@ -87,7 +87,8 @@ If not specified, will search for all merged pull requests with the label
 
 func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Push, "push", false,
-		fmt.Sprintf(`If true, Librarian will create a commit and a pull request for the changes.
+		fmt.Sprintf(`If true, Librarian will create a commit, 
+push and create a pull request for the changes.
 A GitHub token with push access must be provided via the
 %s environment variable.`, config.LibrarianGithubToken))
 }
