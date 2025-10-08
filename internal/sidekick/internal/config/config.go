@@ -17,14 +17,10 @@
 package config
 
 import (
-	"crypto/sha256"
 	"fmt"
-	"io"
 	"maps"
-	"net/http"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config/gcloudyaml"
 	"github.com/googleapis/librarian/internal/sidekick/internal/license"
@@ -32,11 +28,7 @@ import (
 )
 
 const (
-	defaultGitHubApi = "https://api.github.com"
-	defaultGitHub    = "https://github.com"
-	repo             = "googleapis/googleapis"
-	branch           = "master"
-	configName       = ".sidekick.toml"
+	configName = ".sidekick.toml"
 )
 
 // DocumentationOverride describes overrides for the documentation of a single element.
@@ -51,14 +43,23 @@ type DocumentationOverride struct {
 	Replace string `toml:"replace"`
 }
 
+// PaginationOverrides describes overrides for pagination config of a method.
+type PaginationOverride struct {
+	// The method ID.
+	ID string `toml:"id"`
+	// The name of the field used for `items`.
+	ItemField string `toml:"item-field"`
+}
+
 // Config is the main configuration struct.
 type Config struct {
 	General GeneralConfig `toml:"general"`
 
-	Source           map[string]string       `toml:"source,omitempty"`
-	Codec            map[string]string       `toml:"codec,omitempty"`
-	CommentOverrides []DocumentationOverride `toml:"documentation-overrides,omitempty"`
-	Release          *Release                `toml:"release,omitempty"`
+	Source              map[string]string       `toml:"source,omitempty"`
+	Codec               map[string]string       `toml:"codec,omitempty"`
+	CommentOverrides    []DocumentationOverride `toml:"documentation-overrides,omitempty"`
+	PaginationOverrides []PaginationOverride    `toml:"pagination-overrides,omitempty"`
+	Release             *Release                `toml:"release,omitempty"`
 
 	// Gcloud is used to pass data into gcloud.Generate. It does not use the
 	// normal .sidekick.toml file, but instead reads a gcloud.yaml file.
@@ -131,9 +132,10 @@ func mergeConfigs(rootConfig, local *Config) *Config {
 			SpecificationFormat: rootConfig.General.SpecificationFormat,
 			IgnoredDirectories:  rootConfig.General.IgnoredDirectories,
 		},
-		Source:           map[string]string{},
-		Codec:            map[string]string{},
-		CommentOverrides: local.CommentOverrides,
+		Source:              map[string]string{},
+		Codec:               map[string]string{},
+		CommentOverrides:    local.CommentOverrides,
+		PaginationOverrides: local.PaginationOverrides,
 		// Release does not accept local overrides
 		Release: rootConfig.Release,
 	}
@@ -162,112 +164,6 @@ func mergeConfigs(rootConfig, local *Config) *Config {
 	}
 	// Ignore errors reading the top-level file.
 	return &merged
-}
-
-// UpdateRootConfig updates the root configuration file with the latest SHA from GitHub.
-func UpdateRootConfig(rootConfig *Config) error {
-	gitHubApi, ok := rootConfig.Source["github-api"]
-	if !ok {
-		gitHubApi = defaultGitHubApi
-	}
-	gitHub, ok := rootConfig.Source["github"]
-	if !ok {
-		gitHub = defaultGitHub
-	}
-
-	query := fmt.Sprintf("%s/repos/%s/commits/%s", gitHubApi, repo, branch)
-	fmt.Printf("getting latest SHA from %q\n", query)
-	latestSha, err := getLatestSha(query)
-	if err != nil {
-		return err
-	}
-
-	newRoot := fmt.Sprintf("%s/%s/archive/%s.tar.gz", gitHub, repo, latestSha)
-	fmt.Printf("computing SHA256 for %q\n", newRoot)
-	newSha256, err := getSha256(newRoot)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("updating .sidekick.toml\n")
-
-	contents, err := os.ReadFile(".sidekick.toml")
-	if err != nil {
-		return err
-	}
-	var newContents []string
-	for _, line := range strings.Split(string(contents), "\n") {
-		switch {
-		case strings.HasPrefix(line, "googleapis-root "):
-			s := strings.SplitN(line, "=", 2)
-			if len(s) != 2 {
-				return fmt.Errorf("invalid googleapis-root line, expected = separator, got=%q", line)
-			}
-			newContents = append(newContents, fmt.Sprintf("%s= '%s'", s[0], newRoot))
-		case strings.HasPrefix(line, "googleapis-sha256 "):
-			s := strings.SplitN(line, "=", 2)
-			if len(s) != 2 {
-				return fmt.Errorf("invalid googleapis-sha256 line, expected = separator, got=%q", line)
-			}
-			newContents = append(newContents, fmt.Sprintf("%s= '%s'", s[0], newSha256))
-		default:
-			newContents = append(newContents, line)
-		}
-	}
-
-	cwd, _ := os.Getwd()
-	fmt.Printf("%s\n", cwd)
-	f, err := os.Create(".sidekick.toml")
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	for i, line := range newContents {
-		f.Write([]byte(line))
-		if i != len(newContents)-1 {
-			f.Write([]byte("\n"))
-		}
-	}
-	return f.Close()
-}
-
-func getSha256(query string) (string, error) {
-	response, err := http.Get(query)
-	if err != nil {
-		return "", err
-	}
-	if response.StatusCode >= 300 {
-		return "", fmt.Errorf("http error in download %s", response.Status)
-	}
-	defer response.Body.Close()
-
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, response.Body); err != nil {
-		return "", err
-	}
-	got := fmt.Sprintf("%x", hasher.Sum(nil))
-	return got, nil
-}
-
-func getLatestSha(query string) (string, error) {
-	client := &http.Client{}
-	request, err := http.NewRequest(http.MethodGet, query, nil)
-	if err != nil {
-		return "", err
-	}
-	request.Header.Set("Accept", "application/vnd.github.VERSION.sha")
-	response, err := client.Do(request)
-	if err != nil {
-		return "", err
-	}
-	if response.StatusCode >= 300 {
-		return "", fmt.Errorf("http error in download %s", response.Status)
-	}
-	defer response.Body.Close()
-	contents, err := io.ReadAll(response.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(contents), nil
 }
 
 // WriteSidekickToml writes the configuration to a .sidekick.toml file.

@@ -55,7 +55,6 @@ func ParseDisco(source, serviceConfigFile string, options map[string]string) (*a
 	if err != nil {
 		return nil, err
 	}
-	updateMethodPagination(result)
 	updateAutoPopulatedFields(serviceConfig, result)
 	return result, nil
 }

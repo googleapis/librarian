@@ -88,7 +88,7 @@ func parseRemote(repo string) (*github.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return github.FetchGitHubRepoFromRemote(githubRepo)
+	return GetGitHubRepositoryFromGitRepo(githubRepo)
 }
 
 func (r *tagAndReleaseRunner) run(ctx context.Context) error {
@@ -157,9 +157,15 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 	}
 
 	// Load library state from remote repo
-	libraryState, err := loadRepoStateFromGitHub(ctx, r.ghClient, *p.Base.Ref)
+	targetBranch := *p.Base.Ref
+	librarianState, err := loadRepoStateFromGitHub(ctx, r.ghClient, targetBranch)
 	if err != nil {
 		return err
+	}
+
+	librarianConfig, err := loadLibrarianConfigFromGitHub(ctx, r.ghClient, targetBranch)
+	if err != nil {
+		slog.Warn("error loading .librarian/config.yaml", slog.Any("err", err))
 	}
 
 	// Add a tag to the release commit to trigger louhi flow: "release-{pr number}".
@@ -171,15 +177,14 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 	}
 	for _, release := range releases {
 		slog.Info("creating release", "library", release.Library, "version", release.Version)
-
-		tagFormat, err := determineTagFormat(release.Library, libraryState)
-		if err != nil {
-			slog.Warn("could not determine tag format", "library", release.Library)
-			return err
+		libraryState := librarianState.LibraryByID(release.Library)
+		if libraryState == nil {
+			return fmt.Errorf("library %s not found", release.Library)
 		}
 
 		// Create the release.
-		tagName := formatTag(tagFormat, release.Library, release.Version)
+		tagFormat := config.DetermineTagFormat(release.Library, libraryState, librarianConfig)
+		tagName := config.FormatTag(tagFormat, release.Library, release.Version)
 		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
 		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
 			return fmt.Errorf("failed to create release: %w", err)
@@ -187,18 +192,6 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 
 	}
 	return r.replacePendingLabel(ctx, p)
-}
-
-func determineTagFormat(libraryID string, librarianState *config.LibrarianState) (string, error) {
-	// TODO(#2177): read from LibrarianConfig
-	libraryState := librarianState.LibraryByID(libraryID)
-	if libraryState == nil {
-		return "", fmt.Errorf("library %s not found", libraryID)
-	}
-	if libraryState.TagFormat != "" {
-		return libraryState.TagFormat, nil
-	}
-	return "", fmt.Errorf("library %s did not configure tag_format", libraryID)
 }
 
 // libraryRelease holds the parsed information from a pull request body.

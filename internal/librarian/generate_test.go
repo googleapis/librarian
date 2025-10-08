@@ -196,7 +196,7 @@ func TestRunBuildCommand(t *testing.T) {
 					}
 				}
 			}
-			if _, err := r.repo.AddAll(); err != nil {
+			if err := r.repo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
 			if err := r.repo.Commit("test commit"); err != nil {
@@ -261,6 +261,7 @@ func TestRunConfigureCommand(t *testing.T) {
 		api                string
 		repo               gitrepo.Repository
 		state              *config.LibrarianState
+		librarianConfig    *config.LibrarianConfig
 		container          *mockContainerClient
 		wantConfigureCalls int
 		wantErr            bool
@@ -354,6 +355,30 @@ func TestRunConfigureCommand(t *testing.T) {
 			wantConfigureCalls: 1,
 		},
 		{
+			name: "configure_library_without_global_files_in_output",
+			api:  "some/api",
+			repo: newTestGitRepo(t),
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path: "a/path/example.txt",
+					},
+				},
+			},
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 1,
+			wantErr:            true,
+			wantErrMsg:         "failed to copy global file",
+		},
+		{
 			name: "configure command failed",
 			api:  "some/api",
 			repo: newTestGitRepo(t),
@@ -376,11 +401,13 @@ func TestRunConfigureCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			outputDir := t.TempDir()
 			r := &generateRunner{
 				api:             test.api,
 				repo:            test.repo,
 				sourceRepo:      newTestGitRepo(t),
 				state:           test.state,
+				librarianConfig: test.librarianConfig,
 				containerClient: test.container,
 			}
 
@@ -402,7 +429,7 @@ func TestRunConfigureCommand(t *testing.T) {
 				}
 			}
 
-			_, err := r.runConfigureCommand(context.Background())
+			_, err := r.runConfigureCommand(context.Background(), outputDir)
 
 			if test.wantErr {
 				if err == nil {
@@ -1122,5 +1149,102 @@ func TestUpdateLastGeneratedCommitState(t *testing.T) {
 	}
 	if r.state.Libraries[0].LastGeneratedCommit != hash {
 		t.Errorf("updateState() got = %v, want %v", r.state.Libraries[0].LastGeneratedCommit, hash)
+	}
+}
+
+func TestGetExistingSrc(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		paths []string
+		want  []string
+	}{
+		{
+			name: "all_source_paths_existed",
+			paths: []string{
+				"a/path",
+				"another/path",
+			},
+			want: []string{
+				"a/path",
+				"another/path",
+			},
+		},
+		{
+			name: "one_source_paths_existed",
+			paths: []string{
+				"a/path",
+			},
+			want: []string{
+				"a/path",
+			},
+		},
+		{
+			name: "no_source_paths_existed",
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo := newTestGitRepo(t)
+			state := &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			}
+			for _, path := range test.paths {
+				relPath := filepath.Join(repo.GetDir(), path)
+				if err := os.MkdirAll(relPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			r := &generateRunner{
+				repo:  repo,
+				state: state,
+			}
+
+			got := r.getExistingSrc("some-library")
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("getExistingSrc() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetSafeDirectoryName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		id   string
+		want string
+	}{
+		{
+			name: "simple",
+			id:   "pubsub",
+			want: "pubsub",
+		},
+		{
+			name: "nested",
+			id:   "pubsub/v2",
+			want: "pubsub-slash-v2",
+		},
+		{
+			name: "deeply nested",
+			id:   "compute/metadata/v2",
+			want: "compute-slash-metadata-slash-v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := getSafeDirectoryName(test.id)
+			if test.want != got {
+				t.Errorf("getSafeDirectoryName() = %q; want %q", got, test.want)
+			}
+		})
 	}
 }

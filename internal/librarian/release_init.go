@@ -20,6 +20,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
@@ -196,7 +198,9 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 // processLibrary wrapper to process the library for release. Helps retrieve latest commits
 // since the last release and passing the changes to updateLibrary.
 func (r *initRunner) processLibrary(library *config.LibraryState) error {
-	commits, err := GetConventionalCommitsSinceLastRelease(r.repo, library)
+	tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
+	tagName := config.FormatTag(tagFormat, library.ID, library.Version)
+	commits, err := getConventionalCommitsSinceLastRelease(r.repo, library, tagName)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
@@ -205,10 +209,19 @@ func (r *initRunner) processLibrary(library *config.LibraryState) error {
 	return r.updateLibrary(library, commits)
 }
 
-// filterCommitsByLibraryID keeps the conventional commits that match a libaryID.
+// filterCommitsByLibraryID keeps the conventional commits if the given libraryID appears in the Footer or matches
+// the libraryID in the commit.
 func filterCommitsByLibraryID(commits []*conventionalcommits.ConventionalCommit, libraryID string) []*conventionalcommits.ConventionalCommit {
 	var filteredCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
+		if commit.Footers != nil {
+			ids, ok := commit.Footers["Library-IDs"]
+			libraryIDs := strings.Split(ids, ",")
+			if ok && slices.Contains(libraryIDs, libraryID) {
+				filteredCommits = append(filteredCommits, commit)
+				continue
+			}
+		}
 		if commit.LibraryID == libraryID {
 			filteredCommits = append(filteredCommits, commit)
 		}
@@ -285,27 +298,4 @@ func (r *initRunner) determineNextVersion(commits []*conventionalcommits.Convent
 
 	// Compare versions and pick latest
 	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
-}
-
-// copyGlobalAllowlist copies files in the global file allowlist excluding
-//
-//	read-only files and copies global files from src.
-func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadOnly bool) error {
-	if cfg == nil {
-		slog.Info("librarian config is not setup, skip copying global allowlist")
-		return nil
-	}
-	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
-	for _, globalFile := range cfg.GlobalFilesAllowlist {
-		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
-			slog.Debug("skipping read-only file", "path", globalFile.Path)
-			continue
-		}
-		srcPath := filepath.Join(src, globalFile.Path)
-		dstPath := filepath.Join(dst, globalFile.Path)
-		if err := copyFile(dstPath, srcPath); err != nil {
-			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
-		}
-	}
-	return nil
 }

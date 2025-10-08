@@ -1080,6 +1080,7 @@ func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
 func TestProtobuf_Pagination(t *testing.T) {
 	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "pagination.proto"))
+	updateMethodPagination(nil, test)
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")

@@ -19,3 +19,13 @@ repositories:
     supported-commands:
       - stage-release
       - publish-release
+  - name: "gax-go"
+    full-name: https://github.com/googleapis/gax-go
+    github-token-secret-name: "gax-go-github-token"
+    supported-commands:
+      - publish-release
+  - name: "gapic-generator-go"
+    full-name: https://github.com/googleapis/gapic-generator-go
+    github-token-secret-name: "gapic-generator-go-github-token"
+    supported-commands:
+      - publish-release

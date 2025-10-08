@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-func TestShouldInclude(t *testing.T) {
+func TestShouldIncludeForRelease(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name         string
@@ -135,52 +135,45 @@ func TestShouldInclude(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := shouldInclude(test.files, test.sourceRoots, test.excludePaths)
+			got := shouldIncludeForRelease(test.files, test.sourceRoots, test.excludePaths)
 			if got != test.want {
-				t.Errorf("shouldInclude(%v, %v, %v) = %v, want %v", test.files, test.sourceRoots, test.excludePaths, got, test.want)
+				t.Errorf("shouldIncludeForRelease(%v, %v, %v) = %v, want %v", test.files, test.sourceRoots, test.excludePaths, got, test.want)
 			}
 		})
 	}
 }
 
-func TestFormatTag(t *testing.T) {
+func TestShouldIncludeForGeneration(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name    string
-		library *config.LibraryState
-		want    string
+		name     string
+		files    []string
+		apiPaths []string
+		want     bool
 	}{
 		{
-			name: "default format",
-			library: &config.LibraryState{
-				ID:      "google.cloud.foo.v1",
-				Version: "1.2.3",
-			},
-			want: "google.cloud.foo.v1-1.2.3",
+			name:     "all_files_in_apiPaths",
+			files:    []string{"a/b/c.proto"},
+			apiPaths: []string{"a"},
+			want:     true,
 		},
 		{
-			name: "custom format",
-			library: &config.LibraryState{
-				ID:        "google.cloud.foo.v1",
-				Version:   "1.2.3",
-				TagFormat: "v{version}-{id}",
-			},
-			want: "v1.2.3-google.cloud.foo.v1",
+			name:     "some_files_in_apiPaths",
+			files:    []string{"a/b/c.proto", "e/f/g.proto"},
+			apiPaths: []string{"a"},
+			want:     true,
 		},
 		{
-			name: "custom format -- version only",
-			library: &config.LibraryState{
-				ID:        "google.cloud.foo.v1",
-				Version:   "1.2.3",
-				TagFormat: "v{version}",
-			},
-			want: "v1.2.3",
+			name:     "no_files_in_apiPaths",
+			files:    []string{"a/b/c.proto"},
+			apiPaths: []string{"b"},
+			want:     false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := formatTag(test.library.TagFormat, test.library.ID, test.library.Version)
+			got := shouldIncludeForGeneration(test.files, test.apiPaths)
 			if got != test.want {
-				t.Errorf("formatTag() = %q, want %q", got, test.want)
+				t.Errorf("shouldIncludeForGeneration(%v, %v) = %v, want %v", test.files, test.apiPaths, got, test.want)
 			}
 		})
 	}
@@ -220,7 +213,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		wantErrPhrase string
 	}{
 		{
-			name: "get_commits_for_foo",
+			name: "found_matching_commits_for_foo",
 			repo: repoWithCommits,
 			library: &config.LibraryState{
 				ID:                  "foo",
@@ -243,6 +236,34 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 					Subject:   "a fix for foo",
 					LibraryID: "foo",
 					Footers:   make(map[string]string),
+				},
+			},
+		},
+		{
+			name: "no_matching_commits_for_foo",
+			repo: repoWithCommits,
+			library: &config.LibraryState{
+				ID:          "foo",
+				Version:     "1.0.0",
+				TagFormat:   "{id}-v{version}",
+				SourceRoots: []string{"no_matching_dir"},
+			},
+		},
+		{
+			name: "apiPaths_has_no_impact_on_release",
+			repo: repoWithCommits,
+			library: &config.LibraryState{
+				ID:          "foo",
+				Version:     "1.0.0",
+				TagFormat:   "{id}-v{version}",
+				SourceRoots: []string{"no_matching_dir"}, // For release, only this is considered
+				APIs: []*config.API{
+					{
+						Path: "foo",
+					},
+					{
+						Path: "bar",
+					},
 				},
 			},
 		},
@@ -281,21 +302,123 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := GetConventionalCommitsSinceLastRelease(test.repo, test.library)
+			got, err := getConventionalCommitsSinceLastRelease(test.repo, test.library, "")
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("GetConventionalCommitsSinceLastRelease() should have failed")
+					t.Fatal("getConventionalCommitsSinceLastRelease() should have failed")
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("GetConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+					t.Errorf("getConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("GetConventionalCommitsSinceLastRelease() failed: %v", err)
+				t.Fatalf("getConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
-				t.Errorf("GetConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
+				t.Errorf("getConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name          string
+		repo          gitrepo.Repository
+		library       *config.LibraryState
+		want          []*conventionalcommits.ConventionalCommit
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "found_matching_file_changes_for_foo",
+			library: &config.LibraryState{
+				ID: "foo",
+				APIs: []*config.API{
+					{
+						Path: "foo",
+					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234": {
+						{Message: "feat(foo): a feature"},
+					},
+				},
+				ChangedFilesInCommitValue: []string{"foo/a.proto"},
+			},
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:      "feat",
+					Scope:     "foo",
+					Subject:   "a feature",
+					LibraryID: "foo",
+					Footers:   map[string]string{},
+				},
+			},
+		},
+		{
+			name: "no_matching_file_changes_for_foo",
+			library: &config.LibraryState{
+				ID: "foo",
+				APIs: []*config.API{
+					{
+						Path: "foo",
+					},
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234": {
+						{Message: "feat(baz): a feature"},
+					},
+				},
+				ChangedFilesInCommitValue: []string{"baz/a.proto", "baz/b.proto", "bar/a.proto"}, // file changed is not in foo/*
+			},
+		},
+		{
+			name: "sources_root_has_no_impact",
+			library: &config.LibraryState{
+				ID: "foo",
+				APIs: []*config.API{
+					{
+						Path: "foo", // For generation, only this is considered
+					},
+				},
+				SourceRoots: []string{
+					"baz/",
+					"bar/",
+				},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234": {
+						{Message: "feat(baz): a feature"},
+					},
+				},
+				ChangedFilesInCommitValue: []string{"baz/a.proto", "baz/b.proto", "bar/a.proto"}, // file changed is not in foo/*
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := getConventionalCommitsSinceLastGeneration(test.repo, test.library, "1234")
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("getConventionalCommitsSinceLastGeneration() should have failed")
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("getConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("getConventionalCommitsSinceLastRelease() failed: %v", err)
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
+				t.Errorf("getConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
@@ -173,9 +174,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 //
 // Returns the last generated commit before the generation and error, if any.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
+	safeLibraryDirectory := getSafeDirectoryName(libraryID)
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.library)
-		configuredLibraryID, err := r.runConfigureCommand(ctx)
+		configureOutputDir := filepath.Join(outputDir, safeLibraryDirectory, "configure")
+		if err := os.MkdirAll(configureOutputDir, 0755); err != nil {
+			return "", err
+		}
+		configuredLibraryID, err := r.runConfigureCommand(ctx, configureOutputDir)
 		if err != nil {
 			return "", err
 		}
@@ -197,7 +203,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	// For each library, create a separate output directory. This avoids
 	// libraries interfering with each other, and makes it easier to see what
 	// was generated for each library when debugging.
-	libraryOutputDir := filepath.Join(outputDir, libraryID)
+	libraryOutputDir := filepath.Join(outputDir, safeLibraryDirectory)
 	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
 		return "", err
 	}
@@ -339,7 +345,7 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 //
 // If successful, it returns the ID of the newly configured library; otherwise,
 // it returns an empty string and an error.
-func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error) {
+func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir string) (string, error) {
 
 	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
 	if err != nil {
@@ -365,12 +371,14 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 	}
 
 	configureRequest := &docker.ConfigureRequest{
-		ApiRoot:     apiRoot,
-		HostMount:   r.hostMount,
-		LibraryID:   r.library,
-		RepoDir:     r.repo.GetDir(),
-		GlobalFiles: globalFiles,
-		State:       r.state,
+		ApiRoot:             apiRoot,
+		HostMount:           r.hostMount,
+		LibraryID:           r.library,
+		Output:              outputDir,
+		RepoDir:             r.repo.GetDir(),
+		GlobalFiles:         globalFiles,
+		ExistingSourceRoots: r.getExistingSrc(r.library),
+		State:               r.state,
 	}
 	slog.Info("Performing configuration for library", "id", r.library)
 	if _, err := r.containerClient.Configure(ctx, configureRequest); err != nil {
@@ -401,6 +409,14 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context) (string, error
 		r.state.Libraries[i] = libraryState
 	}
 
+	if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryState.ID, outputDir); err != nil {
+		return "", err
+	}
+
+	if err := copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false); err != nil {
+		return "", err
+	}
+
 	return libraryState.ID, nil
 }
 
@@ -414,10 +430,39 @@ func (r *generateRunner) restoreLibrary(libraryID string) error {
 	return r.repo.CleanUntracked(library.SourceRoots)
 }
 
+// getExistingSrc returns source roots as-is of a given library ID, if the source roots exist in the language repo.
+func (r *generateRunner) getExistingSrc(libraryID string) []string {
+	library := findLibraryByID(r.state, libraryID)
+	var existingSrc []string
+	for _, src := range library.SourceRoots {
+		relPath := filepath.Join(r.repo.GetDir(), src)
+		if _, err := os.Stat(relPath); err == nil {
+			existingSrc = append(existingSrc, src)
+		}
+	}
+
+	return existingSrc
+}
+
 func setAllAPIStatus(state *config.LibrarianState, status string) {
 	for _, library := range state.Libraries {
 		for _, api := range library.APIs {
 			api.Status = status
 		}
 	}
+}
+
+// getSafeDirectoryName returns a directory name which doesn't contain slashes
+// based on a library ID. This avoids cases where a library ID contains
+// slashes but we want generateSingleLibrary to create a directory which
+// is not a subdirectory of some other directory. For example, if there
+// are library IDs of "pubsub" and "pubsub/v2" we don't want to create
+// "output/pubsub/v2" and then "output/pubsub" later. This function does
+// not protect against malicious library IDs, e.g. ".", ".." or deliberate
+// collisions (e.g. "pubsub/v2" and "pubsub-slash-v2").
+//
+// The exact implementation may change over time - nothing should rely on this.
+// The current implementation simply replaces any slashes with "-slash-".
+func getSafeDirectoryName(libraryID string) string {
+	return strings.ReplaceAll(libraryID, "/", "-slash-")
 }

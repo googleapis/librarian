@@ -28,14 +28,16 @@ const (
 type LibrarianConfig struct {
 	GlobalFilesAllowlist []*GlobalFile    `yaml:"global_files_allowlist"`
 	Libraries            []*LibraryConfig `yaml:"libraries"`
+	TagFormat            string           `yaml:"tag_format"`
 }
 
 // LibraryConfig defines configuration for a single library, identified by its ID.
 type LibraryConfig struct {
+	GenerateBlocked bool   `yaml:"generate_blocked"`
 	LibraryID       string `yaml:"id"`
 	NextVersion     string `yaml:"next_version"`
-	GenerateBlocked bool   `yaml:"generate_blocked"`
 	ReleaseBlocked  bool   `yaml:"release_blocked"`
+	TagFormat       string `yaml:"tag_format"`
 }
 
 // GlobalFile defines the global files in language repositories.

@@ -93,12 +93,12 @@ Language Image: {{.ImageVersion}}
 	}).Parse(`BEGIN_COMMIT_OVERRIDE
 {{ range .Commits }}
 BEGIN_NESTED_COMMIT
-{{.Type}}: [{{.LibraryID}}] {{.Subject}}
+{{.Type}}: {{.Subject}}
 {{.Body}}
 
 PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
-
-Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{.CommitHash}})
+Library-IDs: {{index .Footers "Library-IDs"}}
+Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{shortSHA .CommitHash}})
 END_NESTED_COMMIT
 {{ end }}
 END_COMMIT_OVERRIDE
@@ -182,20 +182,20 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 	// because this function will return early if no conventional commit is found
 	// since last generation.
 	startSHA := startCommit.Hash.String()
-
+	groupedCommits := groupByIDAndSubject(allCommits)
 	// Sort the slice by commit time in reverse order,
 	// so that the latest commit appears first.
-	sort.Slice(allCommits, func(i, j int) bool {
-		return allCommits[i].When.After(allCommits[j].When)
+	sort.Slice(groupedCommits, func(i, j int) bool {
+		return groupedCommits[i].When.After(groupedCommits[j].When)
 	})
-	endSHA := allCommits[0].CommitHash
+	endSHA := groupedCommits[0].CommitHash
 	librarianVersion := cli.Version()
 	data := &generationPRBody{
 		StartSHA:         startSHA,
 		EndSHA:           endSHA,
 		LibrarianVersion: librarianVersion,
 		ImageVersion:     state.Image,
-		Commits:          allCommits,
+		Commits:          groupedCommits,
 		FailedLibraries:  failedLibraries,
 	}
 	var out bytes.Buffer
@@ -237,6 +237,44 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 	return res, nil
 }
 
+// groupByIDAndSubject aggregates conventional commits for ones have the same Piper ID and subject in the footer.
+func groupByIDAndSubject(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
+	var res []*conventionalcommits.ConventionalCommit
+	idToCommits := make(map[string][]*conventionalcommits.ConventionalCommit)
+	for _, commit := range commits {
+		// a commit is not considering for grouping if it doesn't have a footer or
+		// the footer doesn't have a Piper ID.
+		if commit.Footers == nil {
+			commit.Footers = make(map[string]string)
+			commit.Footers["Library-IDs"] = commit.LibraryID
+			res = append(res, commit)
+			continue
+		}
+
+		id, ok := commit.Footers["PiperOrigin-RevId"]
+		if !ok {
+			commit.Footers["Library-IDs"] = commit.LibraryID
+			res = append(res, commit)
+			continue
+		}
+
+		key := fmt.Sprintf("%s-%s", id, commit.Subject)
+		idToCommits[key] = append(idToCommits[key], commit)
+	}
+
+	for _, groupCommits := range idToCommits {
+		var ids []string
+		for _, commit := range groupCommits {
+			ids = append(ids, commit.LibraryID)
+		}
+		firstCommit := groupCommits[0]
+		firstCommit.Footers["Library-IDs"] = strings.Join(ids, ",")
+		res = append(res, firstCommit)
+	}
+
+	return res
+}
+
 // formatReleaseNotes generates the body for a release pull request.
 func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
 	librarianVersion := cli.Version()
@@ -269,8 +307,9 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repository) *releaseNoteSection {
 	// The version should already be updated to the next version.
 	newVersion := library.Version
-	newTag := formatTag(library.TagFormat, library.ID, newVersion)
-	previousTag := formatTag(library.TagFormat, library.ID, library.PreviousVersion)
+	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
+	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
+	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
 	for _, commit := range library.Changes {

@@ -55,6 +55,8 @@ const (
 	ReleaseInitResponse = "release-init-response.json"
 	// LibrarianStateFile is the name of the pipeline state file.
 	LibrarianStateFile = "state.yaml"
+	// LibrarianConfigFile is the name of the language-repository config file.
+	LibrarianConfigFile = "config.yaml"
 	// LibrarianGithubToken is the name of the env var used to store the github token.
 	LibrarianGithubToken = "LIBRARIAN_GITHUB_TOKEN"
 )

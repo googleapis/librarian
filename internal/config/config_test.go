@@ -35,8 +35,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "All environment variables set",
 			envVars: map[string]string{
-				LibrarianGithubToken:        "gh_token",
-				"LIBRARIAN_SYNC_AUTH_TOKEN": "sync_token",
+				LibrarianGithubToken: "gh_token",
 			},
 			want: Config{
 				GitHubToken: "gh_token",
@@ -47,7 +46,6 @@ func TestNew(t *testing.T) {
 			name:    "No environment variables set",
 			envVars: map[string]string{},
 			want: Config{
-				GitHubToken: "",
 				CommandName: "test",
 			},
 		},

@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
@@ -304,7 +303,6 @@ type MockRepository struct {
 	Dir                                    string
 	IsCleanValue                           bool
 	IsCleanError                           error
-	AddAllStatus                           git.Status
 	AddAllError                            error
 	CommitError                            error
 	RemotesValue                           []*gitrepo.Remote
@@ -335,11 +333,11 @@ func (m *MockRepository) IsClean() (bool, error) {
 	return m.IsCleanValue, nil
 }
 
-func (m *MockRepository) AddAll() (git.Status, error) {
+func (m *MockRepository) AddAll() error {
 	if m.AddAllError != nil {
-		return git.Status{}, m.AddAllError
+		return m.AddAllError
 	}
-	return m.AddAllStatus, nil
+	return nil
 }
 
 func (m *MockRepository) Commit(msg string) error {

@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
@@ -1337,11 +1336,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1368,11 +1364,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1392,11 +1385,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1412,11 +1402,8 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "No GitHub Remote",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{}, // No remotes
 				}
 			},
@@ -1457,12 +1444,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:                          t.TempDir(),
-					AddAllStatus:                 status,
 					RemotesValue:                 []*gitrepo.Remote{remote},
 					CreateBranchAndCheckoutError: errors.New("create branch error"),
 				}
@@ -1482,12 +1465,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 					CommitError:  errors.New("commit error"),
 				}
@@ -1507,12 +1486,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 					PushError:    errors.New("push error"),
 				}
@@ -1532,12 +1507,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1557,12 +1528,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1586,7 +1553,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: git.Status{}, // Clean status
+					IsCleanValue: true,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1603,11 +1570,8 @@ func TestCommitAndPush(t *testing.T) {
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
 				}
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
 					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
@@ -1729,8 +1693,7 @@ func TestWritePRBody(t *testing.T) {
 			name: "unable to save file",
 			info: &commitInfo{
 				repo: &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: make(git.Status),
+					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
 						{
 							Name: "origin",
@@ -1828,14 +1791,14 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 
 func TestCopyLibraryFiles(t *testing.T) {
 	t.Parallel()
-	setup := func(foo string, files []string) {
+	setup := func(foo, contents string, files []string) {
 		for _, relPath := range files {
 			fullPath := filepath.Join(foo, relPath)
 			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 				t.Error(err)
 			}
 
-			if _, err := os.Create(fullPath); err != nil {
+			if err := os.WriteFile(fullPath, []byte(contents), 0755); err != nil {
 				t.Error(err)
 			}
 		}
@@ -1846,6 +1809,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		outputDir     string
 		libraryID     string
 		state         *config.LibrarianState
+		existingFiles []string
 		filesToCreate []string
 		setup         func(t *testing.T, outputDir string)
 		verify        func(t *testing.T, repoDir string)
@@ -1991,10 +1955,40 @@ func TestCopyLibraryFiles(t *testing.T) {
 				"skipped/path/example.txt",
 			},
 		},
+		{
+			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			name:      "only_delta_files_are_copied",
+			outputDir: filepath.Join(t.TempDir(), "foo"),
+			libraryID: "example-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			},
+			existingFiles: []string{
+				"a/path/example.txt",
+			},
+			filesToCreate: []string{
+				"another/path/example.txt",
+			},
+			wantFiles: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if len(test.existingFiles) > 0 {
+				setup(test.repoDir, "old contents", test.existingFiles)
+			}
 			if len(test.filesToCreate) > 0 {
-				setup(test.outputDir, test.filesToCreate)
+				setup(test.outputDir, "new contents", test.filesToCreate)
 			}
 			if test.setup != nil {
 				test.setup(t, test.outputDir)
@@ -2021,12 +2015,24 @@ func TestCopyLibraryFiles(t *testing.T) {
 				}
 			}
 
+			for _, file := range test.existingFiles {
+				fullPath := filepath.Join(test.repoDir, file)
+				got, err := os.ReadFile(fullPath)
+				if err != nil {
+					t.Error(err)
+				}
+				if diff := cmp.Diff("old contents", string(got)); diff != "" {
+					t.Errorf("file contents mismatch (-want +got):\n%s", diff)
+				}
+			}
+
 			for _, file := range test.skipFiles {
 				fullPath := filepath.Join(test.repoDir, file)
 				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
 					t.Errorf("file %s should not be copied to %s", file, test.repoDir)
 				}
 			}
+
 			if test.verify != nil {
 				test.verify(t, test.repoDir)
 			}
@@ -2093,6 +2099,213 @@ func TestCopyFile(t *testing.T) {
 				return
 			}
 
+		})
+	}
+}
+
+func TestCopyGlobalAllowlist(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name              string
+		cfg               *config.LibrarianConfig
+		files             []string
+		copied            []string
+		skipped           []string
+		doNotCreateOutput bool // do not create files in output dir.
+		wantErr           bool
+		wantErrMsg        string
+		copyReadOnly      bool
+	}{
+		{
+			name: "copied all global allowlist",
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "write-only",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			copied: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+			},
+			skipped: []string{
+				"ignored/path/example.txt",
+			},
+		},
+		{
+			name: "read only file is not copied",
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			copied: []string{
+				"one/path/example.txt",
+			},
+			skipped: []string{
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+		},
+		{
+			name: "repo doesn't have the global file",
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			files: []string{
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to lstat file",
+		},
+		{
+			name: "output doesn't have the global file",
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+			},
+			doNotCreateOutput: true,
+			wantErr:           true,
+			wantErrMsg:        "failed to copy global file",
+		},
+		{
+			name:         "copies read-only files",
+			copyReadOnly: true,
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			copied: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+			},
+			skipped: []string{
+				"ignored/path/example.txt",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			repo := t.TempDir()
+			for _, oneFile := range test.files {
+				// Create files in repo directory.
+				file := filepath.Join(repo, oneFile)
+				dir := filepath.Dir(file)
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					t.Error(err)
+				}
+
+				err := os.WriteFile(file, []byte("old content"), 0755)
+				if err != nil {
+					t.Error(err)
+				}
+
+				if test.doNotCreateOutput {
+					continue
+				}
+
+				// Create files in output directory.
+				file = filepath.Join(output, oneFile)
+				dir = filepath.Dir(file)
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					t.Error(err)
+				}
+
+				err = os.WriteFile(file, []byte("new content"), 0755)
+				if err != nil {
+					t.Error(err)
+				}
+			}
+
+			err := copyGlobalAllowlist(test.cfg, repo, output, test.copyReadOnly)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("cleanAndCopyGlobalAllowlist() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Errorf("failed to run cleanAndCopyGlobalAllowlist(): %q", err.Error())
+			}
+
+			for _, wantFile := range test.copied {
+				got, err := os.ReadFile(filepath.Join(repo, wantFile))
+				if err != nil {
+					return
+				}
+				if diff := cmp.Diff("new content", string(got)); diff != "" {
+					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, wantFile)
+				}
+			}
+			// Make sure the skipped files are not changed.
+			for _, skippedFile := range test.skipped {
+				got, err := os.ReadFile(filepath.Join(repo, skippedFile))
+				if err != nil {
+					return
+				}
+				if diff := cmp.Diff("old content", string(got)); diff != "" {
+					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, skippedFile)
+				}
+			}
 		})
 	}
 }

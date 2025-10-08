@@ -225,11 +225,21 @@ impl wkt::message::Message for {{Codec.Name}} {
 #[doc(hidden)]
 impl gax::paginator::internal::PageableResponse for {{Codec.Name}} {
     {{#PageableItem}}
+    {{^Map}}
     type PageItem = {{{Codec.PrimitiveFieldType}}};
 
     fn items(self) -> std::vec::Vec<Self::PageItem> {
         self.{{{Codec.FieldName}}}
     }
+    {{/Map}}
+    {{#Map}}
+    type PageItem = ({{Codec.KeyType}}, {{Codec.ValueType}});
+
+    fn items(self) -> std::vec::Vec<Self::PageItem> {
+        use std::iter::{IntoIterator, Iterator};
+        self.{{{Codec.FieldName}}}.into_iter().collect()
+    }
+    {{/Map}}
 
     {{/PageableItem}}
     {{#NextPageToken}}
