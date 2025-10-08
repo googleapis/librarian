@@ -79,8 +79,8 @@ func TestRunGenerate(t *testing.T) {
 					fileToAdd: "google/cloud/future/v2/future.code",
 				},
 			},
-			wantInPrBody:      []string{"feat: [go-google-cloud-pubsub-v1] new feature pubsub"},
-			doNotWantInPrBody: []string{"feat: [go-google-cloud-future-v2] new feature future"},
+			wantInPrBody:      []string{"feat: new feature pubsub"},
+			doNotWantInPrBody: []string{"feat: new feature future"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
