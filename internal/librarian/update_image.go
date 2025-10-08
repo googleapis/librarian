@@ -18,11 +18,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -112,41 +110,18 @@ func findLatestImage(currentImage string) (string, error) {
 }
 
 func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, libraryState *config.LibraryState, outputDir string) error {
+	slog.Info("checking out apiSource", "commit", libraryState.LastGeneratedCommit)
 	if err := r.sourceRepo.Checkout(libraryState.LastGeneratedCommit); err != nil {
 		return fmt.Errorf("Error checking out from sourceRepo %w", err)
 	}
 
-	safeLibraryDirectory := getSafeDirectoryName(libraryState.ID)
-	libraryOutputDir := filepath.Join(outputDir, safeLibraryDirectory)
-	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
-		return fmt.Errorf("Error making output directory %w", err)
-	}
-
-	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
-	if err != nil {
+	if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir); err != nil {
+		slog.Error("failed to regenerate a single library", "ID", libraryState.ID)
 		return err
 	}
 
-	generateRequest := &docker.GenerateRequest{
-		ApiRoot:   apiRoot,
-		HostMount: r.hostMount,
-		LibraryID: libraryState.ID,
-		Output:    outputDir,
-		RepoDir:   r.repo.GetDir(),
-		State:     r.state,
-	}
-	slog.Info("Performing generation for library", "id", libraryState.ID, "outputDir", outputDir)
-	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
-		return err
-	}
-
-	// Read the library state from the response.
-	if _, err := readLibraryState(
-		filepath.Join(generateRequest.RepoDir, config.LibrarianDir, config.GenerateResponse)); err != nil {
-		return err
-	}
-
-	if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), libraryState.ID, outputDir); err != nil {
+	if err := buildSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo); err != nil {
+		slog.Error("failed to build a single library", "ID", libraryState.ID)
 		return err
 	}
 
