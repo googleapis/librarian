@@ -1278,12 +1278,11 @@ func TestCleanUntracked(t *testing.T) {
 func TestGetLatestCommit(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name        string
-		path        string
-		setup       func(t *testing.T, repo *git.Repository, path string)
-		want        *Commit
-		wantErr     bool
-		wantErrType error
+		name    string
+		path    string
+		setup   func(t *testing.T, repo *git.Repository, path string)
+		want    *Commit
+		wantErr error
 	}{
 		{
 			name: "get_latest_commit_of_a_path",
@@ -1303,8 +1302,7 @@ func TestGetLatestCommit(t *testing.T) {
 			setup: func(t *testing.T, repo *git.Repository, path string) {
 				// Do nothing.
 			},
-			wantErr:     true,
-			wantErrType: plumbing.ErrReferenceNotFound,
+			wantErr: plumbing.ErrReferenceNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1313,13 +1311,9 @@ func TestGetLatestCommit(t *testing.T) {
 			test.setup(t, repo, test.path)
 			localRepo := &LocalRepository{Dir: dir, repo: repo}
 			got, err := localRepo.GetLatestCommit(test.path)
-			if test.wantErr {
-				if err == nil {
-					t.Error("GetLatestCommit should return an error")
-					return
-				}
-				if !errors.Is(err, test.wantErrType) {
-					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErrType)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)
 				}
 
 				return
