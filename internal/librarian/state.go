@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -186,7 +187,8 @@ func findServiceConfigIn(path string) (string, error) {
 }
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
-	path := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
+	sortByLibraryID(state)
+	stateFile := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
 	var buffer bytes.Buffer
 	encoder := yaml.NewEncoder(&buffer)
 	encoder.SetIndent(2)
@@ -194,7 +196,14 @@ func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, buffer.Bytes(), 0644)
+	return os.WriteFile(stateFile, buffer.Bytes(), 0644)
+}
+
+// sortByLibraryID sorts config.LibraryState with respect to ID.
+func sortByLibraryID(state *config.LibrarianState) {
+	sort.Slice(state.Libraries, func(i, j int) bool {
+		return state.Libraries[i].ID < state.Libraries[j].ID
+	})
 }
 
 // readLibraryState reads the library state from a container response, if it exists.
