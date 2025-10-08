@@ -1291,6 +1291,7 @@ func TestGetLatestCommit(t *testing.T) {
 			setup: func(t *testing.T, repo *git.Repository, path string) {
 				createAndCommit(t, repo, path, []byte("1st content"), "first commit")
 				createAndCommit(t, repo, path, []byte("2nd content"), "second commit")
+				createAndCommit(t, repo, "another/path/example.txt", []byte("2nd content"), "second commit")
 			},
 			want: &Commit{
 				Message: "second commit",
