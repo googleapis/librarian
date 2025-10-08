@@ -15,6 +15,7 @@
 package gitrepo
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -1269,6 +1270,65 @@ func TestCleanUntracked(t *testing.T) {
 				if _, err := os.Stat(trackedFile); err != nil {
 					t.Errorf("tracked file, %s should not be touched: %q", trackedFile, err)
 				}
+			}
+		})
+	}
+}
+
+func TestGetLatestCommit(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		path        string
+		setup       func(t *testing.T, repo *git.Repository, path string)
+		want        *Commit
+		wantErr     bool
+		wantErrType error
+	}{
+		{
+			name: "get_latest_commit_of_a_path",
+			path: "a/path/example.txt",
+			setup: func(t *testing.T, repo *git.Repository, path string) {
+				createAndCommit(t, repo, path, []byte("1st content"), "first commit")
+				createAndCommit(t, repo, path, []byte("2nd content"), "second commit")
+			},
+			want: &Commit{
+				Message: "second commit",
+			},
+		},
+		{
+			name: "no_commit_of_a_path",
+			path: "a/path/example.txt",
+			setup: func(t *testing.T, repo *git.Repository, path string) {
+				// Do nothing.
+			},
+			wantErr:     true,
+			wantErrType: plumbing.ErrReferenceNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			test.setup(t, repo, test.path)
+			localRepo := &LocalRepository{Dir: dir, repo: repo}
+			got, err := localRepo.GetLatestCommit(test.path)
+			if test.wantErr {
+				if err == nil {
+					t.Error("GetLatestCommit should return an error")
+					return
+				}
+				if !errors.Is(err, test.wantErrType) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErrType)
+				}
+
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(Commit{}, "When", "Hash")); diff != "" {
+				t.Errorf("GetLatestCommit() mismatch in %s (-want +got):\n%s", test.name, diff)
 			}
 		})
 	}
