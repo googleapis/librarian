@@ -145,35 +145,118 @@ func TestShouldIncludeForRelease(t *testing.T) {
 
 func TestShouldIncludeForGeneration(t *testing.T) {
 	t.Parallel()
-	for _, test := range []struct {
-		name     string
-		files    []string
-		apiPaths []string
-		want     bool
+	cases := []struct {
+		name              string
+		sourceFiles       []string
+		languageRepoFiles []string
+		library           *config.LibraryState
+		want              bool
 	}{
 		{
-			name:     "all_files_in_apiPaths",
-			files:    []string{"a/b/c.proto"},
-			apiPaths: []string{"a"},
-			want:     true,
+			name:              "include: source and language files in path",
+			sourceFiles:       []string{"google/cloud/aiplatform/v1/featurestore_service.proto"},
+			languageRepoFiles: []string{"google/cloud/aiplatform/featurestore_client.go"},
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+				SourceRoots: []string{"google/cloud/aiplatform"},
+			},
+			want: true,
 		},
 		{
-			name:     "some_files_in_apiPaths",
-			files:    []string{"a/b/c.proto", "e/f/g.proto"},
-			apiPaths: []string{"a"},
-			want:     true,
+			name:              "exclude: no source files in path",
+			sourceFiles:       []string{"google/cloud/vision/v1/image_annotator.proto"},
+			languageRepoFiles: []string{"google/cloud/aiplatform/featurestore_client.go"},
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+				SourceRoots: []string{"google/cloud/aiplatform"},
+			},
+			want: false,
 		},
 		{
-			name:     "no_files_in_apiPaths",
-			files:    []string{"a/b/c.proto"},
-			apiPaths: []string{"b"},
-			want:     false,
+			name:              "exclude: no language repo files in path",
+			sourceFiles:       []string{"google/cloud/aiplatform/v1/featurestore_service.proto"},
+			languageRepoFiles: []string{"google/cloud/vision/image_annotator_client.go"},
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+				SourceRoots: []string{"google/cloud/aiplatform"},
+			},
+			want: false,
 		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := shouldIncludeForGeneration(test.files, test.apiPaths)
-			if got != test.want {
-				t.Errorf("shouldIncludeForGeneration(%v, %v) = %v, want %v", test.files, test.apiPaths, got, test.want)
+		{
+			name:              "exclude: language repo file in excluded path",
+			sourceFiles:       []string{"google/cloud/aiplatform/v1/featurestore_service.proto"},
+			languageRepoFiles: []string{"google/cloud/aiplatform/internal/generated/featurestore_client.go"},
+			library: &config.LibraryState{
+				APIs:                []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+				SourceRoots:         []string{"google/cloud/aiplatform"},
+				ReleaseExcludePaths: []string{"google/cloud/aiplatform/internal"},
+			},
+			want: false,
+		},
+		{
+			name:              "include: multiple files, some matching",
+			sourceFiles:       []string{"google/cloud/aiplatform/v1/featurestore_service.proto", "unrelated/file"},
+			languageRepoFiles: []string{"google/cloud/aiplatform/featurestore_client.go", "unrelated/file"},
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+				SourceRoots: []string{"google/cloud/aiplatform"},
+			},
+			want: true,
+		},
+		{
+			name:              "include: multiple source roots and APIs",
+			sourceFiles:       []string{"google/cloud/vision/v1/image_annotator.proto"},
+			languageRepoFiles: []string{"google/cloud/aiplatform/featurestore_client.go"},
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/aiplatform/v1"}, {Path: "google/cloud/vision/v1"}},
+				SourceRoots: []string{"google/cloud/aiplatform", "google/cloud/vision"},
+			},
+			want: true,
+		},
+		{
+			name:              "include: source root all files",
+			sourceFiles:       []string{"google/cloud/vision/v1/image_annotator.proto"},
+			languageRepoFiles: []string{"google/cloud/vision/v1/image_annotator.go"},
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/vision/v1"}},
+				SourceRoots: []string{"."},
+			},
+			want: true,
+		},
+		{
+			name:              "exclude: empty source files",
+			languageRepoFiles: []string{"google/cloud/aiplatform/featurestore_client.go"},
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+				SourceRoots: []string{"google/cloud/aiplatform"},
+			},
+			want: false,
+		},
+		{
+			name:        "exclude: empty language repo files",
+			sourceFiles: []string{"google/cloud/aiplatform/v1/featurestore_service.proto"},
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+				SourceRoots: []string{"google/cloud/aiplatform"},
+			},
+			want: false,
+		},
+		{
+			name: "exclude: both file lists empty",
+			library: &config.LibraryState{
+				APIs:        []*config.API{{Path: "google/cloud/aiplatform/v1"}},
+				SourceRoots: []string{"google/cloud/aiplatform"},
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := shouldIncludeForGeneration(tc.sourceFiles, tc.languageRepoFiles, tc.library)
+			if got != tc.want {
+				t.Errorf("shouldIncludeForGeneration() = %v, want %v", got, tc.want)
 			}
 		})
 	}
@@ -325,30 +408,36 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name          string
-		repo          gitrepo.Repository
-		library       *config.LibraryState
-		want          []*conventionalcommits.ConventionalCommit
-		wantErr       bool
-		wantErrPhrase string
+		name           string
+		sourceRepo     gitrepo.Repository
+		languageRepo   gitrepo.Repository
+		library        *config.LibraryState
+		want           []*conventionalcommits.ConventionalCommit
+		wantErr        bool
+		wantErrMessage string
 	}{
 		{
 			name: "found_matching_file_changes_for_foo",
 			library: &config.LibraryState{
-				ID: "foo",
+				ID:          "foo",
+				SourceRoots: []string{"foo"},
 				APIs: []*config.API{
 					{
 						Path: "foo",
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
 					"1234": {
 						{Message: "feat(foo): a feature"},
 					},
 				},
 				ChangedFilesInCommitValue: []string{"foo/a.proto"},
+			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"foo/a.go"},
 			},
 			want: []*conventionalcommits.ConventionalCommit{
 				{
@@ -363,20 +452,25 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 		{
 			name: "no_matching_file_changes_for_foo",
 			library: &config.LibraryState{
-				ID: "foo",
+				ID:          "foo",
+				SourceRoots: []string{"foo"},
 				APIs: []*config.API{
 					{
 						Path: "foo",
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
 					"1234": {
 						{Message: "feat(baz): a feature"},
 					},
 				},
 				ChangedFilesInCommitValue: []string{"baz/a.proto", "baz/b.proto", "bar/a.proto"}, // file changed is not in foo/*
+			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"foo/a.go"},
 			},
 		},
 		{
@@ -393,7 +487,7 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 					"bar/",
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
 					"1234": {
 						{Message: "feat(baz): a feature"},
@@ -401,16 +495,20 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 				},
 				ChangedFilesInCommitValue: []string{"baz/a.proto", "baz/b.proto", "bar/a.proto"}, // file changed is not in foo/*
 			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"foo/a.go"},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := getConventionalCommitsSinceLastGeneration(test.repo, test.library, "1234")
+			got, err := getConventionalCommitsSinceLastGeneration(test.sourceRepo, test.languageRepo, test.library, "1234")
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("getConventionalCommitsSinceLastGeneration() should have failed")
 				}
-				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("getConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				if !strings.Contains(err.Error(), test.wantErrMessage) {
+					t.Errorf("getConventionalCommitsSinceLastRelease() returned error %q, want to contain %q", err.Error(), test.wantErrMessage)
 				}
 				return
 			}

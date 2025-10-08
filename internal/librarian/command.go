@@ -30,9 +30,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/docker"
-
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -85,7 +84,7 @@ type commitInfo struct {
 	prType            string
 	pullRequestLabels []string
 	push              bool
-	repo              gitrepo.Repository
+	languageRepo      gitrepo.Repository
 	sourceRepo        gitrepo.Repository
 	state             *config.LibrarianState
 	workRoot          string
@@ -336,7 +335,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return nil
 	}
 
-	repo := info.repo
+	repo := info.languageRepo
 	if err := repo.AddAll(); err != nil {
 		return err
 	}
@@ -370,7 +369,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
-	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.repo)
+	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.languageRepo)
 	if err != nil {
 		return fmt.Errorf("failed to get GitHub repository: %w", err)
 	}
@@ -399,7 +398,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 // -push flag had been specified. This logs any errors (e.g. if the GitHub repo can't be determined)
 // but deliberately does not return them, as a failure here should not interfere with the flow.
 func writePRBody(info *commitInfo) {
-	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.repo)
+	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.languageRepo)
 	if err != nil {
 		slog.Warn("Unable to create PR body; could not determine GitHub repo", "error", err)
 		return
@@ -444,7 +443,7 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, error) {
 	switch info.prType {
 	case generate:
-		return formatGenerationPRBody(info.sourceRepo, info.state, info.idToCommits, info.failedLibraries)
+		return formatGenerationPRBody(info.sourceRepo, info.languageRepo, info.state, info.idToCommits, info.failedLibraries)
 	case release:
 		return formatReleaseNotes(info.state, gitHubRepo)
 	default:

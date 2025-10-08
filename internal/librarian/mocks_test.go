@@ -324,6 +324,15 @@ type MockRepository struct {
 	PushCalls                              int
 	PushError                              error
 	RestoreError                           error
+	HeadHashValue                          string
+	HeadHashError                          error
+}
+
+func (m *MockRepository) HeadHash() (string, error) {
+	if m.HeadHashError != nil {
+		return "", m.HeadHashError
+	}
+	return m.HeadHashValue, nil
 }
 
 func (m *MockRepository) IsClean() (bool, error) {

@@ -21,13 +21,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -43,7 +42,8 @@ func TestFormatGenerationPRBody(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		state           *config.LibrarianState
-		repo            gitrepo.Repository
+		sourceRepo      gitrepo.Repository
+		languageRepo    gitrepo.Repository
 		idToCommits     map[string]string
 		failedLibraries []string
 		want            string
@@ -58,7 +58,8 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -66,7 +67,8 @@ func TestFormatGenerationPRBody(t *testing.T) {
 						},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -75,7 +77,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
@@ -102,6 +104,10 @@ func TestFormatGenerationPRBody(t *testing.T) {
 						"path/to/file",
 					},
 				},
+			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library":     "1234567890",
@@ -137,7 +143,8 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -145,7 +152,8 @@ Language Image: %s`,
 						},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -154,7 +162,7 @@ Language Image: %s`,
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
@@ -187,6 +195,10 @@ Language Image: %s`,
 						"path/to/file",
 					},
 				},
+			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library":     "1234567890",
@@ -222,7 +234,8 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -230,7 +243,8 @@ Language Image: %s`,
 						},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -239,7 +253,7 @@ Language Image: %s`,
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
@@ -266,6 +280,10 @@ Language Image: %s`,
 						"path/to/file",
 					},
 				},
+			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library":     "1234567890",
@@ -308,7 +326,8 @@ Language Image: %s
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -317,7 +336,7 @@ Language Image: %s
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
@@ -348,6 +367,10 @@ Language Image: %s
 						"path/to/file",
 					},
 				},
+			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library": "1234567890",
@@ -391,7 +414,8 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						// Intentionally set this value to verify the test can pass.
 						LastGeneratedCommit: "randomCommit",
 						APIs: []*config.API{
@@ -402,7 +426,7 @@ Language Image: %s`,
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue:   []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitError: errors.New("simulated get commit error"),
 				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
@@ -429,6 +453,10 @@ Language Image: %s`,
 					},
 				},
 			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
+			},
 			idToCommits: map[string]string{
 				"one-library": "1234567890",
 			},
@@ -439,9 +467,13 @@ Language Image: %s`,
 			name: "no conventional commits since last generation",
 			state: &config.LibrarianState{
 				Image:     "go:1.21",
-				Libraries: []*config.LibraryState{{ID: "one-library"}},
+				Libraries: []*config.LibraryState{{ID: "one-library", SourceRoots: []string{"path/to"}}},
 			},
-			repo: &MockRepository{},
+			sourceRepo: &MockRepository{},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
+			},
 			idToCommits: map[string]string{
 				"one-library": "",
 			},
@@ -453,12 +485,17 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
+			},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library": "1234567890",
@@ -468,7 +505,7 @@ Language Image: %s`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatGenerationPRBody(test.repo, test.state, test.idToCommits, test.failedLibraries)
+			got, err := formatGenerationPRBody(test.sourceRepo, test.languageRepo, test.state, test.idToCommits, test.failedLibraries)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)

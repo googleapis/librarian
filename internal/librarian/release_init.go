@@ -23,12 +23,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
-	"github.com/googleapis/librarian/internal/semver"
-
-	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 type initRunner struct {
@@ -102,7 +101,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
 		push:              r.push,
-		repo:              r.repo,
+		languageRepo:      r.repo,
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
