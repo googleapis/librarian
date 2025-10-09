@@ -1088,13 +1088,12 @@ func TestGenerateScenarios(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(r.sourceRepo.GetDir(), test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
-
+			// Commit the service config file because configure command needs
+			// to find the piper id associated with the commit message.
 			if err := r.sourceRepo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
-
 			message := "feat: add an api\nPiperOrigin-RevId: 123456"
-
 			if err := r.sourceRepo.Commit(message); err != nil {
 				t.Fatal(err)
 			}
