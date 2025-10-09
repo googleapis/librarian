@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -638,7 +639,7 @@ func TestGenerateScenarios(t *testing.T) {
 		wantConfigureCalls int
 	}{
 		{
-			name:    "generate single library including initial configuration",
+			name:    "generate_single_library_including_initial_configuration",
 			api:     "some/api",
 			library: "some-library",
 			state: &config.LibrarianState{
@@ -1088,6 +1089,16 @@ func TestGenerateScenarios(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			if err := r.sourceRepo.AddAll(); err != nil {
+				t.Fatal(err)
+			}
+
+			message := "feat: add an api\nPiperOrigin-RevId: 123456"
+
+			if err := r.sourceRepo.Commit(message); err != nil {
+				t.Fatal(err)
+			}
+
 			// Create a symlink in the output directory to trigger an error.
 			if test.name == "symlink in output" {
 				outputDir := filepath.Join(r.workRoot, "output")
@@ -1255,6 +1266,67 @@ PiperOrigin-RevId: abcde`,
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("findPiperIDFrom() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindServiceYaml(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		api     string
+		setup   func(t *testing.T, path string)
+		want    string
+		wantErr error
+	}{
+		{
+			name: "found_service_yaml",
+			api:  "some/api",
+			setup: func(t *testing.T, path string) {
+				if err := os.MkdirAll(path, 0755); err != nil {
+					t.Fatal(err)
+				}
+				yamlFile := filepath.Join(path, "example_v1.yaml")
+				if err := os.WriteFile(yamlFile, []byte("content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: "example_v1.yaml",
+		},
+		{
+			name: "do_not_find_service_yaml",
+			api:  "some/api",
+			setup: func(t *testing.T, path string) {
+				if err := os.MkdirAll(path, 0755); err != nil {
+					t.Fatal(err)
+				}
+				anotherFile := filepath.Join(path, "example.txt")
+				if err := os.WriteFile(anotherFile, []byte("content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: errServiceYamlNotFound,
+		},
+		{
+			name:    "invalid_dir",
+			api:     "/invalid/some/api",
+			setup:   func(t *testing.T, path string) {},
+			wantErr: fs.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), test.api)
+			test.setup(t, dir)
+			got, err := findServiceYaml(dir)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findServiceYaml() mismatch (-want +got):%s", diff)
 			}
 		})
 	}
