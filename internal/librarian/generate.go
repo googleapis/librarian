@@ -463,6 +463,7 @@ func getInitialPiperID(repo gitrepo.Repository, api string) (string, error) {
 func findPiperIDFrom(message string) (string, error) {
 	matches := piperRegex.FindStringSubmatch(message)
 	if len(matches) == 0 {
+		slog.Error("piper id is not found in the commit message", "message", message)
 		return "", errPiperNotFound
 	}
 
