@@ -118,7 +118,8 @@ Flags:
 	  	Working directory root. When this is not specified, a working directory
 	  	will be created in /tmp.
 	-push
-	  	If true, Librarian will create a commit and a pull request for the changes.
+	  	If true, Librarian will create a commit,
+	  	push and create a pull request for the changes.
 	  	A GitHub token with push access must be provided via the
 	  	LIBRARIAN_GITHUB_TOKEN environment variable.
 	-repo string
@@ -193,7 +194,7 @@ Flags:
 	  	which branch to clone and which branch to use as the base for a pull
 	  	request. (default "main")
 	-commit
-	  	If true, librarian will create a commit for the release but not create
+	  	If true, librarian will create a commit for the change but not create
 	  	a pull request. This flag is ignored if push is set to true.
 	-image string
 	  	Language specific image used to invoke code generation and releasing.
@@ -208,7 +209,8 @@ Flags:
 	  	Working directory root. When this is not specified, a working directory
 	  	will be created in /tmp.
 	-push
-	  	If true, Librarian will create a commit and a pull request for the changes.
+	  	If true, Librarian will create a commit,
+	  	push and create a pull request for the changes.
 	  	A GitHub token with push access must be provided via the
 	  	LIBRARIAN_GITHUB_TOKEN environment variable.
 	-repo string

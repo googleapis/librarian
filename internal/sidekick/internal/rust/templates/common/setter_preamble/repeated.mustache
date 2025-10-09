@@ -63,7 +63,11 @@ limitations under the License.
 /// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([ {{EnumType.Codec.Name}}::default() ]);
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+{{#EnumType.Codec.ValuesForExamples}}
+///     {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}},
+{{/EnumType.Codec.ValuesForExamples}}
+/// ]);
 /// ```
 {{/IsEnum}}
 {{#IsObject}}

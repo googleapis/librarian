@@ -68,8 +68,10 @@ limitations under the License.
 /// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}({{EnumType.Codec.Name}}::default());
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{EnumType.Codec.Name}}>);
+{{#EnumType.Codec.ValuesForExamples}}
+/// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_or_clear_{{FieldCodec.SetterName}}(Some({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}));
+{{/EnumType.Codec.ValuesForExamples}}
+/// let x_none = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{EnumType.Codec.Name}}>);
 /// ```
 {{/IsEnum}}
 {{#IsObject}}

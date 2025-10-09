@@ -45,6 +45,7 @@ type Repository interface {
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
 	GetCommit(commitHash string) (*Commit, error)
+	GetLatestCommit(path string) (*Commit, error)
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
@@ -263,6 +264,29 @@ func (r *LocalRepository) GetDir() string {
 // GetCommit returns a commit for the given commit hash.
 func (r *LocalRepository) GetCommit(commitHash string) (*Commit, error) {
 	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Commit{
+		Hash:    commit.Hash,
+		Message: commit.Message,
+		When:    commit.Author.When,
+	}, nil
+}
+
+// GetLatestCommit returns the latest commit of the given path in the repository.
+func (r *LocalRepository) GetLatestCommit(path string) (*Commit, error) {
+	opt := &git.LogOptions{
+		Order:    git.LogOrderCommitterTime,
+		FileName: &path,
+	}
+	log, err := r.repo.Log(opt)
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := log.Next()
 	if err != nil {
 		return nil, err
 	}
