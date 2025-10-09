@@ -34,8 +34,9 @@ const (
 )
 
 var (
-	piperRegex       = regexp.MustCompile(`PiperOrigin-RevId: (?P<piperID>\d+)`)
-	errPiperNotFound = errors.New("piper ID not found")
+	piperRegex             = regexp.MustCompile(`PiperOrigin-RevId: (?P<piperID>\d+)`)
+	errPiperNotFound       = errors.New("piper ID not found")
+	errServiceYamlNotFound = errors.New("service yaml not found")
 )
 
 type generateRunner struct {
@@ -483,6 +484,26 @@ func findPiperIDFrom(message string) (string, error) {
 	}
 
 	return matches[1], nil
+}
+
+// findServiceYaml returns the service yaml filename within the given api.
+func findServiceYaml(api string) (string, error) {
+	entries, err := os.ReadDir(api)
+	if err != nil {
+		return "", err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		if strings.HasSuffix(entry.Name(), ".yaml") {
+			return entry.Name(), nil
+		}
+	}
+
+	return "", errServiceYamlNotFound
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {
