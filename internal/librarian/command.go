@@ -159,6 +159,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 }
 
 func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {
+	slog.Info("clone or open repo", "repo", repo)
 	if repo == "" {
 		return nil, fmt.Errorf("repo must be specified")
 	}
@@ -330,7 +331,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 	return fileNames, nil
 }
 
-func commit(ctx context.Context, repo gitrepo.Repository, message string) (bool, error) {
+func commit(repo gitrepo.Repository, message string) (bool, error) {
 	if err := repo.AddAll(); err != nil {
 		return false, err
 	}

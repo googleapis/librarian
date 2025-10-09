@@ -629,6 +629,7 @@ func (r *LocalRepository) CleanUntracked(paths []string) error {
 	return nil
 }
 
+// Checkout checks out the local repository at the provided git SHA.
 func (r *LocalRepository) Checkout(commitSha string) error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {

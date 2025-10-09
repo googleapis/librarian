@@ -82,7 +82,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	}
 
 	commitMessage := fmt.Sprintf("chore: update image to %s", r.image)
-	committed, err := commit(ctx, r.repo, commitMessage)
+	committed, err := commit(r.repo, commitMessage)
 	if err != nil {
 		return err
 	}
@@ -102,6 +102,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 			continue
 		}
 	}
+	slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
 
 	return nil
 }
@@ -114,7 +115,7 @@ func findLatestImage(currentImage string) (string, error) {
 func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, libraryState *config.LibraryState, outputDir string) error {
 	slog.Info("checking out apiSource", "commit", libraryState.LastGeneratedCommit)
 	if err := r.sourceRepo.Checkout(libraryState.LastGeneratedCommit); err != nil {
-		return fmt.Errorf("Error checking out from sourceRepo %w", err)
+		return fmt.Errorf("error checking out from sourceRepo %w", err)
 	}
 
 	if r.generate {

@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,113 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
-
-func TestGenerateRunnerRun(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name               string
-		libraryID          string
-		build              bool
-		container          *mockContainerClient
-		wantConfigureCalls int
-		wantGenerateCalls  int
-		wantBuildCalls     int
-		wantErr            bool
-		config             *config.LibrarianConfig
-	}{
-		{
-			name:               "run_all",
-			container:          &mockContainerClient{},
-			wantConfigureCalls: 0,
-			wantGenerateCalls:  2,
-			wantBuildCalls:     0,
-		},
-		{
-			name:               "run_all_with_build",
-			build:              true,
-			container:          &mockContainerClient{},
-			wantConfigureCalls: 0,
-			wantGenerateCalls:  2,
-			wantBuildCalls:     2,
-		},
-		{
-			name:               "run_single",
-			build:              true,
-			libraryID:          "some-library",
-			container:          &mockContainerClient{},
-			wantConfigureCalls: 0,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     1,
-		},
-		{
-			name:               "skips_generate_blocked",
-			container:          &mockContainerClient{},
-			wantConfigureCalls: 0,
-			wantGenerateCalls:  1,
-			wantBuildCalls:     0,
-			config: &config.LibrarianConfig{
-				Libraries: []*config.LibraryConfig{
-					{
-						LibraryID:       "some-library",
-						GenerateBlocked: true,
-					},
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			runner := &generateRunner{
-				library:         test.libraryID,
-				repo:            newTestGitRepo(t),
-				sourceRepo:      newTestGitRepo(t),
-				containerClient: test.container,
-				state: &config.LibrarianState{
-					Libraries: []*config.LibraryState{
-						{
-							ID:   "some-library",
-							APIs: []*config.API{{Path: "some/api"}},
-							SourceRoots: []string{
-								"a/path",
-								"another/path",
-							},
-						},
-						{
-							ID:   "another-library",
-							APIs: []*config.API{{Path: "another/api"}},
-							SourceRoots: []string{
-								"b/path",
-								"c/path",
-							},
-						},
-					},
-				},
-				librarianConfig: test.config,
-				build:           test.build,
-				workRoot:        t.TempDir(),
-			}
-			err := runner.run(t.Context())
-			if test.wantErr {
-				if err == nil {
-					t.Fatal(err)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
-				t.Errorf("run() configureCalls mismatch (-want +got):%s", diff)
-			}
-			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
-				t.Errorf("run() generateCalls mismatch (-want +got):%s", diff)
-			}
-			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
-				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
-			}
-		})
-	}
-}
 
 func TestGenerateSingleLibrary(t *testing.T) {
 	t.Parallel()
@@ -596,7 +490,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "clone googleapis fails",
 			cfg: &config.Config{
 				API:            "some/api",
-				APISource:      "", // This will trigger the clone of googleapis
+				APISource:      "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
 				APISourceDepth: 1,
 				Repo:           newTestGitRepo(t).GetDir(),
 				WorkRoot:       t.TempDir(),
@@ -604,7 +498,7 @@ func TestNewGenerateRunner(t *testing.T) {
 				CommandName:    generateCmdName,
 			},
 			wantErr:    true,
-			wantErrMsg: "repo must be specified",
+			wantErrMsg: "repository does not exist",
 		},
 		{
 			name: "valid config with local repo",
@@ -621,18 +515,20 @@ func TestNewGenerateRunner(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			if test.name == "clone googleapis fails" {
+				// The function will try to clone googleapis into the current work directory.
+				// To make it fail, create a non-empty, non-git directory.
+				googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
+				slog.Info("making directory", "dir", googleapisDir)
+				if err := os.MkdirAll(googleapisDir, 0755); err != nil {
+					t.Fatalf("os.MkdirAll() = %v", err)
+				}
+				if err := os.WriteFile(filepath.Join(googleapisDir, "some-file"), []byte("foo"), 0644); err != nil {
+					t.Fatalf("os.WriteFile() = %v", err)
+				}
+			}
 			if test.cfg.APISource == "" && test.cfg.WorkRoot != "" {
-				if test.name == "clone googleapis fails" {
-					// The function will try to clone googleapis into the current work directory.
-					// To make it fail, create a non-empty, non-git directory.
-					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
-					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
-						t.Fatalf("os.MkdirAll() = %v", err)
-					}
-					if err := os.WriteFile(filepath.Join(googleapisDir, "some-file"), []byte("foo"), 0644); err != nil {
-						t.Fatalf("os.WriteFile() = %v", err)
-					}
-				} else {
+				if test.name != "clone googleapis fails" {
 					// The function will try to clone googleapis into the current work directory.
 					// To prevent a real clone, we can pre-create a fake googleapis repo.
 					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")

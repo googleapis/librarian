@@ -122,7 +122,7 @@ func newCmdUpdateImage() *cli.Command {
 		Long:      generateLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			setupLogger(verbose)
-			slog.Debug("generate command verbose logging")
+			slog.Debug("update image command verbose logging")
 			if err := cmd.Config.SetDefaults(); err != nil {
 				return fmt.Errorf("failed to initialize config: %w", err)
 			}

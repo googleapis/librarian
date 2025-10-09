@@ -242,7 +242,7 @@ func generateSingleLibrary(ctx context.Context, containerClient ContainerClient,
 	safeLibraryDirectory := getSafeDirectoryName(libraryState.ID)
 	libraryOutputDir := filepath.Join(outputDir, safeLibraryDirectory)
 	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
-		return fmt.Errorf("Error making output directory %w", err)
+		return fmt.Errorf("error making output directory %w", err)
 	}
 
 	apiRoot, err := filepath.Abs(sourceRepo.GetDir())
@@ -253,11 +253,11 @@ func generateSingleLibrary(ctx context.Context, containerClient ContainerClient,
 	generateRequest := &docker.GenerateRequest{
 		ApiRoot:   apiRoot,
 		LibraryID: libraryState.ID,
-		Output:    safeLibraryDirectory,
+		Output:    libraryOutputDir,
 		RepoDir:   repo.GetDir(),
 		State:     state,
 	}
-	slog.Info("Performing generation for library", "id", libraryState.ID, "outputDir", safeLibraryDirectory)
+	slog.Info("Performing generation for library", "id", libraryState.ID, "outputDir", libraryOutputDir)
 	if err := containerClient.Generate(ctx, generateRequest); err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func generateSingleLibrary(ctx context.Context, containerClient ContainerClient,
 		return err
 	}
 
-	if err := cleanAndCopyLibrary(state, repo.GetDir(), libraryState.ID, outputDir); err != nil {
+	if err := cleanAndCopyLibrary(state, repo.GetDir(), libraryState.ID, libraryOutputDir); err != nil {
 		return err
 	}
 
@@ -278,7 +278,7 @@ func generateSingleLibrary(ctx context.Context, containerClient ContainerClient,
 
 func buildSingleLibrary(ctx context.Context, containerClient ContainerClient, state *config.LibrarianState, libraryState *config.LibraryState, repo gitrepo.Repository) error {
 	if libraryState == nil {
-		return fmt.Errorf("No libraryState provided")
+		return fmt.Errorf("no libraryState provided")
 	}
 	buildRequest := &docker.BuildRequest{
 		LibraryID: libraryState.ID,
