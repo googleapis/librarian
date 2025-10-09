@@ -761,7 +761,8 @@ func TestParseFooters(t *testing.T) {
 			name: "multi-line footers with key on one line, value on the next",
 			footerLines: []string{
 				"PiperOrigin-RevId: 123456",
-				"",
+				"Library-IDs:",
+				"library-one,library-two",
 				"Source-Link:",
 				"",
 				"googleapis/googleapis@a12b345",
@@ -772,8 +773,10 @@ func TestParseFooters(t *testing.T) {
 			},
 			wantFooters: map[string]string{
 				"PiperOrigin-RevId": "123456",
-				"Source-Link":       "\ngoogleapis/googleapis@a12b345",
-				"Copy-Tag":          "\neyJwIjoic"},
+				"Library-IDs":       "library-one,library-two",
+				"Source-Link":       "googleapis/googleapis@a12b345",
+				"Copy-Tag":          "eyJwIjoic",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
