@@ -27,7 +27,114 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func TestRunGenerateCommand(t *testing.T) {
+func TestGenerateRunnerRun(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name               string
+		libraryID          string
+		build              bool
+		container          *mockContainerClient
+		wantConfigureCalls int
+		wantGenerateCalls  int
+		wantBuildCalls     int
+		wantErr            bool
+		config             *config.LibrarianConfig
+	}{
+		{
+			name:               "run_all",
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 0,
+			wantGenerateCalls:  2,
+			wantBuildCalls:     0,
+		},
+		{
+			name:               "run_all_with_build",
+			build:              true,
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 0,
+			wantGenerateCalls:  2,
+			wantBuildCalls:     2,
+		},
+		{
+			name:               "run_single",
+			build:              true,
+			libraryID:          "some-library",
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 0,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     1,
+		},
+		{
+			name:               "skips_generate_blocked",
+			container:          &mockContainerClient{},
+			wantConfigureCalls: 0,
+			wantGenerateCalls:  1,
+			wantBuildCalls:     0,
+			config: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:       "some-library",
+						GenerateBlocked: true,
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &generateRunner{
+				library:         test.libraryID,
+				repo:            newTestGitRepo(t),
+				sourceRepo:      newTestGitRepo(t),
+				containerClient: test.container,
+				state: &config.LibrarianState{
+					Libraries: []*config.LibraryState{
+						{
+							ID:   "some-library",
+							APIs: []*config.API{{Path: "some/api"}},
+							SourceRoots: []string{
+								"a/path",
+								"another/path",
+							},
+						},
+						{
+							ID:   "another-library",
+							APIs: []*config.API{{Path: "another/api"}},
+							SourceRoots: []string{
+								"b/path",
+								"c/path",
+							},
+						},
+					},
+				},
+				librarianConfig: test.config,
+				build:           test.build,
+				workRoot:        t.TempDir(),
+			}
+			err := runner.run(t.Context())
+			if test.wantErr {
+				if err == nil {
+					t.Fatal(err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
+				t.Errorf("run() configureCalls mismatch (-want +got):%s", diff)
+			}
+			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
+				t.Errorf("run() generateCalls mismatch (-want +got):%s", diff)
+			}
+			if diff := cmp.Diff(test.wantBuildCalls, test.container.buildCalls); diff != "" {
+				t.Errorf("run() buildCalls mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateSingleLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name              string
@@ -79,23 +186,13 @@ func TestRunGenerateCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			r := &generateRunner{
-				api:             test.api,
-				repo:            test.repo,
-				sourceRepo:      newTestGitRepo(t),
-				ghClient:        test.ghClient,
-				state:           test.state,
-				containerClient: test.container,
-			}
-
 			outputDir := t.TempDir()
-			gotLibraryID, err := r.runGenerateCommand(context.Background(), "some-library", outputDir)
+			libraryID := "some-library"
+			libraryState := test.state.LibraryByID(libraryID)
+			err := generateSingleLibrary(t.Context(), test.container, test.state, libraryState, newTestGitRepo(t), test.repo, outputDir)
 			if (err != nil) != test.wantErr {
-				t.Errorf("runGenerateCommand() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("generateSingleLibrary() error = %v, wantErr %v", err, test.wantErr)
 				return
-			}
-			if diff := cmp.Diff(test.wantLibraryID, gotLibraryID); diff != "" {
-				t.Errorf("runGenerateCommand() mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantGenerateCalls, test.container.generateCalls); diff != "" {
 				t.Errorf("runGenerateCommand() generateCalls mismatch (-want +got):%s", diff)
@@ -104,38 +201,29 @@ func TestRunGenerateCommand(t *testing.T) {
 	}
 }
 
-func TestRunBuildCommand(t *testing.T) {
+func TestBuildSingleLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name           string
-		build          bool
 		libraryID      string
 		container      *mockContainerClient
 		wantBuildCalls int
 		wantErr        bool
 	}{
 		{
-			name:           "build_flag_not_specified",
-			build:          false,
-			container:      &mockContainerClient{},
-			wantBuildCalls: 0,
-		},
-		{
 			name:           "build_with_library_id",
-			build:          true,
 			libraryID:      "some-library",
 			container:      &mockContainerClient{},
 			wantBuildCalls: 1,
 		},
 		{
 			name:           "build_with_no_library_id",
-			build:          true,
 			container:      &mockContainerClient{},
+			wantErr:        true,
 			wantBuildCalls: 0,
 		},
 		{
 			name:      "build_with_no_response",
-			build:     true,
 			libraryID: "some-library",
 			container: &mockContainerClient{
 				noBuildResponse: true,
@@ -144,7 +232,6 @@ func TestRunBuildCommand(t *testing.T) {
 		},
 		{
 			name:      "build_with_docker_command_error_files_restored",
-			build:     true,
 			libraryID: "some-library",
 			container: &mockContainerClient{
 				buildErr: errors.New("simulate build error"),
@@ -153,7 +240,6 @@ func TestRunBuildCommand(t *testing.T) {
 		},
 		{
 			name:      "build_with_error_response_in_response",
-			build:     true,
 			libraryID: "some-library",
 			container: &mockContainerClient{
 				wantErrorMsg: true,
@@ -175,16 +261,10 @@ func TestRunBuildCommand(t *testing.T) {
 					},
 				},
 			}
-			r := &generateRunner{
-				build:           test.build,
-				repo:            repo,
-				state:           state,
-				containerClient: test.container,
-			}
 
 			// Create library files and commit the change.
-			repoDir := r.repo.GetDir()
-			for _, library := range r.state.Libraries {
+			repoDir := repo.GetDir()
+			for _, library := range state.Libraries {
 				for _, srcPath := range library.SourceRoots {
 					relPath := filepath.Join(repoDir, srcPath)
 					if err := os.MkdirAll(relPath, 0755); err != nil {
@@ -196,34 +276,21 @@ func TestRunBuildCommand(t *testing.T) {
 					}
 				}
 			}
-			if err := r.repo.AddAll(); err != nil {
+			if err := repo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
-			if err := r.repo.Commit("test commit"); err != nil {
+			if err := repo.Commit("test commit"); err != nil {
 				t.Fatal(err)
 			}
-			// Modify library files and add untacked files.
-			for _, library := range r.state.Libraries {
-				for _, srcPath := range library.SourceRoots {
-					file := filepath.Join(repoDir, srcPath, "example.txt")
-					if err := os.WriteFile(file, []byte("new content"), 0755); err != nil {
-						t.Fatal(err)
-					}
 
-					newFile := filepath.Join(repoDir, srcPath, "another_example.txt")
-					if err := os.WriteFile(newFile, []byte("new content"), 0755); err != nil {
-						t.Fatal(err)
-					}
-				}
-			}
-
-			err := r.runBuildCommand(context.Background(), test.libraryID)
+			libraryState := state.LibraryByID(test.libraryID)
+			err := buildSingleLibrary(t.Context(), test.container, state, libraryState, repo)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal(err)
 				}
 				// Verify the library files are restore.
-				for _, library := range r.state.Libraries {
+				for _, library := range state.Libraries {
 					for _, srcPath := range library.SourceRoots {
 						file := filepath.Join(repoDir, srcPath, "example.txt")
 						readFile, err := os.ReadFile(file)

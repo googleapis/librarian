@@ -204,8 +204,10 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 		return "", err
 	}
 
-	if err := r.runBuildCommand(ctx, libraryID); err != nil {
-		return "", err
+	if r.build {
+		if err := buildSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo); err != nil {
+			return "", err
+		}
 	}
 
 	if err := r.updateLastGeneratedCommitState(libraryID); err != nil {
@@ -231,43 +233,6 @@ func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error 
 		}
 	}
 	return nil
-}
-
-// runGenerateCommand attempts to perform generation for an API. It then cleans the
-// destination directory and copies the newly generated files into it.
-//
-// If successful, it returns the ID of the generated library; otherwise, it
-// returns an empty string and an error.
-func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outputDir string) (string, error) {
-	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
-	if err != nil {
-		return "", err
-	}
-
-	generateRequest := &docker.GenerateRequest{
-		ApiRoot:   apiRoot,
-		LibraryID: libraryID,
-		Output:    outputDir,
-		RepoDir:   r.repo.GetDir(),
-		State:     r.state,
-	}
-	slog.Info("Performing generation for library", "id", libraryID, "outputDir", outputDir)
-	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
-		return "", err
-	}
-
-	// Read the library state from the response.
-	if _, err := readLibraryState(
-		filepath.Join(generateRequest.RepoDir, config.LibrarianDir, config.GenerateResponse)); err != nil {
-		return "", err
-	}
-
-	if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), libraryID, outputDir); err != nil {
-		return "", err
-	}
-
-	slog.Info("Generation succeeds", "id", libraryID)
-	return libraryID, nil
 }
 
 func generateSingleLibrary(ctx context.Context, containerClient ContainerClient, state *config.LibrarianState, libraryState *config.LibraryState, repo gitrepo.Repository, sourceRepo gitrepo.Repository, outputDir string) error {
@@ -312,6 +277,9 @@ func generateSingleLibrary(ctx context.Context, containerClient ContainerClient,
 }
 
 func buildSingleLibrary(ctx context.Context, containerClient ContainerClient, state *config.LibrarianState, libraryState *config.LibraryState, repo gitrepo.Repository) error {
+	if libraryState == nil {
+		return fmt.Errorf("No libraryState provided")
+	}
 	buildRequest := &docker.BuildRequest{
 		LibraryID: libraryState.ID,
 		RepoDir:   repo.GetDir(),
@@ -337,49 +305,6 @@ func buildSingleLibrary(ctx context.Context, containerClient ContainerClient, st
 	}
 
 	slog.Info("Build succeeds", "id", libraryState.ID)
-	return nil
-}
-
-// runBuildCommand orchestrates the building of an API library using a containerized
-// environment.
-//
-// The `outputDir` parameter specifies the target directory where the built artifacts
-// should be placed.
-func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) error {
-	if !r.build {
-		slog.Info("Build flag not specified, skipping")
-		return nil
-	}
-	if libraryID == "" {
-		slog.Warn("Cannot perform build, missing library ID")
-		return nil
-	}
-
-	buildRequest := &docker.BuildRequest{
-		LibraryID: libraryID,
-		RepoDir:   r.repo.GetDir(),
-		State:     r.state,
-	}
-	slog.Info("Performing build for library", "id", libraryID)
-	if containerErr := r.containerClient.Build(ctx, buildRequest); containerErr != nil {
-		if restoreErr := r.restoreLibrary(libraryID); restoreErr != nil {
-			return errors.Join(containerErr, restoreErr)
-		}
-
-		return errors.Join(containerErr)
-	}
-
-	// Read the library state from the response.
-	if _, responseErr := readLibraryState(
-		filepath.Join(buildRequest.RepoDir, config.LibrarianDir, config.BuildResponse)); responseErr != nil {
-		if restoreErr := r.restoreLibrary(libraryID); restoreErr != nil {
-			return errors.Join(responseErr, restoreErr)
-		}
-
-		return responseErr
-	}
-
-	slog.Info("Build succeeds", "id", libraryID)
 	return nil
 }
 
@@ -483,16 +408,6 @@ func restoreLibrary(libraryState *config.LibraryState, repo gitrepo.Repository) 
 		return err
 	}
 	return repo.CleanUntracked(libraryState.SourceRoots)
-}
-
-func (r *generateRunner) restoreLibrary(libraryID string) error {
-	// At this point, we should have a library in the state.
-	library := findLibraryByID(r.state, libraryID)
-	if err := r.repo.Restore(library.SourceRoots); err != nil {
-		return err
-	}
-
-	return r.repo.CleanUntracked(library.SourceRoots)
 }
 
 // getExistingSrc returns source roots as-is of a given library ID, if the source roots exist in the language repo.
