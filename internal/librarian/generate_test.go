@@ -1232,6 +1232,17 @@ PiperOrigin-RevId: 745187558
 `,
 			want: "745187558",
 		},
+		{
+			name: "invalid_piper_id",
+			message: `feat: this is a new api
+PiperOrigin-RevId: abcde`,
+			wantErr: errPiperNotFound,
+		},
+		{
+			name:    "does_not_contain_piper_id",
+			message: `feat: this is a new api`,
+			wantErr: errPiperNotFound,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := findPiperIDFrom(test.message)
