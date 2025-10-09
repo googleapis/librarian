@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -30,6 +31,11 @@ import (
 
 const (
 	generateCmdName = "generate"
+)
+
+var (
+	piperRegex       = regexp.MustCompile("PiperOrigin-RevId: (?P<piperID>`\\d+`)")
+	errPiperNotFound = errors.New("piper ID not found")
 )
 
 type generateRunner struct {
@@ -444,6 +450,25 @@ func (r *generateRunner) getExistingSrc(libraryID string) []string {
 	return existingSrc
 }
 
+// getInitialPiperID returns the Piper ID which is part of the initial commit message.
+func getInitialPiperID(repo gitrepo.Repository, api string) (string, error) {
+	initialCommit, err := repo.GetLatestCommit(api)
+	if err != nil {
+		return "", err
+	}
+
+	return findPiperIDFrom(initialCommit.Message)
+}
+
+func findPiperIDFrom(message string) (string, error) {
+	matches := piperRegex.FindStringSubmatch(message)
+	if len(matches) == 0 {
+		return "", errPiperNotFound
+	}
+
+	return matches[0], nil
+}
+
 func setAllAPIStatus(state *config.LibrarianState, status string) {
 	for _, library := range state.Libraries {
 		for _, api := range library.APIs {
@@ -454,7 +479,7 @@ func setAllAPIStatus(state *config.LibrarianState, status string) {
 
 // getSafeDirectoryName returns a directory name which doesn't contain slashes
 // based on a library ID. This avoids cases where a library ID contains
-// slashes but we want generateSingleLibrary to create a directory which
+// slashes, but we want generateSingleLibrary to create a directory which
 // is not a subdirectory of some other directory. For example, if there
 // are library IDs of "pubsub" and "pubsub/v2" we don't want to create
 // "output/pubsub/v2" and then "output/pubsub" later. This function does
