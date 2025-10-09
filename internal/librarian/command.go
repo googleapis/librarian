@@ -89,6 +89,7 @@ type commitInfo struct {
 	sourceRepo        gitrepo.Repository
 	state             *config.LibrarianState
 	workRoot          string
+	piperID           string
 	failedGenerations int
 }
 

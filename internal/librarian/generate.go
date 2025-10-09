@@ -162,6 +162,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
+		piperID:           r.piperID,
 		failedGenerations: failedGenerations,
 	}
 
