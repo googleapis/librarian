@@ -1218,6 +1218,37 @@ func TestGetExistingSrc(t *testing.T) {
 	}
 }
 
+func TestFindPiperIDFrom(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		message string
+		want    string
+		wantErr error
+	}{
+		{
+			name: "found_piper_id",
+			message: `feat: add a new API
+PiperOrigin-RevId: 745187558
+`,
+			want: "745187558",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findPiperIDFrom(test.message)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findPiperIDFrom() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
 func TestGetSafeDirectoryName(t *testing.T) {
 	for _, test := range []struct {
 		name string
