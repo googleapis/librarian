@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	piperRegex       = regexp.MustCompile("PiperOrigin-RevId: (?P<piperID>`\\d+`)")
+	piperRegex       = regexp.MustCompile("PiperOrigin-RevId: (?P<piperID>\\d+)")
 	errPiperNotFound = errors.New("piper ID not found")
 )
 
@@ -466,7 +466,7 @@ func findPiperIDFrom(message string) (string, error) {
 		return "", errPiperNotFound
 	}
 
-	return matches[0], nil
+	return matches[1], nil
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {
