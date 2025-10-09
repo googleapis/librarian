@@ -26,6 +26,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func loadServiceConfig(serviceConfigFile string, source map[string]string) (*serviceconfig.Service, error) {
+	if serviceConfigFile == "" {
+		return nil, nil
+	}
+	return readServiceConfig(findServiceConfigPath(serviceConfigFile, source))
+}
+
 func readServiceConfig(serviceConfigPath string) (*serviceconfig.Service, error) {
 	y, err := os.ReadFile(serviceConfigPath)
 	if err != nil {

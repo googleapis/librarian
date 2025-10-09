@@ -21,7 +21,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/discovery"
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 // ParseDisco reads discovery docs specifications and converts them into
@@ -43,13 +42,9 @@ func ParseDisco(source, serviceConfigFile string, options map[string]string) (*a
 	if err != nil {
 		return nil, err
 	}
-	var serviceConfig *serviceconfig.Service
-	if serviceConfigFile != "" {
-		cfg, err := readServiceConfig(findServiceConfigPath(serviceConfigFile, options))
-		if err != nil {
-			return nil, err
-		}
-		serviceConfig = cfg
+	serviceConfig, err := loadServiceConfig(serviceConfigFile, options)
+	if err != nil {
+		return nil, err
 	}
 	result, err := discovery.NewAPI(serviceConfig, contents)
 	if err != nil {

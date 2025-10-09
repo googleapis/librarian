@@ -42,13 +42,9 @@ func ParseOpenAPI(source, serviceConfigFile string, options map[string]string) (
 	if err != nil {
 		return nil, err
 	}
-	var serviceConfig *serviceconfig.Service
-	if serviceConfigFile != "" {
-		cfg, err := readServiceConfig(findServiceConfigPath(serviceConfigFile, options))
-		if err != nil {
-			return nil, err
-		}
-		serviceConfig = cfg
+	serviceConfig, err := loadServiceConfig(serviceConfigFile, options)
+	if err != nil {
+		return nil, err
 	}
 	return makeAPIForOpenAPI(serviceConfig, model)
 }
