@@ -26,11 +26,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func loadServiceConfig(serviceConfigFile string, source map[string]string) (*serviceconfig.Service, error) {
-	if serviceConfigFile == "" {
-		return nil, nil
+func loadServiceConfig(cfg *config.Config) (*serviceconfig.Service, error) {
+	if name := cfg.General.ServiceConfig; name != "" {
+		return readServiceConfig(findServiceConfigPath(name, cfg.Source))
 	}
-	return readServiceConfig(findServiceConfigPath(serviceConfigFile, source))
+	return nil, nil
 }
 
 func readServiceConfig(serviceConfigPath string) (*serviceconfig.Service, error) {

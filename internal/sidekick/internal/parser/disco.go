@@ -25,9 +25,10 @@ import (
 
 // ParseDisco reads discovery docs specifications and converts them into
 // the `api.API` model.
-func ParseDisco(source, serviceConfigFile string, options map[string]string) (*api.API, error) {
-	for _, opt := range config.SourceRoots(options) {
-		location, ok := options[opt]
+func ParseDisco(cfg *config.Config) (*api.API, error) {
+	source := cfg.General.SpecificationSource
+	for _, opt := range config.SourceRoots(cfg.Source) {
+		location, ok := cfg.Source[opt]
 		if !ok {
 			// Ignore options that are not set
 			continue
@@ -42,7 +43,7 @@ func ParseDisco(source, serviceConfigFile string, options map[string]string) (*a
 	if err != nil {
 		return nil, err
 	}
-	serviceConfig, err := loadServiceConfig(serviceConfigFile, options)
+	serviceConfig, err := loadServiceConfig(cfg)
 	if err != nil {
 		return nil, err
 	}

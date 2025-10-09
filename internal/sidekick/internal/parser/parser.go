@@ -29,11 +29,11 @@ func CreateModel(config *config.Config) (*api.API, error) {
 	var model *api.API
 	switch config.General.SpecificationFormat {
 	case "disco":
-		model, err = ParseDisco(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
+		model, err = ParseDisco(config)
 	case "openapi":
-		model, err = ParseOpenAPI(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
+		model, err = ParseOpenAPI(config)
 	case "protobuf":
-		model, err = ParseProtobuf(config.General.SpecificationSource, config.General.ServiceConfig, config.Source)
+		model, err = ParseProtobuf(config)
 	case "none":
 		return nil, nil
 	default:

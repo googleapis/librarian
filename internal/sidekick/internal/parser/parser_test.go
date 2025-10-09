@@ -29,6 +29,8 @@ var (
 	discoSourceFile           = path.Join(testdataDir, discoSourceFileRelative)
 	secretManagerYamlRelative = "google/cloud/secretmanager/v1/secretmanager_v1.yaml"
 	secretManagerYamlFullPath = path.Join(testdataDir, "googleapis", secretManagerYamlRelative)
+	openAPIFile               = path.Join(testdataDir, "openapi", "secretmanager_openapi_v1.json")
+	protobufFile              = path.Join("testdata", "scalar.proto")
 )
 
 func TestCreateModelDisco(t *testing.T) {
