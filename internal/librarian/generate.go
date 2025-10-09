@@ -54,6 +54,7 @@ type generateRunner struct {
 	state           *config.LibrarianState
 	librarianConfig *config.LibrarianConfig
 	workRoot        string
+	piperID         string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -77,6 +78,7 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		state:           runner.state,
 		librarianConfig: runner.librarianConfig,
 		workRoot:        runner.workRoot,
+		piperID:         "",
 	}, nil
 }
 
@@ -189,6 +191,10 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 		}
 		configuredLibraryID, err := r.runConfigureCommand(ctx, configureOutputDir)
 		if err != nil {
+			return "", err
+		}
+
+		if err := r.setPiperID(); err != nil {
 			return "", err
 		}
 		libraryID = configuredLibraryID
@@ -450,14 +456,22 @@ func (r *generateRunner) getExistingSrc(libraryID string) []string {
 	return existingSrc
 }
 
-// getInitialPiperID returns the Piper ID which is part of the initial commit message.
-func getInitialPiperID(repo gitrepo.Repository, api string) (string, error) {
-	initialCommit, err := repo.GetLatestCommit(api)
+// setPiperID sets the Piper ID which is part of the initial commit message.
+func (r *generateRunner) setPiperID() error {
+	slog.Info("Retrieving the latest commit", "api", r.api)
+	initialCommit, err := r.sourceRepo.GetLatestCommit(r.api)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return findPiperIDFrom(initialCommit.Message)
+	id, err := findPiperIDFrom(initialCommit.Message)
+	if err != nil {
+		return err
+	}
+	slog.Info("found piper id in the commit message", "piper id", id)
+	r.piperID = id
+
+	return nil
 }
 
 func findPiperIDFrom(message string) (string, error) {
