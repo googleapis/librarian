@@ -67,10 +67,10 @@ func newLibrarianCommand() *cli.Command {
 		UsageLine: "librarian <command> [arguments]",
 		Long:      librarianLongHelp,
 		Commands: []*cli.Command{
-			newCmdUpdateImage(),
 			newCmdGenerate(),
 			cmdRelease,
 			cmdVersion,
+			newCmdUpdateImage(),
 		},
 	}
 	cmd.Init()

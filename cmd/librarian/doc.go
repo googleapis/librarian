@@ -276,5 +276,106 @@ Version prints version information for the librarian binary.
 Usage:
 
 	librarian version
+
+# update-image
+
+The generate command is the primary tool for all code generation
+tasks. It handles both the initial setup of a new library (onboarding) and the
+regeneration of existing ones. Librarian works by delegating language-specific
+tasks to a container, which is configured in the .librarian/state.yaml file.
+Librarian is environment aware and will check if the current directory is the
+root of a librarian repository. If you are not executing in such a directory the
+'--repo' flag must be provided.
+
+# Onboarding a new library
+
+To configure and generate a new library for the first time, you must specify the
+API to be generated and the library it will belong to. Librarian will invoke the
+'configure' command in the language container to set up the repository, add the
+new library's configuration to the '.librarian/state.yaml' file, and then
+proceed with generation.
+
+Example:
+
+	librarian generate --library=secretmanager --api=google/cloud/secretmanager/v1
+
+# Regenerating existing libraries
+
+You can regenerate a single, existing library by specifying either the library
+ID or the API path. If no specific library or API is provided, Librarian will
+regenerate all libraries listed in '.librarian/state.yaml'. If '--library' or
+'--api' is specified the whole library will be regenerated.
+
+Examples:
+
+	# Regenerate a single library by its ID
+	librarian generate --library=secretmanager
+
+	# Regenerate a single library by its API path
+	librarian generate --api=google/cloud/secretmanager/v1
+
+	# Regenerate all libraries in the repository
+	librarian generate
+
+# Workflow and Options:
+
+The generation process involves delegating to the language container's
+'generate' command. After the code is generated, the tool cleans the destination
+directories and copies the new files into place, according to the configuration
+in '.librarian/state.yaml'.
+
+  - If the '--build' flag is specified, the 'build' command is also executed in
+    the container to compile and validate the generated code.
+  - If the '--push' flag is provided, the changes are committed to a new branch,
+    and a pull request is created on GitHub. Otherwise, the changes are left in
+    your local working directory for inspection. When pushing to a remote branch,
+    you have the option of using HTTPS or SSH. Librarian will automatically determine
+    whether to use HTTPS or SSH based on the remote URI.
+
+Example with build and push:
+
+	LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build
+
+Usage:
+
+	librarian update-image [flags]
+
+Flags:
+
+	-api-source string
+	  	The location of an API specification repository.
+	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
+	-branch string
+	  	The branch to use with remote code repositories. This is used to specify
+	  	which branch to clone and which branch to use as the base for a pull
+	  	request. (default "main")
+	-build
+	  	If true, Librarian will build each generated library by invoking the
+	  	language-specific container.
+	-commit
+	  	If true, librarian will create a commit for the change but not create
+	  	a pull request. This flag is ignored if push is set to true.
+	-host-mount string
+	  	For use when librarian is running in a container. A mapping of a
+	  	directory from the host to the container, in the format
+	  	<host-mount>:<local-mount>.
+	-image string
+	  	Language specific image used to invoke code generation and releasing.
+	  	If not specified, the image configured in the state.yaml is used.
+	-output string
+	  	Working directory root. When this is not specified, a working directory
+	  	will be created in /tmp.
+	-push
+	  	If true, Librarian will create a commit,
+	  	push and create a pull request for the changes.
+	  	A GitHub token with push access must be provided via the
+	  	LIBRARIAN_GITHUB_TOKEN environment variable.
+	-repo string
+	  	Code repository where the generated code will reside. Can be a remote
+	  	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
+	  	local file path like /path/to/repo. Both absolute and relative paths are
+	  	supported. If not specified, will try to detect if the current working directory
+	  	is configured as a language repository.
+	-v	enables verbose logging
 */
 package main
