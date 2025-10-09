@@ -232,7 +232,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
-	return c.runDocker(ctx, c.HostMount, CommandGenerate, mounts, commandArgs)
+	return c.runDocker(ctx, CommandGenerate, mounts, commandArgs)
 }
 
 // Build builds the library with an ID of libraryID, as configured in
@@ -262,7 +262,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		"--repo=/repo",
 	}
 
-	return c.runDocker(ctx, c.HostMount, CommandBuild, mounts, commandArgs)
+	return c.runDocker(ctx, CommandBuild, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -307,7 +307,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		mounts = append(mounts, fmt.Sprintf("%s/%s:/repo/%s:ro", request.RepoDir, globalFile, globalFile))
 	}
 
-	if err := c.runDocker(ctx, c.HostMount, CommandConfigure, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
 
@@ -342,15 +342,15 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
-	if err := c.runDocker(ctx, c.HostMount, CommandReleaseInit, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, CommandReleaseInit, mounts, commandArgs); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Docker) runDocker(_ context.Context, hostMount string, command Command, mounts []string, commandArgs []string) (err error) {
-	mounts = maybeRelocateMounts(hostMount, mounts)
+func (c *Docker) runDocker(_ context.Context, command Command, mounts []string, commandArgs []string) (err error) {
+	mounts = maybeRelocateMounts(c.HostMount, mounts)
 	args := []string{
 		"run",
 		"--rm", // Automatically delete the container after completion
