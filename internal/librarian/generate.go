@@ -461,7 +461,12 @@ func (r *generateRunner) getExistingSrc(libraryID string) []string {
 // setPiperID sets the Piper ID which is part of the initial commit message.
 func (r *generateRunner) setPiperID() error {
 	slog.Info("Retrieving the latest commit", "api", r.api)
-	initialCommit, err := r.sourceRepo.GetLatestCommit(r.api)
+	serviceYaml, err := findServiceYaml(filepath.Join(r.sourceRepo.GetDir(), r.api))
+	if err != nil {
+		return err
+	}
+
+	initialCommit, err := r.sourceRepo.GetLatestCommit(filepath.Join(r.api, serviceYaml))
 	if err != nil {
 		return err
 	}
