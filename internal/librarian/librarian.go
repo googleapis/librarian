@@ -119,7 +119,7 @@ func newCmdUpdateImage() *cli.Command {
 	cmdUpdateImage := &cli.Command{
 		Short:     "update-image updates configured language image container",
 		UsageLine: "librarian update-image [flags]",
-		Long:      generateLongHelp,
+		Long:      updateImageLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			setupLogger(verbose)
 			slog.Debug("update image command verbose logging")
