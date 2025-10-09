@@ -1285,6 +1285,10 @@ func TestFindServiceYaml(t *testing.T) {
 				if err := os.MkdirAll(path, 0755); err != nil {
 					t.Fatal(err)
 				}
+				another := filepath.Join(path, "another/path")
+				if err := os.MkdirAll(another, 0755); err != nil {
+					t.Fatal(err)
+				}
 				yamlFile := filepath.Join(path, "example_v1.yaml")
 				if err := os.WriteFile(yamlFile, []byte("content"), 0755); err != nil {
 					t.Fatal(err)
