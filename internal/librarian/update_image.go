@@ -34,6 +34,7 @@ type updateImageRunner struct {
 	sourceRepo      gitrepo.Repository
 	state           *config.LibrarianState
 	generate        bool
+	build           bool
 	push            bool
 	commit          bool
 	image           string
@@ -55,6 +56,7 @@ func newUpdateImageRunner(cfg *config.Config) (*updateImageRunner, error) {
 		sourceRepo:      runner.sourceRepo,
 		state:           runner.state,
 		generate:        true,
+		build:           cfg.Build,
 		commit:          cfg.Commit,
 		push:            cfg.Push,
 		image:           cfg.Image,
@@ -115,14 +117,18 @@ func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, library
 		return fmt.Errorf("Error checking out from sourceRepo %w", err)
 	}
 
-	if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir); err != nil {
-		slog.Error("failed to regenerate a single library", "ID", libraryState.ID)
-		return err
+	if r.generate {
+		if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir); err != nil {
+			slog.Error("failed to regenerate a single library", "ID", libraryState.ID)
+			return err
+		}
 	}
 
-	if err := buildSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo); err != nil {
-		slog.Error("failed to build a single library", "ID", libraryState.ID)
-		return err
+	if r.build {
+		if err := buildSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo); err != nil {
+			slog.Error("failed to build a single library", "ID", libraryState.ID)
+			return err
+		}
 	}
 
 	return nil
