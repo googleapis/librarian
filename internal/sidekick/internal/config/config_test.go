@@ -312,6 +312,67 @@ func TestMergeLocalForPaginationOverrides(t *testing.T) {
 	}
 }
 
+func TestMergeLocalForDiscovery(t *testing.T) {
+	root := Config{
+		General: GeneralConfig{
+			Language:            "root-language",
+			SpecificationFormat: "root-specification-format",
+		},
+		Discovery: &Discovery{
+			OperationID: "root-method-id",
+			Pollers: []*Poller{
+				{
+					Prefix: "root-prefix-0",
+				},
+			},
+		},
+	}
+
+	local := Config{
+		General: GeneralConfig{
+			Language:            "local-language",
+			SpecificationFormat: "local-specification-format",
+			SpecificationSource: "local-specification-source",
+			ServiceConfig:       "local-service-config",
+		},
+		Discovery: &Discovery{
+			OperationID: "local-method-id",
+			Pollers: []*Poller{
+				{
+					Prefix: "local-prefix-0",
+				},
+			},
+		},
+	}
+
+	got, err := mergeTestConfigs(t, &root, &local)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &Config{
+		General: GeneralConfig{
+			Language:            "local-language",
+			SpecificationFormat: "local-specification-format",
+			SpecificationSource: "local-specification-source",
+			ServiceConfig:       "local-service-config",
+		},
+		Codec:  map[string]string{},
+		Source: map[string]string{},
+		Discovery: &Discovery{
+			OperationID: "local-method-id",
+			Pollers: []*Poller{
+				{
+					Prefix: "local-prefix-0",
+				},
+			},
+		},
+	}
+
+	if diff := cmp.Diff(want, got); len(diff) != 0 {
+		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
+	}
+}
+
 func TestMergeConfigAndFileBadRead(t *testing.T) {
 	root := Config{
 		General: GeneralConfig{
