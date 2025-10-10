@@ -3,6 +3,7 @@ module github.com/googleapis/librarian
 go 1.25.0
 
 require (
+	cloud.google.com/go/artifactregistry v1.17.2
 	cloud.google.com/go/cloudbuild v1.23.0
 	cloud.google.com/go/iam v1.5.2
 	cloud.google.com/go/longrunning v0.6.7

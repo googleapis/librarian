@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/images"
 )
 
 var testToken = os.Getenv("TEST_GITHUB_TOKEN")
@@ -436,5 +437,55 @@ func TestCreateRelease(t *testing.T) {
 	}
 	if diff := cmp.Diff(release.GetBody(), body); diff != "" {
 		t.Fatalf("release body mismatch (-want + got):\n%s", diff)
+	}
+}
+
+func TestFindLatestImage(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		image    string
+		wantDiff bool
+		wantErr  bool
+	}{
+		{
+			name:     "AR unpinned",
+			image:    "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:dea280223eca5a0041fb5310635cec9daba2f01617dbfb1e47b90c77368b5620",
+			wantDiff: true,
+		},
+		{
+			name:     "AR pinned",
+			image:    "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:dea280223eca5a0041fb5310635cec9daba2f01617dbfb1e47b90c77368b5620",
+			wantDiff: true,
+		},
+		{
+			name:    "invalid image",
+			image:   "gcr.io/some-project/some-name",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			client := &images.ArtifactRegistryClient{}
+			got, err := images.FindLatestImage(t.Context(), client, test.image)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("FindLatestImage() error = %v, wantErr %v", err, test.wantErr)
+				}
+				return
+			}
+
+			if !strings.HasPrefix(got, "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:") {
+				t.Fatalf("FindLatestImage() unexpected image format")
+			}
+			if test.wantDiff {
+				if got == test.image {
+					t.Fatalf("FindLatestImage() expected to change")
+				}
+			} else {
+				if got != test.image {
+					t.Fatalf("FindLatestImage() expected to stay the same")
+				}
+			}
+		})
 	}
 }
