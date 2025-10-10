@@ -16,7 +16,6 @@ package rust
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"testing"
 
@@ -42,167 +41,283 @@ func createRustCodec() *codec {
 	}
 }
 
-func TestParseOptionsProtobuf(t *testing.T) {
-	options := map[string]string{
-		"version":                   "1.2.3",
-		"package-name-override":     "test-only",
-		"copyright-year":            "2035",
-		"module-path":               "alternative::generated",
-		"package:wkt":               "package=types,source=google.protobuf,source=test-only",
-		"package:gax":               "package=gax,feature=unstable-sdk-client",
-		"package:serde_with":        "package=serde_with",
-		"include-grpc-only-methods": "true",
-		"per-service-features":      "true",
-	}
-	got, err := newCodec("protobuf", options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gp := &packagez{
-		name:        "wkt",
-		packageName: "types",
-	}
-	want := &codec{
-		version:             "1.2.3",
-		releaseLevel:        "preview",
-		packageNameOverride: "test-only",
-		generationYear:      "2035",
-		modulePath:          "alternative::generated",
-		extraPackages: []*packagez{
-			gp,
-			{
-				name:        "gax",
-				packageName: "gax",
-				features: []string{
-					"unstable-sdk-client",
-				},
-			},
-			{
-				name:        "serde_with",
-				packageName: "serde_with",
+func TestParseOptions(t *testing.T) {
+	for _, test := range []struct {
+		Format  string
+		Options map[string]string
+		Update  func(*codec)
+	}{
+		{
+			Format:  "protobuf",
+			Options: map[string]string{},
+			Update: func(c *codec) {
+				c.systemParameters = []systemParameter{
+					{Name: "$alt", Value: "json;enum-encoding=int"},
+				}
 			},
 		},
-		packageMapping: map[string]*packagez{
-			"google.protobuf": gp,
-			"test-only":       gp,
+		{
+			Format:  "openapi",
+			Options: map[string]string{},
+			Update: func(c *codec) {
+				c.systemParameters = []systemParameter{
+					{Name: "$alt", Value: "json"},
+				}
+			},
 		},
-		systemParameters: []systemParameter{
-			{Name: "$alt", Value: "json;enum-encoding=int"},
+		{
+			Format:  "disco",
+			Options: map[string]string{},
+			Update: func(c *codec) {
+				c.systemParameters = []systemParameter{
+					{Name: "$alt", Value: "json"},
+				}
+			},
 		},
-		includeGrpcOnlyMethods: true,
-		perServiceFeatures:     true,
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"package-name-override": "override",
+			},
+			Update: func(c *codec) {
+				c.packageNameOverride = "override"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"name-overrides": "a=b,c=d",
+			},
+			Update: func(c *codec) {
+				c.nameOverrides = map[string]string{
+					"a": "b",
+					"c": "d",
+				}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"module-path": "crate::generated::storage",
+			},
+			Update: func(c *codec) {
+				c.modulePath = "crate::generated::storage"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"copyright-year": "2035",
+			},
+			Update: func(c *codec) {
+				c.generationYear = "2035"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"not-for-publication": "true",
+			},
+			Update: func(c *codec) {
+				c.doNotPublish = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"version": "1.2.3",
+			},
+			Update: func(c *codec) {
+				c.version = "1.2.3"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"release-level": "stable",
+			},
+			Update: func(c *codec) {
+				c.releaseLevel = "stable"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"package:bytes":    "force-used=true,package=bytes",
+				"package:location": "package=google-cloud-location,source=google.cloud.location",
+			},
+			Update: func(c *codec) {
+				c.extraPackages = []*packagez{
+					{
+						name:        "bytes",
+						used:        true,
+						packageName: "bytes",
+					},
+					{
+						name:        "location",
+						packageName: "google-cloud-location",
+					},
+				}
+				c.packageMapping["google.cloud.location"] = c.extraPackages[1]
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"disabled-rustdoc-warnings": "",
+			},
+			Update: func(c *codec) {
+				c.disabledRustdocWarnings = []string{}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"disabled-rustdoc-warnings": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.disabledRustdocWarnings = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"template-override": "templates/http-client",
+			},
+			Update: func(c *codec) {
+				c.templateOverride = "templates/http-client"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"include-grpc-only-methods": "true",
+			},
+			Update: func(c *codec) {
+				c.includeGrpcOnlyMethods = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"per-service-features": "true",
+			},
+			Update: func(c *codec) {
+				c.perServiceFeatures = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"detailed-tracing-attributes": "true",
+			},
+			Update: func(c *codec) {
+				c.detailedTracingAttributes = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"has-veneer": "true",
+			},
+			Update: func(c *codec) {
+				c.hasVeneer = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"extra-modules": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.extraModules = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"internal-types": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.internalTypes = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"routing-required": "true",
+			},
+			Update: func(c *codec) {
+				c.routingRequired = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"generate-setter-samples": "true",
+			},
+			Update: func(c *codec) {
+				c.generateSetterSamples = true
+			},
+		},
+	} {
+		want, err := newCodec(test.Format, map[string]string{})
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		test.Update(want)
+		got, err := newCodec(test.Format, test.Options)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{}), cmpopts.IgnoreFields(codec{}, "extraPackages")); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+		lessPackagez := func(a, b *packagez) bool { return a.name < b.name }
+		if diff := cmp.Diff(want.extraPackages, got.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(lessPackagez)); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
 	}
-	sort.Slice(want.extraPackages, func(i, j int) bool {
-		return want.extraPackages[i].name < want.extraPackages[j].name
-	})
-	sort.Slice(got.extraPackages, func(i, j int) bool {
-		return got.extraPackages[i].name < got.extraPackages[j].name
-	})
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{})); diff != "" {
-		t.Errorf("codec mismatch (-want, +got):\n%s", diff)
-	}
-	if want.packageNameOverride != got.packageNameOverride {
-		t.Errorf("mismatched in packageNameOverride, want=%s, got=%s", want.packageNameOverride, got.packageNameOverride)
-	}
-	checkRustPackages(t, got, want)
 }
 
-func TestParseOptionsOpenAPI(t *testing.T) {
-	options := map[string]string{
-		"version":               "1.2.3",
-		"package-name-override": "test-only",
-		"copyright-year":        "2035",
+func TestParseOptionsErrors(t *testing.T) {
+	for _, test := range []struct {
+		Options map[string]string
+	}{
+		{Options: map[string]string{"name-overrides": "a=b,c"}},
+		{Options: map[string]string{"not-for-publication": ""}},
+		{Options: map[string]string{"package:": ""}},
+		{Options: map[string]string{"include-grpc-only-methods": ""}},
+		{Options: map[string]string{"per-service-features": ""}},
+		{Options: map[string]string{"detailed-tracing-attributes": ""}},
+		{Options: map[string]string{"has-veneer": ""}},
+		{Options: map[string]string{"routing-required": ""}},
+		{Options: map[string]string{"generate-setter-samples": ""}},
+		{Options: map[string]string{"--invalid--": ""}},
+	} {
+		if got, err := newCodec("disco", test.Options); err == nil {
+			t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Options)
+		}
 	}
-	got, err := newCodec("openapi", options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := &codec{
-		version:             "1.2.3",
-		releaseLevel:        "preview",
-		packageNameOverride: "test-only",
-		generationYear:      "2035",
-		modulePath:          "crate::model",
-		extraPackages:       []*packagez{},
-		packageMapping:      map[string]*packagez{},
-		systemParameters: []systemParameter{
-			{Name: "$alt", Value: "json"},
-		},
-		serializeEnumsAsStrings: true,
-	}
-	sort.Slice(want.extraPackages, func(i, j int) bool {
-		return want.extraPackages[i].name < want.extraPackages[j].name
-	})
-	sort.Slice(got.extraPackages, func(i, j int) bool {
-		return got.extraPackages[i].name < got.extraPackages[j].name
-	})
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{})); diff != "" {
-		t.Errorf("codec mismatch (-want, +got):\n%s", diff)
-	}
-	if want.packageNameOverride != got.packageNameOverride {
-		t.Errorf("mismatched in packageNameOverride, want=%s, got=%s", want.packageNameOverride, got.packageNameOverride)
-	}
-	checkRustPackages(t, got, want)
 }
 
-func TestParseOptionsTemplateOverride(t *testing.T) {
-	options := map[string]string{
-		"version":               "1.2.3",
-		"package-name-override": "test-only",
-		"copyright-year":        "2038",
-		"template-override":     "templates/fancy-templates",
+func TestParsePackageOptionError(t *testing.T) {
+	for _, test := range []struct {
+		Definition string
+	}{
+		{Definition: "package="},
+		{Definition: "ignore=,package=a"},
+		{Definition: "force-used=,package=a"},
+		{Definition: "--invalid--=a,package=b"},
+	} {
+		if got, err := parsePackageOption("package:test", test.Definition); err == nil {
+			t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Definition)
+		}
 	}
-	got, err := newCodec("disco", options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := &codec{
-		version:             "1.2.3",
-		releaseLevel:        "preview",
-		packageNameOverride: "test-only",
-		generationYear:      "2038",
-		modulePath:          "crate::model",
-		extraPackages:       []*packagez{},
-		packageMapping:      map[string]*packagez{},
-		systemParameters: []systemParameter{
-			{Name: "$alt", Value: "json"},
-		},
-		serializeEnumsAsStrings: true,
-		bytesUseUrlSafeAlphabet: true,
-		templateOverride:        "templates/fancy-templates",
-	}
-	sort.Slice(want.extraPackages, func(i, j int) bool {
-		return want.extraPackages[i].name < want.extraPackages[j].name
-	})
-	sort.Slice(got.extraPackages, func(i, j int) bool {
-		return got.extraPackages[i].name < got.extraPackages[j].name
-	})
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{})); diff != "" {
-		t.Errorf("codec mismatch (-want, +got):\n%s", diff)
-	}
-	if want.packageNameOverride != got.packageNameOverride {
-		t.Errorf("mismatched in packageNameOverride, want=%s, got=%s", want.packageNameOverride, got.packageNameOverride)
-	}
-	checkRustPackages(t, got, want)
-}
-
-func TestParseOptionsDetailedTracingAttributes(t *testing.T) {
-	options := map[string]string{
-		"detailed-tracing-attributes": "true",
-	}
-	got, err := newCodec("", options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !got.detailedTracingAttributes {
-		t.Errorf("expected tracing attributes to be enabled")
-	}
-
-	options = map[string]string{
-		"detailed-tracing-attributes": "--invalid--",
-	}
-	if got, err := newCodec("", options); err == nil {
-		t.Errorf("expected an error with an invalid detailed-tracing-attributes flag, got=%v", got)
+	if got, err := parsePackageOption("package:", "unused"); err == nil {
+		t.Errorf("expected an error parsing the options, got=%v", got)
 	}
 }
 
@@ -293,14 +408,6 @@ func testOneOfEnumNameImpl(t *testing.T, c *codec, name string, want string) {
 	got := c.OneOfEnumName(oneof)
 	if want != got {
 		t.Errorf("mismatch in service name, want=%s, got=%s", want, got)
-	}
-}
-
-func checkRustPackages(t *testing.T, got *codec, want *codec) {
-	t.Helper()
-	less := func(a, b *packagez) bool { return a.name < b.name }
-	if diff := cmp.Diff(want.extraPackages, got.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("package mismatch (-want, +got):\n%s", diff)
 	}
 }
 

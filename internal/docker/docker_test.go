@@ -35,7 +35,10 @@ func TestNew(t *testing.T) {
 		testUID      = "1000"
 		testGID      = "1001"
 	)
-	d, err := New(testWorkRoot, testImage, testUID, testGID)
+	d, err := New(testWorkRoot, testImage, &DockerOptions{
+		UserUID: testUID,
+		UserGID: testGID,
+	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -145,7 +148,8 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: "Generate runs in docker",
 			docker: &Docker{
-				Image: testImage,
+				Image:     testImage,
+				HostMount: "hostDir:localDir",
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
@@ -154,7 +158,6 @@ func TestDockerRun(t *testing.T) {
 					ApiRoot:   testAPIRoot,
 					Output:    "hostDir",
 					LibraryID: testLibraryID,
-					HostMount: "hostDir:localDir",
 				}
 
 				return d.Generate(ctx, generateRequest)
@@ -941,7 +944,10 @@ func TestReleaseInitRequestContent(t *testing.T) {
 		},
 	}
 
-	d, err := New(tmpDir, "test-image", "1000", "1000")
+	d, err := New(tmpDir, "test-image", &DockerOptions{
+		UserUID: "1000",
+		UserGID: "1000",
+	})
 	if err != nil {
 		t.Fatalf("New() failed: %v", err)
 	}

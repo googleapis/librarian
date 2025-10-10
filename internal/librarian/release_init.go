@@ -20,6 +20,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
@@ -207,10 +209,19 @@ func (r *initRunner) processLibrary(library *config.LibraryState) error {
 	return r.updateLibrary(library, commits)
 }
 
-// filterCommitsByLibraryID keeps the conventional commits that match a libaryID.
+// filterCommitsByLibraryID keeps the conventional commits if the given libraryID appears in the Footer or matches
+// the libraryID in the commit.
 func filterCommitsByLibraryID(commits []*conventionalcommits.ConventionalCommit, libraryID string) []*conventionalcommits.ConventionalCommit {
 	var filteredCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
+		if commit.Footers != nil {
+			ids, ok := commit.Footers["Library-IDs"]
+			libraryIDs := strings.Split(ids, ",")
+			if ok && slices.Contains(libraryIDs, libraryID) {
+				filteredCommits = append(filteredCommits, commit)
+				continue
+			}
+		}
 		if commit.LibraryID == libraryID {
 			filteredCommits = append(filteredCommits, commit)
 		}

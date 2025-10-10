@@ -493,3 +493,56 @@ func TestLoadRepoStateFromGitHub(t *testing.T) {
 		})
 	}
 }
+
+func TestSortByLibraryID(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		state *config.LibrarianState
+		want  *config.LibrarianState
+	}{
+		{
+			name: "sort_with_library_id",
+			state: &config.LibrarianState{
+				Image: "test-image",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "b-library",
+					},
+					{
+						ID: "a-library",
+					},
+				},
+			},
+			want: &config.LibrarianState{
+				Image: "test-image",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "a-library",
+					},
+					{
+						ID: "b-library",
+					},
+				},
+			},
+		},
+		{
+			name: "nil_libraries",
+			state: &config.LibrarianState{
+				Image:     "test-image",
+				Libraries: nil,
+			},
+			want: &config.LibrarianState{
+				Image:     "test-image",
+				Libraries: nil,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			sortByLibraryID(test.state)
+			if diff := cmp.Diff(test.want, test.state); diff != "" {
+				t.Errorf("sortByLibraryID mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

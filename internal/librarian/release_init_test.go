@@ -1129,6 +1129,75 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 			},
 		},
 		{
+			name: "some_commits_have_library_id_in_footer",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-two",
+					},
+				},
+				{
+					LibraryID: "library-two",
+					Type:      "chore",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-two",
+					},
+				},
+				{
+					LibraryID: "library-three",
+					Type:      "deps",
+				},
+			},
+			LibraryID: "library-one",
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-two",
+					},
+				},
+				{
+					LibraryID: "library-two",
+					Type:      "chore",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-two",
+					},
+				},
+			},
+		},
+		{
+			name: "some_commits_have_library_id_that_is_prefix_of_another",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-one_suffix",
+					},
+				},
+				{
+					LibraryID: "library-one-suffix",
+					Type:      "chore",
+					Footers: map[string]string{
+						"Library-IDs": "library-one-suffix",
+					},
+				},
+			},
+			LibraryID: "library-one",
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-one_suffix",
+					},
+				},
+			},
+		},
+		{
 			name: "no_commits_match_libraryID",
 			commits: []*conventionalcommits.ConventionalCommit{
 				{

@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/conventionalcommits"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -110,11 +111,96 @@ func TestFormatGenerationPRBody(t *testing.T) {
 			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
-fix: [one-library] a bug fix
+fix: a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
+Library-IDs: one-library
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+END_NESTED_COMMIT
 
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
+[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+(exclusive) and
+[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+(inclusive).
+
+Librarian Version: %s
+Language Image: %s`,
+				librarianVersion, "go:1.21"),
+		},
+		{
+			name: "group_commit_messages",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "one-library",
+						APIs: []*config.API{
+							{
+								Path: "path/to",
+							},
+						},
+					},
+					{
+						ID: "another-library",
+						APIs: []*config.API{
+							{
+								Path: "path/to",
+							},
+						},
+					},
+				},
+			},
+			repo: &MockRepository{
+				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
+				GetCommitByHash: map[string]*gitrepo.Commit{
+					"1234567890": {
+						Hash: plumbing.NewHash("1234567890"),
+						When: time.UnixMilli(200),
+					},
+					"abcdefg": {
+						Hash: plumbing.NewHash("abcdefg"),
+						When: time.UnixMilli(300),
+					},
+				},
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234567890": {
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+					"abcdefg": {
+						{
+							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
+							Hash:    hash2,
+							When:    today.Add(time.Hour),
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					hash2.String(): {
+						"path/to/file",
+					},
+				},
+			},
+			idToCommits: map[string]string{
+				"one-library":     "1234567890",
+				"another-library": "abcdefg",
+			},
+			failedLibraries: []string{},
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
+
+BEGIN_NESTED_COMMIT
+fix: a bug fix
+This is another body.
+
+PiperOrigin-RevId: 573342
+Library-IDs: one-library,another-library
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
@@ -192,11 +278,11 @@ Language Image: %s`,
 			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
-fix: [one-library] a bug fix
+fix: a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
-
+Library-IDs: one-library
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
@@ -270,20 +356,20 @@ Language Image: %s
 			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
-fix: [one-library] a bug fix
+fix: a bug fix
 This is another body.
 
 PiperOrigin-RevId: 573342
-
+Library-IDs: one-library
 Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
 END_NESTED_COMMIT
 
 BEGIN_NESTED_COMMIT
-feat: [one-library] new feature
+feat: new feature
 This is body.
 
 PiperOrigin-RevId: 98765
-
+Library-IDs: one-library
 Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567)
 END_NESTED_COMMIT
 
@@ -501,6 +587,108 @@ func TestFindLatestCommit(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("findLatestCommit() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGroupByPiperID(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		commits []*conventionalcommits.ConventionalCommit
+		want    []*conventionalcommits.ConventionalCommit
+	}{
+		{
+			name: "group_commits_with_same_piper_id_and_subject",
+			commits: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-1",
+					Subject:   "one subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "123456",
+					},
+				},
+				{
+					LibraryID: "library-2",
+					Subject:   "a different subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "123456",
+					},
+				},
+				{
+					LibraryID: "library-3",
+					Subject:   "the same subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+					},
+				},
+				{
+					LibraryID: "library-4",
+					Subject:   "the same subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+					},
+				},
+				{
+					LibraryID: "library-5",
+				},
+				{
+					LibraryID: "library-6",
+					Footers: map[string]string{
+						"random-key": "random-value",
+					},
+				},
+			},
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					LibraryID: "library-1",
+					Subject:   "one subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "123456",
+						"Library-IDs":       "library-1",
+					},
+				},
+				{
+					LibraryID: "library-2",
+					Subject:   "a different subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "123456",
+						"Library-IDs":       "library-2",
+					},
+				},
+				{
+					LibraryID: "library-3",
+					Subject:   "the same subject",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "987654",
+						"Library-IDs":       "library-3,library-4",
+					},
+				},
+				{
+					LibraryID: "library-5",
+					Footers: map[string]string{
+						"Library-IDs": "library-5",
+					},
+				},
+				{
+					LibraryID: "library-6",
+					Footers: map[string]string{
+						"random-key":  "random-value",
+						"Library-IDs": "library-6",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := groupByIDAndSubject(test.commits)
+			// We don't care the order in the slice but sorting makes the test deterministic.
+			opts := cmpopts.SortSlices(func(a, b *conventionalcommits.ConventionalCommit) bool {
+				return a.LibraryID < b.LibraryID
+			})
+			if diff := cmp.Diff(test.want, got, opts); diff != "" {
+				t.Errorf("groupByIDAndSubject() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

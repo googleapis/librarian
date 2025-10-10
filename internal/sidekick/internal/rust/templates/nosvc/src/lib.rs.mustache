@@ -39,3 +39,6 @@ limitations under the License.
 #[allow(deprecated)]
 {{/HasDeprecatedEntities}}
 pub mod model;
+{{#Codec.ExtraModules}}
+mod {{{.}}};
+{{/Codec.ExtraModules}}

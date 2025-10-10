@@ -62,6 +62,7 @@ type ConventionalCommit struct {
 	// Scope is the scope of the change.
 	Scope string `yaml:"-" json:"-"`
 	// Footers contain metadata (e.g,"BREAKING CHANGE", "Reviewed-by").
+	// Repeated footer keys not supported, only first value is kept
 	Footers map[string]string `yaml:"-" json:"-"`
 	// IsBreaking indicates if the commit introduces a breaking change.
 	IsBreaking bool `yaml:"-" json:"-"`
@@ -346,12 +347,21 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 		}
 		// This is a new footer.
 		key := strings.TrimSpace(footerMatches[1])
+		if _, ok := footers[key]; ok {
+			// Key already exists. Invalidate lastKey to prevent any subsequent
+			// continuation lines from being appended to the wrong footer.
+			lastKey = ""
+			continue
+		}
 		value := strings.TrimSpace(footerMatches[2])
 		footers[key] = value
 		lastKey = key
 		if key == breakingChangeKey {
 			isBreaking = true
 		}
+	}
+	for key, value := range footers {
+		footers[key] = strings.TrimSpace(value)
 	}
 	return footers, isBreaking
 }

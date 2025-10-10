@@ -59,6 +59,10 @@ type Docker struct {
 	// The group ID to run the container as.
 	gid string
 
+	// HostMount specifies a mount point from the Docker host into the Docker
+	// container. The format is "{host-dir}:{local-dir}".
+	HostMount string
+
 	// run runs the docker command.
 	run func(args ...string) error
 }
@@ -66,10 +70,6 @@ type Docker struct {
 // BuildRequest contains all the information required for a language
 // container to run the build command.
 type BuildRequest struct {
-	// HostMount specifies a mount point from the Docker host into the Docker
-	// container. The format is "{host-dir}:{local-dir}".
-	HostMount string
-
 	// LibraryID specifies the ID of the library to build.
 	LibraryID string
 
@@ -86,10 +86,6 @@ type BuildRequest struct {
 type ConfigureRequest struct {
 	// ApiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
-
-	// HostMount specifies a mount point from the Docker host into the Docker
-	// container. The format is "{host-dir}:{local-dir}".
-	HostMount string
 
 	// libraryID specifies the ID of the library to configure.
 	LibraryID string
@@ -118,10 +114,6 @@ type GenerateRequest struct {
 	// ApiRoot specifies the root directory of the API specification repo.
 	ApiRoot string
 
-	// HostMount specifies a mount point from the Docker host into the Docker
-	// container. The format is "{host-dir}:{local-dir}".
-	HostMount string
-
 	// LibraryID specifies the ID of the library to generate.
 	LibraryID string
 
@@ -146,12 +138,6 @@ type ReleaseInitRequest struct {
 	// Commit determines whether to create a commit for the release but not
 	// create a pull request. This flag is ignored if Push is set to true.
 	Commit bool
-
-	// HostMount is used to remap Docker mount paths when running in environments
-	// where Docker containers are siblings (e.g., Kokoro).
-	// It specifies a mount point from the Docker host into the Docker container.
-	// The format is "{host-dir}:{local-dir}".
-	HostMount string
 
 	// LibrarianConfig is a pointer to the [config.LibrarianConfig] struct, holding
 	// global files configuration in a language repository.
@@ -180,14 +166,33 @@ type ReleaseInitRequest struct {
 	State *config.LibrarianState
 }
 
+// DockerOptions contains optional configuration parameters for invoking
+// docker commands.
+type DockerOptions struct {
+	// UserUID is the user ID of the current user. It is used to run Docker
+	// containers with the same user, so that created files have the correct
+	// ownership.
+	UserUID string
+	// UserGID is the group ID of the current user. It is used to run Docker
+	// containers with the same user, so that created files have the correct
+	// ownership.
+	UserGID string
+	// HostMount is used to remap Docker mount paths when running in environments
+	// where Docker containers are siblings (e.g., Kokoro).
+	// It specifies a mount point from the Docker host into the Docker container.
+	// The format is "{host-dir}:{local-dir}".
+	HostMount string
+}
+
 // New constructs a Docker instance which will invoke the specified
 // Docker image as required to implement language-specific commands,
 // providing the container with required environment variables.
-func New(workRoot, image, uid, gid string) (*Docker, error) {
+func New(workRoot, image string, options *DockerOptions) (*Docker, error) {
 	docker := &Docker{
-		Image: image,
-		uid:   uid,
-		gid:   gid,
+		Image:     image,
+		uid:       options.UserUID,
+		gid:       options.UserGID,
+		HostMount: options.HostMount,
 	}
 	docker.run = func(args ...string) error {
 		return docker.runCommand("docker", args...)
@@ -227,7 +232,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
-	return c.runDocker(ctx, request.HostMount, CommandGenerate, mounts, commandArgs)
+	return c.runDocker(ctx, CommandGenerate, mounts, commandArgs)
 }
 
 // Build builds the library with an ID of libraryID, as configured in
@@ -257,7 +262,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		"--repo=/repo",
 	}
 
-	return c.runDocker(ctx, request.HostMount, CommandBuild, mounts, commandArgs)
+	return c.runDocker(ctx, CommandBuild, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -302,7 +307,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		mounts = append(mounts, fmt.Sprintf("%s/%s:/repo/%s:ro", request.RepoDir, globalFile, globalFile))
 	}
 
-	if err := c.runDocker(ctx, request.HostMount, CommandConfigure, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
 
@@ -337,15 +342,15 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
-	if err := c.runDocker(ctx, request.HostMount, CommandReleaseInit, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, CommandReleaseInit, mounts, commandArgs); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Docker) runDocker(_ context.Context, hostMount string, command Command, mounts []string, commandArgs []string) (err error) {
-	mounts = maybeRelocateMounts(hostMount, mounts)
+func (c *Docker) runDocker(_ context.Context, command Command, mounts []string, commandArgs []string) (err error) {
+	mounts = maybeRelocateMounts(c.HostMount, mounts)
 	args := []string{
 		"run",
 		"--rm", // Automatically delete the container after completion
