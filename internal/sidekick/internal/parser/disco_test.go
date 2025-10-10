@@ -87,7 +87,6 @@ func TestDisco_ParseNoServiceConfig(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationSource: discoSourceFile,
 		},
-		Source: map[string]string{},
 	}
 	got, err := ParseDisco(cfg)
 	if err != nil {
@@ -112,7 +111,6 @@ func TestDisco_ParsePagination(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationSource: discoSourceFile,
 		},
-		Source: map[string]string{},
 	}
 	model, err := ParseDisco(cfg)
 	if err != nil {
@@ -142,7 +140,6 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationSource: discoSourceFile,
 		},
-		Source: map[string]string{},
 	}
 	model, err := ParseDisco(cfg)
 	if err != nil {
@@ -172,7 +169,6 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationSource: discoSourceFile,
 		},
-		Source: map[string]string{},
 	}
 	model, err := ParseDisco(cfg)
 	if err != nil {
