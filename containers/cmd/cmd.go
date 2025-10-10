@@ -14,8 +14,6 @@
 
 // Package cmd provides the main function LanguageContainerMain that
 // handles command line argument parsing and invocation of the corresponding methods.
-// A Librarian language container implementation will call the function
-// from its main function.
 package cmd
 
 import (
@@ -52,37 +50,35 @@ type ReleaseInitFlags struct {
 	Output    string
 }
 
-// LanguageContainer defines the contract for a language-specific container.
-type LanguageContainer interface {
-	Generate(ctx context.Context, flags *GenerateFlags) error
-	Configure(ctx context.Context, flags *ConfigureFlags) error
-	ReleaseInit(ctx context.Context, flags *ReleaseInitFlags) error
+// LanguageContainerFunctions lists the functions a language container
+// defines to accept requests from Librarian CLI.
+type LanguageContainerFunctions struct {
+	Generate    func(ctx context.Context, flags *GenerateFlags)
+	Configure   func(ctx context.Context, flags *ConfigureFlags)
+	ReleaseInit func(ctx context.Context, flags *ReleaseInitFlags)
 }
 
 // Entry point for a language container. This parses the arguments and
-// calls the corresponding method on the container.
+// calls the corresponding function in the functions struct.
 //
 // A language container defines the following main function:
 //
 // ```
 //
 //	func main() {
-//		cmd.LanguageContainerMain(os.Args, &myContainer{})
+//		cmd.LanguageContainerMain(os.Args, cmd.LanguageContainerFunctions{ ... })
 //	}
 //
 // ```
-func LanguageContainerMain(args []string, container LanguageContainer) {
-	// TODO: Call the generateFunc only when it's "generate" command.
+func LanguageContainerMain(args []string, functions LanguageContainerFunctions) {
 	// TODO: Parse the arguments correctly.
-	if args[0] == "generate" {
+	if len(args) > 0 && args[0] == "generate" && functions.Generate != nil {
 		generateFlags := GenerateFlags{
 			Librarian: "/librarian",
 			Input:     "/input",
 			Output:    "/output",
 			Source:    "/source",
 		}
-		if err := container.Generate(context.Background(), &generateFlags); err != nil {
-			// TODO: handle error
-		}
+		functions.Generate(context.Background(), &generateFlags)
 	}
 }

@@ -19,49 +19,31 @@ import (
 	"testing"
 )
 
-// fakeContainer is a mock implementation of the LanguageContainer interface for testing.
-type fakeContainer struct {
-	calledMethod string
-	// We can add fields to capture flags if we need to test them.
-	// generateFlags *GenerateFlags
-}
-
-func (f *fakeContainer) Generate(ctx context.Context, flags *GenerateFlags) error {
-	f.calledMethod = "Generate"
-	return nil
-}
-
-func (f *fakeContainer) Configure(ctx context.Context, flags *ConfigureFlags) error {
-	f.calledMethod = "Configure"
-	return nil
-}
-
-func (f *fakeContainer) ReleaseInit(ctx context.Context, flags *ReleaseInitFlags) error {
-	f.calledMethod = "ReleaseInit"
-	return nil
-}
-
 func TestLanguageContainerMain_ParseArguments(t *testing.T) {
+	var calledFunction string
 	for _, test := range []struct {
-		name           string
-		arguments      []string
-		expectedMethod string
+		name      string
+		arguments []string
+		functions LanguageContainerFunctions
 	}{
 		{
-			name:           "parse generate command",
-			expectedMethod: "Generate",
+			name: "parse generate command",
 			arguments: []string{
 				"generate",
+			},
+			functions: LanguageContainerFunctions{
+				Generate: func(ctx context.Context, flags *GenerateFlags) {
+					calledFunction = "generate"
+				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			container := &fakeContainer{}
-			LanguageContainerMain(test.arguments, container)
-			// Note: The current implementation only handles "generate". This test will need to be expanded
-			// as more command parsing logic is added to LanguageContainerMain.
-			if container.calledMethod != test.expectedMethod {
-				t.Errorf("LanguageContainerMain called wrong method: got %q, want %q", container.calledMethod, test.expectedMethod)
+			calledFunction = "None"
+			LanguageContainerMain(test.arguments, test.functions)
+			if calledFunction != test.arguments[0] {
+				t.Errorf("LanguageContainerMain didn't call the correct function. Expected %s, got %s",
+					test.arguments[0], calledFunction)
 			}
 		})
 	}
