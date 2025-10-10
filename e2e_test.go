@@ -280,7 +280,7 @@ func TestRunConfigure(t *testing.T) {
 			if err := initRepo(t, repo, initialRepoStateDir, "initial commit"); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
-			if err := initRepo(t, apiSourceRepo, test.apiSource, "feat: add a new api\nPiperOrigin-RevId: 123456"); err != nil {
+			if err := initRepo(t, apiSourceRepo, test.apiSource, "feat: add a new api\n\nPiperOrigin-RevId: 123456"); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
