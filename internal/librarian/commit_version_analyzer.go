@@ -96,6 +96,25 @@ func shouldIncludeForGeneration(files, apiPaths []string) bool {
 	return false
 }
 
+// libraryFilter filters a list of conventional commits by library ID.
+func libraryFilter(commits []*conventionalcommits.ConventionalCommit, libraryID string) []*conventionalcommits.ConventionalCommit {
+	var filteredCommits []*conventionalcommits.ConventionalCommit
+	for _, commit := range commits {
+		if libraryIDs, ok := commit.Footers["Library-IDs"]; ok {
+			ids := strings.Split(libraryIDs, ",")
+			for _, id := range ids {
+				if strings.TrimSpace(id) == libraryID {
+					filteredCommits = append(filteredCommits, commit)
+					break
+				}
+			}
+		} else if commit.LibraryID == libraryID {
+			filteredCommits = append(filteredCommits, commit)
+		}
+	}
+	return filteredCommits
+}
+
 // convertToConventionalCommits converts a list of commits in a git repo into a list
 // of conventional commits. The filesFilter parameter is custom filter out non-matching
 // files depending on a generation or a release change.
@@ -116,6 +135,9 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 		if parsedCommits == nil {
 			continue
 		}
+
+		parsedCommits = libraryFilter(parsedCommits, library.ID)
+
 		for _, pc := range parsedCommits {
 			pc.CommitHash = commit.Hash.String()
 		}

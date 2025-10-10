@@ -180,7 +180,9 @@ func TestShouldIncludeForGeneration(t *testing.T) {
 }
 
 func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
+
 	t.Parallel()
+
 	pathAndMessages := []pathAndMessage{
 		{
 			path:    "foo/a.txt",
@@ -202,8 +204,46 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 			path:    "foo/c.txt",
 			message: "feat(foo): another feature for foo",
 		},
+		{
+			path: "foo/something.txt",
+			message: `BEGIN_COMMIT_OVERRIDE 
+
+BEGIN_NESTED_COMMIT
+fix: a bug1 fix
+
+This is another body.
+
+PiperOrigin-RevId: 573342
+Library-IDs: foo
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+END_NESTED_COMMIT
+
+BEGIN_NESTED_COMMIT
+fix: a bug2 fix
+
+This is another body.
+
+PiperOrigin-RevId: 573342
+Library-IDs: bar
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+END_NESTED_COMMIT
+
+BEGIN_NESTED_COMMIT
+fix: a bug3 fix
+
+This is another body.
+
+PiperOrigin-RevId: 573342
+Library-IDs: foo, bar
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+END_NESTED_COMMIT
+
+END_COMMIT_OVERRIDE`,
+		},
 	}
+
 	repoWithCommits := setupRepoForGetCommits(t, pathAndMessages, []string{"foo-v1.0.0"})
+
 	for _, test := range []struct {
 		name          string
 		repo          gitrepo.Repository
@@ -223,6 +263,28 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 				ReleaseExcludePaths: []string{"foo/README.md"},
 			},
 			want: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:      "fix",
+					Subject:   "a bug1 fix",
+					LibraryID: "foo",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "573342",
+						"Library-IDs":       "foo",
+						"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
+					},
+					IsNested: true,
+				},
+				{
+					Type:      "fix",
+					Subject:   "a bug3 fix",
+					LibraryID: "foo",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "573342",
+						"Library-IDs":       "foo, bar",
+						"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
+					},
+					IsNested: true,
+				},
 				{
 					Type:      "feat",
 					Scope:     "foo",
