@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -1092,7 +1093,7 @@ func TestGenerateScenarios(t *testing.T) {
 			if err := r.sourceRepo.AddAll(); err != nil {
 				t.Fatal(err)
 			}
-			message := "feat: add an api\nPiperOrigin-RevId: 123456"
+			message := "feat: add an api\n\nPiperOrigin-RevId: 123456"
 			if err := r.sourceRepo.Commit(message); err != nil {
 				t.Fatal(err)
 			}
@@ -1230,31 +1231,34 @@ func TestGetExistingSrc(t *testing.T) {
 func TestFindPiperIDFrom(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		message string
+		commit  *gitrepo.Commit
 		want    string
 		wantErr error
 	}{
 		{
 			name: "found_piper_id",
-			message: `feat: add a new API
-PiperOrigin-RevId: 745187558
-`,
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API\n\nPiperOrigin-RevId: 745187558",
+			},
 			want: "745187558",
 		},
 		{
-			name: "invalid_piper_id",
-			message: `feat: this is a new api
-PiperOrigin-RevId: abcde`,
-			wantErr: errPiperNotFound,
+			name: "invalid_commit",
+			commit: &gitrepo.Commit{
+				Message: "",
+			},
+			wantErr: conventionalcommits.ErrEmptyCommitMessage,
 		},
 		{
-			name:    "does_not_contain_piper_id",
-			message: `feat: this is a new api`,
+			name: "does_not_contain_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API",
+			},
 			wantErr: errPiperNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := findPiperIDFrom(test.message)
+			got, err := findPiperIDFrom(test.commit, "example-id")
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)

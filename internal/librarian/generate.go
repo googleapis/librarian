@@ -21,10 +21,10 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -34,7 +34,6 @@ const (
 )
 
 var (
-	piperRegex       = regexp.MustCompile(`PiperOrigin-RevId: (?P<piperID>\d+)`)
 	errPiperNotFound = errors.New("piper ID not found")
 )
 
@@ -468,13 +467,12 @@ func (r *generateRunner) setPiperID() error {
 		}
 	}
 
-	slog.Info("Retrieving the latest commit", "api", r.api)
 	initialCommit, err := r.sourceRepo.GetLatestCommit(filepath.Join(r.api, serviceYaml))
 	if err != nil {
 		return err
 	}
 
-	id, err := findPiperIDFrom(initialCommit.Message)
+	id, err := findPiperIDFrom(initialCommit, r.library)
 	if err != nil {
 		return err
 	}
@@ -484,14 +482,22 @@ func (r *generateRunner) setPiperID() error {
 	return nil
 }
 
-func findPiperIDFrom(message string) (string, error) {
-	matches := piperRegex.FindStringSubmatch(message)
-	if len(matches) == 0 {
-		slog.Error("piper id is not found in the commit message", "message", message)
+func findPiperIDFrom(commit *gitrepo.Commit, libraryID string) (string, error) {
+	commits, err := conventionalcommits.ParseCommits(commit, libraryID)
+	if err != nil {
+		return "", err
+	}
+
+	if len(commits) == 0 || commits[0].Footers == nil {
 		return "", errPiperNotFound
 	}
 
-	return matches[1], nil
+	id, ok := commits[0].Footers["PiperOrigin-RevId"]
+	if !ok {
+		return "", errPiperNotFound
+	}
+
+	return id, nil
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {

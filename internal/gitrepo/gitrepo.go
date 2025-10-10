@@ -277,6 +277,7 @@ func (r *LocalRepository) GetCommit(commitHash string) (*Commit, error) {
 
 // GetLatestCommit returns the latest commit of the given path in the repository.
 func (r *LocalRepository) GetLatestCommit(path string) (*Commit, error) {
+	slog.Info("Retrieving the latest commit", "path", path)
 	opt := &git.LogOptions{
 		Order:    git.LogOrderCommitterTime,
 		FileName: &path,
