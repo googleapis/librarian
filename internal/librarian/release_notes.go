@@ -155,7 +155,7 @@ type commitSection struct {
 
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
+func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
 	var allCommits []*conventionalcommits.ConventionalCommit
 	for _, library := range state.Libraries {
 		lastGenCommit, ok := idToCommits[library.ID]
@@ -163,7 +163,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 			continue
 		}
 
-		commits, err := getConventionalCommitsSinceLastGeneration(repo, library, lastGenCommit)
+		commits, err := getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo, library, lastGenCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 		}
@@ -174,7 +174,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 		return "No commit is found since last generation", nil
 	}
 
-	startCommit, err := findLatestGenerationCommit(repo, state, idToCommits)
+	startCommit, err := findLatestGenerationCommit(sourceRepo, state, idToCommits)
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
 	}

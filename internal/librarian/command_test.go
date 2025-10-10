@@ -1599,7 +1599,7 @@ func TestCommitAndPush(t *testing.T) {
 				ghClient:          client,
 				prType:            test.prType,
 				push:              test.push,
-				repo:              repo,
+				languageRepo:      repo,
 				state:             test.state,
 				failedGenerations: test.failedGenerations,
 				workRoot:          t.TempDir(),
@@ -1642,7 +1642,7 @@ func TestWritePRBody(t *testing.T) {
 		{
 			name: "success",
 			info: &commitInfo{
-				repo: &MockRepository{
+				languageRepo: &MockRepository{
 					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
 						{
@@ -1660,7 +1660,7 @@ func TestWritePRBody(t *testing.T) {
 		{
 			name: "invalid repo",
 			info: &commitInfo{
-				repo: &MockRepository{
+				languageRepo: &MockRepository{
 					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
 						{
@@ -1676,7 +1676,7 @@ func TestWritePRBody(t *testing.T) {
 		{
 			name: "invalid-pr-type",
 			info: &commitInfo{
-				repo: &MockRepository{
+				languageRepo: &MockRepository{
 					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
 						{
@@ -1692,7 +1692,7 @@ func TestWritePRBody(t *testing.T) {
 		{
 			name: "unable to save file",
 			info: &commitInfo{
-				repo: &MockRepository{
+				languageRepo: &MockRepository{
 					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
 						{

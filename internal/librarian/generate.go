@@ -150,7 +150,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		idToCommits:       idToCommits,
 		prType:            generate,
 		push:              r.push,
-		repo:              r.repo,
+		languageRepo:      r.repo,
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
