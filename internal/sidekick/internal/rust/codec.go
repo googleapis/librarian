@@ -324,7 +324,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 		// not save us any computations.
 
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil {
+			if m.OperationInfo != nil || m.DiscoveryLro != nil {
 				hasLROs = true
 			}
 			if len(m.AutoPopulated) != 0 {
