@@ -34,9 +34,8 @@ const (
 )
 
 var (
-	piperRegex             = regexp.MustCompile(`PiperOrigin-RevId: (?P<piperID>\d+)`)
-	errPiperNotFound       = errors.New("piper ID not found")
-	errServiceYamlNotFound = errors.New("service yaml not found")
+	piperRegex       = regexp.MustCompile(`PiperOrigin-RevId: (?P<piperID>\d+)`)
+	errPiperNotFound = errors.New("piper ID not found")
 )
 
 type generateRunner struct {
