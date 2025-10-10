@@ -460,12 +460,16 @@ func (r *generateRunner) getExistingSrc(libraryID string) []string {
 
 // setPiperID sets the Piper ID which is part of the initial commit message.
 func (r *generateRunner) setPiperID() error {
-	slog.Info("Retrieving the latest commit", "api", r.api)
-	serviceYaml, err := findServiceYaml(filepath.Join(r.sourceRepo.GetDir(), r.api))
-	if err != nil {
-		return err
+	library := findLibraryByID(r.state, r.library)
+	serviceYaml := ""
+	for _, api := range library.APIs {
+		if api.Path == r.api {
+			serviceYaml = api.ServiceConfig
+			break
+		}
 	}
 
+	slog.Info("Retrieving the latest commit", "api", r.api)
 	initialCommit, err := r.sourceRepo.GetLatestCommit(filepath.Join(r.api, serviceYaml))
 	if err != nil {
 		return err
@@ -489,26 +493,6 @@ func findPiperIDFrom(message string) (string, error) {
 	}
 
 	return matches[1], nil
-}
-
-// findServiceYaml returns the service yaml filename within the given api.
-func findServiceYaml(api string) (string, error) {
-	entries, err := os.ReadDir(api)
-	if err != nil {
-		return "", err
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		if strings.HasSuffix(entry.Name(), ".yaml") {
-			return entry.Name(), nil
-		}
-	}
-
-	return "", errServiceYamlNotFound
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {
