@@ -636,3 +636,75 @@ func TestNextVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestLibraryFilter(t *testing.T) {
+	t.Parallel()
+	commits := []*conventionalcommits.ConventionalCommit{
+		{
+			LibraryID: "foo",
+			Footers:   map[string]string{},
+		},
+		{
+			LibraryID: "bar",
+			Footers:   map[string]string{},
+		},
+		{
+			Footers: map[string]string{
+				"Library-IDs": "foo",
+			},
+		},
+		{
+			Footers: map[string]string{
+				"Library-IDs": "bar",
+			},
+		},
+		{
+			Footers: map[string]string{
+				"Library-IDs": "foo, bar",
+			},
+		},
+		{
+			Footers: map[string]string{
+				"Library-IDs": "foo,bar",
+			},
+		},
+	}
+	for _, test := range []struct {
+		name      string
+		libraryID string
+		want      []*conventionalcommits.ConventionalCommit
+	}{
+		{
+			name:      "filter by foo",
+			libraryID: "foo",
+			want: []*conventionalcommits.ConventionalCommit{
+				commits[0],
+				commits[2],
+				commits[4],
+				commits[5],
+			},
+		},
+		{
+			name:      "filter by bar",
+			libraryID: "bar",
+			want: []*conventionalcommits.ConventionalCommit{
+				commits[1],
+				commits[3],
+				commits[4],
+				commits[5],
+			},
+		},
+		{
+			name:      "filter by baz",
+			libraryID: "baz",
+			want:      nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := libraryFilter(commits, test.libraryID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("libraryFilter() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
