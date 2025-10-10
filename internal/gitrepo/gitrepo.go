@@ -44,6 +44,7 @@ type Repository interface {
 	GetDir() string
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
+	ChangedFiles() ([]string, error)
 	GetCommit(commitHash string) (*Commit, error)
 	GetLatestCommit(path string) (*Commit, error)
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
@@ -231,6 +232,27 @@ func (r *LocalRepository) IsClean() (bool, error) {
 	}
 
 	return status.IsClean(), nil
+}
+
+// ChangedFiles returns a list of files that have been modified, added, or deleted
+// in the working tree, including both staged and unstaged changes.
+func (r *LocalRepository) ChangedFiles() ([]string, error) {
+	slog.Info("Getting changed files")
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	status, err := worktree.Status()
+	if err != nil {
+		return nil, err
+	}
+	var changedFiles []string
+	for file, fileStatus := range status {
+		if fileStatus.Staging != git.Unmodified || fileStatus.Worktree != git.Unmodified {
+			changedFiles = append(changedFiles, file)
+		}
+	}
+	return changedFiles, nil
 }
 
 // Remotes returns the remotes within the repository.
@@ -425,6 +447,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 
 // ChangedFilesInCommit returns the files changed in the given commit.
 func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, error) {
+	slog.Info("Getting changed files in commit", "hash", commitHash)
 	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for hash %s: %w", commitHash, err)

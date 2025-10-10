@@ -320,6 +320,8 @@ type MockRepository struct {
 	ChangedFilesInCommitValue              []string
 	ChangedFilesInCommitValueByHash        map[string][]string
 	ChangedFilesInCommitError              error
+	ChangedFilesValue                      []string
+	ChangedFilesError                      error
 	CreateBranchAndCheckoutError           error
 	PushCalls                              int
 	PushError                              error
@@ -425,6 +427,13 @@ func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
 		}
 	}
 	return m.ChangedFilesInCommitValue, nil
+}
+
+func (m *MockRepository) ChangedFiles() ([]string, error) {
+	if m.ChangedFilesError != nil {
+		return nil, m.ChangedFilesError
+	}
+	return m.ChangedFilesValue, nil
 }
 
 func (m *MockRepository) CreateBranchAndCheckout(name string) error {

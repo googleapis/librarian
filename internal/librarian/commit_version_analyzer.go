@@ -74,13 +74,23 @@ func getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo gitrepo.
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)
 	}
-	headHash, err := languageRepo.HeadHash()
-	if err != nil {
-		return nil, err
-	}
-	languageRepoFiles, err := languageRepo.ChangedFilesInCommit(headHash)
-	if err != nil {
-		return nil, err
+
+	var languageRepoFiles []string
+	if ok, _ := languageRepo.IsClean(); ok {
+		headHash, err := languageRepo.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		languageRepoFiles, err = languageRepo.ChangedFilesInCommit(headHash)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// The commit or push flag is not set, get all locally changed files.
+		languageRepoFiles, err = languageRepo.ChangedFiles()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// checks that the files in the commit are in the api paths for the source repo.

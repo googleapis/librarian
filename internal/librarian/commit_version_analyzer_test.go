@@ -436,8 +436,42 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 				ChangedFilesInCommitValue: []string{"foo/a.proto"},
 			},
 			languageRepo: &MockRepository{
+				IsCleanValue:              true,
 				HeadHashValue:             "5678",
 				ChangedFilesInCommitValue: []string{"foo/a.go"},
+			},
+			want: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:      "feat",
+					Scope:     "foo",
+					Subject:   "a feature",
+					LibraryID: "foo",
+					Footers:   map[string]string{},
+				},
+			},
+		},
+		{
+			name: "found_matching_file_changes_for_foo_with_unclean_repo",
+			library: &config.LibraryState{
+				ID:          "foo",
+				SourceRoots: []string{"foo"},
+				APIs: []*config.API{
+					{
+						Path: "foo",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
+					"1234": {
+						{Message: "feat(foo): a feature"},
+					},
+				},
+				ChangedFilesInCommitValue: []string{"foo/a.proto"},
+			},
+			languageRepo: &MockRepository{
+				IsCleanValue:      false,
+				ChangedFilesValue: []string{"foo/a.go"},
 			},
 			want: []*conventionalcommits.ConventionalCommit{
 				{
