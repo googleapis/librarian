@@ -47,9 +47,10 @@ var (
 	// For a generation PR, each commit is expected to have the libraryID in brackets
 	// ('[]').
 	libraryIDRegex = regexp.MustCompile(`\[([^\]]+)\]`)
-	// ErrEmptyCommitMessage returns when the commit message is empty.
-	ErrEmptyCommitMessage = errors.New("empty commit message")
 )
+
+// ErrEmptyCommitMessage returns when the commit message is empty.
+var ErrEmptyCommitMessage = errors.New("empty commit message")
 
 // ConventionalCommit represents a parsed conventional commit message.
 // See https://www.conventionalcommits.org/en/v1.0.0/ for details.
