@@ -27,7 +27,7 @@ final class {{Codec.Name}} {
   factory {{Codec.Name}}.fromApiKey([String? apiKey]) {
     if (apiKey == null) {
       for (var key in _apiKeys) {
-        apiKey = getEnvironmentVariable(key);
+        apiKey = environmentVariable(key);
         if (apiKey != null) break;
       }
     }
