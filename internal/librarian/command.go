@@ -89,6 +89,7 @@ type commitInfo struct {
 	sourceRepo        gitrepo.Repository
 	state             *config.LibrarianState
 	workRoot          string
+	// piperID is the piper id in the initial commit message that onboards the api.
 	piperID           string
 	failedGenerations int
 }

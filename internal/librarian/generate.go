@@ -56,10 +56,8 @@ type generateRunner struct {
 }
 
 type generationStatus struct {
-	// oldCommit is the last generated commit before the generation.
 	oldCommit string
-	// piperID is the piper id in the initial commit message that onboards the api.
-	piperID string
+	piperID   string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
