@@ -25,7 +25,7 @@ final class {{Codec.Name}} {
       : _client = ServiceClient(client: client);
 
   factory {{Codec.Name}}.fromApiKey([String? apiKey]) {
-    apiKey ??= _apiKeys.map(getEnvironmentVariable).nonNulls.firstOrNull;
+    apiKey ??= _apiKeys.map(environmentVariable).nonNulls.firstOrNull;
     if (apiKey == null) {
       throw ArgumentError('apiKey or one of these environment variables must '
         'be set to an API key: ${_apiKeys.join(", ")}');
