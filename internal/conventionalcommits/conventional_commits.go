@@ -42,11 +42,11 @@ var (
 	// literal. The key is followed by ":" and then the value.
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
 	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):(.*)`)
-	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
+	sourceLinkRegex = regexp.MustCompile(`^\[googleapis/googleapis@(?P<shortSHA>.*)]\(https://github\.com/googleapis/googleapis/commit/(?P<sha>.*)\)$`)
 	// libraryIDRegex extracts the libraryID from the commit message in a generation PR.
 	// For a generation PR, each commit is expected to have the libraryID in brackets
 	// ('[]').
-	libraryIDRegex = regexp.MustCompile(`\[([^\]]+)\]`)
+	libraryIDRegex = regexp.MustCompile(`\[([^]]+)]`)
 )
 
 // ErrEmptyCommitMessage returns when the commit message is empty.
