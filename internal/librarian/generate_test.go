@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -638,7 +639,7 @@ func TestGenerateScenarios(t *testing.T) {
 		wantConfigureCalls int
 	}{
 		{
-			name:    "generate single library including initial configuration",
+			name:    "generate_single_library_including_initial_configuration",
 			api:     "some/api",
 			library: "some-library",
 			state: &config.LibrarianState{
@@ -1087,6 +1088,15 @@ func TestGenerateScenarios(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(r.sourceRepo.GetDir(), test.api, "example_service_v2.yaml"), data, 0755); err != nil {
 				t.Fatal(err)
 			}
+			// Commit the service config file because configure command needs
+			// to find the piper id associated with the commit message.
+			if err := r.sourceRepo.AddAll(); err != nil {
+				t.Fatal(err)
+			}
+			message := "feat: add an api\n\nPiperOrigin-RevId: 123456"
+			if err := r.sourceRepo.Commit(message); err != nil {
+				t.Fatal(err)
+			}
 
 			// Create a symlink in the output directory to trigger an error.
 			if test.name == "symlink in output" {
@@ -1213,6 +1223,51 @@ func TestGetExistingSrc(t *testing.T) {
 			got := r.getExistingSrc("some-library")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("getExistingSrc() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindPiperIDFrom(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		commit  *gitrepo.Commit
+		want    string
+		wantErr error
+	}{
+		{
+			name: "found_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API\n\nPiperOrigin-RevId: 745187558",
+			},
+			want: "745187558",
+		},
+		{
+			name: "invalid_commit",
+			commit: &gitrepo.Commit{
+				Message: "",
+			},
+			wantErr: conventionalcommits.ErrEmptyCommitMessage,
+		},
+		{
+			name: "does_not_contain_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API",
+			},
+			wantErr: errPiperNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findPiperIDFrom(test.commit, "example-id")
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findPiperIDFrom() mismatch (-want +got):%s", diff)
 			}
 		})
 	}

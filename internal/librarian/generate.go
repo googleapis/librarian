@@ -24,12 +24,17 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const (
 	generateCmdName = "generate"
+)
+
+var (
+	errPiperNotFound = errors.New("piper ID not found")
 )
 
 type generateRunner struct {
@@ -48,6 +53,11 @@ type generateRunner struct {
 	state           *config.LibrarianState
 	librarianConfig *config.LibrarianConfig
 	workRoot        string
+}
+
+type generationStatus struct {
+	oldCommit string
+	piperID   string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -88,6 +98,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string)
+	piperID := ""
 	var failedLibraries []string
 	failedGenerations := 0
 	if r.api != "" || r.library != "" {
@@ -95,11 +106,12 @@ func (r *generateRunner) run(ctx context.Context) error {
 		if libraryID == "" {
 			libraryID = findLibraryIDByAPIPath(r.state, r.api)
 		}
-		oldCommit, err := r.generateSingleLibrary(ctx, libraryID, outputDir)
+		status, err := r.generateSingleLibrary(ctx, libraryID, outputDir)
 		if err != nil {
 			return err
 		}
-		idToCommits[libraryID] = oldCommit
+		idToCommits[libraryID] = status.oldCommit
+		piperID = status.piperID
 	} else {
 		succeededGenerations := 0
 		blockedGenerations := 0
@@ -112,7 +124,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 					continue
 				}
 			}
-			oldCommit, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
+			status, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
 			if err != nil {
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
 				failedLibraries = append(failedLibraries, library.ID)
@@ -120,7 +132,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 			} else {
 				// Only add the mapping if library generation is successful so that
 				// failed library will not appear in generation PR body.
-				idToCommits[library.ID] = oldCommit
+				idToCommits[library.ID] = status.oldCommit
 				succeededGenerations++
 			}
 		}
@@ -154,6 +166,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
+		piperID:           piperID,
 		failedGenerations: failedGenerations,
 	}
 
@@ -170,34 +183,42 @@ func (r *generateRunner) run(ctx context.Context) error {
 //
 // 3. Build the library.
 //
-// 4. Update the last generated commit.
-//
-// Returns the last generated commit before the generation and error, if any.
-func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
+// 4. Update the last generated commit or initial piper id if the library needs configure.
+func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (*generationStatus, error) {
 	safeLibraryDirectory := getSafeDirectoryName(libraryID)
+	piperID := ""
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.library)
 		configureOutputDir := filepath.Join(outputDir, safeLibraryDirectory, "configure")
 		if err := os.MkdirAll(configureOutputDir, 0755); err != nil {
-			return "", err
+			return nil, err
 		}
 		configuredLibraryID, err := r.runConfigureCommand(ctx, configureOutputDir)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+
+		id, err := r.getPiperID()
+		if err != nil {
+			return nil, err
+		}
+		piperID = id
 		libraryID = configuredLibraryID
 	}
 
 	// At this point, we should have a library in the state.
 	libraryState := findLibraryByID(r.state, libraryID)
 	if libraryState == nil {
-		return "", fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
+		return nil, fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
 	}
 	lastGenCommit := libraryState.LastGeneratedCommit
 
 	if len(libraryState.APIs) == 0 {
 		slog.Info("library has no APIs; skipping generation", "library", libraryID)
-		return "", nil
+		return &generationStatus{
+			oldCommit: "",
+			piperID:   piperID,
+		}, nil
 	}
 
 	// For each library, create a separate output directory. This avoids
@@ -205,23 +226,26 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	// was generated for each library when debugging.
 	libraryOutputDir := filepath.Join(outputDir, safeLibraryDirectory)
 	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, libraryOutputDir)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := r.runBuildCommand(ctx, generatedLibraryID); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := r.updateLastGeneratedCommitState(generatedLibraryID); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return lastGenCommit, nil
+	return &generationStatus{
+		oldCommit: lastGenCommit,
+		piperID:   piperID,
+	}, nil
 }
 
 func (r *generateRunner) needsConfigure() bool {
@@ -441,6 +465,49 @@ func (r *generateRunner) getExistingSrc(libraryID string) []string {
 	return existingSrc
 }
 
+// getPiperID returns the Piper ID which is part of the initial commit message.
+func (r *generateRunner) getPiperID() (string, error) {
+	library := findLibraryByID(r.state, r.library)
+	serviceYaml := ""
+	for _, api := range library.APIs {
+		if api.Path == r.api {
+			serviceYaml = api.ServiceConfig
+			break
+		}
+	}
+
+	initialCommit, err := r.sourceRepo.GetLatestCommit(filepath.Join(r.api, serviceYaml))
+	if err != nil {
+		return "", err
+	}
+
+	id, err := findPiperIDFrom(initialCommit, r.library)
+	if err != nil {
+		return "", err
+	}
+
+	slog.Info("found piper id in the commit message", "piper id", id)
+	return id, nil
+}
+
+func findPiperIDFrom(commit *gitrepo.Commit, libraryID string) (string, error) {
+	commits, err := conventionalcommits.ParseCommits(commit, libraryID)
+	if err != nil {
+		return "", err
+	}
+
+	if len(commits) == 0 || commits[0].Footers == nil {
+		return "", errPiperNotFound
+	}
+
+	id, ok := commits[0].Footers["PiperOrigin-RevId"]
+	if !ok {
+		return "", errPiperNotFound
+	}
+
+	return id, nil
+}
+
 func setAllAPIStatus(state *config.LibrarianState, status string) {
 	for _, library := range state.Libraries {
 		for _, api := range library.APIs {
@@ -451,7 +518,7 @@ func setAllAPIStatus(state *config.LibrarianState, status string) {
 
 // getSafeDirectoryName returns a directory name which doesn't contain slashes
 // based on a library ID. This avoids cases where a library ID contains
-// slashes but we want generateSingleLibrary to create a directory which
+// slashes, but we want generateSingleLibrary to create a directory which
 // is not a subdirectory of some other directory. For example, if there
 // are library IDs of "pubsub" and "pubsub/v2" we don't want to create
 // "output/pubsub/v2" and then "output/pubsub" later. This function does

@@ -66,10 +66,10 @@ func TestRunGenerate(t *testing.T) {
 			workRoot := t.TempDir()
 			repo := t.TempDir()
 			apiSourceRepo := t.TempDir()
-			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
+			if err := initRepo(t, repo, initialRepoStateDir, "initial commit"); err != nil {
 				t.Fatalf("languageRepo prepare test error = %v", err)
 			}
-			if err := initRepo(t, apiSourceRepo, localAPISource); err != nil {
+			if err := initRepo(t, apiSourceRepo, localAPISource, "initial commit"); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
@@ -197,10 +197,10 @@ func TestCleanAndCopy(t *testing.T) {
 	workRoot := t.TempDir()
 	repo := t.TempDir()
 	apiSourceRepo := t.TempDir()
-	if err := initRepo(t, repo, repoInitDir); err != nil {
+	if err := initRepo(t, repo, repoInitDir, "initial commit"); err != nil {
 		t.Fatalf("languageRepo prepare test error = %v", err)
 	}
-	if err := initRepo(t, apiSourceRepo, localAPISource); err != nil {
+	if err := initRepo(t, apiSourceRepo, localAPISource, "initial commit"); err != nil {
 		t.Fatalf("APISouceRepo prepare test error = %v", err)
 	}
 
@@ -277,10 +277,10 @@ func TestRunConfigure(t *testing.T) {
 			workRoot := t.TempDir()
 			repo := t.TempDir()
 			apiSourceRepo := t.TempDir()
-			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
+			if err := initRepo(t, repo, initialRepoStateDir, "initial commit"); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
-			if err := initRepo(t, apiSourceRepo, test.apiSource); err != nil {
+			if err := initRepo(t, apiSourceRepo, test.apiSource, "feat: add a new api\n\nPiperOrigin-RevId: 123456"); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
@@ -380,10 +380,10 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 			repo := t.TempDir()
 			apiSourceRepo := t.TempDir()
 
-			if err := initRepo(t, repo, test.initialRepoStateDir); err != nil {
+			if err := initRepo(t, repo, test.initialRepoStateDir, "initial commit"); err != nil {
 				t.Fatalf("languageRepo prepare test error = %v", err)
 			}
-			if err := initRepo(t, apiSourceRepo, localAPISource); err != nil {
+			if err := initRepo(t, apiSourceRepo, localAPISource, "initial commit"); err != nil {
 				t.Fatalf("APISouceRepo prepare test error = %v", err)
 			}
 
@@ -486,7 +486,7 @@ func TestReleaseInit(t *testing.T) {
 			wantChangelog := filepath.Join(test.testDataDir, "CHANGELOG.md")
 			commitMsgPath := filepath.Join(test.testDataDir, "commit_msg.txt")
 
-			if err := initRepo(t, repo, initialRepoStateDir); err != nil {
+			if err := initRepo(t, repo, initialRepoStateDir, "initial commit"); err != nil {
 				t.Fatalf("prepare test error = %v", err)
 			}
 
@@ -722,7 +722,7 @@ libraries:
 			repo := test.repoURL
 			if test.repoPath != "" {
 				repo = t.TempDir()
-				err := initRepo(t, repo, test.repoPath)
+				err := initRepo(t, repo, test.repoPath, "initial commit")
 				if err != nil {
 					t.Fatalf("error initializing fake git repo %s", err)
 				}
@@ -792,7 +792,7 @@ func newMockGitHubServer(t *testing.T, prTitleFragment string) *httptest.Server 
 
 // initRepo initiates a git repo in the given directory, copy
 // files from source directory and create a commit.
-func initRepo(t *testing.T, dir, source string) error {
+func initRepo(t *testing.T, dir, source, message string) error {
 	t.Logf("initializing repo, dir %s, source %s", dir, source)
 	if err := os.CopyFS(dir, os.DirFS(source)); err != nil {
 		return err
@@ -801,7 +801,7 @@ func initRepo(t *testing.T, dir, source string) error {
 	runGit(t, dir, "add", ".")
 	runGit(t, dir, "config", "user.email", "test@github.com")
 	runGit(t, dir, "config", "user.name", "Test User")
-	runGit(t, dir, "commit", "-m", "init test repo")
+	runGit(t, dir, "commit", "-m", message)
 	runGit(t, dir, "remote", "add", "origin", "https://github.com/googleapis/librarian.git")
 	return nil
 }
