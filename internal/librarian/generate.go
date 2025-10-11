@@ -100,6 +100,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string)
+	piperID := ""
 	var failedLibraries []string
 	failedGenerations := 0
 	if r.api != "" || r.library != "" {
@@ -112,6 +113,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 			return err
 		}
 		idToCommits[libraryID] = status.oldCommit
+		piperID = status.piperID
 	} else {
 		succeededGenerations := 0
 		blockedGenerations := 0
@@ -166,6 +168,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
+		piperID:           piperID,
 		failedGenerations: failedGenerations,
 	}
 
