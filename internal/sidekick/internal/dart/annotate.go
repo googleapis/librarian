@@ -16,9 +16,7 @@ package dart
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
-	"net/url"
 	"slices"
 	"sort"
 	"strconv"
@@ -57,7 +55,7 @@ type modelAnnotations struct {
 	RepositoryURL        string
 	ReadMeAfterTitleText string
 	ReadMeQuickstartText string
-	NewIssueURL          string
+	IssueTrackerURL      string
 }
 
 // HasServices returns true if the model has services.
@@ -228,6 +226,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		repositoryURL        string
 		readMeAfterTitleText string
 		readMeQuickstartText string
+		issueTrackerUrl      string
 	)
 
 	for key, definition := range options {
@@ -236,6 +235,8 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			packageNameOverride = definition
 		case key == "copyright-year":
 			generationYear = definition
+		case key == "issueTrackerUrl":
+			issueTrackerUrl = definition
 		case key == "version":
 			packageVersion = definition
 		case key == "part-file":
@@ -325,19 +326,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return err
 	}
 
-	name := packageName(model, packageNameOverride)
-	u, err := url.Parse("https://github.com/googleapis/google-cloud-dart/issues/new")
-	if err != nil {
-		log.Fatal(err)
-	}
-	q := u.Query()
-	q.Set("title", name+": <insert your title here>")
-	q.Set("labels", name)
-	u.RawQuery = q.Encode()
-
 	ann := &modelAnnotations{
 		Parent:         model,
-		PackageName:    name,
+		PackageName:    packageName(model, packageNameOverride),
 		PackageVersion: packageVersion,
 		MainFileName:   strcase.ToSnake(model.Name),
 		CopyrightYear:  generationYear,
@@ -357,7 +348,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		DevDependencies:      devDependencies,
 		DoNotPublish:         doNotPublish,
 		RepositoryURL:        repositoryURL,
-		NewIssueURL:          u.String(),
+		IssueTrackerURL:      issueTrackerUrl,
 		ReadMeAfterTitleText: readMeAfterTitleText,
 		ReadMeQuickstartText: readMeQuickstartText,
 	}
