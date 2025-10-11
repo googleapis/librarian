@@ -56,8 +56,10 @@ type generateRunner struct {
 }
 
 type generationStatus struct {
+	// oldCommit is the last generated commit before the generation.
 	oldCommit string
-	piperID   string
+	// piperID is the piper id in the initial commit message that onboards the api.
+	piperID string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -180,9 +182,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 //
 // 3. Build the library.
 //
-// 4. Update the last generated commit.
-//
-// Returns the last generated commit before the generation and error, if any.
+// 4. Update the last generated commit or initial piper id if the library needs configure.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (*generationStatus, error) {
 	safeLibraryDirectory := getSafeDirectoryName(libraryID)
 	piperID := ""
