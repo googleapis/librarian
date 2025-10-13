@@ -140,9 +140,6 @@ type generationPROption struct {
 	state           *config.LibrarianState
 	idToCommits     map[string]string
 	failedLibraries []string
-	api             string
-	library         string
-	apiOnboarding   bool
 }
 
 type onboardPROption struct {
