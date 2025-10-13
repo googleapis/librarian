@@ -190,6 +190,7 @@ type commitSection struct {
 	Commits []*conventionalcommits.ConventionalCommit
 }
 
+// formatOnboardPRBody creates the body of an onboarding pull request.
 func formatOnboardPRBody(opt *onboardPROption) (string, error) {
 	piperID, err := getPiperID(opt.state, opt.sourceRepo, opt.api, opt.library)
 	if err != nil {
