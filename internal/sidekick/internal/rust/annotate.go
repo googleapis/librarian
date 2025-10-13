@@ -769,7 +769,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 	}
 	serviceName := c.ServiceName(m.Service)
 	annotation := &methodAnnotation{
-		Name:                      strcase.ToSnake(m.Name),
+		Name:                      toSnake(m.Name),
 		BuilderName:               toPascal(m.Name),
 		Body:                      bodyAccessor(m),
 		DocLines:                  c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes()),
