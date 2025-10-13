@@ -441,6 +441,9 @@ func TestCreateRelease(t *testing.T) {
 }
 
 func TestFindLatestImage(t *testing.T) {
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
 	for _, test := range []struct {
 		name     string
 		image    string
