@@ -31,7 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func TestFormatGenerationPRBody(t *testing.T) {
+func TestFormatGenerationNotes(t *testing.T) {
 	t.Parallel()
 
 	today := time.Now()
@@ -519,13 +519,13 @@ Language Image: %s`,
 				failedLibraries: test.failedLibraries,
 				apiOnboarding:   test.apiOnboarding,
 			}
-			got, err := formatGenerationPRBody(opt)
+			got, err := formatGenerationNotes(opt)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("formatGenerationPRBody() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+					t.Errorf("formatGenerationNotes() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
 				}
 				return
 			}
@@ -533,7 +533,7 @@ Language Image: %s`,
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("formatGenerationPRBody() mismatch (-want +got):\n%s", diff)
+				t.Errorf("formatGenerationNotes() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
