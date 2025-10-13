@@ -465,7 +465,7 @@ func (r *generateRunner) getExistingSrc(libraryID string) []string {
 	return existingSrc
 }
 
-// getPiperID returns the Piper ID which is part of the initial commit message.
+// getPiperID extracts the Piper ID from the commit message that onboarded the API.
 func (r *generateRunner) getPiperID() (string, error) {
 	library := findLibraryByID(r.state, r.library)
 	serviceYaml := ""
