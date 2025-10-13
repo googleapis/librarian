@@ -991,6 +991,43 @@ Language Image: go:1.21
 			ghRepo:          &github.Repository{},
 			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21", librarianVersion),
 		},
+		{
+			name: "generate with chore",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the newVersion in the release note.
+						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
+						ReleaseTriggered: true,
+						Changes: []*conventionalcommits.ConventionalCommit{
+							{
+								Type:       "chore",
+								Subject:    "some chore",
+								Body:       "this is the body",
+								CommitHash: hash1.String(),
+								IsNested:   true,
+							},
+						},
+					},
+				},
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+### Miscellaneous Chores
+
+* some chore ([1234567](https://github.com/owner/repo/commit/1234567))
+
+</details>`,
+				librarianVersion, today),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
