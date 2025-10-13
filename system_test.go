@@ -31,6 +31,7 @@ import (
 )
 
 var testToken = os.Getenv("TEST_GITHUB_TOKEN")
+var githubAction = os.Getenv("GITHUB_ACTION")
 
 func TestGetRawContentSystem(t *testing.T) {
 	if testToken == "" {
@@ -441,8 +442,10 @@ func TestCreateRelease(t *testing.T) {
 }
 
 func TestFindLatestImage(t *testing.T) {
-	if testToken == "" {
-		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	// If we are able to configure system tests on GitHub actions, then update this
+	// guard clause.
+	if githubAction != "" {
+		t.Skip("skipping on GitHub actions")
 	}
 	for _, test := range []struct {
 		name     string
