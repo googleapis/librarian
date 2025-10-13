@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -58,10 +57,8 @@ type generateRunner struct {
 // generationStatus represents the result of a single library generation.
 type generationStatus struct {
 	// oldCommit is the SHA of the previously generated version of the library.
-	oldCommit string
-	// piperID is the Piper ID of the commit that onboarded a new API.
-	// It is only populated when a new API is configured.
-	piperID string
+	oldCommit       string
+	isAPIOnboarding bool
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -102,7 +99,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string)
-	piperID := ""
+	isAPIOnboarding := false
 	var failedLibraries []string
 	failedGenerations := 0
 	if r.api != "" || r.library != "" {
@@ -115,7 +112,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 			return err
 		}
 		idToCommits[libraryID] = status.oldCommit
-		piperID = status.piperID
+		isAPIOnboarding = status.isAPIOnboarding
 	} else {
 		succeededGenerations := 0
 		blockedGenerations := 0
@@ -170,7 +167,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
-		piperID:           piperID,
+		isAPIOnboarding:   isAPIOnboarding,
 		failedGenerations: failedGenerations,
 	}
 
@@ -190,7 +187,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // 4. Update the last generated commit or initial piper id if the library needs configure.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (*generationStatus, error) {
 	safeLibraryDirectory := getSafeDirectoryName(libraryID)
-	piperID := ""
+	isAPIOnboarding := false
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.library)
 		configureOutputDir := filepath.Join(outputDir, safeLibraryDirectory, "configure")
@@ -202,11 +199,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 			return nil, err
 		}
 
-		id, err := r.getPiperID()
-		if err != nil {
-			return nil, err
-		}
-		piperID = id
+		isAPIOnboarding = true
 		libraryID = configuredLibraryID
 	}
 
@@ -220,8 +213,8 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	if len(libraryState.APIs) == 0 {
 		slog.Info("library has no APIs; skipping generation", "library", libraryID)
 		return &generationStatus{
-			oldCommit: "",
-			piperID:   piperID,
+			oldCommit:       "",
+			isAPIOnboarding: isAPIOnboarding,
 		}, nil
 	}
 
@@ -247,8 +240,8 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	}
 
 	return &generationStatus{
-		oldCommit: lastGenCommit,
-		piperID:   piperID,
+		oldCommit:       lastGenCommit,
+		isAPIOnboarding: isAPIOnboarding,
 	}, nil
 }
 
@@ -467,49 +460,6 @@ func (r *generateRunner) getExistingSrc(libraryID string) []string {
 	}
 
 	return existingSrc
-}
-
-// getPiperID extracts the Piper ID from the commit message that onboarded the API.
-func (r *generateRunner) getPiperID() (string, error) {
-	library := findLibraryByID(r.state, r.library)
-	serviceYaml := ""
-	for _, api := range library.APIs {
-		if api.Path == r.api {
-			serviceYaml = api.ServiceConfig
-			break
-		}
-	}
-
-	initialCommit, err := r.sourceRepo.GetLatestCommit(filepath.Join(r.api, serviceYaml))
-	if err != nil {
-		return "", err
-	}
-
-	id, err := findPiperIDFrom(initialCommit, r.library)
-	if err != nil {
-		return "", err
-	}
-
-	slog.Info("found piper id in the commit message", "piperID", id)
-	return id, nil
-}
-
-func findPiperIDFrom(commit *gitrepo.Commit, libraryID string) (string, error) {
-	commits, err := conventionalcommits.ParseCommits(commit, libraryID)
-	if err != nil {
-		return "", err
-	}
-
-	if len(commits) == 0 || commits[0].Footers == nil {
-		return "", errPiperNotFound
-	}
-
-	id, ok := commits[0].Footers["PiperOrigin-RevId"]
-	if !ok {
-		return "", errPiperNotFound
-	}
-
-	return id, nil
 }
 
 func setAllAPIStatus(state *config.LibrarianState, status string) {

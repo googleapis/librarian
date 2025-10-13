@@ -89,9 +89,7 @@ type commitInfo struct {
 	sourceRepo        gitrepo.Repository
 	state             *config.LibrarianState
 	workRoot          string
-	// piperID is the Piper ID of the commit that onboarded a new API.
-	// It is only populated when a new API is configured.
-	piperID           string
+	isAPIOnboarding   bool
 	failedGenerations int
 }
 
