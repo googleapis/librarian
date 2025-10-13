@@ -55,9 +55,13 @@ type generateRunner struct {
 	workRoot        string
 }
 
+// generationStatus represents the result of a single library generation.
 type generationStatus struct {
+	// oldCommit is the SHA of the previously generated version of the library.
 	oldCommit string
-	piperID   string
+	// piperID is the Piper ID of the commit that onboarded a new API.
+	// It is only populated when a new API is configured.
+	piperID string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
