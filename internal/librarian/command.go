@@ -80,8 +80,6 @@ type commitInfo struct {
 	failedLibraries   []string
 	ghClient          GitHubClient
 	idToCommits       map[string]string
-	api               string
-	library           string
 	prType            string
 	pullRequestLabels []string
 	push              bool
@@ -90,6 +88,10 @@ type commitInfo struct {
 	state             *config.LibrarianState
 	workRoot          string
 	failedGenerations int
+	// api is the api path of a library, only set this value during api onboarding.
+	api string
+	// library is the ID of a library, only set this value during api onboarding.
+	library string
 }
 
 type commandRunner struct {
