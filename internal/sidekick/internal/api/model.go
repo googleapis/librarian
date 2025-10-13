@@ -500,7 +500,7 @@ type PathTemplate struct {
 	Verb     *string
 }
 
-// PathPath returns a simplified representation of the path template as a string.
+// FlatPath returns a simplified representation of the path template as a string.
 //
 // In the context of discovery LROs it is useful to get the path template as a
 // simplified string, such as "compute/v1/projects/{project}/zones/{zone}/instances".
