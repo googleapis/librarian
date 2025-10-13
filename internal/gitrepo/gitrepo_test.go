@@ -1622,6 +1622,11 @@ func TestCheckout(t *testing.T) {
 			sha:  "2e230f309505db42ce8becb0f3946d608a11a61c",
 			want: "chore: librarian release pull request: 20250925T070206Z (#2356)",
 		},
+		{
+			name:    "unknown SHA",
+			sha:     "should not exist",
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
