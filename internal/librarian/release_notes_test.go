@@ -31,7 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func TestFormatGenerationNotes(t *testing.T) {
+func TestFormatGenerationPRBody(t *testing.T) {
 	t.Parallel()
 
 	today := time.Now()
