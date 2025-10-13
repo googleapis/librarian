@@ -486,7 +486,7 @@ func (r *generateRunner) getPiperID() (string, error) {
 		return "", err
 	}
 
-	slog.Info("found piper id in the commit message", "piper id", id)
+	slog.Info("found piper id in the commit message", "piperID", id)
 	return id, nil
 }
 
