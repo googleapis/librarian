@@ -370,14 +370,12 @@ END_COMMIT_OVERRIDE`,
 				},
 				{
 					Type:      "feat",
-					Scope:     "foo",
 					Subject:   "another feature for foo",
 					LibraryID: "foo",
 					Footers:   make(map[string]string),
 				},
 				{
 					Type:      "fix",
-					Scope:     "foo",
 					Subject:   "a fix for foo",
 					LibraryID: "foo",
 					Footers:   make(map[string]string),
@@ -505,7 +503,6 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 			want: []*conventionalcommits.ConventionalCommit{
 				{
 					Type:      "feat",
-					Scope:     "foo",
 					Subject:   "a feature",
 					LibraryID: "foo",
 					Footers:   map[string]string{},
@@ -538,7 +535,6 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 			want: []*conventionalcommits.ConventionalCommit{
 				{
 					Type:      "feat",
-					Scope:     "foo",
 					Subject:   "a feature",
 					LibraryID: "foo",
 					Footers:   map[string]string{},
