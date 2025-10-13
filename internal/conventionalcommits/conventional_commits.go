@@ -63,8 +63,6 @@ type ConventionalCommit struct {
 	Body string `yaml:"body" json:"body"`
 	// LibraryID is the library ID the commit associated with.
 	LibraryID string `yaml:"-" json:"-"`
-	// Scope is the scope of the change.
-	Scope string `yaml:"-" json:"-"`
 	// Footers contain metadata (e.g,"BREAKING CHANGE", "Reviewed-by").
 	// Repeated footer keys not supported, only first value is kept
 	Footers map[string]string `yaml:"-" json:"-"`
@@ -72,9 +70,6 @@ type ConventionalCommit struct {
 	IsBreaking bool `yaml:"-" json:"-"`
 	// IsNested indicates if the commit is a nested commit.
 	IsNested bool `yaml:"-" json:"-"`
-	// SHA is the full commit hash.
-	// Deprecated: use CommitHash instead.
-	SHA string `yaml:"-" json:"source_commit_hash,omitempty"`
 	// CommitHash is the full commit hash.
 	CommitHash string `yaml:"-" json:"commit_hash,omitempty"`
 	// When is the timestamp of the commit.
@@ -259,13 +254,11 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 
 		commits = append(commits, &ConventionalCommit{
 			Type:       header.Type,
-			Scope:      header.Scope,
 			Subject:    header.Description,
 			LibraryID:  libraryID,
 			Footers:    footers,
 			IsBreaking: header.IsBreaking || footerIsBreaking,
 			IsNested:   commitPart.isNested,
-			SHA:        commit.Hash.String(),
 			CommitHash: commit.Hash.String(),
 			When:       commit.When,
 		})

@@ -286,3 +286,42 @@ func TestFieldTypePredicates(t *testing.T) {
 		}
 	}
 }
+
+func TestFlatPath(t *testing.T) {
+	for _, test := range []struct {
+		Input *PathTemplate
+		Want  string
+	}{
+		{
+			Input: NewPathTemplate(),
+			Want:  "",
+		},
+		{
+			Input: NewPathTemplate().
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("zones").
+				WithVariableNamed("zone"),
+			Want: "projects/{project}/zones/{zone}",
+		},
+		{
+			Input: NewPathTemplate().
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("global").
+				WithLiteral("location"),
+			Want: "projects/{project}/global/location",
+		},
+		{
+			Input: NewPathTemplate().
+				WithLiteral("projects").
+				WithVariable(NewPathVariable("a", "b", "c").WithMatchRecursive()),
+			Want: "projects/{a.b.c}",
+		},
+	} {
+		got := test.Input.FlatPath()
+		if got != test.Want {
+			t.Errorf("mismatch want=%q, got=%q", test.Want, got)
+		}
+	}
+}
