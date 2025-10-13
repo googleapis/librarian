@@ -24,9 +24,12 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
+
+const computeDiscoveryFile = "../../../testdata/disco/compute.v1.json"
 
 func TestSorted(t *testing.T) {
 	got, err := ComputeDisco(t, nil)
@@ -118,7 +121,7 @@ func TestBadParse(t *testing.T) {
 		{"resource with bad child", `{"resources": {"badResource": {"resources": {"badChild": {"methods": {"badResponse": {"response": {"$ref": "notThere"}}}}}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if _, err := NewAPI(nil, contents); err == nil {
+		if _, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input", test.Name)
 		}
 	}
@@ -210,7 +213,7 @@ func TestMessageErrors(t *testing.T) {
 		{"bad message field", `{"schemas": {"withBadField": {"type": "object", "properties": {"badFormat": {"type": "string", "format": "--bad--"}}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if _, err := NewAPI(nil, contents); err == nil {
+		if _, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input", test.Name)
 		}
 	}
@@ -224,7 +227,7 @@ func TestServiceErrors(t *testing.T) {
 		{"bad method", `{"resources": {"withBadMethod": {"methods": {"uploadNotSupported": { "mediaUpload": {} }}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if got, err := NewAPI(nil, contents); err == nil {
+		if got, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input, got=%v", test.Name, got)
 		}
 	}
@@ -232,9 +235,18 @@ func TestServiceErrors(t *testing.T) {
 
 func ComputeDisco(t *testing.T, sc *serviceconfig.Service) (*api.API, error) {
 	t.Helper()
-	contents, err := os.ReadFile("../../../testdata/disco/compute.v1.json")
+	contents, err := os.ReadFile(computeDiscoveryFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return NewAPI(sc, contents, nil)
+}
+
+func ComputeDiscoWithLros(t *testing.T, cfg *config.Config) (*api.API, error) {
+	t.Helper()
+	contents, err := os.ReadFile(computeDiscoveryFile)
 	if err != nil {
 		return nil, err
 	}
-	return NewAPI(sc, contents)
+	return NewAPI(nil, contents, cfg)
 }
