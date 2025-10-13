@@ -474,6 +474,10 @@ func TestFindLatestImage(t *testing.T) {
 				return
 			}
 
+			if err != nil {
+				t.Fatalf("FindLatestImage() error = %v", err)
+			}
+
 			if !strings.HasPrefix(got, "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:") {
 				t.Fatalf("FindLatestImage() unexpected image format")
 			}
