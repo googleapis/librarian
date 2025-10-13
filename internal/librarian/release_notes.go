@@ -145,6 +145,13 @@ type generationPROption struct {
 	apiOnboarding   bool
 }
 
+type onboardPROption struct {
+	sourceRepo gitrepo.Repository
+	state      *config.LibrarianState
+	api        string
+	library    string
+}
+
 type generationPRBody struct {
 	StartSHA         string
 	EndSHA           string
@@ -183,24 +190,16 @@ type commitSection struct {
 	Commits []*conventionalcommits.ConventionalCommit
 }
 
-func formatGenerationNotes(opt *generationPROption) (string, error) {
-	if opt.apiOnboarding {
-		return formatOnboardingPRBody(opt.state, opt.sourceRepo, opt.api, opt.library)
-	}
-
-	return formatGenerationPRBody(opt.sourceRepo, opt.languageRepo, opt.state, opt.idToCommits, opt.failedLibraries)
-}
-
-func formatOnboardingPRBody(state *config.LibrarianState, sourceRepo gitrepo.Repository, api, library string) (string, error) {
-	piperID, err := getPiperID(state, sourceRepo, api, library)
+func formatOnboardPRBody(opt *onboardPROption) (string, error) {
+	piperID, err := getPiperID(opt.state, opt.sourceRepo, opt.api, opt.library)
 	if err != nil {
 		return "", err
 	}
 
 	data := &onboardingPRBody{
 		LibrarianVersion: cli.Version(),
-		ImageVersion:     state.Image,
-		LibraryID:        library,
+		ImageVersion:     opt.state.Image,
+		LibraryID:        opt.library,
 		PiperID:          piperID,
 	}
 
@@ -214,15 +213,15 @@ func formatOnboardingPRBody(state *config.LibrarianState, sourceRepo gitrepo.Rep
 
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
+func formatGenerationPRBody(opt *generationPROption) (string, error) {
 	var allCommits []*conventionalcommits.ConventionalCommit
-	for _, library := range state.Libraries {
-		lastGenCommit, ok := idToCommits[library.ID]
+	for _, library := range opt.state.Libraries {
+		lastGenCommit, ok := opt.idToCommits[library.ID]
 		if !ok {
 			continue
 		}
 
-		commits, err := getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo, library, lastGenCommit)
+		commits, err := getConventionalCommitsSinceLastGeneration(opt.sourceRepo, opt.languageRepo, library, lastGenCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 		}
@@ -233,7 +232,7 @@ func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *
 		return "No commit is found since last generation", nil
 	}
 
-	startCommit, err := findLatestGenerationCommit(sourceRepo, state, idToCommits)
+	startCommit, err := findLatestGenerationCommit(opt.sourceRepo, opt.state, opt.idToCommits)
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
 	}
@@ -253,9 +252,9 @@ func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *
 		StartSHA:         startSHA,
 		EndSHA:           endSHA,
 		LibrarianVersion: librarianVersion,
-		ImageVersion:     state.Image,
+		ImageVersion:     opt.state.Image,
 		Commits:          groupedCommits,
-		FailedLibraries:  failedLibraries,
+		FailedLibraries:  opt.failedLibraries,
 	}
 	var out bytes.Buffer
 	if err := genBodyTemplate.Execute(&out, data); err != nil {

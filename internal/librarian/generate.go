@@ -54,9 +54,7 @@ type generateRunner struct {
 type generationStatus struct {
 	// oldCommit is the SHA of the previously generated version of the library.
 	oldCommit string
-	// apiOnboarding is true if an API is being configured and generated for the
-	// first time.
-	apiOnboarding bool
+	prType    string
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
@@ -97,9 +95,9 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string)
-	apiOnboarding := false
 	var failedLibraries []string
 	failedGenerations := 0
+	prType := generate
 	if r.api != "" || r.library != "" {
 		libraryID := r.library
 		if libraryID == "" {
@@ -110,7 +108,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 			return err
 		}
 		idToCommits[libraryID] = status.oldCommit
-		apiOnboarding = status.apiOnboarding
+		prType = status.prType
 	} else {
 		succeededGenerations := 0
 		blockedGenerations := 0
@@ -159,13 +157,12 @@ func (r *generateRunner) run(ctx context.Context) error {
 		failedLibraries:   failedLibraries,
 		ghClient:          r.ghClient,
 		idToCommits:       idToCommits,
-		prType:            generate,
+		prType:            prType,
 		push:              r.push,
 		languageRepo:      r.repo,
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
-		apiOnboarding:     apiOnboarding,
 		api:               r.api,
 		library:           r.library,
 		failedGenerations: failedGenerations,
@@ -187,7 +184,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // 4. Update the last generated commit or initial piper id if the library needs configure.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (*generationStatus, error) {
 	safeLibraryDirectory := getSafeDirectoryName(libraryID)
-	apiOnboarding := false
+	prType := generate
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.library)
 		configureOutputDir := filepath.Join(outputDir, safeLibraryDirectory, "configure")
@@ -199,7 +196,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 			return nil, err
 		}
 
-		apiOnboarding = true
+		prType = onboard
 		libraryID = configuredLibraryID
 	}
 
@@ -213,8 +210,8 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	if len(libraryState.APIs) == 0 {
 		slog.Info("library has no APIs; skipping generation", "library", libraryID)
 		return &generationStatus{
-			oldCommit:     "",
-			apiOnboarding: apiOnboarding,
+			oldCommit: "",
+			prType:    prType,
 		}, nil
 	}
 
@@ -240,8 +237,8 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	}
 
 	return &generationStatus{
-		oldCommit:     lastGenCommit,
-		apiOnboarding: apiOnboarding,
+		oldCommit: lastGenCommit,
+		prType:    prType,
 	}, nil
 }
 

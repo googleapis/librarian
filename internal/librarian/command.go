@@ -38,6 +38,7 @@ import (
 
 const (
 	generate                = "generate"
+	onboard                 = "onboard"
 	release                 = "release"
 	defaultAPISourceBranch  = "master"
 	prBodyFile              = "pr-body.txt"
@@ -454,11 +455,16 @@ func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, erro
 			state:           info.state,
 			idToCommits:     info.idToCommits,
 			failedLibraries: info.failedLibraries,
-			api:             info.api,
-			library:         info.library,
-			apiOnboarding:   info.apiOnboarding,
 		}
-		return formatGenerationNotes(opt)
+		return formatGenerationPRBody(opt)
+	case onboard:
+		opt := &onboardPROption{
+			sourceRepo: info.sourceRepo,
+			state:      info.state,
+			api:        info.api,
+			library:    info.library,
+		}
+		return formatOnboardPRBody(opt)
 	case release:
 		return formatReleaseNotes(info.state, gitHubRepo)
 	default:
