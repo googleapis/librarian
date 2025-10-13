@@ -37,7 +37,7 @@ type Discovery struct {
 
 // Poller defines how to find a suitable poller RPC.
 //
-// For operations that may be be LROs sidekick will match the URL path of the
+// For operations that may be LROs sidekick will match the URL path of the
 // RPC against the prefixes.
 type Poller struct {
 	// An acceptable prefix for the URL path, for example:
@@ -51,9 +51,9 @@ type Poller struct {
 // LroServices returns the set of Discovery LRO services.
 //
 // The discovery doc parser avoids generating LRO annotations for methods in
-// this set. These functions return a the LRO operation, but are interseted to
-// that list, poll, wait for, and cancel LROs. They do not need the annotations
-// and generated helpers.
+// this set. These functions return the LRO operation, but are inserted to that
+// list, poll, wait for, and cancel LROs. They do not need the annotations and
+// generated helpers.
 func (d *Discovery) LroServices() map[string]bool {
 	found := map[string]bool{}
 	for _, poller := range d.Pollers {
