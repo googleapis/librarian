@@ -46,6 +46,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 		languageRepo    gitrepo.Repository
 		idToCommits     map[string]string
 		failedLibraries []string
+		apiOnboarding   bool
 		want            string
 		wantErr         bool
 		wantErrPhrase   string
@@ -510,7 +511,15 @@ Language Image: %s`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatGenerationPRBody(test.sourceRepo, test.languageRepo, test.state, test.idToCommits, test.failedLibraries)
+			opt := &generationPROption{
+				sourceRepo:      test.sourceRepo,
+				languageRepo:    test.languageRepo,
+				state:           test.state,
+				idToCommits:     test.idToCommits,
+				failedLibraries: test.failedLibraries,
+				apiOnboarding:   test.apiOnboarding,
+			}
+			got, err := formatGenerationPRBody(opt)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
