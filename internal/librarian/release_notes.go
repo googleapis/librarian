@@ -16,9 +16,11 @@ package librarian
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -31,6 +33,8 @@ import (
 )
 
 var (
+	errPiperNotFound = errors.New("piper id not found")
+
 	commitTypeToHeading = map[string]string{
 		"feat":     "Features",
 		"fix":      "Bug Fixes",
@@ -120,7 +124,25 @@ Language Image: {{.ImageVersion}}
 {{- end -}}
 {{- end }}
 `))
+
+	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`feat: onboard a new library
+
+PiperOrigin-RevId: {{.PiperID}}
+Librarian Version: {{.LibrarianVersion}}
+Language Image: {{.ImageVersion}}
+`))
 )
+
+type generationPROption struct {
+	sourceRepo      gitrepo.Repository
+	languageRepo    gitrepo.Repository
+	state           *config.LibrarianState
+	idToCommits     map[string]string
+	failedLibraries []string
+	api             string
+	library         string
+	apiOnboarding   bool
+}
 
 type generationPRBody struct {
 	StartSHA         string
@@ -129,6 +151,12 @@ type generationPRBody struct {
 	ImageVersion     string
 	Commits          []*conventionalcommits.ConventionalCommit
 	FailedLibraries  []string
+}
+
+type onboardingPRBody struct {
+	ImageVersion     string
+	LibrarianVersion string
+	PiperID          string
 }
 
 type releaseNote struct {
@@ -155,15 +183,19 @@ type commitSection struct {
 
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
+func formatGenerationPRBody(opt *generationPROption) (string, error) {
+	if opt.apiOnboarding {
+		return formatOnboardingPRBody(opt.state, opt.sourceRepo, opt.api, opt.library)
+	}
+
 	var allCommits []*conventionalcommits.ConventionalCommit
-	for _, library := range state.Libraries {
-		lastGenCommit, ok := idToCommits[library.ID]
+	for _, library := range opt.state.Libraries {
+		lastGenCommit, ok := opt.idToCommits[library.ID]
 		if !ok {
 			continue
 		}
 
-		commits, err := getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo, library, lastGenCommit)
+		commits, err := getConventionalCommitsSinceLastGeneration(opt.sourceRepo, opt.languageRepo, library, lastGenCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 		}
@@ -174,7 +206,7 @@ func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *
 		return "No commit is found since last generation", nil
 	}
 
-	startCommit, err := findLatestGenerationCommit(sourceRepo, state, idToCommits)
+	startCommit, err := findLatestGenerationCommit(opt.sourceRepo, opt.state, opt.idToCommits)
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
 	}
@@ -194,12 +226,32 @@ func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *
 		StartSHA:         startSHA,
 		EndSHA:           endSHA,
 		LibrarianVersion: librarianVersion,
-		ImageVersion:     state.Image,
+		ImageVersion:     opt.state.Image,
 		Commits:          groupedCommits,
-		FailedLibraries:  failedLibraries,
+		FailedLibraries:  opt.failedLibraries,
 	}
 	var out bytes.Buffer
 	if err := genBodyTemplate.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+
+	return strings.TrimSpace(out.String()), nil
+}
+
+func formatOnboardingPRBody(state *config.LibrarianState, sourceRepo gitrepo.Repository, api, library string) (string, error) {
+	piperID, err := getPiperID(state, sourceRepo, api, library)
+	if err != nil {
+		return "", err
+	}
+
+	data := &onboardingPRBody{
+		LibrarianVersion: cli.Version(),
+		ImageVersion:     state.Image,
+		PiperID:          piperID,
+	}
+
+	var out bytes.Buffer
+	if err := onboardingBodyTemplate.Execute(&out, data); err != nil {
 		return "", fmt.Errorf("error executing template: %w", err)
 	}
 
@@ -341,4 +393,47 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 	}
 
 	return section
+}
+
+// getPiperID extracts the Piper ID from the commit message that onboarded the API.
+func getPiperID(state *config.LibrarianState, sourceRepo gitrepo.Repository, apiPath, library string) (string, error) {
+	libraryState := findLibraryByID(state, library)
+	serviceYaml := ""
+	for _, api := range libraryState.APIs {
+		if api.Path == apiPath {
+			serviceYaml = api.ServiceConfig
+			break
+		}
+	}
+
+	initialCommit, err := sourceRepo.GetLatestCommit(filepath.Join(apiPath, serviceYaml))
+	if err != nil {
+		return "", err
+	}
+
+	id, err := findPiperIDFrom(initialCommit, library)
+	if err != nil {
+		return "", err
+	}
+
+	slog.Info("found piper id in the commit message", "piperID", id)
+	return id, nil
+}
+
+func findPiperIDFrom(commit *gitrepo.Commit, libraryID string) (string, error) {
+	commits, err := conventionalcommits.ParseCommits(commit, libraryID)
+	if err != nil {
+		return "", err
+	}
+
+	if len(commits) == 0 || commits[0].Footers == nil {
+		return "", errPiperNotFound
+	}
+
+	id, ok := commits[0].Footers["PiperOrigin-RevId"]
+	if !ok {
+		return "", errPiperNotFound
+	}
+
+	return id, nil
 }
