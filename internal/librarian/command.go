@@ -81,7 +81,6 @@ type commitInfo struct {
 	idToCommits       map[string]string
 	api               string
 	library           string
-	libraryVersion    string
 	prType            string
 	pullRequestLabels []string
 	push              bool
