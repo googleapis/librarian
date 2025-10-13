@@ -89,7 +89,7 @@ type commitInfo struct {
 	sourceRepo        gitrepo.Repository
 	state             *config.LibrarianState
 	workRoot          string
-	isAPIOnboarding   bool
+	apiOnboarding     bool
 	failedGenerations int
 }
 
