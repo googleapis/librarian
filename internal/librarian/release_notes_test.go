@@ -1182,6 +1182,13 @@ func TestFindPiperIDFrom(t *testing.T) {
 			wantErr: conventionalcommits.ErrEmptyCommitMessage,
 		},
 		{
+			name: "unconventional_commit",
+			commit: &gitrepo.Commit{
+				Message: "unconventional commit message",
+			},
+			wantErr: errPiperNotFound,
+		},
+		{
 			name: "does_not_contain_piper_id",
 			commit: &gitrepo.Commit{
 				Message: "feat: add a new API",
