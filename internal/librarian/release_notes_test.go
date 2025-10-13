@@ -46,6 +46,8 @@ func TestFormatGenerationNotes(t *testing.T) {
 		languageRepo    gitrepo.Repository
 		idToCommits     map[string]string
 		failedLibraries []string
+		api             string
+		library         string
 		apiOnboarding   bool
 		want            string
 		wantErr         bool
@@ -414,6 +416,41 @@ Language Image: %s`,
 				librarianVersion, "go:1.21"),
 		},
 		{
+			name: "onboarding_new_api",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+						APIs: []*config.API{
+							{
+								Path:          "path/to",
+								ServiceConfig: "library_v1.yaml",
+							},
+						},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				GetLatestCommitByPath: map[string]*gitrepo.Commit{
+					"path/to/library_v1.yaml": {
+						Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
+					},
+				},
+			},
+			api:           "path/to",
+			library:       "one-library",
+			apiOnboarding: true,
+			want: fmt.Sprintf(`feat: onboard a new library
+
+PiperOrigin-RevId: 98765
+Library-IDs: one-library
+Librarian Version: %s
+Language Image: %s`,
+				librarianVersion, "go:1.21"),
+		},
+		{
 			name: "no conventional commit is found since last generation",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
@@ -516,6 +553,8 @@ Language Image: %s`,
 				languageRepo:    test.languageRepo,
 				state:           test.state,
 				idToCommits:     test.idToCommits,
+				api:             test.api,
+				library:         test.library,
 				failedLibraries: test.failedLibraries,
 				apiOnboarding:   test.apiOnboarding,
 			}

@@ -309,6 +309,7 @@ type MockRepository struct {
 	RemotesError                           error
 	CommitCalls                            int
 	GetCommitError                         error
+	GetLatestCommitError                   error
 	GetCommitByHash                        map[string]*gitrepo.Commit
 	GetCommitsForPathsSinceTagValue        []*gitrepo.Commit
 	GetCommitsForPathsSinceTagValueByTag   map[string][]*gitrepo.Commit
@@ -316,6 +317,7 @@ type MockRepository struct {
 	GetCommitsForPathsSinceLastGenValue    []*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByCommit map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByPath   map[string][]*gitrepo.Commit
+	GetLatestCommitByPath                  map[string]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenError    error
 	ChangedFilesInCommitValue              []string
 	ChangedFilesInCommitValueByHash        map[string][]string
@@ -374,6 +376,20 @@ func (m *MockRepository) GetCommit(commitHash string) (*gitrepo.Commit, error) {
 
 	if m.GetCommitByHash != nil {
 		if commit, ok := m.GetCommitByHash[commitHash]; ok {
+			return commit, nil
+		}
+	}
+
+	return nil, errors.New("should not reach here")
+}
+
+func (m *MockRepository) GetLatestCommit(path string) (*gitrepo.Commit, error) {
+	if m.GetLatestCommitError != nil {
+		return nil, m.GetLatestCommitError
+	}
+
+	if m.GetLatestCommitByPath != nil {
+		if commit, ok := m.GetLatestCommitByPath[path]; ok {
 			return commit, nil
 		}
 	}

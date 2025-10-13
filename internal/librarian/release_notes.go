@@ -128,6 +128,7 @@ Language Image: {{.ImageVersion}}
 	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`feat: onboard a new library
 
 PiperOrigin-RevId: {{.PiperID}}
+Library-IDs: {{.LibraryID}}
 Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
 `))
@@ -156,6 +157,7 @@ type generationPRBody struct {
 type onboardingPRBody struct {
 	ImageVersion     string
 	LibrarianVersion string
+	LibraryID        string
 	PiperID          string
 }
 
@@ -198,6 +200,7 @@ func formatOnboardingPRBody(state *config.LibrarianState, sourceRepo gitrepo.Rep
 	data := &onboardingPRBody{
 		LibrarianVersion: cli.Version(),
 		ImageVersion:     state.Image,
+		LibraryID:        library,
 		PiperID:          piperID,
 	}
 
