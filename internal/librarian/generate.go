@@ -32,10 +32,6 @@ const (
 	generateCmdName = "generate"
 )
 
-var (
-	errPiperNotFound = errors.New("piper ID not found")
-)
-
 type generateRunner struct {
 	api             string
 	branch          string
