@@ -572,6 +572,36 @@ Language Image: %s`,
 			wantErr:       true,
 			wantErrPhrase: "no latest commit",
 		},
+		{
+			name: "latest_commit_does_not_contain_piper_during_api_onboarding",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+						APIs: []*config.API{
+							{
+								Path:          "path/to",
+								ServiceConfig: "library_v1.yaml",
+							},
+						},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				GetLatestCommitByPath: map[string]*gitrepo.Commit{
+					"path/to/library_v1.yaml": {
+						Message: "feat: new feature\n\nThis is body.",
+					},
+				},
+			},
+			api:           "path/to",
+			library:       "one-library",
+			apiOnboarding: true,
+			wantErr:       true,
+			wantErrPhrase: errPiperNotFound.Error(),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			opt := &generationPROption{
