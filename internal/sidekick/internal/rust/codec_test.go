@@ -227,6 +227,15 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: "protobuf",
 			Options: map[string]string{
+				"extra-modules": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.extraModules = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
 				"internal-types": "a,b,c",
 			},
 			Update: func(c *codec) {

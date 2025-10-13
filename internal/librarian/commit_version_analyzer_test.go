@@ -180,7 +180,9 @@ func TestShouldIncludeForGeneration(t *testing.T) {
 }
 
 func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
+
 	t.Parallel()
+
 	pathAndMessages := []pathAndMessage{
 		{
 			path:    "foo/a.txt",
@@ -202,8 +204,46 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 			path:    "foo/c.txt",
 			message: "feat(foo): another feature for foo",
 		},
+		{
+			path: "foo/something.txt",
+			message: `BEGIN_COMMIT_OVERRIDE 
+
+BEGIN_NESTED_COMMIT
+fix: a bug1 fix
+
+This is another body.
+
+PiperOrigin-RevId: 573342
+Library-IDs: foo
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+END_NESTED_COMMIT
+
+BEGIN_NESTED_COMMIT
+fix: a bug2 fix
+
+This is another body.
+
+PiperOrigin-RevId: 573342
+Library-IDs: bar
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+END_NESTED_COMMIT
+
+BEGIN_NESTED_COMMIT
+fix: a bug3 fix
+
+This is another body.
+
+PiperOrigin-RevId: 573342
+Library-IDs: foo, bar
+Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+END_NESTED_COMMIT
+
+END_COMMIT_OVERRIDE`,
+		},
 	}
+
 	repoWithCommits := setupRepoForGetCommits(t, pathAndMessages, []string{"foo-v1.0.0"})
+
 	for _, test := range []struct {
 		name          string
 		repo          gitrepo.Repository
@@ -223,6 +263,28 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 				ReleaseExcludePaths: []string{"foo/README.md"},
 			},
 			want: []*conventionalcommits.ConventionalCommit{
+				{
+					Type:      "fix",
+					Subject:   "a bug1 fix",
+					LibraryID: "foo",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "573342",
+						"Library-IDs":       "foo",
+						"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
+					},
+					IsNested: true,
+				},
+				{
+					Type:      "fix",
+					Subject:   "a bug3 fix",
+					LibraryID: "foo",
+					Footers: map[string]string{
+						"PiperOrigin-RevId": "573342",
+						"Library-IDs":       "foo, bar",
+						"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
+					},
+					IsNested: true,
+				},
 				{
 					Type:      "feat",
 					Scope:     "foo",
@@ -570,6 +632,78 @@ func TestNextVersion(t *testing.T) {
 			}
 			if gotVersion != test.wantVersion {
 				t.Errorf("NextVersion() = %v, want %v", gotVersion, test.wantVersion)
+			}
+		})
+	}
+}
+
+func TestLibraryFilter(t *testing.T) {
+	t.Parallel()
+	commits := []*conventionalcommits.ConventionalCommit{
+		{
+			LibraryID: "foo",
+			Footers:   map[string]string{},
+		},
+		{
+			LibraryID: "bar",
+			Footers:   map[string]string{},
+		},
+		{
+			Footers: map[string]string{
+				"Library-IDs": "foo",
+			},
+		},
+		{
+			Footers: map[string]string{
+				"Library-IDs": "bar",
+			},
+		},
+		{
+			Footers: map[string]string{
+				"Library-IDs": "foo, bar",
+			},
+		},
+		{
+			Footers: map[string]string{
+				"Library-IDs": "foo,bar",
+			},
+		},
+	}
+	for _, test := range []struct {
+		name      string
+		libraryID string
+		want      []*conventionalcommits.ConventionalCommit
+	}{
+		{
+			name:      "filter by foo",
+			libraryID: "foo",
+			want: []*conventionalcommits.ConventionalCommit{
+				commits[0],
+				commits[2],
+				commits[4],
+				commits[5],
+			},
+		},
+		{
+			name:      "filter by bar",
+			libraryID: "bar",
+			want: []*conventionalcommits.ConventionalCommit{
+				commits[1],
+				commits[3],
+				commits[4],
+				commits[5],
+			},
+		},
+		{
+			name:      "filter by baz",
+			libraryID: "baz",
+			want:      nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := libraryFilter(commits, test.libraryID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("libraryFilter() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

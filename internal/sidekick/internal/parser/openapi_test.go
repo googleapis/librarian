@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
@@ -525,7 +526,7 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 
 func openapiSecretManagerAPI(t *testing.T) *api.API {
 	t.Helper()
-	contents, err := os.ReadFile("../../testdata/openapi/secretmanager_openapi_v1.json")
+	contents, err := os.ReadFile(openAPIFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -778,7 +779,7 @@ func TestOpenAPI_ServicePlaceholder(t *testing.T) {
 }
 
 func TestOpenAPI_MakeApiWithServiceConfig(t *testing.T) {
-	contents, err := os.ReadFile("../../testdata/openapi/secretmanager_openapi_v1.json")
+	contents, err := os.ReadFile(openAPIFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -798,7 +799,7 @@ func TestOpenAPI_MakeApiWithServiceConfig(t *testing.T) {
 }
 
 func TestOpenAPI_MakeApiServiceConfigOverridesDescription(t *testing.T) {
-	contents, err := os.ReadFile("../../testdata/openapi/secretmanager_openapi_v1.json")
+	contents, err := os.ReadFile(openAPIFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -821,7 +822,7 @@ func TestOpenAPI_MakeApiServiceConfigOverridesDescription(t *testing.T) {
 }
 
 func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
-	contents, err := os.ReadFile("../../testdata/openapi/secretmanager_openapi_v1.json")
+	contents, err := os.ReadFile(openAPIFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1268,6 +1269,21 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestOpenAPI_ParseBadFiles(t *testing.T) {
+	for _, general := range []config.GeneralConfig{
+		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
+		{SpecificationSource: openAPIFile, ServiceConfig: "-invalid-file-name-"},
+		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},
+	} {
+		cfg := &config.Config{
+			General: general,
+		}
+		if got, err := ParseOpenAPI(cfg); err == nil {
+			t.Fatalf("expected error with missing source file, got=%v", got)
+		}
+	}
 }
 
 const openAPISingleMessagePreamble = `

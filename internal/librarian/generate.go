@@ -279,7 +279,6 @@ func (r *generateRunner) runGenerateCommand(ctx context.Context, libraryID, outp
 
 	generateRequest := &docker.GenerateRequest{
 		ApiRoot:   apiRoot,
-		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		Output:    outputDir,
 		RepoDir:   r.repo.GetDir(),
@@ -320,7 +319,6 @@ func (r *generateRunner) runBuildCommand(ctx context.Context, libraryID string) 
 	}
 
 	buildRequest := &docker.BuildRequest{
-		HostMount: r.hostMount,
 		LibraryID: libraryID,
 		RepoDir:   r.repo.GetDir(),
 		State:     r.state,
@@ -396,7 +394,6 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 
 	configureRequest := &docker.ConfigureRequest{
 		ApiRoot:             apiRoot,
-		HostMount:           r.hostMount,
 		LibraryID:           r.library,
 		Output:              outputDir,
 		RepoDir:             r.repo.GetDir(),

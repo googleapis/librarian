@@ -140,7 +140,11 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}
 
 	ghClient := github.NewClient(cfg.GitHubToken, gitHubRepo)
-	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	container, err := docker.New(cfg.WorkRoot, image, &docker.DockerOptions{
+		UserUID:   cfg.UserUID,
+		UserGID:   cfg.UserGID,
+		HostMount: cfg.HostMount,
+	})
 	if err != nil {
 		return nil, err
 	}

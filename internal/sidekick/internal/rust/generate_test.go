@@ -340,7 +340,7 @@ func importsModelModules(t *testing.T, filename string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Split(string(contents), "\n")
+	lines := strings.Split(strings.ReplaceAll(string(contents), "\r\n", "\n"), "\n")
 	for _, want := range []string{"mod debug;", "mod serialize;", "mod deserialize;"} {
 		if !slices.Contains(lines, want) {
 			t.Errorf("expected file %s to have a line matching %q, got:\n%s", filename, want, contents)

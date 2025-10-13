@@ -53,6 +53,8 @@ type modelAnnotations struct {
 	DefaultSystemParameters []systemParameter
 	// Enables per-service features
 	PerServiceFeatures bool
+	// A list of additional modules loaded by the `lib.rs` file.
+	ExtraModules []string
 	// If true, at lease one service has a method we cannot wrap (yet).
 	Incomplete bool
 	// If true, the generator will produce reference documentation samples for message fields setters.
@@ -568,6 +570,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		NotForPublication:       codec.doNotPublish,
 		DisabledRustdocWarnings: codec.disabledRustdocWarnings,
 		PerServiceFeatures:      codec.perServiceFeatures && len(servicesSubset) > 0,
+		ExtraModules:            codec.extraModules,
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
 			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),

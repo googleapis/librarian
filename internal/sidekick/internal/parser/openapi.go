@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/httprule"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/svcconfig"
 	"github.com/pb33f/libopenapi"
@@ -33,7 +34,8 @@ import (
 )
 
 // ParseOpenAPI parses an OpenAPI specification and returns an API model.
-func ParseOpenAPI(source, serviceConfigFile string, options map[string]string) (*api.API, error) {
+func ParseOpenAPI(cfg *config.Config) (*api.API, error) {
+	source := cfg.General.SpecificationSource
 	contents, err := os.ReadFile(source)
 	if err != nil {
 		return nil, err
@@ -42,13 +44,9 @@ func ParseOpenAPI(source, serviceConfigFile string, options map[string]string) (
 	if err != nil {
 		return nil, err
 	}
-	var serviceConfig *serviceconfig.Service
-	if serviceConfigFile != "" {
-		cfg, err := readServiceConfig(findServiceConfigPath(serviceConfigFile, options))
-		if err != nil {
-			return nil, err
-		}
-		serviceConfig = cfg
+	serviceConfig, err := loadServiceConfig(cfg)
+	if err != nil {
+		return nil, err
 	}
 	return makeAPIForOpenAPI(serviceConfig, model)
 }

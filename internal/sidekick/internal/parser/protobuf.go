@@ -37,18 +37,15 @@ import (
 
 // ParseProtobuf reads Protobuf specifications and converts them into
 // the `api.API` model.
-func ParseProtobuf(source, serviceConfigFile string, options map[string]string) (*api.API, error) {
-	request, err := newCodeGeneratorRequest(source, options)
+func ParseProtobuf(cfg *config.Config) (*api.API, error) {
+	source := cfg.General.SpecificationSource
+	request, err := newCodeGeneratorRequest(source, cfg.Source)
 	if err != nil {
 		return nil, err
 	}
-	var serviceConfig *serviceconfig.Service
-	if serviceConfigFile != "" {
-		cfg, err := readServiceConfig(findServiceConfigPath(serviceConfigFile, options))
-		if err != nil {
-			return nil, err
-		}
-		serviceConfig = cfg
+	serviceConfig, err := loadServiceConfig(cfg)
+	if err != nil {
+		return nil, err
 	}
 	return makeAPIForProtobuf(serviceConfig, request), nil
 }

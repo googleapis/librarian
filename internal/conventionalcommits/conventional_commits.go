@@ -364,6 +364,9 @@ func parseFooters(footerLines []string) (footers map[string]string, isBreaking b
 			isBreaking = true
 		}
 	}
+	for key, value := range footers {
+		footers[key] = strings.TrimSpace(value)
+	}
 	return footers, isBreaking
 }
 
