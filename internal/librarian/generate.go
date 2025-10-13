@@ -166,6 +166,8 @@ func (r *generateRunner) run(ctx context.Context) error {
 		state:             r.state,
 		workRoot:          r.workRoot,
 		apiOnboarding:     apiOnboarding,
+		api:               r.api,
+		library:           r.library,
 		failedGenerations: failedGenerations,
 	}
 

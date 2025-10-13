@@ -79,6 +79,7 @@ type commitInfo struct {
 	failedLibraries   []string
 	ghClient          GitHubClient
 	idToCommits       map[string]string
+	api               string
 	library           string
 	libraryVersion    string
 	prType            string
@@ -454,6 +455,8 @@ func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, erro
 			state:           info.state,
 			idToCommits:     info.idToCommits,
 			failedLibraries: info.failedLibraries,
+			api:             info.api,
+			library:         info.library,
 			apiOnboarding:   info.apiOnboarding,
 		}
 		return formatGenerationPRBody(opt)
