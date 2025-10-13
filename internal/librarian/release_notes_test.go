@@ -1055,3 +1055,48 @@ Language Image: go:1.21
 		})
 	}
 }
+
+func TestFindPiperIDFrom(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		commit  *gitrepo.Commit
+		want    string
+		wantErr error
+	}{
+		{
+			name: "found_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API\n\nPiperOrigin-RevId: 745187558",
+			},
+			want: "745187558",
+		},
+		{
+			name: "invalid_commit",
+			commit: &gitrepo.Commit{
+				Message: "",
+			},
+			wantErr: conventionalcommits.ErrEmptyCommitMessage,
+		},
+		{
+			name: "does_not_contain_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API",
+			},
+			wantErr: errPiperNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findPiperIDFrom(test.commit, "example-id")
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findPiperIDFrom() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
