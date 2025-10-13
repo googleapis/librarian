@@ -1653,6 +1653,9 @@ func TestCheckout(t *testing.T) {
 			if diff := cmp.Diff(test.sha, headSha); diff != "" {
 				t.Fatalf("Checkout() mismatch (-want +got):\n%s", diff)
 			}
+			if err != nil {
+				t.Fatalf("Checkout() unexpected error fetching HeadHash: %v", err)
+			}
 			ref, err := repo.repo.Head()
 			if err != nil {
 				t.Fatalf("Checkout() unexpected error fetching HEAD: %v", err)
