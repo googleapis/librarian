@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conventionalcommits
+package gitrepo
 
 import (
 	"strings"
@@ -21,7 +21,6 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestParseCommits(t *testing.T) {
@@ -546,7 +545,7 @@ END_COMMIT_OVERRIDE`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			commit := &gitrepo.Commit{
+			commit := &Commit{
 				Message: test.message,
 				Hash:    plumbing.NewHash("fake-sha"),
 				When:    now,

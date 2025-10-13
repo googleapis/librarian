@@ -25,7 +25,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"gopkg.in/yaml.v3"
 )
@@ -1068,13 +1067,13 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name      string
-		commits   []*conventionalcommits.ConventionalCommit
+		commits   []*gitrepo.ConventionalCommit
 		LibraryID string
-		want      []*conventionalcommits.ConventionalCommit
+		want      []*gitrepo.ConventionalCommit
 	}{
 		{
 			name: "commits_all_match_libraryID",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1089,7 +1088,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 				},
 			},
 			LibraryID: "library-one",
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1106,7 +1105,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 		},
 		{
 			name: "some_commits_match_libraryID",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1121,7 +1120,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 				},
 			},
 			LibraryID: "library-one",
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1130,7 +1129,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 		},
 		{
 			name: "some_commits_have_library_id_in_footer",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1151,7 +1150,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 				},
 			},
 			LibraryID: "library-one",
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1170,7 +1169,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 		},
 		{
 			name: "some_commits_have_library_id_that_is_prefix_of_another",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1187,7 +1186,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 				},
 			},
 			LibraryID: "library-one",
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1199,7 +1198,7 @@ func TestFilterCommitsByLibraryID(t *testing.T) {
 		},
 		{
 			name: "no_commits_match_libraryID",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-one",
 					Type:      "feat",
@@ -1232,7 +1231,7 @@ func TestUpdateLibrary(t *testing.T) {
 		libraryState   *config.LibraryState
 		library        string // this is the `--library` input
 		libraryVersion string // this is the `--version` input
-		commits        []*conventionalcommits.ConventionalCommit
+		commits        []*gitrepo.ConventionalCommit
 		want           *config.LibraryState
 		wantErr        bool
 		wantErrMsg     string
@@ -1243,7 +1242,7 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:      "one-id",
 				Version: "1.2.3",
 			},
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					Type:    "fix",
 					Subject: "change a typo",
@@ -1259,7 +1258,7 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:              "one-id",
 				Version:         "1.3.0",
 				PreviousVersion: "1.2.3",
-				Changes: []*conventionalcommits.ConventionalCommit{
+				Changes: []*gitrepo.ConventionalCommit{
 					{
 						Type:    "fix",
 						Subject: "change a typo",
@@ -1281,7 +1280,7 @@ func TestUpdateLibrary(t *testing.T) {
 				Version: "1.2.3",
 			},
 			libraryVersion: "5.0.0",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					Type:    "fix",
 					Subject: "change a typo",
@@ -1297,7 +1296,7 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:              "one-id",
 				Version:         "5.0.0", // Use the `--version` value`
 				PreviousVersion: "1.2.3",
-				Changes: []*conventionalcommits.ConventionalCommit{
+				Changes: []*gitrepo.ConventionalCommit{
 					{
 						Type:    "fix",
 						Subject: "change a typo",
@@ -1319,7 +1318,7 @@ func TestUpdateLibrary(t *testing.T) {
 				Version: "1.2.3",
 			},
 			libraryVersion: "1.0.0",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					Type:    "fix",
 					Subject: "change a typo",
@@ -1340,7 +1339,7 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:      "one-id",
 				Version: "1.2.3",
 			},
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					Type:    "feat",
 					Subject: "add another config file",
@@ -1360,7 +1359,7 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:              "one-id",
 				Version:         "2.0.0",
 				PreviousVersion: "1.2.3",
-				Changes: []*conventionalcommits.ConventionalCommit{
+				Changes: []*gitrepo.ConventionalCommit{
 					{
 						Type:    "feat",
 						Subject: "add another config file",
@@ -1397,7 +1396,7 @@ func TestUpdateLibrary(t *testing.T) {
 				Version: "1.2.3",
 			},
 			library: "one-id",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					Type:    "chore",
 					Subject: "a chore",
@@ -1414,7 +1413,7 @@ func TestUpdateLibrary(t *testing.T) {
 			},
 			library:        "one-id",
 			libraryVersion: "5.0.0",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					Type:    "chore",
 					Subject: "a chore",
@@ -1425,7 +1424,7 @@ func TestUpdateLibrary(t *testing.T) {
 				PreviousVersion:  "1.2.3",
 				Version:          "5.0.0", // Use the `--version` override value
 				ReleaseTriggered: true,
-				Changes: []*conventionalcommits.ConventionalCommit{
+				Changes: []*gitrepo.ConventionalCommit{
 					{
 						Type:    "chore",
 						Subject: "a chore",
@@ -1464,7 +1463,7 @@ func TestDetermineNextVersion(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name            string
-		commits         []*conventionalcommits.ConventionalCommit
+		commits         []*gitrepo.ConventionalCommit
 		currentVersion  string
 		libraryID       string
 		config          *config.Config
@@ -1475,7 +1474,7 @@ func TestDetermineNextVersion(t *testing.T) {
 	}{
 		{
 			name: "from commits",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
 			config: &config.Config{
@@ -1491,7 +1490,7 @@ func TestDetermineNextVersion(t *testing.T) {
 		},
 		{
 			name: "with config.yaml override version",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
 			config: &config.Config{
@@ -1512,7 +1511,7 @@ func TestDetermineNextVersion(t *testing.T) {
 		},
 		{
 			name: "with outdated config.yaml override version",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
 			config: &config.Config{

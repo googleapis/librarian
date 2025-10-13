@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -638,12 +637,12 @@ func TestGroupByPiperID(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
-		commits []*conventionalcommits.ConventionalCommit
-		want    []*conventionalcommits.ConventionalCommit
+		commits []*gitrepo.ConventionalCommit
+		want    []*gitrepo.ConventionalCommit
 	}{
 		{
 			name: "group_commits_with_same_piper_id_and_subject",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-1",
 					Subject:   "one subject",
@@ -682,7 +681,7 @@ func TestGroupByPiperID(t *testing.T) {
 					},
 				},
 			},
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-1",
 					Subject:   "one subject",
@@ -726,7 +725,7 @@ func TestGroupByPiperID(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := groupByIDAndSubject(test.commits)
 			// We don't care the order in the slice but sorting makes the test deterministic.
-			opts := cmpopts.SortSlices(func(a, b *conventionalcommits.ConventionalCommit) bool {
+			opts := cmpopts.SortSlices(func(a, b *gitrepo.ConventionalCommit) bool {
 				return a.LibraryID < b.LibraryID
 			})
 			if diff := cmp.Diff(test.want, got, opts); diff != "" {
@@ -762,7 +761,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -806,7 +805,7 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -856,7 +855,7 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -899,7 +898,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "feature for a",
@@ -913,7 +912,7 @@ Language Image: go:1.21
 						Version:          "2.0.1",
 						PreviousVersion:  "2.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "fix",
 								Subject:    "fix for b",
@@ -959,7 +958,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -999,7 +998,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",

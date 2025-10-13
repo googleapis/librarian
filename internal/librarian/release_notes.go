@@ -25,7 +25,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -127,7 +126,7 @@ type generationPRBody struct {
 	EndSHA           string
 	LibrarianVersion string
 	ImageVersion     string
-	Commits          []*conventionalcommits.ConventionalCommit
+	Commits          []*gitrepo.ConventionalCommit
 	FailedLibraries  []string
 }
 
@@ -150,13 +149,13 @@ type releaseNoteSection struct {
 
 type commitSection struct {
 	Heading string
-	Commits []*conventionalcommits.ConventionalCommit
+	Commits []*gitrepo.ConventionalCommit
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
 func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
-	var allCommits []*conventionalcommits.ConventionalCommit
+	var allCommits []*gitrepo.ConventionalCommit
 	for _, library := range state.Libraries {
 		lastGenCommit, ok := idToCommits[library.ID]
 		if !ok {
@@ -238,9 +237,9 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 }
 
 // groupByIDAndSubject aggregates conventional commits for ones have the same Piper ID and subject in the footer.
-func groupByIDAndSubject(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
-	var res []*conventionalcommits.ConventionalCommit
-	idToCommits := make(map[string][]*conventionalcommits.ConventionalCommit)
+func groupByIDAndSubject(commits []*gitrepo.ConventionalCommit) []*gitrepo.ConventionalCommit {
+	var res []*gitrepo.ConventionalCommit
+	idToCommits := make(map[string][]*gitrepo.ConventionalCommit)
 	for _, commit := range commits {
 		// a commit is not considering for grouping if it doesn't have a footer or
 		// the footer doesn't have a Piper ID.
@@ -311,7 +310,7 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
 	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
-	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
+	commitsByType := make(map[string][]*gitrepo.ConventionalCommit)
 	for _, commit := range library.Changes {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
