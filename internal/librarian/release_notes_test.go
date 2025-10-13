@@ -546,6 +546,32 @@ Language Image: %s`,
 			wantErr:       true,
 			wantErrPhrase: "failed to fetch conventional commits for library",
 		},
+		{
+			name: "no_latest_commit_during_api_onboarding",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+						APIs: []*config.API{
+							{
+								Path:          "path/to",
+								ServiceConfig: "library_v1.yaml",
+							},
+						},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				GetLatestCommitError: errors.New("no latest commit"),
+			},
+			api:           "path/to",
+			library:       "one-library",
+			apiOnboarding: true,
+			wantErr:       true,
+			wantErrPhrase: "no latest commit",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			opt := &generationPROption{
