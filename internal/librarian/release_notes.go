@@ -181,21 +181,45 @@ type commitSection struct {
 	Commits []*conventionalcommits.ConventionalCommit
 }
 
-// formatGenerationPRBody creates the body of a generation pull request.
-// Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(opt *generationPROption) (string, error) {
+func formatGenerationNotes(opt *generationPROption) (string, error) {
 	if opt.apiOnboarding {
 		return formatOnboardingPRBody(opt.state, opt.sourceRepo, opt.api, opt.library)
 	}
 
+	return formatGenerationPRBody(opt.sourceRepo, opt.languageRepo, opt.state, opt.idToCommits, opt.failedLibraries)
+}
+
+func formatOnboardingPRBody(state *config.LibrarianState, sourceRepo gitrepo.Repository, api, library string) (string, error) {
+	piperID, err := getPiperID(state, sourceRepo, api, library)
+	if err != nil {
+		return "", err
+	}
+
+	data := &onboardingPRBody{
+		LibrarianVersion: cli.Version(),
+		ImageVersion:     state.Image,
+		PiperID:          piperID,
+	}
+
+	var out bytes.Buffer
+	if err := onboardingBodyTemplate.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+
+	return strings.TrimSpace(out.String()), nil
+}
+
+// formatGenerationPRBody creates the body of a generation pull request.
+// Only consider libraries whose ID appears in idToCommits.
+func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
 	var allCommits []*conventionalcommits.ConventionalCommit
-	for _, library := range opt.state.Libraries {
-		lastGenCommit, ok := opt.idToCommits[library.ID]
+	for _, library := range state.Libraries {
+		lastGenCommit, ok := idToCommits[library.ID]
 		if !ok {
 			continue
 		}
 
-		commits, err := getConventionalCommitsSinceLastGeneration(opt.sourceRepo, opt.languageRepo, library, lastGenCommit)
+		commits, err := getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo, library, lastGenCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 		}
@@ -206,7 +230,7 @@ func formatGenerationPRBody(opt *generationPROption) (string, error) {
 		return "No commit is found since last generation", nil
 	}
 
-	startCommit, err := findLatestGenerationCommit(opt.sourceRepo, opt.state, opt.idToCommits)
+	startCommit, err := findLatestGenerationCommit(sourceRepo, state, idToCommits)
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
 	}
@@ -226,32 +250,12 @@ func formatGenerationPRBody(opt *generationPROption) (string, error) {
 		StartSHA:         startSHA,
 		EndSHA:           endSHA,
 		LibrarianVersion: librarianVersion,
-		ImageVersion:     opt.state.Image,
+		ImageVersion:     state.Image,
 		Commits:          groupedCommits,
-		FailedLibraries:  opt.failedLibraries,
+		FailedLibraries:  failedLibraries,
 	}
 	var out bytes.Buffer
 	if err := genBodyTemplate.Execute(&out, data); err != nil {
-		return "", fmt.Errorf("error executing template: %w", err)
-	}
-
-	return strings.TrimSpace(out.String()), nil
-}
-
-func formatOnboardingPRBody(state *config.LibrarianState, sourceRepo gitrepo.Repository, api, library string) (string, error) {
-	piperID, err := getPiperID(state, sourceRepo, api, library)
-	if err != nil {
-		return "", err
-	}
-
-	data := &onboardingPRBody{
-		LibrarianVersion: cli.Version(),
-		ImageVersion:     state.Image,
-		PiperID:          piperID,
-	}
-
-	var out bytes.Buffer
-	if err := onboardingBodyTemplate.Execute(&out, data); err != nil {
 		return "", fmt.Errorf("error executing template: %w", err)
 	}
 

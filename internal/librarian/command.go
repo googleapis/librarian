@@ -459,7 +459,7 @@ func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, erro
 			library:         info.library,
 			apiOnboarding:   info.apiOnboarding,
 		}
-		return formatGenerationPRBody(opt)
+		return formatGenerationNotes(opt)
 	case release:
 		return formatReleaseNotes(info.state, gitHubRepo)
 	default:
