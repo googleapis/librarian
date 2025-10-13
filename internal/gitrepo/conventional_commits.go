@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conventionalcommits
+package gitrepo
 
 import (
 	"encoding/json"
@@ -22,8 +22,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const (
@@ -125,7 +123,7 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 // Malformed override or nested blocks (e.g., with a missing end marker) are
 // ignored. Any commit part that is found but fails to parse as a valid
 // conventional commit is logged and skipped.
-func ParseCommits(commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
+func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, error) {
 	message := commit.Message
 	if strings.TrimSpace(message) == "" {
 		return nil, ErrEmptyCommitMessage
@@ -196,7 +194,7 @@ func extractCommitParts(message string) []commitPart {
 
 // parseSimpleCommit parses a simple commit message and returns a slice of ConventionalCommit.
 // A simple commit message is commit that does not include override or nested commits.
-func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
+func parseSimpleCommit(commitPart commitPart, commit *Commit, libraryID string) ([]*ConventionalCommit, error) {
 	trimmedMessage := strings.TrimSpace(commitPart.message)
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")

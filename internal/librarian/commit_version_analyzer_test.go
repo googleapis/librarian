@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/semver"
 )
@@ -331,7 +330,7 @@ END_COMMIT_OVERRIDE`,
 		name          string
 		repo          gitrepo.Repository
 		library       *config.LibraryState
-		want          []*conventionalcommits.ConventionalCommit
+		want          []*gitrepo.ConventionalCommit
 		wantErr       bool
 		wantErrPhrase string
 	}{
@@ -345,7 +344,7 @@ END_COMMIT_OVERRIDE`,
 				SourceRoots:         []string{"foo"},
 				ReleaseExcludePaths: []string{"foo/README.md"},
 			},
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					Type:      "fix",
 					Subject:   "a bug1 fix",
@@ -458,7 +457,7 @@ END_COMMIT_OVERRIDE`,
 			if err != nil {
 				t.Fatalf("getConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
 				t.Errorf("getConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -472,7 +471,7 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 		sourceRepo     gitrepo.Repository
 		languageRepo   gitrepo.Repository
 		library        *config.LibraryState
-		want           []*conventionalcommits.ConventionalCommit
+		want           []*gitrepo.ConventionalCommit
 		wantErr        bool
 		wantErrMessage string
 	}{
@@ -500,7 +499,7 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 				HeadHashValue:             "5678",
 				ChangedFilesInCommitValue: []string{"foo/a.go"},
 			},
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					Type:      "feat",
 					Subject:   "a feature",
@@ -532,7 +531,7 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 				IsCleanValue:      false,
 				ChangedFilesValue: []string{"foo/a.go"},
 			},
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					Type:      "feat",
 					Subject:   "a feature",
@@ -607,7 +606,7 @@ func TestGetConventionalCommitsSinceLastGeneration(t *testing.T) {
 			if err != nil {
 				t.Fatalf("getConventionalCommitsSinceLastRelease() failed: %v", err)
 			}
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(gitrepo.ConventionalCommit{}, "CommitHash", "Body", "IsBreaking", "When")); diff != "" {
 				t.Errorf("getConventionalCommitsSinceLastRelease() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -618,12 +617,12 @@ func TestGetHighestChange(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name           string
-		commits        []*conventionalcommits.ConventionalCommit
+		commits        []*gitrepo.ConventionalCommit
 		expectedChange semver.ChangeLevel
 	}{
 		{
 			name: "major change",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat", IsBreaking: true},
 				{Type: "feat"},
 				{Type: "fix"},
@@ -632,7 +631,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "minor change",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 				{Type: "fix"},
 			},
@@ -640,14 +639,14 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "patch change",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "fix"},
 			},
 			expectedChange: semver.Patch,
 		},
 		{
 			name: "no change",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "docs"},
 				{Type: "chore"},
 			},
@@ -655,12 +654,12 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name:           "no commits",
-			commits:        []*conventionalcommits.ConventionalCommit{},
+			commits:        []*gitrepo.ConventionalCommit{},
 			expectedChange: semver.None,
 		},
 		{
 			name: "nested commit forces minor bump",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "fix"},
 				{Type: "feat", IsNested: true},
 			},
@@ -668,7 +667,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "nested commit with breaking change forces minor bump",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat", IsBreaking: true, IsNested: true},
 				{Type: "feat"},
 			},
@@ -676,7 +675,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "major change and nested commit",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat", IsBreaking: true},
 				{Type: "fix", IsNested: true},
 			},
@@ -684,7 +683,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "nested commit before major change",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "fix", IsNested: true},
 				{Type: "feat", IsBreaking: true},
 			},
@@ -692,7 +691,7 @@ func TestGetHighestChange(t *testing.T) {
 		},
 		{
 			name: "nested commit with only fixes forces minor bump",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "fix"},
 				{Type: "fix", IsNested: true},
 			},
@@ -712,14 +711,14 @@ func TestNextVersion(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name           string
-		commits        []*conventionalcommits.ConventionalCommit
+		commits        []*gitrepo.ConventionalCommit
 		currentVersion string
 		wantVersion    string
 		wantErr        bool
 	}{
 		{
 			name: "without override version",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
 			currentVersion: "1.0.0",
@@ -727,7 +726,7 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "derive next returns error",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
 			currentVersion: "invalid-version",
@@ -736,7 +735,7 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "breaking change on nested commit results in minor bump",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat", IsBreaking: true, IsNested: true},
 			},
 			currentVersion: "1.2.3",
@@ -744,7 +743,7 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "major change before nested commit results in major bump",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat", IsBreaking: true},
 				{Type: "fix", IsNested: true},
 			},
@@ -767,7 +766,7 @@ func TestNextVersion(t *testing.T) {
 
 func TestLibraryFilter(t *testing.T) {
 	t.Parallel()
-	commits := []*conventionalcommits.ConventionalCommit{
+	commits := []*gitrepo.ConventionalCommit{
 		{
 			LibraryID: "foo",
 			Footers:   map[string]string{},
@@ -800,12 +799,12 @@ func TestLibraryFilter(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		libraryID string
-		want      []*conventionalcommits.ConventionalCommit
+		want      []*gitrepo.ConventionalCommit
 	}{
 		{
 			name:      "filter by foo",
 			libraryID: "foo",
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				commits[0],
 				commits[2],
 				commits[4],
@@ -815,7 +814,7 @@ func TestLibraryFilter(t *testing.T) {
 		{
 			name:      "filter by bar",
 			libraryID: "bar",
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				commits[1],
 				commits[3],
 				commits[4],
