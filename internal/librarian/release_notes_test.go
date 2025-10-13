@@ -416,41 +416,6 @@ Language Image: %s`,
 				librarianVersion, "go:1.21"),
 		},
 		{
-			name: "onboarding_new_api",
-			state: &config.LibrarianState{
-				Image: "go:1.21",
-				Libraries: []*config.LibraryState{
-					{
-						ID:          "one-library",
-						SourceRoots: []string{"path/to"},
-						APIs: []*config.API{
-							{
-								Path:          "path/to",
-								ServiceConfig: "library_v1.yaml",
-							},
-						},
-					},
-				},
-			},
-			sourceRepo: &MockRepository{
-				GetLatestCommitByPath: map[string]*gitrepo.Commit{
-					"path/to/library_v1.yaml": {
-						Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
-					},
-				},
-			},
-			api:           "path/to",
-			library:       "one-library",
-			apiOnboarding: true,
-			want: fmt.Sprintf(`feat: onboard a new library
-
-PiperOrigin-RevId: 98765
-Library-IDs: one-library
-Librarian Version: %s
-Language Image: %s`,
-				librarianVersion, "go:1.21"),
-		},
-		{
 			name: "no conventional commit is found since last generation",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
@@ -546,6 +511,83 @@ Language Image: %s`,
 			wantErr:       true,
 			wantErrPhrase: "failed to fetch conventional commits for library",
 		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			opt := &generationPROption{
+				sourceRepo:      test.sourceRepo,
+				languageRepo:    test.languageRepo,
+				state:           test.state,
+				idToCommits:     test.idToCommits,
+				failedLibraries: test.failedLibraries,
+			}
+			got, err := formatGenerationPRBody(opt)
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("formatGenerationPRBody() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("formatGenerationPRBody() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFormatOnboardPRBody(t *testing.T) {
+	t.Parallel()
+	librarianVersion := cli.Version()
+
+	for _, test := range []struct {
+		name          string
+		state         *config.LibrarianState
+		sourceRepo    gitrepo.Repository
+		api           string
+		library       string
+		want          string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "onboarding_new_api",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+						APIs: []*config.API{
+							{
+								Path:          "path/to",
+								ServiceConfig: "library_v1.yaml",
+							},
+						},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				GetLatestCommitByPath: map[string]*gitrepo.Commit{
+					"path/to/library_v1.yaml": {
+						Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
+					},
+				},
+			},
+			api:     "path/to",
+			library: "one-library",
+			want: fmt.Sprintf(`feat: onboard a new library
+
+PiperOrigin-RevId: 98765
+Library-IDs: one-library
+Librarian Version: %s
+Language Image: %s`,
+				librarianVersion, "go:1.21"),
+		},
 		{
 			name: "no_latest_commit_during_api_onboarding",
 			state: &config.LibrarianState{
@@ -568,7 +610,6 @@ Language Image: %s`,
 			},
 			api:           "path/to",
 			library:       "one-library",
-			apiOnboarding: true,
 			wantErr:       true,
 			wantErrPhrase: "no latest commit",
 		},
@@ -598,29 +639,24 @@ Language Image: %s`,
 			},
 			api:           "path/to",
 			library:       "one-library",
-			apiOnboarding: true,
 			wantErr:       true,
 			wantErrPhrase: errPiperNotFound.Error(),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			opt := &generationPROption{
-				sourceRepo:      test.sourceRepo,
-				languageRepo:    test.languageRepo,
-				state:           test.state,
-				idToCommits:     test.idToCommits,
-				api:             test.api,
-				library:         test.library,
-				failedLibraries: test.failedLibraries,
-				apiOnboarding:   test.apiOnboarding,
+			opt := &onboardPROption{
+				sourceRepo: test.sourceRepo,
+				state:      test.state,
+				api:        test.api,
+				library:    test.library,
 			}
-			got, err := formatGenerationNotes(opt)
+			got, err := formatOnboardPRBody(opt)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
 				}
 				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("formatGenerationNotes() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+					t.Errorf("formatOnboardPRBody() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
 				}
 				return
 			}
@@ -628,7 +664,7 @@ Language Image: %s`,
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("formatGenerationNotes() mismatch (-want +got):\n%s", diff)
+				t.Errorf("formatOnboardPRBody() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
