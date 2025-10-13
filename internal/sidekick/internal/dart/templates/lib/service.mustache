@@ -18,12 +18,21 @@ limitations under the License.
 {{{.}}}
 {{/Codec.DocLines}}
 final class {{Codec.Name}} {
-  static const String _host = '{{DefaultHost}}';
-
+  static const _host = '{{DefaultHost}}';
   final ServiceClient _client;
 
   {{Codec.Name}}({required http.Client client})
       : _client = ServiceClient(client: client);
+
+  factory {{Codec.Name}}.fromApiKey([String? apiKey]) {
+    apiKey ??= _apiKeys.map(environmentVariable).nonNulls.firstOrNull;
+    if (apiKey == null) {
+      throw ArgumentError('apiKey or one of these environment variables must '
+        'be set to an API key: ${_apiKeys.join(", ")}');
+    }
+    return {{Codec.Name}}(client: auth.clientViaApiKey(apiKey));
+  }
+
   {{#Codec.Methods}}
   {{> method}}
   {{/Codec.Methods}}

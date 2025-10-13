@@ -50,6 +50,15 @@ type generateRunner struct {
 	workRoot        string
 }
 
+// generationStatus represents the result of a single library generation.
+type generationStatus struct {
+	// oldCommit is the SHA of the previously generated version of the library.
+	oldCommit string
+	// apiOnboarding is true if an API is being configured and generated for the
+	// first time.
+	apiOnboarding bool
+}
+
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 	runner, err := newCommandRunner(cfg)
 	if err != nil {
@@ -88,6 +97,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// use this map to keep the mapping from library id to commit sha before the
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string)
+	apiOnboarding := false
 	var failedLibraries []string
 	failedGenerations := 0
 	if r.api != "" || r.library != "" {
@@ -95,11 +105,12 @@ func (r *generateRunner) run(ctx context.Context) error {
 		if libraryID == "" {
 			libraryID = findLibraryIDByAPIPath(r.state, r.api)
 		}
-		oldCommit, err := r.generateSingleLibrary(ctx, libraryID, outputDir)
+		status, err := r.generateSingleLibrary(ctx, libraryID, outputDir)
 		if err != nil {
 			return err
 		}
-		idToCommits[libraryID] = oldCommit
+		idToCommits[libraryID] = status.oldCommit
+		apiOnboarding = status.apiOnboarding
 	} else {
 		succeededGenerations := 0
 		blockedGenerations := 0
@@ -112,7 +123,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 					continue
 				}
 			}
-			oldCommit, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
+			status, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
 			if err != nil {
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
 				failedLibraries = append(failedLibraries, library.ID)
@@ -120,7 +131,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 			} else {
 				// Only add the mapping if library generation is successful so that
 				// failed library will not appear in generation PR body.
-				idToCommits[library.ID] = oldCommit
+				idToCommits[library.ID] = status.oldCommit
 				succeededGenerations++
 			}
 		}
@@ -150,10 +161,11 @@ func (r *generateRunner) run(ctx context.Context) error {
 		idToCommits:       idToCommits,
 		prType:            generate,
 		push:              r.push,
-		repo:              r.repo,
+		languageRepo:      r.repo,
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
+		apiOnboarding:     apiOnboarding,
 		failedGenerations: failedGenerations,
 	}
 
@@ -170,34 +182,38 @@ func (r *generateRunner) run(ctx context.Context) error {
 //
 // 3. Build the library.
 //
-// 4. Update the last generated commit.
-//
-// Returns the last generated commit before the generation and error, if any.
-func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (string, error) {
+// 4. Update the last generated commit or initial piper id if the library needs configure.
+func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (*generationStatus, error) {
 	safeLibraryDirectory := getSafeDirectoryName(libraryID)
+	apiOnboarding := false
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.library)
 		configureOutputDir := filepath.Join(outputDir, safeLibraryDirectory, "configure")
 		if err := os.MkdirAll(configureOutputDir, 0755); err != nil {
-			return "", err
+			return nil, err
 		}
 		configuredLibraryID, err := r.runConfigureCommand(ctx, configureOutputDir)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+
+		apiOnboarding = true
 		libraryID = configuredLibraryID
 	}
 
 	// At this point, we should have a library in the state.
 	libraryState := findLibraryByID(r.state, libraryID)
 	if libraryState == nil {
-		return "", fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
+		return nil, fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
 	}
 	lastGenCommit := libraryState.LastGeneratedCommit
 
 	if len(libraryState.APIs) == 0 {
 		slog.Info("library has no APIs; skipping generation", "library", libraryID)
-		return "", nil
+		return &generationStatus{
+			oldCommit:     "",
+			apiOnboarding: apiOnboarding,
+		}, nil
 	}
 
 	// For each library, create a separate output directory. This avoids
@@ -205,23 +221,26 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	// was generated for each library when debugging.
 	libraryOutputDir := filepath.Join(outputDir, safeLibraryDirectory)
 	if err := os.MkdirAll(libraryOutputDir, 0755); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	generatedLibraryID, err := r.runGenerateCommand(ctx, libraryID, libraryOutputDir)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := r.runBuildCommand(ctx, generatedLibraryID); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := r.updateLastGeneratedCommitState(generatedLibraryID); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return lastGenCommit, nil
+	return &generationStatus{
+		oldCommit:     lastGenCommit,
+		apiOnboarding: apiOnboarding,
+	}, nil
 }
 
 func (r *generateRunner) needsConfigure() bool {
@@ -451,7 +470,7 @@ func setAllAPIStatus(state *config.LibrarianState, status string) {
 
 // getSafeDirectoryName returns a directory name which doesn't contain slashes
 // based on a library ID. This avoids cases where a library ID contains
-// slashes but we want generateSingleLibrary to create a directory which
+// slashes, but we want generateSingleLibrary to create a directory which
 // is not a subdirectory of some other directory. For example, if there
 // are library IDs of "pubsub" and "pubsub/v2" we don't want to create
 // "output/pubsub/v2" and then "output/pubsub" later. This function does

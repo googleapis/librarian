@@ -59,7 +59,7 @@ func shouldIncludeForRelease(files, sourceRoots, excludePaths []string) bool {
 // getConventionalCommitsSinceLastGeneration returns all conventional commits for
 // all API paths in given library since the last generation. The repo input should
 // be the googleapis source repo.
-func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*conventionalcommits.ConventionalCommit, error) {
+func getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*conventionalcommits.ConventionalCommit, error) {
 	if lastGenCommit == "" {
 		slog.Info("the last generation commit is empty, skip fetching conventional commits", "library", library.ID)
 		return make([]*conventionalcommits.ConventionalCommit, 0), nil
@@ -70,30 +70,64 @@ func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library 
 		apiPaths = append(apiPaths, oneAPI.Path)
 	}
 
-	commits, err := repo.GetCommitsForPathsSinceCommit(apiPaths, lastGenCommit)
+	sourceCommits, err := sourceRepo.GetCommitsForPathsSinceCommit(apiPaths, lastGenCommit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)
 	}
 
-	// checks that the files in the commit are in the api paths for the source repo.
-	// The generation change is for changes in the source repo and NOT the language repo.
-	shouldIncludeFiles := func(files []string) bool {
-		return shouldIncludeForGeneration(files, apiPaths)
+	var languageRepoFiles []string
+	if ok, _ := languageRepo.IsClean(); ok {
+		headHash, err := languageRepo.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		languageRepoFiles, err = languageRepo.ChangedFilesInCommit(headHash)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// The commit or push flag is not set, get all locally changed files.
+		languageRepoFiles, err = languageRepo.ChangedFiles()
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return convertToConventionalCommits(repo, library, commits, shouldIncludeFiles)
+	// checks that the files in the commit are in the api paths for the source repo.
+	// The generation change is for changes in the source repo and NOT the language repo.
+	shouldIncludeFiles := func(sourceFiles []string) bool {
+		return shouldIncludeForGeneration(sourceFiles, languageRepoFiles, library)
+	}
+
+	return convertToConventionalCommits(sourceRepo, library, sourceCommits, shouldIncludeFiles)
 }
 
 // shouldIncludeForGeneration determines if a commit should be included in generation.
 // It returns true if there is at least one file in the commit that is under the
-// library's API(s) path (a library could have multiple APIs).
-func shouldIncludeForGeneration(files, apiPaths []string) bool {
-	for _, file := range files {
+// library's API(s) path (a library could have multiple APIs) and has local
+// changes associated with it.
+func shouldIncludeForGeneration(sourceFiles, languageRepoFiles []string, library *config.LibraryState) bool {
+	var apiPaths []string
+	for _, api := range library.APIs {
+		apiPaths = append(apiPaths, api.Path)
+	}
+
+	var sourceFilesInPath bool
+	for _, file := range sourceFiles {
 		if isUnderAnyPath(file, apiPaths) {
-			return true
+			sourceFilesInPath = true
+			break
 		}
 	}
-	return false
+
+	var languageRepoFilesInPath bool
+	for _, file := range languageRepoFiles {
+		if isUnderAnyPath(file, library.SourceRoots) && !isUnderAnyPath(file, library.ReleaseExcludePaths) {
+			languageRepoFilesInPath = true
+			break
+		}
+	}
+	return sourceFilesInPath && languageRepoFilesInPath
 }
 
 // libraryFilter filters a list of conventional commits by library ID.
@@ -118,10 +152,10 @@ func libraryFilter(commits []*conventionalcommits.ConventionalCommit, libraryID 
 // convertToConventionalCommits converts a list of commits in a git repo into a list
 // of conventional commits. The filesFilter parameter is custom filter out non-matching
 // files depending on a generation or a release change.
-func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, filesFilter func(files []string) bool) ([]*conventionalcommits.ConventionalCommit, error) {
+func convertToConventionalCommits(sourceRepo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, filesFilter func(files []string) bool) ([]*conventionalcommits.ConventionalCommit, error) {
 	var conventionalCommits []*conventionalcommits.ConventionalCommit
 	for _, commit := range commits {
-		files, err := repo.ChangedFilesInCommit(commit.Hash.String())
+		files, err := sourceRepo.ChangedFilesInCommit(commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get changed files for commit %s: %w", commit.Hash.String(), err)
 		}
@@ -149,6 +183,9 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 // isUnderAnyPath returns true if the file is under any of the given paths.
 func isUnderAnyPath(file string, paths []string) bool {
 	for _, p := range paths {
+		if p == "." {
+			return true
+		}
 		rel, err := filepath.Rel(p, file)
 		if err == nil && !strings.HasPrefix(rel, "..") {
 			return true

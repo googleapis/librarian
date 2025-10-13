@@ -320,10 +320,21 @@ type MockRepository struct {
 	ChangedFilesInCommitValue              []string
 	ChangedFilesInCommitValueByHash        map[string][]string
 	ChangedFilesInCommitError              error
+	ChangedFilesValue                      []string
+	ChangedFilesError                      error
 	CreateBranchAndCheckoutError           error
 	PushCalls                              int
 	PushError                              error
 	RestoreError                           error
+	HeadHashValue                          string
+	HeadHashError                          error
+}
+
+func (m *MockRepository) HeadHash() (string, error) {
+	if m.HeadHashError != nil {
+		return "", m.HeadHashError
+	}
+	return m.HeadHashValue, nil
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -416,6 +427,13 @@ func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
 		}
 	}
 	return m.ChangedFilesInCommitValue, nil
+}
+
+func (m *MockRepository) ChangedFiles() ([]string, error) {
+	if m.ChangedFilesError != nil {
+		return nil, m.ChangedFilesError
+	}
+	return m.ChangedFilesValue, nil
 }
 
 func (m *MockRepository) CreateBranchAndCheckout(name string) error {
