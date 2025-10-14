@@ -44,6 +44,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 			MethodID: ".test.v1.ResourceService.move",
 			Want: &methodAnnotation{
 				Name:                "r#move",
+				NameNoMangling:      "move",
 				BuilderName:         "Move",
 				Body:                "None::<gaxi::http::NoBody>",
 				ServiceNameToPascal: "ResourceService",
@@ -56,6 +57,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 			MethodID: ".test.v1.ResourceService.Delete",
 			Want: &methodAnnotation{
 				Name:                "delete",
+				NameNoMangling:      "delete",
 				BuilderName:         "Delete",
 				Body:                "None::<gaxi::http::NoBody>",
 				ServiceNameToPascal: "ResourceService",
@@ -68,6 +70,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 			MethodID: ".test.v1.ResourceService.Self",
 			Want: &methodAnnotation{
 				Name:                "r#self",
+				NameNoMangling:      "self",
 				BuilderName:         "r#Self",
 				Body:                "None::<gaxi::http::NoBody>",
 				ServiceNameToPascal: "ResourceService",
