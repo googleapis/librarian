@@ -16,6 +16,7 @@ package dart
 
 import (
 	"io/fs"
+	"maps"
 	"os"
 	"os/exec"
 	"path"
@@ -83,7 +84,11 @@ func TestFromProtobuf(t *testing.T) {
 func TestGeneratedFiles(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	annotate := newAnnotateModel(model)
-	annotate.annotateModel(map[string]string{"package:google_cloud_gax": "^1.2.3", "package:http": "^4.5.6"})
+
+	options := maps.Clone(requiredConfig)
+	maps.Copy(options, map[string]string{"package:google_cloud_gax": "^1.2.3", "package:http": "^4.5.6"})
+
+	annotate.annotateModel(options)
 	files := generatedFiles(model)
 	if len(files) == 0 {
 		t.Errorf("expected a non-empty list of template files from generatedFiles()")

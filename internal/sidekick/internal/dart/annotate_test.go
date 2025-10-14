@@ -35,8 +35,12 @@ var (
 func TestAnnotateModel(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "test"
+
+	options := maps.Clone(requiredConfig)
+	maps.Copy(options, map[string]string{"package:google_cloud_gax": "^1.2.3"})
+
 	annotate := newAnnotateModel(model)
-	err := annotate.annotateModel(map[string]string{"package:google_cloud_gax": "^1.2.3"})
+	err := annotate.annotateModel(options)
 	if err != nil {
 		t.Fatal(err)
 	}

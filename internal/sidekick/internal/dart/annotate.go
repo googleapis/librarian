@@ -228,7 +228,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		repositoryURL              string
 		readMeAfterTitleText       string
 		readMeQuickstartText       string
-		issueTrackerUrl            string
+		issueTrackerURL            string
 		apiKeyEnvironmentVariables = []string{}
 	)
 
@@ -249,7 +249,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		case key == "issue-tracker-url":
 			// issue-tracker-url = "http://www.example.com/issues"
 			// A link to the issue tracker for the service.
-			issueTrackerUrl = definition
+			issueTrackerURL = definition
 		case key == "version":
 			packageVersion = definition
 		case key == "part-file":
@@ -343,8 +343,8 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return errors.New("all packages that define a service must define 'api-keys-environment-variables'")
 	}
 
-	if len(issueTrackerUrl) == 0 {
-		return errors.New("all packages that define a service must define 'issue-tracker-url'")
+	if len(issueTrackerURL) == 0 {
+		return errors.New("all packages that must 'issue-tracker-url'")
 	}
 
 	ann := &modelAnnotations{
@@ -369,7 +369,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		DevDependencies:            devDependencies,
 		DoNotPublish:               doNotPublish,
 		RepositoryURL:              repositoryURL,
-		IssueTrackerURL:            issueTrackerUrl,
+		IssueTrackerURL:            issueTrackerURL,
 		ReadMeAfterTitleText:       readMeAfterTitleText,
 		ReadMeQuickstartText:       readMeQuickstartText,
 		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
