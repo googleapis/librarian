@@ -133,7 +133,7 @@ Language Image: {{.ImageVersion}}
 `))
 )
 
-type generationPROption struct {
+type generationPRRequest struct {
 	sourceRepo      gitrepo.Repository
 	languageRepo    gitrepo.Repository
 	state           *config.LibrarianState
@@ -141,7 +141,7 @@ type generationPROption struct {
 	failedLibraries []string
 }
 
-type onboardPROption struct {
+type onboardPRRequest struct {
 	sourceRepo gitrepo.Repository
 	state      *config.LibrarianState
 	api        string
@@ -187,7 +187,7 @@ type commitSection struct {
 }
 
 // formatOnboardPRBody creates the body of an onboarding pull request.
-func formatOnboardPRBody(opt *onboardPROption) (string, error) {
+func formatOnboardPRBody(opt *onboardPRRequest) (string, error) {
 	piperID, err := getPiperID(opt.state, opt.sourceRepo, opt.api, opt.library)
 	if err != nil {
 		return "", err
@@ -210,7 +210,7 @@ func formatOnboardPRBody(opt *onboardPROption) (string, error) {
 
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(opt *generationPROption) (string, error) {
+func formatGenerationPRBody(opt *generationPRRequest) (string, error) {
 	var allCommits []*gitrepo.ConventionalCommit
 	for _, library := range opt.state.Libraries {
 		lastGenCommit, ok := opt.idToCommits[library.ID]

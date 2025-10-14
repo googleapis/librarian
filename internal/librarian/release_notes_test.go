@@ -512,7 +512,7 @@ Language Image: %s`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			opt := &generationPROption{
+			opt := &generationPRRequest{
 				sourceRepo:      test.sourceRepo,
 				languageRepo:    test.languageRepo,
 				state:           test.state,
@@ -643,7 +643,7 @@ Language Image: %s`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			opt := &onboardPROption{
+			opt := &onboardPRRequest{
 				sourceRepo: test.sourceRepo,
 				state:      test.state,
 				api:        test.api,
