@@ -203,6 +203,7 @@ type messageAnnotation struct {
 
 type methodAnnotation struct {
 	Name                      string
+	NameNoMangling            string
 	BuilderName               string
 	DocLines                  []string
 	PathInfo                  *api.PathInfo
@@ -784,6 +785,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 	serviceName := c.ServiceName(m.Service)
 	annotation := &methodAnnotation{
 		Name:                      toSnake(m.Name),
+		NameNoMangling:            toSnakeNoMangling(m.Name),
 		BuilderName:               toPascal(m.Name),
 		Body:                      bodyAccessor(m),
 		DocLines:                  c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes()),
