@@ -25,7 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestNew(t *testing.T) {
@@ -929,7 +929,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 				ID:               "my-library",
 				Version:          "1.1.0",
 				ReleaseTriggered: true,
-				Changes: []*conventionalcommits.ConventionalCommit{
+				Changes: []*gitrepo.ConventionalCommit{
 					{
 						Type:    "feat",
 						Subject: "new feature",

@@ -861,6 +861,16 @@ func TestGenerateScenarios(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			// Commit the service config file because configure command needs
+			// to find the piper id associated with the commit message.
+			if err := r.sourceRepo.AddAll(); err != nil {
+				t.Fatal(err)
+			}
+			message := "feat: add an api\n\nPiperOrigin-RevId: 123456"
+			if err := r.sourceRepo.Commit(message); err != nil {
+				t.Fatal(err)
+			}
+
 			// Create a symlink in the output directory to trigger an error.
 			if test.name == "symlink in output" {
 				outputDir := filepath.Join(r.workRoot, "output")

@@ -287,8 +287,8 @@ func validateReleaseInitRequestJSON(state *librarianState) error {
 			if change.PiperCLNumber == "" {
 				return fmt.Errorf("validation error: library %s, change %d missing 'piper_cl_number'", lib.ID, j)
 			}
-			if change.SourceCommitHash == "" && change.CommitHash == "" {
-				return fmt.Errorf("validation error: library %s, change %d missing 'source_commit_hash' or 'commit_hash'", lib.ID, j)
+			if change.CommitHash == "" {
+				return fmt.Errorf("validation error: library %s, change %d missing 'commit_hash'", lib.ID, j)
 			}
 
 			// Validation logic to check for incorrect commit association.
@@ -531,10 +531,9 @@ type api struct {
 }
 
 type change struct {
-	Type             string `json:"type" yaml:"type"`
-	Subject          string `json:"subject" yaml:"subject"`
-	Body             string `json:"body" yaml:"body"`
-	PiperCLNumber    string `json:"piper_cl_number" yaml:"piper_cl_number"`
-	SourceCommitHash string `json:"source_commit_hash" yaml:"source_commit_hash"`
-	CommitHash       string `json:"commit_hash" yaml:"commit_hash"`
+	Type          string `json:"type" yaml:"type"`
+	Subject       string `json:"subject" yaml:"subject"`
+	Body          string `json:"body" yaml:"body"`
+	PiperCLNumber string `json:"piper_cl_number" yaml:"piper_cl_number"`
+	CommitHash    string `json:"commit_hash" yaml:"commit_hash"`
 }

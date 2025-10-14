@@ -16,21 +16,24 @@ package librarian
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 var (
+	errPiperNotFound = errors.New("piper id not found")
+
 	commitTypeToHeading = map[string]string{
 		"feat":     "Features",
 		"fix":      "Bug Fixes",
@@ -120,15 +123,45 @@ Language Image: {{.ImageVersion}}
 {{- end -}}
 {{- end }}
 `))
+
+	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`feat: onboard a new library
+
+PiperOrigin-RevId: {{.PiperID}}
+Library-IDs: {{.LibraryID}}
+Librarian Version: {{.LibrarianVersion}}
+Language Image: {{.ImageVersion}}
+`))
 )
+
+type generationPRRequest struct {
+	sourceRepo      gitrepo.Repository
+	languageRepo    gitrepo.Repository
+	state           *config.LibrarianState
+	idToCommits     map[string]string
+	failedLibraries []string
+}
+
+type onboardPRRequest struct {
+	sourceRepo gitrepo.Repository
+	state      *config.LibrarianState
+	api        string
+	library    string
+}
 
 type generationPRBody struct {
 	StartSHA         string
 	EndSHA           string
 	LibrarianVersion string
 	ImageVersion     string
-	Commits          []*conventionalcommits.ConventionalCommit
+	Commits          []*gitrepo.ConventionalCommit
 	FailedLibraries  []string
+}
+
+type onboardingPRBody struct {
+	ImageVersion     string
+	LibrarianVersion string
+	LibraryID        string
+	PiperID          string
 }
 
 type releaseNote struct {
@@ -150,20 +183,51 @@ type releaseNoteSection struct {
 
 type commitSection struct {
 	Heading string
-	Commits []*conventionalcommits.ConventionalCommit
+	Commits []*gitrepo.ConventionalCommit
+}
+
+// formatOnboardPRBody creates the body of an onboarding pull request.
+func formatOnboardPRBody(request *onboardPRRequest) (string, error) {
+	piperID, err := getPiperID(request.state, request.sourceRepo, request.api, request.library)
+	if err != nil {
+		return "", err
+	}
+
+	data := &onboardingPRBody{
+		LibrarianVersion: cli.Version(),
+		ImageVersion:     request.state.Image,
+		LibraryID:        request.library,
+		PiperID:          piperID,
+	}
+
+	var out bytes.Buffer
+	if err := onboardingBodyTemplate.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+
+	return strings.TrimSpace(out.String()), nil
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
-	var allCommits []*conventionalcommits.ConventionalCommit
-	for _, library := range state.Libraries {
-		lastGenCommit, ok := idToCommits[library.ID]
+func formatGenerationPRBody(request *generationPRRequest) (string, error) {
+	var allCommits []*gitrepo.ConventionalCommit
+	languageRepoChanges, err := languageRepoChangedFiles(request.languageRepo)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch changes in language repo: %w", err)
+	}
+	for _, library := range request.state.Libraries {
+		lastGenCommit, ok := request.idToCommits[library.ID]
 		if !ok {
 			continue
 		}
+		// If nothing has changed that would be significant in a release for this library,
+		// we don't look at the API changes either.
+		if !shouldIncludeForRelease(languageRepoChanges, library.SourceRoots, library.ReleaseExcludePaths) {
+			continue
+		}
 
-		commits, err := getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo, library, lastGenCommit)
+		commits, err := getConventionalCommitsSinceLastGeneration(request.sourceRepo, library, lastGenCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 		}
@@ -174,7 +238,7 @@ func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *
 		return "No commit is found since last generation", nil
 	}
 
-	startCommit, err := findLatestGenerationCommit(sourceRepo, state, idToCommits)
+	startCommit, err := findLatestGenerationCommit(request.sourceRepo, request.state, request.idToCommits)
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
 	}
@@ -194,9 +258,9 @@ func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *
 		StartSHA:         startSHA,
 		EndSHA:           endSHA,
 		LibrarianVersion: librarianVersion,
-		ImageVersion:     state.Image,
+		ImageVersion:     request.state.Image,
 		Commits:          groupedCommits,
-		FailedLibraries:  failedLibraries,
+		FailedLibraries:  request.failedLibraries,
 	}
 	var out bytes.Buffer
 	if err := genBodyTemplate.Execute(&out, data); err != nil {
@@ -238,9 +302,9 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 }
 
 // groupByIDAndSubject aggregates conventional commits for ones have the same Piper ID and subject in the footer.
-func groupByIDAndSubject(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
-	var res []*conventionalcommits.ConventionalCommit
-	idToCommits := make(map[string][]*conventionalcommits.ConventionalCommit)
+func groupByIDAndSubject(commits []*gitrepo.ConventionalCommit) []*gitrepo.ConventionalCommit {
+	var res []*gitrepo.ConventionalCommit
+	idToCommits := make(map[string][]*gitrepo.ConventionalCommit)
 	for _, commit := range commits {
 		// a commit is not considering for grouping if it doesn't have a footer or
 		// the footer doesn't have a Piper ID.
@@ -311,7 +375,7 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
 	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
-	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
+	commitsByType := make(map[string][]*gitrepo.ConventionalCommit)
 	for _, commit := range library.Changes {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
@@ -341,4 +405,66 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 	}
 
 	return section
+}
+
+// getPiperID extracts the Piper ID from the commit message that onboarded the API.
+func getPiperID(state *config.LibrarianState, sourceRepo gitrepo.Repository, apiPath, library string) (string, error) {
+	libraryState := findLibraryByID(state, library)
+	serviceYaml := ""
+	for _, api := range libraryState.APIs {
+		if api.Path == apiPath {
+			serviceYaml = api.ServiceConfig
+			break
+		}
+	}
+
+	initialCommit, err := sourceRepo.GetLatestCommit(filepath.Join(apiPath, serviceYaml))
+	if err != nil {
+		return "", err
+	}
+
+	id, err := findPiperIDFrom(initialCommit, library)
+	if err != nil {
+		return "", err
+	}
+
+	slog.Info("found piper id in the commit message", "piperID", id)
+	return id, nil
+}
+
+func findPiperIDFrom(commit *gitrepo.Commit, libraryID string) (string, error) {
+	commits, err := gitrepo.ParseCommits(commit, libraryID)
+	if err != nil {
+		return "", err
+	}
+
+	if len(commits) == 0 || commits[0].Footers == nil {
+		return "", errPiperNotFound
+	}
+
+	id, ok := commits[0].Footers["PiperOrigin-RevId"]
+	if !ok {
+		return "", errPiperNotFound
+	}
+
+	return id, nil
+}
+
+// languageRepoChangedFiles returns the paths of files changed in the repo as part
+// of the current librarian run - either in the head commit if the repo is clean,
+// or the outstanding changes otherwise.
+func languageRepoChangedFiles(languageRepo gitrepo.Repository) ([]string, error) {
+	clean, err := languageRepo.IsClean()
+	if err != nil {
+		return nil, err
+	}
+	if clean {
+		headHash, err := languageRepo.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		return languageRepo.ChangedFilesInCommit(headHash)
+	}
+	// The commit or push flag is not set, get all locally changed files.
+	return languageRepo.ChangedFiles()
 }
