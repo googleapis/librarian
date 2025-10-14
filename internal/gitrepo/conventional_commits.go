@@ -60,20 +60,49 @@ type ConventionalCommit struct {
 	// Footers contain metadata (e.g,"BREAKING CHANGE", "Reviewed-by").
 	// Repeated footer keys not supported, only first value is kept
 	Footers map[string]string `yaml:"-" json:"-"`
-	// IsBreaking indicates if the commit introduces a breaking change.
-	IsBreaking bool `yaml:"-" json:"-"`
-	// IsNested indicates if the commit is a nested commit.
-	IsNested bool `yaml:"-" json:"-"`
 	// CommitHash is the full commit hash.
 	CommitHash string `yaml:"-" json:"commit_hash,omitempty"`
 	// When is the timestamp of the commit.
 	When time.Time `yaml:"-" json:"-"`
+	// NestedCommits are the nested commits within this commit.
+	NestedCommits []*ConventionalCommit `yaml:"-" json:"-"`
+
+	// IsBreaking indicates if the commit introduces a breaking change.
+	IsBreaking bool `yaml:"-" json:"-"`
+	// IsNested indicates if the commit is a nested commit.
+	IsNested bool `yaml:"-" json:"-"`
+}
+
+// HasNestedCommits checks if the commit has any nested commits.
+func (c *ConventionalCommit) HasNestedCommits() bool {
+	return len(c.NestedCommits) > 0
+}
+
+// FilterCommitsByLibraryID returns a copy of the conventional commit. If the
+// commit contains nested commits, only those nested commits that are associated
+// with the library ID will be returned.
+func (c *ConventionalCommit) FilterCommitsByLibraryID(libraryID string) *ConventionalCommit {
+	commit := *c
+	commit.NestedCommits = nil
+	for _, nestedCommit := range c.NestedCommits {
+		if libraryIDs, ok := nestedCommit.Footers["Library-IDs"]; ok {
+			ids := strings.SplitSeq(libraryIDs, ",")
+			for id := range ids {
+				if strings.TrimSpace(id) == libraryID {
+					commit.NestedCommits = append(commit.NestedCommits, nestedCommit)
+					break
+				}
+			}
+		} else if commit.LibraryID == libraryID {
+			commit.NestedCommits = append(commit.NestedCommits, nestedCommit)
+		}
+	}
+	return &commit
 }
 
 // parsedHeader holds the result of parsing the header line.
 type parsedHeader struct {
 	Type        string
-	Scope       string
 	Description string
 	IsBreaking  bool
 }
@@ -107,40 +136,46 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// ParseCommits parses a commit message into a slice of ConventionalCommit structs.
+// ParseCommit parses a commit message into a of ConventionalCommit.
 //
 // It supports an override block wrapped in BEGIN_COMMIT_OVERRIDE and
 // END_COMMIT_OVERRIDE. If found, this block takes precedence, and only its
 // content will be parsed.
 //
 // The message can also contain multiple nested commits, each wrapped in
-// BEGIN_NESTED_COMMIT and END_NESTED_COMMIT markers.
+// BEGIN_NESTED_COMMIT and END_NESTED_COMMIT markers. In the case that this
+// block is wrapped in a BEGIN_COMMIT_OVERRIDE the first nested commit will
+// be treated as the primary commit.
 //
 // Malformed override or nested blocks (e.g., with a missing end marker) are
 // ignored. Any commit part that is found but fails to parse as a valid
 // conventional commit is logged and skipped.
-func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, error) {
-	message := commit.Message
+func ParseCommit(commit *Commit, libraryID string) (*ConventionalCommit, error) {
+	message := extractCommitMessageOverride(commit.Message)
 	if strings.TrimSpace(message) == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
-	message = extractCommitMessageOverride(message)
-
-	var commits []*ConventionalCommit
-
-	for _, part := range extractCommitParts(message) {
+	var conventionalCommit *ConventionalCommit
+	for i, part := range extractNestedCommits(message) {
 		c, err := parseSimpleCommit(part, commit, libraryID)
 		if err != nil {
 			slog.Warn("failed to parse commit part", "commit", part.message, "error", err)
 			continue
 		}
-
-		if c != nil {
-			commits = append(commits, c...)
+		if i == 0 {
+			if len(c) == 0 {
+				continue
+			}
+			conventionalCommit = c[0]
+			if len(c) > 1 {
+				conventionalCommit.NestedCommits = c[1:]
+			}
+		} else {
+			conventionalCommit.NestedCommits = append(conventionalCommit.NestedCommits, c...)
 		}
 	}
 
-	return commits, nil
+	return conventionalCommit, nil
 }
 
 func extractCommitMessageOverride(message string) string {
@@ -156,15 +191,18 @@ func extractCommitMessageOverride(message string) string {
 	return strings.TrimSpace(afterBegin[:endIndex])
 }
 
-func extractCommitParts(message string) []commitPart {
+// extractNestedCommits splits the commit message into parts based on
+// BEGIN_NESTED_COMMIT and END_NESTED_COMMIT markers. The first part (if any)
+// is considered the primary commit. Subsequent parts are nested commits.
+// Malformed nested blocks (missing END_NESTED_COMMIT) are ignored.
+func extractNestedCommits(message string) []commitPart {
 	parts := strings.Split(message, beginNestedCommit)
 	var commitParts []commitPart
 
 	// The first part is the primary commit.
 	if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
 		commitParts = append(commitParts, commitPart{
-			message:  strings.TrimSpace(parts[0]),
-			isNested: false,
+			message: strings.TrimSpace(parts[0]),
 		})
 	}
 
@@ -181,7 +219,7 @@ func extractCommitParts(message string) []commitPart {
 			continue
 		}
 		commitParts = append(commitParts, commitPart{
-			message:  commitStr,
+			message:  strings.TrimSpace(commitStr),
 			isNested: true,
 		})
 	}
@@ -191,12 +229,11 @@ func extractCommitParts(message string) []commitPart {
 // parseSimpleCommit parses a simple commit message and returns a slice of ConventionalCommit.
 // A simple commit message is commit that does not include override or nested commits.
 func parseSimpleCommit(commitPart commitPart, commit *Commit, libraryID string) ([]*ConventionalCommit, error) {
-	trimmedMessage := strings.TrimSpace(commitPart.message)
-	if trimmedMessage == "" {
+	if commitPart.message == "" {
 		return nil, fmt.Errorf("empty commit message")
 	}
 
-	lines := strings.Split(trimmedMessage, "\n")
+	lines := strings.Split(commitPart.message, "\n")
 	bodyLines, footerLines := separateBodyAndFooters(lines)
 	footers, footerIsBreaking := parseFooters(footerLines)
 	processFooters(footers)
@@ -213,7 +250,6 @@ func parseSimpleCommit(commitPart commitPart, commit *Commit, libraryID string) 
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
-			slog.Warn("bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
 			if len(commits) == 0 {
 				// This should not happen as we expect a conventional commit message inside a nested commit.
 				continue
@@ -283,7 +319,6 @@ func parseHeader(headerLine string) (*parsedHeader, bool) {
 
 	return &parsedHeader{
 		Type:        capturesMap["type"],
-		Scope:       capturesMap["scope"],
 		Description: capturesMap["description"],
 		IsBreaking:  capturesMap["breaking"] == "!",
 	}, true

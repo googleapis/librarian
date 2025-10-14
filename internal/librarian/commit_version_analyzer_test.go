@@ -355,17 +355,19 @@ END_COMMIT_OVERRIDE`,
 						"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
 					},
 					IsNested: true,
-				},
-				{
-					Type:      "fix",
-					Subject:   "a bug3 fix",
-					LibraryID: "foo",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "573342",
-						"Library-IDs":       "foo, bar",
-						"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
+					NestedCommits: []*gitrepo.ConventionalCommit{
+						{
+							Type:      "fix",
+							Subject:   "a bug3 fix",
+							LibraryID: "foo",
+							Footers: map[string]string{
+								"PiperOrigin-RevId": "573342",
+								"Library-IDs":       "foo, bar",
+								"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
+							},
+							IsNested: true,
+						},
 					},
-					IsNested: true,
 				},
 				{
 					Type:      "feat",
@@ -759,78 +761,6 @@ func TestNextVersion(t *testing.T) {
 			}
 			if gotVersion != test.wantVersion {
 				t.Errorf("NextVersion() = %v, want %v", gotVersion, test.wantVersion)
-			}
-		})
-	}
-}
-
-func TestLibraryFilter(t *testing.T) {
-	t.Parallel()
-	commits := []*gitrepo.ConventionalCommit{
-		{
-			LibraryID: "foo",
-			Footers:   map[string]string{},
-		},
-		{
-			LibraryID: "bar",
-			Footers:   map[string]string{},
-		},
-		{
-			Footers: map[string]string{
-				"Library-IDs": "foo",
-			},
-		},
-		{
-			Footers: map[string]string{
-				"Library-IDs": "bar",
-			},
-		},
-		{
-			Footers: map[string]string{
-				"Library-IDs": "foo, bar",
-			},
-		},
-		{
-			Footers: map[string]string{
-				"Library-IDs": "foo,bar",
-			},
-		},
-	}
-	for _, test := range []struct {
-		name      string
-		libraryID string
-		want      []*gitrepo.ConventionalCommit
-	}{
-		{
-			name:      "filter by foo",
-			libraryID: "foo",
-			want: []*gitrepo.ConventionalCommit{
-				commits[0],
-				commits[2],
-				commits[4],
-				commits[5],
-			},
-		},
-		{
-			name:      "filter by bar",
-			libraryID: "bar",
-			want: []*gitrepo.ConventionalCommit{
-				commits[1],
-				commits[3],
-				commits[4],
-				commits[5],
-			},
-		},
-		{
-			name:      "filter by baz",
-			libraryID: "baz",
-			want:      nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := libraryFilter(commits, test.libraryID)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("libraryFilter() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

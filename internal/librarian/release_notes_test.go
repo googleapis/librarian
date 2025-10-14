@@ -1024,6 +1024,60 @@ Language Image: go:1.21
 				librarianVersion, today),
 		},
 		{
+			name: "release_with_commit_description_and_body",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the newVersion in the release note.
+						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
+						ReleaseTriggered: true,
+						Changes: []*gitrepo.ConventionalCommit{
+							{
+								Type:       "feat",
+								Subject:    "new feature",
+								Body:       "this is the body",
+								CommitHash: hash1.String(),
+								NestedCommits: []*gitrepo.ConventionalCommit{
+									{
+										Type:       "feat",
+										Subject:    "a sub feat related to the same piper ID",
+										CommitHash: hash1.String(),
+									},
+									{
+										Type:       "fix",
+										Subject:    "a sub fix related to the same piper ID",
+										CommitHash: hash1.String(),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+### Features
+
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+
+* a sub feat related to the same piper ID ([1234567](https://github.com/owner/repo/commit/1234567))
+
+### Bug Fixes
+
+* a sub fix related to the same piper ID ([1234567](https://github.com/owner/repo/commit/1234567))
+
+</details>`,
+				librarianVersion, today),
+		},
+		{
 			name: "no releases",
 			state: &config.LibrarianState{
 				Image:     "go:1.21",

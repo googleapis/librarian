@@ -129,25 +129,6 @@ func shouldIncludeForGeneration(sourceFiles, languageRepoFiles []string, library
 	return sourceFilesInPath && languageRepoFilesInPath
 }
 
-// libraryFilter filters a list of conventional commits by library ID.
-func libraryFilter(commits []*gitrepo.ConventionalCommit, libraryID string) []*gitrepo.ConventionalCommit {
-	var filteredCommits []*gitrepo.ConventionalCommit
-	for _, commit := range commits {
-		if libraryIDs, ok := commit.Footers["Library-IDs"]; ok {
-			ids := strings.Split(libraryIDs, ",")
-			for _, id := range ids {
-				if strings.TrimSpace(id) == libraryID {
-					filteredCommits = append(filteredCommits, commit)
-					break
-				}
-			}
-		} else if commit.LibraryID == libraryID {
-			filteredCommits = append(filteredCommits, commit)
-		}
-	}
-	return filteredCommits
-}
-
 // convertToConventionalCommits converts a list of commits in a git repo into a list
 // of conventional commits. The filesFilter parameter is custom filter out non-matching
 // files depending on a generation or a release change.
@@ -161,20 +142,15 @@ func convertToConventionalCommits(sourceRepo gitrepo.Repository, library *config
 		if !filesFilter(files) {
 			continue
 		}
-		parsedCommits, err := gitrepo.ParseCommits(commit, library.ID)
+		conventionalCommit, err := gitrepo.ParseCommit(commit, library.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
-		if parsedCommits == nil {
+		if conventionalCommit == nil {
 			continue
 		}
 
-		parsedCommits = libraryFilter(parsedCommits, library.ID)
-
-		for _, pc := range parsedCommits {
-			pc.CommitHash = commit.Hash.String()
-		}
-		conventionalCommits = append(conventionalCommits, parsedCommits...)
+		conventionalCommits = append(conventionalCommits, conventionalCommit.FilterCommitsByLibraryID(library.ID))
 	}
 	return conventionalCommits, nil
 }

@@ -23,180 +23,161 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestParseCommits(t *testing.T) {
+func TestParseCommit(t *testing.T) {
 	now := time.Now()
 	sha := plumbing.NewHash("fake-sha")
 	for _, test := range []struct {
 		name          string
 		message       string
-		want          []*ConventionalCommit
+		want          *ConventionalCommit
 		wantErr       bool
 		wantErrPhrase string
 	}{
 		{
 			name:    "simple_commit_with_no_library_association",
 			message: "feat: add new feature",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "add new feature",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					Footers:    make(map[string]string),
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "add new feature",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				Footers:    make(map[string]string),
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "simple_commit_with_scope",
 			message: "feat(scope): add new feature",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "add new feature",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					Footers:    make(map[string]string),
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+
+				Type:       "feat",
+				Subject:    "add new feature",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				Footers:    make(map[string]string),
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "simple_commit_with_breaking_change",
 			message: "feat!: add new feature",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "add new feature",
-					LibraryID:  "example-id",
-					IsBreaking: true,
-					IsNested:   false,
-					Footers:    make(map[string]string),
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "add new feature",
+				LibraryID:  "example-id",
+				IsBreaking: true,
+				IsNested:   false,
+				Footers:    make(map[string]string),
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "commit_with_single_footer",
 			message: "feat: add new feature\n\nCo-authored-by: John Doe <john.doe@example.com>",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "add new feature",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					Footers:    map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "add new feature",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				Footers:    map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "commit_with_multiple_footers",
 			message: "feat: add new feature\n\nCo-authored-by: John Doe <john.doe@example.com>\nReviewed-by: Jane Smith <jane.smith@example.com>",
-			want: []*ConventionalCommit{
-				{
-					Type:      "feat",
-					Subject:   "add new feature",
-					LibraryID: "example-id",
-					IsNested:  false,
-					Footers: map[string]string{
-						"Co-authored-by": "John Doe <john.doe@example.com>",
-						"Reviewed-by":    "Jane Smith <jane.smith@example.com>",
-					},
-					CommitHash: sha.String(),
-					When:       now,
+			want: &ConventionalCommit{
+				Type:      "feat",
+				Subject:   "add new feature",
+				LibraryID: "example-id",
+				IsNested:  false,
+				Footers: map[string]string{
+					"Co-authored-by": "John Doe <john.doe@example.com>",
+					"Reviewed-by":    "Jane Smith <jane.smith@example.com>",
 				},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "commit_with_multiple_footers_for_generated_changes",
 			message: "feat: [library-name] add new feature\n\nThis is the body.\n...\n\nPiperOrigin-RevId: piper_cl_number\n\nSource-Link: [googleapis/googleapis@{source_commit_hash}](https://github.com/googleapis/googleapis/commit/abcdefg1234567)",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "[library-name] add new feature",
-					Body:       "This is the body.\n...",
-					LibraryID:  "library-name",
-					IsNested:   false,
-					IsBreaking: false,
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "piper_cl_number",
-						"Source-Link":       "abcdefg1234567",
-					},
-					CommitHash: sha.String(),
-					When:       now,
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "[library-name] add new feature",
+				Body:       "This is the body.\n...",
+				LibraryID:  "library-name",
+				IsNested:   false,
+				IsBreaking: false,
+				Footers: map[string]string{
+					"PiperOrigin-RevId": "piper_cl_number",
+					"Source-Link":       "abcdefg1234567",
 				},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "commit_with_breaking_change_footer",
 			message: "feat: add new feature\n\nBREAKING CHANGE: this is a breaking change",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "add new feature",
-					Body:       "",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					IsBreaking: true,
-					Footers:    map[string]string{"BREAKING CHANGE": "this is a breaking change"},
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "add new feature",
+				Body:       "",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				IsBreaking: true,
+				Footers:    map[string]string{"BREAKING CHANGE": "this is a breaking change"},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "commit_with_wrong_breaking_change_footer",
 			message: "feat: add new feature\n\nBreaking change: this is a breaking change",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "add new feature",
-					Body:       "Breaking change: this is a breaking change",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					IsBreaking: false,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "add new feature",
+				Body:       "Breaking change: this is a breaking change",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				IsBreaking: false,
+				Footers:    map[string]string{},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "commit_with_body_and_footers",
 			message: "feat: add new feature\n\nThis is the body of the commit message.\nIt can span multiple lines.\n\nCo-authored-by: John Doe <john.doe@example.com>",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "add new feature",
-					Body:       "This is the body of the commit message.\nIt can span multiple lines.",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					Footers:    map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "add new feature",
+				Body:       "This is the body of the commit message.\nIt can span multiple lines.",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				Footers:    map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
 			name:    "commit_with_multi-line_footer",
 			message: "feat: add new feature\n\nThis is the body.\n\nBREAKING CHANGE: this is a breaking change\nthat spans multiple lines.",
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "add new feature",
-					Body:       "This is the body.",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					IsBreaking: true,
-					Footers:    map[string]string{"BREAKING CHANGE": "this is a breaking change\nthat spans multiple lines."},
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "add new feature",
+				Body:       "This is the body.",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				IsBreaking: true,
+				Footers:    map[string]string{"BREAKING CHANGE": "this is a breaking change\nthat spans multiple lines."},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
@@ -210,17 +191,15 @@ This is the body of the override.
 
 Reviewed-by: Jane Doe
 END_COMMIT_OVERRIDE`,
-			want: []*ConventionalCommit{
-				{
-					Type:       "fix",
-					Subject:    "this is the override message",
-					Body:       "This is the body of the override.",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					Footers:    map[string]string{"Reviewed-by": "Jane Doe"},
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "fix",
+				Subject:    "this is the override message",
+				Body:       "This is the body of the override.",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				Footers:    map[string]string{"Reviewed-by": "Jane Doe"},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
@@ -249,37 +228,38 @@ END_NESTED_COMMIT
 BEGIN_NESTED_COMMIT
 chore(deps): update deps
 END_NESTED_COMMIT
-`,
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "main feature",
-					Body:       "main commit body",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-				{
-					Type:       "fix",
-					Subject:    "fix a bug",
-					Body:       "some details for the fix",
-					LibraryID:  "example-id",
-					IsNested:   true,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-				{
-					Type:       "chore",
-					Subject:    "update deps",
-					Body:       "",
-					LibraryID:  "example-id",
-					IsNested:   true,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
+		`,
+			want: &ConventionalCommit{
+
+				Type:       "feat",
+				Subject:    "main feature",
+				Body:       "main commit body",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				Footers:    map[string]string{},
+				CommitHash: sha.String(),
+				When:       now,
+				NestedCommits: []*ConventionalCommit{
+					{
+						Type:       "fix",
+						Subject:    "fix a bug",
+						Body:       "some details for the fix",
+						LibraryID:  "example-id",
+						IsNested:   true,
+						Footers:    map[string]string{},
+						CommitHash: sha.String(),
+						When:       now,
+					},
+					{
+						Type:       "chore",
+						Subject:    "update deps",
+						Body:       "",
+						LibraryID:  "example-id",
+						IsNested:   true,
+						Footers:    map[string]string{},
+						CommitHash: sha.String(),
+						When:       now,
+					},
 				},
 			},
 		},
@@ -290,17 +270,15 @@ END_NESTED_COMMIT
 
 BEGIN_NESTED_COMMIT
 END_NESTED_COMMIT
-`,
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "main feature 2nd line of title",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
-				},
+		`,
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "main feature 2nd line of title",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				Footers:    map[string]string{},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
@@ -335,27 +313,28 @@ PiperOrigin-RevId: 654321
 Source-Link: fake-link
 END_NESTED_COMMIT
 END_COMMIT_OVERRIDE
-`,
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "[abc] nested commit 1",
-					Body:       "body of nested commit 1\n...",
-					LibraryID:  "abc",
-					IsNested:   true,
-					Footers:    map[string]string{"PiperOrigin-RevId": "123456", "Source-Link": "fake-link"},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-				{
-					Type:       "feat",
-					Subject:    "[abc] nested commit 2",
-					IsNested:   true,
-					Body:       "body of nested commit 2\n...",
-					LibraryID:  "abc",
-					Footers:    map[string]string{"PiperOrigin-RevId": "654321", "Source-Link": "fake-link"},
-					CommitHash: sha.String(),
-					When:       now,
+		`,
+			want: &ConventionalCommit{
+
+				Type:       "feat",
+				Subject:    "[abc] nested commit 1",
+				Body:       "body of nested commit 1\n...",
+				LibraryID:  "abc",
+				IsNested:   true,
+				Footers:    map[string]string{"PiperOrigin-RevId": "123456", "Source-Link": "fake-link"},
+				CommitHash: sha.String(),
+				When:       now,
+				NestedCommits: []*ConventionalCommit{
+					{
+						Type:       "feat",
+						Subject:    "[abc] nested commit 2",
+						IsNested:   true,
+						Body:       "body of nested commit 2\n...",
+						LibraryID:  "abc",
+						Footers:    map[string]string{"PiperOrigin-RevId": "654321", "Source-Link": "fake-link"},
+						CommitHash: sha.String(),
+						When:       now,
+					},
 				},
 			},
 		},
@@ -373,17 +352,15 @@ This is the body of the override.
 Reviewed-by: Jane Doe
 END_COMMIT_OVERRIDE
 END_NESTED_COMMIT`,
-			want: []*ConventionalCommit{
-				{
-					Type:       "fix",
-					Subject:    "this is the override message",
-					Body:       "This is the body of the override.",
-					LibraryID:  "example-id",
-					IsNested:   false,
-					Footers:    map[string]string{"Reviewed-by": "Jane Doe"},
-					CommitHash: sha.String(),
-					When:       now,
-				},
+			want: &ConventionalCommit{
+				Type:       "fix",
+				Subject:    "this is the override message",
+				Body:       "This is the body of the override.",
+				LibraryID:  "example-id",
+				IsNested:   false,
+				Footers:    map[string]string{"Reviewed-by": "Jane Doe"},
+				CommitHash: sha.String(),
+				When:       now,
 			},
 		},
 		{
@@ -408,42 +385,43 @@ PiperOrigin-RevId: 799242210
 Source-Link: [googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
 END_NESTED_COMMIT
 END_COMMIT_OVERRIDE`,
-			want: []*ConventionalCommit{
-				{
-					Type:      "feat",
-					Subject:   "[texttospeech] Support promptable voices by specifying a model name and a prompt",
-					LibraryID: "texttospeech",
-					IsNested:  true,
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "799242210",
-						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
-					},
-					CommitHash: sha.String(),
-					When:       now,
+			want: &ConventionalCommit{
+
+				Type:      "feat",
+				Subject:   "[texttospeech] Support promptable voices by specifying a model name and a prompt",
+				LibraryID: "texttospeech",
+				IsNested:  true,
+				Footers: map[string]string{
+					"PiperOrigin-RevId": "799242210",
+					"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
 				},
-				{
-					Type:      "feat",
-					Subject:   "[texttospeech] Add enum value M4A to enum AudioEncoding",
-					LibraryID: "texttospeech",
-					IsNested:  true,
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "799242210",
-						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
+				CommitHash: sha.String(),
+				When:       now,
+				NestedCommits: []*ConventionalCommit{
+					{
+						Type:      "feat",
+						Subject:   "[texttospeech] Add enum value M4A to enum AudioEncoding",
+						LibraryID: "texttospeech",
+						IsNested:  true,
+						Footers: map[string]string{
+							"PiperOrigin-RevId": "799242210",
+							"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
+						},
+						CommitHash: sha.String(),
+						When:       now,
 					},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-				{
-					Type:      "docs",
-					Subject:   "[texttospeech] A comment for method 'StreamingSynthesize' in service 'TextToSpeech' is changed",
-					LibraryID: "texttospeech",
-					IsNested:  true,
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "799242210",
-						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
+					{
+						Type:      "docs",
+						Subject:   "[texttospeech] A comment for method 'StreamingSynthesize' in service 'TextToSpeech' is changed",
+						LibraryID: "texttospeech",
+						IsNested:  true,
+						Footers: map[string]string{
+							"PiperOrigin-RevId": "799242210",
+							"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
+						},
+						CommitHash: sha.String(),
+						When:       now,
 					},
-					CommitHash: sha.String(),
-					When:       now,
 				},
 			},
 		},
@@ -468,33 +446,33 @@ service 'TextToSpeech' is changed
 
 END_NESTED_COMMIT
 END_COMMIT_OVERRIDE`,
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "[texttospeech] Support promptable voices by specifying a model name and a prompt",
-					LibraryID:  "texttospeech",
-					IsNested:   true,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-				{
-					Type:       "feat",
-					Subject:    "[texttospeech] Add enum value M4A to enum AudioEncoding",
-					LibraryID:  "texttospeech",
-					IsNested:   true,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-				{
-					Type:       "docs",
-					Subject:    "[texttospeech] A comment for method 'StreamingSynthesize' in service 'TextToSpeech' is changed",
-					LibraryID:  "texttospeech",
-					IsNested:   true,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
+			want: &ConventionalCommit{
+				Type:       "feat",
+				Subject:    "[texttospeech] Support promptable voices by specifying a model name and a prompt",
+				LibraryID:  "texttospeech",
+				IsNested:   true,
+				Footers:    map[string]string{},
+				CommitHash: sha.String(),
+				When:       now,
+				NestedCommits: []*ConventionalCommit{
+					{
+						Type:       "feat",
+						Subject:    "[texttospeech] Add enum value M4A to enum AudioEncoding",
+						LibraryID:  "texttospeech",
+						IsNested:   true,
+						Footers:    map[string]string{},
+						CommitHash: sha.String(),
+						When:       now,
+					},
+					{
+						Type:       "docs",
+						Subject:    "[texttospeech] A comment for method 'StreamingSynthesize' in service 'TextToSpeech' is changed",
+						LibraryID:  "texttospeech",
+						IsNested:   true,
+						Footers:    map[string]string{},
+						CommitHash: sha.String(),
+						When:       now,
+					},
 				},
 			},
 		},
@@ -522,24 +500,25 @@ feat: [google-cloud-eventarc] add new fields to Eventarc resources
 
 END_NESTED_COMMIT
 END_COMMIT_OVERRIDE`,
-			want: []*ConventionalCommit{
-				{
-					Type:       "docs",
-					Subject:    "[google-cloud-video-live-stream] Update requirements of resource ID fields to be more clear",
-					LibraryID:  "google-cloud-video-live-stream",
-					IsNested:   true,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-				{
-					Type:       "feat",
-					Subject:    "[google-cloud-eventarc] add new fields to Eventarc resources",
-					LibraryID:  "google-cloud-eventarc",
-					IsNested:   true,
-					Footers:    map[string]string{},
-					CommitHash: sha.String(),
-					When:       now,
+			want: &ConventionalCommit{
+
+				Type:       "docs",
+				Subject:    "[google-cloud-video-live-stream] Update requirements of resource ID fields to be more clear",
+				LibraryID:  "google-cloud-video-live-stream",
+				IsNested:   true,
+				Footers:    map[string]string{},
+				CommitHash: sha.String(),
+				When:       now,
+				NestedCommits: []*ConventionalCommit{
+					{
+						Type:       "feat",
+						Subject:    "[google-cloud-eventarc] add new fields to Eventarc resources",
+						LibraryID:  "google-cloud-eventarc",
+						IsNested:   true,
+						Footers:    map[string]string{},
+						CommitHash: sha.String(),
+						When:       now,
+					},
 				},
 			},
 		},
@@ -550,7 +529,7 @@ END_COMMIT_OVERRIDE`,
 				Hash:    plumbing.NewHash("fake-sha"),
 				When:    now,
 			}
-			got, err := ParseCommits(commit, "example-id")
+			got, err := ParseCommit(commit, "example-id")
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
@@ -631,7 +610,7 @@ fix(sub): fix a bug that is never closed`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := extractCommitParts(test.message)
+			got := extractNestedCommits(test.message)
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(commitPart{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

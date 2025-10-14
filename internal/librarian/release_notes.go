@@ -130,12 +130,16 @@ type generationPRBody struct {
 	FailedLibraries  []string
 }
 
-type releaseNote struct {
+// releaseNotePRBody represents the data needed to generate a release pull
+// request.
+type releaseNotePRBody struct {
 	LibrarianVersion string
 	ImageVersion     string
 	NoteSections     []*releaseNoteSection
 }
 
+// releaseNoteSection represents a section in the release notes for a specific
+// library.
 type releaseNoteSection struct {
 	RepoOwner      string
 	RepoName       string
@@ -147,8 +151,11 @@ type releaseNoteSection struct {
 	CommitSections []*commitSection
 }
 
+// commitSection represents the commits in the release notes for a specific
+// library.
 type commitSection struct {
 	Heading string
+	// A list of flattened conventional commits associated with this section and
 	Commits []*gitrepo.ConventionalCommit
 }
 
@@ -287,7 +294,7 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 		releaseSections = append(releaseSections, section)
 	}
 
-	data := &releaseNote{
+	data := &releaseNotePRBody{
 		LibrarianVersion: librarianVersion,
 		ImageVersion:     state.Image,
 		NoteSections:     releaseSections,
@@ -304,15 +311,15 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
 func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repository) *releaseNoteSection {
-	// The version should already be updated to the next version.
-	newVersion := library.Version
 	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
-	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
-	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*gitrepo.ConventionalCommit)
 	for _, commit := range library.Changes {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
+		// flatten nested commits for easier template processing
+		for _, nested := range commit.NestedCommits {
+			commitsByType[nested.Type] = append(commitsByType[nested.Type], nested)
+		}
 	}
 
 	var sections []*commitSection
@@ -332,9 +339,9 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 		RepoOwner:      ghRepo.Owner,
 		RepoName:       ghRepo.Name,
 		LibraryID:      library.ID,
-		NewVersion:     newVersion,
-		PreviousTag:    previousTag,
-		NewTag:         newTag,
+		NewVersion:     library.Version,
+		PreviousTag:    config.FormatTag(tagFormat, library.ID, library.PreviousVersion),
+		NewTag:         config.FormatTag(tagFormat, library.ID, library.Version),
 		Date:           time.Now().Format("2006-01-02"),
 		CommitSections: sections,
 	}
