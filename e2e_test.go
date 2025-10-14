@@ -821,7 +821,7 @@ func runGit(t *testing.T, dir string, args ...string) string {
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
-		t.Fatalf("failed to get git commit SHA: %v", err)
+		t.Fatalf("failed to run git command: %s, %v", args, err)
 	}
 	return strings.TrimSpace(string(out))
 }
