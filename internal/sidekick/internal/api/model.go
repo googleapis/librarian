@@ -15,6 +15,7 @@
 package api
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -245,6 +246,8 @@ type Method struct {
 	ServerSideStreaming bool
 	// OperationInfo contains information for methods returning long-running operations.
 	OperationInfo *OperationInfo
+	// DiscoveryLro has a value if this is a discovery-style long-running operation.
+	DiscoveryLro *DiscoveryLro
 	// Routing contains the routing annotations, if any.
 	Routing []*RoutingInfo
 	// AutoPopulated contains the auto-populated (request_id) field, if any, as defined in
@@ -403,6 +406,14 @@ type OperationInfo struct {
 	Codec any
 }
 
+// DiscoveryLro contains old-style long-running operation descriptors.
+type DiscoveryLro struct {
+	// The path parameters required by the polling operation.
+	PollingPathParameters []string
+	// Language specific annotations.
+	Codec any
+}
+
 // RoutingInfo contains normalized routing info.
 //
 // The routing information format is documented in:
@@ -487,6 +498,27 @@ const (
 type PathTemplate struct {
 	Segments []PathSegment
 	Verb     *string
+}
+
+// FlatPath returns a simplified representation of the path template as a string.
+//
+// In the context of discovery LROs it is useful to get the path template as a
+// simplified string, such as "compute/v1/projects/{project}/zones/{zone}/instances".
+// The path can be matched against LRO prefixes and then mapped to the correct
+// poller RPC.
+func (template *PathTemplate) FlatPath() string {
+	var buffer strings.Builder
+	sep := ""
+	for _, segment := range template.Segments {
+		buffer.WriteString(sep)
+		if segment.Literal != nil {
+			buffer.WriteString(*segment.Literal)
+		} else if segment.Variable != nil {
+			buffer.WriteString(fmt.Sprintf("{%s}", strings.Join(segment.Variable.FieldPath, ".")))
+		}
+		sep = "/"
+	}
+	return buffer.String()
 }
 
 // PathSegment is a segment of a path.
