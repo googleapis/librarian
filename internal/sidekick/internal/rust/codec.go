@@ -132,6 +132,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `per-service-features` value %q to boolean: %w", definition, err)
 			}
 			codec.perServiceFeatures = value
+		case key == "default-features":
+			if definition == "" {
+				codec.defaultFeatures = []string{}
+			} else {
+				codec.defaultFeatures = strings.Split(definition, ",")
+			}
 		case key == "detailed-tracing-attributes":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -263,6 +269,8 @@ type codec struct {
 	includeGrpcOnlyMethods bool
 	// If true, the generator will produce per-client features.
 	perServiceFeatures bool
+	// If not empty, and if `perServiceFeatures` is true, the default features
+	defaultFeatures []string
 	// If true, the generated code includes detailed tracing attributes on HTTP
 	// requests. This feature flag exists to reduce unexpected changes to the
 	// generated code until the feature is ready and well-tested.
