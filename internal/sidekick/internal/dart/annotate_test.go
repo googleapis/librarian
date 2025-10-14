@@ -126,6 +126,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
+			map[string]string{"issue-tracker-url": "http://example.com/issues"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("http://example.com/issues", codec.IssueTrackerURL); diff != "" {
+					t.Errorf("mismatch in Codec.IssueTrackerURL (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
 			map[string]string{"google_cloud_gax": "^1.2.3", "package:http": "1.2.0"},
 			func(t *testing.T, am *annotateModel) {
 				if diff := cmp.Diff(map[string]string{
@@ -148,6 +157,40 @@ func TestAnnotateModel_Options(t *testing.T) {
 			t.Fatal(err)
 		}
 		tt.verify(t, annotate)
+	}
+}
+
+func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
+	method := sample.MethodListSecretVersions()
+	service := &api.Service{
+		Name:          sample.ServiceName,
+		Documentation: sample.APIDescription,
+		DefaultHost:   sample.DefaultHost,
+		Methods:       []*api.Method{method},
+		Package:       sample.Package,
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
+			sample.CustomerManagedEncryption()},
+		[]*api.Enum{sample.EnumState()},
+		[]*api.Service{service},
+	)
+
+	var tests = []string{
+		"api-keys-environment-variables",
+		"issue-tracker-url",
+	}
+
+	for _, tt := range tests {
+		annotate := newAnnotateModel(model)
+		options := maps.Clone(requiredConfig)
+		delete(options, tt)
+
+		err := annotate.annotateModel(options)
+		if err == nil {
+			t.Fatalf("expected error when missing %q", tt)
+		}
 	}
 }
 
