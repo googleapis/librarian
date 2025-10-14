@@ -166,14 +166,14 @@ func parseImage(pinnedImage string) (*Image, error) {
 
 	parts := strings.Split(baseName, "/")
 	if len(parts) < 4 {
-		return nil, fmt.Errorf("unexpected image format, expected an AR formatted image: %s", baseName)
+		return nil, fmt.Errorf("unexpected image format %q, expected an AR formatted image", baseName)
 	}
 
 	host := parts[0]
 	if strings.HasSuffix(host, "-docker.pkg.dev") {
 		parsedImage.Location = strings.TrimSuffix(host, "-docker.pkg.dev")
 	} else {
-		return nil, fmt.Errorf("expected AR formatted host with -docker.pkg.dev suffix: %s", host)
+		return nil, fmt.Errorf("unexpected host format %q, expected AR formatted host with -docker.pkg.dev suffix", host)
 	}
 
 	parsedImage.Project = parts[1]
