@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -143,6 +142,12 @@ func TestInitRun(t *testing.T) {
 					},
 					repo: &MockRepository{
 						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -307,6 +312,12 @@ func TestInitRun(t *testing.T) {
 					},
 					repo: &MockRepository{
 						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"blocked-example-id-1.0.0": {
 								{
@@ -380,6 +391,12 @@ func TestInitRun(t *testing.T) {
 					},
 					repo: &MockRepository{
 						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"blocked-example-id-1.0.0": {
 								{
@@ -694,7 +711,13 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 					repo: &MockRepository{
-						Dir:                       t.TempDir(),
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
 						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
@@ -759,7 +782,13 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 					repo: &MockRepository{
-						Dir:                       t.TempDir(),
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
 						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
@@ -970,7 +999,7 @@ func TestInitRun(t *testing.T) {
 				t.Fatalf("os.WriteFile() = %v", err)
 			}
 
-			err := runner.run(context.Background())
+			err := runner.run(t.Context())
 
 			// Check how many times the docker container has been called. If a release is to proceed
 			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0. Run this check even

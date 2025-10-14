@@ -15,13 +15,17 @@
 package librarian
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
+	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -149,13 +153,38 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	var prBodyBuilder func() (string, error)
+	switch prType {
+	case pullRequestGenerate:
+		prBodyBuilder = func() (string, error) {
+			req := &generationPRRequest{
+				sourceRepo:      r.sourceRepo,
+				languageRepo:    r.repo,
+				state:           r.state,
+				idToCommits:     idToCommits,
+				failedLibraries: failedLibraries,
+			}
+			return formatGenerationPRBody(req)
+		}
+	case pullRequestOnboard:
+		prBodyBuilder = func() (string, error) {
+			req := &onboardPRRequest{
+				sourceRepo: r.sourceRepo,
+				state:      r.state,
+				api:        r.api,
+				library:    r.library,
+			}
+			return formatOnboardPRBody(req)
+		}
+	default:
+		return fmt.Errorf("unexpected prType %s", prType)
+	}
+
 	commitInfo := &commitInfo{
 		branch:            r.branch,
 		commit:            r.commit,
 		commitMessage:     "feat: generate libraries",
-		failedLibraries:   failedLibraries,
 		ghClient:          r.ghClient,
-		idToCommits:       idToCommits,
 		prType:            prType,
 		push:              r.push,
 		languageRepo:      r.repo,
@@ -165,6 +194,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		api:               r.api,
 		library:           r.library,
 		failedGenerations: failedGenerations,
+		prBodyBuilder:     prBodyBuilder,
 	}
 
 	return commitAndPush(ctx, commitInfo)
@@ -367,4 +397,181 @@ func setAllAPIStatus(state *config.LibrarianState, status string) {
 			api.Status = status
 		}
 	}
+}
+
+type generationPRRequest struct {
+	sourceRepo      gitrepo.Repository
+	languageRepo    gitrepo.Repository
+	state           *config.LibrarianState
+	idToCommits     map[string]string
+	failedLibraries []string
+}
+
+type onboardPRRequest struct {
+	sourceRepo gitrepo.Repository
+	state      *config.LibrarianState
+	api        string
+	library    string
+}
+
+type generationPRBody struct {
+	StartSHA         string
+	EndSHA           string
+	LibrarianVersion string
+	ImageVersion     string
+	Commits          []*gitrepo.ConventionalCommit
+	FailedLibraries  []string
+}
+
+type onboardingPRBody struct {
+	ImageVersion     string
+	LibrarianVersion string
+	LibraryID        string
+	PiperID          string
+}
+
+// formatGenerationPRBody creates the body of a generation pull request.
+// Only consider libraries whose ID appears in idToCommits.
+func formatGenerationPRBody(request *generationPRRequest) (string, error) {
+	var allCommits []*gitrepo.ConventionalCommit
+	languageRepoChanges, err := languageRepoChangedFiles(request.languageRepo)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch changes in language repo: %w", err)
+	}
+	for _, library := range request.state.Libraries {
+		lastGenCommit, ok := request.idToCommits[library.ID]
+		if !ok {
+			continue
+		}
+		// If nothing has changed that would be significant in a release for this library,
+		// we don't look at the API changes either.
+		if !shouldIncludeForRelease(languageRepoChanges, library.SourceRoots, library.ReleaseExcludePaths) {
+			continue
+		}
+
+		commits, err := getConventionalCommitsSinceLastGeneration(request.sourceRepo, library, lastGenCommit)
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
+		}
+		allCommits = append(allCommits, commits...)
+	}
+
+	if len(allCommits) == 0 {
+		return "No commit is found since last generation", nil
+	}
+
+	startCommit, err := findLatestGenerationCommit(request.sourceRepo, request.state, request.idToCommits)
+	if err != nil {
+		return "", fmt.Errorf("failed to find the start commit: %w", err)
+	}
+	// Even though startCommit might be nil, it shouldn't happen in production
+	// because this function will return early if no conventional commit is found
+	// since last generation.
+	startSHA := startCommit.Hash.String()
+	groupedCommits := groupByIDAndSubject(allCommits)
+	// Sort the slice by commit time in reverse order,
+	// so that the latest commit appears first.
+	sort.Slice(groupedCommits, func(i, j int) bool {
+		return groupedCommits[i].When.After(groupedCommits[j].When)
+	})
+	endSHA := groupedCommits[0].CommitHash
+	librarianVersion := cli.Version()
+	data := &generationPRBody{
+		StartSHA:         startSHA,
+		EndSHA:           endSHA,
+		LibrarianVersion: librarianVersion,
+		ImageVersion:     request.state.Image,
+		Commits:          groupedCommits,
+		FailedLibraries:  request.failedLibraries,
+	}
+	var out bytes.Buffer
+	if err := genBodyTemplate.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+
+	return strings.TrimSpace(out.String()), nil
+}
+
+// languageRepoChangedFiles returns the paths of files changed in the repo as part
+// of the current librarian run - either in the head commit if the repo is clean,
+// or the outstanding changes otherwise.
+func languageRepoChangedFiles(languageRepo gitrepo.Repository) ([]string, error) {
+	clean, err := languageRepo.IsClean()
+	if err != nil {
+		return nil, err
+	}
+	if clean {
+		headHash, err := languageRepo.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		return languageRepo.ChangedFilesInCommit(headHash)
+	}
+	// The commit or push flag is not set, get all locally changed files.
+	return languageRepo.ChangedFiles()
+}
+
+// formatOnboardPRBody creates the body of an onboarding pull request.
+func formatOnboardPRBody(request *onboardPRRequest) (string, error) {
+	piperID, err := getPiperID(request.state, request.sourceRepo, request.api, request.library)
+	if err != nil {
+		return "", err
+	}
+
+	data := &onboardingPRBody{
+		LibrarianVersion: cli.Version(),
+		ImageVersion:     request.state.Image,
+		LibraryID:        request.library,
+		PiperID:          piperID,
+	}
+
+	var out bytes.Buffer
+	if err := onboardingBodyTemplate.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+
+	return strings.TrimSpace(out.String()), nil
+}
+
+// getPiperID extracts the Piper ID from the commit message that onboarded the API.
+func getPiperID(state *config.LibrarianState, sourceRepo gitrepo.Repository, apiPath, library string) (string, error) {
+	libraryState := findLibraryByID(state, library)
+	serviceYaml := ""
+	for _, api := range libraryState.APIs {
+		if api.Path == apiPath {
+			serviceYaml = api.ServiceConfig
+			break
+		}
+	}
+
+	initialCommit, err := sourceRepo.GetLatestCommit(filepath.Join(apiPath, serviceYaml))
+	if err != nil {
+		return "", err
+	}
+
+	id, err := findPiperIDFrom(initialCommit, library)
+	if err != nil {
+		return "", err
+	}
+
+	slog.Info("found piper id in the commit message", "piperID", id)
+	return id, nil
+}
+
+func findPiperIDFrom(commit *gitrepo.Commit, libraryID string) (string, error) {
+	commits, err := gitrepo.ParseCommits(commit, libraryID)
+	if err != nil {
+		return "", err
+	}
+
+	if len(commits) == 0 || commits[0].Footers == nil {
+		return "", errPiperNotFound
+	}
+
+	id, ok := commits[0].Footers["PiperOrigin-RevId"]
+	if !ok {
+		return "", errPiperNotFound
+	}
+
+	return id, nil
 }
