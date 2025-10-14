@@ -38,6 +38,7 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, cfg *config.C
 		Name:        doc.Name,
 		Title:       doc.Title,
 		Description: doc.Description,
+		Revision:    doc.Revision,
 		Messages:    make([]*api.Message, 0),
 		State: &api.APIState{
 			ServiceByID: make(map[string]*api.Service),
@@ -111,6 +112,7 @@ type document struct {
 	Version           string             `json:"version"`
 	Title             string             `json:"title"`
 	Description       string             `json:"description"`
+	Revision          string             `json:"revision"`
 	RootURL           string             `json:"rootUrl"`
 	MTLSRootURL       string             `json:"mtlsRootUrl"`
 	ServicePath       string             `json:"servicePath"`

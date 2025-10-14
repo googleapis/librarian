@@ -19,6 +19,14 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 //! Google Cloud Client Libraries for Rust - {{{Title}}}
+{{!
+    Discovery-doc based APIs include a revision.
+    Publishing the information is useful for troubleshooting.
+}}
+{{#Revision}}
+//!
+//! This client library was generated from the "{{Revision}}" revision of the API.
+{{/Revision}}
 //! {{^Codec.ReleaseLevelIsGA}}
 //!
 //! **FEEDBACK WANTED:** We believe the APIs in this crate are stable, and

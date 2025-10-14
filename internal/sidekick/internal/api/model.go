@@ -138,8 +138,11 @@ type API struct {
 	PackageName string
 	// The API Title (e.g. "Secret Manager API" or "Cloud Spanner API").
 	Title string
-	// The API Description
+	// The API Description.
 	Description string
+	// The API Revision. In discovery-based services this is the "revision"
+	// attribute.
+	Revision string
 	// Services are a collection of services that make up the API.
 	Services []*Service
 	// Messages are a collection of messages used to process request and

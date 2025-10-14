@@ -49,20 +49,14 @@ func TestInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantName := "compute"
-	wantTitle := "Compute Engine API"
-	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	want := &api.API{
+		Name:        "compute",
+		Title:       "Compute Engine API",
+		Description: "Creates and runs virtual machines on Google Cloud Platform. ",
+		Revision:    "20250810",
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
-	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	if got.PackageName != "" {
-		t.Errorf("expected empty package name")
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
 
@@ -76,20 +70,18 @@ func TestServiceConfigOverridesInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Name != sc.Name {
-		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
+	want := &api.API{
+		Name:        sc.Name,
+		Title:       sc.Title,
+		Description: sc.Documentation.Summary,
+		Revision:    "20250810",
+		PackageName: "google.cloud.secretmanager.v1",
 	}
-	if got.Title != sc.Title {
-		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
-	}
-	if diff := cmp.Diff(sc.Documentation.Summary, got.Description); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 	if len(sc.Apis) != 2 {
 		t.Fatalf("expected 2 APIs in service config")
-	}
-	if got.PackageName == "" {
-		t.Errorf("got empty package name")
 	}
 	if !strings.HasPrefix(sc.Apis[1].Name, got.PackageName) {
 		t.Errorf("mismatched package name want = %q, got = %q", sc.Apis[1].Name, got.PackageName)
