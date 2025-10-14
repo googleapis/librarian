@@ -56,17 +56,16 @@ const (
 // String returns the string representation of a pullRequestType.
 // It returns unknown if the type is not a recognized constant.
 func (t pullRequestType) String() string {
-	names := []string{
-		"onboard",
-		"generate",
-		"release",
+	names := map[pullRequestType]string{
+		pullRequestUnspecified: "unspecified",
+		pullRequestOnboard:     "onboard",
+		pullRequestGenerate:    "generate",
+		pullRequestRelease:     "release",
 	}
-
-	if t < pullRequestOnboard || t > pullRequestRelease {
-		return "unspecified"
+	if name, ok := names[t]; ok {
+		return name
 	}
-
-	return names[t]
+	return "unspecified"
 }
 
 var globalPreservePatterns = []string{
