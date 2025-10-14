@@ -93,7 +93,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		commit:        r.commit,
 		commitMessage: "chore: create a release",
 		ghClient:      r.ghClient,
-		prType:        release,
+		prType:        pullRequestRelease,
 		// Newly created PRs from the `release init` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},

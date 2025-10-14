@@ -47,9 +47,10 @@ For each failed library, open a ticket in that library’s repository and then y
 type pullRequestType int
 
 const (
-	onboard pullRequestType = iota
-	generate
-	release
+	pullRequestUnspecified pullRequestType = iota
+	pullRequestOnboard
+	pullRequestGenerate
+	pullRequestRelease
 )
 
 // String returns the string representation of a pullRequestType.
@@ -61,8 +62,8 @@ func (t pullRequestType) String() string {
 		"release",
 	}
 
-	if t < onboard || t > release {
-		return "unknown"
+	if t < pullRequestOnboard || t > pullRequestRelease {
+		return "unspecified"
 	}
 
 	return names[t]
@@ -470,7 +471,7 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 
 func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, error) {
 	switch info.prType {
-	case onboard:
+	case pullRequestOnboard:
 		opt := &onboardPRRequest{
 			sourceRepo: info.sourceRepo,
 			state:      info.state,
@@ -478,7 +479,7 @@ func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, erro
 			library:    info.library,
 		}
 		return formatOnboardPRBody(opt)
-	case generate:
+	case pullRequestGenerate:
 		opt := &generationPRRequest{
 			sourceRepo:      info.sourceRepo,
 			languageRepo:    info.languageRepo,
@@ -487,7 +488,7 @@ func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, erro
 			failedLibraries: info.failedLibraries,
 		}
 		return formatGenerationPRBody(opt)
-	case release:
+	case pullRequestRelease:
 		return formatReleaseNotes(info.state, gitHubRepo)
 	default:
 		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)

@@ -97,7 +97,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 	idToCommits := make(map[string]string)
 	var failedLibraries []string
 	failedGenerations := 0
-	prType := generate
+	prType := pullRequestGenerate
 	if r.api != "" || r.library != "" {
 		libraryID := r.library
 		if libraryID == "" {
@@ -184,7 +184,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 // 4. Update the last generated commit or initial piper id if the library needs configure.
 func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, outputDir string) (*generationStatus, error) {
 	safeLibraryDirectory := getSafeDirectoryName(libraryID)
-	prType := generate
+	prType := pullRequestGenerate
 	if r.needsConfigure() {
 		slog.Info("library not configured, start initial configuration", "library", r.library)
 		configureOutputDir := filepath.Join(outputDir, safeLibraryDirectory, "configure")
@@ -196,7 +196,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 			return nil, err
 		}
 
-		prType = onboard
+		prType = pullRequestOnboard
 		libraryID = configuredLibraryID
 	}
 
