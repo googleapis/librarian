@@ -25,7 +25,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestNew(t *testing.T) {
@@ -929,15 +928,13 @@ func TestReleaseInitRequestContent(t *testing.T) {
 				ID:               "my-library",
 				Version:          "1.1.0",
 				ReleaseTriggered: true,
-				Changes: []*gitrepo.ConventionalCommit{
+				Changes: []*config.Commit{
 					{
-						Type:    "feat",
-						Subject: "new feature",
-						Body:    "body of feature",
-						Footers: map[string]string{
-							"PiperOrigin-RevId": "12345",
-						},
-						CommitHash: "1234",
+						Type:          "feat",
+						Subject:       "new feature",
+						Body:          "body of feature",
+						PiperCLNumber: "12345",
+						CommitHash:    "1234",
 					},
 				},
 			},
