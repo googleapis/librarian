@@ -97,10 +97,9 @@ func languageRepoChangedFiles(languageRepo gitrepo.Repository) ([]string, error)
 			return nil, err
 		}
 		return languageRepo.ChangedFilesInCommit(headHash)
-	} else {
-		// The commit or push flag is not set, get all locally changed files.
-		return languageRepo.ChangedFiles()
 	}
+	// The commit or push flag is not set, get all locally changed files.
+	return languageRepo.ChangedFiles()
 }
 
 // shouldIncludeForGeneration determines if a commit should be included in generation.
@@ -114,17 +113,6 @@ func shouldIncludeForGeneration(sourceFiles []string, library *config.LibrarySta
 
 	for _, file := range sourceFiles {
 		if isUnderAnyPath(file, apiPaths) {
-			return true
-		}
-	}
-	return false
-}
-
-// libraryHasChanges returns whether any of the language repository changes fall under
-// one of the library's source roots, but not in its release-exclude paths.
-func libraryHasChanges(languageRepoChanges []string, library *config.LibraryState) bool {
-	for _, file := range languageRepoChanges {
-		if isUnderAnyPath(file, library.SourceRoots) && !isUnderAnyPath(file, library.ReleaseExcludePaths) {
 			return true
 		}
 	}

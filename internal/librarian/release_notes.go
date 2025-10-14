@@ -165,7 +165,9 @@ func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *
 		if !ok {
 			continue
 		}
-		if !libraryHasChanges(languageRepoChanges, library) {
+		// If nothing has changed that would be significant in a release for this library,
+		// we don't look at the API changes either.
+		if !shouldIncludeForRelease(languageRepoChanges, library.SourceRoots, library.ReleaseExcludePaths) {
 			continue
 		}
 
