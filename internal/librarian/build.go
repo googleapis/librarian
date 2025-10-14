@@ -41,7 +41,7 @@ func buildSingleLibrary(ctx context.Context, containerClient ContainerClient, st
 			return errors.Join(containerErr, restoreErr)
 		}
 
-		return errors.Join(containerErr)
+		return containerErr
 	}
 
 	// Read the library state from the response.
