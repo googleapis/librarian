@@ -638,7 +638,7 @@ func TestGenerateScenarios(t *testing.T) {
 		wantConfigureCalls int
 	}{
 		{
-			name:    "generate single library including initial configuration",
+			name:    "generate_single_library_including_initial_configuration",
 			api:     "some/api",
 			library: "some-library",
 			state: &config.LibrarianState{

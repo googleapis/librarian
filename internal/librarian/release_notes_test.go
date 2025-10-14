@@ -21,11 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
@@ -43,7 +41,8 @@ func TestFormatGenerationPRBody(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		state           *config.LibrarianState
-		repo            gitrepo.Repository
+		sourceRepo      gitrepo.Repository
+		languageRepo    gitrepo.Repository
 		idToCommits     map[string]string
 		failedLibraries []string
 		want            string
@@ -58,7 +57,8 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -66,7 +66,8 @@ func TestFormatGenerationPRBody(t *testing.T) {
 						},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -75,7 +76,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
@@ -102,6 +103,11 @@ func TestFormatGenerationPRBody(t *testing.T) {
 						"path/to/file",
 					},
 				},
+			},
+			languageRepo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library":     "1234567890",
@@ -137,7 +143,8 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -145,7 +152,8 @@ Language Image: %s`,
 						},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -154,7 +162,7 @@ Language Image: %s`,
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
@@ -187,6 +195,11 @@ Language Image: %s`,
 						"path/to/file",
 					},
 				},
+			},
+			languageRepo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library":     "1234567890",
@@ -222,7 +235,8 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -230,7 +244,8 @@ Language Image: %s`,
 						},
 					},
 					{
-						ID: "another-library",
+						ID:          "another-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -239,7 +254,7 @@ Language Image: %s`,
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
@@ -266,6 +281,11 @@ Language Image: %s`,
 						"path/to/file",
 					},
 				},
+			},
+			languageRepo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library":     "1234567890",
@@ -308,7 +328,8 @@ Language Image: %s
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						APIs: []*config.API{
 							{
 								Path: "path/to",
@@ -317,7 +338,7 @@ Language Image: %s
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitByHash: map[string]*gitrepo.Commit{
 					"1234567890": {
@@ -348,6 +369,11 @@ Language Image: %s
 						"path/to/file",
 					},
 				},
+			},
+			languageRepo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library": "1234567890",
@@ -391,7 +417,8 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 						// Intentionally set this value to verify the test can pass.
 						LastGeneratedCommit: "randomCommit",
 						APIs: []*config.API{
@@ -402,7 +429,7 @@ Language Image: %s`,
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				RemotesValue:   []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
 				GetCommitError: errors.New("simulated get commit error"),
 				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
@@ -429,6 +456,11 @@ Language Image: %s`,
 					},
 				},
 			},
+			languageRepo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
+			},
 			idToCommits: map[string]string{
 				"one-library": "1234567890",
 			},
@@ -439,13 +471,38 @@ Language Image: %s`,
 			name: "no conventional commits since last generation",
 			state: &config.LibrarianState{
 				Image:     "go:1.21",
-				Libraries: []*config.LibraryState{{ID: "one-library"}},
+				Libraries: []*config.LibraryState{{ID: "one-library", SourceRoots: []string{"path/to"}}},
 			},
-			repo: &MockRepository{},
+			sourceRepo: &MockRepository{},
+			languageRepo: &MockRepository{
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
+			},
 			idToCommits: map[string]string{
 				"one-library": "",
 			},
 			want: "No commit is found since last generation",
+		},
+		{
+			name: "failed to get language repo changes commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{},
+			languageRepo: &MockRepository{
+				IsCleanError: errors.New("simulated error"),
+			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
+			wantErr:       true,
+			wantErrPhrase: "failed to fetch changes in language repo",
 		},
 		{
 			name: "failed to get conventional commits",
@@ -453,12 +510,18 @@ Language Image: %s`,
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "one-library",
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
 					},
 				},
 			},
-			repo: &MockRepository{
+			sourceRepo: &MockRepository{
 				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
+			},
+			languageRepo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "5678",
+				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
 			idToCommits: map[string]string{
 				"one-library": "1234567890",
@@ -468,7 +531,7 @@ Language Image: %s`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatGenerationPRBody(test.repo, test.state, test.idToCommits, test.failedLibraries)
+			got, err := formatGenerationPRBody(test.sourceRepo, test.languageRepo, test.state, test.idToCommits, test.failedLibraries)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
@@ -596,12 +659,12 @@ func TestGroupByPiperID(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
-		commits []*conventionalcommits.ConventionalCommit
-		want    []*conventionalcommits.ConventionalCommit
+		commits []*gitrepo.ConventionalCommit
+		want    []*gitrepo.ConventionalCommit
 	}{
 		{
 			name: "group_commits_with_same_piper_id_and_subject",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-1",
 					Subject:   "one subject",
@@ -640,7 +703,7 @@ func TestGroupByPiperID(t *testing.T) {
 					},
 				},
 			},
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-1",
 					Subject:   "one subject",
@@ -684,7 +747,7 @@ func TestGroupByPiperID(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := groupByIDAndSubject(test.commits)
 			// We don't care the order in the slice but sorting makes the test deterministic.
-			opts := cmpopts.SortSlices(func(a, b *conventionalcommits.ConventionalCommit) bool {
+			opts := cmpopts.SortSlices(func(a, b *gitrepo.ConventionalCommit) bool {
 				return a.LibraryID < b.LibraryID
 			})
 			if diff := cmp.Diff(test.want, got, opts); diff != "" {
@@ -720,7 +783,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -764,7 +827,7 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -814,7 +877,7 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -857,7 +920,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "feature for a",
@@ -871,7 +934,7 @@ Language Image: go:1.21
 						Version:          "2.0.1",
 						PreviousVersion:  "2.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "fix",
 								Subject:    "fix for b",
@@ -917,7 +980,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -957,7 +1020,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -1009,6 +1072,77 @@ Language Image: go:1.21
 			}
 			if diff := cmp.Diff(test.wantReleaseNote, got); diff != "" {
 				t.Errorf("formatReleaseNotes() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLanguageRepoChangedFiles(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		repo    gitrepo.Repository
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "IsClean fails",
+			repo: &MockRepository{
+				IsCleanError: fmt.Errorf("mock failure from IsClean"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean, HeadHash fails",
+			repo: &MockRepository{
+				IsCleanValue:  true,
+				HeadHashError: fmt.Errorf("mock failure from HeadHash"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean, ChangedFilesInCommit fails",
+			repo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "1234",
+				ChangedFilesInCommitError: fmt.Errorf("mock failure from ChangedFilesInCommit"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "dirty, ChangedFiles fails",
+			repo: &MockRepository{
+				ChangedFilesError: fmt.Errorf("mock failure from ChangedFiles"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean success",
+			repo: &MockRepository{
+				IsCleanValue:  true,
+				HeadHashValue: "1234",
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					"abcd": []string{"a/b/c", "d/e/f"},
+					"1234": []string{"g/h/i", "j/k/l"},
+				},
+			},
+			want: []string{"g/h/i", "j/k/l"},
+		},
+		{
+			name: "dirty success",
+			repo: &MockRepository{
+				ChangedFilesValue: []string{"a/b/c", "d/e/f"},
+			},
+			want: []string{"a/b/c", "d/e/f"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := languageRepoChangedFiles(test.repo)
+			if (err != nil) != test.wantErr {
+				t.Errorf("languageRepoChangedFiles() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

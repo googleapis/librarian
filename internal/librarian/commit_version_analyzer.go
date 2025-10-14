@@ -21,14 +21,13 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/semver"
 )
 
 // getConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
 // version specified in the state file. The repo should be the language repo.
-func getConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState, tag string) ([]*conventionalcommits.ConventionalCommit, error) {
+func getConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *config.LibraryState, tag string) ([]*gitrepo.ConventionalCommit, error) {
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
 
 	if err != nil {
@@ -59,10 +58,10 @@ func shouldIncludeForRelease(files, sourceRoots, excludePaths []string) bool {
 // getConventionalCommitsSinceLastGeneration returns all conventional commits for
 // all API paths in given library since the last generation. The repo input should
 // be the googleapis source repo.
-func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*conventionalcommits.ConventionalCommit, error) {
+func getConventionalCommitsSinceLastGeneration(sourceRepo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*gitrepo.ConventionalCommit, error) {
 	if lastGenCommit == "" {
 		slog.Info("the last generation commit is empty, skip fetching conventional commits", "library", library.ID)
-		return make([]*conventionalcommits.ConventionalCommit, 0), nil
+		return make([]*gitrepo.ConventionalCommit, 0), nil
 	}
 
 	apiPaths := make([]string, 0)
@@ -70,25 +69,30 @@ func getConventionalCommitsSinceLastGeneration(repo gitrepo.Repository, library 
 		apiPaths = append(apiPaths, oneAPI.Path)
 	}
 
-	commits, err := repo.GetCommitsForPathsSinceCommit(apiPaths, lastGenCommit)
+	sourceCommits, err := sourceRepo.GetCommitsForPathsSinceCommit(apiPaths, lastGenCommit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)
 	}
 
 	// checks that the files in the commit are in the api paths for the source repo.
 	// The generation change is for changes in the source repo and NOT the language repo.
-	shouldIncludeFiles := func(files []string) bool {
-		return shouldIncludeForGeneration(files, apiPaths)
+	shouldIncludeFiles := func(sourceFiles []string) bool {
+		return shouldIncludeForGeneration(sourceFiles, library)
 	}
 
-	return convertToConventionalCommits(repo, library, commits, shouldIncludeFiles)
+	return convertToConventionalCommits(sourceRepo, library, sourceCommits, shouldIncludeFiles)
 }
 
 // shouldIncludeForGeneration determines if a commit should be included in generation.
 // It returns true if there is at least one file in the commit that is under the
 // library's API(s) path (a library could have multiple APIs).
-func shouldIncludeForGeneration(files, apiPaths []string) bool {
-	for _, file := range files {
+func shouldIncludeForGeneration(sourceFiles []string, library *config.LibraryState) bool {
+	var apiPaths []string
+	for _, api := range library.APIs {
+		apiPaths = append(apiPaths, api.Path)
+	}
+
+	for _, file := range sourceFiles {
 		if isUnderAnyPath(file, apiPaths) {
 			return true
 		}
@@ -97,8 +101,8 @@ func shouldIncludeForGeneration(files, apiPaths []string) bool {
 }
 
 // libraryFilter filters a list of conventional commits by library ID.
-func libraryFilter(commits []*conventionalcommits.ConventionalCommit, libraryID string) []*conventionalcommits.ConventionalCommit {
-	var filteredCommits []*conventionalcommits.ConventionalCommit
+func libraryFilter(commits []*gitrepo.ConventionalCommit, libraryID string) []*gitrepo.ConventionalCommit {
+	var filteredCommits []*gitrepo.ConventionalCommit
 	for _, commit := range commits {
 		if libraryIDs, ok := commit.Footers["Library-IDs"]; ok {
 			ids := strings.Split(libraryIDs, ",")
@@ -118,17 +122,17 @@ func libraryFilter(commits []*conventionalcommits.ConventionalCommit, libraryID 
 // convertToConventionalCommits converts a list of commits in a git repo into a list
 // of conventional commits. The filesFilter parameter is custom filter out non-matching
 // files depending on a generation or a release change.
-func convertToConventionalCommits(repo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, filesFilter func(files []string) bool) ([]*conventionalcommits.ConventionalCommit, error) {
-	var conventionalCommits []*conventionalcommits.ConventionalCommit
+func convertToConventionalCommits(sourceRepo gitrepo.Repository, library *config.LibraryState, commits []*gitrepo.Commit, filesFilter func(files []string) bool) ([]*gitrepo.ConventionalCommit, error) {
+	var conventionalCommits []*gitrepo.ConventionalCommit
 	for _, commit := range commits {
-		files, err := repo.ChangedFilesInCommit(commit.Hash.String())
+		files, err := sourceRepo.ChangedFilesInCommit(commit.Hash.String())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get changed files for commit %s: %w", commit.Hash.String(), err)
 		}
 		if !filesFilter(files) {
 			continue
 		}
-		parsedCommits, err := conventionalcommits.ParseCommits(commit, library.ID)
+		parsedCommits, err := gitrepo.ParseCommits(commit, library.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse commit %s: %w", commit.Hash.String(), err)
 		}
@@ -149,6 +153,9 @@ func convertToConventionalCommits(repo gitrepo.Repository, library *config.Libra
 // isUnderAnyPath returns true if the file is under any of the given paths.
 func isUnderAnyPath(file string, paths []string) bool {
 	for _, p := range paths {
+		if p == "." {
+			return true
+		}
 		rel, err := filepath.Rel(p, file)
 		if err == nil && !strings.HasPrefix(rel, "..") {
 			return true
@@ -158,13 +165,13 @@ func isUnderAnyPath(file string, paths []string) bool {
 }
 
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
-func NextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string) (string, error) {
+func NextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string) (string, error) {
 	highestChange := getHighestChange(commits)
 	return semver.DeriveNext(highestChange, currentVersion)
 }
 
 // getHighestChange determines the highest-ranking change type from a slice of commits.
-func getHighestChange(commits []*conventionalcommits.ConventionalCommit) semver.ChangeLevel {
+func getHighestChange(commits []*gitrepo.ConventionalCommit) semver.ChangeLevel {
 	highestChange := semver.None
 	for _, commit := range commits {
 		var currentChange semver.ChangeLevel

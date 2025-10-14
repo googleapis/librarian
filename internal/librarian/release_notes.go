@@ -25,7 +25,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -127,7 +126,7 @@ type generationPRBody struct {
 	EndSHA           string
 	LibrarianVersion string
 	ImageVersion     string
-	Commits          []*conventionalcommits.ConventionalCommit
+	Commits          []*gitrepo.ConventionalCommit
 	FailedLibraries  []string
 }
 
@@ -150,20 +149,29 @@ type releaseNoteSection struct {
 
 type commitSection struct {
 	Heading string
-	Commits []*conventionalcommits.ConventionalCommit
+	Commits []*gitrepo.ConventionalCommit
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
 // Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
-	var allCommits []*conventionalcommits.ConventionalCommit
+func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
+	var allCommits []*gitrepo.ConventionalCommit
+	languageRepoChanges, err := languageRepoChangedFiles(languageRepo)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch changes in language repo: %w", err)
+	}
 	for _, library := range state.Libraries {
 		lastGenCommit, ok := idToCommits[library.ID]
 		if !ok {
 			continue
 		}
+		// If nothing has changed that would be significant in a release for this library,
+		// we don't look at the API changes either.
+		if !shouldIncludeForRelease(languageRepoChanges, library.SourceRoots, library.ReleaseExcludePaths) {
+			continue
+		}
 
-		commits, err := getConventionalCommitsSinceLastGeneration(repo, library, lastGenCommit)
+		commits, err := getConventionalCommitsSinceLastGeneration(sourceRepo, library, lastGenCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 		}
@@ -174,7 +182,7 @@ func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianStat
 		return "No commit is found since last generation", nil
 	}
 
-	startCommit, err := findLatestGenerationCommit(repo, state, idToCommits)
+	startCommit, err := findLatestGenerationCommit(sourceRepo, state, idToCommits)
 	if err != nil {
 		return "", fmt.Errorf("failed to find the start commit: %w", err)
 	}
@@ -238,9 +246,9 @@ func findLatestGenerationCommit(repo gitrepo.Repository, state *config.Librarian
 }
 
 // groupByIDAndSubject aggregates conventional commits for ones have the same Piper ID and subject in the footer.
-func groupByIDAndSubject(commits []*conventionalcommits.ConventionalCommit) []*conventionalcommits.ConventionalCommit {
-	var res []*conventionalcommits.ConventionalCommit
-	idToCommits := make(map[string][]*conventionalcommits.ConventionalCommit)
+func groupByIDAndSubject(commits []*gitrepo.ConventionalCommit) []*gitrepo.ConventionalCommit {
+	var res []*gitrepo.ConventionalCommit
+	idToCommits := make(map[string][]*gitrepo.ConventionalCommit)
 	for _, commit := range commits {
 		// a commit is not considering for grouping if it doesn't have a footer or
 		// the footer doesn't have a Piper ID.
@@ -311,7 +319,7 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
 	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
-	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
+	commitsByType := make(map[string][]*gitrepo.ConventionalCommit)
 	for _, commit := range library.Changes {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
@@ -341,4 +349,23 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 	}
 
 	return section
+}
+
+// languageRepoChangedFiles returns the paths of files changed in the repo as part
+// of the current librarian run - either in the head commit if the repo is clean,
+// or the outstanding changes otherwise.
+func languageRepoChangedFiles(languageRepo gitrepo.Repository) ([]string, error) {
+	clean, err := languageRepo.IsClean()
+	if err != nil {
+		return nil, err
+	}
+	if clean {
+		headHash, err := languageRepo.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		return languageRepo.ChangedFilesInCommit(headHash)
+	}
+	// The commit or push flag is not set, get all locally changed files.
+	return languageRepo.ChangedFiles()
 }

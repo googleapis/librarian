@@ -47,15 +47,16 @@ type modelAnnotations struct {
 	DefaultHost       string
 	DocLines          []string
 	// A reference to an optional hand-written part file.
-	PartFileReference    string
-	PackageDependencies  []packageDependency
-	Imports              []string
-	DevDependencies      []string
-	DoNotPublish         bool
-	RepositoryURL        string
-	ReadMeAfterTitleText string
-	ReadMeQuickstartText string
-	IssueTrackerURL      string
+	PartFileReference          string
+	PackageDependencies        []packageDependency
+	Imports                    []string
+	DevDependencies            []string
+	DoNotPublish               bool
+	RepositoryURL              string
+	ReadMeAfterTitleText       string
+	ReadMeQuickstartText       string
+	IssueTrackerURL            string
+	ApiKeyEnvironmentVariables []string
 }
 
 // HasServices returns true if the model has services.
@@ -217,20 +218,29 @@ func newAnnotateModel(model *api.API) *annotateModel {
 // [Template.Services] field.
 func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	var (
-		packageNameOverride  string
-		generationYear       string
-		packageVersion       string
-		partFileReference    string
-		doNotPublish         bool
-		devDependencies      = []string{}
-		repositoryURL        string
-		readMeAfterTitleText string
-		readMeQuickstartText string
-		issueTrackerUrl      string
+		packageNameOverride        string
+		generationYear             string
+		packageVersion             string
+		partFileReference          string
+		doNotPublish               bool
+		devDependencies            = []string{}
+		repositoryURL              string
+		readMeAfterTitleText       string
+		readMeQuickstartText       string
+		issueTrackerUrl            string
+		apiKeyEnvironmentVariables = []string{}
 	)
 
 	for key, definition := range options {
 		switch {
+		case key == "api-keys-environment-variables":
+			// api-keys-environment-variables = "GOOGLE_API_KEY,GEMINI_API_KEY"
+			// A comma-separated list of environment variables to look for searching for
+			// a API key.
+			apiKeyEnvironmentVariables = strings.Split(definition, ",")
+			for i := range apiKeyEnvironmentVariables {
+				apiKeyEnvironmentVariables[i] = strings.TrimSpace(apiKeyEnvironmentVariables[i])
+			}
 		case key == "package-name-override":
 			packageNameOverride = definition
 		case key == "copyright-year":
@@ -325,7 +335,6 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	if err != nil {
 		return err
 	}
-
 	ann := &modelAnnotations{
 		Parent:         model,
 		PackageName:    packageName(model, packageNameOverride),
@@ -341,16 +350,17 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:             formatDocComments(model.Description, model.State),
-		Imports:              calculateImports(annotate.imports),
-		PartFileReference:    partFileReference,
-		PackageDependencies:  packageDependencies,
-		DevDependencies:      devDependencies,
-		DoNotPublish:         doNotPublish,
-		RepositoryURL:        repositoryURL,
-		IssueTrackerURL:      issueTrackerUrl,
-		ReadMeAfterTitleText: readMeAfterTitleText,
-		ReadMeQuickstartText: readMeQuickstartText,
+		DocLines:                   formatDocComments(model.Description, model.State),
+		Imports:                    calculateImports(annotate.imports),
+		PartFileReference:          partFileReference,
+		PackageDependencies:        packageDependencies,
+		DevDependencies:            devDependencies,
+		DoNotPublish:               doNotPublish,
+		RepositoryURL:              repositoryURL,
+		IssueTrackerURL:            issueTrackerUrl,
+		ReadMeAfterTitleText:       readMeAfterTitleText,
+		ReadMeQuickstartText:       readMeQuickstartText,
+		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
 	}
 
 	model.Codec = ann
@@ -444,6 +454,7 @@ func calculateImports(imports map[string]bool) []string {
 func (annotate *annotateModel) annotateService(s *api.Service) {
 	// Add a package:http import if we're generating a service.
 	annotate.imports[httpImport] = true
+	annotate.imports[authImport] = true
 
 	// Some methods are skipped.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {

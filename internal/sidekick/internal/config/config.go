@@ -56,6 +56,7 @@ type Config struct {
 	General GeneralConfig `toml:"general"`
 
 	Source              map[string]string       `toml:"source,omitempty"`
+	Discovery           *Discovery              `toml:"discovery,omitempty"`
 	Codec               map[string]string       `toml:"codec,omitempty"`
 	CommentOverrides    []DocumentationOverride `toml:"documentation-overrides,omitempty"`
 	PaginationOverrides []PaginationOverride    `toml:"pagination-overrides,omitempty"`
@@ -136,6 +137,7 @@ func mergeConfigs(rootConfig, local *Config) *Config {
 		Codec:               map[string]string{},
 		CommentOverrides:    local.CommentOverrides,
 		PaginationOverrides: local.PaginationOverrides,
+		Discovery:           local.Discovery,
 		// Release does not accept local overrides
 		Release: rootConfig.Release,
 	}

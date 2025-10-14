@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conventionalcommits
+package gitrepo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const (
@@ -41,12 +40,15 @@ var (
 	// literal. The key is followed by ":" and then the value.
 	// e.g., "Reviewed-by: G. Gemini" or "BREAKING CHANGE: an API was changed".
 	footerRegex     = regexp.MustCompile(`^([A-Za-z-]+|` + breakingChangeKey + `):(.*)`)
-	sourceLinkRegex = regexp.MustCompile(`^\[googleapis\/googleapis@(?P<shortSHA>.*)\]\(https:\/\/github\.com\/googleapis\/googleapis\/commit\/(?P<sha>.*)\)$`)
+	sourceLinkRegex = regexp.MustCompile(`^\[googleapis/googleapis@(?P<shortSHA>.*)]\(https://github\.com/googleapis/googleapis/commit/(?P<sha>.*)\)$`)
 	// libraryIDRegex extracts the libraryID from the commit message in a generation PR.
 	// For a generation PR, each commit is expected to have the libraryID in brackets
 	// ('[]').
-	libraryIDRegex = regexp.MustCompile(`\[([^\]]+)\]`)
+	libraryIDRegex = regexp.MustCompile(`\[([^]]+)]`)
 )
+
+// ErrEmptyCommitMessage returns when the commit message is empty.
+var ErrEmptyCommitMessage = errors.New("empty commit message")
 
 // ConventionalCommit represents a parsed conventional commit message.
 // See https://www.conventionalcommits.org/en/v1.0.0/ for details.
@@ -59,8 +61,6 @@ type ConventionalCommit struct {
 	Body string `yaml:"body" json:"body"`
 	// LibraryID is the library ID the commit associated with.
 	LibraryID string `yaml:"-" json:"-"`
-	// Scope is the scope of the change.
-	Scope string `yaml:"-" json:"-"`
 	// Footers contain metadata (e.g,"BREAKING CHANGE", "Reviewed-by").
 	// Repeated footer keys not supported, only first value is kept
 	Footers map[string]string `yaml:"-" json:"-"`
@@ -68,9 +68,6 @@ type ConventionalCommit struct {
 	IsBreaking bool `yaml:"-" json:"-"`
 	// IsNested indicates if the commit is a nested commit.
 	IsNested bool `yaml:"-" json:"-"`
-	// SHA is the full commit hash.
-	// Deprecated: use CommitHash instead.
-	SHA string `yaml:"-" json:"source_commit_hash,omitempty"`
 	// CommitHash is the full commit hash.
 	CommitHash string `yaml:"-" json:"commit_hash,omitempty"`
 	// When is the timestamp of the commit.
@@ -126,10 +123,10 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 // Malformed override or nested blocks (e.g., with a missing end marker) are
 // ignored. Any commit part that is found but fails to parse as a valid
 // conventional commit is logged and skipped.
-func ParseCommits(commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
+func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, error) {
 	message := commit.Message
 	if strings.TrimSpace(message) == "" {
-		return nil, fmt.Errorf("empty commit message")
+		return nil, ErrEmptyCommitMessage
 	}
 	message = extractCommitMessageOverride(message)
 
@@ -197,7 +194,7 @@ func extractCommitParts(message string) []commitPart {
 
 // parseSimpleCommit parses a simple commit message and returns a slice of ConventionalCommit.
 // A simple commit message is commit that does not include override or nested commits.
-func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID string) ([]*ConventionalCommit, error) {
+func parseSimpleCommit(commitPart commitPart, commit *Commit, libraryID string) ([]*ConventionalCommit, error) {
 	trimmedMessage := strings.TrimSpace(commitPart.message)
 	if trimmedMessage == "" {
 		return nil, fmt.Errorf("empty commit message")
@@ -255,13 +252,11 @@ func parseSimpleCommit(commitPart commitPart, commit *gitrepo.Commit, libraryID 
 
 		commits = append(commits, &ConventionalCommit{
 			Type:       header.Type,
-			Scope:      header.Scope,
 			Subject:    header.Description,
 			LibraryID:  libraryID,
 			Footers:    footers,
 			IsBreaking: header.IsBreaking || footerIsBreaking,
 			IsNested:   commitPart.isNested,
-			SHA:        commit.Hash.String(),
 			CommitHash: commit.Hash.String(),
 			When:       commit.When,
 		})

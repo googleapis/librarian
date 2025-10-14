@@ -23,12 +23,13 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/svcconfig"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 // NewAPI parses the discovery doc in `contents` and returns the corresponding `api.API` model.
-func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, error) {
+func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, cfg *config.Config) (*api.API, error) {
 	doc, err := newDiscoDocument(contents)
 	if err != nil {
 		return nil, err
@@ -97,6 +98,8 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 	// The services must be sorted otherwise the generated code gets different
 	// output on each run.
 	slices.SortStableFunc(result.Services, compareServices)
+
+	lroAnnotations(result, cfg)
 
 	return result, nil
 }

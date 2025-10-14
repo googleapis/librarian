@@ -131,7 +131,10 @@ func (m *methodAnnotation) HasBindingSubstitutions() bool {
 
 // HasLROs returns true if this service includes methods that return long-running operations.
 func (s *serviceAnnotations) HasLROs() bool {
-	return len(s.LROTypes) > 0
+	if len(s.LROTypes) > 0 {
+		return true
+	}
+	return slices.IndexFunc(s.Methods, func(m *api.Method) bool { return m.DiscoveryLro != nil }) != -1
 }
 
 // FeatureName returns the feature name for the service.
@@ -200,6 +203,7 @@ type messageAnnotation struct {
 
 type methodAnnotation struct {
 	Name                      string
+	NameNoMangling            string
 	BuilderName               string
 	DocLines                  []string
 	PathInfo                  *api.PathInfo
@@ -260,6 +264,17 @@ func (info *operationInfo) BothAreEmpty() bool {
 // NoneAreEmpty returns true if neither the metadata nor the response are empty.
 func (info *operationInfo) NoneAreEmpty() bool {
 	return info.MetadataType != "wkt::Empty" && info.ResponseType != "wkt::Empty"
+}
+
+type discoveryLroAnnotations struct {
+	MethodName            string
+	ReturnType            string
+	PollingPathParameters []discoveryLroPathParameter
+}
+
+type discoveryLroPathParameter struct {
+	Name       string
+	SetterName string
 }
 
 type routingVariantAnnotations struct {
@@ -509,7 +524,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 	hasLROs := false
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil {
+			if m.OperationInfo != nil || m.DiscoveryLro != nil {
 				hasLROs = true
 			}
 			if !codec.generateMethod(m) {
@@ -769,7 +784,8 @@ func (c *codec) annotateMethod(m *api.Method) {
 	}
 	serviceName := c.ServiceName(m.Service)
 	annotation := &methodAnnotation{
-		Name:                      strcase.ToSnake(m.Name),
+		Name:                      toSnake(m.Name),
+		NameNoMangling:            toSnakeNoMangling(m.Name),
 		BuilderName:               toPascal(m.Name),
 		Body:                      bodyAccessor(m),
 		DocLines:                  c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes()),
@@ -796,6 +812,20 @@ func (c *codec) annotateMethod(m *api.Method) {
 			ResponseType:     responseType,
 			PackageNamespace: c.packageNamespace(m.Model),
 		}
+	}
+	if m.DiscoveryLro != nil {
+		lroAnnotation := &discoveryLroAnnotations{
+			MethodName: annotation.Name,
+			ReturnType: returnType,
+		}
+		for _, p := range m.DiscoveryLro.PollingPathParameters {
+			a := discoveryLroPathParameter{
+				Name:       toSnake(p),
+				SetterName: toSnakeNoMangling(p),
+			}
+			lroAnnotation.PollingPathParameters = append(lroAnnotation.PollingPathParameters, a)
+		}
+		m.DiscoveryLro.Codec = lroAnnotation
 	}
 	m.Codec = annotation
 }

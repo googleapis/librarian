@@ -307,6 +307,151 @@ func TestIsClean(t *testing.T) {
 	}
 }
 
+func TestChangedFiles(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		setup      func(t *testing.T, dir string, w *git.Worktree)
+		wantFiles  []string
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "clean repository",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				// No changes
+			},
+		},
+		{
+			name: "untracked file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "untracked.txt")
+				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+			wantFiles: []string{"untracked.txt"},
+		},
+		{
+			name: "added file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "added.txt")
+				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("added.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+			},
+			wantFiles: []string{"added.txt"},
+		},
+		{
+			name: "modified file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "modified.txt")
+				if err := os.WriteFile(filePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("modified.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				_, err := w.Commit("commit", &git.CommitOptions{
+					Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+				})
+				if err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+
+				if err := os.WriteFile(filePath, []byte("modified"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+			wantFiles: []string{"modified.txt"},
+		},
+		{
+			name: "deleted file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "deleted.txt")
+				if err := os.WriteFile(filePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("deleted.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				_, err := w.Commit("commit", &git.CommitOptions{
+					Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+				})
+				if err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+				if err := os.Remove(filePath); err != nil {
+					t.Fatalf("failed to remove file: %v", err)
+				}
+			},
+			wantFiles: []string{"deleted.txt"},
+		},
+		{
+			name: "multiple changes",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				// Untracked
+				untrackedFilePath := filepath.Join(dir, "untracked.txt")
+				if err := os.WriteFile(untrackedFilePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+
+				// Modified
+				modifiedFilePath := filepath.Join(dir, "modified.txt")
+				if err := os.WriteFile(modifiedFilePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("modified.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				_, err := w.Commit("commit", &git.CommitOptions{
+					Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+				})
+				if err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+				if err := os.WriteFile(modifiedFilePath, []byte("modified"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+			wantFiles: []string{"modified.txt", "untracked.txt"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			w, err := repo.Worktree()
+			if err != nil {
+				t.Fatalf("failed to get worktree: %v", err)
+			}
+
+			r := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+
+			test.setup(t, dir, w)
+			gotFiles, err := r.ChangedFiles()
+			if (err != nil) != test.wantErr {
+				t.Errorf("ChangedFiles() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if test.wantErr {
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("ChangedFiles() error message = %q, want to contain %q", err.Error(), test.wantErrMsg)
+				}
+				return
+			}
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("ChangedFiles() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAddAll(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -1028,7 +1173,6 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 
 func TestGetCommitsForPathsSinceTag(t *testing.T) {
 	t.Parallel()
-
 	repo, _ := setupRepoForGetCommitsTest(t)
 
 	for _, test := range []struct {
