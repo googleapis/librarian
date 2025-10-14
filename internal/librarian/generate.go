@@ -54,7 +54,7 @@ type generateRunner struct {
 type generationStatus struct {
 	// oldCommit is the SHA of the previously generated version of the library.
 	oldCommit string
-	prType    string
+	prType    pullRequestType
 }
 
 func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {

@@ -37,15 +37,34 @@ import (
 )
 
 const (
-	generate                = "generate"
-	onboard                 = "onboard"
-	release                 = "release"
 	defaultAPISourceBranch  = "master"
 	prBodyFile              = "pr-body.txt"
 	failedGenerationComment = `One or more libraries have failed to generate, please review PR description for a list of failed libraries.
 For each failed library, open a ticket in that library’s repository and then you may resolve this comment and merge.
 `
 )
+
+type pullRequestType int
+
+const (
+	onboard pullRequestType = iota
+	generate
+	release
+)
+
+func (t pullRequestType) String() string {
+	names := []string{
+		"onboard",
+		"generate",
+		"release",
+	}
+
+	if t < onboard || t > release {
+		return "Unknown"
+	}
+
+	return names[t]
+}
 
 var globalPreservePatterns = []string{
 	fmt.Sprintf(`^%s(/.*)?$`, regexp.QuoteMeta(config.GeneratorInputDir)), // Preserve the generator-input directory and its contents.
@@ -80,7 +99,7 @@ type commitInfo struct {
 	failedLibraries   []string
 	ghClient          GitHubClient
 	idToCommits       map[string]string
-	prType            string
+	prType            pullRequestType
 	pullRequestLabels []string
 	push              bool
 	languageRepo      gitrepo.Repository
@@ -449,6 +468,14 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 
 func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, error) {
 	switch info.prType {
+	case onboard:
+		opt := &onboardPRRequest{
+			sourceRepo: info.sourceRepo,
+			state:      info.state,
+			api:        info.api,
+			library:    info.library,
+		}
+		return formatOnboardPRBody(opt)
 	case generate:
 		opt := &generationPRRequest{
 			sourceRepo:      info.sourceRepo,
@@ -458,14 +485,6 @@ func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, erro
 			failedLibraries: info.failedLibraries,
 		}
 		return formatGenerationPRBody(opt)
-	case onboard:
-		opt := &onboardPRRequest{
-			sourceRepo: info.sourceRepo,
-			state:      info.state,
-			api:        info.api,
-			library:    info.library,
-		}
-		return formatOnboardPRBody(opt)
 	case release:
 		return formatReleaseNotes(info.state, gitHubRepo)
 	default:
