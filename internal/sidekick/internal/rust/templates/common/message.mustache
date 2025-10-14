@@ -132,10 +132,7 @@ impl {{Codec.Name}} {
     {{/Codec.BasicFields}}
     {{#OneOfs}}
 
-    /// Sets the value of [{{Codec.FieldName}}][{{Codec.StructQualifiedName}}::{{Codec.SetterName}}].
-    ///
-    /// Note that all the setters affecting `{{Codec.FieldName}}` are mutually
-    /// exclusive.
+    {{> /templates/common/setter_preamble/oneof}}
     pub fn set_{{Codec.SetterName}}<T: std::convert::Into<std::option::Option<{{{Codec.FieldType}}}>>>(mut self, v: T) -> Self
     {
         self.{{Codec.FieldName}} = v.into();
@@ -158,14 +155,7 @@ impl {{Codec.Name}} {
         })
     }
 
-    /// Sets the value of [{{Group.Codec.FieldName}}][{{Codec.FQMessageName}}::{{Group.Codec.FieldName}}]
-    /// to hold a `{{Codec.BranchName}}`.
-    ///
-    /// Note that all the setters affecting `{{Group.Codec.FieldName}}` are
-    /// mutually exclusive.
-    {{#Deprecated}}
-    #[deprecated]
-    {{/Deprecated}}
+    {{> /templates/common/oneof_variants}}
     {{#Singular}}
     pub fn set_{{Codec.SetterName}}<T: std::convert::Into<{{{Codec.FieldType}}}>>(mut self, v: T) -> Self {
         self.{{Group.Codec.FieldName}} = std::option::Option::Some(
