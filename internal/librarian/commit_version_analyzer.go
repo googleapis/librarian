@@ -83,25 +83,6 @@ func getConventionalCommitsSinceLastGeneration(sourceRepo gitrepo.Repository, li
 	return convertToConventionalCommits(sourceRepo, library, sourceCommits, shouldIncludeFiles)
 }
 
-// languageRepoChangedFiles returns the paths of files changed in the repo as part
-// of the current librarian run - either in the head commit if the repo is clean,
-// or the outstanding changes otherwise.
-func languageRepoChangedFiles(languageRepo gitrepo.Repository) ([]string, error) {
-	clean, err := languageRepo.IsClean()
-	if err != nil {
-		return nil, err
-	}
-	if clean {
-		headHash, err := languageRepo.HeadHash()
-		if err != nil {
-			return nil, err
-		}
-		return languageRepo.ChangedFilesInCommit(headHash)
-	}
-	// The commit or push flag is not set, get all locally changed files.
-	return languageRepo.ChangedFiles()
-}
-
 // shouldIncludeForGeneration determines if a commit should be included in generation.
 // It returns true if there is at least one file in the commit that is under the
 // library's API(s) path (a library could have multiple APIs).

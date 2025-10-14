@@ -1076,3 +1076,74 @@ Language Image: go:1.21
 		})
 	}
 }
+
+func TestLanguageRepoChangedFiles(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		repo    gitrepo.Repository
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "IsClean fails",
+			repo: &MockRepository{
+				IsCleanError: fmt.Errorf("mock failure from IsClean"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean, HeadHash fails",
+			repo: &MockRepository{
+				IsCleanValue:  true,
+				HeadHashError: fmt.Errorf("mock failure from HeadHash"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean, ChangedFilesInCommit fails",
+			repo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "1234",
+				ChangedFilesInCommitError: fmt.Errorf("mock failure from ChangedFilesInCommit"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "dirty, ChangedFiles fails",
+			repo: &MockRepository{
+				ChangedFilesError: fmt.Errorf("mock failure from ChangedFiles"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean success",
+			repo: &MockRepository{
+				IsCleanValue:  true,
+				HeadHashValue: "1234",
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					"abcd": []string{"a/b/c", "d/e/f"},
+					"1234": []string{"g/h/i", "j/k/l"},
+				},
+			},
+			want: []string{"g/h/i", "j/k/l"},
+		},
+		{
+			name: "dirty success",
+			repo: &MockRepository{
+				ChangedFilesValue: []string{"a/b/c", "d/e/f"},
+			},
+			want: []string{"a/b/c", "d/e/f"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := languageRepoChangedFiles(test.repo)
+			if (err != nil) != test.wantErr {
+				t.Errorf("languageRepoChangedFiles() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

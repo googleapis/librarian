@@ -350,3 +350,22 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 
 	return section
 }
+
+// languageRepoChangedFiles returns the paths of files changed in the repo as part
+// of the current librarian run - either in the head commit if the repo is clean,
+// or the outstanding changes otherwise.
+func languageRepoChangedFiles(languageRepo gitrepo.Repository) ([]string, error) {
+	clean, err := languageRepo.IsClean()
+	if err != nil {
+		return nil, err
+	}
+	if clean {
+		headHash, err := languageRepo.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		return languageRepo.ChangedFilesInCommit(headHash)
+	}
+	// The commit or push flag is not set, get all locally changed files.
+	return languageRepo.ChangedFiles()
+}
