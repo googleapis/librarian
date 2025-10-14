@@ -156,13 +156,20 @@ type commitSection struct {
 // Only consider libraries whose ID appears in idToCommits.
 func formatGenerationPRBody(sourceRepo, languageRepo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
 	var allCommits []*gitrepo.ConventionalCommit
+	languageRepoChanges, err := languageRepoChangedFiles(languageRepo)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch changes in language repo: %w", err)
+	}
 	for _, library := range state.Libraries {
 		lastGenCommit, ok := idToCommits[library.ID]
 		if !ok {
 			continue
 		}
+		if !libraryHasChanges(languageRepoChanges, library) {
+			continue
+		}
 
-		commits, err := getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo, library, lastGenCommit)
+		commits, err := getConventionalCommitsSinceLastGeneration(sourceRepo, library, lastGenCommit)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 		}

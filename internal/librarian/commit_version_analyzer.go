@@ -58,7 +58,7 @@ func shouldIncludeForRelease(files, sourceRoots, excludePaths []string) bool {
 // getConventionalCommitsSinceLastGeneration returns all conventional commits for
 // all API paths in given library since the last generation. The repo input should
 // be the googleapis source repo.
-func getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*gitrepo.ConventionalCommit, error) {
+func getConventionalCommitsSinceLastGeneration(sourceRepo gitrepo.Repository, library *config.LibraryState, lastGenCommit string) ([]*gitrepo.ConventionalCommit, error) {
 	if lastGenCommit == "" {
 		slog.Info("the last generation commit is empty, skip fetching conventional commits", "library", library.ID)
 		return make([]*gitrepo.ConventionalCommit, 0), nil
@@ -74,59 +74,61 @@ func getConventionalCommitsSinceLastGeneration(sourceRepo, languageRepo gitrepo.
 		return nil, fmt.Errorf("failed to get commits for library %s at commit %s: %w", library.ID, lastGenCommit, err)
 	}
 
-	var languageRepoFiles []string
-	if ok, _ := languageRepo.IsClean(); ok {
-		headHash, err := languageRepo.HeadHash()
-		if err != nil {
-			return nil, err
-		}
-		languageRepoFiles, err = languageRepo.ChangedFilesInCommit(headHash)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// The commit or push flag is not set, get all locally changed files.
-		languageRepoFiles, err = languageRepo.ChangedFiles()
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// checks that the files in the commit are in the api paths for the source repo.
 	// The generation change is for changes in the source repo and NOT the language repo.
 	shouldIncludeFiles := func(sourceFiles []string) bool {
-		return shouldIncludeForGeneration(sourceFiles, languageRepoFiles, library)
+		return shouldIncludeForGeneration(sourceFiles, library)
 	}
 
 	return convertToConventionalCommits(sourceRepo, library, sourceCommits, shouldIncludeFiles)
 }
 
+// languageRepoChangedFiles returns the paths of files changed in the repo as part
+// of the current librarian run - either in the head commit if the repo is clean,
+// or the outstanding changes otherwise.
+func languageRepoChangedFiles(languageRepo gitrepo.Repository) ([]string, error) {
+	clean, err := languageRepo.IsClean()
+	if err != nil {
+		return nil, err
+	}
+	if clean {
+		headHash, err := languageRepo.HeadHash()
+		if err != nil {
+			return nil, err
+		}
+		return languageRepo.ChangedFilesInCommit(headHash)
+	} else {
+		// The commit or push flag is not set, get all locally changed files.
+		return languageRepo.ChangedFiles()
+	}
+}
+
 // shouldIncludeForGeneration determines if a commit should be included in generation.
 // It returns true if there is at least one file in the commit that is under the
-// library's API(s) path (a library could have multiple APIs) and has local
-// changes associated with it.
-func shouldIncludeForGeneration(sourceFiles, languageRepoFiles []string, library *config.LibraryState) bool {
+// library's API(s) path (a library could have multiple APIs).
+func shouldIncludeForGeneration(sourceFiles []string, library *config.LibraryState) bool {
 	var apiPaths []string
 	for _, api := range library.APIs {
 		apiPaths = append(apiPaths, api.Path)
 	}
 
-	var sourceFilesInPath bool
 	for _, file := range sourceFiles {
 		if isUnderAnyPath(file, apiPaths) {
-			sourceFilesInPath = true
-			break
+			return true
 		}
 	}
+	return false
+}
 
-	var languageRepoFilesInPath bool
-	for _, file := range languageRepoFiles {
+// libraryHasChanges returns whether any of the language repository changes fall under
+// one of the library's source roots, but not in its release-exclude paths.
+func libraryHasChanges(languageRepoChanges []string, library *config.LibraryState) bool {
+	for _, file := range languageRepoChanges {
 		if isUnderAnyPath(file, library.SourceRoots) && !isUnderAnyPath(file, library.ReleaseExcludePaths) {
-			languageRepoFilesInPath = true
-			break
+			return true
 		}
 	}
-	return sourceFilesInPath && languageRepoFilesInPath
+	return false
 }
 
 // libraryFilter filters a list of conventional commits by library ID.

@@ -498,6 +498,7 @@ Language Image: %s`,
 				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
 			},
 			languageRepo: &MockRepository{
+				IsCleanValue:              true,
 				HeadHashValue:             "5678",
 				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
