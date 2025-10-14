@@ -41,11 +41,17 @@ type ArtifactRegistryClient struct {
 
 // Image is a data structure for parsing Docker image parameters.
 type Image struct {
-	Name       string
-	Tag        string
-	SHA        string
-	Location   string
-	Project    string
+	// Name is the short name of the docker image.
+	Name string
+	// Tag is the named tag of the docker image.
+	Tag string
+	// SHA is the SHA256 (e.g. `sha256:abcd1234`).
+	SHA string
+	// Location is the Artifact Registry location (e.g. `us-central1`).
+	Location string
+	// Project is the name of the GCP project that holds the AR repository.
+	Project string
+	// Repository is the name of the AR repository.
 	Repository string
 }
 
