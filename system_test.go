@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -436,5 +437,61 @@ func TestCreateRelease(t *testing.T) {
 	}
 	if diff := cmp.Diff(release.GetBody(), body); diff != "" {
 		t.Fatalf("release body mismatch (-want + got):\n%s", diff)
+	}
+}
+
+func TestGitCheckout(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		sha     string
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "known SHA",
+			// v0.3.0 release
+			sha:  "2e230f309505db42ce8becb0f3946d608a11a61c",
+			want: "chore: librarian release pull request: 20250925T070206Z (#2356)",
+		},
+		{
+			name:    "unknown SHA",
+			sha:     "should not exist",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+				Dir:          filepath.Join(t.TempDir(), "librarian"),
+				MaybeClone:   true,
+				RemoteURL:    "https://github.com/googleapis/librarian",
+				RemoteBranch: "main",
+			})
+			if err != nil {
+				t.Fatalf("error cloning repository, %v", err)
+			}
+
+			err = repo.Checkout(test.sha)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("Checkout() expected to return error")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Checkout() unexpected error: %v", err)
+			}
+
+			headSha, err := repo.HeadHash()
+			if diff := cmp.Diff(test.sha, headSha); diff != "" {
+				t.Fatalf("Checkout() mismatch (-want +got):\n%s", diff)
+			}
+			if err != nil {
+				t.Fatalf("Checkout() unexpected error fetching HeadHash: %v", err)
+			}
+		})
 	}
 }
