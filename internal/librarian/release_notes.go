@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -152,75 +151,6 @@ type releaseNoteSection struct {
 type commitSection struct {
 	Heading string
 	Commits []*gitrepo.ConventionalCommit
-}
-
-// findLatestGenerationCommit returns the latest commit among the last generated
-// commit of all the libraries.
-// A library is skipped if the last generated commit is empty.
-//
-// Note that it is possible that the returned commit is nil.
-func findLatestGenerationCommit(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string) (*gitrepo.Commit, error) {
-	latest := time.UnixMilli(0) // the earliest timestamp.
-	var res *gitrepo.Commit
-	for _, library := range state.Libraries {
-		commitHash, ok := idToCommits[library.ID]
-		if !ok || commitHash == "" {
-			slog.Info("skip getting last generated commit", "library", library.ID)
-			continue
-		}
-		commit, err := repo.GetCommit(commitHash)
-		if err != nil {
-			return nil, fmt.Errorf("can't find last generated commit for %s: %w", library.ID, err)
-		}
-		if latest.Before(commit.When) {
-			latest = commit.When
-			res = commit
-		}
-	}
-
-	if res == nil {
-		slog.Warn("no library has non-empty last generated commit")
-	}
-
-	return res, nil
-}
-
-// groupByIDAndSubject aggregates conventional commits for ones have the same Piper ID and subject in the footer.
-func groupByIDAndSubject(commits []*gitrepo.ConventionalCommit) []*gitrepo.ConventionalCommit {
-	var res []*gitrepo.ConventionalCommit
-	idToCommits := make(map[string][]*gitrepo.ConventionalCommit)
-	for _, commit := range commits {
-		// a commit is not considering for grouping if it doesn't have a footer or
-		// the footer doesn't have a Piper ID.
-		if commit.Footers == nil {
-			commit.Footers = make(map[string]string)
-			commit.Footers["Library-IDs"] = commit.LibraryID
-			res = append(res, commit)
-			continue
-		}
-
-		id, ok := commit.Footers["PiperOrigin-RevId"]
-		if !ok {
-			commit.Footers["Library-IDs"] = commit.LibraryID
-			res = append(res, commit)
-			continue
-		}
-
-		key := fmt.Sprintf("%s-%s", id, commit.Subject)
-		idToCommits[key] = append(idToCommits[key], commit)
-	}
-
-	for _, groupCommits := range idToCommits {
-		var ids []string
-		for _, commit := range groupCommits {
-			ids = append(ids, commit.LibraryID)
-		}
-		firstCommit := groupCommits[0]
-		firstCommit.Footers["Library-IDs"] = strings.Join(ids, ",")
-		res = append(res, firstCommit)
-	}
-
-	return res
 }
 
 // formatReleaseNotes generates the body for a release pull request.
