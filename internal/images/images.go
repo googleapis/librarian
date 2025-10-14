@@ -29,11 +29,14 @@ import (
 type ImageRegistryClient interface {
 	// FindLatest returns the latest docker image given a current image.
 	FindLatest(ctx context.Context, image *Image) (string, error)
+	// Close cleans up any open resources.
+	Close() error
 }
 
 // ArtifactRegistryClient is the implementation of ImageRegistryClient
 // to interact with Artifact Registry.
 type ArtifactRegistryClient struct {
+	client *artifactregistry.Client
 }
 
 // Image is a data structure for parsing Docker image parameters.
@@ -65,15 +68,29 @@ func (i *Image) String() string {
 	return b.String()
 }
 
-// FindLatest returns the latest docker image given a current image.
-func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, image *Image) (string, error) {
+// NewArtifactRegistryClient creates a new ArtifactRegistryClient.
+func NewArtifactRegistryClient(ctx context.Context) (*ArtifactRegistryClient, error) {
 	client, err := artifactregistry.NewClient(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	defer client.Close()
+	return &ArtifactRegistryClient{
+		client: client,
+	}, nil
+}
 
-	it := client.ListVersions(ctx, &artifactregistrypb.ListVersionsRequest{
+// Close cleans up any open resources.
+func (c *ArtifactRegistryClient) Close() error {
+	return c.client.Close()
+}
+
+// FindLatest returns the latest docker image given a current image.
+func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, image *Image) (string, error) {
+	if c.client == nil {
+		return "", fmt.Errorf("no client configured")
+	}
+
+	it := c.client.ListVersions(ctx, &artifactregistrypb.ListVersionsRequest{
 		Parent:  fmt.Sprintf("projects/%s/locations/%s/repositories/%s/packages/%s", image.Project, image.Location, image.Repository, image.Name),
 		View:    artifactregistrypb.VersionView_FULL,
 		OrderBy: "create_time DESC",

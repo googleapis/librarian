@@ -32,6 +32,10 @@ func (c *MockImageRegistryClient) FindLatest(ctx context.Context, image *Image) 
 	return c.LatestImage, c.Error
 }
 
+func (c *MockImageRegistryClient) Close() error {
+	return nil
+}
+
 func TestFindLatestImage(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -139,6 +143,39 @@ func TestParseImage(t *testing.T) {
 			str := got.String()
 			if diff := cmp.Diff(str, test.image); diff != "" {
 				t.Errorf("image.String() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNewArtifactRegistryClient(t *testing.T) {
+
+	for _, test := range []struct {
+		name    string
+		image   string
+		want    *Image
+		wantErr bool
+	}{
+		{
+			name:  "AR unpinned",
+			image: "us-central1-docker.pkg.dev/some-project/some-repo/some-image",
+			want: &Image{
+				Name:       "some-image",
+				Location:   "us-central1",
+				Project:    "some-project",
+				Repository: "some-repo",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			client, err := NewArtifactRegistryClient(t.Context())
+			if (err != nil) != test.wantErr {
+				t.Errorf("parseImage() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if client.client == nil {
+				t.Error("NewArtifactRegistryClient() did not set a client")
 			}
 		})
 	}
