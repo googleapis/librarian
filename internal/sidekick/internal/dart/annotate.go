@@ -343,7 +343,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return errors.New("all packages that define a service must define 'api-keys-environment-variables'")
 	}
 
-	if len(model.Services) > 0 && len(issueTrackerUrl) == 0 {
+	if len(issueTrackerUrl) == 0 {
 		return errors.New("all packages that define a service must define 'issue-tracker-url'")
 	}
 
