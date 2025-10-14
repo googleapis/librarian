@@ -20,7 +20,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -114,7 +113,7 @@ type LibraryState struct {
 	LastGeneratedCommit string `yaml:"last_generated_commit" json:"-"`
 	// The changes from the language repository since the library was last released.
 	// This field is ignored when writing to state.yaml.
-	Changes []*conventionalcommits.ConventionalCommit `yaml:"-" json:"changes,omitempty"`
+	Changes []*gitrepo.ConventionalCommit `yaml:"-" json:"changes,omitempty"`
 	// A list of APIs that are part of this library.
 	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.

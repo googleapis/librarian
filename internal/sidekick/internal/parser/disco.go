@@ -47,7 +47,7 @@ func ParseDisco(cfg *config.Config) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	result, err := discovery.NewAPI(serviceConfig, contents)
+	result, err := discovery.NewAPI(serviceConfig, contents, cfg)
 	if err != nil {
 		return nil, err
 	}

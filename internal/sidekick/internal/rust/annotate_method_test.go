@@ -44,6 +44,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 			MethodID: ".test.v1.ResourceService.move",
 			Want: &methodAnnotation{
 				Name:                "r#move",
+				NameNoMangling:      "move",
 				BuilderName:         "Move",
 				Body:                "None::<gaxi::http::NoBody>",
 				ServiceNameToPascal: "ResourceService",
@@ -56,6 +57,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 			MethodID: ".test.v1.ResourceService.Delete",
 			Want: &methodAnnotation{
 				Name:                "delete",
+				NameNoMangling:      "delete",
 				BuilderName:         "Delete",
 				Body:                "None::<gaxi::http::NoBody>",
 				ServiceNameToPascal: "ResourceService",
@@ -68,6 +70,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 			MethodID: ".test.v1.ResourceService.Self",
 			Want: &methodAnnotation{
 				Name:                "r#self",
+				NameNoMangling:      "self",
 				BuilderName:         "r#Self",
 				Body:                "None::<gaxi::http::NoBody>",
 				ServiceNameToPascal: "ResourceService",
@@ -86,6 +89,40 @@ func TestAnnotateMethodNames(t *testing.T) {
 		if diff := cmp.Diff(test.Want, got, cmpopts.IgnoreFields(methodAnnotation{}, "PathInfo", "SystemParameters")); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
 		}
+	}
+}
+
+func TestAnnotateDiscoveryAnnotations(t *testing.T) {
+	model := annotateMethodModel(t)
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+	codec, err := newCodec("protobuf", map[string]string{
+		"include-grpc-only-methods": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = annotateModel(model, codec)
+
+	methodID := ".test.v1.ResourceService.Delete"
+	gotMethod, ok := model.State.MethodByID[methodID]
+	if !ok {
+		t.Fatalf("missing method %s", methodID)
+	}
+	got := gotMethod.DiscoveryLro.Codec.(*discoveryLroAnnotations)
+	want := &discoveryLroAnnotations{
+		MethodName: "delete",
+		ReturnType: "()",
+		PollingPathParameters: []discoveryLroPathParameter{
+			{Name: "project", SetterName: "project"},
+			{Name: "zone", SetterName: "zone"},
+			{Name: "r#type", SetterName: "type"},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
 
@@ -126,10 +163,21 @@ func annotateMethodModel(t *testing.T) *api.API {
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
-					Verb:         "DELETE",
-					PathTemplate: api.NewPathTemplate(),
+					Verb: "DELETE",
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("projects").
+						WithVariableNamed("project").
+						WithLiteral("zones").
+						WithVariableNamed("zone").
+						// This is unlikely, but want to test variables that
+						// are reserved words.
+						WithLiteral("types").
+						WithVariableNamed("type"),
 				},
 			},
+		},
+		DiscoveryLro: &api.DiscoveryLro{
+			PollingPathParameters: []string{"project", "zone", "type"},
 		},
 	}
 	methodSelf := &api.Method{
