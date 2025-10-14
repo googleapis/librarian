@@ -66,6 +66,76 @@ func TestDefaultFeatures(t *testing.T) {
 	}
 }
 
+func TestRustdocWarnings(t *testing.T) {
+	for _, test := range []struct {
+		Options map[string]string
+		Want    []string
+	}{
+		{
+			Options: map[string]string{},
+			Want:    nil,
+		},
+		{
+			Options: map[string]string{
+				"disabled-rustdoc-warnings": "",
+			},
+			Want: []string{},
+		},
+		{
+			Options: map[string]string{
+				"disabled-rustdoc-warnings": "",
+			},
+			Want: []string{},
+		},
+	} {
+		model := newTestAnnotateModelAPI()
+		codec, err := newCodec("protobuf", test.Options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := annotateModel(model, codec)
+		t.Logf("Options=%v", test.Options)
+		if diff := cmp.Diff(test.Want, got.DisabledRustdocWarnings); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
+func TestClippyWarnings(t *testing.T) {
+	for _, test := range []struct {
+		Options map[string]string
+		Want    []string
+	}{
+		{
+			Options: map[string]string{},
+			Want:    nil,
+		},
+		{
+			Options: map[string]string{
+				"disabled-clippy-warnings": "",
+			},
+			Want: []string{},
+		},
+		{
+			Options: map[string]string{
+				"disabled-clippy-warnings": "",
+			},
+			Want: []string{},
+		},
+	} {
+		model := newTestAnnotateModelAPI()
+		codec, err := newCodec("protobuf", test.Options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := annotateModel(model, codec)
+		t.Logf("Options=%v", test.Options)
+		if diff := cmp.Diff(test.Want, got.DisabledClippyWarnings); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
 func newTestAnnotateModelAPI() *api.API {
 	service0 := &api.Service{
 		Name: "Service0",

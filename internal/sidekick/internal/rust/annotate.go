@@ -46,9 +46,10 @@ type modelAnnotations struct {
 	Services          []*api.Service
 	NameToLower       string
 	NotForPublication bool
-	// If true, disable rustdoc warnings known to be triggered by our generated
-	// documentation.
+	// A list of `#[allow(rustdoc::*)]` warnings to disable.
 	DisabledRustdocWarnings []string
+	// A list of `#[allow(clippy::*)]` warnings to disable.
+	DisabledClippyWarnings []string
 	// Sets the default system parameters.
 	DefaultSystemParameters []systemParameter
 	// Enables per-service features.
@@ -587,6 +588,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		NameToLower:             strings.ToLower(model.Name),
 		NotForPublication:       codec.doNotPublish,
 		DisabledRustdocWarnings: codec.disabledRustdocWarnings,
+		DisabledClippyWarnings:  codec.disabledClippyWarnings,
 		PerServiceFeatures:      codec.perServiceFeatures && len(servicesSubset) > 0,
 		ExtraModules:            codec.extraModules,
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
