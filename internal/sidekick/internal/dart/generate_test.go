@@ -47,6 +47,7 @@ func TestFromProtobuf(t *testing.T) {
 		},
 		Codec: map[string]string{
 			"api-keys-environment-variables": "GOOGLE_API_KEY,GEMINI_API_KEY",
+			"issue-tracker-url":              "http://www.example.com/issues",
 			"copyright-year":                 "2025",
 			"not-for-publication":            "true",
 			"version":                        "0.1.0",

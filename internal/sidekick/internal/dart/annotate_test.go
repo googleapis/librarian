@@ -26,6 +26,7 @@ import (
 var (
 	requiredConfig = map[string]string{
 		"api-keys-environment-variables": "GOOGLE_API_KEY,GEMINI_API_KEY",
+		"issue-tracker-url":              "http://www.example.com/issues",
 		"package:googleapis_auth":        "^2.0.0",
 		"package:google_cloud_gax":       "^1.2.3",
 		"package:http":                   "^4.5.6"}

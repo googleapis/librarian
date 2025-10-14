@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -245,7 +246,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			packageNameOverride = definition
 		case key == "copyright-year":
 			generationYear = definition
-		case key == "issueTrackerUrl":
+		case key == "issue-tracker-url":
+			// issue-tracker-url = "http://www.example.com/issues"
+			// A link to the issue tracker for the service.
 			issueTrackerUrl = definition
 		case key == "version":
 			packageVersion = definition
@@ -335,6 +338,15 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	if err != nil {
 		return err
 	}
+
+	if len(model.Services) > 0 && len(apiKeyEnvironmentVariables) == 0 {
+		return errors.New("all packages that define a service must define 'api-keys-environment-variables'")
+	}
+
+	if len(model.Services) > 0 && len(issueTrackerUrl) == 0 {
+		return errors.New("all packages that define a service must define 'issue-tracker-url'")
+	}
+
 	ann := &modelAnnotations{
 		Parent:         model,
 		PackageName:    packageName(model, packageNameOverride),
