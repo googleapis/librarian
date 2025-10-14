@@ -74,8 +74,8 @@ Language Image: {{.ImageVersion}}
 {{ range .CommitSections }}
 ### {{.Heading}}
 {{ range .Commits }}
-{{ if index .Footers "PiperOrigin-RevId" -}}
-* {{.Subject}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
+{{ if .PiperCLNumber -}}
+* {{.Subject}} (PiperOrigin-RevId: {{.PiperCLNumber}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
 {{- else -}}
 * {{.Subject}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
 {{- end }}
@@ -156,7 +156,7 @@ type releaseNoteSection struct {
 type commitSection struct {
 	Heading string
 	// A list of flattened conventional commits associated with this section and
-	Commits []*gitrepo.ConventionalCommit
+	Commits []*config.Commit
 }
 
 // formatGenerationPRBody creates the body of a generation pull request.
@@ -313,13 +313,9 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repository) *releaseNoteSection {
 	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
 
-	commitsByType := make(map[string][]*gitrepo.ConventionalCommit)
+	commitsByType := make(map[string][]*config.Commit)
 	for _, commit := range library.Changes {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
-		// flatten nested commits for easier template processing
-		for _, nested := range commit.NestedCommits {
-			commitsByType[nested.Type] = append(commitsByType[nested.Type], nested)
-		}
 	}
 
 	var sections []*commitSection

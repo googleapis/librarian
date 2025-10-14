@@ -1258,16 +1258,16 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:              "one-id",
 				Version:         "1.3.0",
 				PreviousVersion: "1.2.3",
-				Changes: []*gitrepo.ConventionalCommit{
+				Changes: []*config.Commit{
 					{
 						Type:    "fix",
 						Subject: "change a typo",
 					},
 					{
-						Type:    "feat",
-						Subject: "add a config file",
-						Body:    "This is the body.",
-						Footers: map[string]string{"PiperOrigin-RevId": "12345"},
+						Type:          "feat",
+						Subject:       "add a config file",
+						Body:          "This is the body.",
+						PiperCLNumber: "12345",
 					},
 				},
 				ReleaseTriggered: true,
@@ -1296,16 +1296,16 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:              "one-id",
 				Version:         "5.0.0", // Use the `--version` value`
 				PreviousVersion: "1.2.3",
-				Changes: []*gitrepo.ConventionalCommit{
+				Changes: []*config.Commit{
 					{
 						Type:    "fix",
 						Subject: "change a typo",
 					},
 					{
-						Type:    "feat",
-						Subject: "add a config file",
-						Body:    "This is the body.",
-						Footers: map[string]string{"PiperOrigin-RevId": "12345"},
+						Type:          "feat",
+						Subject:       "add a config file",
+						Body:          "This is the body.",
+						PiperCLNumber: "12345",
 					},
 				},
 				ReleaseTriggered: true,
@@ -1359,20 +1359,15 @@ func TestUpdateLibrary(t *testing.T) {
 				ID:              "one-id",
 				Version:         "2.0.0",
 				PreviousVersion: "1.2.3",
-				Changes: []*gitrepo.ConventionalCommit{
+				Changes: []*config.Commit{
 					{
 						Type:    "feat",
 						Subject: "add another config file",
 						Body:    "This is the body",
-						Footers: map[string]string{
-							"BREAKING CHANGE": "this is a breaking change",
-						},
-						IsBreaking: true,
 					},
 					{
-						Type:       "feat",
-						Subject:    "change a typo",
-						IsBreaking: true,
+						Type:    "feat",
+						Subject: "change a typo",
 					},
 				},
 				ReleaseTriggered: true,
@@ -1424,7 +1419,7 @@ func TestUpdateLibrary(t *testing.T) {
 				PreviousVersion:  "1.2.3",
 				Version:          "5.0.0", // Use the `--version` override value
 				ReleaseTriggered: true,
-				Changes: []*gitrepo.ConventionalCommit{
+				Changes: []*config.Commit{
 					{
 						Type:    "chore",
 						Subject: "a chore",
