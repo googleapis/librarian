@@ -128,23 +128,6 @@ func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, imageName strin
 	return newImage.String(), nil
 }
 
-// ImageRegistryClient is an abstration of a Docker registry client.
-type ImageRegistryClient interface {
-	// FindLatest returns the latest docker image given a current image.
-	FindLatest(ctx context.Context, imageName string) (string, error)
-	// Close cleans up any open resources.
-	Close() error
-}
-
-// FindLatestImage returns the latest created image matching the provided image name.
-func FindLatestImage(ctx context.Context, client ImageRegistryClient, currentImage string) (string, error) {
-	latestImage, err := client.FindLatest(ctx, currentImage)
-	if err != nil {
-		return "", err
-	}
-	return latestImage, nil
-}
-
 func parseImage(pinnedImage string) (*containerImage, error) {
 	parsedImage := &containerImage{}
 	baseName := ""

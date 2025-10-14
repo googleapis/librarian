@@ -476,7 +476,7 @@ func TestFindLatestImage(t *testing.T) {
 				t.Fatalf("unexpected error in NewArtifactRegistryClient() %v", err)
 			}
 			defer client.Close()
-			got, err := images.FindLatestImage(t.Context(), client, test.image)
+			got, err := client.FindLatest(t.Context(), test.image)
 			if test.wantErr {
 				if err == nil {
 					t.Errorf("FindLatestImage() error = %v, wantErr %v", err, test.wantErr)
