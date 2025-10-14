@@ -90,6 +90,7 @@ func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, image *Image) (
 		if key == "subjectDigest" {
 			slog.Info("Found SHA", "sha", field.GetStringValue())
 			latestSha = field.GetStringValue()
+			break
 		}
 	}
 
@@ -147,7 +148,7 @@ func parseImage(pinnedImage string) (*Image, error) {
 
 	host := parts[0]
 	if strings.HasSuffix(host, "-docker.pkg.dev") {
-		parsedImage.Location = strings.Replace(host, "-docker.pkg.dev", "", 1)
+		parsedImage.Location = strings.TrimSuffix(host, "-docker.pkg.dev")
 	} else {
 		return nil, fmt.Errorf("expected AR formatted host with -docker.pkg.dev suffix: %s", host)
 	}

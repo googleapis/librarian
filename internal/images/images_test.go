@@ -57,7 +57,7 @@ func TestFindLatestImage(t *testing.T) {
 			},
 		},
 		{
-			name:    "AR pinned",
+			name:    "AR pinned with client error",
 			image:   "us-central1-docker.pkg.dev/some-project/some-repo/some-image@sha256:123abc",
 			wantErr: true,
 			client: &MockImageRegistryClient{
