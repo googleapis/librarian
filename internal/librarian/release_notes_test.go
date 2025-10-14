@@ -534,14 +534,14 @@ Language Image: %s`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			opt := &generationPRRequest{
+			req := &generationPRRequest{
 				sourceRepo:      test.sourceRepo,
 				languageRepo:    test.languageRepo,
 				state:           test.state,
 				idToCommits:     test.idToCommits,
 				failedLibraries: test.failedLibraries,
 			}
-			got, err := formatGenerationPRBody(opt)
+			got, err := formatGenerationPRBody(req)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
