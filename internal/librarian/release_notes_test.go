@@ -484,6 +484,27 @@ Language Image: %s`,
 			want: "No commit is found since last generation",
 		},
 		{
+			name: "failed to get language repo changes commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{},
+			languageRepo: &MockRepository{
+				IsCleanError: errors.New("simulated error"),
+			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
+			wantErr:       true,
+			wantErrPhrase: "failed to fetch changes in language repo",
+		},
+		{
 			name: "failed to get conventional commits",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
