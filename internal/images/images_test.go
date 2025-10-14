@@ -28,7 +28,7 @@ type MockImageRegistryClient struct {
 	Error       error
 }
 
-func (c *MockImageRegistryClient) FindLatest(ctx context.Context, image *Image) (string, error) {
+func (c *MockImageRegistryClient) FindLatest(ctx context.Context, imageName string) (string, error) {
 	return c.LatestImage, c.Error
 }
 
@@ -68,11 +68,6 @@ func TestFindLatestImage(t *testing.T) {
 				Error: fmt.Errorf("test error"),
 			},
 		},
-		{
-			name:    "invalid image",
-			image:   "gcr.io/some-project/some-name",
-			wantErr: true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -94,13 +89,13 @@ func TestParseImage(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		image   string
-		want    *Image
+		want    *containerImage
 		wantErr bool
 	}{
 		{
 			name:  "AR unpinned",
 			image: "us-central1-docker.pkg.dev/some-project/some-repo/some-image",
-			want: &Image{
+			want: &containerImage{
 				Name:       "some-image",
 				Location:   "us-central1",
 				Project:    "some-project",
@@ -110,7 +105,7 @@ func TestParseImage(t *testing.T) {
 		{
 			name:  "AR pinned SHA",
 			image: "us-central1-docker.pkg.dev/some-project/some-repo/some-image@sha256:abcdef",
-			want: &Image{
+			want: &containerImage{
 				Name:       "some-image",
 				Location:   "us-central1",
 				Project:    "some-project",
@@ -121,7 +116,7 @@ func TestParseImage(t *testing.T) {
 		{
 			name:  "AR tagged",
 			image: "us-central1-docker.pkg.dev/some-project/some-repo/some-image:1.2.3",
-			want: &Image{
+			want: &containerImage{
 				Name:       "some-image",
 				Location:   "us-central1",
 				Project:    "some-project",

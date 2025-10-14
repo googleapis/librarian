@@ -25,22 +25,14 @@ import (
 	artifactregistrypb "cloud.google.com/go/artifactregistry/apiv1/artifactregistrypb"
 )
 
-// ImageRegistryClient is an abstration of a Docker registry client.
-type ImageRegistryClient interface {
-	// FindLatest returns the latest docker image given a current image.
-	FindLatest(ctx context.Context, image *Image) (string, error)
-	// Close cleans up any open resources.
-	Close() error
-}
-
 // ArtifactRegistryClient is the implementation of ImageRegistryClient
 // to interact with Artifact Registry.
 type ArtifactRegistryClient struct {
 	client *artifactregistry.Client
 }
 
-// Image is a data structure for parsing Docker image parameters.
-type Image struct {
+// containerImage is a data structure for parsing Docker image parameters.
+type containerImage struct {
 	// Name is the short name of the docker image.
 	Name string
 	// Tag is the named tag of the docker image.
@@ -56,12 +48,12 @@ type Image struct {
 }
 
 // BaseName returns the image name without a pinned SHA or tag.
-func (i *Image) BaseName() string {
+func (i *containerImage) BaseName() string {
 	return fmt.Sprintf("%s-docker.pkg.dev/%s/%s/%s", i.Location, i.Project, i.Repository, i.Name)
 }
 
 // String returns the image name with pinned SHA or tag.
-func (i *Image) String() string {
+func (i *containerImage) String() string {
 	var b strings.Builder
 	b.WriteString(i.BaseName())
 	if i.SHA != "" {
@@ -91,7 +83,12 @@ func (c *ArtifactRegistryClient) Close() error {
 }
 
 // FindLatest returns the latest docker image given a current image.
-func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, image *Image) (string, error) {
+func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, imageName string) (string, error) {
+	image, err := parseImage(imageName)
+	if err != nil {
+		return "", err
+	}
+
 	if c.client == nil {
 		return "", fmt.Errorf("no client configured")
 	}
@@ -121,7 +118,7 @@ func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, image *Image) (
 		return "", fmt.Errorf("failed to find updated SHA for latest version: %s", version.GetName())
 	}
 
-	newImage := &Image{
+	newImage := &containerImage{
 		Name:       image.Name,
 		Location:   image.Location,
 		Repository: image.Repository,
@@ -131,22 +128,25 @@ func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, image *Image) (
 	return newImage.String(), nil
 }
 
+// ImageRegistryClient is an abstration of a Docker registry client.
+type ImageRegistryClient interface {
+	// FindLatest returns the latest docker image given a current image.
+	FindLatest(ctx context.Context, imageName string) (string, error)
+	// Close cleans up any open resources.
+	Close() error
+}
+
 // FindLatestImage returns the latest created image matching the provided image name.
 func FindLatestImage(ctx context.Context, client ImageRegistryClient, currentImage string) (string, error) {
-	image, err := parseImage(currentImage)
-	if err != nil {
-		return "", err
-	}
-
-	latestImage, err := client.FindLatest(ctx, image)
+	latestImage, err := client.FindLatest(ctx, currentImage)
 	if err != nil {
 		return "", err
 	}
 	return latestImage, nil
 }
 
-func parseImage(pinnedImage string) (*Image, error) {
-	parsedImage := &Image{}
+func parseImage(pinnedImage string) (*containerImage, error) {
+	parsedImage := &containerImage{}
 	baseName := ""
 
 	atParts := strings.Split(pinnedImage, "@")
