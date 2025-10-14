@@ -471,22 +471,22 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, error) {
 	switch info.prType {
 	case pullRequestOnboard:
-		opt := &onboardPRRequest{
+		req := &onboardPRRequest{
 			sourceRepo: info.sourceRepo,
 			state:      info.state,
 			api:        info.api,
 			library:    info.library,
 		}
-		return formatOnboardPRBody(opt)
+		return formatOnboardPRBody(req)
 	case pullRequestGenerate:
-		opt := &generationPRRequest{
+		req := &generationPRRequest{
 			sourceRepo:      info.sourceRepo,
 			languageRepo:    info.languageRepo,
 			state:           info.state,
 			idToCommits:     info.idToCommits,
 			failedLibraries: info.failedLibraries,
 		}
-		return formatGenerationPRBody(opt)
+		return formatGenerationPRBody(req)
 	case pullRequestRelease:
 		return formatReleaseNotes(info.state, gitHubRepo)
 	default:

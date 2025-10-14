@@ -187,16 +187,16 @@ type commitSection struct {
 }
 
 // formatOnboardPRBody creates the body of an onboarding pull request.
-func formatOnboardPRBody(opt *onboardPRRequest) (string, error) {
-	piperID, err := getPiperID(opt.state, opt.sourceRepo, opt.api, opt.library)
+func formatOnboardPRBody(request *onboardPRRequest) (string, error) {
+	piperID, err := getPiperID(request.state, request.sourceRepo, request.api, request.library)
 	if err != nil {
 		return "", err
 	}
 
 	data := &onboardingPRBody{
 		LibrarianVersion: cli.Version(),
-		ImageVersion:     opt.state.Image,
-		LibraryID:        opt.library,
+		ImageVersion:     request.state.Image,
+		LibraryID:        request.library,
 		PiperID:          piperID,
 	}
 

@@ -665,13 +665,13 @@ Language Image: %s`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			opt := &onboardPRRequest{
+			req := &onboardPRRequest{
 				sourceRepo: test.sourceRepo,
 				state:      test.state,
 				api:        test.api,
 				library:    test.library,
 			}
-			got, err := formatOnboardPRBody(opt)
+			got, err := formatOnboardPRBody(req)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
