@@ -52,6 +52,8 @@ const (
 	release
 )
 
+// String returns the string representation of a pullRequestType.
+// It returns unknown if the type is not a recognized constant.
 func (t pullRequestType) String() string {
 	names := []string{
 		"onboard",
@@ -60,7 +62,7 @@ func (t pullRequestType) String() string {
 	}
 
 	if t < onboard || t > release {
-		return "Unknown"
+		return "unknown"
 	}
 
 	return names[t]
