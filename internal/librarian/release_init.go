@@ -266,7 +266,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitr
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
-	library.Changes = commits
+	library.Changes = toCommit(commits)
 	library.Version = nextVersion
 	library.ReleaseTriggered = true
 	return nil
@@ -294,4 +294,22 @@ func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit,
 
 	// Compare versions and pick latest
 	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
+}
+
+// toCommit converts a slice of gitrepo.ConventionalCommit to a slice of config.Commit.
+// If the ConventionalCommit has NestedCommits, they are also extracted and
+// converted.
+func toCommit(c []*gitrepo.ConventionalCommit) []*config.Commit {
+	var commits []*config.Commit
+	for _, cc := range c {
+		commits = append(commits, &config.Commit{
+			Type:          cc.Type,
+			Subject:       cc.Subject,
+			Body:          cc.Body,
+			CommitHash:    cc.CommitHash,
+			PiperCLNumber: cc.Footers["PiperOrigin-RevId"],
+		})
+	}
+	return commits
+
 }

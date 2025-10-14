@@ -923,7 +923,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*gitrepo.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -967,22 +967,18 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*gitrepo.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
-								Type:       "feat",
-								Subject:    "new feature",
-								CommitHash: hash1.String(),
-								Footers: map[string]string{
-									"PiperOrigin-RevId": "123456",
-								},
+								Type:          "feat",
+								Subject:       "new feature",
+								CommitHash:    hash1.String(),
+								PiperCLNumber: "123456",
 							},
 							{
-								Type:       "fix",
-								Subject:    "a bug fix",
-								CommitHash: hash2.String(),
-								Footers: map[string]string{
-									"PiperOrigin-RevId": "987654",
-								},
+								Type:          "fix",
+								Subject:       "a bug fix",
+								CommitHash:    hash2.String(),
+								PiperCLNumber: "987654",
 							},
 						},
 						ReleaseTriggered: true,
@@ -1017,7 +1013,7 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*gitrepo.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -1060,7 +1056,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*gitrepo.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "feature for a",
@@ -1074,7 +1070,7 @@ Language Image: go:1.21
 						Version:          "2.0.1",
 						PreviousVersion:  "2.0.0",
 						ReleaseTriggered: true,
-						Changes: []*gitrepo.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "fix",
 								Subject:    "fix for b",
@@ -1120,7 +1116,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*gitrepo.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -1160,7 +1156,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*gitrepo.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -1205,13 +1201,12 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*gitrepo.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "chore",
 								Subject:    "some chore",
 								Body:       "this is the body",
 								CommitHash: hash1.String(),
-								IsNested:   true,
 							},
 						},
 					},

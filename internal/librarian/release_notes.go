@@ -79,8 +79,8 @@ Language Image: {{.ImageVersion}}
 {{ range .CommitSections }}
 ### {{.Heading}}
 {{ range .Commits }}
-{{ if index .Footers "PiperOrigin-RevId" -}}
-* {{.Subject}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
+{{ if .PiperCLNumber -}}
+* {{.Subject}} (PiperOrigin-RevId: {{.PiperCLNumber}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
 {{- else -}}
 * {{.Subject}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
 {{- end }}
@@ -184,7 +184,7 @@ type releaseNoteSection struct {
 
 type commitSection struct {
 	Heading string
-	Commits []*gitrepo.ConventionalCommit
+	Commits []*config.Commit
 }
 
 // formatOnboardPRBody creates the body of an onboarding pull request.
@@ -376,7 +376,7 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
 	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
-	commitsByType := make(map[string][]*gitrepo.ConventionalCommit)
+	commitsByType := make(map[string][]*config.Commit)
 	for _, commit := range library.Changes {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
