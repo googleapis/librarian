@@ -54,6 +54,7 @@ type Repository interface {
 	Restore(paths []string) error
 	CleanUntracked(paths []string) error
 	pushRefSpec(refSpec string) error
+	Checkout(commitHash string) error
 }
 
 const RootPath = "."
@@ -650,4 +651,15 @@ func (r *LocalRepository) CleanUntracked(paths []string) error {
 	}
 
 	return nil
+}
+
+// Checkout checks out the local repository at the provided git SHA.
+func (r *LocalRepository) Checkout(commitSha string) error {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Hash: plumbing.NewHash(commitSha),
+	})
 }

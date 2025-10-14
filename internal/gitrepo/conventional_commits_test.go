@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conventionalcommits
+package gitrepo
 
 import (
 	"strings"
@@ -21,7 +21,6 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 func TestParseCommits(t *testing.T) {
@@ -44,7 +43,6 @@ func TestParseCommits(t *testing.T) {
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    make(map[string]string),
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -56,12 +54,10 @@ func TestParseCommits(t *testing.T) {
 			want: []*ConventionalCommit{
 				{
 					Type:       "feat",
-					Scope:      "scope",
 					Subject:    "add new feature",
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    make(map[string]string),
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -78,7 +74,6 @@ func TestParseCommits(t *testing.T) {
 					IsBreaking: true,
 					IsNested:   false,
 					Footers:    make(map[string]string),
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -94,7 +89,6 @@ func TestParseCommits(t *testing.T) {
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -113,7 +107,6 @@ func TestParseCommits(t *testing.T) {
 						"Co-authored-by": "John Doe <john.doe@example.com>",
 						"Reviewed-by":    "Jane Smith <jane.smith@example.com>",
 					},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -134,7 +127,6 @@ func TestParseCommits(t *testing.T) {
 						"PiperOrigin-RevId": "piper_cl_number",
 						"Source-Link":       "abcdefg1234567",
 					},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -152,7 +144,6 @@ func TestParseCommits(t *testing.T) {
 					IsNested:   false,
 					IsBreaking: true,
 					Footers:    map[string]string{"BREAKING CHANGE": "this is a breaking change"},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -170,7 +161,6 @@ func TestParseCommits(t *testing.T) {
 					IsNested:   false,
 					IsBreaking: false,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -187,7 +177,6 @@ func TestParseCommits(t *testing.T) {
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    map[string]string{"Co-authored-by": "John Doe <john.doe@example.com>"},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -205,7 +194,6 @@ func TestParseCommits(t *testing.T) {
 					IsNested:   false,
 					IsBreaking: true,
 					Footers:    map[string]string{"BREAKING CHANGE": "this is a breaking change\nthat spans multiple lines."},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -225,13 +213,11 @@ END_COMMIT_OVERRIDE`,
 			want: []*ConventionalCommit{
 				{
 					Type:       "fix",
-					Scope:      "override",
 					Subject:    "this is the override message",
 					Body:       "This is the body of the override.",
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    map[string]string{"Reviewed-by": "Jane Doe"},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -267,37 +253,31 @@ END_NESTED_COMMIT
 			want: []*ConventionalCommit{
 				{
 					Type:       "feat",
-					Scope:      "parser",
 					Subject:    "main feature",
 					Body:       "main commit body",
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
 				{
 					Type:       "fix",
-					Scope:      "sub",
 					Subject:    "fix a bug",
 					Body:       "some details for the fix",
 					LibraryID:  "example-id",
 					IsNested:   true,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
 				{
 					Type:       "chore",
-					Scope:      "deps",
 					Subject:    "update deps",
 					Body:       "",
 					LibraryID:  "example-id",
 					IsNested:   true,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -314,12 +294,10 @@ END_NESTED_COMMIT
 			want: []*ConventionalCommit{
 				{
 					Type:       "feat",
-					Scope:      "parser",
 					Subject:    "main feature 2nd line of title",
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -366,7 +344,6 @@ END_COMMIT_OVERRIDE
 					LibraryID:  "abc",
 					IsNested:   true,
 					Footers:    map[string]string{"PiperOrigin-RevId": "123456", "Source-Link": "fake-link"},
-					SHA:        sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -377,7 +354,6 @@ END_COMMIT_OVERRIDE
 					Body:       "body of nested commit 2\n...",
 					LibraryID:  "abc",
 					Footers:    map[string]string{"PiperOrigin-RevId": "654321", "Source-Link": "fake-link"},
-					SHA:        sha.String(), // For each nested commit, the SHA should be the same (points to language repo's commit hash)
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -400,13 +376,11 @@ END_NESTED_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:       "fix",
-					Scope:      "override",
 					Subject:    "this is the override message",
 					Body:       "This is the body of the override.",
 					LibraryID:  "example-id",
 					IsNested:   false,
 					Footers:    map[string]string{"Reviewed-by": "Jane Doe"},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -444,7 +418,6 @@ END_COMMIT_OVERRIDE`,
 						"PiperOrigin-RevId": "799242210",
 						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
 					},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -457,7 +430,6 @@ END_COMMIT_OVERRIDE`,
 						"PiperOrigin-RevId": "799242210",
 						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
 					},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -470,7 +442,6 @@ END_COMMIT_OVERRIDE`,
 						"PiperOrigin-RevId": "799242210",
 						"Source-Link":       "b738e78ed63effb7d199ed2d61c9e03291b6077f",
 					},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -504,7 +475,6 @@ END_COMMIT_OVERRIDE`,
 					LibraryID:  "texttospeech",
 					IsNested:   true,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -514,7 +484,6 @@ END_COMMIT_OVERRIDE`,
 					LibraryID:  "texttospeech",
 					IsNested:   true,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -524,7 +493,6 @@ END_COMMIT_OVERRIDE`,
 					LibraryID:  "texttospeech",
 					IsNested:   true,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -561,7 +529,6 @@ END_COMMIT_OVERRIDE`,
 					LibraryID:  "google-cloud-video-live-stream",
 					IsNested:   true,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -571,7 +538,6 @@ END_COMMIT_OVERRIDE`,
 					LibraryID:  "google-cloud-eventarc",
 					IsNested:   true,
 					Footers:    map[string]string{},
-					SHA:        sha.String(),
 					CommitHash: sha.String(),
 					When:       now,
 				},
@@ -579,7 +545,7 @@ END_COMMIT_OVERRIDE`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			commit := &gitrepo.Commit{
+			commit := &Commit{
 				Message: test.message,
 				Hash:    plumbing.NewHash("fake-sha"),
 				When:    now,
@@ -681,14 +647,13 @@ func TestConventionalCommit_MarshalJSON(t *testing.T) {
 		Footers: map[string]string{
 			"PiperOrigin-RevId": "12345",
 		},
-		SHA:        "1234",
 		CommitHash: "1234",
 	}
 	b, err := c.MarshalJSON()
 	if err != nil {
 		t.Fatalf("MarshalJSON() failed: %v", err)
 	}
-	want := `{"type":"feat","subject":"new feature","body":"body of feature","source_commit_hash":"1234","commit_hash":"1234","piper_cl_number":"12345"}`
+	want := `{"type":"feat","subject":"new feature","body":"body of feature","commit_hash":"1234","piper_cl_number":"12345"}`
 	if diff := cmp.Diff(want, string(b)); diff != "" {
 		t.Errorf("MarshalJSON() mismatch (-want +got):\n%s", diff)
 	}

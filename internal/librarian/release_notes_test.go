@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
@@ -46,6 +45,9 @@ func TestFormatGenerationPRBody(t *testing.T) {
 		languageRepo    gitrepo.Repository
 		idToCommits     map[string]string
 		failedLibraries []string
+		api             string
+		library         string
+		apiOnboarding   bool
 		want            string
 		wantErr         bool
 		wantErrPhrase   string
@@ -485,6 +487,27 @@ Language Image: %s`,
 			want: "No commit is found since last generation",
 		},
 		{
+			name: "failed to get language repo changes commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{},
+			languageRepo: &MockRepository{
+				IsCleanError: errors.New("simulated error"),
+			},
+			idToCommits: map[string]string{
+				"one-library": "1234567890",
+			},
+			wantErr:       true,
+			wantErrPhrase: "failed to fetch changes in language repo",
+		},
+		{
 			name: "failed to get conventional commits",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
@@ -499,6 +522,7 @@ Language Image: %s`,
 				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
 			},
 			languageRepo: &MockRepository{
+				IsCleanValue:              true,
 				HeadHashValue:             "5678",
 				ChangedFilesInCommitValue: []string{"path/to/a.go"},
 			},
@@ -510,7 +534,14 @@ Language Image: %s`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := formatGenerationPRBody(test.sourceRepo, test.languageRepo, test.state, test.idToCommits, test.failedLibraries)
+			req := &generationPRRequest{
+				sourceRepo:      test.sourceRepo,
+				languageRepo:    test.languageRepo,
+				state:           test.state,
+				idToCommits:     test.idToCommits,
+				failedLibraries: test.failedLibraries,
+			}
+			got, err := formatGenerationPRBody(req)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
@@ -525,6 +556,136 @@ Language Image: %s`,
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("formatGenerationPRBody() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFormatOnboardPRBody(t *testing.T) {
+	t.Parallel()
+	librarianVersion := cli.Version()
+
+	for _, test := range []struct {
+		name          string
+		state         *config.LibrarianState
+		sourceRepo    gitrepo.Repository
+		api           string
+		library       string
+		want          string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "onboarding_new_api",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+						APIs: []*config.API{
+							{
+								Path:          "path/to",
+								ServiceConfig: "library_v1.yaml",
+							},
+						},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				GetLatestCommitByPath: map[string]*gitrepo.Commit{
+					"path/to/library_v1.yaml": {
+						Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
+					},
+				},
+			},
+			api:     "path/to",
+			library: "one-library",
+			want: fmt.Sprintf(`feat: onboard a new library
+
+PiperOrigin-RevId: 98765
+Library-IDs: one-library
+Librarian Version: %s
+Language Image: %s`,
+				librarianVersion, "go:1.21"),
+		},
+		{
+			name: "no_latest_commit_during_api_onboarding",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+						APIs: []*config.API{
+							{
+								Path:          "path/to",
+								ServiceConfig: "library_v1.yaml",
+							},
+						},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				GetLatestCommitError: errors.New("no latest commit"),
+			},
+			api:           "path/to",
+			library:       "one-library",
+			wantErr:       true,
+			wantErrPhrase: "no latest commit",
+		},
+		{
+			name: "latest_commit_does_not_contain_piper_during_api_onboarding",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:          "one-library",
+						SourceRoots: []string{"path/to"},
+						APIs: []*config.API{
+							{
+								Path:          "path/to",
+								ServiceConfig: "library_v1.yaml",
+							},
+						},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				GetLatestCommitByPath: map[string]*gitrepo.Commit{
+					"path/to/library_v1.yaml": {
+						Message: "feat: new feature\n\nThis is body.",
+					},
+				},
+			},
+			api:           "path/to",
+			library:       "one-library",
+			wantErr:       true,
+			wantErrPhrase: errPiperNotFound.Error(),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			req := &onboardPRRequest{
+				sourceRepo: test.sourceRepo,
+				state:      test.state,
+				api:        test.api,
+				library:    test.library,
+			}
+			got, err := formatOnboardPRBody(req)
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("formatOnboardPRBody() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("formatOnboardPRBody() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -638,12 +799,12 @@ func TestGroupByPiperID(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
-		commits []*conventionalcommits.ConventionalCommit
-		want    []*conventionalcommits.ConventionalCommit
+		commits []*gitrepo.ConventionalCommit
+		want    []*gitrepo.ConventionalCommit
 	}{
 		{
 			name: "group_commits_with_same_piper_id_and_subject",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-1",
 					Subject:   "one subject",
@@ -682,7 +843,7 @@ func TestGroupByPiperID(t *testing.T) {
 					},
 				},
 			},
-			want: []*conventionalcommits.ConventionalCommit{
+			want: []*gitrepo.ConventionalCommit{
 				{
 					LibraryID: "library-1",
 					Subject:   "one subject",
@@ -726,7 +887,7 @@ func TestGroupByPiperID(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := groupByIDAndSubject(test.commits)
 			// We don't care the order in the slice but sorting makes the test deterministic.
-			opts := cmpopts.SortSlices(func(a, b *conventionalcommits.ConventionalCommit) bool {
+			opts := cmpopts.SortSlices(func(a, b *gitrepo.ConventionalCommit) bool {
 				return a.LibraryID < b.LibraryID
 			})
 			if diff := cmp.Diff(test.want, got, opts); diff != "" {
@@ -762,7 +923,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -806,7 +967,7 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -856,7 +1017,7 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -899,7 +1060,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "feature for a",
@@ -913,7 +1074,7 @@ Language Image: go:1.21
 						Version:          "2.0.1",
 						PreviousVersion:  "2.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "fix",
 								Subject:    "fix for b",
@@ -959,7 +1120,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -999,7 +1160,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -1033,6 +1194,43 @@ Language Image: go:1.21
 			ghRepo:          &github.Repository{},
 			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21", librarianVersion),
 		},
+		{
+			name: "generate with chore",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the newVersion in the release note.
+						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
+						ReleaseTriggered: true,
+						Changes: []*gitrepo.ConventionalCommit{
+							{
+								Type:       "chore",
+								Subject:    "some chore",
+								Body:       "this is the body",
+								CommitHash: hash1.String(),
+								IsNested:   true,
+							},
+						},
+					},
+				},
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+### Miscellaneous Chores
+
+* some chore ([1234567](https://github.com/owner/repo/commit/1234567))
+
+</details>`,
+				librarianVersion, today),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -1051,6 +1249,129 @@ Language Image: go:1.21
 			}
 			if diff := cmp.Diff(test.wantReleaseNote, got); diff != "" {
 				t.Errorf("formatReleaseNotes() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindPiperIDFrom(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		commit  *gitrepo.Commit
+		want    string
+		wantErr error
+	}{
+		{
+			name: "found_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API\n\nPiperOrigin-RevId: 745187558",
+			},
+			want: "745187558",
+		},
+		{
+			name: "invalid_commit",
+			commit: &gitrepo.Commit{
+				Message: "",
+			},
+			wantErr: gitrepo.ErrEmptyCommitMessage,
+		},
+		{
+			name: "unconventional_commit",
+			commit: &gitrepo.Commit{
+				Message: "unconventional commit message",
+			},
+			wantErr: errPiperNotFound,
+		},
+		{
+			name: "does_not_contain_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API",
+			},
+			wantErr: errPiperNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findPiperIDFrom(test.commit, "example-id")
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findPiperIDFrom() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
+func TestLanguageRepoChangedFiles(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		repo    gitrepo.Repository
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "IsClean fails",
+			repo: &MockRepository{
+				IsCleanError: fmt.Errorf("mock failure from IsClean"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean, HeadHash fails",
+			repo: &MockRepository{
+				IsCleanValue:  true,
+				HeadHashError: fmt.Errorf("mock failure from HeadHash"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean, ChangedFilesInCommit fails",
+			repo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "1234",
+				ChangedFilesInCommitError: fmt.Errorf("mock failure from ChangedFilesInCommit"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "dirty, ChangedFiles fails",
+			repo: &MockRepository{
+				ChangedFilesError: fmt.Errorf("mock failure from ChangedFiles"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean success",
+			repo: &MockRepository{
+				IsCleanValue:  true,
+				HeadHashValue: "1234",
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					"abcd": []string{"a/b/c", "d/e/f"},
+					"1234": []string{"g/h/i", "j/k/l"},
+				},
+			},
+			want: []string{"g/h/i", "j/k/l"},
+		},
+		{
+			name: "dirty success",
+			repo: &MockRepository{
+				ChangedFilesValue: []string{"a/b/c", "d/e/f"},
+			},
+			want: []string{"a/b/c", "d/e/f"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := languageRepoChangedFiles(test.repo)
+			if (err != nil) != test.wantErr {
+				t.Errorf("languageRepoChangedFiles() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

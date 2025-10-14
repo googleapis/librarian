@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/semver"
@@ -90,13 +89,11 @@ func (r *initRunner) run(ctx context.Context) error {
 	}
 
 	commitInfo := &commitInfo{
-		branch:         r.branch,
-		commit:         r.commit,
-		commitMessage:  "chore: create a release",
-		ghClient:       r.ghClient,
-		library:        r.library,
-		libraryVersion: r.libraryVersion,
-		prType:         release,
+		branch:        r.branch,
+		commit:        r.commit,
+		commitMessage: "chore: create a release",
+		ghClient:      r.ghClient,
+		prType:        pullRequestRelease,
 		// Newly created PRs from the `release init` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
@@ -210,8 +207,8 @@ func (r *initRunner) processLibrary(library *config.LibraryState) error {
 
 // filterCommitsByLibraryID keeps the conventional commits if the given libraryID appears in the Footer or matches
 // the libraryID in the commit.
-func filterCommitsByLibraryID(commits []*conventionalcommits.ConventionalCommit, libraryID string) []*conventionalcommits.ConventionalCommit {
-	var filteredCommits []*conventionalcommits.ConventionalCommit
+func filterCommitsByLibraryID(commits []*gitrepo.ConventionalCommit, libraryID string) []*gitrepo.ConventionalCommit {
+	var filteredCommits []*gitrepo.ConventionalCommit
 	for _, commit := range commits {
 		if commit.Footers != nil {
 			ids, ok := commit.Footers["Library-IDs"]
@@ -235,7 +232,7 @@ func filterCommitsByLibraryID(commits []*conventionalcommits.ConventionalCommit,
 // 2. Updates the library's previous version and the new current version.
 //
 // 3. Set the library's release trigger to true.
-func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conventionalcommits.ConventionalCommit) error {
+func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitrepo.ConventionalCommit) error {
 	var nextVersion string
 	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
 	if r.libraryVersion != "" {
@@ -277,7 +274,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 
 // determineNextVersion determines the next valid SemVer version from the commits or from
 // the next_version override value in the config.yaml file.
-func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
 	if err != nil {
 		return "", err

@@ -37,14 +37,36 @@ import (
 )
 
 const (
-	generate                = "generate"
-	release                 = "release"
 	defaultAPISourceBranch  = "master"
 	prBodyFile              = "pr-body.txt"
 	failedGenerationComment = `One or more libraries have failed to generate, please review PR description for a list of failed libraries.
 For each failed library, open a ticket in that library’s repository and then you may resolve this comment and merge.
 `
 )
+
+type pullRequestType int
+
+const (
+	pullRequestUnspecified pullRequestType = iota
+	pullRequestOnboard
+	pullRequestGenerate
+	pullRequestRelease
+)
+
+// String returns the string representation of a pullRequestType.
+// It returns unknown if the type is not a recognized constant.
+func (t pullRequestType) String() string {
+	names := map[pullRequestType]string{
+		pullRequestUnspecified: "unspecified",
+		pullRequestOnboard:     "onboard",
+		pullRequestGenerate:    "generate",
+		pullRequestRelease:     "release",
+	}
+	if name, ok := names[t]; ok {
+		return name
+	}
+	return "unspecified"
+}
 
 var globalPreservePatterns = []string{
 	fmt.Sprintf(`^%s(/.*)?$`, regexp.QuoteMeta(config.GeneratorInputDir)), // Preserve the generator-input directory and its contents.
@@ -79,17 +101,18 @@ type commitInfo struct {
 	failedLibraries   []string
 	ghClient          GitHubClient
 	idToCommits       map[string]string
-	library           string
-	libraryVersion    string
-	prType            string
+	prType            pullRequestType
 	pullRequestLabels []string
 	push              bool
 	languageRepo      gitrepo.Repository
 	sourceRepo        gitrepo.Repository
 	state             *config.LibrarianState
 	workRoot          string
-	apiOnboarding     bool
 	failedGenerations int
+	// api is the api path of a library, only set this value during api onboarding.
+	api string
+	// library is the ID of a library, only set this value during api onboarding.
+	library string
 }
 
 type commandRunner struct {
@@ -447,9 +470,24 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 
 func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, error) {
 	switch info.prType {
-	case generate:
-		return formatGenerationPRBody(info.sourceRepo, info.languageRepo, info.state, info.idToCommits, info.failedLibraries)
-	case release:
+	case pullRequestOnboard:
+		req := &onboardPRRequest{
+			sourceRepo: info.sourceRepo,
+			state:      info.state,
+			api:        info.api,
+			library:    info.library,
+		}
+		return formatOnboardPRBody(req)
+	case pullRequestGenerate:
+		req := &generationPRRequest{
+			sourceRepo:      info.sourceRepo,
+			languageRepo:    info.languageRepo,
+			state:           info.state,
+			idToCommits:     info.idToCommits,
+			failedLibraries: info.failedLibraries,
+		}
+		return formatGenerationPRBody(req)
+	case pullRequestRelease:
 		return formatReleaseNotes(info.state, gitHubRepo)
 	default:
 		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
