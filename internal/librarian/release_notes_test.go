@@ -1205,7 +1205,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*gitrepo.ConventionalCommit{
 							{
 								Type:       "chore",
 								Subject:    "some chore",
