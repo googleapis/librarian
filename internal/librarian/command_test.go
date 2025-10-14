@@ -1518,7 +1518,7 @@ func TestCommitAndPush(t *testing.T) {
 				return &mockGitHubClient{}
 			},
 			state:          &config.LibrarianState{},
-			prType:         4,
+			prType:         100,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request body",

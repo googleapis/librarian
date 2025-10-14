@@ -34,6 +34,7 @@ func TestNewGenerateRunner(t *testing.T) {
 		cfg        *config.Config
 		wantErr    bool
 		wantErrMsg string
+		setupFunc  func(*config.Config) error
 	}{
 		{
 			name: "valid config",
@@ -102,7 +103,7 @@ func TestNewGenerateRunner(t *testing.T) {
 			name: "clone googleapis fails",
 			cfg: &config.Config{
 				API:            "some/api",
-				APISource:      "", // This will trigger the clone of googleapis
+				APISource:      "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
 				APISourceDepth: 1,
 				Repo:           newTestGitRepo(t).GetDir(),
 				WorkRoot:       t.TempDir(),
@@ -110,7 +111,19 @@ func TestNewGenerateRunner(t *testing.T) {
 				CommandName:    generateCmdName,
 			},
 			wantErr:    true,
-			wantErrMsg: "repo must be specified",
+			wantErrMsg: "repository does not exist",
+			setupFunc: func(cfg *config.Config) error {
+				// The function will try to clone googleapis into the current work directory.
+				// To make it fail, create a non-empty, non-git directory.
+				googleapisDir := filepath.Join(cfg.WorkRoot, "googleapis")
+				if err := os.MkdirAll(googleapisDir, 0755); err != nil {
+					return err
+				}
+				if err := os.WriteFile(filepath.Join(googleapisDir, "some-file"), []byte("foo"), 0644); err != nil {
+					return err
+				}
+				return nil
+			},
 		},
 		{
 			name: "valid config with local repo",
@@ -127,32 +140,11 @@ func TestNewGenerateRunner(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if test.cfg.APISource == "" && test.cfg.WorkRoot != "" {
-				if test.name == "clone googleapis fails" {
-					// The function will try to clone googleapis into the current work directory.
-					// To make it fail, create a non-empty, non-git directory.
-					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
-					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
-						t.Fatalf("os.MkdirAll() = %v", err)
-					}
-					if err := os.WriteFile(filepath.Join(googleapisDir, "some-file"), []byte("foo"), 0644); err != nil {
-						t.Fatalf("os.WriteFile() = %v", err)
-					}
-				} else {
-					// The function will try to clone googleapis into the current work directory.
-					// To prevent a real clone, we can pre-create a fake googleapis repo.
-					googleapisDir := filepath.Join(test.cfg.WorkRoot, "googleapis")
-					if err := os.MkdirAll(googleapisDir, 0755); err != nil {
-						t.Fatalf("os.MkdirAll() = %v", err)
-					}
-					runGit(t, googleapisDir, "init")
-					runGit(t, googleapisDir, "config", "user.email", "test@example.com")
-					runGit(t, googleapisDir, "config", "user.name", "Test User")
-					if err := os.WriteFile(filepath.Join(googleapisDir, "README.md"), []byte("test"), 0644); err != nil {
-						t.Fatalf("os.WriteFile: %v", err)
-					}
-					runGit(t, googleapisDir, "add", "README.md")
-					runGit(t, googleapisDir, "commit", "-m", "initial commit")
+
+			// custom setup
+			if test.setupFunc != nil {
+				if err := test.setupFunc(test.cfg); err != nil {
+					t.Fatalf("error in setup %v", err)
 				}
 			}
 
