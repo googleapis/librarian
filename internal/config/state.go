@@ -162,7 +162,10 @@ type Commit struct {
 // IsBulkCommit returns true if the commit is associated with 10 or more
 // libraries.
 func (c *Commit) IsBulkCommit() bool {
-	return strings.Count(c.LibraryIDs, ",") >= 9
+	if c.LibraryIDs == "" {
+		return false
+	}
+	return len(strings.Split(c.LibraryIDs, ",")) >= 10
 }
 
 var (

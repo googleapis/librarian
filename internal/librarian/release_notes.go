@@ -360,7 +360,7 @@ func groupByIDAndSubject(commits []*gitrepo.ConventionalCommit) []*gitrepo.Conve
 func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
 	librarianVersion := cli.Version()
 	var releaseSections []*releaseNoteSection
-	var bulkChanges []*config.Commit
+	bulkChangesMap := make(map[string]*config.Commit)
 	for _, library := range state.Libraries {
 		if !library.ReleaseTriggered {
 			continue
@@ -368,13 +368,20 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 
 		for _, commit := range library.Changes {
 			if commit.IsBulkCommit() {
-				bulkChanges = append(bulkChanges, commit)
+				bulkChangesMap[commit.CommitHash+commit.Subject] = commit
 			}
 		}
 
 		section := formatLibraryReleaseNotes(library)
 		releaseSections = append(releaseSections, section)
 	}
+	var bulkChanges []*config.Commit
+	for _, commit := range bulkChangesMap {
+		bulkChanges = append(bulkChanges, commit)
+	}
+	sort.Slice(bulkChanges, func(i, j int) bool {
+		return bulkChanges[i].CommitHash < bulkChanges[j].CommitHash
+	})
 
 	data := &releasePRBody{
 		LibrarianVersion: librarianVersion,
