@@ -424,7 +424,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 // but deliberately does not return them, as a failure here should not interfere with the flow.
 func writePRBody(info *commitInfo) error {
 	if info.prBodyBuilder == nil {
-		return fmt.Errorf("no prBodyBuild provided")
+		return fmt.Errorf("no prBodyBuilder provided")
 	}
 
 	prBody, err := info.prBodyBuilder()

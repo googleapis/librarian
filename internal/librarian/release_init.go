@@ -93,8 +93,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		if err != nil {
 			return "", fmt.Errorf("failed to get GitHub repository: %w", err)
 		}
-		formatReleaseNotes(r.state, gitHubRepo)
-		return "", nil
+		return formatReleaseNotes(r.state, gitHubRepo)
 	}
 	commitInfo := &commitInfo{
 		branch:        r.branch,
