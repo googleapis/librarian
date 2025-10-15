@@ -1270,16 +1270,16 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>
 
 
 <details><summary>Bulk Changes</summary>
 
-* fix: bulk change ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* fix: bulk change ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
   Libraries: a,b,c,d,e,f,g,h,i,j
-* chore: bulk change 2 (PiperOrigin-RevId: 12345) ([abcdef0](https://github.com/owner/repo/commit/abcdef0))
+* chore: bulk change 2 (PiperOrigin-RevId: 12345) ([abcdef00](https://github.com/owner/repo/commit/abcdef00))
   Libraries: j,k,l,m,n,o,p,q,r,s
 </details>`,
 				librarianVersion, today),
