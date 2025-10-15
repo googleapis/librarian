@@ -259,7 +259,7 @@ Language Image: gcr.io/test/image:latest
 
 ### Features
 
-* some feature ([1234567](https://github.com/googleapis/repo/commit/1234567))
+* some feature ([12345678](https://github.com/googleapis/repo/commit/12345678))
 
 </details>
 
@@ -280,7 +280,7 @@ Language Image: gcr.io/test/image:latest
 
 ### Features
 
-* some feature ([1234567](https://github.com/googleapis/repo/commit/1234567))`,
+* some feature ([12345678](https://github.com/googleapis/repo/commit/12345678))`,
 				},
 				{
 					Version: "2.3.4",

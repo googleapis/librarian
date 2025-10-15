@@ -488,10 +488,7 @@ func TestOneOfAnnotations(t *testing.T) {
 	codec := createRustCodec()
 	annotateModel(model, codec)
 
-	// Stops the recursion when comparing fields.
-	ignore := cmpopts.IgnoreFields(api.Field{}, "Group")
-
-	if diff := cmp.Diff(&oneOfAnnotation{
+	wantOneOfCodec := &oneOfAnnotation{
 		FieldName:           "r#type",
 		SetterName:          "type",
 		EnumName:            "Type",
@@ -500,11 +497,15 @@ func TestOneOfAnnotations(t *testing.T) {
 		StructQualifiedName: "crate::model::Message",
 		FieldType:           "crate::model::message::Type",
 		DocLines:            []string{"/// Say something clever about this oneof."},
-	}, group.Codec, ignore); diff != "" {
+		ExampleField:        singular,
+	}
+	if diff := cmp.Diff(wantOneOfCodec, group.Codec, cmpopts.IgnoreFields(api.OneOf{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	// Stops the recursion when comparing fields.
+	ignore := cmpopts.IgnoreFields(api.Field{}, "Codec")
+	wantFieldCodec := &fieldAnnotations{
 		FieldName:          "oneof_field",
 		SetterName:         "oneof_field",
 		BranchName:         "OneofField",
@@ -515,11 +516,13 @@ func TestOneOfAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.oneof_field().iter().fold(builder, |builder, p| builder.query(&[("oneofField", p)]));`,
 		KeyType:            "",
 		ValueType:          "",
-	}, singular.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{repeated, map_field, integer_field, boxed_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, singular.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	wantFieldCodec = &fieldAnnotations{
 		FieldName:          "oneof_field_repeated",
 		SetterName:         "oneof_field_repeated",
 		BranchName:         "OneofFieldRepeated",
@@ -530,11 +533,13 @@ func TestOneOfAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.oneof_field_repeated().iter().fold(builder, |builder, p| builder.query(&[("oneofFieldRepeated", p)]));`,
 		KeyType:            "",
 		ValueType:          "",
-	}, repeated.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{singular, map_field, integer_field, boxed_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, repeated.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	wantFieldCodec = &fieldAnnotations{
 		FieldName:          "oneof_field_map",
 		SetterName:         "oneof_field_map",
 		BranchName:         "OneofFieldMap",
@@ -550,11 +555,13 @@ func TestOneOfAnnotations(t *testing.T) {
 		IsBoxed:            true,
 		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, wkt::internal::F32>",
 		SkipIfIsDefault:    true,
-	}, map_field.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{singular, repeated, integer_field, boxed_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, map_field.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	wantFieldCodec = &fieldAnnotations{
 		FieldName:          "oneof_field_integer",
 		SetterName:         "oneof_field_integer",
 		BranchName:         "OneofFieldInteger",
@@ -565,11 +572,13 @@ func TestOneOfAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.oneof_field_integer().iter().fold(builder, |builder, p| builder.query(&[("oneofFieldInteger", p)]));`,
 		SerdeAs:            "wkt::internal::I64",
 		SkipIfIsDefault:    true,
-	}, integer_field.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{singular, repeated, map_field, boxed_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, integer_field.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	wantFieldCodec = &fieldAnnotations{
 		FieldName:          "oneof_field_boxed",
 		SetterName:         "oneof_field_boxed",
 		BranchName:         "OneofFieldBoxed",
@@ -581,7 +590,9 @@ func TestOneOfAnnotations(t *testing.T) {
 		IsBoxed:            true,
 		SerdeAs:            "wkt::internal::F64",
 		SkipIfIsDefault:    true,
-	}, boxed_field.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{singular, repeated, map_field, integer_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, boxed_field.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 }
@@ -624,7 +635,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 	annotateModel(model, codec)
 
 	// Stops the recursion when comparing fields.
-	ignore := cmpopts.IgnoreFields(api.Field{}, "Group")
+	ignore := cmpopts.IgnoreFields(api.OneOf{}, "Codec")
 
 	want := &oneOfAnnotation{
 		FieldName:           "nested_thing",
@@ -635,6 +646,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		StructQualifiedName: "crate::model::Message",
 		FieldType:           "crate::model::message::NestedThingOneOf",
 		DocLines:            []string{"/// Say something clever about this oneof."},
+		ExampleField:        singular,
 	}
 	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
@@ -687,7 +699,7 @@ func TestEnumAnnotations(t *testing.T) {
 	}
 	annotateModel(model, codec)
 
-	want := &enumAnnotation{
+	wantEnumCodec := &enumAnnotation{
 		Name:           "TestEnum",
 		ModuleName:     "test_enum",
 		QualifiedName:  "crate::model::TestEnum",
@@ -701,47 +713,55 @@ func TestEnumAnnotations(t *testing.T) {
 			{EnumValue: v3, Index: 2},
 		},
 	}
-	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
+	if diff := cmp.Diff(wantEnumCodec, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&enumValueAnnotation{
+	wantEnumValueCodec := &enumValueAnnotation{
 		Name:        "WEEK_5",
 		VariantName: "Week5",
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// week5 is also documented."},
-	}, v0.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v0.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&enumValueAnnotation{
+	wantEnumValueCodec = &enumValueAnnotation{
 		Name:        "MULTI_WORD_VALUE",
 		VariantName: "MultiWordValue",
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// MULTI_WORD_VALUE is also documented."},
-	}, v1.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v1.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
-	if diff := cmp.Diff(&enumValueAnnotation{
+
+	wantEnumValueCodec = &enumValueAnnotation{
 		Name:        "VALUE",
 		VariantName: "Value",
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// VALUE is also documented."},
-	}, v2.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v2.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
-	if diff := cmp.Diff(&enumValueAnnotation{
+
+	wantEnumValueCodec = &enumValueAnnotation{
 		Name:        "TEST_ENUM_V3",
 		VariantName: "V3",
 		EnumType:    "TestEnum",
-	}, v3.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v3.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
-	if diff := cmp.Diff(&enumValueAnnotation{
+
+	wantEnumValueCodec = &enumValueAnnotation{
 		Name:        "TEST_ENUM_2025",
 		VariantName: "TestEnum2025",
 		EnumType:    "TestEnum",
-	}, v4.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v4.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
 }
@@ -851,7 +871,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 	}
 	annotateModel(model, codec)
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want := &fieldAnnotations{
 		FieldName:          "parent",
 		SetterName:         "parent",
 		BranchName:         "Parent",
@@ -862,11 +882,12 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = builder.query(&[("parent", &req.parent)]);`,
 		KeyType:            "",
 		ValueType:          "",
-	}, parent.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, parent.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want = &fieldAnnotations{
 		FieldName:          "public_key",
 		SetterName:         "public_key",
 		BranchName:         "PublicKey",
@@ -877,11 +898,12 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = builder.query(&[("public_key", &req.public_key)]);`,
 		KeyType:            "",
 		ValueType:          "",
-	}, publicKey.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, publicKey.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want = &fieldAnnotations{
 		FieldName:          "read_time",
 		SetterName:         "read_time",
 		BranchName:         "ReadTime",
@@ -892,11 +914,12 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = builder.query(&[("readTime", &req.read_time)]);`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
-	}, readTime.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, readTime.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want = &fieldAnnotations{
 		FieldName:          "optional",
 		SetterName:         "optional",
 		BranchName:         "Optional",
@@ -907,11 +930,12 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.optional.iter().fold(builder, |builder, p| builder.query(&[("optional", p)]));`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
-	}, optional.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, optional.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want = &fieldAnnotations{
 		FieldName:          "repeated",
 		SetterName:         "repeated",
 		BranchName:         "Repeated",
@@ -922,7 +946,8 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.repeated.iter().fold(builder, |builder, p| builder.query(&[("repeated", p)]));`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
-	}, repeated.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, repeated.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 }
@@ -1814,6 +1839,97 @@ func TestEnumAnnotationsValuesForExamples(t *testing.T) {
 			got := enum.Codec.(*enumAnnotation).ValuesForExamples
 			if diff := cmp.Diff(tc.wantExamples, got, cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
 				t.Errorf("mismatch in ValuesForExamples (-want, +got)\n:%s", diff)
+			}
+		})
+	}
+}
+
+func TestOneOfExampleFieldSelection(t *testing.T) {
+	deprecated := &api.Field{
+		Name:       "deprecated_field",
+		ID:         ".test.Message.deprecated_field",
+		Typez:      api.STRING_TYPE,
+		IsOneOf:    true,
+		Deprecated: true,
+	}
+	map_field := &api.Field{
+		Name:    "map_field",
+		ID:      ".test.Message.map_field",
+		Typez:   api.MESSAGE_TYPE,
+		TypezID: ".test.$Map",
+		IsOneOf: true,
+		Map:     true,
+	}
+	repeated := &api.Field{
+		Name:     "repeated_field",
+		ID:       ".test.Message.repeated_field",
+		Typez:    api.STRING_TYPE,
+		Repeated: true,
+		IsOneOf:  true,
+	}
+	scalar := &api.Field{
+		Name:    "scalar_field",
+		ID:      ".test.Message.scalar_field",
+		Typez:   api.INT32_TYPE,
+		IsOneOf: true,
+	}
+	message_field := &api.Field{
+		Name:    "message_field",
+		ID:      ".test.Message.message_field",
+		Typez:   api.MESSAGE_TYPE,
+		TypezID: ".test.AnotherMessage",
+		IsOneOf: true,
+	}
+
+	testCases := []struct {
+		name   string
+		fields []*api.Field
+		want   *api.Field
+	}{
+		{
+			name:   "all types",
+			fields: []*api.Field{deprecated, map_field, repeated, scalar, message_field},
+			want:   scalar,
+		},
+		{
+			name:   "no scalars",
+			fields: []*api.Field{deprecated, map_field, repeated},
+			want:   repeated,
+		},
+		{
+			name:   "only map and deprecated",
+			fields: []*api.Field{deprecated, map_field},
+			want:   map_field,
+		},
+		{
+			name:   "only deprecated",
+			fields: []*api.Field{deprecated},
+			want:   deprecated,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			group := &api.OneOf{
+				Name:   "test_oneof",
+				ID:     ".test.Message.test_oneof",
+				Fields: tc.fields,
+			}
+			message := &api.Message{
+				Name:    "Message",
+				ID:      ".test.Message",
+				Package: "test",
+				Fields:  tc.fields,
+				OneOfs:  []*api.OneOf{group},
+			}
+			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			codec := createRustCodec()
+			annotateModel(model, codec)
+
+			got := group.Codec.(*oneOfAnnotation).ExampleField
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("mismatch in ExampleField (-want, +got)\n:%s", diff)
 			}
 		})
 	}

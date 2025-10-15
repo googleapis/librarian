@@ -46,13 +46,17 @@ type modelAnnotations struct {
 	Services          []*api.Service
 	NameToLower       string
 	NotForPublication bool
-	// If true, disable rustdoc warnings known to be triggered by our generated
-	// documentation.
+	// A list of `#[allow(rustdoc::*)]` warnings to disable.
 	DisabledRustdocWarnings []string
-	// Sets the default system parameters
+	// A list of `#[allow(clippy::*)]` warnings to disable.
+	DisabledClippyWarnings []string
+	// Sets the default system parameters.
 	DefaultSystemParameters []systemParameter
-	// Enables per-service features
+	// Enables per-service features.
 	PerServiceFeatures bool
+	// The set of default features, only applicable if `PerServiceFeatures` is
+	// true.
+	DefaultFeatures []string
 	// A list of additional modules loaded by the `lib.rs` file.
 	ExtraModules []string
 	// If true, at lease one service has a method we cannot wrap (yet).
@@ -397,6 +401,10 @@ type oneOfAnnotation struct {
 	StructQualifiedName string
 	FieldType           string
 	DocLines            []string
+	// The best field to show in a oneof related samples.
+	// Non deprecated fields are preferred, then scalar, repeated, map fields
+	// in that order.
+	ExampleField *api.Field
 	// If set, this enum is only enabled when some features are enabled.
 	FeatureGates   []string
 	FeatureGatesOp string
@@ -437,6 +445,9 @@ type fieldAnnotations struct {
 	// If true, this is a `wkt::NullValue` field, and also requires super-extra
 	// custom deserialization.
 	IsWktNullValue bool
+	// If this field is part of a oneof group, this will contain the other fields
+	// in the group.
+	OtherFieldsInGroup []*api.Field
 }
 
 // SkipIfIsEmpty returns true if the field should be skipped if it is empty.
@@ -584,6 +595,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		NameToLower:             strings.ToLower(model.Name),
 		NotForPublication:       codec.doNotPublish,
 		DisabledRustdocWarnings: codec.disabledRustdocWarnings,
+		DisabledClippyWarnings:  codec.disabledClippyWarnings,
 		PerServiceFeatures:      codec.perServiceFeatures && len(servicesSubset) > 0,
 		ExtraModules:            codec.extraModules,
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
@@ -665,6 +677,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		}
 		annotation.FeatureGatesOp = "all"
 		annotation.FeatureGates = allFeatures
+	}
+	ann.DefaultFeatures = c.defaultFeatures
+	if ann.DefaultFeatures == nil {
+		ann.DefaultFeatures = allFeatures
 	}
 }
 
@@ -975,6 +991,29 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
+
+	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
+		if f1.Deprecated == f2.Deprecated {
+			if f1.Map == f2.Map {
+				if f1.Repeated == f2.Repeated {
+					return 0
+				} else if f1.Repeated {
+					return -1
+				} else {
+					return 1
+				}
+			} else if f1.Map {
+				return -1
+			} else {
+				return 1
+			}
+		} else if f1.Deprecated {
+			return -1
+		} else {
+			return 1
+		}
+	})
+
 	oneof.Codec = &oneOfAnnotation{
 		FieldName:           toSnake(oneof.Name),
 		SetterName:          toSnakeNoMangling(oneof.Name),
@@ -984,6 +1023,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		StructQualifiedName: structQualifiedName,
 		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),
 		DocLines:            c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes()),
+		ExampleField:        bestField,
 	}
 }
 
@@ -1093,6 +1133,9 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		} else {
 			ann.SerdeAs = c.messageFieldSerdeAs(field)
 		}
+	}
+	if field.Group != nil {
+		ann.OtherFieldsInGroup = language.FilterSlice(field.Group.Fields, func(f *api.Field) bool { return field != f })
 	}
 }
 

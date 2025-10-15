@@ -80,11 +80,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 ### Bug Fixes
 
-* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -126,11 +126,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature (PiperOrigin-RevId: 123456) ([12345678](https://github.com/owner/repo/commit/12345678))
 
 ### Bug Fixes
 
-* a bug fix (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix (PiperOrigin-RevId: 987654) ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -170,9 +170,9 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
-* another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* another new feature ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -221,7 +221,7 @@ Language Image: go:1.21
 
 ### Features
 
-* feature for a ([1234567](https://github.com/owner/repo/commit/1234567))
+* feature for a ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>
 
@@ -232,7 +232,7 @@ Language Image: go:1.21
 
 ### Bug Fixes
 
-* fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* fix for b ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today, today),
@@ -272,7 +272,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>`,
 				librarianVersion, today),
@@ -308,7 +308,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>`,
 				librarianVersion, today),
@@ -353,7 +353,7 @@ Language Image: go:1.21
 
 ### Miscellaneous Chores
 
-* some chore ([1234567](https://github.com/owner/repo/commit/1234567))
+* some chore ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>`,
 				librarianVersion, today),

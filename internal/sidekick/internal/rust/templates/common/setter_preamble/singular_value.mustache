@@ -15,66 +15,11 @@ limitations under the License.
 }}
 /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
 {{#ModelCodec.GenerateSetterSamples}}
-{{#IsString}}
 ///
 /// # Example
 /// ```
-/// # use {{Parent.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}("example");
+{{> /templates/common/setter_preamble/singular_value_samples}}
 /// ```
-{{/IsString}}
-{{#IsBytes}}
-///
-/// # Example
-/// ```
-/// # use {{Parent.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(bytes::Bytes::from_static(b"example"));
-/// ```
-{{/IsBytes}}
-{{#IsBool}}
-///
-/// # Example
-/// ```
-/// # use {{Parent.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(true);
-/// ```
-{{/IsBool}}
-{{#IsLikeInt}}
-///
-/// # Example
-/// ```
-/// # use {{Parent.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(42);
-/// ```
-{{/IsLikeInt}}
-{{#IsLikeFloat}}
-///
-/// # Example
-/// ```
-/// # use {{Parent.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(42.0);
-/// ```
-{{/IsLikeFloat}}
-{{#IsEnum}}
-///
-/// # Example
-/// ```
-/// # use {{Parent.Codec.NameInExamples}};
-/// use {{EnumType.Codec.NameInExamples}};
-{{#EnumType.Codec.ValuesForExamples}}
-/// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_{{FieldCodec.SetterName}}({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}});
-{{/EnumType.Codec.ValuesForExamples}}
-/// ```
-{{/IsEnum}}
-{{#IsObject}}
-///
-/// # Example
-/// ```
-/// # use {{Parent.Codec.NameInExamples}};
-/// use {{MessageType.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}({{MessageType.Codec.Name}}::default()/* use setters */);
-/// ```
-{{/IsObject}}
 {{/ModelCodec.GenerateSetterSamples}}
 {{#Deprecated}}
 #[deprecated]

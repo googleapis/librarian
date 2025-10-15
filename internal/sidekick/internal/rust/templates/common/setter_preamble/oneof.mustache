@@ -1,0 +1,51 @@
+{{!
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+/// Sets the value of [{{Codec.FieldName}}][{{Codec.StructQualifiedName}}::{{Codec.SetterName}}].
+///
+/// Note that all the setters affecting `{{Codec.FieldName}}` are mutually
+/// exclusive.
+{{#ModelCodec.GenerateSetterSamples}}
+///
+/// # Example
+/// ```
+{{#Codec.ExampleField}}
+{{#IsString}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}("value".to_string())));
+{{/IsString}}
+{{#IsLikeInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(123)));
+{{/IsLikeInt}}
+{{#IsObject}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}({{MessageType.Codec.Name}}::default()/* use setters */)));
+{{/IsObject}}
+{{#Repeated}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec![{{MessageType.Codec.Name}}::default()])));
+{{/Repeated}}
+{{#Map}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{KeyField.MessageType.Codec.NameInExamples}};
+/// use {{ValueField.MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(std::collections::HashMap::from([({{KeyField.MessageType.Codec.Name}}::default(), {{ValueField.MessageType.Codec.Name}}::default())]))));
+{{/Map}}
+{{/Codec.ExampleField}}
+/// ```
+{{/ModelCodec.GenerateSetterSamples}}
