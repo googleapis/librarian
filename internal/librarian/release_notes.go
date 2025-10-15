@@ -70,25 +70,40 @@ var (
 		"shortSHA": shortSHA,
 	}).Parse(`Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
-
+{{ $prInfo := . }}
 {{- range .NoteSections -}}
-{{ $noteSection := . }}
 <details><summary>{{.LibraryID}}: {{.NewVersion}}</summary>
 
-## [{{.NewVersion}}]({{"https://github.com/"}}{{.RepoOwner}}/{{.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
+## [{{.NewVersion}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{$prInfo.Date}})
 {{ range .CommitSections }}
 ### {{.Heading}}
 {{ range .Commits }}
+{{ if not .IsBulkCommit -}}
 {{ if .PiperCLNumber -}}
-* {{.Subject}} (PiperOrigin-RevId: {{.PiperCLNumber}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
+* {{.Subject}} (PiperOrigin-RevId: {{.PiperCLNumber}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/commit/{{shortSHA .CommitHash}}))
 {{- else -}}
-* {{.Subject}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{shortSHA .CommitHash}}))
+* {{.Subject}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/commit/{{shortSHA .CommitHash}}))
+{{- end }}
 {{- end }}
 {{ end }}
 
 {{- end }}
 </details>
 
+
+{{ end }}
+{{- if .BulkChanges -}}
+<details><summary>Bulk Changes</summary>
+{{ range .BulkChanges }}
+{{ if .PiperCLNumber -}}
+* {{.Type}}: {{.Subject}} (PiperOrigin-RevId: {{.PiperCLNumber}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/commit/{{shortSHA .CommitHash}}))
+  Libraries: {{.LibraryIDs}}
+{{- else -}}
+* {{.Type}}: {{.Subject}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/commit/{{shortSHA .CommitHash}}))
+  Libraries: {{.LibraryIDs}}
+{{- end }}
+{{- end }}
+</details>
 {{ end }}
 `))
 
@@ -165,20 +180,21 @@ type onboardingPRBody struct {
 	PiperID          string
 }
 
-type releaseNote struct {
+type releasePRBody struct {
 	LibrarianVersion string
 	ImageVersion     string
+	RepoOwner        string
+	RepoName         string
+	Date             string
 	NoteSections     []*releaseNoteSection
+	BulkChanges      []*config.Commit
 }
 
 type releaseNoteSection struct {
-	RepoOwner      string
-	RepoName       string
 	LibraryID      string
 	PreviousTag    string
 	NewTag         string
 	NewVersion     string
-	Date           string
 	CommitSections []*commitSection
 }
 
@@ -344,19 +360,30 @@ func groupByIDAndSubject(commits []*gitrepo.ConventionalCommit) []*gitrepo.Conve
 func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
 	librarianVersion := cli.Version()
 	var releaseSections []*releaseNoteSection
+	var bulkChanges []*config.Commit
 	for _, library := range state.Libraries {
 		if !library.ReleaseTriggered {
 			continue
 		}
 
-		section := formatLibraryReleaseNotes(library, ghRepo)
+		for _, commit := range library.Changes {
+			if commit.IsBulkCommit() {
+				bulkChanges = append(bulkChanges, commit)
+			}
+		}
+
+		section := formatLibraryReleaseNotes(library)
 		releaseSections = append(releaseSections, section)
 	}
 
-	data := &releaseNote{
+	data := &releasePRBody{
 		LibrarianVersion: librarianVersion,
+		Date:             time.Now().Format("2006-01-02"),
+		RepoOwner:        ghRepo.Owner,
+		RepoName:         ghRepo.Name,
 		ImageVersion:     state.Image,
 		NoteSections:     releaseSections,
+		BulkChanges:      bulkChanges,
 	}
 
 	var out bytes.Buffer
@@ -369,7 +396,7 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
-func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repository) *releaseNoteSection {
+func formatLibraryReleaseNotes(library *config.LibraryState) *releaseNoteSection {
 	// The version should already be updated to the next version.
 	newVersion := library.Version
 	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
@@ -378,7 +405,9 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 
 	commitsByType := make(map[string][]*config.Commit)
 	for _, commit := range library.Changes {
-		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
+		if !commit.IsBulkCommit() {
+			commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
+		}
 	}
 
 	var sections []*commitSection
@@ -395,13 +424,10 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 	}
 
 	section := &releaseNoteSection{
-		RepoOwner:      ghRepo.Owner,
-		RepoName:       ghRepo.Name,
 		LibraryID:      library.ID,
 		NewVersion:     newVersion,
 		PreviousTag:    previousTag,
 		NewTag:         newTag,
-		Date:           time.Now().Format("2006-01-02"),
 		CommitSections: sections,
 	}
 

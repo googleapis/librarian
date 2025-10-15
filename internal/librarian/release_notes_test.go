@@ -903,6 +903,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 	today := time.Now().Format("2006-01-02")
 	hash1 := plumbing.NewHash("1234567890abcdef")
 	hash2 := plumbing.NewHash("fedcba0987654321")
+	hash3 := plumbing.NewHash("abcdefg123456789")
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
@@ -1223,6 +1224,63 @@ Language Image: go:1.21
 
 * some chore ([1234567](https://github.com/owner/repo/commit/1234567))
 
+</details>`,
+				librarianVersion, today),
+		},
+		{
+			name: "release with bulk commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "j",
+						// this is the newVersion in the release note.
+						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
+							},
+							{
+								Type:       "fix",
+								Subject:    "bulk change",
+								CommitHash: hash2.String(),
+								LibraryIDs: "a,b,c,d,e,f,g,h,i,j",
+							},
+							{
+								Type:          "chore",
+								Subject:       "bulk change 2",
+								CommitHash:    hash3.String(),
+								LibraryIDs:    "j,k,l,m,n,o,p,q,r,s",
+								PiperCLNumber: "12345",
+							},
+						},
+					},
+				},
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>j: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (%s)
+
+### Features
+
+* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+
+</details>
+
+
+<details><summary>Bulk Changes</summary>
+
+* fix: bulk change ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+  Libraries: a,b,c,d,e,f,g,h,i,j
+* chore: bulk change 2 (PiperOrigin-RevId: 12345) ([abcdef0](https://github.com/owner/repo/commit/abcdef0))
+  Libraries: j,k,l,m,n,o,p,q,r,s
 </details>`,
 				librarianVersion, today),
 		},
