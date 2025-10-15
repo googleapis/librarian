@@ -122,11 +122,20 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 		}
 	}
 	slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
-	slog.Warn("successful generations", slog.Int("num", len(successfulGenerations)))
+	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
 
 	// TODO(#2587): improve PR body content
 	prBodyBuilder := func() (string, error) {
-		return fmt.Sprintf("failed libraries: %d", len(failedGenerations)), nil
+		body := fmt.Sprintf("feat: update image to %s\n\n", r.image)
+		if len(failedGenerations) > 0 {
+			body += "The following libraries failed to regenerate:\n"
+			for _, lib := range failedGenerations {
+				body += fmt.Sprintf("- %s\n", lib.ID)
+			}
+		} else {
+			body += "All libraries regenerated successfully."
+		}
+		return body, nil
 	}
 	commitMessage := fmt.Sprintf("feat: update image to %s", r.image)
 	// TODO(#2588): open PR as draft if there are failures
@@ -159,7 +168,7 @@ func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, library
 	}
 
 	if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir); err != nil {
-		slog.Error("failed to regenerate a single library", "ID", libraryState.ID)
+		slog.Error("failed to regenerate a single library", "error", err, "ID", libraryState.ID)
 		return err
 	}
 
@@ -168,7 +177,7 @@ func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, library
 		return nil
 	}
 	if err := buildSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo); err != nil {
-		slog.Error("failed to build a single library", "ID", libraryState.ID)
+		slog.Error("failed to build a single library", "error", err, "ID", libraryState.ID)
 		return err
 	}
 

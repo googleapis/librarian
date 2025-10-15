@@ -151,8 +151,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		sourceRepoDir string
 	)
 
-	// If APISource is set, checkout the protos repository. This is determined
-	// by whether the command is asking for the API source config option.
+	// If APISource is set, checkout the protos repository.
 	if cfg.APISource != "" {
 		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
