@@ -209,6 +209,24 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: "protobuf",
 			Options: map[string]string{
+				"default-features": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.defaultFeatures = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"default-features": "",
+			},
+			Update: func(c *codec) {
+				c.defaultFeatures = []string{}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
 				"detailed-tracing-attributes": "true",
 			},
 			Update: func(c *codec) {

@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -27,9 +28,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/images"
 )
 
 var testToken = os.Getenv("TEST_GITHUB_TOKEN")
+var githubAction = os.Getenv("GITHUB_ACTION")
 
 func TestGetRawContentSystem(t *testing.T) {
 	if testToken == "" {
@@ -436,5 +439,124 @@ func TestCreateRelease(t *testing.T) {
 	}
 	if diff := cmp.Diff(release.GetBody(), body); diff != "" {
 		t.Fatalf("release body mismatch (-want + got):\n%s", diff)
+	}
+}
+
+func TestFindLatestImage(t *testing.T) {
+	// If we are able to configure system tests on GitHub actions, then update this
+	// guard clause.
+	if githubAction != "" {
+		t.Skip("skipping on GitHub actions")
+	}
+	for _, test := range []struct {
+		name     string
+		image    string
+		wantDiff bool
+		wantErr  bool
+	}{
+		{
+			name:     "AR unpinned",
+			image:    "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:dea280223eca5a0041fb5310635cec9daba2f01617dbfb1e47b90c77368b5620",
+			wantDiff: true,
+		},
+		{
+			name:     "AR pinned",
+			image:    "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:dea280223eca5a0041fb5310635cec9daba2f01617dbfb1e47b90c77368b5620",
+			wantDiff: true,
+		},
+		{
+			name:    "invalid image",
+			image:   "gcr.io/some-project/some-name",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			client, err := images.NewArtifactRegistryClient(t.Context())
+			if err != nil {
+				t.Fatalf("unexpected error in NewArtifactRegistryClient() %v", err)
+			}
+			defer client.Close()
+			got, err := client.FindLatest(t.Context(), test.image)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("FindLatestImage() error = %v, wantErr %v", err, test.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("FindLatestImage() error = %v", err)
+			}
+
+			if !strings.HasPrefix(got, "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:") {
+				t.Fatalf("FindLatestImage() unexpected image format")
+			}
+			if test.wantDiff {
+				if got == test.image {
+					t.Fatalf("FindLatestImage() expected to change")
+				}
+			} else {
+				if got != test.image {
+					t.Fatalf("FindLatestImage() expected to stay the same")
+				}
+			}
+		})
+	}
+}
+
+func TestGitCheckout(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		sha     string
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "known SHA",
+			// v0.3.0 release
+			sha:  "2e230f309505db42ce8becb0f3946d608a11a61c",
+			want: "chore: librarian release pull request: 20250925T070206Z (#2356)",
+		},
+		{
+			name:    "unknown SHA",
+			sha:     "should not exist",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+				Dir:          filepath.Join(t.TempDir(), "librarian"),
+				MaybeClone:   true,
+				RemoteURL:    "https://github.com/googleapis/librarian",
+				RemoteBranch: "main",
+			})
+			if err != nil {
+				t.Fatalf("error cloning repository, %v", err)
+			}
+
+			err = repo.Checkout(test.sha)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("Checkout() expected to return error")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Checkout() unexpected error: %v", err)
+			}
+
+			headSha, err := repo.HeadHash()
+			if diff := cmp.Diff(test.sha, headSha); diff != "" {
+				t.Fatalf("Checkout() mismatch (-want +got):\n%s", diff)
+			}
+			if err != nil {
+				t.Fatalf("Checkout() unexpected error fetching HeadHash: %v", err)
+			}
+		})
 	}
 }

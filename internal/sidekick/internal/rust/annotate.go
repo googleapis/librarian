@@ -49,10 +49,13 @@ type modelAnnotations struct {
 	// If true, disable rustdoc warnings known to be triggered by our generated
 	// documentation.
 	DisabledRustdocWarnings []string
-	// Sets the default system parameters
+	// Sets the default system parameters.
 	DefaultSystemParameters []systemParameter
-	// Enables per-service features
+	// Enables per-service features.
 	PerServiceFeatures bool
+	// The set of default features, only applicable if `PerServiceFeatures` is
+	// true.
+	DefaultFeatures []string
 	// A list of additional modules loaded by the `lib.rs` file.
 	ExtraModules []string
 	// If true, at lease one service has a method we cannot wrap (yet).
@@ -203,6 +206,7 @@ type messageAnnotation struct {
 
 type methodAnnotation struct {
 	Name                      string
+	NameNoMangling            string
 	BuilderName               string
 	DocLines                  []string
 	PathInfo                  *api.PathInfo
@@ -665,6 +669,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		annotation.FeatureGatesOp = "all"
 		annotation.FeatureGates = allFeatures
 	}
+	ann.DefaultFeatures = c.defaultFeatures
+	if ann.DefaultFeatures == nil {
+		ann.DefaultFeatures = allFeatures
+	}
 }
 
 // packageToModuleName maps "google.foo.v1" to "google::foo::v1".
@@ -784,6 +792,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 	serviceName := c.ServiceName(m.Service)
 	annotation := &methodAnnotation{
 		Name:                      toSnake(m.Name),
+		NameNoMangling:            toSnakeNoMangling(m.Name),
 		BuilderName:               toPascal(m.Name),
 		Body:                      bodyAccessor(m),
 		DocLines:                  c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes()),

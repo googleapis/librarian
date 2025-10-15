@@ -191,10 +191,11 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 
 	wantMethod := &methodAnnotation{
-		Name:        "get_resource",
-		BuilderName: "GetResource",
-		Body:        "None::<gaxi::http::NoBody>",
-		PathInfo:    method.PathInfo,
+		Name:           "get_resource",
+		NameNoMangling: "get_resource",
+		BuilderName:    "GetResource",
+		Body:           "None::<gaxi::http::NoBody>",
+		PathInfo:       method.PathInfo,
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
@@ -208,10 +209,11 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 
 	wantMethod = &methodAnnotation{
-		Name:        "delete_resource",
-		BuilderName: "DeleteResource",
-		Body:        "None::<gaxi::http::NoBody>",
-		PathInfo:    emptyMethod.PathInfo,
+		Name:           "delete_resource",
+		NameNoMangling: "delete_resource",
+		BuilderName:    "DeleteResource",
+		Body:           "None::<gaxi::http::NoBody>",
+		PathInfo:       emptyMethod.PathInfo,
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
@@ -406,7 +408,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
 	}
 
-	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
+	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
 	wantMethod := &methodAnnotation{
 		ServiceNameToPascal: "Renamed",
 		ServiceNameToCamel:  "renamed",

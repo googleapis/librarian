@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -445,6 +446,8 @@ func TestChangedFiles(t *testing.T) {
 				}
 				return
 			}
+
+			slices.Sort(gotFiles) // Sorting makes the test deterministic.
 			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
 				t.Errorf("ChangedFiles() mismatch (-want +got):\n%s", diff)
 			}

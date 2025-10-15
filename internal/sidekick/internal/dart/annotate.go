@@ -56,6 +56,7 @@ type modelAnnotations struct {
 	RepositoryURL              string
 	ReadMeAfterTitleText       string
 	ReadMeQuickstartText       string
+	IssueTrackerURL            string
 	ApiKeyEnvironmentVariables []string
 }
 
@@ -227,6 +228,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		repositoryURL              string
 		readMeAfterTitleText       string
 		readMeQuickstartText       string
+		issueTrackerURL            string
 		apiKeyEnvironmentVariables = []string{}
 	)
 
@@ -244,6 +246,10 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			packageNameOverride = definition
 		case key == "copyright-year":
 			generationYear = definition
+		case key == "issue-tracker-url":
+			// issue-tracker-url = "http://www.example.com/issues"
+			// A link to the issue tracker for the service.
+			issueTrackerURL = definition
 		case key == "version":
 			packageVersion = definition
 		case key == "part-file":
@@ -337,6 +343,10 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return errors.New("all packages that define a service must define 'api-keys-environment-variables'")
 	}
 
+	if issueTrackerURL == "" {
+		return errors.New("all packages must define 'issue-tracker-url'")
+	}
+
 	ann := &modelAnnotations{
 		Parent:         model,
 		PackageName:    packageName(model, packageNameOverride),
@@ -359,6 +369,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		DevDependencies:            devDependencies,
 		DoNotPublish:               doNotPublish,
 		RepositoryURL:              repositoryURL,
+		IssueTrackerURL:            issueTrackerURL,
 		ReadMeAfterTitleText:       readMeAfterTitleText,
 		ReadMeQuickstartText:       readMeQuickstartText,
 		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,

@@ -1294,7 +1294,7 @@ func TestCommitAndPush(t *testing.T) {
 		setupMockRepo     func(t *testing.T) gitrepo.Repository
 		setupMockClient   func(t *testing.T) GitHubClient
 		state             *config.LibrarianState
-		prType            string
+		prType            pullRequestType
 		failedGenerations int
 		commit            bool
 		push              bool
@@ -1320,7 +1320,7 @@ func TestCommitAndPush(t *testing.T) {
 				return nil
 			},
 			state:  &config.LibrarianState{},
-			prType: "release",
+			prType: pullRequestRelease,
 			check: func(t *testing.T, repo gitrepo.Repository) {
 				mockRepo := repo.(*MockRepository)
 				if mockRepo.PushCalls != 0 {
@@ -1347,7 +1347,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:  &config.LibrarianState{},
-			prType: "release",
+			prType: pullRequestRelease,
 			commit: true,
 			check: func(t *testing.T, repo gitrepo.Repository) {
 				mockRepo := repo.(*MockRepository)
@@ -1375,7 +1375,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:  &config.LibrarianState{},
-			prType: "generate",
+			prType: pullRequestGenerate,
 			push:   true,
 		},
 		{
@@ -1396,7 +1396,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:  &config.LibrarianState{},
-			prType: "release",
+			prType: pullRequestRelease,
 			push:   true,
 		},
 		{
@@ -1410,7 +1410,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			state:          &config.LibrarianState{},
 			wantErr:        true,
@@ -1432,7 +1432,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "mock add all error",
@@ -1453,7 +1453,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "create branch error",
@@ -1474,7 +1474,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
@@ -1495,7 +1495,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "push error",
@@ -1516,7 +1516,7 @@ func TestCommitAndPush(t *testing.T) {
 				return &mockGitHubClient{}
 			},
 			state:          &config.LibrarianState{},
-			prType:         "random",
+			prType:         4,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request body",
@@ -1539,7 +1539,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:          &config.LibrarianState{},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request",
@@ -1560,7 +1560,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType: "generate",
+			prType: pullRequestGenerate,
 			push:   true,
 		},
 		{
@@ -1582,7 +1582,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:             &config.LibrarianState{},
-			prType:            "generate",
+			prType:            pullRequestGenerate,
 			failedGenerations: 1,
 			push:              true,
 			wantErr:           true,
@@ -1651,7 +1651,7 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   "release",
+				prType:   pullRequestRelease,
 				state:    &config.LibrarianState{},
 				workRoot: t.TempDir(),
 			},
@@ -1669,7 +1669,7 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   "release",
+				prType:   pullRequestRelease,
 				workRoot: t.TempDir(),
 			},
 		},
@@ -1685,7 +1685,7 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   "invalid-pr-type",
+				prType:   4,
 				workRoot: t.TempDir(),
 			},
 		},
@@ -1701,7 +1701,7 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   "release",
+				prType:   pullRequestRelease,
 				state:    &config.LibrarianState{},
 				workRoot: filepath.Join(t.TempDir(), "missing-directory"),
 			},
