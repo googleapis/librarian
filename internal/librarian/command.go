@@ -44,6 +44,8 @@ For each failed library, open a ticket in that library’s repository and then y
 `
 )
 
+var errBuilderNotProvided = fmt.Errorf("no prBodyBuilder provided")
+
 type pullRequestType int
 
 const (
@@ -424,7 +426,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 // caller.
 func writePRBody(info *commitInfo) error {
 	if info.prBodyBuilder == nil {
-		return fmt.Errorf("no prBodyBuilder provided")
+		return errBuilderNotProvided
 	}
 
 	prBody, err := info.prBodyBuilder()
