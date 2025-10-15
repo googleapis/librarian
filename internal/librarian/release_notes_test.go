@@ -125,15 +125,15 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 Library-IDs: one-library
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE
 
 This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+[googleapis/googleapis@abcdef00](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
 (exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+[googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 (inclusive).
 
 Librarian Version: %s
@@ -217,15 +217,15 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 Library-IDs: one-library,another-library
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE
 
 This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+[googleapis/googleapis@abcdef00](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
 (exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+[googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 (inclusive).
 
 Librarian Version: %s
@@ -306,15 +306,15 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 Library-IDs: one-library
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE
 
 This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
+[googleapis/googleapis@abcdef00](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
 (exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+[googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 (inclusive).
 
 Librarian Version: %s
@@ -390,7 +390,7 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 Library-IDs: one-library
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
 BEGIN_NESTED_COMMIT
@@ -399,15 +399,15 @@ This is body.
 
 PiperOrigin-RevId: 98765
 Library-IDs: one-library
-Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567)
+Source-link: [googleapis/googleapis@12345678](https://github.com/googleapis/googleapis/commit/12345678)
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE
 
 This pull request is generated with proto changes between
-[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
+[googleapis/googleapis@12345678](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
 (exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
+[googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
 (inclusive).
 
 Librarian Version: %s
@@ -948,11 +948,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 ### Bug Fixes
 
-* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -994,11 +994,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature (PiperOrigin-RevId: 123456) ([12345678](https://github.com/owner/repo/commit/12345678))
 
 ### Bug Fixes
 
-* a bug fix (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix (PiperOrigin-RevId: 987654) ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -1038,9 +1038,9 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
-* another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* another new feature ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -1089,7 +1089,7 @@ Language Image: go:1.21
 
 ### Features
 
-* feature for a ([1234567](https://github.com/owner/repo/commit/1234567))
+* feature for a ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>
 
@@ -1100,7 +1100,7 @@ Language Image: go:1.21
 
 ### Bug Fixes
 
-* fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* fix for b ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today, today),
@@ -1140,7 +1140,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>`,
 				librarianVersion, today),
@@ -1176,7 +1176,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>`,
 				librarianVersion, today),
@@ -1221,7 +1221,7 @@ Language Image: go:1.21
 
 ### Miscellaneous Chores
 
-* some chore ([1234567](https://github.com/owner/repo/commit/1234567))
+* some chore ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>`,
 				librarianVersion, today),
