@@ -632,7 +632,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 	// Stops the recursion when comparing fields.
 	ignore := cmpopts.IgnoreFields(api.OneOf{}, "Codec")
 
-	if diff := cmp.Diff(&oneOfAnnotation{
+	want := &oneOfAnnotation{
 		FieldName:           "nested_thing",
 		SetterName:          "nested_thing",
 		EnumName:            "NestedThingOneOf",
@@ -642,7 +642,8 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		FieldType:           "crate::model::message::NestedThingOneOf",
 		DocLines:            []string{"/// Say something clever about this oneof."},
 		ExampleField:        singular,
-	}, group.Codec, ignore); diff != "" {
+	}
+	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
 	}
 }

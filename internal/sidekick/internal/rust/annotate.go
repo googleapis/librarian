@@ -982,24 +982,29 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
-	var bestField *api.Field
-	score := func(f *api.Field) int {
-		if f.Deprecated {
-			return 0
-		}
-		if f.Map {
+
+	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
+		if f1.Deprecated == f2.Deprecated {
+			if f1.Map == f2.Map {
+				if f1.Repeated == f2.Repeated {
+					return 0
+				} else if f1.Repeated {
+					return -1
+				} else {
+					return 1
+				}
+			} else if f1.Map {
+				return -1
+			} else {
+				return 1
+			}
+		} else if f1.Deprecated {
+			return -1
+		} else {
 			return 1
 		}
-		if f.Repeated {
-			return 2
-		}
-		return 3 // Singular value
-	}
-	for _, field := range oneof.Fields {
-		if bestField == nil || score(field) > score(bestField) {
-			bestField = field
-		}
-	}
+	})
+
 	oneof.Codec = &oneOfAnnotation{
 		FieldName:           toSnake(oneof.Name),
 		SetterName:          toSnakeNoMangling(oneof.Name),
