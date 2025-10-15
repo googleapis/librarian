@@ -54,8 +54,10 @@ impl std::fmt::Debug for {{Codec.Name}} {
 impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> gax::client_builder::Result<Self> {
         {{#Codec.DetailedTracingAttributes}}
+        #[cfg(google_cloud_unstable_tracing)]
         let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
+        #[cfg(google_cloud_unstable_tracing)]
         let inner = if tracing_is_enabled {
             inner.with_instrumentation(&crate::info::INSTRUMENTATION_CLIENT_INFO)
         } else {
@@ -93,7 +95,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         );
         {{/HasAutoPopulatedFields}}
         {{#Codec.DetailedTracingAttributes}}
-        let (builder, method, path_template) = None
+        let (builder, method, _path_template) = None
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
         let (builder, method) = None
@@ -158,7 +160,8 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             gax::error::Error::binding(BindingError { paths })
         })??;
         {{#Codec.DetailedTracingAttributes}}
-        let options = gax::options::internal::set_path_template(options, path_template);
+        #[cfg(google_cloud_unstable_tracing)]
+        let options = gax::options::internal::set_path_template(options, _path_template);
         {{/Codec.DetailedTracingAttributes}}
         let options = gax::options::internal::set_default_idempotency(
             options,
