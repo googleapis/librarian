@@ -88,6 +88,13 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	prBodyBuilder := func() (string, error) {
+		gitHubRepo, err := GetGitHubRepositoryFromGitRepo(r.repo)
+		if err != nil {
+			return "", fmt.Errorf("failed to get GitHub repository: %w", err)
+		}
+		return formatReleaseNotes(r.state, gitHubRepo)
+	}
 	commitInfo := &commitInfo{
 		branch:        r.branch,
 		commit:        r.commit,
@@ -102,6 +109,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
+		prBodyBuilder:     prBodyBuilder,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)

@@ -44,6 +44,8 @@ For each failed library, open a ticket in that library’s repository and then y
 `
 )
 
+var errBuilderNotProvided = fmt.Errorf("no prBodyBuilder provided")
+
 type pullRequestType int
 
 const (
@@ -98,9 +100,7 @@ type commitInfo struct {
 	branch            string
 	commit            bool
 	commitMessage     string
-	failedLibraries   []string
 	ghClient          GitHubClient
-	idToCommits       map[string]string
 	prType            pullRequestType
 	pullRequestLabels []string
 	push              bool
@@ -112,7 +112,8 @@ type commitInfo struct {
 	// api is the api path of a library, only set this value during api onboarding.
 	api string
 	// library is the ID of a library, only set this value during api onboarding.
-	library string
+	library       string
+	prBodyBuilder func() (string, error)
 }
 
 type commandRunner struct {
@@ -359,8 +360,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 func commitAndPush(ctx context.Context, info *commitInfo) error {
 	if !info.push && !info.commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
-		writePRBody(info)
-		return nil
+		return writePRBody(info)
 	}
 
 	repo := info.languageRepo
@@ -389,8 +389,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 	if !info.push {
 		slog.Info("Push flag is not specified, skipping pull request creation")
-		writePRBody(info)
-		return nil
+		return writePRBody(info)
 	}
 
 	if err := repo.Push(branch); err != nil {
@@ -403,7 +402,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	title := fmt.Sprintf("chore: librarian %s pull request: %s", info.prType, datetimeNow)
-	prBody, err := createPRBody(info, gitHubRepo)
+	prBody, err := info.prBodyBuilder()
 	if err != nil {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
@@ -423,19 +422,17 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 }
 
 // writePRBody attempts to log the body of a PR that would have been created if the
-// -push flag had been specified. This logs any errors (e.g. if the GitHub repo can't be determined)
-// but deliberately does not return them, as a failure here should not interfere with the flow.
-func writePRBody(info *commitInfo) {
-	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.languageRepo)
-	if err != nil {
-		slog.Warn("Unable to create PR body; could not determine GitHub repo", "error", err)
-		return
+// -push flag had been specified. This logs any errors and returns them to the
+// caller.
+func writePRBody(info *commitInfo) error {
+	if info.prBodyBuilder == nil {
+		return errBuilderNotProvided
 	}
 
-	prBody, err := createPRBody(info, gitHubRepo)
+	prBody, err := info.prBodyBuilder()
 	if err != nil {
 		slog.Warn("Unable to create PR body", "error", err)
-		return
+		return err
 	}
 	// Note: we can't accurately predict whether a PR would have been created,
 	// as we're not checking whether the repo is clean or not. The intention is to be
@@ -444,11 +441,12 @@ func writePRBody(info *commitInfo) {
 	// Ensure that "cat [path-to-pr-body.txt]" gives useful output.
 	prBody = prBody + "\n"
 	err = os.WriteFile(fullPath, []byte(prBody), 0644)
-	if err == nil {
-		slog.Info("Wrote body of pull request that might have been created", "file", fullPath)
-	} else {
+	if err != nil {
 		slog.Warn("Unable to save PR body", "error", err)
+		return err
 	}
+	slog.Info("Wrote body of pull request that might have been created", "file", fullPath)
+	return nil
 }
 
 // addLabelsToPullRequest adds a list of labels to a single pull request (specified by the id number).
@@ -466,32 +464,6 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 		return fmt.Errorf("failed to add labels to pull request: %w", err)
 	}
 	return nil
-}
-
-func createPRBody(info *commitInfo, gitHubRepo *github.Repository) (string, error) {
-	switch info.prType {
-	case pullRequestOnboard:
-		req := &onboardPRRequest{
-			sourceRepo: info.sourceRepo,
-			state:      info.state,
-			api:        info.api,
-			library:    info.library,
-		}
-		return formatOnboardPRBody(req)
-	case pullRequestGenerate:
-		req := &generationPRRequest{
-			sourceRepo:      info.sourceRepo,
-			languageRepo:    info.languageRepo,
-			state:           info.state,
-			idToCommits:     info.idToCommits,
-			failedLibraries: info.failedLibraries,
-		}
-		return formatGenerationPRBody(req)
-	case pullRequestRelease:
-		return formatReleaseNotes(info.state, gitHubRepo)
-	default:
-		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
-	}
 }
 
 // copyGlobalAllowlist copies files in the global file allowlist from src to dst.

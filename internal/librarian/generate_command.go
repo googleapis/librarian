@@ -149,13 +149,38 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	var prBodyBuilder func() (string, error)
+	switch prType {
+	case pullRequestGenerate:
+		prBodyBuilder = func() (string, error) {
+			req := &generationPRRequest{
+				sourceRepo:      r.sourceRepo,
+				languageRepo:    r.repo,
+				state:           r.state,
+				idToCommits:     idToCommits,
+				failedLibraries: failedLibraries,
+			}
+			return formatGenerationPRBody(req)
+		}
+	case pullRequestOnboard:
+		prBodyBuilder = func() (string, error) {
+			req := &onboardPRRequest{
+				sourceRepo: r.sourceRepo,
+				state:      r.state,
+				api:        r.api,
+				library:    r.library,
+			}
+			return formatOnboardPRBody(req)
+		}
+	default:
+		return fmt.Errorf("unexpected prType %s", prType)
+	}
+
 	commitInfo := &commitInfo{
 		branch:            r.branch,
 		commit:            r.commit,
 		commitMessage:     "feat: generate libraries",
-		failedLibraries:   failedLibraries,
 		ghClient:          r.ghClient,
-		idToCommits:       idToCommits,
 		prType:            prType,
 		push:              r.push,
 		languageRepo:      r.repo,
@@ -165,6 +190,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		api:               r.api,
 		library:           r.library,
 		failedGenerations: failedGenerations,
+		prBodyBuilder:     prBodyBuilder,
 	}
 
 	return commitAndPush(ctx, commitInfo)

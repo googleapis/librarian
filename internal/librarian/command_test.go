@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1302,6 +1303,7 @@ func TestCommitAndPush(t *testing.T) {
 		expectedErrMsg    string
 		check             func(t *testing.T, repo gitrepo.Repository)
 		wantPRBodyFile    bool
+		prBodyBuilder     func() (string, error)
 	}{
 		{
 			name: "Push flag and Commit flag are not specified",
@@ -1520,6 +1522,7 @@ func TestCommitAndPush(t *testing.T) {
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request body",
+			prBodyBuilder:  func() (string, error) { return "", fmt.Errorf("failed to create pull request body") },
 		},
 		{
 			name: "Create pull request error",
@@ -1593,6 +1596,11 @@ func TestCommitAndPush(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
 
+			// set default PR body builder
+			if test.prBodyBuilder == nil {
+				test.prBodyBuilder = func() (string, error) { return "some pr body", nil }
+			}
+
 			commitInfo := &commitInfo{
 				commit:            test.commit,
 				commitMessage:     "",
@@ -1603,6 +1611,7 @@ func TestCommitAndPush(t *testing.T) {
 				state:             test.state,
 				failedGenerations: test.failedGenerations,
 				workRoot:          t.TempDir(),
+				prBodyBuilder:     test.prBodyBuilder,
 			}
 
 			err := commitAndPush(context.Background(), commitInfo)
@@ -1637,6 +1646,7 @@ func TestWritePRBody(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		info     *commitInfo
+		wantErr  bool
 		wantFile bool
 	}{
 		{
@@ -1651,14 +1661,15 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   pullRequestRelease,
-				state:    &config.LibrarianState{},
-				workRoot: t.TempDir(),
+				prType:        pullRequestRelease,
+				state:         &config.LibrarianState{},
+				workRoot:      t.TempDir(),
+				prBodyBuilder: func() (string, error) { return "some pr body", nil },
 			},
 			wantFile: true,
 		},
 		{
-			name: "invalid repo",
+			name: "unable to build PR body",
 			info: &commitInfo{
 				languageRepo: &MockRepository{
 					Dir: t.TempDir(),
@@ -1669,12 +1680,14 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   pullRequestRelease,
-				workRoot: t.TempDir(),
+				prType:        pullRequestRelease,
+				workRoot:      t.TempDir(),
+				prBodyBuilder: func() (string, error) { return "", fmt.Errorf("some error") },
 			},
+			wantErr: true,
 		},
 		{
-			name: "invalid-pr-type",
+			name: "unable to save file",
 			info: &commitInfo{
 				languageRepo: &MockRepository{
 					Dir: t.TempDir(),
@@ -1685,12 +1698,15 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   4,
-				workRoot: t.TempDir(),
+				prType:        pullRequestRelease,
+				state:         &config.LibrarianState{},
+				workRoot:      filepath.Join(t.TempDir(), "missing-directory"),
+				prBodyBuilder: func() (string, error) { return "some pr body", nil },
 			},
+			wantErr: true,
 		},
 		{
-			name: "unable to save file",
+			name: "no body builder",
 			info: &commitInfo{
 				languageRepo: &MockRepository{
 					Dir: t.TempDir(),
@@ -1705,10 +1721,22 @@ func TestWritePRBody(t *testing.T) {
 				state:    &config.LibrarianState{},
 				workRoot: filepath.Join(t.TempDir(), "missing-directory"),
 			},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			writePRBody(test.info)
+			err := writePRBody(test.info)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("writePRBody() expected error, but no error returned")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error %v", err)
+			}
+
 			gotFile := gotPRBodyFile(t, test.info.workRoot)
 			if test.wantFile != gotFile {
 				t.Errorf("writePRBody() wantFile = %t, gotFile = %t", test.wantFile, gotFile)
