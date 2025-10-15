@@ -124,10 +124,12 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
 	slog.Warn("successful generations", slog.Int("num", len(successfulGenerations)))
 
+	// TODO(#2587): improve PR body content
 	prBodyBuilder := func() (string, error) {
 		return fmt.Sprintf("failed libraries: %d", len(failedGenerations)), nil
 	}
 	commitMessage := fmt.Sprintf("feat: update image to %s", r.image)
+	// TODO(#2588): open PR as draft if there are failures
 	err := commitAndPush(ctx, &commitInfo{
 		branch:            r.branch,
 		commit:            r.commit,
