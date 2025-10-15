@@ -420,8 +420,8 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 }
 
 // writePRBody attempts to log the body of a PR that would have been created if the
-// -push flag had been specified. This logs any errors (e.g. if the GitHub repo can't be determined)
-// but deliberately does not return them, as a failure here should not interfere with the flow.
+// -push flag had been specified. This logs any errors and returns them to the
+// caller.
 func writePRBody(info *commitInfo) error {
 	if info.prBodyBuilder == nil {
 		return fmt.Errorf("no prBodyBuilder provided")
