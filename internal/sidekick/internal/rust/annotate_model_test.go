@@ -83,9 +83,9 @@ func TestRustdocWarnings(t *testing.T) {
 		},
 		{
 			Options: map[string]string{
-				"disabled-rustdoc-warnings": "",
+				"disabled-rustdoc-warnings": "a,b,c",
 			},
-			Want: []string{},
+			Want: []string{"a", "b", "c"},
 		},
 	} {
 		model := newTestAnnotateModelAPI()
@@ -118,9 +118,9 @@ func TestClippyWarnings(t *testing.T) {
 		},
 		{
 			Options: map[string]string{
-				"disabled-clippy-warnings": "",
+				"disabled-clippy-warnings": "a,b,c",
 			},
-			Want: []string{},
+			Want: []string{"a", "b", "c"},
 		},
 	} {
 		model := newTestAnnotateModelAPI()
