@@ -309,7 +309,10 @@ func toCommit(c []*gitrepo.ConventionalCommit) []*config.Commit {
 			CommitHash:    cc.CommitHash,
 			PiperCLNumber: cc.Footers["PiperOrigin-RevId"],
 		})
+		if cc.HasNestedCommits() {
+			nestedCommits := toCommit(cc.NestedCommits)
+			commits = append(commits, nestedCommits...)
+		}
 	}
 	return commits
-
 }

@@ -165,12 +165,16 @@ type onboardingPRBody struct {
 	PiperID          string
 }
 
-type releaseNote struct {
+// releaseNotePRBody represents the data needed to generate a release pull
+// request.
+type releaseNotePRBody struct {
 	LibrarianVersion string
 	ImageVersion     string
 	NoteSections     []*releaseNoteSection
 }
 
+// releaseNoteSection represents a section in the release notes for a specific
+// library.
 type releaseNoteSection struct {
 	RepoOwner      string
 	RepoName       string
@@ -182,8 +186,11 @@ type releaseNoteSection struct {
 	CommitSections []*commitSection
 }
 
+// commitSection represents the commits in the release notes for a specific
+// library.
 type commitSection struct {
 	Heading string
+	// A list of flattened conventional commits associated with this section and
 	Commits []*config.Commit
 }
 
@@ -353,7 +360,7 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 		releaseSections = append(releaseSections, section)
 	}
 
-	data := &releaseNote{
+	data := &releaseNotePRBody{
 		LibrarianVersion: librarianVersion,
 		ImageVersion:     state.Image,
 		NoteSections:     releaseSections,
@@ -370,11 +377,7 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
 func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repository) *releaseNoteSection {
-	// The version should already be updated to the next version.
-	newVersion := library.Version
 	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
-	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
-	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*config.Commit)
 	for _, commit := range library.Changes {
@@ -398,9 +401,9 @@ func formatLibraryReleaseNotes(library *config.LibraryState, ghRepo *github.Repo
 		RepoOwner:      ghRepo.Owner,
 		RepoName:       ghRepo.Name,
 		LibraryID:      library.ID,
-		NewVersion:     newVersion,
-		PreviousTag:    previousTag,
-		NewTag:         newTag,
+		NewVersion:     library.Version,
+		PreviousTag:    config.FormatTag(tagFormat, library.ID, library.PreviousVersion),
+		NewTag:         config.FormatTag(tagFormat, library.ID, library.Version),
 		Date:           time.Now().Format("2006-01-02"),
 		CommitSections: sections,
 	}
@@ -434,16 +437,16 @@ func getPiperID(state *config.LibrarianState, sourceRepo gitrepo.Repository, api
 }
 
 func findPiperIDFrom(commit *gitrepo.Commit, libraryID string) (string, error) {
-	commits, err := gitrepo.ParseCommits(commit, libraryID)
+	conventionalCommit, err := gitrepo.ParseCommit(commit, libraryID)
 	if err != nil {
 		return "", err
 	}
 
-	if len(commits) == 0 || commits[0].Footers == nil {
+	if conventionalCommit == nil || conventionalCommit.Footers == nil {
 		return "", errPiperNotFound
 	}
 
-	id, ok := commits[0].Footers["PiperOrigin-RevId"]
+	id, ok := conventionalCommit.Footers["PiperOrigin-RevId"]
 	if !ok {
 		return "", errPiperNotFound
 	}
