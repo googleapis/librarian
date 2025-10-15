@@ -18,6 +18,10 @@ limitations under the License.
 ///
 /// Note that all the setters affecting `{{Group.Codec.FieldName}}` are
 /// mutually exclusive.
+{{#ModelCodec.GenerateSetterSamples}}
+///
+/// # Example
+/// ```
 {{#Singular}}
 {{> /templates/common/setter_preamble/singular_value_samples}}
 {{/Singular}}
@@ -27,8 +31,6 @@ limitations under the License.
 {{#Map}}
 {{> /templates/common/setter_preamble/map_samples}}
 {{/Map}}
-{{#ModelCodec.GenerateSetterSamples}}
-/// ```
 /// assert!(x.{{Codec.FieldName}}().is_some());
 {{#Codec.OtherFieldsInGroup}}
 /// assert!(x.{{Codec.FieldName}}().is_none());

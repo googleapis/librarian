@@ -15,75 +15,51 @@ limitations under the License.
 }}
 /// Sets or clears the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
 {{#ModelCodec.GenerateSetterSamples}}
-{{#IsString}}
 ///
 /// # Example
 /// ```
+{{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}("example");
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some("example"));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<String>);
-/// ```
 {{/IsString}}
 {{#IsBytes}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(bytes::Bytes::from_static(b"example"));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(bytes::Bytes::from_static(b"example")));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<bytes::Bytes>);
-/// ```
 {{/IsBytes}}
 {{#IsBool}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(false));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<bool>);
-/// ```
 {{/IsBool}}
 {{#IsLikeInt}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(42));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<i32>);
-/// ```
 {{/IsLikeInt}}
 {{#IsLikeFloat}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(42.0));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<i32>);
-/// ```
 {{/IsLikeFloat}}
 {{#IsEnum}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
 {{#EnumType.Codec.ValuesForExamples}}
 /// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_or_clear_{{FieldCodec.SetterName}}(Some({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}));
 {{/EnumType.Codec.ValuesForExamples}}
 /// let x_none = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{EnumType.Codec.Name}}>);
-/// ```
 {{/IsEnum}}
 {{#IsObject}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{MessageType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some({{MessageType.Codec.Name}}::default()/* use setters */));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{MessageType.Codec.Name}}>);
-/// ```
 {{/IsObject}}
+/// ```
 {{/ModelCodec.GenerateSetterSamples}}
 {{#Deprecated}}
 #[deprecated]

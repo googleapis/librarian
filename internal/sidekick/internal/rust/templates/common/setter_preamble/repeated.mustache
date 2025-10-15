@@ -14,7 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 /// Sets the value of [{{Codec.FieldName}}][{{Codec.FQMessageName}}::{{Codec.SetterName}}].
+{{#ModelCodec.GenerateSetterSamples}}
+///
+/// # Example
+/// ```
 {{> /templates/common/setter_preamble/repeated_samples}}
+/// ```
+{{/ModelCodec.GenerateSetterSamples}}
 {{#Deprecated}}
 #[deprecated]
 {{/Deprecated}}

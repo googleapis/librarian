@@ -13,53 +13,29 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-{{#ModelCodec.GenerateSetterSamples}}
 {{#IsString}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(["a", "b", "c"]);
-/// ```
 {{/IsString}}
 {{#IsBytes}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let b1 = bytes::Bytes::from_static(b"abc");
 /// let b2 = bytes::Bytes::from_static(b"xyz");
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([b1, b2]);
-/// ```
 {{/IsBytes}}
 {{#IsLikeBool}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([true, false, true]);
-/// ```
 {{/IsLikeBool}}
 {{#IsLikeInt}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1, 2, 3]);
-/// ```
 {{/IsLikeInt}}
 {{#IsLikeFloat}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1.0, 2.0, 3.0]);
-/// ```
 {{/IsLikeFloat}}
 {{#IsEnum}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
@@ -67,12 +43,8 @@ limitations under the License.
 ///     {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}},
 {{/EnumType.Codec.ValuesForExamples}}
 /// ]);
-/// ```
 {{/IsEnum}}
 {{#IsObject}}
-///
-/// # Example
-/// ```
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{MessageType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new()
@@ -80,6 +52,4 @@ limitations under the License.
 ///         {{MessageType.Codec.Name}}::default()/* use setters */,
 ///         {{MessageType.Codec.Name}}::default()/* use (different) setters */,
 ///     ]);
-/// ```
 {{/IsObject}}
-{{/ModelCodec.GenerateSetterSamples}}

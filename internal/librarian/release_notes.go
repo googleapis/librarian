@@ -60,10 +60,10 @@ var (
 	}
 
 	shortSHA = func(sha string) string {
-		if len(sha) < 7 {
+		if len(sha) < 8 {
 			return sha
 		}
-		return sha[:7]
+		return sha[:8]
 	}
 
 	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{

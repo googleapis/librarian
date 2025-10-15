@@ -238,7 +238,7 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 Library-IDs: foo
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
 BEGIN_NESTED_COMMIT
@@ -248,7 +248,7 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 Library-IDs: bar
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
 BEGIN_NESTED_COMMIT
@@ -258,7 +258,7 @@ This is another body.
 
 PiperOrigin-RevId: 573342
 Library-IDs: foo, bar
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
+Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE`,
@@ -293,7 +293,7 @@ END_COMMIT_OVERRIDE`,
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "573342",
 						"Library-IDs":       "foo",
-						"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
+						"Source-link":       "[googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)",
 					},
 					IsNested: true,
 				},
@@ -304,7 +304,7 @@ END_COMMIT_OVERRIDE`,
 					Footers: map[string]string{
 						"PiperOrigin-RevId": "573342",
 						"Library-IDs":       "foo, bar",
-						"Source-link":       "[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)",
+						"Source-link":       "[googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)",
 					},
 					IsNested: true,
 				},
