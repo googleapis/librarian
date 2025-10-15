@@ -1646,6 +1646,7 @@ func TestWritePRBody(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		info     *commitInfo
+		wantErr  bool
 		wantFile bool
 	}{
 		{
@@ -1683,6 +1684,7 @@ func TestWritePRBody(t *testing.T) {
 				workRoot:      t.TempDir(),
 				prBodyBuilder: func() (string, error) { return "", fmt.Errorf("some error") },
 			},
+			wantErr: true,
 		},
 		{
 			name: "unable to save file",
@@ -1701,10 +1703,40 @@ func TestWritePRBody(t *testing.T) {
 				workRoot:      filepath.Join(t.TempDir(), "missing-directory"),
 				prBodyBuilder: func() (string, error) { return "some pr body", nil },
 			},
+			wantErr: true,
+		},
+		{
+			name: "no body builder",
+			info: &commitInfo{
+				languageRepo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:   pullRequestRelease,
+				state:    &config.LibrarianState{},
+				workRoot: filepath.Join(t.TempDir(), "missing-directory"),
+			},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			writePRBody(test.info)
+			err := writePRBody(test.info)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("writePRBody() expected error, but no error returned")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error %v", err)
+			}
+
 			gotFile := gotPRBodyFile(t, test.info.workRoot)
 			if test.wantFile != gotFile {
 				t.Errorf("writePRBody() wantFile = %t, gotFile = %t", test.wantFile, gotFile)
