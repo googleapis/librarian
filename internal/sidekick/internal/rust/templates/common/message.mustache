@@ -155,7 +155,7 @@ impl {{Codec.Name}} {
         })
     }
 
-    {{> /templates/common/oneof_variants}}
+    {{> /templates/common/setter_preamble/oneof_variants}}
     {{#Singular}}
     pub fn set_{{Codec.SetterName}}<T: std::convert::Into<{{{Codec.FieldType}}}>>(mut self, v: T) -> Self {
         self.{{Group.Codec.FieldName}} = std::option::Option::Some(

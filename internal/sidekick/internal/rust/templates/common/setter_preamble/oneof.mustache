@@ -18,50 +18,34 @@ limitations under the License.
 /// Note that all the setters affecting `{{Codec.FieldName}}` are mutually
 /// exclusive.
 {{#ModelCodec.GenerateSetterSamples}}
-{{#Codec.ExampleField}}
-    {{#IsString}}
 ///
 /// # Example
 /// ```
+{{#Codec.ExampleField}}
+{{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}("value".to_string())));
-/// ```
-    {{/IsString}}
-    {{#IsLikeInt}}
-///
-/// # Example
-/// ```
+{{/IsString}}
+{{#IsLikeInt}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(123)));
-/// ```
-    {{/IsLikeInt}}
-    {{#IsObject}}
-///
-/// # Example
-/// ```
+{{/IsLikeInt}}
+{{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{MessageType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}({{MessageType.Codec.Name}}::default()/* use setters */)));
-/// ```
-    {{/IsObject}}
-    {{#Repeated}}
-///
-/// # Example
-/// ```
+{{/IsObject}}
+{{#Repeated}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{MessageType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec![{{MessageType.Codec.Name}}::default()])));
-/// ```
-    {{/Repeated}}
-    {{#Map}}
-///
-/// # Example
-/// ```
+{{/Repeated}}
+{{#Map}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{KeyField.MessageType.Codec.NameInExamples}};
 /// use {{ValueField.MessageType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(std::collections::HashMap::from([({{KeyField.MessageType.Codec.Name}}::default(), {{ValueField.MessageType.Codec.Name}}::default())]))));
-/// ```
-    {{/Map}}
+{{/Map}}
 {{/Codec.ExampleField}}
+/// ```
 {{/ModelCodec.GenerateSetterSamples}}
