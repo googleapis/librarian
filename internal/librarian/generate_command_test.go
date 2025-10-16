@@ -835,6 +835,54 @@ func TestGenerateScenarios(t *testing.T) {
 			wantBuildCalls:     0,
 			wantConfigureCalls: 0,
 		},
+		{
+			name: "source_roots_have_same_global_files",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+						SourceRoots: []string{
+							"src/some/path",
+							"one/global/example.txt",
+						},
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/some",
+							},
+						},
+					},
+					{
+						ID: "another-library",
+						SourceRoots: []string{
+							"src/another/path",
+							"one/global/example.txt",
+						},
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/another",
+							},
+						},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/global/example.txt",
+						Permissions: "read-write",
+					},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:           &mockGitHubClient{},
+			build:              true,
+			wantGenerateCalls:  2,
+			wantBuildCalls:     2,
+			wantConfigureCalls: 0,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := newTestGitRepoWithState(t, test.state, true)
