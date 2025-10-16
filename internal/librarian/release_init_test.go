@@ -1153,6 +1153,154 @@ func TestInitRun(t *testing.T) {
 	}
 }
 
+func TestRunInitCommand(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name   string
+		state  *config.LibrarianState
+		config *config.LibrarianConfig
+		repo   gitrepo.Repository
+		client ContainerClient
+		want   *config.LibrarianState
+	}{
+		{
+			name: "global_file_commits_appear_in_multiple_libraries",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "another-example-id",
+						Version: "1.0.0",
+						SourceRoots: []string{
+							"dir3",
+							"one/global/example.txt",
+						},
+						RemoveRegex: []string{
+							"dir3",
+						},
+					},
+					{
+						ID:      "example-id",
+						Version: "2.0.0",
+						SourceRoots: []string{
+							"dir1",
+							"one/global/example.txt",
+						},
+						RemoveRegex: []string{
+							"dir1",
+						},
+					},
+				},
+			},
+			config: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/global/example.txt",
+						Permissions: "read-write",
+					},
+				},
+			},
+			repo: &MockRepository{
+				Dir: t.TempDir(),
+				RemotesValue: []*gitrepo.Remote{
+					{
+						Name: "origin",
+						URLs: []string{"https://github.com/googleapis/librarian.git"},
+					},
+				},
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+					"another-example-id-1.0.0": {
+						{
+							Hash:    plumbing.NewHash("123456"),
+							Message: "feat: bump version",
+						},
+					},
+					"example-id-2.0.0": {
+						{
+							Hash:    plumbing.NewHash("123456"),
+							Message: "feat: bump version",
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					plumbing.NewHash("123456").String(): {
+						"one/global/example.txt",
+					},
+				},
+			},
+			client: &mockContainerClient{},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:              "another-example-id",
+						Version:         "1.1.0",
+						PreviousVersion: "1.0.0",
+						SourceRoots: []string{
+							"dir3",
+							"one/global/example.txt",
+						},
+						RemoveRegex: []string{
+							"dir3",
+						},
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "bump version",
+								CommitHash: "1234560000000000000000000000000000000000",
+							},
+						},
+						ReleaseTriggered: true,
+					},
+					{
+						ID:              "example-id",
+						Version:         "2.1.0",
+						PreviousVersion: "2.0.0",
+						SourceRoots: []string{
+							"dir1",
+							"one/global/example.txt",
+						},
+						RemoveRegex: []string{
+							"dir1",
+						},
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "bump version",
+								CommitHash: "1234560000000000000000000000000000000000",
+							},
+						},
+						ReleaseTriggered: true,
+					},
+				},
+			},
+		},
+	} {
+		output := t.TempDir()
+		for _, globalFile := range test.config.GlobalFilesAllowlist {
+			file := filepath.Join(output, globalFile.Path)
+			if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(file, []byte("new content"), 0755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		r := &initRunner{
+			repo:            test.repo,
+			state:           test.state,
+			librarianConfig: test.config,
+			containerClient: test.client,
+		}
+		err := r.runInitCommand(t.Context(), output)
+		if err != nil {
+			t.Errorf("failed to run runInitCommand(): %q", err.Error())
+			return
+		}
+		if diff := cmp.Diff(test.want, r.state); diff != "" {
+			t.Errorf("commit filter mismatch (-want +got):\n%s", diff)
+		}
+	}
+}
+
 func TestProcessLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
