@@ -129,7 +129,7 @@ type commitInfo struct {
 	library string
 	// prBodyBuilder is a callback function for building the pull request body
 	prBodyBuilder func() (string, error)
-	// idDraft declares whether or not to create the pull request as a draft.
+	// isDraft declares whether or not to create the pull request as a draft.
 	isDraft bool
 }
 
