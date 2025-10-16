@@ -365,8 +365,7 @@ Language Image: go:1.21
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID: "j",
-						// this is the newVersion in the release note.
+						ID:               "j",
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
@@ -392,17 +391,11 @@ Language Image: go:1.21
 						},
 					},
 					{
-						ID: "j",
-						// this is the newVersion in the release note.
-						Version:          "1.1.0",
-						PreviousVersion:  "1.0.0",
+						ID:               "k",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
-							{
-								Type:       "feat",
-								Subject:    "new feature",
-								CommitHash: hash1.String(),
-							},
 							{
 								Type:       "fix",
 								Subject:    "bulk change",
@@ -427,13 +420,9 @@ Language Image: go:1.21
 </details>
 
 
-<details><summary>j: 1.1.0</summary>
+<details><summary>k: 2.4.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (2025-10-15)
-
-### Features
-
-* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
+## [2.4.0](https://github.com/owner/repo/compare/k-2.3.0...k-2.4.0) (%s)
 
 </details>
 
@@ -445,7 +434,7 @@ Language Image: go:1.21
 * fix: bulk change ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
   Libraries: a,b,c,d,e,f,g,h,i,j,k
 </details>`,
-				librarianVersion, today),
+				librarianVersion, today, today),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
