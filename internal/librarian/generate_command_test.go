@@ -910,6 +910,115 @@ func TestGenerateScenarios(t *testing.T) {
 	}
 }
 
+func TestGenerateSingleLibraryCommand(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		api        string
+		library    string
+		state      *config.LibrarianState
+		container  *mockContainerClient
+		ghClient   GitHubClient
+		build      bool
+		wantErr    bool
+		wantErrMsg string
+		wantPRType pullRequestType
+	}{
+		{
+			name:    "onboard library returns pullRequestOnboard",
+			api:     "some/api",
+			library: "some-library",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+				configureLibraryPaths: []string{
+					"src/a",
+				},
+			},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantPRType: pullRequestOnboard,
+		},
+		{
+			name:    "generate existing library returns pullRequestGenerate",
+			library: "some-library",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantPRType: pullRequestGenerate,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newTestGitRepoWithState(t, test.state, true)
+			sourceRepo := newTestGitRepo(t)
+			r := &generateRunner{
+				api:             test.api,
+				library:         test.library,
+				build:           test.build,
+				repo:            repo,
+				sourceRepo:      sourceRepo,
+				state:           test.state,
+				containerClient: test.container,
+				ghClient:        test.ghClient,
+				workRoot:        t.TempDir(),
+			}
+
+			// Create a service config in api path.
+			if test.api != "" {
+				if err := os.MkdirAll(filepath.Join(r.sourceRepo.GetDir(), test.api), 0755); err != nil {
+					t.Fatal(err)
+				}
+				data := []byte("type: google.api.Service")
+				if err := os.WriteFile(filepath.Join(r.sourceRepo.GetDir(), test.api, "example_service_v2.yaml"), data, 0755); err != nil {
+					t.Fatal(err)
+				}
+				// Commit the service config file because configure command needs
+				// to find the piper id associated with the commit message.
+				if err := r.sourceRepo.AddAll(); err != nil {
+					t.Fatal(err)
+				}
+				message := "feat: add an api\n\nPiperOrigin-RevId: 123456"
+				if err := r.sourceRepo.Commit(message); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			status, err := r.generateSingleLibrary(context.Background(), r.library, r.workRoot)
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if status.prType != test.wantPRType {
+				t.Errorf("generateSingleLibrary() prType = %v, want %v", status.prType, test.wantPRType)
+			}
+		})
+	}
+}
+
 func TestUpdateLastGeneratedCommitState(t *testing.T) {
 	t.Parallel()
 	sourceRepo := newTestGitRepo(t)
