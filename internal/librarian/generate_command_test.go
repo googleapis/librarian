@@ -837,7 +837,7 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repo := newTestGitRepoWithState(t, test.state, true)
+			repo := newTestGitRepoWithState(t, test.state)
 
 			r := &generateRunner{
 				api:             test.api,
