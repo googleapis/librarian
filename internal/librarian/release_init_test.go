@@ -1471,6 +1471,35 @@ func TestUpdateLibrary(t *testing.T) {
 			wantErrMsg: "inputted version is not SemVer greater than the current version. Set a version SemVer greater than current than",
 		},
 		{
+			name: "update a library with library ids in footer",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					Type:    "feat",
+					Subject: "add a config file",
+					Body:    "This is the body.",
+					Footers: map[string]string{"Library-IDs": "a,b,c"},
+				},
+			},
+			want: &config.LibraryState{
+				ID:              "one-id",
+				Version:         "1.3.0",
+				PreviousVersion: "1.2.3",
+				Changes: []*config.Commit{
+					{
+						Type:       "feat",
+						Subject:    "add a config file",
+						Body:       "This is the body.",
+						LibraryIDs: "a,b,c",
+					},
+				},
+				ReleaseTriggered: true,
+			},
+		},
+		{
 			name: "library has breaking changes",
 			libraryState: &config.LibraryState{
 				ID:      "one-id",

@@ -154,6 +154,15 @@ type Commit struct {
 	CommitHash string `json:"commit_hash,omitempty"`
 	// PiperCLNumber is the Piper CL number associated with the commit.
 	PiperCLNumber string `json:"piper_cl_number,omitempty"`
+
+	// A list of library IDs associated with the commit.
+	LibraryIDs string `json:"-"`
+}
+
+// IsBulkCommit returns true if the commit is associated with 10 or more
+// libraries.
+func (c *Commit) IsBulkCommit() bool {
+	return len(strings.Split(c.LibraryIDs, ",")) >= 10
 }
 
 var (

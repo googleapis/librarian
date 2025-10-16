@@ -327,6 +327,29 @@ some content
 				},
 			},
 		},
+		{
+			name: "with bulk changes",
+			body: `
+<details><summary>google-cloud-storage: v1.2.3</summary>
+
+[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+
+</details>
+
+
+<details><summary>Bulk Changes</summary>
+
+some content
+
+</details>`,
+			want: []libraryRelease{
+				{
+					Version: "v1.2.3",
+					Library: "google-cloud-storage",
+					Body:    "[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := parsePullRequestBody(test.body)

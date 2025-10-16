@@ -316,8 +316,8 @@ func toCommit(c []*gitrepo.ConventionalCommit) []*config.Commit {
 			Body:          cc.Body,
 			CommitHash:    cc.CommitHash,
 			PiperCLNumber: cc.Footers["PiperOrigin-RevId"],
+			LibraryIDs:    cc.Footers["Library-IDs"],
 		})
 	}
 	return commits
-
 }

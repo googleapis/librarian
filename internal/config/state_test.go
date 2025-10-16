@@ -463,3 +463,39 @@ func TestLibraryState_LibraryByID(t *testing.T) {
 		})
 	}
 }
+
+func TestCommit_IsBulkCommit(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		libraryIDs string
+		want       bool
+	}{
+		{
+			name:       "less than 10",
+			libraryIDs: "a,b,c",
+			want:       false,
+		},
+		{
+			name:       "exactly 10",
+			libraryIDs: "a,b,c,d,e,f,g,h,i,j",
+			want:       true,
+		},
+		{
+			name:       "more than 10",
+			libraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
+			want:       true,
+		},
+		{
+			name:       "empty",
+			libraryIDs: "",
+			want:       false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := &Commit{LibraryIDs: test.libraryIDs}
+			if got := c.IsBulkCommit(); got != test.want {
+				t.Errorf("Commit.IsBulkCommit() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}

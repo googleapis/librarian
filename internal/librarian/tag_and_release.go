@@ -211,6 +211,9 @@ func parsePullRequestBody(body string) []libraryRelease {
 	matches := detailsRegex.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		summary := match[1]
+		if summary == "Bulk Changes" {
+			continue
+		}
 		content := strings.TrimSpace(match[2])
 
 		summaryMatches := summaryRegex.FindStringSubmatch(summary)
