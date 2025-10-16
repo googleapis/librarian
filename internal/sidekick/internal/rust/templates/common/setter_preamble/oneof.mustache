@@ -110,6 +110,212 @@ limitations under the License.
 ///     ])));
 {{/IsObject}}
 {{/IsRepeated}}
+{{#IsMap}}
+{{#Codec.KeyField.IsString}}
+{{#Codec.ValueField.IsString}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     ("key0".to_string(), "abc".to_string()),
+///     ("key1".to_string(), "xyz".to_string()),
+/// ]))));
+{{/Codec.ValueField.IsString}}
+{{#Codec.ValueField.IsBytes}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     ("key0".to_string(), bytes::Bytes::from_static(b"abc")),
+///     ("key1".to_string(), bytes::Bytes::from_static(b"xyz")),
+/// ]))));
+{{/Codec.ValueField.IsBytes}}
+{{#Codec.ValueField.IsBool}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     ("key0".to_string(), true),
+///     ("key1".to_string(), false),
+/// ]))));
+{{/Codec.ValueField.IsBool}}
+{{#Codec.ValueField.IsLikeInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     ("key0".to_string(), 123),
+///     ("key1".to_string(), 456),
+/// ]))));
+{{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeFloat}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     ("key0".to_string(), 123.5),
+///     ("key1".to_string(), 456.5),
+/// ]))));
+{{/Codec.ValueField.IsLikeFloat}}
+{{#Codec.ValueField.IsEnum}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+///     ("key{{Index}}".to_string(), {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
+{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+/// ]))));
+{{/Codec.ValueField.IsEnum}}
+{{#Codec.ValueField.IsObject}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     ("key0".to_string(), {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
+///     ("key1".to_string(), {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+/// ]))));
+{{/Codec.ValueField.IsObject}}
+{{/Codec.KeyField.IsString}}
+{{#Codec.KeyField.IsBool}}
+{{#Codec.ValueField.IsString}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (true, "abc".to_string()),
+///     (false, "xyz".to_string()),
+/// ]))));
+{{/Codec.ValueField.IsString}}
+{{#Codec.ValueField.IsBytes}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (true, bytes::Bytes::from_static(b"abc")),
+///     (false, bytes::Bytes::from_static(b"xyz")),
+/// ]))));
+{{/Codec.ValueField.IsBytes}}
+{{#Codec.ValueField.IsBool}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (true, true),
+///     (false, false),
+/// ]))));
+{{/Codec.ValueField.IsBool}}
+{{#Codec.ValueField.IsLikeInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (true, 123),
+///     (false, 456),
+/// ]))));
+{{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeFloat}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (true, 123.5),
+///     (false, 456.5),
+/// ]))));
+{{/Codec.ValueField.IsLikeFloat}}
+{{#Codec.ValueField.IsEnum}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+///     (true, {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
+{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+/// ]))));
+{{/Codec.ValueField.IsEnum}}
+{{#Codec.ValueField.IsObject}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (true, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
+///     (false, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+/// ]))));
+{{/Codec.ValueField.IsObject}}
+{{/Codec.KeyField.IsBool}}
+{{#Codec.KeyField.IsLikeInt}}
+{{#Codec.ValueField.IsString}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (0, "abc".to_string()),
+///     (1, "xyz".to_string()),
+/// ]))));
+{{/Codec.ValueField.IsString}}
+{{#Codec.ValueField.IsBytes}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (0, bytes::Bytes::from_static(b"abc")),
+///     (1, bytes::Bytes::from_static(b"xyz")),
+/// ]))));
+{{/Codec.ValueField.IsBytes}}
+{{#Codec.ValueField.IsBool}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (0, true),
+///     (1, false),
+/// ]))));
+{{/Codec.ValueField.IsBool}}
+{{#Codec.ValueField.IsLikeInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (0, 123),
+///     (1, 456),
+/// ]))));
+{{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeFloat}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (0, 123.5),
+///     (1, 456.5),
+/// ]))));
+{{/Codec.ValueField.IsLikeFloat}}
+{{#Codec.ValueField.IsEnum}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+///     ({{Index}}, {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
+{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+/// ]))));
+{{/Codec.ValueField.IsEnum}}
+{{#Codec.ValueField.IsObject}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+/// use std::collections::HashMap;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(HashMap::from([
+///     (0, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
+///     (1, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+/// ]))));
+{{/Codec.ValueField.IsObject}}
+{{/Codec.KeyField.IsLikeInt}}
+{{/IsMap}}
 {{/Codec.ExampleField}}
 /// ```
 {{/ModelCodec.GenerateSetterSamples}}
