@@ -194,7 +194,7 @@ type updateImagePRBody struct {
 }
 
 func formatUpdateImagePRBody(image string, failedGenerations []*config.LibraryState) (string, error) {
-	var failedLibraries []string
+	failedLibraries := make([]string, 0, len(failedGenerations))
 	for _, failedGeneration := range failedGenerations {
 		failedLibraries = append(failedLibraries, failedGeneration.ID)
 	}
@@ -206,7 +206,5 @@ func formatUpdateImagePRBody(image string, failedGenerations []*config.LibrarySt
 	if err := updateImageTemplate.Execute(&out, data); err != nil {
 		return "", fmt.Errorf("error executing template %w", err)
 	}
-	ret := strings.TrimSpace(out.String())
-	slog.Info("ret", "ret", ret)
-	return ret, nil
+	return strings.TrimSpace(out.String()), nil
 }
