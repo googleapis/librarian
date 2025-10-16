@@ -176,14 +176,10 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return fmt.Errorf("unexpected prType %s", prType)
 	}
 
-	commitMessage := "feat: generate libraries"
-	if prType == pullRequestOnboard {
-		commitMessage = "feat: onboard a new library"
-	}
 	commitInfo := &commitInfo{
 		branch:            r.branch,
 		commit:            r.commit,
-		commitMessage:     commitMessage,
+		commitMessage:     "feat: generate libraries",
 		ghClient:          r.ghClient,
 		prType:            prType,
 		push:              r.push,

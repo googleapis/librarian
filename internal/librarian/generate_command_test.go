@@ -404,13 +404,11 @@ func TestGenerateScenarios(t *testing.T) {
 		container          *mockContainerClient
 		ghClient           GitHubClient
 		build              bool
-		useMockRepo        bool
 		wantErr            bool
 		wantErrMsg         string
 		wantGenerateCalls  int
 		wantBuildCalls     int
 		wantConfigureCalls int
-		wantCommitMessage  string
 	}{
 		{
 			name:    "generate_single_library_including_initial_configuration",
@@ -427,11 +425,9 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			ghClient:           &mockGitHubClient{},
 			build:              true,
-			useMockRepo:        true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
 			wantConfigureCalls: 1,
-			wantCommitMessage:  "feat: onboard a new library",
 		},
 		{
 			name:    "generate_single_library_with_librarian_config",
@@ -480,11 +476,9 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			ghClient:           &mockGitHubClient{},
 			build:              true,
-			useMockRepo:        true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
 			wantConfigureCalls: 0,
-			wantCommitMessage:  "feat: generate libraries",
 		},
 		{
 			name: "generate single existing library by api",
@@ -843,20 +837,7 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			var repo gitrepo.Repository
-			if test.useMockRepo {
-				repo = &MockRepository{
-					Dir: t.TempDir(),
-					RemotesValue: []*gitrepo.Remote{
-						{
-							Name: "origin",
-							URLs: []string{"https://github.com/googleapis/librarian.git"},
-						},
-					},
-				}
-			} else {
-				repo = newTestGitRepoWithState(t, test.state, true)
-			}
+			repo := newTestGitRepoWithState(t, test.state, true)
 
 			r := &generateRunner{
 				api:             test.api,
@@ -867,12 +848,8 @@ func TestGenerateScenarios(t *testing.T) {
 				state:           test.state,
 				librarianConfig: test.librarianConfig,
 				containerClient: test.container,
-				ghClient:        &mockGitHubClient{},
+				ghClient:        test.ghClient,
 				workRoot:        t.TempDir(),
-			}
-			if test.useMockRepo {
-				r.commit = true
-				r.push = true
 			}
 
 			// Create a service config in api path.
@@ -928,12 +905,6 @@ func TestGenerateScenarios(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
 				t.Errorf("%s: run() configureCalls mismatch (-want +got):%s", test.name, diff)
-			}
-			if test.useMockRepo && test.wantCommitMessage != "" {
-				mockRepo := repo.(*MockRepository)
-				if mockRepo.LastCommitMessage != test.wantCommitMessage {
-					t.Errorf("want commit message %q, got %q", test.wantCommitMessage, mockRepo.LastCommitMessage)
-				}
 			}
 		})
 	}
