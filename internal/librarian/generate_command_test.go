@@ -404,11 +404,13 @@ func TestGenerateScenarios(t *testing.T) {
 		container          *mockContainerClient
 		ghClient           GitHubClient
 		build              bool
+		useMockRepo        bool
 		wantErr            bool
 		wantErrMsg         string
 		wantGenerateCalls  int
 		wantBuildCalls     int
 		wantConfigureCalls int
+		wantCommitMessage  string
 	}{
 		{
 			name:    "generate_single_library_including_initial_configuration",
@@ -425,9 +427,11 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			ghClient:           &mockGitHubClient{},
 			build:              true,
+			useMockRepo:        true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
 			wantConfigureCalls: 1,
+			wantCommitMessage:  "feat: onboard a new library",
 		},
 		{
 			name:    "generate_single_library_with_librarian_config",
@@ -476,9 +480,11 @@ func TestGenerateScenarios(t *testing.T) {
 			},
 			ghClient:           &mockGitHubClient{},
 			build:              true,
+			useMockRepo:        true,
 			wantGenerateCalls:  1,
 			wantBuildCalls:     1,
 			wantConfigureCalls: 0,
+			wantCommitMessage:  "feat: generate libraries",
 		},
 		{
 			name: "generate single existing library by api",
@@ -838,8 +844,7 @@ func TestGenerateScenarios(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var repo gitrepo.Repository
-			useMockRepo := test.name == "generate_single_library_including_initial_configuration" || test.name == "generate single existing library by library id"
-			if useMockRepo {
+			if test.useMockRepo {
 				repo = &MockRepository{
 					Dir: t.TempDir(),
 					RemotesValue: []*gitrepo.Remote{
@@ -865,7 +870,7 @@ func TestGenerateScenarios(t *testing.T) {
 				ghClient:        &mockGitHubClient{},
 				workRoot:        t.TempDir(),
 			}
-			if useMockRepo {
+			if test.useMockRepo {
 				r.commit = true
 				r.push = true
 			}
@@ -924,16 +929,10 @@ func TestGenerateScenarios(t *testing.T) {
 			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
 				t.Errorf("%s: run() configureCalls mismatch (-want +got):%s", test.name, diff)
 			}
-			if test.name == "generate_single_library_including_initial_configuration" {
+			if test.useMockRepo && test.wantCommitMessage != "" {
 				mockRepo := repo.(*MockRepository)
-				if mockRepo.LastCommitMessage != "feat: onboard a new library" {
-					t.Errorf("want commit message %q, got %q", "feat: onboard a new library", mockRepo.LastCommitMessage)
-				}
-			}
-			if test.name == "generate single existing library by library id" {
-				mockRepo := repo.(*MockRepository)
-				if mockRepo.LastCommitMessage != "feat: generate libraries" {
-					t.Errorf("want commit message %q, got %q", "feat: generate libraries", mockRepo.LastCommitMessage)
+				if mockRepo.LastCommitMessage != test.wantCommitMessage {
+					t.Errorf("want commit message %q, got %q", test.wantCommitMessage, mockRepo.LastCommitMessage)
 				}
 			}
 		})
