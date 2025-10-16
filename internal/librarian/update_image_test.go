@@ -370,6 +370,40 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantCheckoutCalls:   2,
 		},
 		{
+			name: "skips libraries without APIs",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "lib1",
+						APIs: []*config.API{{Path: "some/api1"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+						LastGeneratedCommit: "abcd1234",
+					},
+					{
+						ID:   "lib2",
+						APIs: []*config.API{},
+						SourceRoots: []string{
+							"src/b",
+						},
+						LastGeneratedCommit: "abcd1235",
+					},
+				},
+			},
+			containerClient: &mockContainerClient{},
+			imagesClient: &mockImagesClient{
+				latestImage: "gcr.io/test/image@sha256:abc123",
+			},
+			ghClient:            &mockGitHubClient{},
+			build:               true,
+			wantFindLatestCalls: 1,
+			wantGenerateCalls:   1,
+			wantBuildCalls:      1,
+			wantCheckoutCalls:   1,
+		},
+		{
 			name: "partial generate success",
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",

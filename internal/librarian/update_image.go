@@ -162,6 +162,11 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 }
 
 func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, libraryState *config.LibraryState, outputDir string) error {
+	if len(libraryState.APIs) == 0 {
+		slog.Info("library has no APIs; skipping generation", "library", libraryState.ID)
+		return nil
+	}
+
 	slog.Info("checking out apiSource", "commit", libraryState.LastGeneratedCommit)
 	if err := r.sourceRepo.Checkout(libraryState.LastGeneratedCommit); err != nil {
 		return fmt.Errorf("error checking out from sourceRepo %w", err)
