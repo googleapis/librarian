@@ -61,6 +61,55 @@ limitations under the License.
 /// use {{MessageType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}({{MessageType.Codec.Name}}::default().into())));
 {{/IsObject}}
+{{#IsRepeated}}
+{{#IsString}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec!["a".to_string(), "b".to_string(), "c".to_string()])));
+{{/IsString}}
+{{#IsBytes}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let b1 = bytes::Bytes::from_static(b"abc");
+/// let b2 = bytes::Bytes::from_static(b"xyz");
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec![b1, b2])));
+{{/IsBytes}}
+{{#IsBool}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec![true, false, true])));
+{{/IsBool}}
+{{#IsLikeInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec![1, 2, 3])));
+{{/IsLikeInt}}
+{{#IsLikeFloat}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec![1.0, 2.0, 3.0])));
+{{/IsLikeFloat}}
+{{#IsEnum}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{EnumType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec![
+{{#EnumType.Codec.ValuesForExamples}}
+///     {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}},
+{{/EnumType.Codec.ValuesForExamples}}
+/// ])));
+{{/IsEnum}}
+{{#IsObject}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new()
+///     .set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(vec![
+///         {{MessageType.Codec.Name}}::default()/* use setters */,
+///         {{MessageType.Codec.Name}}::default()/* use (different) setters */,
+///     ])));
+{{/IsObject}}
+{{/IsRepeated}}
 {{/Codec.ExampleField}}
 /// ```
 {{/ModelCodec.GenerateSetterSamples}}
