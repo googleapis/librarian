@@ -131,7 +131,13 @@ type mockContainerClient struct {
 	failGenerateForID string
 	// Set this value if you want an error when
 	// generate a library with a specific id.
-	generateErrForID    error
+	generateErrForID error
+	// Set this value if you want an error when
+	// build a library with a specific id.
+	failBuildForID string
+	// Set this value if you want an error when
+	// build a library with a specific id.
+	buildErrForID       error
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
@@ -164,6 +170,13 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.BuildResponse), []byte(libraryStr), 0755); err != nil {
 		return err
 	}
+
+	if m.failBuildForID != "" {
+		if request.LibraryID == m.failBuildForID {
+			return m.buildErrForID
+		}
+	}
+
 	return m.buildErr
 }
 
@@ -308,6 +321,7 @@ type MockRepository struct {
 	RemotesValue                           []*gitrepo.Remote
 	RemotesError                           error
 	CommitCalls                            int
+	LastCommitMessage                      string
 	GetCommitError                         error
 	GetLatestCommitError                   error
 	GetCommitByHash                        map[string]*gitrepo.Commit
@@ -330,6 +344,8 @@ type MockRepository struct {
 	RestoreError                           error
 	HeadHashValue                          string
 	HeadHashError                          error
+	CheckoutCalls                          int
+	CheckoutError                          error
 }
 
 func (m *MockRepository) HeadHash() (string, error) {
@@ -355,6 +371,7 @@ func (m *MockRepository) AddAll() error {
 
 func (m *MockRepository) Commit(msg string) error {
 	m.CommitCalls++
+	m.LastCommitMessage = msg
 	return m.CommitError
 }
 
@@ -469,4 +486,28 @@ func (m *MockRepository) Push(name string) error {
 
 func (m *MockRepository) Restore(paths []string) error {
 	return m.RestoreError
+}
+
+func (m *MockRepository) CleanUntracked(paths []string) error {
+	return nil
+}
+
+func (m *MockRepository) Checkout(commitHash string) error {
+	m.CheckoutCalls++
+	if m.CheckoutError != nil {
+		return m.CheckoutError
+	}
+	return nil
+}
+
+// mockImagesClient is a mock implementation of the ImageRegistryClient interface for testing.
+type mockImagesClient struct {
+	latestImage     string
+	err             error
+	findLatestCalls int
+}
+
+func (m *mockImagesClient) FindLatest(ctx context.Context, imageName string) (string, error) {
+	m.findLatestCalls++
+	return m.latestImage, m.err
 }

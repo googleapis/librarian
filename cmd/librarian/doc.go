@@ -269,6 +269,67 @@ Flags:
 	  	is configured as a language repository.
 	-v	enables verbose logging
 
+# update-image
+
+The 'update-image' command is used to update the 'image' SHA
+of the language container for a language repository.
+
+This command's primary responsibilities are to:
+
+  - Update the 'image' field in '.librarian/state.yaml'
+  - Regenerate each library with the new language container using googleapis'
+    proto definitions at the 'last_generated_commit'
+
+Examples:
+
+	# Create a PR that updates the language container to latest image.
+	librarian update-image --commit --push
+
+	# Create a PR that updates the language container to the specified image.
+	librarian update-image --commit --push --image=<some-image-with-sha>
+
+Usage:
+
+	librarian update-image [flags]
+
+Flags:
+
+	-api-source string
+	  	The location of an API specification repository.
+	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
+	-branch string
+	  	The branch to use with remote code repositories. This is used to specify
+	  	which branch to clone and which branch to use as the base for a pull
+	  	request. (default "main")
+	-build
+	  	If true, Librarian will build each generated library by invoking the
+	  	language-specific container.
+	-commit
+	  	If true, librarian will create a commit for the change but not create
+	  	a pull request. This flag is ignored if push is set to true.
+	-host-mount string
+	  	For use when librarian is running in a container. A mapping of a
+	  	directory from the host to the container, in the format
+	  	<host-mount>:<local-mount>.
+	-image string
+	  	Language specific image used to invoke code generation and releasing.
+	  	If not specified, the image configured in the state.yaml is used.
+	-output string
+	  	Working directory root. When this is not specified, a working directory
+	  	will be created in /tmp.
+	-push
+	  	If true, Librarian will create a commit,
+	  	push and create a pull request for the changes.
+	  	A GitHub token with push access must be provided via the
+	  	LIBRARIAN_GITHUB_TOKEN environment variable.
+	-repo string
+	  	Code repository where the generated code will reside. Can be a remote
+	  	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
+	  	local file path like /path/to/repo. Both absolute and relative paths are
+	  	supported. If not specified, will try to detect if the current working directory
+	  	is configured as a language repository.
+	-v	enables verbose logging
+
 # version
 
 Version prints version information for the librarian binary.

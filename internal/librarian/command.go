@@ -53,6 +53,7 @@ const (
 	pullRequestOnboard
 	pullRequestGenerate
 	pullRequestRelease
+	pullRequestUpdateImage
 )
 
 // String returns the string representation of a pullRequestType.
@@ -63,6 +64,7 @@ func (t pullRequestType) String() string {
 		pullRequestOnboard:     "onboard",
 		pullRequestGenerate:    "generate",
 		pullRequestRelease:     "release",
+		pullRequestUpdateImage: "update image",
 	}
 	if name, ok := names[t]; ok {
 		return name
@@ -97,17 +99,29 @@ type ContainerClient interface {
 }
 
 type commitInfo struct {
-	branch            string
-	commit            bool
-	commitMessage     string
-	ghClient          GitHubClient
-	prType            pullRequestType
+	// branch is the base branch of the created pull request.
+	branch string
+	// commit declares whether or not to create a commit.
+	commit bool
+	// commitMessage is used as the message on the actual git commit.
+	commitMessage string
+	// ghClient is used to interact with the GitHub API.
+	ghClient GitHubClient
+	// prType is an enum for which type of librarian pull request we are creating.
+	prType pullRequestType
+	// pullRequestLabels is a list of labels to add to the created pull request.
 	pullRequestLabels []string
-	push              bool
-	languageRepo      gitrepo.Repository
-	sourceRepo        gitrepo.Repository
-	state             *config.LibrarianState
-	workRoot          string
+	// push declares whether or not to push the commits to GitHub.
+	push bool
+	// languageRepo is the git repository containing the language-specific libraries.
+	languageRepo gitrepo.Repository
+	// sourceRepo is the git repository containing the source protos.
+	sourceRepo gitrepo.Repository
+	// state is the librarian state.yaml contents.
+	state *config.LibrarianState
+	// workRoot is the directory that we stage code changes in.
+	workRoot string
+	// failedGenerations is the number of generations that failed.
 	failedGenerations int
 	// api is the api path of a library, only set this value during api onboarding.
 	api string
@@ -137,7 +151,9 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		sourceRepo    gitrepo.Repository
 		sourceRepoDir string
 	)
-	if cfg.CommandName == generateCmdName {
+
+	// If APISource is set, checkout the protos repository.
+	if cfg.APISource != "" {
 		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err

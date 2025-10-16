@@ -221,7 +221,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 			return nil, err
 		}
 
-		prType = pullRequestGenerate
+		prType = pullRequestOnboard
 		libraryID = configuredLibraryID
 	}
 
