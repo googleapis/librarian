@@ -20,11 +20,13 @@ package librarian
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -510,14 +512,19 @@ func TestReleaseInit(t *testing.T) {
 			runGit(t, repo, "tag", tagName)
 
 			// Add a new commit to simulate a change.
-			newFilePath := filepath.Join(repo, test.changePath, "new-file.txt")
+			if err := os.MkdirAll(filepath.Join(repo, test.changePath), 0755); err != nil {
+				t.Fatalf("Failed to create directory for new file: %v", err)
+			}
+			newFilePath := filepath.Join(test.changePath, "new-file.txt")
 			commitMsgBytes, err := os.ReadFile(commitMsgPath)
 			if err != nil {
 				t.Fatalf("Failed to read commit message file: %v", err)
 			}
-			createCommit(t, repo, newFilePath, string(commitMsgBytes))
 
-			server := newMockGitHubServer(t, "release", []string{"feat: new feature pubsub"}, []string{})
+			createCommit(t, repo, newFilePath, string(commitMsgBytes))
+			
+			prContentToMatch := parseCommitMessageForPRContent(t,string(commitMsgBytes))
+			server := newMockGitHubServer(t, "release", prContentToMatch, []string{})
 			defer server.Close()
 
 			cmdArgs := []string{
@@ -768,8 +775,9 @@ func newMockGitHubServer(t *testing.T, prTitleFragment string, expectedContentIn
 				t.Errorf("unexpected PR title: got %q, want to contain %q", *newPR.Title, expectedTitle)
 			}
 			for _, expectedContent := range expectedContentInPr {
-				if !strings.Contains(*newPR.Body, expectedContent) {
-					t.Errorf("unexpected PR description: got %q, missing %q", *newPR.Body, expectedContent)
+				htmlEscapedContent := html.EscapeString(expectedContent)
+				if !strings.Contains(*newPR.Body, htmlEscapedContent) {
+					t.Errorf("unexpected PR description: got %q, missing %q", *newPR.Body, htmlEscapedContent)
 				}
 			}
 			for _, notExpectedContent := range notExpectedContentInPr {
@@ -877,4 +885,24 @@ func setupStateFile(t *testing.T, repoInitDir, lastGeneratedCommit string) {
 	if err := os.WriteFile(filepath.Join(repoInitDir, ".librarian", "state.yaml"), stateBytes, 0644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// parseCommitMessageForPRContent extracts lines that should be included in the PR description from commit message.
+func parseCommitMessageForPRContent(content string) []string {   
+	re := regexp.MustCompile(`(?s)BEGIN_NESTED_COMMIT\n(.*?)\nEND_NESTED_COMMIT`)
+    matches := re.FindStringSubmatch(content)
+	nestedContent := content
+    if len(matches) >= 1 {
+    	nestedContent = matches[0]
+    } 
+   lineRegex := regexp.MustCompile(`^(feat|fix|docs|chore): (.+)$`)
+    
+    var result []string
+    for _, line := range strings.Split(nestedContent, "\n") {
+        if m := lineRegex.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
+            result = append(result, m[2])
+        }
+    }
+    
+    return result
 }
