@@ -179,9 +179,7 @@ func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, library
 	return nil
 }
 
-var updateImageTemplate = template.Must(template.New("updateImage").Funcs(template.FuncMap{
-	"shortSHA": shortSHA,
-}).Parse(`feat: update image to {{.Image}}
+var updateImageTemplate = template.Must(template.New("updateImage").Parse(`feat: update image to {{.Image}}
 {{ if .FailedLibraries }}
 ## Generation failed for
 {{- range .FailedLibraries }}
