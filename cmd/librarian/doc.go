@@ -280,6 +280,14 @@ This command's primary responsibilities are to:
   - Regenerate each library with the new language container using googleapis'
     proto definitions at the 'last_generated_commit'
 
+Examples:
+
+	# Create a PR that updates the language container to latest image.
+	librarian update-image --commit --push
+
+	# Create a PR that updates the language container to the specified image.
+	librarian update-image --commit --push --image=<some-image-with-sha>
+
 Usage:
 
 	librarian update-image [flags]
