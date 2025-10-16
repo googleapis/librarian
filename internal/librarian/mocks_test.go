@@ -308,7 +308,6 @@ type MockRepository struct {
 	RemotesValue                           []*gitrepo.Remote
 	RemotesError                           error
 	CommitCalls                            int
-	LastCommitMessage                      string
 	GetCommitError                         error
 	GetLatestCommitError                   error
 	GetCommitByHash                        map[string]*gitrepo.Commit
@@ -356,7 +355,6 @@ func (m *MockRepository) AddAll() error {
 
 func (m *MockRepository) Commit(msg string) error {
 	m.CommitCalls++
-	m.LastCommitMessage = msg
 	return m.CommitError
 }
 
