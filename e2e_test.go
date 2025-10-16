@@ -500,22 +500,13 @@ func TestReleaseInit(t *testing.T) {
 
 			// Add a new commit to simulate a change.
 			newFilePath := filepath.Join(repo, test.changePath, "new-file.txt")
-			if err := os.MkdirAll(filepath.Dir(newFilePath), 0755); err != nil {
-				t.Fatalf("Failed to create directory for new file: %v", err)
-			}
-			if err := os.WriteFile(newFilePath, []byte("new file"), 0644); err != nil {
-				t.Fatal(err)
-			}
-			runGit(t, repo, "add", newFilePath)
 			commitMsgBytes, err := os.ReadFile(commitMsgPath)
 			if err != nil {
 				t.Fatalf("Failed to read commit message file: %v", err)
 			}
-			commitMsg := string(commitMsgBytes)
-			runGit(t, repo, "commit", "-m", commitMsg)
-			runGit(t, repo, "log", "--oneline", fmt.Sprintf("%s..HEAD", tagName), "--", test.changePath)
+			createCommit(t, repo, newFilePath, string(commitMsgBytes))
 
-			server := newMockGitHubServer(t, "release", []string{}, []string{})
+			server := newMockGitHubServer(t, "release", []string{"feat: new feature pubsub"}, []string{})
 			defer server.Close()
 
 			cmdArgs := []string{
