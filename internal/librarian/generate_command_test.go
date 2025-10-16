@@ -1005,7 +1005,7 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repo := newTestGitRepoWithState(t, test.state, true)
+			repo := newTestGitRepoWithState(t, test.state)
 			sourceRepo := newTestGitRepo(t)
 			r := &generateRunner{
 				api:             test.api,
