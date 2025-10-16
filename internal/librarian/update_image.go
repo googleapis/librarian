@@ -108,8 +108,8 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	}
 
 	// For each library, run generation at the previous commit
-	failedGenerations := make([]*config.LibraryState, 0)
-	successfulGenerations := make([]*config.LibraryState, 0)
+	var failedGenerations []*config.LibraryState
+	var successfulGenerations []*config.LibraryState
 	outputDir := filepath.Join(r.workRoot, "output")
 	for _, libraryState := range r.state.Libraries {
 		err := r.regenerateSingleLibrary(ctx, libraryState, outputDir)
@@ -121,7 +121,9 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 			successfulGenerations = append(successfulGenerations, libraryState)
 		}
 	}
-	slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
+	if len(failedGenerations) > 0 {
+		slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
+	}
 	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
 
 	// TODO(#2587): improve PR body content
@@ -139,7 +141,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	}
 	commitMessage := fmt.Sprintf("feat: update image to %s", r.image)
 	// TODO(#2588): open PR as draft if there are failures
-	err := commitAndPush(ctx, &commitInfo{
+	return commitAndPush(ctx, &commitInfo{
 		branch:            r.branch,
 		commit:            r.commit,
 		commitMessage:     commitMessage,
@@ -154,11 +156,6 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 		failedGenerations: len(failedGenerations),
 		prBodyBuilder:     prBodyBuilder,
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, libraryState *config.LibraryState, outputDir string) error {
