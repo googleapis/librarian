@@ -64,6 +64,7 @@ func (t pullRequestType) String() string {
 		pullRequestOnboard:     "onboard",
 		pullRequestGenerate:    "generate",
 		pullRequestRelease:     "release",
+		pullRequestUpdateImage: "update image",
 	}
 	if name, ok := names[t]; ok {
 		return name
