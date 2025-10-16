@@ -420,6 +420,17 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 	}
 }
 
+// Add this custom writer type after the imports:
+type testWriter struct {
+	t *testing.T
+}
+
+func (w *testWriter) Write(p []byte) (n int, err error) {
+	fmt.Print(string(p)) // Print to console
+	w.t.Log(string(p))   // Print to test log
+	return len(p), nil
+}
+
 func TestReleaseInit(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -527,8 +538,8 @@ func TestReleaseInit(t *testing.T) {
 			cmd.Env = os.Environ()
 			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
 			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
-			cmd.Stderr = os.Stderr
-			cmd.Stdout = os.Stdout
+			cmd.Stdout = &testWriter{t: t}
+			cmd.Stderr = &testWriter{t: t}
 			if err := cmd.Run(); err != nil {
 				t.Fatalf("Failed to run release init: %v", err)
 			}
