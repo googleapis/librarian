@@ -495,6 +495,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		QualifiedName:       "crate::model::message::Type",
 		RelativeName:        "message::Type",
 		StructQualifiedName: "crate::model::Message",
+		ScopeInExamples:     "google_cloud_test::model::message",
 		FieldType:           "crate::model::message::Type",
 		DocLines:            []string{"/// Say something clever about this oneof."},
 		ExampleField:        singular,
@@ -644,6 +645,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		QualifiedName:       "crate::model::message::NestedThingOneOf",
 		RelativeName:        "message::NestedThingOneOf",
 		StructQualifiedName: "crate::model::Message",
+		ScopeInExamples:     "google_cloud_test::model::message",
 		FieldType:           "crate::model::message::NestedThingOneOf",
 		DocLines:            []string{"/// Say something clever about this oneof."},
 		ExampleField:        singular,
@@ -1877,6 +1879,13 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 		Name:    "message_field",
 		ID:      ".test.Message.message_field",
 		Typez:   api.MESSAGE_TYPE,
+		TypezID: ".test.OneMessage",
+		IsOneOf: true,
+	}
+	another_message_field := &api.Field{
+		Name:    "another_message_field",
+		ID:      ".test.Message.another_message_field",
+		Typez:   api.MESSAGE_TYPE,
 		TypezID: ".test.AnotherMessage",
 		IsOneOf: true,
 	}
@@ -1889,6 +1898,16 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 		{
 			name:   "all types",
 			fields: []*api.Field{deprecated, map_field, repeated, scalar, message_field},
+			want:   scalar,
+		},
+		{
+			name:   "no primitives",
+			fields: []*api.Field{deprecated, map_field, repeated, message_field},
+			want:   message_field,
+		},
+		{
+			name:   "only scalars and messages",
+			fields: []*api.Field{message_field, scalar, another_message_field},
 			want:   scalar,
 		},
 		{
@@ -1922,7 +1941,17 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 				Fields:  tc.fields,
 				OneOfs:  []*api.OneOf{group},
 			}
-			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+			oneMesage := &api.Message{
+				Name:    "OneMessage",
+				ID:      ".test.OneMessage",
+				Package: "test",
+			}
+			anotherMessage := &api.Message{
+				Name:    "AnotherMessage",
+				ID:      ".test.AnotherMessage",
+				Package: "test",
+			}
+			model := api.NewTestAPI([]*api.Message{message, oneMesage, anotherMessage}, []*api.Enum{}, []*api.Service{})
 			api.CrossReference(model)
 			codec := createRustCodec()
 			annotateModel(model, codec)

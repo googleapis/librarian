@@ -396,11 +396,16 @@ type oneOfAnnotation struct {
 	QualifiedName string
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
+	// This is always relative to `ScopeInExamples`.
 	RelativeName string
 	// The Rust `struct` that contains this oneof, fully qualified
 	StructQualifiedName string
-	FieldType           string
-	DocLines            []string
+	// The scope to show in examples. For messages in external packages
+	// this is basically `QualifiedName`. For messages in the current package
+	// this includes `modelAnnotations.PackageName`.
+	ScopeInExamples string
+	FieldType       string
+	DocLines        []string
 	// The best field to show in a oneof related samples.
 	// Non deprecated fields are preferred, then scalar, repeated, map fields
 	// in that order.
@@ -991,12 +996,22 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
+	scopeInExamples := scope
+	if strings.HasPrefix(scope, c.modulePath+"::") {
+		scopeInExamples = strings.Replace(scope, c.modulePath, fmt.Sprintf("%s::model", c.packageNamespace(model)), 1)
+	}
 
 	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
 		if f1.Deprecated == f2.Deprecated {
 			if f1.Map == f2.Map {
 				if f1.Repeated == f2.Repeated {
-					return 0
+					if f1.MessageType != nil && f2.MessageType == nil {
+						return -1
+					} else if f1.MessageType == nil && f2.MessageType != nil {
+						return 1
+					} else {
+						return 0
+					}
 				} else if f1.Repeated {
 					return -1
 				} else {
@@ -1021,6 +1036,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		QualifiedName:       qualifiedName,
 		RelativeName:        relativeEnumName,
 		StructQualifiedName: structQualifiedName,
+		ScopeInExamples:     scopeInExamples,
 		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),
 		DocLines:            c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes()),
 		ExampleField:        bestField,
