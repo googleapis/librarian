@@ -512,7 +512,7 @@ func TestReleaseInit(t *testing.T) {
 
 			createCommit(t, repo, newFilePath, string(commitMsgBytes))
 			
-			prContentToMatch := parseCommitMessageForPRContent(t,string(commitMsgBytes))
+			prContentToMatch := parseCommitMessageForPRContent(string(commitMsgBytes))
 			server := newMockGitHubServer(t, "release", prContentToMatch, []string{})
 			defer server.Close()
 
