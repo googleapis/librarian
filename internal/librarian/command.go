@@ -79,7 +79,7 @@ var globalPreservePatterns = []string{
 // GitHubClient is an abstraction over the GitHub client.
 type GitHubClient interface {
 	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
-	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error)
+	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string, isDraft bool) (*github.PullRequestMetadata, error)
 	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
 	GetLabels(ctx context.Context, number int) ([]string, error)
 	ReplaceLabels(ctx context.Context, number int, labels []string) error
@@ -126,8 +126,11 @@ type commitInfo struct {
 	// api is the api path of a library, only set this value during api onboarding.
 	api string
 	// library is the ID of a library, only set this value during api onboarding.
-	library       string
+	library string
+	// prBodyBuilder is a callback function for building the pull request body
 	prBodyBuilder func() (string, error)
+	// idDraft declares whether or not to create the pull request as a draft.
+	isDraft bool
 }
 
 type commandRunner struct {
@@ -423,7 +426,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
 
-	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, info.branch, title, prBody)
+	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, info.branch, title, prBody, info.isDraft)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
