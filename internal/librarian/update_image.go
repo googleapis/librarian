@@ -15,10 +15,13 @@
 package librarian
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -126,18 +129,8 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	}
 	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
 
-	// TODO(#2587): improve PR body content
 	prBodyBuilder := func() (string, error) {
-		body := fmt.Sprintf("feat: update image to %s\n\n", r.image)
-		if len(failedGenerations) > 0 {
-			body += "The following libraries failed to regenerate:\n"
-			for _, lib := range failedGenerations {
-				body += fmt.Sprintf("- %s\n", lib.ID)
-			}
-		} else {
-			body += "All libraries regenerated successfully."
-		}
-		return body, nil
+		return formatUpdateImagePRBody(r.image, failedGenerations)
 	}
 	commitMessage := fmt.Sprintf("feat: update image to %s", r.image)
 	// TODO(#2588): open PR as draft if there are failures
@@ -184,4 +177,38 @@ func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, library
 	}
 
 	return nil
+}
+
+var updateImageTemplate = template.Must(template.New("updateImage").Funcs(template.FuncMap{
+	"shortSHA": shortSHA,
+}).Parse(`feat: update image to {{.Image}}
+{{ if .FailedLibraries }}
+## Generation failed for
+{{- range .FailedLibraries }}
+- {{ . }}
+{{- end -}}
+{{- end }}
+`))
+
+type updateImagePRBody struct {
+	Image           string
+	FailedLibraries []string
+}
+
+func formatUpdateImagePRBody(image string, failedGenerations []*config.LibraryState) (string, error) {
+	var failedLibraries []string
+	for _, failedGeneration := range failedGenerations {
+		failedLibraries = append(failedLibraries, failedGeneration.ID)
+	}
+	data := &updateImagePRBody{
+		Image:           image,
+		FailedLibraries: failedLibraries,
+	}
+	var out bytes.Buffer
+	if err := updateImageTemplate.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("error executing template %w", err)
+	}
+	ret := strings.TrimSpace(out.String())
+	slog.Info("ret", "ret", ret)
+	return ret, nil
 }

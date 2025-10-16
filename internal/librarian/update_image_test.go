@@ -760,3 +760,57 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatUpdateImagePRBody(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name              string
+		image             string
+		failedGenerations []*config.LibraryState
+		want              string
+		wantErr           bool
+		wantErrMsg        string
+	}{
+		{
+			name:  "success",
+			image: "some-image",
+			want:  "feat: update image to some-image",
+		},
+		{
+			name:  "multiple errors",
+			image: "some-image",
+			failedGenerations: []*config.LibraryState{
+				{
+					ID: "library-id-1",
+				},
+				{
+					ID: "library-id-2",
+				},
+			},
+			want: `feat: update image to some-image
+
+## Generation failed for
+- library-id-1
+- library-id-2`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := formatUpdateImagePRBody(test.image, test.failedGenerations)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("formatUpdateImagePRBody() error = %v, wantErr %v", err, test.wantErr)
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Fatalf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
+				}
+				return
+			}
+			if diff := cmp.Diff(got, test.want); diff != "" {
+				t.Errorf("%s: formatUpdateImagePRBody() mismatch (-want +got):%s", test.name, diff)
+			}
+		})
+	}
+}
