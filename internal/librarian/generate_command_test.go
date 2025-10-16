@@ -837,7 +837,21 @@ func TestGenerateScenarios(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repo := newTestGitRepoWithState(t, test.state, true)
+			var repo gitrepo.Repository
+			useMockRepo := test.name == "generate_single_library_including_initial_configuration" || test.name == "generate single existing library by library id"
+			if useMockRepo {
+				repo = &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				}
+			} else {
+				repo = newTestGitRepoWithState(t, test.state, true)
+			}
 
 			r := &generateRunner{
 				api:             test.api,
@@ -848,8 +862,12 @@ func TestGenerateScenarios(t *testing.T) {
 				state:           test.state,
 				librarianConfig: test.librarianConfig,
 				containerClient: test.container,
-				ghClient:        test.ghClient,
+				ghClient:        &mockGitHubClient{},
 				workRoot:        t.TempDir(),
+			}
+			if useMockRepo {
+				r.commit = true
+				r.push = true
 			}
 
 			// Create a service config in api path.
@@ -905,6 +923,18 @@ func TestGenerateScenarios(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantConfigureCalls, test.container.configureCalls); diff != "" {
 				t.Errorf("%s: run() configureCalls mismatch (-want +got):%s", test.name, diff)
+			}
+			if test.name == "generate_single_library_including_initial_configuration" {
+				mockRepo := repo.(*MockRepository)
+				if mockRepo.LastCommitMessage != "feat: onboard a new library" {
+					t.Errorf("want commit message %q, got %q", "feat: onboard a new library", mockRepo.LastCommitMessage)
+				}
+			}
+			if test.name == "generate single existing library by library id" {
+				mockRepo := repo.(*MockRepository)
+				if mockRepo.LastCommitMessage != "feat: generate libraries" {
+					t.Errorf("want commit message %q, got %q", "feat: generate libraries", mockRepo.LastCommitMessage)
+				}
 			}
 		})
 	}

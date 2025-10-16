@@ -176,10 +176,14 @@ func (r *generateRunner) run(ctx context.Context) error {
 		return fmt.Errorf("unexpected prType %s", prType)
 	}
 
+	commitMessage := "feat: generate libraries"
+	if prType == pullRequestOnboard {
+		commitMessage = "feat: onboard a new library"
+	}
 	commitInfo := &commitInfo{
 		branch:            r.branch,
 		commit:            r.commit,
-		commitMessage:     "feat: generate libraries",
+		commitMessage:     commitMessage,
 		ghClient:          r.ghClient,
 		prType:            prType,
 		push:              r.push,
@@ -221,7 +225,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 			return nil, err
 		}
 
-		prType = pullRequestGenerate
+		prType = pullRequestOnboard
 		libraryID = configuredLibraryID
 	}
 
