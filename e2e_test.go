@@ -511,7 +511,7 @@ func TestReleaseInit(t *testing.T) {
 			}
 
 			createCommit(t, repo, newFilePath, string(commitMsgBytes))
-			
+
 			prContentToMatch := parseCommitMessageForPRContent(string(commitMsgBytes))
 			server := newMockGitHubServer(t, "release", prContentToMatch, []string{})
 			defer server.Close()
@@ -876,22 +876,22 @@ func setupStateFile(t *testing.T, repoInitDir, lastGeneratedCommit string) {
 	}
 }
 
+var nestedCommitRegex = regexp.MustCompile(`(?s)BEGIN_NESTED_COMMIT\n(.*?)\nEND_NESTED_COMMIT`)
+var conventionalCommitRegex = lineRegex := regexp.MustCompile(`^(feat|fix|docs|chore): (.+)$`)
 // parseCommitMessageForPRContent extracts lines that should be included in the PR description from commit message.
-func parseCommitMessageForPRContent(content string) []string {   
-	re := regexp.MustCompile(`(?s)BEGIN_NESTED_COMMIT\n(.*?)\nEND_NESTED_COMMIT`)
-    matches := re.FindStringSubmatch(content)
+func parseCommitMessageForPRContent(content string) []string {
+	matches := re.FindStringSubmatch(content)
 	nestedContent := content
-    if len(matches) >= 1 {
-    	nestedContent = matches[0]
-    } 
-   lineRegex := regexp.MustCompile(`^(feat|fix|docs|chore): (.+)$`)
-    
-    var result []string
-    for _, line := range strings.Split(nestedContent, "\n") {
-        if m := lineRegex.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
-            result = append(result, m[2])
-        }
-    }
-    
-    return result
+	if len(matches) > 1 {
+		nestedContent = matches[1]
+	}
+	
+	var result []string
+	for _, line := range strings.Split(nestedContent, "\n") {
+		if match := conventionalCommitRegex.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
+			result = append(result, match[2])
+		}
+	}
+
+	return result
 }
