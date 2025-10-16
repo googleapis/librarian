@@ -173,6 +173,8 @@ type commitSection struct {
 func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
 	librarianVersion := cli.Version()
 	var releaseSections []*releaseNoteSection
+	// create a map to deduplicate bulk changes based on their commit hash
+	// and subject
 	bulkChangesMap := make(map[string]*config.Commit)
 	for _, library := range state.Libraries {
 		if !library.ReleaseTriggered {

@@ -310,17 +310,14 @@ func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit,
 func toCommit(c []*gitrepo.ConventionalCommit) []*config.Commit {
 	var commits []*config.Commit
 	for _, cc := range c {
-		c := &config.Commit{
+		commits = append(commits, &config.Commit{
 			Type:          cc.Type,
 			Subject:       cc.Subject,
 			Body:          cc.Body,
 			CommitHash:    cc.CommitHash,
 			PiperCLNumber: cc.Footers["PiperOrigin-RevId"],
-		}
-		if cc.Footers != nil {
-			c.LibraryIDs = cc.Footers["Library-IDs"]
-		}
-		commits = append(commits, c)
+			LibraryIDs:    cc.Footers["Library-IDs"],
+		})
 	}
 	return commits
 }
