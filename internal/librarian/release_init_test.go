@@ -289,6 +289,114 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
+			name:            "run release init command for libraries have the same global files in src roots",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID:      "another-example-id",
+								Version: "1.0.0",
+								SourceRoots: []string{
+									"dir3",
+									"one/global/example.txt",
+								},
+								RemoveRegex: []string{
+									"dir3",
+								},
+							},
+							{
+								ID:      "example-id",
+								Version: "2.0.0",
+								SourceRoots: []string{
+									"dir1",
+									"one/global/example.txt",
+								},
+								RemoveRegex: []string{
+									"dir1",
+								},
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: bump version",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: bump version",
+								},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"one/global/example.txt",
+							},
+						},
+					},
+					librarianConfig: &config.LibrarianConfig{
+						GlobalFilesAllowlist: []*config.GlobalFile{
+							{
+								Path:        "one/global/example.txt",
+								Permissions: "read-write",
+							},
+						},
+					},
+				}
+			},
+			files: map[string]string{
+				"one/global/example.txt": "",
+				"dir1/file1.txt":         "",
+				"dir3/file3.txt":         "",
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "another-example-id",
+						Version: "1.1.0", // version is bumped.
+						APIs:    []*config.API{},
+						SourceRoots: []string{
+							"dir3",
+							"one/global/example.txt",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir3",
+						},
+					},
+					{
+						ID:      "example-id",
+						Version: "2.1.0", // version is bumped.
+						APIs:    []*config.API{},
+						SourceRoots: []string{
+							"dir1",
+							"one/global/example.txt",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir1",
+						},
+					},
+				},
+			},
+		},
+		{
 			name:            "run release init command, skips blocked libraries!",
 			containerClient: &mockContainerClient{},
 			dockerInitCalls: 1,
@@ -1032,7 +1140,7 @@ func TestInitRun(t *testing.T) {
 			}
 
 			// If there is no release triggered for any library, then the librarian state
-			// is not be written back. The `want` value for the librarian state is nil
+			// is not written back. The `want` value for the librarian state is nil
 			var got *config.LibrarianState
 			if err := yaml.Unmarshal(bytes, &got); err != nil {
 				t.Fatal(err)
