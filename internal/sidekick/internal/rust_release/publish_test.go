@@ -17,6 +17,7 @@ package rustrelease
 import (
 	"os"
 	"path"
+	"runtime"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
@@ -245,6 +246,10 @@ func TestPublishPlanMismatchError(t *testing.T) {
 }
 
 func TestPublishSkipSemverChecks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
+
 	requireCommand(t, "git")
 	requireCommand(t, "/bin/echo")
 	tmpDir := t.TempDir()

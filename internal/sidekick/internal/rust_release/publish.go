@@ -28,7 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
 
-// Publish finds all the crates that should be published, runs
+// Publish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
 func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 	if err := PreFlight(config); err != nil {
