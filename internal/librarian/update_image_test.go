@@ -688,7 +688,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			testRepo := newTestGitRepoWithState(t, test.state, true)
+			testRepo := newTestGitRepoWithState(t, test.state)
 			repo := &MockRepository{
 				Dir: testRepo.GetDir(),
 				RemotesValue: []*gitrepo.Remote{

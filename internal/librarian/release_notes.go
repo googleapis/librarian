@@ -53,7 +53,6 @@ var (
 		"perf",
 		"revert",
 		"docs",
-		"chore",
 	}
 
 	shortSHA = func(sha string) string {

@@ -352,10 +352,6 @@ Language Image: go:1.21
 
 ## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
-### Miscellaneous Chores
-
-* some chore ([12345678](https://github.com/owner/repo/commit/12345678))
-
 </details>`,
 				librarianVersion, today),
 		},

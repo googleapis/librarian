@@ -244,11 +244,11 @@ func newTestGitRepo(t *testing.T) gitrepo.Repository {
 			},
 		},
 	}
-	return newTestGitRepoWithState(t, defaultState, true)
+	return newTestGitRepoWithState(t, defaultState)
 }
 
 // newTestGitRepo creates a new git repository in a temporary directory.
-func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState, writeState bool) gitrepo.Repository {
+func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState) gitrepo.Repository {
 	t.Helper()
 	dir := t.TempDir()
 	remoteURL := "https://github.com/googleapis/librarian.git"
@@ -258,40 +258,39 @@ func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState, writeSt
 	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
 		t.Fatalf("os.WriteFile: %v", err)
 	}
-	if writeState {
-		// Create a state.yaml and config.yaml file in .librarian dir.
-		librarianDir := filepath.Join(dir, config.LibrarianDir)
-		if err := os.MkdirAll(librarianDir, 0755); err != nil {
-			t.Fatalf("os.MkdirAll: %v", err)
-		}
+	// Create a state.yaml and config.yaml file in .librarian dir.
+	librarianDir := filepath.Join(dir, config.LibrarianDir)
+	if err := os.MkdirAll(librarianDir, 0755); err != nil {
+		t.Fatalf("os.MkdirAll: %v", err)
+	}
 
-		// Setup each source root directory to be non-empty (one `random_file.txt`)
-		// that can be used to test preserve or remove regex patterns
-		for _, library := range state.Libraries {
-			for _, sourceRoot := range library.SourceRoots {
-				fullPath := filepath.Join(dir, sourceRoot, "random_file.txt")
-				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-					t.Fatal(err)
-				}
-				if _, err := os.Create(fullPath); err != nil {
-					t.Fatal(err)
-				}
+	// Setup each source root directory to be non-empty (one `random_file.txt`)
+	// that can be used to test preserve or remove regex patterns
+	for _, library := range state.Libraries {
+		for _, sourceRoot := range library.SourceRoots {
+			fullPath := filepath.Join(dir, sourceRoot, "random_file.txt")
+			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Create(fullPath); err != nil {
+				t.Fatal(err)
 			}
 		}
-
-		bytes, err := yaml.Marshal(state)
-		if err != nil {
-			t.Fatalf("yaml.Marshal() = %v", err)
-		}
-		stateFile := filepath.Join(librarianDir, "state.yaml")
-		if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
-			t.Fatalf("os.WriteFile: %v", err)
-		}
-		configFile := filepath.Join(librarianDir, "config.yaml")
-		if err := os.WriteFile(configFile, []byte{}, 0644); err != nil {
-			t.Fatalf("os.WriteFile: %v", err)
-		}
 	}
+
+	bytes, err := yaml.Marshal(state)
+	if err != nil {
+		t.Fatalf("yaml.Marshal() = %v", err)
+	}
+	stateFile := filepath.Join(librarianDir, "state.yaml")
+	if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	configFile := filepath.Join(librarianDir, "config.yaml")
+	if err := os.WriteFile(configFile, []byte{}, 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
 	runGit(t, dir, "add", ".")
 	runGit(t, dir, "commit", "-m", "initial commit")
 	runGit(t, dir, "remote", "add", "origin", remoteURL)
