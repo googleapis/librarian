@@ -181,7 +181,11 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 			return fmt.Errorf("library %s not found", release.Library)
 		}
 
-		libraryConfig := librarianConfig.LibraryConfigFor(release.Library)
+		var libraryConfig *config.LibraryConfig
+		if librarianConfig != nil {
+			libraryConfig = librarianConfig.LibraryConfigFor(release.Library)
+		}
+
 		if libraryConfig != nil && libraryConfig.SkipGitHubReleaseCreation {
 			slog.Info("skip creating release", "library", release.Library)
 			continue
