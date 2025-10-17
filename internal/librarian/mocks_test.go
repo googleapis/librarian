@@ -42,6 +42,8 @@ type mockGitHubClient struct {
 	createReleaseCalls      int
 	createIssueCalls        int
 	createTagCalls          int
+	createGistCalls         int
+	getGistContentCalls     int
 	createPullRequestErr    error
 	addLabelsToIssuesErr    error
 	getLabelsErr            error
@@ -51,7 +53,11 @@ type mockGitHubClient struct {
 	createReleaseErr        error
 	createIssueErr          error
 	createTagErr            error
+	createGistError         error
+	getGistError            error
 	createdPR               *github.PullRequestMetadata
+	createdGist             *github.Gist
+	getGistContent          map[string]string
 	labels                  []string
 	pullRequests            []*github.PullRequest
 	pullRequest             *github.PullRequest
@@ -113,6 +119,16 @@ func (m *mockGitHubClient) CreateIssueComment(ctx context.Context, number int, c
 func (m *mockGitHubClient) CreateTag(ctx context.Context, tagName, commitish string) error {
 	m.createTagCalls++
 	return m.createTagErr
+}
+
+func (m *mockGitHubClient) CreateGist(ctx context.Context, contents map[string]string, isPublic bool) (*github.Gist, error) {
+	m.createGistCalls++
+	return m.createdGist, m.createGistError
+}
+
+func (m *mockGitHubClient) GetGistContent(ctx context.Context, gistID string) (map[string]string, error) {
+	m.getGistContentCalls++
+	return m.getGistContent, m.getGistError
 }
 
 // mockContainerClient is a mock implementation of the ContainerClient interface for testing.

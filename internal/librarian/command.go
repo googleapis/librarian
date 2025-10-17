@@ -88,6 +88,8 @@ type GitHubClient interface {
 	CreateRelease(ctx context.Context, tagName, name, body, commitish string) (*github.RepositoryRelease, error)
 	CreateIssueComment(ctx context.Context, number int, comment string) error
 	CreateTag(ctx context.Context, tag, commitish string) error
+	CreateGist(ctx context.Context, contents map[string]string, isPublic bool) (*github.Gist, error)
+	GetGistContent(ctx context.Context, gistID string) (map[string]string, error)
 }
 
 // ContainerClient is an abstraction over the Docker client.

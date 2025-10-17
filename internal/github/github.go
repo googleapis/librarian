@@ -337,8 +337,14 @@ func (c *Client) ClosePullRequest(ctx context.Context, number int) error {
 	return err
 }
 
+type Gist struct {
+	ID    string
+	Owner string
+	Url   string
+}
+
 // CreateGist creates a new gist with one or more files.
-func (c *Client) CreateGist(ctx context.Context, contents map[string]string, isPublic bool) (string, error) {
+func (c *Client) CreateGist(ctx context.Context, contents map[string]string, isPublic bool) (*Gist, error) {
 	var files = make(map[github.GistFilename]github.GistFile, len(contents))
 	for filename, content := range contents {
 		files[github.GistFilename(filename)] = github.GistFile{
@@ -350,9 +356,13 @@ func (c *Client) CreateGist(ctx context.Context, contents map[string]string, isP
 		Public: github.Ptr(isPublic),
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return gist.GetID(), nil
+	return &Gist{
+		ID:    gist.GetID(),
+		Owner: gist.GetOwner().GetName(),
+		Url:   gist.GetHTMLURL(),
+	}, nil
 }
 
 // GetGistContent fetches all the file contents for a specific gist.

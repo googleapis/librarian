@@ -455,13 +455,13 @@ func TestCreateGist(t *testing.T) {
 		"README.md": "some contents go here",
 	}
 	client := github.NewClient(testToken, &github.Repository{})
-	gistID, err := client.CreateGist(t.Context(), files, true)
+	gist, err := client.CreateGist(t.Context(), files, false)
 	if err != nil {
 		t.Fatalf("unexpected error in CreateGist() %s", err)
 	}
-	slog.Info("created gist", "ID", gistID)
+	slog.Info("created gist", "ID", gist.ID, "URL", gist.Url)
 
-	contents, err := client.GetGistContent(t.Context(), gistID)
+	contents, err := client.GetGistContent(t.Context(), gist.ID)
 	if err != nil {
 		t.Fatalf("unexpected error in GetGistContent() %s", err)
 	}
