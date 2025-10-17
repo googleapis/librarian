@@ -9,7 +9,7 @@ This guide should be followed when onboarding new repositories/libraries.
 4) To complete onboarding you should run the librarian test-container generate (WIP) command to validate that all libraries are getting generated correctly.
 
 ## Library Setup:
-1) Ensure All Owlbot PRs for that library have been merged and then release the library using release please PR
+1) Ensure all OwlBot PRs for that library have been merged and then release the library using a release-please PR
 2) Remove the library from your OwlBot config
     - For a monolithic config remove all mentions of the library from your .Owlbot.yaml config file
     - For a single library repository remove the .Owlbot.yaml config file itself 
