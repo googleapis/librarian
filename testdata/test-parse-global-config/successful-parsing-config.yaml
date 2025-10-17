@@ -3,3 +3,5 @@ global_files_allowlist:
     permissions: read-only
   - path: another/path
     permissions: read-write
+libraries:
+  - id: example-library
