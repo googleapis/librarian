@@ -1,6 +1,6 @@
 # Repository/Library Onboarding Guide
 
-This should guide should be followed when onboarding new repositories/libraries.
+This guide should be followed when onboarding new repositories/libraries.
 
 ## Repository Setup:
 1) Add .librarian directory to your repository with appropriate configuration files. See details [here](https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#configuration-files)
