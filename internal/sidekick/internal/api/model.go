@@ -150,7 +150,7 @@ type API struct {
 	Messages []*Message
 	// Enums
 	Enums []*Enum
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 
 	// State contains helpful information that can be used when generating
@@ -208,7 +208,7 @@ type Service struct {
 	// The model this service belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 }
 
@@ -372,7 +372,7 @@ type PathInfo struct {
 	//
 	// If this is empty then the body is not used.
 	BodyFieldPath string
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 }
 
@@ -391,7 +391,7 @@ type PathBinding struct {
 	PathTemplate *PathTemplate
 	// Query parameter fields.
 	QueryParameters map[string]bool
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 }
 
@@ -405,7 +405,7 @@ type OperationInfo struct {
 	ResponseTypeID string
 	// The method.
 	Method *Method
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 }
 
@@ -618,7 +618,7 @@ type Message struct {
 	// These messages are created by sidekick when parsing Discovery docs and
 	// OpenAPI specifications. All the synthetic messages for a service need to
 	// be grouped under a unique namespace to avoid clashes with similar
-	// synthetic messages in other service. Sidekick creates a placeholder
+	// synthetic messages in other services. Sidekick creates a placeholder
 	// message that represents "the service".
 	//
 	// That is, `service1` and `service2` may both have a synthetic `getRequest`
