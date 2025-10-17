@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"strings"
@@ -452,6 +453,83 @@ Language Image: go:1.21
 				t.Errorf("formatReleaseNotes() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestFormatReleaseNotes_Trimmed(t *testing.T) {
+	today := time.Now().Format("2006-01-02")
+	hash1 := plumbing.NewHash("1234567890abcdef")
+	hash2 := plumbing.NewHash("fedcba0987654321")
+	librarianVersion := cli.Version()
+	want := fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+The release notes have been trimmed. Please refer to the individual library release notes for more details.
+
+<details><summary>j: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (%s)
+
+</details>
+
+
+<details><summary>k: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/k-2.3.0...k-2.4.0) (%s)
+
+</details>`, librarianVersion, today, today)
+	longPRCommitTitle := make([]byte, maxPRBodySize)
+	_, err := rand.Read(longPRCommitTitle)
+	if err != nil {
+		t.Error(err)
+	}
+	state := &config.LibrarianState{
+		Image: "go:1.21",
+		Libraries: []*config.LibraryState{
+			{
+				ID:               "j",
+				Version:          "1.1.0",
+				PreviousVersion:  "1.0.0",
+				ReleaseTriggered: true,
+				Changes: []*config.Commit{
+					{
+						Type:       "feat",
+						Subject:    string(longPRCommitTitle),
+						CommitHash: hash1.String(),
+					},
+					{
+						Type:       "fix",
+						Subject:    "bulk change",
+						CommitHash: hash2.String(),
+						LibraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
+					},
+				},
+			},
+			{
+				ID:               "k",
+				Version:          "2.4.0",
+				PreviousVersion:  "2.3.0",
+				ReleaseTriggered: true,
+				Changes: []*config.Commit{
+					{
+						Type:       "fix",
+						Subject:    "bulk change",
+						CommitHash: hash2.String(),
+						LibraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
+					},
+				},
+			},
+		},
+	}
+	got, err := formatReleaseNotes(state, &github.Repository{Owner: "owner", Name: "repo"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len([]byte(got)) > maxPRBodySize {
+		t.Errorf("formatReleaseNotes() returned a body larger than maxPRBodySize")
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("formatReleaseNotes() mismatch (-want +got):\n%s", diff)
 	}
 }
 

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -30,6 +31,10 @@ import (
 
 var (
 	errPiperNotFound = errors.New("piper id not found")
+
+	// maxPRBodySize is the maximum size of a pull request body. The actual max
+	// is 65536 bytes, but we round down for safety.
+	maxPRBodySize = 65000
 
 	commitTypeToHeading = map[string]string{
 		"feat":     "Features",
@@ -66,6 +71,9 @@ var (
 		"shortSHA": shortSHA,
 	}).Parse(`Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
+{{- if .TrimBody }}
+The release notes have been trimmed. Please refer to the individual library release notes for more details.
+{{ end }}
 {{ $prInfo := . }}
 {{- range .NoteSections -}}
 <details><summary>{{.LibraryID}}: {{.NewVersion}}</summary>
@@ -153,6 +161,9 @@ type releasePRBody struct {
 	Date             string
 	NoteSections     []*releaseNoteSection
 	BulkChanges      []*config.Commit
+	// TrimBody indicates whether the body should be trimmed to fit within
+	// the maximum size.
+	TrimBody bool
 }
 
 type releaseNoteSection struct {
@@ -207,9 +218,26 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 		BulkChanges:      bulkChanges,
 	}
 
+	return writeReleaseBody(data, false)
+}
+
+func writeReleaseBody(data *releasePRBody, trimmed bool) (string, error) {
 	var out bytes.Buffer
 	if err := releaseNotesTemplate.Execute(&out, data); err != nil {
 		return "", fmt.Errorf("error executing template: %w", err)
+	}
+	b := out.Bytes()
+	if len(b) > maxPRBodySize {
+		if trimmed {
+			return "", errors.New("the pull request body is too large even when trimmed down")
+		}
+		slog.Warn("the pull request body is too large, trimming down")
+		data.BulkChanges = nil
+		for _, section := range data.NoteSections {
+			section.CommitSections = nil
+		}
+		data.TrimBody = true
+		return writeReleaseBody(data, true)
 	}
 
 	return strings.TrimSpace(out.String()), nil
