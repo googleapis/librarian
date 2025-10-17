@@ -456,6 +456,25 @@ func TestProcessPullRequest(t *testing.T) {
 			wantCreateTagCalls:     1,
 		},
 		{
+			name: "skip_a_library_release",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				librarianState: &config.LibrarianState{
+					Image: "gcr.io/some-project-id/some-test-image:latest",
+					Libraries: []*config.LibraryState{
+						{
+							ID:                        "google-cloud-storage",
+							SourceRoots:               []string{"some/path"},
+							SkipGitHubReleaseCreation: true,
+						},
+					},
+				},
+			},
+			wantCreateReleaseCalls: 0,
+			wantReplaceLabelsCalls: 1,
+			wantCreateTagCalls:     1,
+		},
+		{
 			name: "create release fails",
 			pr:   prWithRelease,
 			ghClient: &mockGitHubClient{
