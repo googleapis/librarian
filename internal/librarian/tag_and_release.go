@@ -176,13 +176,17 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		return fmt.Errorf("failed to create tag %s: %w", tagName, err)
 	}
 	for _, release := range releases {
-		slog.Info("creating release", "library", release.Library, "version", release.Version)
 		libraryState := librarianState.LibraryByID(release.Library)
 		if libraryState == nil {
 			return fmt.Errorf("library %s not found", release.Library)
 		}
 
-		// Create the release.
+		if libraryState.SkipGitHubReleaseCreation {
+			slog.Info("skip creating release", "library", release.Library)
+			continue
+		}
+
+		slog.Info("creating release", "library", release.Library, "version", release.Version)
 		tagFormat := config.DetermineTagFormat(release.Library, libraryState, librarianConfig)
 		tagName := config.FormatTag(tagFormat, release.Library, release.Version)
 		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
