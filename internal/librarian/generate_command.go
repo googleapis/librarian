@@ -376,6 +376,10 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 // getExistingSrc returns source roots as-is of a given library ID, if the source roots exist in the language repo.
 func (r *generateRunner) getExistingSrc(libraryID string) []string {
 	library := r.state.LibraryByID(libraryID)
+	if library == nil {
+		return nil
+	}
+
 	var existingSrc []string
 	for _, src := range library.SourceRoots {
 		relPath := filepath.Join(r.repo.GetDir(), src)
