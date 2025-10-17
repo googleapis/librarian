@@ -180,6 +180,12 @@ func TestParseGlobalConfig(t *testing.T) {
 						Permissions: "read-write",
 					},
 				},
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:                 "example-library",
+						SkipGitHubReleaseCreation: false,
+					},
+				},
 			},
 		},
 		{
