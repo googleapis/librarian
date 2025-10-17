@@ -21,7 +21,7 @@ import (
 	"regexp"
 )
 
-// NewGistOverflowHandler handles storing overflow content in a gist.
+// GistOverflowHandler handles storing overflow content in a gist.
 type GistOverflowHandler struct {
 	github         GitHubClient
 	maxContentSize int

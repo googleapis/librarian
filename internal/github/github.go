@@ -337,10 +337,14 @@ func (c *Client) ClosePullRequest(ctx context.Context, number int) error {
 	return err
 }
 
+// Gist represents a created GitHub gist.
 type Gist struct {
-	ID    string
+	// ID is the guid of the gist.
+	ID string
+	// Owner is the GitHub user name that owns the gist.
 	Owner string
-	Url   string
+	// Url is the HTML Url of the created gist.
+	Url string
 }
 
 // CreateGist creates a new gist with one or more files.
