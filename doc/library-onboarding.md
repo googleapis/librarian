@@ -5,7 +5,7 @@ This guide should be followed when onboarding new repositories/libraries.
 ## Repository Setup:
 1) Add .librarian directory to your repository with appropriate configuration files. See details [here](https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#configuration-files)
 2) You should only start with 1 library to validate the flow (follow instructions below)
-3) If your repository contains multiple libaries, start ramping up slowly until all libraries are in your state.yaml file and have migrated to librarian.
+3) If your repository contains multiple libraries, start ramping up slowly until all libraries are in your state.yaml file and have migrated to librarian.
 4) To complete onboarding you should run the librarian test-container generate (WIP) command to validate that all libraries are getting generated correctly.
 
 ## Library Setup:
