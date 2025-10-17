@@ -24,33 +24,42 @@ import (
 )
 
 func TestUpdateSidekickConfigSuccess(t *testing.T) {
-	tmpDir := t.TempDir()
-	manifest := path.Join(tmpDir, "Cargo.toml")
-	sidekick := path.Join(tmpDir, ".sidekick.toml")
-	const contents = `# With version line
+	const contentsA = `# With version line
 [codec]
 a = 123
 version = "1.2.3"
 copyright-year = '2038'
 `
-	const want = `# With version line
+	const contentsB = `# With version line
+[codec]
+a = 123
+version        = "1.2.3"
+copyright-year = '2038'
+`
+
+	for _, contents := range []string{contentsA, contentsB} {
+		tmpDir := t.TempDir()
+		manifest := path.Join(tmpDir, "Cargo.toml")
+		sidekick := path.Join(tmpDir, ".sidekick.toml")
+		const want = `# With version line
 [codec]
 a = 123
 version        = '2.3.4'
 copyright-year = '2038'
 `
-	if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := updateSidekickConfig(manifest, "2.3.4"); err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(sidekick)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(want, string(got)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+		if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := updateSidekickConfig(manifest, "2.3.4"); err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(sidekick)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff(want, string(got)); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
 	}
 }
 
@@ -91,6 +100,35 @@ func TestUpdateSidekickConfigSuccessEmptyCodec(t *testing.T) {
 	const contents = `# With version line
 
 [codec]
+`
+	const want = `# With version line
+
+[codec]
+version        = '2.3.4'
+`
+	if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := updateSidekickConfig(manifest, "2.3.4"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(sidekick)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(want, string(got)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestUpdateSidekickConfigSuccessOnlyVersion(t *testing.T) {
+	tmpDir := t.TempDir()
+	manifest := path.Join(tmpDir, "Cargo.toml")
+	sidekick := path.Join(tmpDir, ".sidekick.toml")
+	const contents = `# With version line
+
+[codec]
+version        = '1.2.3'
 `
 	const want = `# With version line
 
