@@ -336,3 +336,51 @@ func (c *Client) ClosePullRequest(ctx context.Context, number int) error {
 	})
 	return err
 }
+
+// Gist represents a created GitHub gist.
+type Gist struct {
+	// ID is the guid of the gist.
+	ID string
+	// Owner is the GitHub user name that owns the gist.
+	Owner string
+	// Url is the HTML Url of the created gist.
+	Url string
+}
+
+// CreateGist creates a new gist with one or more files.
+func (c *Client) CreateGist(ctx context.Context, contents map[string]string, isPublic bool) (*Gist, error) {
+	var files = make(map[github.GistFilename]github.GistFile, len(contents))
+	for filename, content := range contents {
+		files[github.GistFilename(filename)] = github.GistFile{
+			Content: github.Ptr(content),
+		}
+	}
+	gist, _, err := c.Gists.Create(ctx, &github.Gist{
+		Files:  files,
+		Public: github.Ptr(isPublic),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &Gist{
+		ID:    gist.GetID(),
+		Owner: gist.GetOwner().GetName(),
+		Url:   gist.GetHTMLURL(),
+	}, nil
+}
+
+// GetGistContent fetches all the file contents for a specific gist.
+func (c *Client) GetGistContent(ctx context.Context, gistID string) (map[string]string, error) {
+	gist, _, err := c.Gists.Get(ctx, gistID)
+	if err != nil {
+		return nil, err
+	}
+
+	files := gist.GetFiles()
+	var contents = make(map[string]string, len(files))
+	for _, file := range files {
+		contents[file.GetFilename()] = file.GetContent()
+	}
+
+	return contents, nil
+}
