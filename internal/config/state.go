@@ -137,6 +137,8 @@ type LibraryState struct {
 	// Whether including this library in a release.
 	// This field is ignored when writing to state.yaml.
 	ReleaseTriggered bool `yaml:"-" json:"release_triggered,omitempty"`
+	// Whether to create a GitHub release for this library.
+	SkipGitHubReleaseCreation bool `yaml:"skip_github_release_creation" json:"-"`
 	// An error message from the docker response.
 	// This field is ignored when writing to state.yaml.
 	ErrorMessage string `yaml:"-" json:"error,omitempty"`
@@ -154,7 +156,6 @@ type Commit struct {
 	CommitHash string `json:"commit_hash,omitempty"`
 	// PiperCLNumber is the Piper CL number associated with the commit.
 	PiperCLNumber string `json:"piper_cl_number,omitempty"`
-
 	// A list of library IDs associated with the commit.
 	LibraryIDs string `json:"-"`
 }
