@@ -164,7 +164,10 @@ func formatOnboardPRBody(request *onboardPRRequest) (string, error) {
 
 // getPiperID extracts the Piper ID from the commit message that onboarded the API.
 func getPiperID(state *config.LibrarianState, sourceRepo gitrepo.Repository, apiPath, library string) (string, error) {
-	libraryState := findLibraryByID(state, library)
+	libraryState := state.LibraryByID(library)
+	if libraryState == nil {
+		return "", fmt.Errorf("library %s not found", library)
+	}
 	serviceYaml := ""
 	for _, api := range libraryState.APIs {
 		if api.Path == apiPath {

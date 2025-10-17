@@ -101,7 +101,7 @@ type ContainerClient interface {
 type commitInfo struct {
 	// branch is the base branch of the created pull request.
 	branch string
-	// commit declares whether or not to create a commit.
+	// commit declares whether to create a commit.
 	commit bool
 	// commitMessage is used as the message on the actual git commit.
 	commitMessage string
@@ -111,7 +111,7 @@ type commitInfo struct {
 	prType pullRequestType
 	// pullRequestLabels is a list of labels to add to the created pull request.
 	pullRequestLabels []string
-	// push declares whether or not to push the commits to GitHub.
+	// push declares whether to push the commits to GitHub.
 	push bool
 	// languageRepo is the git repository containing the language-specific libraries.
 	languageRepo gitrepo.Repository
@@ -129,7 +129,7 @@ type commitInfo struct {
 	library string
 	// prBodyBuilder is a callback function for building the pull request body
 	prBodyBuilder func() (string, error)
-	// isDraft declares whether or not to create the pull request as a draft.
+	// isDraft declares whether to create the pull request as a draft.
 	isDraft bool
 }
 
@@ -269,18 +269,6 @@ func findLibraryIDByAPIPath(state *config.LibrarianState, apiPath string) string
 	return ""
 }
 
-func findLibraryByID(state *config.LibrarianState, libraryID string) *config.LibraryState {
-	if state == nil {
-		return nil
-	}
-	for _, lib := range state.Libraries {
-		if lib.ID == libraryID {
-			return lib
-		}
-	}
-	return nil
-}
-
 func formatTimestamp(t time.Time) string {
 	const yyyyMMddHHmmss = "20060102T150405Z" // Expected format by time library
 	return t.Format(yyyyMMddHHmmss)
@@ -289,7 +277,7 @@ func formatTimestamp(t time.Time) string {
 // cleanAndCopyLibrary cleans the files of the given library in repoDir and copies
 // the new files from outputDir.
 func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outputDir string) error {
-	library := findLibraryByID(state, libraryID)
+	library := state.LibraryByID(libraryID)
 	if library == nil {
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
@@ -320,7 +308,7 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 // If a file is being copied to the library's SourceRoots in the dest folder but the folder does
 // not exist, the copy fails.
 func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string) error {
-	library := findLibraryByID(state, libraryID)
+	library := state.LibraryByID(libraryID)
 	if library == nil {
 		return fmt.Errorf("library %q not found", libraryID)
 	}

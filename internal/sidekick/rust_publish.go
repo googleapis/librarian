@@ -19,6 +19,10 @@ import (
 	rustrelease "github.com/googleapis/librarian/internal/sidekick/internal/rust_release"
 )
 
+var (
+	skipSemverChecks bool
+)
+
 func init() {
 	newCommand(
 		"sidekick rust-publish",
@@ -32,10 +36,11 @@ the dependency order.
 `,
 		cmdSidekick,
 		rustPublish,
-	)
+	).addFlagBool(&skipSemverChecks, "skip-semver-checks", false, "skip 'cargo semver-checks' for changed crates.")
 }
 
-// rustBumpVersions increments the version numbers as needed.
+// rustPublish finds all the crates that should be published, (optionally) runs
+// `cargo semver-checks` and (optionally) publishes them.
 func rustPublish(rootConfig *config.Config, cmdLine *CommandLine) error {
-	return rustrelease.Publish(rootConfig.Release, cmdLine.DryRun)
+	return rustrelease.Publish(rootConfig.Release, cmdLine.DryRun, skipSemverChecks)
 }
