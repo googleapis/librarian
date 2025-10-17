@@ -463,8 +463,15 @@ func TestProcessPullRequest(t *testing.T) {
 					Image: "gcr.io/some-project-id/some-test-image:latest",
 					Libraries: []*config.LibraryState{
 						{
-							ID:                        "google-cloud-storage",
-							SourceRoots:               []string{"some/path"},
+							ID:          "google-cloud-storage",
+							SourceRoots: []string{"some/path"},
+						},
+					},
+				},
+				librarianConfig: &config.LibrarianConfig{
+					Libraries: []*config.LibraryConfig{
+						{
+							LibraryID:                 "google-cloud-storage",
 							SkipGitHubReleaseCreation: true,
 						},
 					},

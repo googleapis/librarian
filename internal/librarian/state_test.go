@@ -66,26 +66,6 @@ libraries:
 			},
 		},
 		{
-			name: "skip_github_release_default",
-			content: `image: gcr.io/test/image:v1.2.3
-libraries:
-  - id: a/b
-    source_roots:
-      - src/a
-`,
-			source: "",
-			want: &config.LibrarianState{
-				Image: "gcr.io/test/image:v1.2.3",
-				Libraries: []*config.LibraryState{
-					{
-						ID:                        "a/b",
-						SourceRoots:               []string{"src/a"},
-						SkipGitHubReleaseCreation: false,
-					},
-				},
-			},
-		},
-		{
 			name: "invalid source",
 			content: `image: gcr.io/test/image:v1.2.3
 libraries:
