@@ -446,6 +446,31 @@ func TestCreateRelease(t *testing.T) {
 	}
 }
 
+func TestCreateGist(t *testing.T) {
+	if testToken == "" {
+		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+	}
+
+	files := map[string]string{
+		"README.md": "some contents go here",
+	}
+	client := github.NewClient(testToken, &github.Repository{})
+	gistID, err := client.CreateGist(t.Context(), files, true)
+	if err != nil {
+		t.Fatalf("unexpected error in CreateGist() %s", err)
+	}
+	slog.Info("created gist", "ID", gistID)
+
+	contents, err := client.GetGistContent(t.Context(), gistID)
+	if err != nil {
+		t.Fatalf("unexpected error in GetGistContent() %s", err)
+	}
+
+	if diff := cmp.Diff(contents, files); diff != "" {
+		t.Fatalf("gist content mismatch (-want + got):\n%s", diff)
+	}
+}
+
 func TestFindLatestImage(t *testing.T) {
 	// If we are able to configure system tests on GitHub actions, then update this
 	// guard clause.
