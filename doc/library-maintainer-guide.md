@@ -239,3 +239,6 @@ $ cd ../google-cloud-go
 $ git checkout -b test-generated-api-changes
 $ librarian generate -api-source=../googleapis -library=bigtable
 ```
+
+## Support
+Please see [this page](go/g3doc-cloud-sdk-librarian-support) for support contacts
