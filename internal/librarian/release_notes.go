@@ -218,29 +218,30 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 		BulkChanges:      bulkChanges,
 	}
 
-	return writeReleaseBody(data, false)
+	return writeReleaseBody(data)
 }
 
-func writeReleaseBody(data *releasePRBody, trimmed bool) (string, error) {
-	var out bytes.Buffer
-	if err := releaseNotesTemplate.Execute(&out, data); err != nil {
-		return "", fmt.Errorf("error executing template: %w", err)
-	}
-	b := out.Bytes()
-	if len(b) > maxPRBodySize {
-		if trimmed {
-			return "", errors.New("the pull request body is too large even when trimmed down")
+func writeReleaseBody(data *releasePRBody) (string, error) {
+	for range 2 {
+		var out bytes.Buffer
+		if err := releaseNotesTemplate.Execute(&out, data); err != nil {
+			return "", fmt.Errorf("error executing template: %w", err)
 		}
-		slog.Warn("the pull request body is too large, trimming down")
+		bytes := out.Bytes()
+
+		// If the size is within limits, return the trimmed string
+		if len(bytes) <= maxPRBodySize {
+			return strings.TrimSpace(out.String()), nil
+		}
+		// If it's the first iteration, trim the data and continue
+		slog.Warn("the pull request body is too large, trimming down", "size", len(bytes))
 		data.BulkChanges = nil
 		for _, section := range data.NoteSections {
 			section.CommitSections = nil
 		}
 		data.TrimBody = true
-		return writeReleaseBody(data, true)
 	}
-
-	return strings.TrimSpace(out.String()), nil
+	return "", errors.New("failed to trim pull request body to an acceptable size")
 }
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
