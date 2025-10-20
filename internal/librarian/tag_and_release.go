@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -40,10 +41,9 @@ const (
 )
 
 var (
-	detailsRegex = regexp.MustCompile(`(?s)<details><summary>(.*?)</summary>(.*?)</details>`)
-	libraryRegex = regexp.MustCompile(`Libraries:(.*?)`)
-	summaryRegex = regexp.MustCompile(`(.*?): (v?\d+\.\d+\.\d+)`)
-	titleRegex   = regexp.MustCompile(`(feat|fix|perf|revert|docs): (.*?)`)
+	bulkChangeSectionRegex = regexp.MustCompile(`(feat|fix|perf|revert|docs): (.*)\nLibraries: (.*)`)
+	detailsRegex           = regexp.MustCompile(`(?s)<details><summary>(.*?)</summary>(.*?)</details>`)
+	summaryRegex           = regexp.MustCompile(`(.*?): (v?\d+\.\d+\.\d+)`)
 )
 
 type tagAndReleaseRunner struct {
@@ -225,14 +225,18 @@ func parsePullRequestBody(body string) []libraryRelease {
 		summary := match[1]
 		content := strings.TrimSpace(match[2])
 		if summary == "Bulk Changes" {
-			titleMatches := titleRegex.FindStringSubmatch(content)
-			libraryMatches := libraryRegex.FindStringSubmatch(content)
-			if len(titleMatches) != 1 || len(libraryMatches) != 1 {
-				slog.Warn("bulk change does not associated with a library id", "content", content)
-				continue
-			}
-			for _, libraryID := range strings.Split(libraryMatches[1], ",") {
-				idToBody[libraryID] = append(idToBody[libraryID], strings.TrimSpace(titleMatches[1]))
+			// Associated bulk changes to individual libraries.
+			sections := bulkChangeSectionRegex.FindAllStringSubmatch(content, -1)
+			for _, section := range sections {
+				if len(section) != 4 {
+					slog.Warn("bulk change does not associated with a library id", "content", section)
+					continue
+				}
+				title := fmt.Sprintf("%s: %s", section[1], section[2])
+				libraries := section[3]
+				for _, libraryID := range strings.Split(libraries, ",") {
+					idToBody[libraryID] = append(idToBody[libraryID], strings.TrimSpace(title))
+				}
 			}
 
 			continue
@@ -252,12 +256,20 @@ func parsePullRequestBody(body string) []libraryRelease {
 
 	var parsedBodies []libraryRelease
 	for libraryID, contents := range idToBody {
+		version, ok := idToVersion[libraryID]
+		if !ok {
+			version = ""
+		}
 		parsedBodies = append(parsedBodies, libraryRelease{
-			Body:    strings.Join(contents, "\n"),
+			Body:    strings.Join(contents, "\n\n"),
 			Library: libraryID,
-			Version: idToVersion[libraryID],
+			Version: version,
 		})
 	}
+
+	sort.Slice(parsedBodies, func(i, j int) bool {
+		return parsedBodies[i].Library < parsedBodies[j].Library
+	})
 
 	return parsedBodies
 }
