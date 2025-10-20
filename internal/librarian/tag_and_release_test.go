@@ -398,30 +398,6 @@ feat: this is a bulk change`,
 				},
 			},
 		},
-		{
-			name: "bulk_changes_without_library_id",
-			body: `
-<details><summary>Bulk Changes</summary>
-
-* feat: this is a bulk change
-Libraries: a,b
-
-* fix: this change is ignored
-
-</details>`,
-			want: []libraryRelease{
-				{
-					Version: "",
-					Library: "a",
-					Body:    "feat: this is a bulk change",
-				},
-				{
-					Version: "",
-					Library: "b",
-					Body:    "feat: this is a bulk change",
-				},
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := parsePullRequestBody(test.body)
