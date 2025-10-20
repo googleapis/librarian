@@ -61,6 +61,11 @@ type libraryRelease struct {
 	Version string
 }
 
+type versionAnBody struct {
+	version string
+	body    []string
+}
+
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 	if cfg.GitHubToken == "" {
 		return nil, fmt.Errorf("`%s` must be set", config.LibrarianGithubToken)
@@ -218,8 +223,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 // parsePullRequestBody parses a string containing release notes and returns a slice of ParsedPullRequestBody.
 func parsePullRequestBody(body string) []libraryRelease {
 	slog.Info("parsing pull request body")
-	idToBody := make(map[string][]string)
-	idToVersion := make(map[string]string)
+	idToVersionAndBody := make(map[string]*versionAnBody)
 	matches := detailsRegex.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		summary := match[1]
@@ -234,8 +238,10 @@ func parsePullRequestBody(body string) []libraryRelease {
 				}
 				title := fmt.Sprintf("%s: %s", section[1], section[2])
 				libraries := section[3]
-				for _, libraryID := range strings.Split(libraries, ",") {
-					idToBody[libraryID] = append(idToBody[libraryID], strings.TrimSpace(title))
+				for _, library := range strings.Split(libraries, ",") {
+					// Bulk change doesn't have a version, put an empty string so that
+					// the version is not overwritten if exists.
+					putVersionAndBody(idToVersionAndBody, library, title, "")
 				}
 			}
 
@@ -247,23 +253,18 @@ func parsePullRequestBody(body string) []libraryRelease {
 			slog.Info("parsed pull request body", "library", summaryMatches[1], "version", summaryMatches[2])
 			library := strings.TrimSpace(summaryMatches[1])
 			version := strings.TrimSpace(summaryMatches[2])
-			idToVersion[library] = version
-			idToBody[library] = append(idToBody[library], content)
+			putVersionAndBody(idToVersionAndBody, library, content, version)
 		} else {
 			slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 		}
 	}
 
 	var parsedBodies []libraryRelease
-	for libraryID, contents := range idToBody {
-		version, ok := idToVersion[libraryID]
-		if !ok {
-			version = ""
-		}
+	for libraryID, vab := range idToVersionAndBody {
 		parsedBodies = append(parsedBodies, libraryRelease{
-			Body:    strings.Join(contents, "\n\n"),
+			Body:    strings.Join(vab.body, "\n\n"),
 			Library: libraryID,
-			Version: version,
+			Version: vab.version,
 		})
 	}
 
@@ -288,4 +289,22 @@ func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github
 		return fmt.Errorf("failed to replace labels: %w", err)
 	}
 	return nil
+}
+
+func putVersionAndBody(idToVersionAndBody map[string]*versionAnBody, library, title, version string) {
+	vab, ok := idToVersionAndBody[library]
+	if !ok {
+		idToVersionAndBody[library] = &versionAnBody{
+			version: version,
+			body:    []string{title},
+		}
+	} else {
+		if version == "" {
+			version = vab.version
+		}
+		idToVersionAndBody[library] = &versionAnBody{
+			version: version,
+			body:    append(idToVersionAndBody[library].body, title),
+		}
+	}
 }
