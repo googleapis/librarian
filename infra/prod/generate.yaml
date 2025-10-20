@@ -72,4 +72,4 @@ availableSecrets:
       env: 'LIBRARIAN_GITHUB_TOKEN'
 options:
   logging: CLOUD_LOGGING_ONLY
-timeout: 2h
+timeout: 10h

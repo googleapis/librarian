@@ -16,12 +16,15 @@ package librarian
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -47,6 +50,18 @@ func loadRepoState(repo *gitrepo.LocalRepository, source string) (*config.Librar
 	return parseLibrarianState(path, source)
 }
 
+func loadRepoStateFromGitHub(ctx context.Context, ghClient GitHubClient, branch string) (*config.LibrarianState, error) {
+	content, err := ghClient.GetRawContent(ctx, path.Join(config.LibrarianDir, config.LibrarianStateFile), branch)
+	if err != nil {
+		return nil, err
+	}
+	state, err := loadLibrarianStateFromBytes(content, "")
+	if err != nil {
+		return nil, err
+	}
+	return state, nil
+}
+
 func loadLibrarianConfig(repo *gitrepo.LocalRepository) (*config.LibrarianConfig, error) {
 	if repo == nil {
 		slog.Info("repo is nil, skipping state loading")
@@ -56,13 +71,29 @@ func loadLibrarianConfig(repo *gitrepo.LocalRepository) (*config.LibrarianConfig
 	return parseLibrarianConfig(path)
 }
 
+func loadLibrarianConfigFromGitHub(ctx context.Context, ghClient GitHubClient, branch string) (*config.LibrarianConfig, error) {
+	content, err := ghClient.GetRawContent(ctx, path.Join(config.LibrarianDir, config.LibrarianConfigFile), branch)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := loadLibrarianConfigFromBytes(content)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
 func parseLibrarianState(path, source string) (*config.LibrarianState, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
+	return loadLibrarianStateFromBytes(bytes, source)
+}
+
+func loadLibrarianStateFromBytes(data []byte, source string) (*config.LibrarianState, error) {
 	var s config.LibrarianState
-	if err := yaml.Unmarshal(bytes, &s); err != nil {
+	if err := yaml.Unmarshal(data, &s); err != nil {
 		return nil, fmt.Errorf("unmarshaling librarian state: %w", err)
 	}
 	if err := populateServiceConfigIfEmpty(&s, source); err != nil {
@@ -83,8 +114,12 @@ func parseLibrarianConfig(path string) (*config.LibrarianConfig, error) {
 		}
 		return nil, err
 	}
+	return loadLibrarianConfigFromBytes(bytes)
+}
+
+func loadLibrarianConfigFromBytes(data []byte) (*config.LibrarianConfig, error) {
 	var lc config.LibrarianConfig
-	if err := yaml.Unmarshal(bytes, &lc); err != nil {
+	if err := yaml.Unmarshal(data, &lc); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal global config: %w", err)
 	}
 	if err := lc.Validate(); err != nil {
@@ -152,7 +187,8 @@ func findServiceConfigIn(path string) (string, error) {
 }
 
 func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
-	path := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
+	sortByLibraryID(state)
+	stateFile := filepath.Join(repoDir, config.LibrarianDir, librarianStateFile)
 	var buffer bytes.Buffer
 	encoder := yaml.NewEncoder(&buffer)
 	encoder.SetIndent(2)
@@ -160,16 +196,26 @@ func saveLibrarianState(repoDir string, state *config.LibrarianState) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, buffer.Bytes(), 0644)
+	return os.WriteFile(stateFile, buffer.Bytes(), 0644)
+}
+
+// sortByLibraryID sorts config.LibraryState with respect to ID.
+func sortByLibraryID(state *config.LibrarianState) {
+	sort.Slice(state.Libraries, func(i, j int) bool {
+		return state.Libraries[i].ID < state.Libraries[j].ID
+	})
 }
 
 // readLibraryState reads the library state from a container response, if it exists.
 // If the response file does not exist, readLibraryState succeeds but returns a nil pointer.
 //
-// The response file is removed afterwards.
+// The response file is removed afterward.
 func readLibraryState(jsonFilePath string) (*config.LibraryState, error) {
 	data, err := os.ReadFile(jsonFilePath)
 	defer func() {
+		if b, err := os.ReadFile(jsonFilePath); err == nil {
+			slog.Debug("container response", "content", string(b))
+		}
 		if err := os.Remove(jsonFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
 			slog.Warn("fail to remove file", slog.String("name", jsonFilePath), slog.Any("err", err))
 		}

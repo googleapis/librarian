@@ -53,8 +53,22 @@ impl std::fmt::Debug for {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> gax::client_builder::Result<Self> {
+        {{#Codec.DetailedTracingAttributes}}
+        #[cfg(google_cloud_unstable_tracing)]
+        let tracing_is_enabled = gaxi::options::tracing_enabled(&config);
+        let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
+        #[cfg(google_cloud_unstable_tracing)]
+        let inner = if tracing_is_enabled {
+            inner.with_instrumentation(&crate::info::INSTRUMENTATION_CLIENT_INFO)
+        } else {
+            inner
+        };
+        Ok(Self { inner })
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
         let inner = gaxi::http::ReqwestClient::new(config, crate::DEFAULT_HOST).await?;
         Ok(Self { inner })
+        {{/Codec.DetailedTracingAttributes}}
     }
 }
 
@@ -80,7 +94,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             true,
         );
         {{/HasAutoPopulatedFields}}
+        {{#Codec.DetailedTracingAttributes}}
+        let (builder, method, _path_template) = None
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
         let (builder, method) = None
+        {{/Codec.DetailedTracingAttributes}}
         {{#PathInfo.Bindings}}
         .or_else(|| {
             {{#Codec.HasVariablePath}}
@@ -94,6 +113,9 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{^Codec.HasVariablePath}}
             let path = "{{Codec.PathFmt}}".to_string();
             {{/Codec.HasVariablePath}}
+            {{#Codec.DetailedTracingAttributes}}
+            let path_template = "{{Codec.PathTemplate}}";
+            {{/Codec.DetailedTracingAttributes}}
 
             let builder = self
                 .inner
@@ -112,7 +134,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/Codec.QueryParams}}
             let builder = Ok(builder);
             {{/Codec.QueryParamsCanFail}}
+            {{#Codec.DetailedTracingAttributes}}
+            Some(builder.map(|b| (b, reqwest::Method::{{Verb}}, path_template)))
+            {{/Codec.DetailedTracingAttributes}}
+            {{^Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, reqwest::Method::{{Verb}})))
+            {{/Codec.DetailedTracingAttributes}}
         })
         {{/PathInfo.Bindings}}
         .ok_or_else(|| {
@@ -132,6 +159,10 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/PathInfo.Bindings}}
             gax::error::Error::binding(BindingError { paths })
         })??;
+        {{#Codec.DetailedTracingAttributes}}
+        #[cfg(google_cloud_unstable_tracing)]
+        let options = gax::options::internal::set_path_template(options, _path_template);
+        {{/Codec.DetailedTracingAttributes}}
         let options = gax::options::internal::set_default_idempotency(
             options,
             {{! TODO(#2588) - return idempotency from the above closure }}
@@ -151,7 +182,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{#ReturnsEmpty}}
         .map(|r: gax::response::Response<{{OutputType.Codec.QualifiedName}}>| {
             let (parts, _) = r.into_parts();
-            gax::response::Response::from_parts(parts, ()) 
+            gax::response::Response::from_parts(parts, ())
         })
         {{/ReturnsEmpty}}
     }

@@ -36,6 +36,7 @@ var cmdSidekick = newCommand(
 	addFlagString(&output, "output", "the path within project-root to put generated files").
 	addFlagString(&flagLanguage, "language", "the generated language").
 	addFlagBool(&dryrun, "dry-run", false, "do a dry-run: load the configuration, but do not perform any changes.").
+	addFlagString(&updatedRoot, "updated-root", "update a specific *-root commit SHA, defaults to `googleapis`.").
 	addFlagFunc("source-option", "source options", func(opt string) error {
 		components := strings.SplitN(opt, "=", 2)
 		if len(components) != 2 {

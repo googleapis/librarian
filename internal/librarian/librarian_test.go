@@ -15,13 +15,17 @@
 package librarian
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"log/slog"
 	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
@@ -34,22 +38,95 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// TODO(https://github.com/googleapis/librarian/issues/202): add better tests
-// for librarian.Run.
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
 		log.Fatal(err)
 	}
 }
 
+func TestVerboseFlag(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		args              []string
+		expectDebugLog    bool
+		expectDebugSubstr string
+	}{
+		{
+			name:              "generate with -v flag",
+			args:              []string{"generate", "-v"},
+			expectDebugLog:    true,
+			expectDebugSubstr: "generate command verbose logging",
+		},
+		{
+			name:           "generate without -v flag",
+			args:           []string{"generate"},
+			expectDebugLog: false,
+		},
+		{
+			name:              "release init with -v flag",
+			args:              []string{"release", "init", "-v"},
+			expectDebugLog:    true,
+			expectDebugSubstr: "init command verbose logging",
+		},
+		{
+			name:           "release init without -v flag",
+			args:           []string{"release", "init"},
+			expectDebugLog: false,
+		},
+		{
+			name:              "release tag-and-release with -v flag",
+			args:              []string{"release", "tag-and-release", "-v"},
+			expectDebugLog:    true,
+			expectDebugSubstr: "tag-and-release command verbose logging",
+		},
+		{
+			name:           "release tag-and-release without -v flag",
+			args:           []string{"release", "tag-and-release"},
+			expectDebugLog: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			// Redirect stderr to capture logs.
+			oldStderr := os.Stderr
+			r, w, _ := os.Pipe()
+			os.Stderr = w
+			// Reset logger to default for test isolation.
+			slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+
+			_ = Run(context.Background(), test.args...)
+
+			// Restore stderr and read the output.
+			w.Close()
+			os.Stderr = oldStderr
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+			output := buf.String()
+
+			hasDebugLog := strings.Contains(output, "level=DEBUG")
+			if test.expectDebugLog {
+				if !hasDebugLog {
+					t.Errorf("expected debug log to be present, but it wasn't. Output:\n%s", output)
+				}
+				if !strings.Contains(output, test.expectDebugSubstr) {
+					t.Errorf("expected debug log to contain %q, but it didn't. Output:\n%s", test.expectDebugSubstr, output)
+				}
+			} else {
+				if hasDebugLog {
+					t.Errorf("expected debug log to be absent, but it was present. Output:\n%s", output)
+				}
+			}
+		})
+	}
+}
+
 func TestGenerate_DefaultBehavior(t *testing.T) {
 	ctx := context.Background()
 
-	// 1. Setup a mock repository with a state file
+	// 1. Set up a mock repository with a state file
 	repo := newTestGitRepo(t)
 	repoDir := repo.GetDir()
 
-	// Setup a dummy API Source repo to prevent cloning googleapis/googleapis
+	// Set up a dummy API Source repo to prevent cloning googleapis/googleapis
 	apiSourceDir := t.TempDir()
 	runGit(t, apiSourceDir, "init")
 	runGit(t, apiSourceDir, "config", "user.email", "test@example.com")
@@ -167,11 +244,11 @@ func newTestGitRepo(t *testing.T) gitrepo.Repository {
 			},
 		},
 	}
-	return newTestGitRepoWithState(t, defaultState, true)
+	return newTestGitRepoWithState(t, defaultState)
 }
 
 // newTestGitRepo creates a new git repository in a temporary directory.
-func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState, writeState bool) gitrepo.Repository {
+func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState) gitrepo.Repository {
 	t.Helper()
 	dir := t.TempDir()
 	remoteURL := "https://github.com/googleapis/librarian.git"
@@ -181,40 +258,39 @@ func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState, writeSt
 	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
 		t.Fatalf("os.WriteFile: %v", err)
 	}
-	if writeState {
-		// Create a state.yaml and config.yaml file in .librarian dir.
-		librarianDir := filepath.Join(dir, config.LibrarianDir)
-		if err := os.MkdirAll(librarianDir, 0755); err != nil {
-			t.Fatalf("os.MkdirAll: %v", err)
-		}
+	// Create a state.yaml and config.yaml file in .librarian dir.
+	librarianDir := filepath.Join(dir, config.LibrarianDir)
+	if err := os.MkdirAll(librarianDir, 0755); err != nil {
+		t.Fatalf("os.MkdirAll: %v", err)
+	}
 
-		// Setup each source root directory to be non-empty (one `random_file.txt`)
-		// that can be used to test preserve or remove regex patterns
-		for _, library := range state.Libraries {
-			for _, sourceRoot := range library.SourceRoots {
-				fullPath := filepath.Join(dir, sourceRoot, "random_file.txt")
-				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-					t.Fatal(err)
-				}
-				if _, err := os.Create(fullPath); err != nil {
-					t.Fatal(err)
-				}
+	// Setup each source root directory to be non-empty (one `random_file.txt`)
+	// that can be used to test preserve or remove regex patterns
+	for _, library := range state.Libraries {
+		for _, sourceRoot := range library.SourceRoots {
+			fullPath := filepath.Join(dir, sourceRoot, "random_file.txt")
+			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Create(fullPath); err != nil {
+				t.Fatal(err)
 			}
 		}
-
-		bytes, err := yaml.Marshal(state)
-		if err != nil {
-			t.Fatalf("yaml.Marshal() = %v", err)
-		}
-		stateFile := filepath.Join(librarianDir, "state.yaml")
-		if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
-			t.Fatalf("os.WriteFile: %v", err)
-		}
-		configFile := filepath.Join(librarianDir, "config.yaml")
-		if err := os.WriteFile(configFile, []byte{}, 0644); err != nil {
-			t.Fatalf("os.WriteFile: %v", err)
-		}
 	}
+
+	bytes, err := yaml.Marshal(state)
+	if err != nil {
+		t.Fatalf("yaml.Marshal() = %v", err)
+	}
+	stateFile := filepath.Join(librarianDir, "state.yaml")
+	if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+	configFile := filepath.Join(librarianDir, "config.yaml")
+	if err := os.WriteFile(configFile, []byte{}, 0644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
 	runGit(t, dir, "add", ".")
 	runGit(t, dir, "commit", "-m", "initial commit")
 	runGit(t, dir, "remote", "add", "origin", remoteURL)

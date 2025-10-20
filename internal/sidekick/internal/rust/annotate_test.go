@@ -27,27 +27,40 @@ func TestPackageNames(t *testing.T) {
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{},
 		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Override the default name for test APIs ("Test").
 	model.Name = "workflows-v1"
-	codec, err := newCodec(true, map[string]string{
-		"per-service-features": "true",
-		"copyright-year":       "2035",
+	codec, err := newCodec("protobuf", map[string]string{
+		"version":                     "1.2.3",
+		"release-level":               "stable",
+		"copyright-year":              "2035",
+		"per-service-features":        "true",
+		"extra-modules":               "operation",
+		"generate-setter-samples":     "true",
+		"detailed-tracing-attributes": "true",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := annotateModel(model, codec)
 	want := &modelAnnotations{
-		PackageName:        "google-cloud-workflows-v1",
-		PackageNamespace:   "google_cloud_workflows_v1",
-		PackageVersion:     "0.0.0",
-		ReleaseLevel:       "preview",
-		RequiredPackages:   []string{},
-		ExternPackages:     []string{},
-		CopyrightYear:      "2035",
-		Services:           []*api.Service{},
-		NameToLower:        "workflows-v1",
-		PerServiceFeatures: false,
+		PackageName:               "google-cloud-workflows-v1",
+		PackageVersion:            "1.2.3",
+		ReleaseLevel:              "stable",
+		PackageNamespace:          "google_cloud_workflows_v1",
+		RequiredPackages:          []string{},
+		ExternPackages:            []string{},
+		HasLROs:                   false,
+		CopyrightYear:             "2035",
+		Services:                  []*api.Service{},
+		NameToLower:               "workflows-v1",
+		PerServiceFeatures:        false, // no services
+		ExtraModules:              []string{"operation"},
+		GenerateSetterSamples:     true,
+		DetailedTracingAttributes: true,
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
 		t.Errorf("mismatch in modelAnnotations list (-want, +got)\n:%s", diff)
@@ -136,7 +149,6 @@ func serviceAnnotationsModel() *api.API {
 		[]*api.Message{request, response},
 		[]*api.Enum{usedEnum, extraEnum},
 		[]*api.Service{service})
-	loadWellKnownTypes(model.State)
 	api.CrossReference(model)
 	return model
 }
@@ -155,7 +167,7 @@ func TestServiceAnnotations(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService.DeleteResource")
 	}
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,10 +191,11 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 
 	wantMethod := &methodAnnotation{
-		Name:        "get_resource",
-		BuilderName: "GetResource",
-		Body:        "None::<gaxi::http::NoBody>",
-		PathInfo:    method.PathInfo,
+		Name:           "get_resource",
+		NameNoMangling: "get_resource",
+		BuilderName:    "GetResource",
+		Body:           "None::<gaxi::http::NoBody>",
+		PathInfo:       method.PathInfo,
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
@@ -196,10 +209,11 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 
 	wantMethod = &methodAnnotation{
-		Name:        "delete_resource",
-		BuilderName: "DeleteResource",
-		Body:        "None::<gaxi::http::NoBody>",
-		PathInfo:    emptyMethod.PathInfo,
+		Name:           "delete_resource",
+		NameNoMangling: "delete_resource",
+		BuilderName:    "DeleteResource",
+		Body:           "None::<gaxi::http::NoBody>",
+		PathInfo:       emptyMethod.PathInfo,
 		SystemParameters: []systemParameter{
 			{Name: "$alt", Value: "json;enum-encoding=int"},
 		},
@@ -213,13 +227,51 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 }
 
+func TestServiceAnnotationsDetailedTracing(t *testing.T) {
+	model := serviceAnnotationsModel()
+	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
+	if !ok {
+		t.Fatal("cannot find .test.v1.ResourceService")
+	}
+	codec, err := newCodec("protobuf", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	got := service.Codec.(*serviceAnnotations)
+	if !got.DetailedTracingAttributes {
+		t.Errorf("serviceAnnotations.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
+	}
+}
+
+func TestMethodAnnotationsDetailedTracing(t *testing.T) {
+	model := serviceAnnotationsModel()
+	method, ok := model.State.MethodByID[".test.v1.ResourceService.GetResource"]
+	if !ok {
+		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
+	}
+	codec, err := newCodec("protobuf", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	got := method.Codec.(*methodAnnotation)
+	if !got.DetailedTracingAttributes {
+		t.Errorf("methodAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
+	}
+}
+
 func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 	model := serviceAnnotationsModel()
 	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"per-service-features": "true",
 	})
 	if err != nil {
@@ -259,6 +311,11 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		ID:      ".test.OperationMetadata",
 		Package: "test",
 	}
+	operation := &api.Message{
+		Name:    "Operation",
+		ID:      ".google.longrunning.Operation",
+		Package: "google.longrunning",
+	}
 	service := &api.Service{
 		Name:    "LroService",
 		ID:      ".test.LroService",
@@ -290,10 +347,13 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 			},
 		},
 	}
-	model := api.NewTestAPI([]*api.Message{create, delete, resource, metadata}, []*api.Enum{}, []*api.Service{service})
-	api.CrossReference(model)
+	model := api.NewTestAPI([]*api.Message{create, delete, resource, metadata, operation}, []*api.Enum{}, []*api.Service{service})
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
 	if err != nil {
@@ -330,7 +390,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
 
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"name-overrides": ".test.v1.ResourceService=Renamed",
 	})
 	if err != nil {
@@ -348,7 +408,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
 	}
 
-	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
+	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
 	wantMethod := &methodAnnotation{
 		ServiceNameToPascal: "Renamed",
 		ServiceNameToCamel:  "renamed",
@@ -428,23 +488,25 @@ func TestOneOfAnnotations(t *testing.T) {
 	codec := createRustCodec()
 	annotateModel(model, codec)
 
-	// Stops the recursion when comparing fields.
-	ignore := cmpopts.IgnoreFields(api.Field{}, "Group")
-
-	if diff := cmp.Diff(&oneOfAnnotation{
+	wantOneOfCodec := &oneOfAnnotation{
 		FieldName:           "r#type",
 		SetterName:          "type",
 		EnumName:            "Type",
 		QualifiedName:       "crate::model::message::Type",
 		RelativeName:        "message::Type",
 		StructQualifiedName: "crate::model::Message",
+		ScopeInExamples:     "google_cloud_test::model::message",
 		FieldType:           "crate::model::message::Type",
 		DocLines:            []string{"/// Say something clever about this oneof."},
-	}, group.Codec, ignore); diff != "" {
+		ExampleField:        singular,
+	}
+	if diff := cmp.Diff(wantOneOfCodec, group.Codec, cmpopts.IgnoreFields(api.OneOf{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	// Stops the recursion when comparing fields.
+	ignore := cmpopts.IgnoreFields(api.Field{}, "Codec")
+	wantFieldCodec := &fieldAnnotations{
 		FieldName:          "oneof_field",
 		SetterName:         "oneof_field",
 		BranchName:         "OneofField",
@@ -455,11 +517,13 @@ func TestOneOfAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.oneof_field().iter().fold(builder, |builder, p| builder.query(&[("oneofField", p)]));`,
 		KeyType:            "",
 		ValueType:          "",
-	}, singular.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{repeated, map_field, integer_field, boxed_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, singular.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	wantFieldCodec = &fieldAnnotations{
 		FieldName:          "oneof_field_repeated",
 		SetterName:         "oneof_field_repeated",
 		BranchName:         "OneofFieldRepeated",
@@ -470,11 +534,13 @@ func TestOneOfAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.oneof_field_repeated().iter().fold(builder, |builder, p| builder.query(&[("oneofFieldRepeated", p)]));`,
 		KeyType:            "",
 		ValueType:          "",
-	}, repeated.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{singular, map_field, integer_field, boxed_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, repeated.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	wantFieldCodec = &fieldAnnotations{
 		FieldName:          "oneof_field_map",
 		SetterName:         "oneof_field_map",
 		BranchName:         "OneofFieldMap",
@@ -490,11 +556,13 @@ func TestOneOfAnnotations(t *testing.T) {
 		IsBoxed:            true,
 		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, wkt::internal::F32>",
 		SkipIfIsDefault:    true,
-	}, map_field.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{singular, repeated, integer_field, boxed_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, map_field.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	wantFieldCodec = &fieldAnnotations{
 		FieldName:          "oneof_field_integer",
 		SetterName:         "oneof_field_integer",
 		BranchName:         "OneofFieldInteger",
@@ -505,11 +573,13 @@ func TestOneOfAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.oneof_field_integer().iter().fold(builder, |builder, p| builder.query(&[("oneofFieldInteger", p)]));`,
 		SerdeAs:            "wkt::internal::I64",
 		SkipIfIsDefault:    true,
-	}, integer_field.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{singular, repeated, map_field, boxed_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, integer_field.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	wantFieldCodec = &fieldAnnotations{
 		FieldName:          "oneof_field_boxed",
 		SetterName:         "oneof_field_boxed",
 		BranchName:         "OneofFieldBoxed",
@@ -521,7 +591,9 @@ func TestOneOfAnnotations(t *testing.T) {
 		IsBoxed:            true,
 		SerdeAs:            "wkt::internal::F64",
 		SkipIfIsDefault:    true,
-	}, boxed_field.Codec, ignore); diff != "" {
+		OtherFieldsInGroup: []*api.Field{singular, repeated, map_field, integer_field},
+	}
+	if diff := cmp.Diff(wantFieldCodec, boxed_field.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 }
@@ -555,7 +627,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"name-overrides": ".test.Message.nested_thing=NestedThingOneOf",
 	})
 	if err != nil {
@@ -564,7 +636,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 	annotateModel(model, codec)
 
 	// Stops the recursion when comparing fields.
-	ignore := cmpopts.IgnoreFields(api.Field{}, "Group")
+	ignore := cmpopts.IgnoreFields(api.OneOf{}, "Codec")
 
 	want := &oneOfAnnotation{
 		FieldName:           "nested_thing",
@@ -573,8 +645,10 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		QualifiedName:       "crate::model::message::NestedThingOneOf",
 		RelativeName:        "message::NestedThingOneOf",
 		StructQualifiedName: "crate::model::Message",
+		ScopeInExamples:     "google_cloud_test::model::message",
 		FieldType:           "crate::model::message::NestedThingOneOf",
 		DocLines:            []string{"/// Say something clever about this oneof."},
+		ExampleField:        singular,
 	}
 	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
@@ -614,67 +688,82 @@ func TestEnumAnnotations(t *testing.T) {
 	enum := &api.Enum{
 		Name:          "TestEnum",
 		ID:            ".test.v1.TestEnum",
+		Package:       "test.v1",
 		Documentation: "The enum is documented.",
 		Values:        []*api.EnumValue{v0, v1, v2, v3, v4},
 	}
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	annotateModel(model, codec)
 
-	want := &enumAnnotation{
-		Name:          "TestEnum",
-		ModuleName:    "test_enum",
-		QualifiedName: "crate::model::TestEnum",
-		RelativeName:  "TestEnum",
-		DocLines:      []string{"/// The enum is documented."},
-		UniqueNames:   []*api.EnumValue{v0, v1, v2, v3, v4},
+	wantEnumCodec := &enumAnnotation{
+		Name:           "TestEnum",
+		ModuleName:     "test_enum",
+		QualifiedName:  "crate::model::TestEnum",
+		RelativeName:   "TestEnum",
+		DocLines:       []string{"/// The enum is documented."},
+		UniqueNames:    []*api.EnumValue{v0, v1, v2, v3, v4},
+		NameInExamples: "google_cloud_test_v1::model::TestEnum",
+		ValuesForExamples: []*enumValueForExamples{
+			{EnumValue: v0, Index: 0},
+			{EnumValue: v1, Index: 1},
+			{EnumValue: v3, Index: 2},
+		},
 	}
-	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
+	if diff := cmp.Diff(wantEnumCodec, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&enumValueAnnotation{
+	wantEnumValueCodec := &enumValueAnnotation{
 		Name:        "WEEK_5",
 		VariantName: "Week5",
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// week5 is also documented."},
-	}, v0.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v0.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&enumValueAnnotation{
+	wantEnumValueCodec = &enumValueAnnotation{
 		Name:        "MULTI_WORD_VALUE",
 		VariantName: "MultiWordValue",
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// MULTI_WORD_VALUE is also documented."},
-	}, v1.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v1.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
-	if diff := cmp.Diff(&enumValueAnnotation{
+
+	wantEnumValueCodec = &enumValueAnnotation{
 		Name:        "VALUE",
 		VariantName: "Value",
 		EnumType:    "TestEnum",
 		DocLines:    []string{"/// VALUE is also documented."},
-	}, v2.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v2.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
-	if diff := cmp.Diff(&enumValueAnnotation{
+
+	wantEnumValueCodec = &enumValueAnnotation{
 		Name:        "TEST_ENUM_V3",
 		VariantName: "V3",
 		EnumType:    "TestEnum",
-	}, v3.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v3.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
-	if diff := cmp.Diff(&enumValueAnnotation{
+
+	wantEnumValueCodec = &enumValueAnnotation{
 		Name:        "TEST_ENUM_2025",
 		VariantName: "TestEnum2025",
 		EnumType:    "TestEnum",
-	}, v4.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(wantEnumValueCodec, v4.Codec); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
 	}
 }
@@ -704,25 +793,31 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 		Number: 3,
 	}
 	enum := &api.Enum{
-		Name:   "TestEnum",
-		ID:     ".test.v1.TestEnum",
-		Values: []*api.EnumValue{v0, v1, v2, v3},
+		Name:    "TestEnum",
+		ID:      ".test.v1.TestEnum",
+		Package: "test.v1",
+		Values:  []*api.EnumValue{v0, v1, v2, v3},
 	}
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	annotateModel(model, codec)
 
 	want := &enumAnnotation{
-		Name:          "TestEnum",
-		ModuleName:    "test_enum",
-		QualifiedName: "crate::model::TestEnum",
-		RelativeName:  "TestEnum",
-		UniqueNames:   []*api.EnumValue{v0, v2},
+		Name:           "TestEnum",
+		ModuleName:     "test_enum",
+		QualifiedName:  "crate::model::TestEnum",
+		RelativeName:   "TestEnum",
+		UniqueNames:    []*api.EnumValue{v0, v2},
+		NameInExamples: "google_cloud_test_v1::model::TestEnum",
+		ValuesForExamples: []*enumValueForExamples{
+			{EnumValue: v0, Index: 0},
+			{EnumValue: v2, Index: 1},
+		},
 	}
 
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
@@ -772,13 +867,13 @@ func TestJsonNameAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	annotateModel(model, codec)
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want := &fieldAnnotations{
 		FieldName:          "parent",
 		SetterName:         "parent",
 		BranchName:         "Parent",
@@ -789,11 +884,12 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = builder.query(&[("parent", &req.parent)]);`,
 		KeyType:            "",
 		ValueType:          "",
-	}, parent.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, parent.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want = &fieldAnnotations{
 		FieldName:          "public_key",
 		SetterName:         "public_key",
 		BranchName:         "PublicKey",
@@ -804,11 +900,12 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = builder.query(&[("public_key", &req.public_key)]);`,
 		KeyType:            "",
 		ValueType:          "",
-	}, publicKey.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, publicKey.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want = &fieldAnnotations{
 		FieldName:          "read_time",
 		SetterName:         "read_time",
 		BranchName:         "ReadTime",
@@ -819,11 +916,12 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = builder.query(&[("readTime", &req.read_time)]);`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
-	}, readTime.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, readTime.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want = &fieldAnnotations{
 		FieldName:          "optional",
 		SetterName:         "optional",
 		BranchName:         "Optional",
@@ -834,11 +932,12 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.optional.iter().fold(builder, |builder, p| builder.query(&[("optional", p)]));`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
-	}, optional.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, optional.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 
-	if diff := cmp.Diff(&fieldAnnotations{
+	want = &fieldAnnotations{
 		FieldName:          "repeated",
 		SetterName:         "repeated",
 		BranchName:         "Repeated",
@@ -849,7 +948,8 @@ func TestJsonNameAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.repeated.iter().fold(builder, |builder, p| builder.query(&[("repeated", p)]));`,
 		SerdeAs:            "wkt::internal::I32",
 		SkipIfIsDefault:    true,
-	}, repeated.Codec); diff != "" {
+	}
+	if diff := cmp.Diff(want, repeated.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 }
@@ -872,7 +972,7 @@ func TestMessageAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -882,6 +982,7 @@ func TestMessageAnnotations(t *testing.T) {
 		ModuleName:        "test_message",
 		QualifiedName:     "crate::model::TestMessage",
 		RelativeName:      "TestMessage",
+		NameInExamples:    "google_cloud_test_v1::model::TestMessage",
 		PackageModuleName: "test::v1",
 		SourceFQN:         "test.v1.TestMessage",
 		DocLines:          []string{"/// A test message."},
@@ -897,6 +998,7 @@ func TestMessageAnnotations(t *testing.T) {
 		ModuleName:        "nested_message",
 		QualifiedName:     "crate::model::test_message::NestedMessage",
 		RelativeName:      "test_message::NestedMessage",
+		NameInExamples:    "google_cloud_test_v1::model::test_message::NestedMessage",
 		PackageModuleName: "test::v1",
 		SourceFQN:         "test.v1.TestMessage.NestedMessage",
 		DocLines:          []string{"/// A nested message."},
@@ -905,424 +1007,6 @@ func TestMessageAnnotations(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, nested.Codec); diff != "" {
 		t.Errorf("mismatch in nested message annotations (-want, +got)\n:%s", diff)
-	}
-}
-
-func TestFieldAnnotations(t *testing.T) {
-	key_field := &api.Field{Name: "key", Typez: api.INT32_TYPE}
-	value_field := &api.Field{Name: "value", Typez: api.INT64_TYPE}
-	map_message := &api.Message{
-		Name:    "$Map",
-		ID:      ".test.$Map",
-		IsMap:   true,
-		Package: "test",
-		Fields:  []*api.Field{key_field, value_field},
-	}
-	singular_field := &api.Field{
-		Name:     "singular_field",
-		JSONName: "singularField",
-		ID:       ".test.Message.singular_field",
-		Typez:    api.STRING_TYPE,
-	}
-	repeated_field := &api.Field{
-		Name:     "repeated_field",
-		JSONName: "repeatedField",
-		ID:       ".test.Message.repeated_field",
-		Typez:    api.STRING_TYPE,
-		Repeated: true,
-	}
-	map_field := &api.Field{
-		Name:     "map_field",
-		JSONName: "mapField",
-		ID:       ".test.Message.map_field",
-		Typez:    api.MESSAGE_TYPE,
-		TypezID:  ".test.$Map",
-		Repeated: false,
-	}
-	boxed_field := &api.Field{
-		Name:     "boxed_field",
-		JSONName: "boxedField",
-		ID:       ".test.Message.boxed_field",
-		Typez:    api.MESSAGE_TYPE,
-		TypezID:  ".test.TestMessage",
-		Optional: true,
-	}
-	message := &api.Message{
-		Name:          "TestMessage",
-		Package:       "test",
-		ID:            ".test.TestMessage",
-		Documentation: "A test message.",
-		Fields:        []*api.Field{singular_field, repeated_field, map_field, boxed_field},
-	}
-
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	model.State.MessageByID[map_message.ID] = map_message
-	api.CrossReference(model)
-	api.LabelRecursiveFields(model)
-	codec, err := newCodec(true, map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	annotateModel(model, codec)
-	wantMessage := &messageAnnotation{
-		Name:              "TestMessage",
-		ModuleName:        "test_message",
-		QualifiedName:     "crate::model::TestMessage",
-		RelativeName:      "TestMessage",
-		PackageModuleName: "test",
-		SourceFQN:         "test.TestMessage",
-		DocLines:          []string{"/// A test message."},
-		BasicFields:       []*api.Field{singular_field, repeated_field, map_field, boxed_field},
-	}
-	if diff := cmp.Diff(wantMessage, message.Codec); diff != "" {
-		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
-	}
-
-	wantField := &fieldAnnotations{
-		FieldName:          "singular_field",
-		SetterName:         "singular_field",
-		BranchName:         "SingularField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::string::String",
-		PrimitiveFieldType: "std::string::String",
-		AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
-	}
-	if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-	}
-
-	wantField = &fieldAnnotations{
-		FieldName:          "repeated_field",
-		SetterName:         "repeated_field",
-		BranchName:         "RepeatedField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::vec::Vec<std::string::String>",
-		PrimitiveFieldType: "std::string::String",
-		AddQueryParameter:  `let builder = req.repeated_field.iter().fold(builder, |builder, p| builder.query(&[("repeatedField", p)]));`,
-	}
-	if diff := cmp.Diff(wantField, repeated_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-	}
-
-	wantField = &fieldAnnotations{
-		FieldName:          "map_field",
-		SetterName:         "map_field",
-		BranchName:         "MapField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::collections::HashMap<i32,i64>",
-		PrimitiveFieldType: "std::collections::HashMap<i32,i64>",
-		AddQueryParameter:  `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.map_field).map_err(Error::ser)?.add(builder, "mapField") };`,
-		KeyType:            "i32",
-		KeyField:           key_field,
-		ValueType:          "i64",
-		ValueField:         value_field,
-		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, wkt::internal::I64>",
-		SkipIfIsDefault:    true,
-	}
-	if diff := cmp.Diff(wantField, map_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-	}
-
-	wantField = &fieldAnnotations{
-		FieldName:          "boxed_field",
-		SetterName:         "boxed_field",
-		BranchName:         "BoxedField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::option::Option<std::boxed::Box<crate::model::TestMessage>>",
-		PrimitiveFieldType: "crate::model::TestMessage",
-		AddQueryParameter:  `let builder = req.boxed_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "boxedField") });`,
-		IsBoxed:            true,
-		SkipIfIsDefault:    true,
-	}
-	if diff := cmp.Diff(wantField, boxed_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-	}
-}
-
-func TestPrimitiveFieldAnnotations(t *testing.T) {
-	for _, test := range []struct {
-		wantType    string
-		wantSerdeAs string
-		typez       api.Typez
-	}{
-		{"i32", "wkt::internal::I32", api.INT32_TYPE},
-		{"i32", "wkt::internal::I32", api.SFIXED32_TYPE},
-		{"i32", "wkt::internal::I32", api.SINT32_TYPE},
-		{"i64", "wkt::internal::I64", api.INT64_TYPE},
-		{"i64", "wkt::internal::I64", api.SFIXED64_TYPE},
-		{"i64", "wkt::internal::I64", api.SINT64_TYPE},
-		{"u32", "wkt::internal::U32", api.UINT32_TYPE},
-		{"u32", "wkt::internal::U32", api.FIXED32_TYPE},
-		{"u64", "wkt::internal::U64", api.UINT64_TYPE},
-		{"u64", "wkt::internal::U64", api.FIXED64_TYPE},
-		{"f32", "wkt::internal::F32", api.FLOAT_TYPE},
-		{"f64", "wkt::internal::F64", api.DOUBLE_TYPE},
-	} {
-		singular_field := &api.Field{
-			Name:     "singular_field",
-			JSONName: "singularField",
-			ID:       ".test.Message.singular_field",
-			Typez:    test.typez,
-		}
-		message := &api.Message{
-			Name:          "TestMessage",
-			Package:       "test",
-			ID:            ".test.TestMessage",
-			Documentation: "A test message.",
-			Fields:        []*api.Field{singular_field},
-		}
-		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-		api.CrossReference(model)
-		api.LabelRecursiveFields(model)
-		codec, err := newCodec(true, map[string]string{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		annotateModel(model, codec)
-
-		wantField := &fieldAnnotations{
-			FieldName:          "singular_field",
-			SetterName:         "singular_field",
-			BranchName:         "SingularField",
-			FQMessageName:      "crate::model::TestMessage",
-			FieldType:          test.wantType,
-			PrimitiveFieldType: test.wantType,
-			SerdeAs:            test.wantSerdeAs,
-			AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
-			SkipIfIsDefault:    true,
-		}
-		if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
-			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-		}
-
-	}
-}
-
-func TestWrapperFieldAnnotations(t *testing.T) {
-	for _, test := range []struct {
-		wantType    string
-		wantSerdeAs string
-		typezID     string
-	}{
-		{"wkt::BytesValue", "serde_with::base64::Base64", ".google.protobuf.BytesValue"},
-		{"wkt::UInt64Value", "wkt::internal::U64", ".google.protobuf.UInt64Value"},
-		{"wkt::Int64Value", "wkt::internal::I64", ".google.protobuf.Int64Value"},
-		{"wkt::UInt32Value", "wkt::internal::U32", ".google.protobuf.UInt32Value"},
-		{"wkt::Int32Value", "wkt::internal::I32", ".google.protobuf.Int32Value"},
-		{"wkt::FloatValue", "wkt::internal::F32", ".google.protobuf.FloatValue"},
-		{"wkt::DoubleValue", "wkt::internal::F64", ".google.protobuf.DoubleValue"},
-		{"wkt::BoolValue", "", ".google.protobuf.BoolValue"},
-	} {
-		singular_field := &api.Field{
-			Name:     "singular_field",
-			JSONName: "singularField",
-			ID:       ".test.Message.singular_field",
-			Typez:    api.MESSAGE_TYPE,
-			TypezID:  test.typezID,
-			Optional: true,
-		}
-		message := &api.Message{
-			Name:          "TestMessage",
-			Package:       "test",
-			ID:            ".test.TestMessage",
-			Documentation: "A test message.",
-			Fields:        []*api.Field{singular_field},
-		}
-		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-		loadWellKnownTypes(model.State)
-		api.CrossReference(model)
-		api.LabelRecursiveFields(model)
-		codec := createRustCodec()
-		annotateModel(model, codec)
-
-		wantField := &fieldAnnotations{
-			FieldName:          "singular_field",
-			SetterName:         "singular_field",
-			BranchName:         "SingularField",
-			FQMessageName:      "crate::model::TestMessage",
-			FieldType:          fmt.Sprintf("std::option::Option<%s>", test.wantType),
-			PrimitiveFieldType: test.wantType,
-			SerdeAs:            test.wantSerdeAs,
-			SkipIfIsDefault:    true,
-		}
-		if diff := cmp.Diff(wantField, singular_field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "AddQueryParameter")); diff != "" {
-			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-		}
-
-	}
-}
-
-func TestEnumFieldAnnotations(t *testing.T) {
-	enumz := &api.Enum{
-		Name:    "TestEnum",
-		Package: "test",
-		ID:      ".test.TestEnum",
-	}
-	singular_field := &api.Field{
-		Name:     "singular_field",
-		JSONName: "singularField",
-		ID:       ".test.Message.singular_field",
-		Typez:    api.ENUM_TYPE,
-		TypezID:  ".test.TestEnum",
-	}
-	repeated_field := &api.Field{
-		Name:     "repeated_field",
-		JSONName: "repeatedField",
-		ID:       ".test.Message.repeated_field",
-		Typez:    api.ENUM_TYPE,
-		TypezID:  ".test.TestEnum",
-		Repeated: true,
-	}
-	optional_field := &api.Field{
-		Name:     "optional_field",
-		JSONName: "optionalField",
-		ID:       ".test.Message.optional_field",
-		Typez:    api.ENUM_TYPE,
-		TypezID:  ".test.TestEnum",
-		Optional: true,
-	}
-	null_value_field := &api.Field{
-		Name:     "null_value_field",
-		JSONName: "nullValueField",
-		ID:       ".test.Message.null_value_field",
-		Typez:    api.ENUM_TYPE,
-		TypezID:  ".google.protobuf.NullValue",
-	}
-	map_field := &api.Field{
-		Name:     "map_field",
-		JSONName: "mapField",
-		ID:       ".test.Message.map_field",
-		Typez:    api.MESSAGE_TYPE,
-		TypezID:  "$map<string, .test.TestEnum>",
-	}
-	// TODO(#1381) - this is closer to what map message should be called.
-	key_field := &api.Field{
-		Name:     "key",
-		JSONName: "key",
-		ID:       "$map<string, .test.TestEnum>.key",
-		Typez:    api.STRING_TYPE,
-	}
-	value_field := &api.Field{
-		Name:     "value",
-		JSONName: "value",
-		ID:       "$map<string, .test.TestEnum>.value",
-		Typez:    api.ENUM_TYPE,
-		TypezID:  ".test.TestEnum",
-	}
-	map_message := &api.Message{
-		Name:   "$map<string, .test.TestEnum>",
-		ID:     "$map<string, .test.TestEnum>",
-		IsMap:  true,
-		Fields: []*api.Field{key_field, value_field},
-	}
-	message := &api.Message{
-		Name:          "TestMessage",
-		Package:       "test",
-		ID:            ".test.TestMessage",
-		Documentation: "A test message.",
-		Fields:        []*api.Field{singular_field, repeated_field, optional_field, null_value_field, map_field},
-	}
-
-	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enumz}, []*api.Service{})
-	model.State.MessageByID[map_message.ID] = map_message
-	api.CrossReference(model)
-	api.LabelRecursiveFields(model)
-	codec, err := newCodec(true, map[string]string{
-		"package:wkt": "force-used=true,package=google-cloud-wkt,source=google.protobuf",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	annotateModel(model, codec)
-	wantMessage := &messageAnnotation{
-		Name:              "TestMessage",
-		ModuleName:        "test_message",
-		QualifiedName:     "crate::model::TestMessage",
-		RelativeName:      "TestMessage",
-		PackageModuleName: "test",
-		SourceFQN:         "test.TestMessage",
-		DocLines:          []string{"/// A test message."},
-		BasicFields:       []*api.Field{singular_field, repeated_field, optional_field, null_value_field, map_field},
-	}
-	if diff := cmp.Diff(wantMessage, message.Codec); diff != "" {
-		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
-	}
-
-	wantField := &fieldAnnotations{
-		FieldName:          "singular_field",
-		SetterName:         "singular_field",
-		BranchName:         "SingularField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "crate::model::TestEnum",
-		PrimitiveFieldType: "crate::model::TestEnum",
-		AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
-		SkipIfIsDefault:    true,
-	}
-	if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-	}
-
-	wantField = &fieldAnnotations{
-		FieldName:          "repeated_field",
-		SetterName:         "repeated_field",
-		BranchName:         "RepeatedField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::vec::Vec<crate::model::TestEnum>",
-		PrimitiveFieldType: "crate::model::TestEnum",
-		AddQueryParameter:  `let builder = req.repeated_field.iter().fold(builder, |builder, p| builder.query(&[("repeatedField", p)]));`,
-		SkipIfIsDefault:    true,
-	}
-	if diff := cmp.Diff(wantField, repeated_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-	}
-
-	wantField = &fieldAnnotations{
-		FieldName:          "optional_field",
-		SetterName:         "optional_field",
-		BranchName:         "OptionalField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::option::Option<crate::model::TestEnum>",
-		PrimitiveFieldType: "crate::model::TestEnum",
-		AddQueryParameter:  `let builder = req.optional_field.iter().fold(builder, |builder, p| builder.query(&[("optionalField", p)]));`,
-		SkipIfIsDefault:    true,
-	}
-	if diff := cmp.Diff(wantField, optional_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-	}
-
-	// In the .proto specification this is represented as an enum. Which we
-	// map to a unit struct.
-	wantField = &fieldAnnotations{
-		FieldName:          "null_value_field",
-		SetterName:         "null_value_field",
-		BranchName:         "NullValueField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "wkt::NullValue",
-		PrimitiveFieldType: "wkt::NullValue",
-		AddQueryParameter:  `let builder = builder.query(&[("nullValueField", &req.null_value_field)]);`,
-		SkipIfIsDefault:    true,
-		IsWktNullValue:     true,
-	}
-	if diff := cmp.Diff(wantField, null_value_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-	}
-
-	wantField = &fieldAnnotations{
-		FieldName:          "map_field",
-		SetterName:         "map_field",
-		BranchName:         "MapField",
-		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::collections::HashMap<std::string::String,crate::model::TestEnum>",
-		PrimitiveFieldType: "std::collections::HashMap<std::string::String,crate::model::TestEnum>",
-		AddQueryParameter:  `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.map_field).map_err(Error::ser)?.add(builder, "mapField") };`,
-		KeyType:            "std::string::String",
-		KeyField:           key_field,
-		ValueType:          "crate::model::TestEnum",
-		ValueField:         value_field,
-		SkipIfIsDefault:    true,
-	}
-	if diff := cmp.Diff(wantField, map_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 }
 
@@ -1383,7 +1067,7 @@ func TestPathInfoAnnotations(t *testing.T) {
 			[]*api.Enum{},
 			[]*api.Service{service})
 		api.CrossReference(model)
-		codec, err := newCodec(true, map[string]string{
+		codec, err := newCodec("protobuf", map[string]string{
 			"include-grpc-only-methods": "true",
 		})
 		if err != nil {
@@ -1521,7 +1205,6 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-
 	b2 := &api.PathBinding{
 		Verb: "POST",
 		PathTemplate: api.NewPathTemplate().
@@ -1554,7 +1237,6 @@ func TestPathBindingAnnotations(t *testing.T) {
 			},
 		},
 	}
-
 	b3 := &api.PathBinding{
 		Verb: "GET",
 		PathTemplate: api.NewPathTemplate().
@@ -1570,7 +1252,6 @@ func TestPathBindingAnnotations(t *testing.T) {
 		PathFmt:     "/v2/foos",
 		QueryParams: []*api.Field{f_name, f_optional, f_child},
 	}
-
 	method := &api.Method{
 		Name:         "DoFoo",
 		ID:           ".test.Service.DoFoo",
@@ -1593,7 +1274,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 		[]*api.Enum{},
 		[]*api.Service{service})
 	api.CrossReference(model)
-	codec, err := newCodec(true, map[string]string{})
+	codec, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1608,8 +1289,276 @@ func TestPathBindingAnnotations(t *testing.T) {
 	if diff := cmp.Diff(want_b2, b2.Codec); diff != "" {
 		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
 	}
+
 	if diff := cmp.Diff(want_b3, b3.Codec); diff != "" {
 		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
+	f_name := &api.Field{
+		Name:     "name",
+		JSONName: "name",
+		ID:       ".test.Request.name",
+		Typez:    api.STRING_TYPE,
+	}
+	request := &api.Message{
+		Name:    "Request",
+		Package: "test",
+		ID:      ".test.Request",
+		Fields:  []*api.Field{f_name},
+	}
+	response := &api.Message{
+		Name:    "Response",
+		Package: "test",
+		ID:      ".test.Response",
+	}
+	binding := &api.PathBinding{
+		Verb: "POST",
+		PathTemplate: api.NewPathTemplate().
+			WithLiteral("v2").
+			WithVariable(api.NewPathVariable("name").
+				WithLiteral("projects").
+				WithMatch()).
+			WithVerb("create"),
+	}
+	method := &api.Method{
+		Name:         "DoFoo",
+		ID:           ".test.Service.DoFoo",
+		InputType:    request,
+		InputTypeID:  ".test.Request",
+		OutputTypeID: ".test.Response",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{binding},
+		},
+	}
+	service := &api.Service{
+		Name:    "FooService",
+		ID:      ".test.FooService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{request, response},
+		[]*api.Enum{},
+		[]*api.Service{service})
+	api.CrossReference(model)
+	codec, err := newCodec("protobuf", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+
+	got := binding.Codec.(*pathBindingAnnotation)
+	if !got.DetailedTracingAttributes {
+		t.Errorf("pathBindingAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
+	}
+}
+
+func TestPathBindingAnnotationsStyle(t *testing.T) {
+	for _, test := range []struct {
+		FieldName     string
+		WantFieldName string
+		WantAccessor  string
+	}{
+		{"machine", "machine", "Some(&req).map(|m| &m.machine).map(|s| s.as_str())"},
+		{"machineType", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())"},
+		{"machine_type", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())"},
+		{"type", "r#type", "Some(&req).map(|m| &m.r#type).map(|s| s.as_str())"},
+	} {
+		field := &api.Field{
+			Name:     test.FieldName,
+			JSONName: test.FieldName,
+			ID:       fmt.Sprintf(".test.Request.%s", test.FieldName),
+			Typez:    api.STRING_TYPE,
+		}
+		request := &api.Message{
+			Name:    "Request",
+			Package: "test",
+			ID:      ".test.Request",
+			Fields:  []*api.Field{field},
+		}
+		response := &api.Message{
+			Name:    "Response",
+			Package: "test",
+			ID:      ".test.Response",
+		}
+		binding := &api.PathBinding{
+			Verb: "GET",
+			PathTemplate: api.NewPathTemplate().
+				WithLiteral("v1").
+				WithLiteral("machines").
+				WithVariable(api.NewPathVariable(test.FieldName).
+					WithMatch()).
+				WithVerb("create"),
+			QueryParameters: map[string]bool{},
+		}
+		wantBinding := &pathBindingAnnotation{
+			PathFmt: "/v1/machines/{}:create",
+			Substitutions: []*bindingSubstitution{
+				{
+					FieldAccessor: test.WantAccessor,
+					FieldName:     test.WantFieldName,
+					Template:      []string{"*"},
+				},
+			},
+		}
+		method := &api.Method{
+			Name:         "Create",
+			ID:           ".test.Service.Create",
+			InputType:    request,
+			InputTypeID:  ".test.Request",
+			OutputTypeID: ".test.Response",
+			PathInfo: &api.PathInfo{
+				Bindings: []*api.PathBinding{binding},
+			},
+		}
+		service := &api.Service{
+			Name:    "Service",
+			ID:      ".test.Service",
+			Package: "test",
+			Methods: []*api.Method{method},
+		}
+		model := api.NewTestAPI(
+			[]*api.Message{request, response},
+			[]*api.Enum{},
+			[]*api.Service{service})
+		api.CrossReference(model)
+		codec, err := newCodec("protobuf", map[string]string{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		annotateModel(model, codec)
+		if diff := cmp.Diff(wantBinding, binding.Codec); diff != "" {
+			t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+		}
+
+	}
+}
+
+func TestPathBindingAnnotationsErrors(t *testing.T) {
+	field := &api.Field{
+		Name:     "field",
+		JSONName: "field",
+		ID:       ".test.Request.field",
+		Typez:    api.STRING_TYPE,
+	}
+	request := &api.Message{
+		Name:    "Request",
+		Package: "test",
+		ID:      ".test.Request",
+		Fields:  []*api.Field{field},
+	}
+	method := &api.Method{
+		Name:         "Create",
+		ID:           ".test.Service.Create",
+		InputType:    request,
+		InputTypeID:  ".test.Request",
+		OutputTypeID: ".test.Response",
+	}
+	got := makeAccessors([]string{"not-a-field-name"}, method)
+	var want []string
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestPathTemplateGeneration(t *testing.T) {
+	tests := []struct {
+		name    string
+		binding *pathBindingAnnotation
+		want    string
+	}{
+		{
+			name: "Simple Literal",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/things",
+			},
+			want: "/v1/things",
+		},
+		{
+			name: "Single Variable",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/things/{}",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "thing_id"},
+				},
+			},
+			want: "/v1/things/{thing_id}",
+		},
+		{
+			name: "Multiple Variables",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/projects/{}/locations/{}",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "project"},
+					{FieldName: "location"},
+				},
+			},
+			want: "/v1/projects/{project}/locations/{location}",
+		},
+		{
+			name: "Variable with Complex Segment Match",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/{}/databases",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "name"},
+				},
+			},
+			want: "/v1/{name}/databases",
+		},
+		{
+			name: "Variable Capturing Remaining Path",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/objects/{}",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "object"},
+				},
+			},
+			want: "/v1/objects/{object}",
+		},
+		{
+			name: "Top-Level Single Wildcard",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/{}",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "field"},
+				},
+			},
+			want: "/{field}",
+		},
+		{
+			name: "Path with Custom Verb",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/things/{}:customVerb",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "thing_id"},
+				},
+			},
+			want: "/v1/things/{thing_id}:customVerb",
+		},
+		{
+			name: "Nested fields",
+			binding: &pathBindingAnnotation{
+				PathFmt: "/v1/projects/{}/locations/{}/ids/{}:actionOnChild",
+				Substitutions: []*bindingSubstitution{
+					{FieldName: "child.project"},
+					{FieldName: "child.location"},
+					{FieldName: "child.id"},
+				},
+			},
+			want: "/v1/projects/{child.project}/locations/{child.location}/ids/{child.id}:actionOnChild",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.binding.PathTemplate(); got != tt.want {
+				t.Errorf("PathTemplate() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -1649,7 +1598,7 @@ func TestInternalMessageOverrides(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{public, private1, private2},
 		[]*api.Enum{},
 		[]*api.Service{})
-	codec, err := newCodec(true, map[string]string{
+	codec, err := newCodec("protobuf", map[string]string{
 		"internal-types": ".test.Private1,.test.Private2",
 	})
 	if err != nil {
@@ -1689,7 +1638,10 @@ func TestRoutingRequired(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{message},
 		[]*api.Enum{},
 		[]*api.Service{service})
-	codec, err := newCodec(true, map[string]string{
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec, err := newCodec("protobuf", map[string]string{
 		"include-grpc-only-methods": "true",
 		"routing-required":          "true",
 	})
@@ -1700,5 +1652,314 @@ func TestRoutingRequired(t *testing.T) {
 
 	if !method.Codec.(*methodAnnotation).RoutingRequired {
 		t.Errorf("codec setting `routing-required` not respected")
+	}
+}
+
+func TestGenerateSetterSamples(t *testing.T) {
+	model := serviceAnnotationsModel()
+	codec, err := newCodec("protobuf", map[string]string{
+		"generate-setter-samples": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	if !model.Codec.(*modelAnnotations).GenerateSetterSamples {
+		t.Errorf("GenerateSetterSamples should be true")
+	}
+}
+
+func TestAnnotateModelWithDetailedTracing(t *testing.T) {
+	tests := []struct {
+		name    string
+		options map[string]string
+		want    bool
+	}{
+		{
+			name:    "DetailedTracingTrue",
+			options: map[string]string{"detailed-tracing-attributes": "true"},
+			want:    true,
+		},
+		{
+			name:    "DetailedTracingFalse",
+			options: map[string]string{"detailed-tracing-attributes": "false"},
+			want:    false,
+		},
+		{
+			name:    "DetailedTracingMissing",
+			options: map[string]string{},
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+			codec, err := newCodec("protobuf", tt.options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := annotateModel(model, codec)
+			if got.DetailedTracingAttributes != tt.want {
+				t.Errorf("annotateModel() DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, tt.want)
+			}
+		})
+	}
+}
+
+func TestSetterSampleAnnotations(t *testing.T) {
+	enum := &api.Enum{
+		Name:    "TestEnum",
+		ID:      ".test.v1.TestEnum",
+		Package: "test.v1",
+	}
+	message := &api.Message{
+		Name:    "TestMessage",
+		ID:      ".test.v1.TestMessage",
+		Package: "test.v1",
+		Fields: []*api.Field{
+			{
+				Name:    "enum_field",
+				ID:      ".test.v1.TestMessage.enum_field",
+				Typez:   api.ENUM_TYPE,
+				TypezID: ".test.v1.TestEnum",
+			},
+			{
+				Name:    "message_field",
+				ID:      ".test.v1.TestMessage.message_field",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".test.v1.TestMessage",
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
+	api.CrossReference(model)
+	codec, err := newCodec("protobuf", map[string]string{
+		"generate-setter-samples": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+
+	if message.Codec.(*messageAnnotation).NameInExamples != "google_cloud_test_v1::model::TestMessage" {
+		t.Errorf("mismatch in message NameInExamples: got %q", message.Codec.(*messageAnnotation).NameInExamples)
+	}
+	if enum.Codec.(*enumAnnotation).NameInExamples != "google_cloud_test_v1::model::TestEnum" {
+		t.Errorf("mismatch in enum NameInExamples: got %q", enum.Codec.(*enumAnnotation).NameInExamples)
+	}
+
+	enumField := message.Fields[0]
+	if enumField.Parent != message {
+		t.Errorf("mismatch in enum_field.Parent")
+	}
+	if enumField.EnumType != enum {
+		t.Errorf("mismatch in enum_field.EnumType")
+	}
+
+	messageField := message.Fields[1]
+	if messageField.Parent != message {
+		t.Errorf("mismatch in message_field.Parent")
+	}
+	if messageField.MessageType != message {
+		t.Errorf("mismatch in message_field.MessageType")
+	}
+}
+
+func TestEnumAnnotationsValuesForExamples(t *testing.T) {
+	v_good1 := &api.EnumValue{Name: "GOOD_1", Number: 1}
+	v_good2 := &api.EnumValue{Name: "GOOD_2", Number: 2}
+	v_good3 := &api.EnumValue{Name: "GOOD_3", Number: 3}
+	v_good4 := &api.EnumValue{Name: "GOOD_4", Number: 4}
+	v_bad_deprecated := &api.EnumValue{Name: "BAD_DEPRECATED", Number: 5, Deprecated: true}
+	v_bad_default := &api.EnumValue{Name: "BAD_DEFAULT", Number: 0}
+
+	testCases := []struct {
+		name         string
+		values       []*api.EnumValue
+		wantExamples []*enumValueForExamples
+	}{
+		{
+			name:   "more than 3 good values",
+			values: []*api.EnumValue{v_good1, v_good2, v_good3, v_good4},
+			wantExamples: []*enumValueForExamples{
+				{EnumValue: v_good1, Index: 0},
+				{EnumValue: v_good2, Index: 1},
+				{EnumValue: v_good3, Index: 2},
+			},
+		},
+		{
+			name:   "less than 3 good values",
+			values: []*api.EnumValue{v_good1, v_good2, v_bad_deprecated},
+			wantExamples: []*enumValueForExamples{
+				{EnumValue: v_good1, Index: 0},
+				{EnumValue: v_good2, Index: 1},
+			},
+		},
+		{
+			name:   "no good values",
+			values: []*api.EnumValue{v_bad_default, v_bad_deprecated},
+			wantExamples: []*enumValueForExamples{
+				{EnumValue: v_bad_default, Index: 0},
+				{EnumValue: v_bad_deprecated, Index: 1},
+			},
+		},
+		{
+			name:         "no values",
+			values:       []*api.EnumValue{},
+			wantExamples: []*enumValueForExamples{},
+		},
+		{
+			name:   "mixed good and bad values",
+			values: []*api.EnumValue{v_bad_default, v_good1, v_bad_deprecated, v_good2},
+			wantExamples: []*enumValueForExamples{
+				{EnumValue: v_good1, Index: 0},
+				{EnumValue: v_good2, Index: 1},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			enum := &api.Enum{
+				Name:    "TestEnum",
+				ID:      ".test.v1.TestEnum",
+				Package: "test.v1",
+				Values:  tc.values,
+			}
+			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatalf("CrossReference() failed: %v", err)
+			}
+			codec, err := newCodec("protobuf", map[string]string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			annotateModel(model, codec)
+
+			got := enum.Codec.(*enumAnnotation).ValuesForExamples
+			if diff := cmp.Diff(tc.wantExamples, got, cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
+				t.Errorf("mismatch in ValuesForExamples (-want, +got)\n:%s", diff)
+			}
+		})
+	}
+}
+
+func TestOneOfExampleFieldSelection(t *testing.T) {
+	deprecated := &api.Field{
+		Name:       "deprecated_field",
+		ID:         ".test.Message.deprecated_field",
+		Typez:      api.STRING_TYPE,
+		IsOneOf:    true,
+		Deprecated: true,
+	}
+	map_field := &api.Field{
+		Name:    "map_field",
+		ID:      ".test.Message.map_field",
+		Typez:   api.MESSAGE_TYPE,
+		TypezID: ".test.$Map",
+		IsOneOf: true,
+		Map:     true,
+	}
+	repeated := &api.Field{
+		Name:     "repeated_field",
+		ID:       ".test.Message.repeated_field",
+		Typez:    api.STRING_TYPE,
+		Repeated: true,
+		IsOneOf:  true,
+	}
+	scalar := &api.Field{
+		Name:    "scalar_field",
+		ID:      ".test.Message.scalar_field",
+		Typez:   api.INT32_TYPE,
+		IsOneOf: true,
+	}
+	message_field := &api.Field{
+		Name:    "message_field",
+		ID:      ".test.Message.message_field",
+		Typez:   api.MESSAGE_TYPE,
+		TypezID: ".test.OneMessage",
+		IsOneOf: true,
+	}
+	another_message_field := &api.Field{
+		Name:    "another_message_field",
+		ID:      ".test.Message.another_message_field",
+		Typez:   api.MESSAGE_TYPE,
+		TypezID: ".test.AnotherMessage",
+		IsOneOf: true,
+	}
+
+	testCases := []struct {
+		name   string
+		fields []*api.Field
+		want   *api.Field
+	}{
+		{
+			name:   "all types",
+			fields: []*api.Field{deprecated, map_field, repeated, scalar, message_field},
+			want:   scalar,
+		},
+		{
+			name:   "no primitives",
+			fields: []*api.Field{deprecated, map_field, repeated, message_field},
+			want:   message_field,
+		},
+		{
+			name:   "only scalars and messages",
+			fields: []*api.Field{message_field, scalar, another_message_field},
+			want:   scalar,
+		},
+		{
+			name:   "no scalars",
+			fields: []*api.Field{deprecated, map_field, repeated},
+			want:   repeated,
+		},
+		{
+			name:   "only map and deprecated",
+			fields: []*api.Field{deprecated, map_field},
+			want:   map_field,
+		},
+		{
+			name:   "only deprecated",
+			fields: []*api.Field{deprecated},
+			want:   deprecated,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			group := &api.OneOf{
+				Name:   "test_oneof",
+				ID:     ".test.Message.test_oneof",
+				Fields: tc.fields,
+			}
+			message := &api.Message{
+				Name:    "Message",
+				ID:      ".test.Message",
+				Package: "test",
+				Fields:  tc.fields,
+				OneOfs:  []*api.OneOf{group},
+			}
+			oneMesage := &api.Message{
+				Name:    "OneMessage",
+				ID:      ".test.OneMessage",
+				Package: "test",
+			}
+			anotherMessage := &api.Message{
+				Name:    "AnotherMessage",
+				ID:      ".test.AnotherMessage",
+				Package: "test",
+			}
+			model := api.NewTestAPI([]*api.Message{message, oneMesage, anotherMessage}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			codec := createRustCodec()
+			annotateModel(model, codec)
+
+			got := group.Codec.(*oneOfAnnotation).ExampleField
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("mismatch in ExampleField (-want, +got)\n:%s", diff)
+			}
+		})
 	}
 }

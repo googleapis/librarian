@@ -25,7 +25,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 )
 
 func TestNew(t *testing.T) {
@@ -35,7 +34,10 @@ func TestNew(t *testing.T) {
 		testUID      = "1000"
 		testGID      = "1001"
 	)
-	d, err := New(testWorkRoot, testImage, testUID, testGID)
+	d, err := New(testWorkRoot, testImage, &DockerOptions{
+		UserUID: testUID,
+		UserGID: testGID,
+	})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -145,7 +147,8 @@ func TestDockerRun(t *testing.T) {
 		{
 			name: "Generate runs in docker",
 			docker: &Docker{
-				Image: testImage,
+				Image:     testImage,
+				HostMount: "hostDir:localDir",
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				generateRequest := &GenerateRequest{
@@ -154,7 +157,6 @@ func TestDockerRun(t *testing.T) {
 					ApiRoot:   testAPIRoot,
 					Output:    "hostDir",
 					LibraryID: testLibraryID,
-					HostMount: "hostDir:localDir",
 				}
 
 				return d.Generate(ctx, generateRequest)
@@ -243,6 +245,11 @@ func TestDockerRun(t *testing.T) {
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					GlobalFiles: []string{
+						"a/b/go.mod",
+						"go.mod",
+					},
 				}
 
 				_, err := d.Configure(ctx, configureRequest)
@@ -253,18 +260,128 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
-				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				"-v", fmt.Sprintf("%s/a/b/go.mod:/repo/a/b/go.mod:ro", repoDir),
+				"-v", fmt.Sprintf("%s/go.mod:/repo/go.mod:ro", repoDir),
 				testImage,
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
+				"--output=/output",
 				"--repo=/repo",
 				"--source=/source",
 			},
 		},
 		{
-			name: "Configure with multiple libraries in librarian state",
+			name: "configure_with_nil_global_files",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:       state,
+					LibraryID:   testLibraryID,
+					RepoDir:     repoDir,
+					ApiRoot:     testAPIRoot,
+					Output:      testOutput,
+					GlobalFiles: nil,
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
+			name: "configure_with_source_roots",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					ExistingSourceRoots: []string{
+						"a/path",
+						"b/path",
+					},
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				"-v", fmt.Sprintf("%s/a/path:/repo/a/path:ro", repoDir),
+				"-v", fmt.Sprintf("%s/b/path:/repo/b/path:ro", repoDir),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
+			name: "configure_with_nil_source_roots",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:               state,
+					LibraryID:           testLibraryID,
+					RepoDir:             repoDir,
+					ApiRoot:             testAPIRoot,
+					Output:              testOutput,
+					ExistingSourceRoots: nil,
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
+			name: "configure_with_multiple_libraries_in_librarian_state",
 			docker: &Docker{
 				Image: testImage,
 			},
@@ -299,6 +416,11 @@ func TestDockerRun(t *testing.T) {
 					LibraryID: testLibraryID,
 					RepoDir:   repoDir,
 					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					GlobalFiles: []string{
+						"a/b/go.mod",
+						"go.mod",
+					},
 				}
 
 				configuredLibrary, err := d.Configure(ctx, configureRequest)
@@ -312,12 +434,15 @@ func TestDockerRun(t *testing.T) {
 				"run", "--rm",
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
-				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
 				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				"-v", fmt.Sprintf("%s/a/b/go.mod:/repo/a/b/go.mod:ro", repoDir),
+				"-v", fmt.Sprintf("%s/go.mod:/repo/go.mod:ro", repoDir),
 				testImage,
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
+				"--output=/output",
 				"--repo=/repo",
 				"--source=/source",
 			},
@@ -377,7 +502,7 @@ func TestDockerRun(t *testing.T) {
 					State:           state,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 				}
 
 				defer os.RemoveAll(partialRepoDir)
@@ -409,7 +534,7 @@ func TestDockerRun(t *testing.T) {
 
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
 				}
@@ -427,9 +552,9 @@ func TestDockerRun(t *testing.T) {
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
 				releaseInitRequest := &ReleaseInitRequest{
-					State:          state,
-					PartialRepoDir: "/non-exist-dir",
-					Output:         testOutput,
+					State:   state,
+					RepoDir: "/non-exist-dir",
+					Output:  testOutput,
 				}
 
 				return d.ReleaseInit(ctx, releaseInitRequest)
@@ -449,7 +574,7 @@ func TestDockerRun(t *testing.T) {
 				}
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 					Output:          testOutput,
 					LibraryID:       testLibraryID,
 					LibrarianConfig: &config.LibrarianConfig{},
@@ -483,7 +608,7 @@ func TestDockerRun(t *testing.T) {
 
 				releaseInitRequest := &ReleaseInitRequest{
 					State:           state,
-					PartialRepoDir:  partialRepoDir,
+					RepoDir:         partialRepoDir,
 					Output:          testOutput,
 					LibraryID:       testLibraryID,
 					LibraryVersion:  "1.2.3",
@@ -803,22 +928,23 @@ func TestReleaseInitRequestContent(t *testing.T) {
 				ID:               "my-library",
 				Version:          "1.1.0",
 				ReleaseTriggered: true,
-				Changes: []*conventionalcommits.ConventionalCommit{
+				Changes: []*config.Commit{
 					{
-						Type:    "feat",
-						Subject: "new feature",
-						Body:    "body of feature",
-						Footers: map[string]string{
-							"PiperOrigin-RevId": "12345",
-						},
-						SHA: "1234",
+						Type:          "feat",
+						Subject:       "new feature",
+						Body:          "body of feature",
+						PiperCLNumber: "12345",
+						CommitHash:    "1234",
 					},
 				},
 			},
 		},
 	}
 
-	d, err := New(tmpDir, "test-image", "1000", "1000")
+	d, err := New(tmpDir, "test-image", &DockerOptions{
+		UserUID: "1000",
+		UserGID: "1000",
+	})
 	if err != nil {
 		t.Fatalf("New() failed: %v", err)
 	}
@@ -860,7 +986,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 
 	req := &ReleaseInitRequest{
 		State:           stateWithChanges,
-		PartialRepoDir:  partialRepoDir,
+		RepoDir:         partialRepoDir,
 		Output:          filepath.Join(tmpDir, "output"),
 		LibrarianConfig: &config.LibrarianConfig{},
 	}

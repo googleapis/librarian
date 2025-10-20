@@ -21,11 +21,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"gopkg.in/yaml.v3"
 )
 
 // mockGitHubClient is a mock implementation of the GitHubClient interface for testing.
@@ -40,6 +40,7 @@ type mockGitHubClient struct {
 	searchPullRequestsCalls int
 	getPullRequestCalls     int
 	createReleaseCalls      int
+	createIssueCalls        int
 	createTagCalls          int
 	createPullRequestErr    error
 	addLabelsToIssuesErr    error
@@ -48,19 +49,24 @@ type mockGitHubClient struct {
 	searchPullRequestsErr   error
 	getPullRequestErr       error
 	createReleaseErr        error
+	createIssueErr          error
 	createTagErr            error
 	createdPR               *github.PullRequestMetadata
 	labels                  []string
 	pullRequests            []*github.PullRequest
 	pullRequest             *github.PullRequest
 	createdRelease          *github.RepositoryRelease
+	librarianState          *config.LibrarianState
 }
 
 func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) ([]byte, error) {
+	if path == ".librarian/state.yaml" && m.librarianState != nil {
+		return yaml.Marshal(m.librarianState)
+	}
 	return m.rawContent, m.rawErr
 }
 
-func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error) {
+func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string, isDraft bool) (*github.PullRequestMetadata, error) {
 	m.createPullRequestCalls++
 	if m.createPullRequestErr != nil {
 		return nil, m.createPullRequestErr
@@ -99,6 +105,11 @@ func (m *mockGitHubClient) CreateRelease(ctx context.Context, tagName, releaseNa
 	return m.createdRelease, m.createReleaseErr
 }
 
+func (m *mockGitHubClient) CreateIssueComment(ctx context.Context, number int, comment string) error {
+	m.createIssueCalls++
+	return m.createIssueErr
+}
+
 func (m *mockGitHubClient) CreateTag(ctx context.Context, tagName, commitish string) error {
 	m.createTagCalls++
 	return m.createTagErr
@@ -120,7 +131,13 @@ type mockContainerClient struct {
 	failGenerateForID string
 	// Set this value if you want an error when
 	// generate a library with a specific id.
-	generateErrForID    error
+	generateErrForID error
+	// Set this value if you want an error when
+	// build a library with a specific id.
+	failBuildForID string
+	// Set this value if you want an error when
+	// build a library with a specific id.
+	buildErrForID       error
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
@@ -153,6 +170,13 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.BuildResponse), []byte(libraryStr), 0755); err != nil {
 		return err
 	}
+
+	if m.failBuildForID != "" {
+		if request.LibraryID == m.failBuildForID {
+			return m.buildErrForID
+		}
+	}
+
 	return m.buildErr
 }
 
@@ -269,7 +293,7 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 		return m.initErr
 	}
 	// Write a release-init-response.json unless we're configured not to.
-	if err := os.MkdirAll(filepath.Join(request.PartialRepoDir, ".librarian"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(request.RepoDir, ".librarian"), 0755); err != nil {
 		return err
 	}
 
@@ -281,7 +305,7 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(request.PartialRepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
 		return err
 	}
 	return m.initErr
@@ -292,13 +316,14 @@ type MockRepository struct {
 	Dir                                    string
 	IsCleanValue                           bool
 	IsCleanError                           error
-	AddAllStatus                           git.Status
 	AddAllError                            error
 	CommitError                            error
-	RemotesValue                           []*git.Remote
+	RemotesValue                           []*gitrepo.Remote
 	RemotesError                           error
 	CommitCalls                            int
+	LastCommitMessage                      string
 	GetCommitError                         error
+	GetLatestCommitError                   error
 	GetCommitByHash                        map[string]*gitrepo.Commit
 	GetCommitsForPathsSinceTagValue        []*gitrepo.Commit
 	GetCommitsForPathsSinceTagValueByTag   map[string][]*gitrepo.Commit
@@ -306,12 +331,28 @@ type MockRepository struct {
 	GetCommitsForPathsSinceLastGenValue    []*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByCommit map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByPath   map[string][]*gitrepo.Commit
+	GetLatestCommitByPath                  map[string]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenError    error
 	ChangedFilesInCommitValue              []string
 	ChangedFilesInCommitValueByHash        map[string][]string
 	ChangedFilesInCommitError              error
+	ChangedFilesValue                      []string
+	ChangedFilesError                      error
 	CreateBranchAndCheckoutError           error
+	PushCalls                              int
 	PushError                              error
+	RestoreError                           error
+	HeadHashValue                          string
+	HeadHashError                          error
+	CheckoutCalls                          int
+	CheckoutError                          error
+}
+
+func (m *MockRepository) HeadHash() (string, error) {
+	if m.HeadHashError != nil {
+		return "", m.HeadHashError
+	}
+	return m.HeadHashValue, nil
 }
 
 func (m *MockRepository) IsClean() (bool, error) {
@@ -321,19 +362,20 @@ func (m *MockRepository) IsClean() (bool, error) {
 	return m.IsCleanValue, nil
 }
 
-func (m *MockRepository) AddAll() (git.Status, error) {
+func (m *MockRepository) AddAll() error {
 	if m.AddAllError != nil {
-		return git.Status{}, m.AddAllError
+		return m.AddAllError
 	}
-	return m.AddAllStatus, nil
+	return nil
 }
 
 func (m *MockRepository) Commit(msg string) error {
 	m.CommitCalls++
+	m.LastCommitMessage = msg
 	return m.CommitError
 }
 
-func (m *MockRepository) Remotes() ([]*git.Remote, error) {
+func (m *MockRepository) Remotes() ([]*gitrepo.Remote, error) {
 	if m.RemotesError != nil {
 		return nil, m.RemotesError
 	}
@@ -351,6 +393,20 @@ func (m *MockRepository) GetCommit(commitHash string) (*gitrepo.Commit, error) {
 
 	if m.GetCommitByHash != nil {
 		if commit, ok := m.GetCommitByHash[commitHash]; ok {
+			return commit, nil
+		}
+	}
+
+	return nil, errors.New("should not reach here")
+}
+
+func (m *MockRepository) GetLatestCommit(path string) (*gitrepo.Commit, error) {
+	if m.GetLatestCommitError != nil {
+		return nil, m.GetLatestCommitError
+	}
+
+	if m.GetLatestCommitByPath != nil {
+		if commit, ok := m.GetLatestCommitByPath[path]; ok {
 			return commit, nil
 		}
 	}
@@ -406,6 +462,13 @@ func (m *MockRepository) ChangedFilesInCommit(hash string) ([]string, error) {
 	return m.ChangedFilesInCommitValue, nil
 }
 
+func (m *MockRepository) ChangedFiles() ([]string, error) {
+	if m.ChangedFilesError != nil {
+		return nil, m.ChangedFilesError
+	}
+	return m.ChangedFilesValue, nil
+}
+
 func (m *MockRepository) CreateBranchAndCheckout(name string) error {
 	if m.CreateBranchAndCheckoutError != nil {
 		return m.CreateBranchAndCheckoutError
@@ -414,8 +477,37 @@ func (m *MockRepository) CreateBranchAndCheckout(name string) error {
 }
 
 func (m *MockRepository) Push(name string) error {
+	m.PushCalls++
 	if m.PushError != nil {
 		return m.PushError
 	}
 	return nil
+}
+
+func (m *MockRepository) Restore(paths []string) error {
+	return m.RestoreError
+}
+
+func (m *MockRepository) CleanUntracked(paths []string) error {
+	return nil
+}
+
+func (m *MockRepository) Checkout(commitHash string) error {
+	m.CheckoutCalls++
+	if m.CheckoutError != nil {
+		return m.CheckoutError
+	}
+	return nil
+}
+
+// mockImagesClient is a mock implementation of the ImageRegistryClient interface for testing.
+type mockImagesClient struct {
+	latestImage     string
+	err             error
+	findLatestCalls int
+}
+
+func (m *mockImagesClient) FindLatest(ctx context.Context, imageName string) (string, error) {
+	m.findLatestCalls++
+	return m.latestImage, m.err
 }

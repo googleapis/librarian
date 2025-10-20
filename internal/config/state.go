@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
+	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const (
@@ -110,10 +110,10 @@ type LibraryState struct {
 	// The last released version of the library, following SemVer.
 	Version string `yaml:"version" json:"version"`
 	// The commit hash from the API definition repository at which the library was last generated.
-	LastGeneratedCommit string `yaml:"last_generated_commit" json:"last_generated_commit"`
+	LastGeneratedCommit string `yaml:"last_generated_commit" json:"-"`
 	// The changes from the language repository since the library was last released.
 	// This field is ignored when writing to state.yaml.
-	Changes []*conventionalcommits.ConventionalCommit `yaml:"-" json:"changes,omitempty"`
+	Changes []*Commit `yaml:"-" json:"changes,omitempty"`
 	// A list of APIs that are part of this library.
 	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
@@ -126,8 +126,8 @@ type LibraryState struct {
 	// If not set, this defaults to the `source_roots`.
 	// A more specific `preserve_regex` takes precedence.
 	RemoveRegex []string `yaml:"remove_regex" json:"remove_regex"`
-	// Path of commits to be excluded from parsing while calculating library changes.
-	// If all files from commit belong to one of the paths it will be skipped.
+	// A list of paths to exclude from the release.
+	// Files matching these paths will not be considered part of a commit for this library.
 	ReleaseExcludePaths []string `yaml:"release_exclude_paths,omitempty" json:"release_exclude_paths,omitempty"`
 	// Specifying a tag format allows librarian to honor this format when creating
 	// a tag for the release of the library. The replacement values of {id} and {version}
@@ -140,6 +140,29 @@ type LibraryState struct {
 	// An error message from the docker response.
 	// This field is ignored when writing to state.yaml.
 	ErrorMessage string `yaml:"-" json:"error,omitempty"`
+}
+
+// Commit represents a single commit in the release notes.
+type Commit struct {
+	// Type is the type of change (e.g., "feat", "fix", "docs").
+	Type string `json:"type"`
+	// Subject is the short summary of the change.
+	Subject string `json:"subject"`
+	// Body is the long-form description of the change.
+	Body string `json:"body"`
+	// CommitHash is the full commit hash.
+	CommitHash string `json:"commit_hash,omitempty"`
+	// PiperCLNumber is the Piper CL number associated with the commit.
+	PiperCLNumber string `json:"piper_cl_number,omitempty"`
+
+	// A list of library IDs associated with the commit.
+	LibraryIDs string `json:"-"`
+}
+
+// IsBulkCommit returns true if the commit is associated with 10 or more
+// libraries.
+func (c *Commit) IsBulkCommit() bool {
+	return len(strings.Split(c.LibraryIDs, ",")) >= 10
 }
 
 var (
@@ -180,12 +203,12 @@ func (l *LibraryState) Validate() error {
 		return fmt.Errorf("source_roots cannot be empty")
 	}
 	for i, p := range l.SourceRoots {
-		if !isValidDirPath(p) {
+		if !isValidRelativePath(p) {
 			return fmt.Errorf("invalid source_path at index %d: %q", i, p)
 		}
 	}
 	for i, p := range l.ReleaseExcludePaths {
-		if !isValidDirPath(p) {
+		if !isValidRelativePath(p) {
 			return fmt.Errorf("invalid release_exclude_path at index %d: %q", i, p)
 		}
 	}
@@ -226,7 +249,7 @@ type API struct {
 
 // Validate checks that the API is valid.
 func (a *API) Validate() error {
-	if !isValidDirPath(a.Path) {
+	if !isValidRelativePath(a.Path) {
 		return fmt.Errorf("invalid path: %q", a.Path)
 	}
 	return nil
@@ -236,9 +259,13 @@ func (a *API) Validate() error {
 // plus path separators and the null byte.
 const invalidPathChars = "<>:\"|?*/\\\x00"
 
-func isValidDirPath(pathString string) bool {
+func isValidRelativePath(pathString string) bool {
 	if pathString == "" {
 		return false
+	}
+
+	if pathString == gitrepo.RootPath {
+		return true
 	}
 
 	// The paths are expected to be relative and use the OS-specific path separator.

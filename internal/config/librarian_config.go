@@ -28,12 +28,16 @@ const (
 type LibrarianConfig struct {
 	GlobalFilesAllowlist []*GlobalFile    `yaml:"global_files_allowlist"`
 	Libraries            []*LibraryConfig `yaml:"libraries"`
+	TagFormat            string           `yaml:"tag_format"`
 }
 
 // LibraryConfig defines configuration for a single library, identified by its ID.
 type LibraryConfig struct {
-	LibraryID   string `yaml:"id"`
-	NextVersion string `yaml:"next_version"`
+	GenerateBlocked bool   `yaml:"generate_blocked"`
+	LibraryID       string `yaml:"id"`
+	NextVersion     string `yaml:"next_version"`
+	ReleaseBlocked  bool   `yaml:"release_blocked"`
+	TagFormat       string `yaml:"tag_format"`
 }
 
 // GlobalFile defines the global files in language repositories.
@@ -52,7 +56,7 @@ var validPermissions = map[string]bool{
 func (g *LibrarianConfig) Validate() error {
 	for i, globalFile := range g.GlobalFilesAllowlist {
 		path, permissions := globalFile.Path, globalFile.Permissions
-		if !isValidDirPath(path) {
+		if !isValidRelativePath(path) {
 			return fmt.Errorf("invalid global file path at index %d: %q", i, path)
 		}
 		if _, ok := validPermissions[permissions]; !ok {
@@ -71,4 +75,14 @@ func (g *LibrarianConfig) LibraryConfigFor(LibraryID string) *LibraryConfig {
 		}
 	}
 	return nil
+}
+
+// GetGlobalFiles returns the global files defined in the librarian config.
+func (g *LibrarianConfig) GetGlobalFiles() []string {
+	var globalFiles []string
+	for _, globalFile := range g.GlobalFilesAllowlist {
+		globalFiles = append(globalFiles, globalFile.Path)
+	}
+
+	return globalFiles
 }

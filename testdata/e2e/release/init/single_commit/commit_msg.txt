@@ -1,0 +1,5 @@
+feat: [dlp] add LocationSupport,Domain,DocumentFallbackLocation
+
+PiperOrigin-RevId: 808091810
+Source-link: https://github.com/googleapis/google-cloud-go/commit/2d9e87b206c27a5d491d324826e84cf060b2cb28
+

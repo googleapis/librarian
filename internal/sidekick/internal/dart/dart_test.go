@@ -208,11 +208,11 @@ func TestResolveTypeName_ImportsMessages(t *testing.T) {
 		typeId string
 		want   string
 	}{
-		{".google.protobuf.Any", "google.protobuf"},
-		{".google.rpc.Status", "google.rpc"},
-		{".google.type.Expr", "google.type"},
+		{".google.protobuf.Any", "package:google_cloud_protobuf/protobuf.dart"},
+		{".google.rpc.Status", "package:google_cloud_rpc/rpc.dart"},
+		{".google.type.Expr", "package:google_cloud_type/type.dart"},
 	} {
-		annotate.imports = map[string]string{}
+		annotate.imports = map[string]bool{}
 		annotate.resolveTypeName(state.MessageByID[test.typeId], true)
 		if _, ok := annotate.imports[test.want]; !ok {
 			t.Errorf("import not added, got: %v want: %s", annotate.imports, test.want)
@@ -244,9 +244,9 @@ func TestResolveTypeName_ImportsEnum(t *testing.T) {
 		Typez:   api.ENUM_TYPE,
 		TypezID: ".google.type.DayOfWeek",
 	}
-	annotate.imports = map[string]string{}
+	annotate.imports = map[string]bool{}
 	annotate.fieldType(field)
-	want := "google.type"
+	want := "package:google_cloud_type/type.dart"
 	if _, ok := annotate.imports[want]; !ok {
 		t.Errorf("import not added, got: %v want: %s", annotate.imports, want)
 	}
@@ -432,7 +432,7 @@ func TestFieldType_Bytes(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
-	annotate.imports = map[string]string{}
+	annotate.imports = map[string]bool{}
 
 	{
 		got := annotate.fieldType(field)

@@ -1,0 +1,66 @@
+{{!
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+/// Sets the value of [{{Codec.FieldName}}][{{Codec.StructQualifiedName}}::{{Codec.SetterName}}].
+///
+/// Note that all the setters affecting `{{Codec.FieldName}}` are mutually
+/// exclusive.
+{{#ModelCodec.GenerateSetterSamples}}
+///
+/// # Example
+/// ```
+{{#Codec.ExampleField}}
+{{#IsString}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}("example".to_string())));
+{{/IsString}}
+{{#IsBytes}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(bytes::Bytes::from_static(b"example"))));
+{{/IsBytes}}
+{{#IsBool}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(true)));
+{{/IsBool}}
+{{#IsLikeInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(42)));
+{{/IsLikeInt}}
+{{#IsLikeFloat}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(42.0)));
+{{/IsLikeFloat}}
+{{#IsEnum}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{EnumType.Codec.NameInExamples}};
+{{#EnumType.Codec.ValuesForExamples}}
+/// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{FieldCodec.BranchName}}({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}})));
+{{/EnumType.Codec.ValuesForExamples}}
+{{/IsEnum}}
+{{#IsObject}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Group.Codec.ScopeInExamples}};
+/// use {{MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}({{MessageType.Codec.Name}}::default().into())));
+{{/IsObject}}
+{{/Codec.ExampleField}}
+/// ```
+{{/ModelCodec.GenerateSetterSamples}}

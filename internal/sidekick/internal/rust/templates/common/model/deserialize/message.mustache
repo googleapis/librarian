@@ -1,0 +1,79 @@
+{{!
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+
+{{^IsMap}}
+{{^ServicePlaceholder}}
+{{> /templates/common/feature_gate}}
+#[doc(hidden)]
+impl<'de> serde::de::Deserialize<'de> for super::{{Codec.RelativeName}} {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        {{> /templates/common/deser_field_tag}}
+        {{! This is the visitor for the message }}
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = super::{{Codec.RelativeName}};
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct {{Codec.Name}}")
+            }
+            fn visit_map<A>(self, mut map: A) -> std::result::Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                use std::option::Option::Some;
+                #[allow(unused_imports)]
+                use serde::de::Error;
+                {{#HasFields}}
+                let mut fields = std::collections::HashSet::new();
+                {{/HasFields}}
+                let mut result = Self::Value::new();
+                while let Some(tag) = map.next_key::<__FieldTag>()? {
+                    #[allow(clippy::match_single_binding)]
+                    match tag {
+                        {{#Fields}}
+                        __FieldTag::__{{Codec.SetterName}} => {
+                            if !fields.insert(__FieldTag::__{{Codec.SetterName}}) {
+                                return std::result::Result::Err(A::Error::duplicate_field("multiple values for {{Codec.SetterName}}"));
+                            }
+                            {{^Codec.RequiresSerdeAs}}
+                            {{> /templates/common/deser_plain_message_field}}
+                            {{/Codec.RequiresSerdeAs}}
+                            {{#Codec.RequiresSerdeAs}}
+                            {{> /templates/common/deser_with_message_field}}
+                            {{/Codec.RequiresSerdeAs}}
+                        },
+                        {{/Fields}}
+                        __FieldTag::Unknown(key) => {
+                            let value = map.next_value::<serde_json::Value>()?;
+                            result._unknown_fields.insert(key, value);
+                        },
+                    }
+                }
+                std::result::Result::Ok(result)
+            }
+        }
+        deserializer.deserialize_any(Visitor)
+    }
+}
+{{#Codec.HasNestedTypes}}
+{{#Messages}}
+{{> /templates/common/model/deserialize/message}}
+{{/Messages}}
+{{/Codec.HasNestedTypes}}
+{{/ServicePlaceholder}}
+{{/IsMap}}

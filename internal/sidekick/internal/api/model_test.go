@@ -231,3 +231,97 @@ func TestPathTemplateBuilder(t *testing.T) {
 		t.Errorf("bad builder result (-want, +got):\n%s", diff)
 	}
 }
+
+func TestFieldTypePredicates(t *testing.T) {
+	type TestCase struct {
+		field    *Field
+		isString bool
+		isBytes  bool
+		isBool   bool
+		isInt    bool
+		isFloat  bool
+		isEnum   bool
+		isObject bool
+	}
+	testCases := []TestCase{
+		{field: &Field{Typez: STRING_TYPE}, isString: true},
+		{field: &Field{Typez: BYTES_TYPE}, isBytes: true},
+		{field: &Field{Typez: BOOL_TYPE}, isBool: true},
+		{field: &Field{Typez: INT32_TYPE}, isInt: true},
+		{field: &Field{Typez: INT64_TYPE}, isInt: true},
+		{field: &Field{Typez: UINT32_TYPE}, isInt: true},
+		{field: &Field{Typez: UINT64_TYPE}, isInt: true},
+		{field: &Field{Typez: SINT32_TYPE}, isInt: true},
+		{field: &Field{Typez: SINT64_TYPE}, isInt: true},
+		{field: &Field{Typez: FIXED32_TYPE}, isInt: true},
+		{field: &Field{Typez: FIXED64_TYPE}, isInt: true},
+		{field: &Field{Typez: SFIXED32_TYPE}, isInt: true},
+		{field: &Field{Typez: SFIXED64_TYPE}, isInt: true},
+		{field: &Field{Typez: FLOAT_TYPE}, isFloat: true},
+		{field: &Field{Typez: DOUBLE_TYPE}, isFloat: true},
+		{field: &Field{Typez: ENUM_TYPE}, isEnum: true},
+		{field: &Field{Typez: MESSAGE_TYPE}, isObject: true},
+	}
+	for _, tc := range testCases {
+		if tc.field.IsString() != tc.isString {
+			t.Errorf("IsString() for %v should be %v", tc.field.Typez, tc.isString)
+		}
+		if tc.field.IsBytes() != tc.isBytes {
+			t.Errorf("IsBytes() for %v should be %v", tc.field.Typez, tc.isBytes)
+		}
+		if tc.field.IsBool() != tc.isBool {
+			t.Errorf("IsBool() for %v should be %v", tc.field.Typez, tc.isBool)
+		}
+		if tc.field.IsLikeInt() != tc.isInt {
+			t.Errorf("IsLikeInt() for %v should be %v", tc.field.Typez, tc.isInt)
+		}
+		if tc.field.IsLikeFloat() != tc.isFloat {
+			t.Errorf("IsLikeFloat() for %v should be %v", tc.field.Typez, tc.isFloat)
+		}
+		if tc.field.IsEnum() != tc.isEnum {
+			t.Errorf("IsEnum() for %v should be %v", tc.field.Typez, tc.isEnum)
+		}
+		if tc.field.IsObject() != tc.isObject {
+			t.Errorf("IsObject() for %v should be %v", tc.field.Typez, tc.isObject)
+		}
+	}
+}
+
+func TestFlatPath(t *testing.T) {
+	for _, test := range []struct {
+		Input *PathTemplate
+		Want  string
+	}{
+		{
+			Input: NewPathTemplate(),
+			Want:  "",
+		},
+		{
+			Input: NewPathTemplate().
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("zones").
+				WithVariableNamed("zone"),
+			Want: "projects/{project}/zones/{zone}",
+		},
+		{
+			Input: NewPathTemplate().
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("global").
+				WithLiteral("location"),
+			Want: "projects/{project}/global/location",
+		},
+		{
+			Input: NewPathTemplate().
+				WithLiteral("projects").
+				WithVariable(NewPathVariable("a", "b", "c").WithMatchRecursive()),
+			Want: "projects/{a.b.c}",
+		},
+	} {
+		got := test.Input.FlatPath()
+		if got != test.Want {
+			t.Errorf("mismatch want=%q, got=%q", test.Want, got)
+		}
+	}
+}

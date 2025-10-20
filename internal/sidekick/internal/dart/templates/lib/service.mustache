@@ -18,12 +18,39 @@ limitations under the License.
 {{{.}}}
 {{/Codec.DocLines}}
 final class {{Codec.Name}} {
-  static const String _host = '{{DefaultHost}}';
-
+  static const _host = '{{DefaultHost}}';
   final ServiceClient _client;
 
+  /// Creates a `{{Codec.Name}}` using [client] for transport.
+  ///
+  /// The provided [http.Client] must be configured to provide whatever
+  /// authentication is required by `{{Codec.Name}}`. You can do that
+  /// using
+  /// [`package:googleapis_auth`](https://pub.dev/packages/googleapis_auth).
   {{Codec.Name}}({required http.Client client})
       : _client = ServiceClient(client: client);
+
+  /// Creates a `{{Codec.Name}}` that does authentication through an API key.
+  ///
+  /// If called without arguments, the API key is taken from these environment
+  /// variables:
+{{#Model.Codec.ApiKeyEnvironmentVariables}}
+  ///   * `{{{.}}}`
+{{/Model.Codec.ApiKeyEnvironmentVariables}}
+  ///
+  /// Throws [ArgumentError] if called without arguments and none of the above
+  /// environment variables are set.
+  ///
+  /// See [API Keys Overview](https://cloud.google.com/api-keys/docs/overview).
+  factory {{Codec.Name}}.fromApiKey([String? apiKey]) {
+    apiKey ??= _apiKeys.map(environmentVariable).nonNulls.firstOrNull;
+    if (apiKey == null) {
+      throw ArgumentError('apiKey or one of these environment variables must '
+        'be set to an API key: ${_apiKeys.join(", ")}');
+    }
+    return {{Codec.Name}}(client: auth.clientViaApiKey(apiKey));
+  }
+
   {{#Codec.Methods}}
   {{> method}}
   {{/Codec.Methods}}

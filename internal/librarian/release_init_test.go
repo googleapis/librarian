@@ -15,28 +15,17 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	gogitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/storage/memory"
-	"gopkg.in/yaml.v3"
-
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-
-	"github.com/go-git/go-git/v5"
-
-	"github.com/googleapis/librarian/internal/gitrepo"
-
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/gitrepo"
+	"gopkg.in/yaml.v3"
 )
 
 func TestNewInitRunner(t *testing.T) {
@@ -88,17 +77,16 @@ func TestNewInitRunner(t *testing.T) {
 
 func TestInitRun(t *testing.T) {
 	t.Parallel()
-	gitStatus := make(git.Status)
-	gitStatus["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 
 	mockRepoWithReleasableUnit := &MockRepository{
-		Dir:          t.TempDir(),
-		AddAllStatus: gitStatus,
-		RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-			Name: "origin",
-			URLs: []string{"https://github.com/googleapis/librarian.git"},
-		})},
-		ChangedFilesInCommitValue: []string{"file.txt"},
+		Dir: t.TempDir(),
+		RemotesValue: []*gitrepo.Remote{
+			{
+				Name: "origin",
+				URLs: []string{"https://github.com/googleapis/librarian.git"},
+			},
+		},
+		ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 		GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 			{
 				Message: "feat: a feature",
@@ -154,6 +142,12 @@ func TestInitRun(t *testing.T) {
 					},
 					repo: &MockRepository{
 						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -180,7 +174,6 @@ func TestInitRun(t *testing.T) {
 						},
 					},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			files: map[string]string{
@@ -258,7 +251,6 @@ func TestInitRun(t *testing.T) {
 					},
 					repo:            mockRepoWithReleasableUnit,
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			files: map[string]string{
@@ -297,6 +289,257 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
+			name:            "run release init command for libraries have the same global files in src roots",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID:      "another-example-id",
+								Version: "1.0.0",
+								SourceRoots: []string{
+									"dir3",
+									"one/global/example.txt",
+								},
+								RemoveRegex: []string{
+									"dir3",
+								},
+							},
+							{
+								ID:      "example-id",
+								Version: "2.0.0",
+								SourceRoots: []string{
+									"dir1",
+									"one/global/example.txt",
+								},
+								RemoveRegex: []string{
+									"dir1",
+								},
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: bump version",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: bump version",
+								},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"one/global/example.txt",
+							},
+						},
+					},
+					librarianConfig: &config.LibrarianConfig{
+						GlobalFilesAllowlist: []*config.GlobalFile{
+							{
+								Path:        "one/global/example.txt",
+								Permissions: "read-write",
+							},
+						},
+					},
+				}
+			},
+			files: map[string]string{
+				"one/global/example.txt": "",
+				"dir1/file1.txt":         "",
+				"dir3/file3.txt":         "",
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "another-example-id",
+						Version: "1.1.0", // version is bumped.
+						APIs:    []*config.API{},
+						SourceRoots: []string{
+							"dir3",
+							"one/global/example.txt",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir3",
+						},
+					},
+					{
+						ID:      "example-id",
+						Version: "2.1.0", // version is bumped.
+						APIs:    []*config.API{},
+						SourceRoots: []string{
+							"dir1",
+							"one/global/example.txt",
+						},
+						PreserveRegex: []string{},
+						RemoveRegex: []string{
+							"dir1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:            "run release init command, skips blocked libraries!",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID:          "blocked-example-id",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
+							},
+							{
+								ID:          "example-id",
+								Version:     "2.0.0",
+								SourceRoots: []string{"dir1"},
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"blocked-example-id-1.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: another new feature",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Hash:    plumbing.NewHash("abcdefg"),
+									Message: "feat: a new feature",
+								},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"dir1/file1.txt",
+							},
+							plumbing.NewHash("abcdefg").String(): {
+								"dir1/file2.txt",
+							},
+						},
+					},
+					librarianConfig: &config.LibrarianConfig{
+						Libraries: []*config.LibraryConfig{
+							{LibraryID: "blocked-example-id", ReleaseBlocked: true},
+							{LibraryID: "example-id"},
+						},
+					},
+				}
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:            "blocked-example-id",
+						Version:       "1.0.0", // version is NOT bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{"dir1"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "example-id",
+						Version:       "2.1.0", // version is bumped.
+						APIs:          []*config.API{},
+						SourceRoots:   []string{"dir1"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
+			name:            "run release init command, does not skip blocked library if explicitly specified",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        t.TempDir(),
+					containerClient: containerClient,
+					// The library is explicitly specified.
+					library: "blocked-example-id",
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								ID:          "blocked-example-id",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"blocked-example-id-1.0.0": {
+								{
+									Hash:    plumbing.NewHash("123456"),
+									Message: "feat: another new feature",
+								},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {
+								"dir1/file1.txt",
+							},
+						},
+					},
+					librarianConfig: &config.LibrarianConfig{
+						Libraries: []*config.LibraryConfig{
+							{LibraryID: "blocked-example-id", ReleaseBlocked: true},
+						},
+					},
+				}
+			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:            "blocked-example-id",
+						Version:       "1.1.0",
+						APIs:          []*config.API{},
+						SourceRoots:   []string{"dir1"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
 			name:            "run release init command for one invalid library (invalid library id in cfg)",
 			containerClient: &mockContainerClient{},
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
@@ -318,7 +561,6 @@ func TestInitRun(t *testing.T) {
 						Dir: t.TempDir(),
 					},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			wantErr:    true,
@@ -357,8 +599,7 @@ func TestInitRun(t *testing.T) {
 							},
 						},
 					},
-					repo:        mockRepoWithReleasableUnit,
-					partialRepo: t.TempDir(),
+					repo: mockRepoWithReleasableUnit,
 				}
 			},
 			files: map[string]string{
@@ -410,13 +651,13 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo:            mockRepoWithReleasableUnit,
-					partialRepo:     t.TempDir(),
 					librarianConfig: &config.LibrarianConfig{},
 				}
 			},
@@ -437,13 +678,13 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo:            mockRepoWithReleasableUnit,
-					partialRepo:     t.TempDir(),
 					librarianConfig: &config.LibrarianConfig{},
 				}
 			},
@@ -476,7 +717,8 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID: "example-id",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -484,7 +726,6 @@ func TestInitRun(t *testing.T) {
 						Dir:                             t.TempDir(),
 						GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
 					},
-					partialRepo: t.TempDir(),
 				}
 			},
 			wantErr:    true,
@@ -500,7 +741,8 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								ID: "example-id",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
@@ -508,7 +750,6 @@ func TestInitRun(t *testing.T) {
 						Dir:                             t.TempDir(),
 						GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
 					},
-					partialRepo: t.TempDir(),
 				}
 			},
 			wantErr:    true,
@@ -524,16 +765,19 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
 						Dir: t.TempDir(),
-						RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-							Name: "origin",
-							URLs: []string{"https://github.com/googleapis/librarian.git"},
-						})},
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
 						ChangedFilesInCommitValue: []string{"file.txt"},
 						GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 							{
@@ -549,12 +793,11 @@ func TestInitRun(t *testing.T) {
 					},
 					ghClient:        &mockGitHubClient{},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 		},
 		{
-			name:            "release init has multiple libraries but only one has a releasable unit",
+			name:            "release init has multiple libraries but only one library has a releasable unit",
 			containerClient: &mockContainerClient{},
 			dockerInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
@@ -564,18 +807,26 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "another-example-id",
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version: "2.0.0",
-								ID:      "example-id",
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
-						Dir:                       t.TempDir(),
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -591,7 +842,6 @@ func TestInitRun(t *testing.T) {
 					},
 					ghClient:        &mockGitHubClient{},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			want: &config.LibrarianState{
@@ -600,7 +850,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "another-example-id",
 						Version:       "1.0.0", // version is NOT bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -608,7 +858,7 @@ func TestInitRun(t *testing.T) {
 						ID:            "example-id",
 						Version:       "2.1.0", // version is bumped.
 						APIs:          []*config.API{},
-						SourceRoots:   []string{},
+						SourceRoots:   []string{"dir1"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
@@ -616,28 +866,38 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "configured library (library id in cfg) does not have releasable unit, no state change",
+			name:            "inputted library does not have a releasable unit, version is inputted",
 			containerClient: &mockContainerClient{},
+			dockerInitCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *initRunner {
 				return &initRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
 					library:         "another-example-id", // release only for this library
+					libraryVersion:  "3.0.0",
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "another-example-id",
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version: "2.0.0",
-								ID:      "example-id",
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
-						Dir:                       t.TempDir(),
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
@@ -653,9 +913,74 @@ func TestInitRun(t *testing.T) {
 					},
 					ghClient:        &mockGitHubClient{},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						Version:       "3.0.0",
+						ID:            "another-example-id",
+						APIs:          []*config.API{},
+						SourceRoots:   []string{"dir1"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						Version:       "2.0.0",
+						ID:            "example-id",
+						APIs:          []*config.API{},
+						SourceRoots:   []string{"dir1"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
+			name:            "inputted library does not have a releasable unit, no version inputted",
+			containerClient: &mockContainerClient{},
+			dockerInitCalls: 0, // version was not inputted, do not trigger a release
+			setupRunner: func(containerClient *mockContainerClient) *initRunner {
+				return &initRunner{
+					workRoot:        os.TempDir(),
+					containerClient: containerClient,
+					library:         "another-example-id", // release only for this library
+					state: &config.LibrarianState{
+						Libraries: []*config.LibraryState{
+							{
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
+							},
+							{
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir:                       t.TempDir(),
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Message: "chore: not releasable",
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Message: "feat: a new feature",
+								},
+							},
+						},
+					},
+					ghClient:        &mockGitHubClient{},
+					librarianConfig: &config.LibrarianConfig{},
+				}
+			},
+			wantErr:    true,
+			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to force a release for",
 		},
 		{
 			name:            "failed to commit and push",
@@ -669,19 +994,21 @@ func TestInitRun(t *testing.T) {
 					state: &config.LibrarianState{
 						Libraries: []*config.LibraryState{
 							{
-								Version: "1.0.0",
-								ID:      "example-id",
+								Version:     "1.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir1"},
 							},
 						},
 					},
 					repo: &MockRepository{
-						Dir:          t.TempDir(),
-						AddAllStatus: gitStatus,
-						RemotesValue: []*git.Remote{git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-							Name: "origin",
-							URLs: []string{"https://github.com/googleapis/librarian.git"},
-						})},
-						ChangedFilesInCommitValue: []string{"file.txt"},
+						Dir: t.TempDir(),
+						RemotesValue: []*gitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						ChangedFilesInCommitValue: []string{"dir1/file.txt"},
 						GetCommitsForPathsSinceTagValue: []*gitrepo.Commit{
 							{
 								Message: "feat: a feature",
@@ -692,27 +1019,10 @@ func TestInitRun(t *testing.T) {
 						AddAllError: errors.New("unable to add all files"),
 					},
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to commit and push",
-		},
-		{
-			name:            "failed to make partial repo",
-			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
-					workRoot:        t.TempDir(),
-					containerClient: containerClient,
-					repo: &MockRepository{
-						Dir: t.TempDir(),
-					},
-					partialRepo: "/invalid/path",
-				}
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to make directory",
 		},
 		{
 			name:            "run release init command with symbolic link",
@@ -736,7 +1046,6 @@ func TestInitRun(t *testing.T) {
 					},
 					repo:            mockRepoWithReleasableUnit,
 					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
 				}
 			},
 			files: map[string]string{
@@ -757,65 +1066,6 @@ func TestInitRun(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:            "copy library files returns error",
-			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
-					workRoot:        t.TempDir(),
-					containerClient: containerClient,
-					library:         "example-id",
-					state: &config.LibrarianState{
-						Libraries: []*config.LibraryState{
-							{
-								Version: "1.0.0",
-								ID:      "example-id",
-								SourceRoots: []string{
-									"dir1",
-								},
-							},
-						},
-					},
-					repo:            mockRepoWithReleasableUnit,
-					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
-				}
-			},
-			files: map[string]string{
-				"dir1/file1.txt": "hello",
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to copy file",
-		},
-		{
-			name:            "copy library files returns error (no library id in cfg)",
-			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
-					workRoot:        t.TempDir(),
-					containerClient: containerClient,
-					state: &config.LibrarianState{
-						Libraries: []*config.LibraryState{
-							{
-								Version: "1.0.0",
-								ID:      "example-id",
-								SourceRoots: []string{
-									"dir1",
-								},
-							},
-						},
-					},
-					repo:            mockRepoWithReleasableUnit,
-					librarianConfig: &config.LibrarianConfig{},
-					partialRepo:     t.TempDir(),
-				}
-			},
-			files: map[string]string{
-				"dir1/file1.txt": "hello",
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to copy file",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			runner := test.setupRunner(test.containerClient)
@@ -834,12 +1084,6 @@ func TestInitRun(t *testing.T) {
 					if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 						t.Fatalf("os.WriteFile() = %v", err)
 					}
-				}
-			}
-			if strings.HasPrefix(test.name, "copy library files returns error") {
-				// Make the directory non-writable so that the copy operations fail.
-				if err := os.Chmod(runner.partialRepo, 0555); err != nil {
-					t.Fatalf("os.Chmod() = %v", err)
 				}
 			}
 			// Create a symbolic link for the test case with symbolic links.
@@ -863,13 +1107,13 @@ func TestInitRun(t *testing.T) {
 				t.Fatalf("os.WriteFile() = %v", err)
 			}
 
-			err := runner.run(context.Background())
+			err := runner.run(t.Context())
 
 			// Check how many times the docker container has been called. If a release is to proceed
 			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0. Run this check even
 			// if there is an error that is wanted to ensure that a docker request is only made when
 			// we want it to.
-			if diff := cmp.Diff(test.containerClient.initCalls, test.dockerInitCalls); diff != "" {
+			if diff := cmp.Diff(test.dockerInitCalls, test.containerClient.initCalls); diff != "" {
 				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
 			}
 
@@ -896,7 +1140,7 @@ func TestInitRun(t *testing.T) {
 			}
 
 			// If there is no release triggered for any library, then the librarian state
-			// is not be written back. The `want` value for the librarian state is nil
+			// is not written back. The `want` value for the librarian state is nil
 			var got *config.LibrarianState
 			if err := yaml.Unmarshal(bytes, &got); err != nil {
 				t.Fatal(err)
@@ -909,143 +1153,168 @@ func TestInitRun(t *testing.T) {
 	}
 }
 
-func TestUpdateLibrary(t *testing.T) {
+func TestRunInitCommand(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name            string
-		pathAndMessages []pathAndMessage
-		tags            []string
-		libraryVersion  string
-		library         *config.LibraryState
-		repo            gitrepo.Repository
-		want            *config.LibraryState
-		wantErr         bool
-		wantErrMsg      string
+		name   string
+		state  *config.LibrarianState
+		config *config.LibrarianConfig
+		repo   gitrepo.Repository
+		client ContainerClient
+		want   *config.LibrarianState
 	}{
 		{
-			name: "update a library",
-			pathAndMessages: []pathAndMessage{
-				{
-					path:    "non-related/path/example.txt",
-					message: "chore: initial commit",
-				},
-				{
-					path:    "one/path/example.txt",
-					message: "feat: add a config file\n\nThis is the body.\n\nPiperOrigin-RevId: 12345",
-				},
-				{
-					path:    "one/path/example.txt",
-					message: "fix: change a typo",
-				},
-				{
-					path:    "another/path/example.txt",
-					message: "fix: another commit",
-				},
-			},
-			tags: []string{
-				"one-id-1.2.3",
-			},
-			libraryVersion: "2.0.0",
-			library: &config.LibraryState{
-				ID:      "one-id",
-				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
-				},
-			},
-			want: &config.LibraryState{
-				ID:              "one-id",
-				Version:         "2.0.0",
-				PreviousVersion: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
-				},
-				Changes: []*conventionalcommits.ConventionalCommit{
+			name: "global_file_commits_appear_in_multiple_libraries",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
 					{
-						Type:      "fix",
-						Subject:   "change a typo",
-						LibraryID: "one-id",
-						Footers:   map[string]string{},
-					},
-					{
-						Type:      "feat",
-						Subject:   "add a config file",
-						Body:      "This is the body.",
-						LibraryID: "one-id",
-						Footers:   map[string]string{"PiperOrigin-RevId": "12345"},
-					},
-				},
-				ReleaseTriggered: true,
-			},
-		},
-		{
-			name: "get breaking changes of one library",
-			pathAndMessages: []pathAndMessage{
-				{
-					path:    "non-related/path/example.txt",
-					message: "chore: initial commit",
-				},
-				{
-					path:    "one/path/example.txt",
-					message: "feat!: change a typo",
-				},
-				{
-					path:    "one/path/config.txt",
-					message: "feat: add another config file\n\nThis is the body\n\nBREAKING CHANGE: this is a breaking change",
-				},
-			},
-			tags: []string{
-				"one-id-1.2.3",
-			},
-			library: &config.LibraryState{
-				ID:      "one-id",
-				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
-				},
-			},
-			want: &config.LibraryState{
-				ID:              "one-id",
-				Version:         "2.0.0",
-				PreviousVersion: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
-				},
-				Changes: []*conventionalcommits.ConventionalCommit{
-					{
-						Type:      "feat",
-						Subject:   "add another config file",
-						Body:      "This is the body",
-						LibraryID: "one-id",
-						Footers: map[string]string{
-							"BREAKING CHANGE": "this is a breaking change",
+						ID:      "another-example-id",
+						Version: "1.0.0",
+						SourceRoots: []string{
+							"dir3",
+							"one/global/example.txt",
 						},
-						IsBreaking: true,
+						RemoveRegex: []string{
+							"dir3",
+						},
 					},
 					{
-						Type:       "feat",
-						Subject:    "change a typo",
-						LibraryID:  "one-id",
-						Footers:    map[string]string{},
-						IsBreaking: true,
+						ID:      "example-id",
+						Version: "2.0.0",
+						SourceRoots: []string{
+							"dir1",
+							"one/global/example.txt",
+						},
+						RemoveRegex: []string{
+							"dir1",
+						},
 					},
 				},
-				ReleaseTriggered: true,
+			},
+			config: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/global/example.txt",
+						Permissions: "read-write",
+					},
+				},
+			},
+			repo: &MockRepository{
+				Dir: t.TempDir(),
+				RemotesValue: []*gitrepo.Remote{
+					{
+						Name: "origin",
+						URLs: []string{"https://github.com/googleapis/librarian.git"},
+					},
+				},
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*gitrepo.Commit{
+					"another-example-id-1.0.0": {
+						{
+							Hash:    plumbing.NewHash("123456"),
+							Message: "feat: bump version",
+						},
+					},
+					"example-id-2.0.0": {
+						{
+							Hash:    plumbing.NewHash("123456"),
+							Message: "feat: bump version",
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					plumbing.NewHash("123456").String(): {
+						"one/global/example.txt",
+					},
+				},
+			},
+			client: &mockContainerClient{},
+			want: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:              "another-example-id",
+						Version:         "1.1.0",
+						PreviousVersion: "1.0.0",
+						SourceRoots: []string{
+							"dir3",
+							"one/global/example.txt",
+						},
+						RemoveRegex: []string{
+							"dir3",
+						},
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "bump version",
+								CommitHash: "1234560000000000000000000000000000000000",
+							},
+						},
+						ReleaseTriggered: true,
+					},
+					{
+						ID:              "example-id",
+						Version:         "2.1.0",
+						PreviousVersion: "2.0.0",
+						SourceRoots: []string{
+							"dir1",
+							"one/global/example.txt",
+						},
+						RemoveRegex: []string{
+							"dir1",
+						},
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "bump version",
+								CommitHash: "1234560000000000000000000000000000000000",
+							},
+						},
+						ReleaseTriggered: true,
+					},
+				},
 			},
 		},
+	} {
+		output := t.TempDir()
+		for _, globalFile := range test.config.GlobalFilesAllowlist {
+			file := filepath.Join(output, globalFile.Path)
+			if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(file, []byte("new content"), 0755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		r := &initRunner{
+			repo:            test.repo,
+			state:           test.state,
+			librarianConfig: test.config,
+			containerClient: test.client,
+		}
+		err := r.runInitCommand(t.Context(), output)
+		if err != nil {
+			t.Errorf("failed to run runInitCommand(): %q", err.Error())
+			return
+		}
+		if diff := cmp.Diff(test.want, r.state); diff != "" {
+			t.Errorf("commit filter mismatch (-want +got):\n%s", diff)
+		}
+	}
+}
+
+func TestProcessLibrary(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name         string
+		libraryState *config.LibraryState
+		repo         gitrepo.Repository
+		wantErr      bool
+		wantErrMsg   string
+	}{
 		{
 			name: "failed to get commit history of one library",
-			library: &config.LibraryState{
+			libraryState: &config.LibraryState{
 				ID:      "one-id",
 				Version: "1.2.3",
-				SourceRoots: []string{
-					"one/path",
-					"two/path",
-				},
 			},
 			repo: &MockRepository{
 				GetCommitsForPathsSinceTagError: errors.New("simulated error when getting commits"),
@@ -1054,244 +1323,446 @@ func TestUpdateLibrary(t *testing.T) {
 			wantErrMsg: "failed to fetch conventional commits for library",
 		},
 	} {
+		state := &config.LibrarianState{
+			Libraries: []*config.LibraryState{
+				test.libraryState,
+			},
+		}
+		r := &initRunner{
+			repo:  test.repo,
+			state: state,
+		}
+		err := r.processLibrary(test.libraryState)
+		if test.wantErr {
+			if err == nil {
+				t.Fatal("processLibrary() should return error")
+			}
+			if !strings.Contains(err.Error(), test.wantErrMsg) {
+				t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+			}
+			return
+		}
+		if err != nil {
+			t.Errorf("failed to run processLibrary(): %q", err.Error())
+		}
+	}
+}
+
+func TestFilterCommitsByLibraryID(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		commits   []*gitrepo.ConventionalCommit
+		LibraryID string
+		want      []*gitrepo.ConventionalCommit
+	}{
+		{
+			name: "commits_all_match_libraryID",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+				{
+					LibraryID: "library-one",
+					Type:      "chore",
+				},
+				{
+					LibraryID: "library-one",
+					Type:      "deps",
+				},
+			},
+			LibraryID: "library-one",
+			want: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+				{
+					LibraryID: "library-one",
+					Type:      "chore",
+				},
+				{
+					LibraryID: "library-one",
+					Type:      "deps",
+				},
+			},
+		},
+		{
+			name: "some_commits_match_libraryID",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+				{
+					LibraryID: "library-two",
+					Type:      "chore",
+				},
+				{
+					LibraryID: "library-three",
+					Type:      "deps",
+				},
+			},
+			LibraryID: "library-one",
+			want: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+			},
+		},
+		{
+			name: "some_commits_have_library_id_in_footer",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-two",
+					},
+				},
+				{
+					LibraryID: "library-two",
+					Type:      "chore",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-two",
+					},
+				},
+				{
+					LibraryID: "library-three",
+					Type:      "deps",
+				},
+			},
+			LibraryID: "library-one",
+			want: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-two",
+					},
+				},
+				{
+					LibraryID: "library-two",
+					Type:      "chore",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-two",
+					},
+				},
+			},
+		},
+		{
+			name: "some_commits_have_library_id_that_is_prefix_of_another",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-one_suffix",
+					},
+				},
+				{
+					LibraryID: "library-one-suffix",
+					Type:      "chore",
+					Footers: map[string]string{
+						"Library-IDs": "library-one-suffix",
+					},
+				},
+			},
+			LibraryID: "library-one",
+			want: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+					Footers: map[string]string{
+						"Library-IDs": "library-one,library-one_suffix",
+					},
+				},
+			},
+		},
+		{
+			name: "no_commits_match_libraryID",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					LibraryID: "library-one",
+					Type:      "feat",
+				},
+				{
+					LibraryID: "library-two",
+					Type:      "chore",
+				},
+				{
+					LibraryID: "library-three",
+					Type:      "deps",
+				},
+			},
+			LibraryID: "invalid-library",
+		},
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			r := &initRunner{
-				libraryVersion: test.libraryVersion,
-				repo:           test.repo,
-			}
-			var err error
-			if test.repo != nil {
-				err = r.updateLibrary(test.library)
-			} else {
-				repo := setupRepoForGetCommits(t, test.pathAndMessages, test.tags)
-				r.repo = repo
-				err = r.updateLibrary(test.library)
-			}
-
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("getChangesOf() should return error")
-				}
-
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Errorf("failed to run getChangesOf(): %q", err.Error())
-			}
-			if diff := cmp.Diff(test.want, test.library, cmpopts.IgnoreFields(conventionalcommits.ConventionalCommit{}, "SHA", "When")); diff != "" {
-				t.Errorf("state mismatch (-want +got):\n%s", diff)
+			got := filterCommitsByLibraryID(test.commits, test.LibraryID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("commit filter mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestCopyGlobalAllowlist(t *testing.T) {
+func TestUpdateLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name              string
-		cfg               *config.LibrarianConfig
-		files             []string
-		copied            []string
-		skipped           []string
-		doNotCreateOutput bool // do not create files in output dir.
-		wantErr           bool
-		wantErrMsg        string
-		copyReadOnly      bool
+		name           string
+		libraryState   *config.LibraryState
+		library        string // this is the `--library` input
+		libraryVersion string // this is the `--version` input
+		commits        []*gitrepo.ConventionalCommit
+		want           *config.LibraryState
+		wantErr        bool
+		wantErrMsg     string
 	}{
 		{
-			name: "copied all global allowlist",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "write-only",
-					},
+			name: "update a library, automatic version calculation",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					Type:    "fix",
+					Subject: "change a typo",
+				},
+				{
+					Type:    "feat",
+					Subject: "add a config file",
+					Body:    "This is the body.",
+					Footers: map[string]string{"PiperOrigin-RevId": "12345"},
 				},
 			},
-			files: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-				"ignored/path/example.txt",
-			},
-			copied: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-			},
-			skipped: []string{
-				"ignored/path/example.txt",
+			want: &config.LibraryState{
+				ID:              "one-id",
+				Version:         "1.3.0",
+				PreviousVersion: "1.2.3",
+				Changes: []*config.Commit{
+					{
+						Type:    "fix",
+						Subject: "change a typo",
+					},
+					{
+						Type:          "feat",
+						Subject:       "add a config file",
+						Body:          "This is the body.",
+						PiperCLNumber: "12345",
+					},
+				},
+				ReleaseTriggered: true,
 			},
 		},
 		{
-			name: "read only file is not copied",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "read-only",
-					},
+			name: "update a library with releasable units, valid version inputted",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			libraryVersion: "5.0.0",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					Type:    "fix",
+					Subject: "change a typo",
+				},
+				{
+					Type:    "feat",
+					Subject: "add a config file",
+					Body:    "This is the body.",
+					Footers: map[string]string{"PiperOrigin-RevId": "12345"},
 				},
 			},
-			files: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-				"ignored/path/example.txt",
-			},
-			copied: []string{
-				"one/path/example.txt",
-			},
-			skipped: []string{
-				"another/path/example.txt",
-				"ignored/path/example.txt",
+			want: &config.LibraryState{
+				ID:              "one-id",
+				Version:         "5.0.0", // Use the `--version` value`
+				PreviousVersion: "1.2.3",
+				Changes: []*config.Commit{
+					{
+						Type:    "fix",
+						Subject: "change a typo",
+					},
+					{
+						Type:          "feat",
+						Subject:       "add a config file",
+						Body:          "This is the body.",
+						PiperCLNumber: "12345",
+					},
+				},
+				ReleaseTriggered: true,
 			},
 		},
 		{
-			name: "repo doesn't have the global file",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "read-only",
-					},
-				},
+			name: "update a library with releasable units, invalid version inputted",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
 			},
-			files: []string{
-				"another/path/example.txt",
-				"ignored/path/example.txt",
+			libraryVersion: "1.0.0",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					Type:    "fix",
+					Subject: "change a typo",
+				},
+				{
+					Type:    "feat",
+					Subject: "add a config file",
+					Body:    "This is the body.",
+					Footers: map[string]string{"PiperOrigin-RevId": "12345"},
+				},
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to lstat file",
+			wantErrMsg: "inputted version is not SemVer greater than the current version. Set a version SemVer greater than current than",
 		},
 		{
-			name: "output doesn't have the global file",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
+			name: "update a library with library ids in footer",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					Type:    "feat",
+					Subject: "add a config file",
+					Body:    "This is the body.",
+					Footers: map[string]string{"Library-IDs": "a,b,c"},
 				},
 			},
-			files: []string{
-				"one/path/example.txt",
+			want: &config.LibraryState{
+				ID:              "one-id",
+				Version:         "1.3.0",
+				PreviousVersion: "1.2.3",
+				Changes: []*config.Commit{
+					{
+						Type:       "feat",
+						Subject:    "add a config file",
+						Body:       "This is the body.",
+						LibraryIDs: "a,b,c",
+					},
+				},
+				ReleaseTriggered: true,
 			},
-			doNotCreateOutput: true,
-			wantErr:           true,
-			wantErrMsg:        "failed to copy global file",
 		},
 		{
-			name:         "copies read-only files",
-			copyReadOnly: true,
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
+			name: "library has breaking changes",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					Type:    "feat",
+					Subject: "add another config file",
+					Body:    "This is the body",
+					Footers: map[string]string{
+						"BREAKING CHANGE": "this is a breaking change",
 					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "read-only",
-					},
+					IsBreaking: true,
+				},
+				{
+					Type:       "feat",
+					Subject:    "change a typo",
+					IsBreaking: true,
 				},
 			},
-			files: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
-				"ignored/path/example.txt",
+			want: &config.LibraryState{
+				ID:              "one-id",
+				Version:         "2.0.0",
+				PreviousVersion: "1.2.3",
+				Changes: []*config.Commit{
+					{
+						Type:    "feat",
+						Subject: "add another config file",
+						Body:    "This is the body",
+					},
+					{
+						Type:    "feat",
+						Subject: "change a typo",
+					},
+				},
+				ReleaseTriggered: true,
 			},
-			copied: []string{
-				"one/path/example.txt",
-				"another/path/example.txt",
+		},
+		{
+			name: "library has no changes",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
 			},
-			skipped: []string{
-				"ignored/path/example.txt",
+			want: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+		},
+		{
+			name: "library has no releasable units and is inputted for release without a version",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			library: "one-id",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					Type:    "chore",
+					Subject: "a chore",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to force a release for",
+		},
+		{
+			name: "library has no releasable units and is inputted for release with a specific version",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "1.2.3",
+			},
+			library:        "one-id",
+			libraryVersion: "5.0.0",
+			commits: []*gitrepo.ConventionalCommit{
+				{
+					Type:    "chore",
+					Subject: "a chore",
+				},
+			},
+			want: &config.LibraryState{
+				ID:               "one-id",
+				PreviousVersion:  "1.2.3",
+				Version:          "5.0.0", // Use the `--version` override value
+				ReleaseTriggered: true,
+				Changes: []*config.Commit{
+					{
+						Type:    "chore",
+						Subject: "a chore",
+					},
+				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			output := t.TempDir()
-			repo := t.TempDir()
-			for _, oneFile := range test.files {
-				// Create files in repo directory.
-				file := filepath.Join(repo, oneFile)
-				dir := filepath.Dir(file)
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					t.Error(err)
-				}
-
-				err := os.WriteFile(file, []byte("old content"), 0755)
-				if err != nil {
-					t.Error(err)
-				}
-
-				if test.doNotCreateOutput {
-					continue
-				}
-
-				// Create files in output directory.
-				file = filepath.Join(output, oneFile)
-				dir = filepath.Dir(file)
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					t.Error(err)
-				}
-
-				err = os.WriteFile(file, []byte("new content"), 0755)
-				if err != nil {
-					t.Error(err)
-				}
+			r := &initRunner{
+				library:        test.library,
+				libraryVersion: test.libraryVersion,
 			}
-
-			err := copyGlobalAllowlist(test.cfg, repo, output, test.copyReadOnly)
+			err := r.updateLibrary(test.libraryState, test.commits)
 
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("cleanAndCopyGlobalAllowlist() should return error")
+					t.Fatal("updateLibrary() should return error")
 				}
-
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
 				}
-
 				return
 			}
 			if err != nil {
-				t.Errorf("failed to run cleanAndCopyGlobalAllowlist(): %q", err.Error())
+				t.Fatalf("failed to run updateLibrary(): %q", err.Error())
 			}
-
-			for _, wantFile := range test.copied {
-				got, err := os.ReadFile(filepath.Join(repo, wantFile))
-				if err != nil {
-					return
-				}
-				if diff := cmp.Diff("new content", string(got)); diff != "" {
-					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, wantFile)
-				}
-			}
-			// Make sure the skipped files are not changed.
-			for _, skippedFile := range test.skipped {
-				got, err := os.ReadFile(filepath.Join(repo, skippedFile))
-				if err != nil {
-					return
-				}
-				if diff := cmp.Diff("old content", string(got)); diff != "" {
-					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, skippedFile)
-				}
+			if diff := cmp.Diff(test.want, test.libraryState); diff != "" {
+				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1301,7 +1772,7 @@ func TestDetermineNextVersion(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name            string
-		commits         []*conventionalcommits.ConventionalCommit
+		commits         []*gitrepo.ConventionalCommit
 		currentVersion  string
 		libraryID       string
 		config          *config.Config
@@ -1312,7 +1783,7 @@ func TestDetermineNextVersion(t *testing.T) {
 	}{
 		{
 			name: "from commits",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
 			config: &config.Config{
@@ -1327,51 +1798,8 @@ func TestDetermineNextVersion(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "with CLI override version",
-			commits: []*conventionalcommits.ConventionalCommit{
-				{Type: "feat"},
-			},
-			config: &config.Config{
-				Library:        "some-library",
-				LibraryVersion: "1.2.3",
-			},
-			libraryID: "some-library",
-			librarianConfig: &config.LibrarianConfig{
-				Libraries: []*config.LibraryConfig{
-					&config.LibraryConfig{
-						LibraryID:   "some-library",
-						NextVersion: "2.3.4",
-					},
-				},
-			},
-			currentVersion: "1.0.0",
-			wantVersion:    "1.2.3",
-			wantErr:        false,
-		},
-		{
-			name: "with CLI override version cannot revert version",
-			commits: []*conventionalcommits.ConventionalCommit{
-				{Type: "feat"},
-			},
-			config: &config.Config{
-				Library:        "some-library",
-				LibraryVersion: "1.2.3",
-			},
-			libraryID: "some-library",
-			librarianConfig: &config.LibrarianConfig{
-				Libraries: []*config.LibraryConfig{
-					&config.LibraryConfig{
-						LibraryID: "some-library",
-					},
-				},
-			},
-			currentVersion: "2.4.0",
-			wantVersion:    "2.5.0",
-			wantErr:        false,
-		},
-		{
 			name: "with config.yaml override version",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
 			config: &config.Config{
@@ -1392,7 +1820,7 @@ func TestDetermineNextVersion(t *testing.T) {
 		},
 		{
 			name: "with outdated config.yaml override version",
-			commits: []*conventionalcommits.ConventionalCommit{
+			commits: []*gitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
 			config: &config.Config{

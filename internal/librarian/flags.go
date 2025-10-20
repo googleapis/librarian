@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -40,8 +41,14 @@ language-specific container.`)
 
 func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Commit, "commit", false,
-		`If true, librarian will create a commit for the release but not create
+		`If true, librarian will create a commit for the change but not create
 a pull request. This flag is ignored if push is set to true.`)
+}
+
+func addFlagGitHubAPIEndpoint(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.GitHubAPIEndpoint, "github-api-endpoint", "",
+		`The GitHub API endpoint to use for all GitHub API operations.
+This is intended for testing and should not be used in production.`)
 }
 
 func addFlagHostMount(fs *flag.FlagSet, cfg *config.Config) {
@@ -80,9 +87,10 @@ If not specified, will search for all merged pull requests with the label
 
 func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Push, "push", false,
-		`If true, Librarian will create a commit and a pull request for the changes.
+		fmt.Sprintf(`If true, Librarian will create a commit, 
+push and create a pull request for the changes.
 A GitHub token with push access must be provided via the
-LIBRARIAN_GITHUB_TOKEN environment variable.`)
+%s environment variable.`, config.LibrarianGithubToken))
 }
 
 func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
@@ -105,4 +113,8 @@ func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.WorkRoot, "output", "",
 		`Working directory root. When this is not specified, a working directory
 will be created in /tmp.`)
+}
+
+func addFlagVerbose(fs *flag.FlagSet, p *bool) {
+	fs.BoolVar(p, "v", false, "enables verbose logging")
 }

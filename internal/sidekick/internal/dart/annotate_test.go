@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,11 +23,24 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 )
 
+var (
+	requiredConfig = map[string]string{
+		"api-keys-environment-variables": "GOOGLE_API_KEY,GEMINI_API_KEY",
+		"issue-tracker-url":              "http://www.example.com/issues",
+		"package:googleapis_auth":        "^2.0.0",
+		"package:google_cloud_gax":       "^1.2.3",
+		"package:http":                   "^4.5.6"}
+)
+
 func TestAnnotateModel(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "test"
+
+	options := maps.Clone(requiredConfig)
+	maps.Copy(options, map[string]string{"package:google_cloud_gax": "^1.2.3"})
+
 	annotate := newAnnotateModel(model)
-	err := annotate.annotateModel(map[string]string{})
+	err := annotate.annotateModel(options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +58,7 @@ func TestAnnotateModel(t *testing.T) {
 func TestAnnotateModel_Options(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 
-	var foo = []struct {
+	var tests = []struct {
 		options map[string]string
 		verify  func(*testing.T, *annotateModel)
 	}{
@@ -85,22 +99,98 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
-			map[string]string{"package:http": "1.2.0"},
+			map[string]string{"readme-after-title-text": "> [!TIP] Still beta!"},
 			func(t *testing.T, am *annotateModel) {
-				if diff := cmp.Diff(map[string]string{"http": "1.2.0"}, am.dependencyConstraints); diff != "" {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("> [!TIP] Still beta!", codec.ReadMeAfterTitleText); diff != "" {
+					t.Errorf("mismatch in Codec.ReadMeAfterTitleText (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"readme-quickstart-text": "## Getting Started\n..."},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("## Getting Started\n...", codec.ReadMeQuickstartText); diff != "" {
+					t.Errorf("mismatch in Codec.ReadMeQuickstartText (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"repository-url": "http://example.com/repo"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("http://example.com/repo", codec.RepositoryURL); diff != "" {
+					t.Errorf("mismatch in Codec.RepositoryURL (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"issue-tracker-url": "http://example.com/issues"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("http://example.com/issues", codec.IssueTrackerURL); diff != "" {
+					t.Errorf("mismatch in Codec.IssueTrackerURL (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"google_cloud_gax": "^1.2.3", "package:http": "1.2.0"},
+			func(t *testing.T, am *annotateModel) {
+				if diff := cmp.Diff(map[string]string{
+					"google_cloud_gax": "^1.2.3",
+					"googleapis_auth":  "^2.0.0",
+					"http":             "1.2.0"},
+					am.dependencyConstraints); diff != "" {
 					t.Errorf("mismatch in annotateModel.dependencyConstraints (-want, +got)\n:%s", diff)
 				}
 			},
 		},
 	}
 
-	for _, tt := range foo {
+	for _, tt := range tests {
 		annotate := newAnnotateModel(model)
-		err := annotate.annotateModel(tt.options)
+		options := maps.Clone(requiredConfig)
+		maps.Copy(options, tt.options)
+		err := annotate.annotateModel(maps.Clone(options))
 		if err != nil {
 			t.Fatal(err)
 		}
 		tt.verify(t, annotate)
+	}
+}
+
+func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
+	method := sample.MethodListSecretVersions()
+	service := &api.Service{
+		Name:          sample.ServiceName,
+		Documentation: sample.APIDescription,
+		DefaultHost:   sample.DefaultHost,
+		Methods:       []*api.Method{method},
+		Package:       sample.Package,
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
+			sample.CustomerManagedEncryption()},
+		[]*api.Enum{sample.EnumState()},
+		[]*api.Service{service},
+	)
+
+	var tests = []string{
+		"api-keys-environment-variables",
+		"issue-tracker-url",
+	}
+
+	for _, tt := range tests {
+		annotate := newAnnotateModel(model)
+		options := maps.Clone(requiredConfig)
+		delete(options, tt)
+
+		err := annotate.annotateModel(options)
+		if err == nil {
+			t.Fatalf("expected error when missing %q", tt)
+		}
 	}
 }
 
@@ -122,7 +212,7 @@ func TestAnnotateMethod(t *testing.T) {
 	)
 	api.Validate(model)
 	annotate := newAnnotateModel(model)
-	err := annotate.annotateModel(map[string]string{})
+	err := annotate.annotateModel(requiredConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,14 +252,17 @@ func TestCalculateDependencies(t *testing.T) {
 		{name: "package imports", imports: []string{
 			httpImport,
 			"package:google_cloud_foo/foo.dart",
-		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "any"}, {Name: "http", Constraint: "^1.3.0"}}},
+		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "^1.2.3"}, {Name: "http", Constraint: "^1.3.0"}}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			deps := map[string]string{}
+			deps := map[string]bool{}
 			for _, imp := range test.imports {
-				deps[imp] = imp
+				deps[imp] = true
 			}
-			got := calculateDependencies(deps, map[string]string{"http": "^1.3.0"})
+			got, err := calculateDependencies(deps, map[string]string{"google_cloud_foo": "^1.2.3", "http": "^1.3.0"})
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in calculateDependencies (-want, +got)\n:%s", diff)
@@ -204,9 +297,9 @@ func TestCalculateImports(t *testing.T) {
 		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			deps := map[string]string{}
+			deps := map[string]bool{}
 			for _, imp := range test.imports {
-				deps[imp] = imp
+				deps[imp] = true
 			}
 			got := calculateImports(deps)
 
@@ -238,8 +331,7 @@ func TestAnnotateMessageToString(t *testing.T) {
 		{message: sample.Automatic(), expected: 0},
 	} {
 		t.Run(test.message.Name, func(t *testing.T) {
-			imports := map[string]string{}
-			annotate.annotateMessage(test.message, imports)
+			annotate.annotateMessage(test.message)
 
 			codec := test.message.Codec.(*messageAnnotation)
 			actual := codec.ToStringLines
@@ -402,7 +494,7 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	payload := sample.SecretPayload()
 	model := api.NewTestAPI(
 		[]*api.Message{r, a, sample.CustomerManagedEncryption(), secretVersion,
-			updateRequest, sample.Secret(), fieldMaskMessage(), payload},
+			updateRequest, sample.Secret(), payload},
 		[]*api.Enum{sample.EnumState()},
 		[]*api.Service{})
 	model.PackageName = "test"
@@ -455,21 +547,5 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
-	}
-}
-
-func fieldMaskMessage() *api.Message {
-	return &api.Message{
-		Name:    "FieldMask",
-		ID:      ".google.protobuf.FieldMask",
-		Package: sample.Package,
-		Fields: []*api.Field{
-			{
-				Name:     "paths",
-				JSONName: "paths",
-				Typez:    api.STRING_TYPE,
-				Repeated: true,
-			},
-		},
 	}
 }

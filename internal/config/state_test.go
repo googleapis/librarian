@@ -392,12 +392,12 @@ func TestIsValidDirPath(t *testing.T) {
 		{"absolute", "/a/b", false},
 		{"up traversal", "../a", false},
 		{"double dot", "..", false},
-		{"single dot", ".", false},
+		{"single dot", ".", true},
 		{"invalid chars", "a/b<c", false},
 		{"invalid null byte", "a/b\x00c", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if got := isValidDirPath(test.path); got != test.want {
+			if got := isValidRelativePath(test.path); got != test.want {
 				t.Errorf("isValidDirPath(%q) = %v, want %v", test.path, got, test.want)
 			}
 		})
@@ -459,6 +459,42 @@ func TestLibraryState_LibraryByID(t *testing.T) {
 			got := state.LibraryByID(test.id)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("LibraryState.LibraryByID() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCommit_IsBulkCommit(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		libraryIDs string
+		want       bool
+	}{
+		{
+			name:       "less than 10",
+			libraryIDs: "a,b,c",
+			want:       false,
+		},
+		{
+			name:       "exactly 10",
+			libraryIDs: "a,b,c,d,e,f,g,h,i,j",
+			want:       true,
+		},
+		{
+			name:       "more than 10",
+			libraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
+			want:       true,
+		},
+		{
+			name:       "empty",
+			libraryIDs: "",
+			want:       false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := &Commit{LibraryIDs: test.libraryIDs}
+			if got := c.IsBulkCommit(); got != test.want {
+				t.Errorf("Commit.IsBulkCommit() = %v, want %v", got, test.want)
 			}
 		})
 	}

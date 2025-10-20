@@ -20,13 +20,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-
-	"github.com/googleapis/librarian/internal/conventionalcommits"
-	"github.com/googleapis/librarian/internal/docker"
-	"github.com/googleapis/librarian/internal/semver"
+	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 type initRunner struct {
@@ -38,7 +38,6 @@ type initRunner struct {
 	librarianConfig *config.LibrarianConfig
 	library         string
 	libraryVersion  string
-	partialRepo     string
 	push            bool
 	repo            gitrepo.Repository
 	sourceRepo      gitrepo.Repository
@@ -60,7 +59,6 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		library:         cfg.Library,
 		libraryVersion:  cfg.LibraryVersion,
-		partialRepo:     filepath.Join(runner.workRoot, "release-init"),
 		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
@@ -90,21 +88,28 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	prBodyBuilder := func() (string, error) {
+		gitHubRepo, err := GetGitHubRepositoryFromGitRepo(r.repo)
+		if err != nil {
+			return "", fmt.Errorf("failed to get GitHub repository: %w", err)
+		}
+		return formatReleaseNotes(r.state, gitHubRepo)
+	}
 	commitInfo := &commitInfo{
-		branch:         r.branch,
-		commit:         r.commit,
-		commitMessage:  "chore: create a release",
-		ghClient:       r.ghClient,
-		library:        r.library,
-		libraryVersion: r.libraryVersion,
-		prType:         release,
+		branch:        r.branch,
+		commit:        r.commit,
+		commitMessage: "chore: create a release",
+		ghClient:      r.ghClient,
+		prType:        pullRequestRelease,
 		// Newly created PRs from the `release init` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
 		push:              r.push,
-		repo:              r.repo,
+		languageRepo:      r.repo,
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
+		workRoot:          r.workRoot,
+		prBodyBuilder:     prBodyBuilder,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
@@ -125,18 +130,11 @@ func hasLibrariesToRelease(libraryStates []*config.LibraryState) bool {
 }
 
 func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
-	dst := r.partialRepo
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return fmt.Errorf("failed to make directory: %w", err)
-	}
-
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
-	// If a library has been specified, only process the release for it
 	if r.library != "" {
-		library := findLibraryByID(r.state, r.library)
+		library := r.state.LibraryByID(r.library)
 		if library == nil {
-			slog.Error("Unable to find the specified library. Cannot proceed with the release.", "library", r.library)
 			return fmt.Errorf("unable to find library for release: %s", r.library)
 		}
 		librariesToRelease = []*config.LibraryState{library}
@@ -144,29 +142,27 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	// Mark if there are any library that needs to be released
 	foundReleasableLibrary := false
 	for _, library := range librariesToRelease {
-		if err := r.updateLibrary(library); err != nil {
+		if r.librarianConfig != nil {
+			libraryConfig := r.librarianConfig.LibraryConfigFor(library.ID)
+			if libraryConfig != nil && libraryConfig.ReleaseBlocked && r.library != library.ID {
+				// Do not skip the `release_blocked` library if library ID is explicitly specified.
+				slog.Info("library has release_blocked, skipping", "id", library.ID)
+				continue
+			}
+		}
+		if err := r.processLibrary(library); err != nil {
 			return err
 		}
+
 		// Copy the library files over if a release is needed
 		if library.ReleaseTriggered {
 			foundReleasableLibrary = true
-			if err := copyLibraryFiles(r.state, dst, library.ID, src); err != nil {
-				return err
-			}
 		}
 	}
 
 	if !foundReleasableLibrary {
 		slog.Info("No libraries need to be released")
 		return nil
-	}
-
-	if err := copyLibrarianDir(dst, src); err != nil {
-		return fmt.Errorf("failed to copy librarian dir from %s to %s: %w", src, dst, err)
-	}
-
-	if err := copyGlobalAllowlist(r.librarianConfig, dst, src, true); err != nil {
-		return fmt.Errorf("failed to copy global allowlist  from %s to %s: %w", src, dst, err)
 	}
 
 	initRequest := &docker.ReleaseInitRequest{
@@ -176,7 +172,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		LibraryID:       r.library,
 		LibraryVersion:  r.libraryVersion,
 		Output:          outputDir,
-		PartialRepoDir:  dst,
+		RepoDir:         src,
 		Push:            r.push,
 		State:           r.state,
 	}
@@ -187,7 +183,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 	// Read the response file.
 	if _, err := readLibraryState(
-		filepath.Join(initRequest.PartialRepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
+		filepath.Join(initRequest.RepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
 		return err
 	}
 
@@ -203,55 +199,90 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	return copyGlobalAllowlist(r.librarianConfig, r.repo.GetDir(), outputDir, false)
 }
 
-// updateLibrary updates the given library in the following way:
-//
-// 1. Update the library's previous version.
-//
-// 2. Get the library's commit history in the given git repository.
-//
-// 3. Override the library version if libraryVersion is not empty.
-//
-// 4. Set the library's release trigger to true.
-func (r *initRunner) updateLibrary(library *config.LibraryState) error {
-	commits, err := GetConventionalCommitsSinceLastRelease(r.repo, library)
+// processLibrary wrapper to process the library for release. Helps retrieve latest commits
+// since the last release and passing the changes to updateLibrary.
+func (r *initRunner) processLibrary(library *config.LibraryState) error {
+	tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
+	tagName := config.FormatTag(tagFormat, library.ID, library.Version)
+	commits, err := getConventionalCommitsSinceLastRelease(r.repo, library, tagName)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
+	// Filter specifically for commits relevant to a library
+	commits = filterCommitsByLibraryID(commits, library.ID)
+	return r.updateLibrary(library, commits)
+}
 
-	if len(commits) == 0 {
-		slog.Info("Skip releasing library as there are no commits", "library", library.ID)
-		return nil
+// filterCommitsByLibraryID keeps the conventional commits if the given libraryID appears in the Footer or matches
+// the libraryID in the commit.
+func filterCommitsByLibraryID(commits []*gitrepo.ConventionalCommit, libraryID string) []*gitrepo.ConventionalCommit {
+	var filteredCommits []*gitrepo.ConventionalCommit
+	for _, commit := range commits {
+		if commit.Footers != nil {
+			ids, ok := commit.Footers["Library-IDs"]
+			libraryIDs := strings.Split(ids, ",")
+			if ok && slices.Contains(libraryIDs, libraryID) {
+				filteredCommits = append(filteredCommits, commit)
+				continue
+			}
+		}
+		if commit.LibraryID == libraryID {
+			filteredCommits = append(filteredCommits, commit)
+		}
 	}
+	return filteredCommits
+}
 
-	nextVersion, err := r.determineNextVersion(commits, library.Version, library.ID)
-	if err != nil {
-		return err
+// updateLibrary updates the library's state with the new release information:
+//
+// 1. Determines the library version's next version.
+//
+// 2. Updates the library's previous version and the new current version.
+//
+// 3. Set the library's release trigger to true.
+func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitrepo.ConventionalCommit) error {
+	var nextVersion string
+	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
+	if r.libraryVersion != "" {
+		slog.Info("Library version override inputted", "currentVersion", library.Version, "inputVersion", r.libraryVersion)
+		nextVersion = semver.MaxVersion(library.Version, r.libraryVersion)
+		slog.Debug("Determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
+		// Currently, nextVersion is the max of current version or input version. If nextVersion is equal to the current version,
+		// then the input version is either equal or less than current version and cannot be used for release
+		if nextVersion == library.Version {
+			return fmt.Errorf("inputted version is not SemVer greater than the current version. Set a version SemVer greater than current than: %s", library.Version)
+		}
+	} else {
+		var err error
+		nextVersion, err = r.determineNextVersion(commits, library.Version, library.ID)
+		if err != nil {
+			return err
+		}
+		slog.Debug("Determined the library's next version from commits", "library", library.ID, "nextVersion", nextVersion)
+		// Unable to find a releasable unit from the changes
+		if nextVersion == library.Version {
+			// No library was inputted for release. Skipping this library for release
+			if r.library == "" {
+				slog.Info("Library does not have any releasable units and will not be released.", "library", library.ID, "version", library.Version)
+				return nil
+			}
+			// Library was inputted for release, but does not contain a releasable unit
+			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to force a release for: %s", library.ID)
+		}
+		slog.Info("Updating library to the next version", "library", r.library, "currentVersion", library.Version, "nextVersion", nextVersion)
 	}
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
-	library.Changes = commits
-	// Only update the library state if there are releasable units
-	if library.Version != nextVersion {
-		library.Version = nextVersion
-		library.ReleaseTriggered = true
-	}
-
+	library.Changes = toCommit(commits)
+	library.Version = nextVersion
+	library.ReleaseTriggered = true
 	return nil
 }
 
-func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
-	// If library version explicitly passed to CLI, use it
-	if r.libraryVersion != "" {
-		slog.Info("Library version override specified", "currentVersion", currentVersion, "version", r.libraryVersion)
-		newVersion := semver.MaxVersion(currentVersion, r.libraryVersion)
-		if newVersion == r.libraryVersion {
-			return newVersion, nil
-		} else {
-			slog.Warn("Specified version is not higher than the current version, ignoring override.")
-		}
-	}
-
+// determineNextVersion determines the next valid SemVer version from the commits or from
+// the next_version override value in the config.yaml file.
+func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
 	if err != nil {
 		return "", err
@@ -273,31 +304,20 @@ func (r *initRunner) determineNextVersion(commits []*conventionalcommits.Convent
 	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
 }
 
-// copyGlobalAllowlist copies files in the global file allowlist excluding
-//
-//	read-only files and copies global files from src.
-func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadOnly bool) error {
-	if cfg == nil {
-		slog.Info("librarian config is not setup, skip copying global allowlist")
-		return nil
+// toCommit converts a slice of gitrepo.ConventionalCommit to a slice of config.Commit.
+// If the ConventionalCommit has NestedCommits, they are also extracted and
+// converted.
+func toCommit(c []*gitrepo.ConventionalCommit) []*config.Commit {
+	var commits []*config.Commit
+	for _, cc := range c {
+		commits = append(commits, &config.Commit{
+			Type:          cc.Type,
+			Subject:       cc.Subject,
+			Body:          cc.Body,
+			CommitHash:    cc.CommitHash,
+			PiperCLNumber: cc.Footers["PiperOrigin-RevId"],
+			LibraryIDs:    cc.Footers["Library-IDs"],
+		})
 	}
-	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
-	for _, globalFile := range cfg.GlobalFilesAllowlist {
-		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
-			slog.Debug("skipping read-only file", "path", globalFile.Path)
-			continue
-		}
-		srcPath := filepath.Join(src, globalFile.Path)
-		dstPath := filepath.Join(dst, globalFile.Path)
-		if err := copyFile(dstPath, srcPath); err != nil {
-			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
-		}
-	}
-	return nil
-}
-
-func copyLibrarianDir(dst, src string) error {
-	return os.CopyFS(
-		filepath.Join(dst, config.LibrarianDir),
-		os.DirFS(filepath.Join(src, config.LibrarianDir)))
+	return commits
 }

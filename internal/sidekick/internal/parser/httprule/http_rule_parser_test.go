@@ -88,3 +88,60 @@ func TestParseSegments(t *testing.T) {
 		})
 	}
 }
+
+func TestParsePathTemplateInvalidVerb(t *testing.T) {
+	if got, err := parsePathTemplate("/foo/{bar}/baz:"); err == nil {
+		t.Errorf("expected an error, got=%v", got)
+	}
+	if got, err := parsePathTemplate("/foo/{bar}/baz^verb"); err == nil {
+		t.Errorf("expected an error, got=%v", got)
+	}
+}
+
+func TestParsePathTemplateInvalidVarSegment(t *testing.T) {
+	if got, err := parsePathTemplate("/foo/{}"); err == nil {
+		t.Errorf("expected an error, got=%v", got)
+	}
+}
+
+func TestParsePathTemplateInvalidVarSubsegment(t *testing.T) {
+	if got, err := parsePathTemplate("/foo/{a="); err == nil {
+		t.Errorf("expected an error, got=%v", got)
+	}
+	if got, err := parsePathTemplate("/foo/{a=/"); err == nil {
+		t.Errorf("expected an error, got=%v", got)
+	}
+	if got, err := parsePathTemplate("/foo/{a=^"); err == nil {
+		t.Errorf("expected an error, got=%v", got)
+	}
+}
+
+func TestParseLiteral(t *testing.T) {
+	if got, pos, err := parseLiteral("abc%2"); err == nil {
+		t.Errorf("expected an error, got=%v, pos=%v", got, pos)
+	}
+}
+
+func TestParseIdentifier(t *testing.T) {
+	if got, pos, err := parseIdentifier(""); err == nil {
+		t.Errorf("expected an error, got=%v, pos=%v", got, pos)
+	}
+	if got, pos, err := parseIdentifier("_"); err == nil {
+		t.Errorf("expected an error, got=%v, pos=%v", got, pos)
+	}
+	got, pos, err := parseIdentifier("abc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if *got != "abc" || pos != 3 {
+		t.Errorf("mismatch want=abc, got=%v, wantPos=3, gotPos=%d", got, pos)
+	}
+
+	got, pos, err = parseIdentifier("abc/def")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if *got != "abc" || pos != 3 {
+		t.Errorf("mismatch want=abc, got=%v, wantPos=3, gotPos=%d", got, pos)
+	}
+}

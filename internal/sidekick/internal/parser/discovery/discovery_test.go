@@ -16,61 +16,47 @@ package discovery
 
 import (
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
-func TestInfo(t *testing.T) {
-	got, err := PublicCaDisco(t, nil)
+const computeDiscoveryFile = "../../../testdata/disco/compute.v1.json"
+
+func TestSorted(t *testing.T) {
+	got, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantName := "publicca"
-	wantTitle := "Public Certificate Authority API"
-	wantDescription := "The Public Certificate Authority API may be used to create and manage ACME external account binding keys associated with Google Trust Services' publicly trusted certificate authority. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	if !slices.IsSortedFunc(got.Messages, compareMessages) {
+		t.Fatalf("unsorted messages after parsing")
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
-	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	if got.PackageName != "" {
-		t.Errorf("expected empty package name")
+	if !slices.IsSortedFunc(got.Services, compareServices) {
+		t.Fatalf("unsorted messages after parsing")
 	}
 }
 
-func TestComputeParses(t *testing.T) {
-	contents, err := os.ReadFile("../../../testdata/disco/compute.v1.json")
+func TestInfo(t *testing.T) {
+	got, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := NewAPI(nil, contents)
-	if err != nil {
-		t.Fatal(err)
+	want := &api.API{
+		Name:        "compute",
+		Title:       "Compute Engine API",
+		Description: "Creates and runs virtual machines on Google Cloud Platform. ",
+		Revision:    "20250810",
 	}
-	wantName := "compute"
-	wantTitle := "Compute Engine API"
-	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
-	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
-	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	if got.PackageName != "" {
-		t.Errorf("expected empty package name")
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
 
@@ -80,24 +66,22 @@ func TestServiceConfigOverridesInfo(t *testing.T) {
 	sc.Documentation.Summary = "Change the description for testing"
 	sc.Name = "not-secretmanager"
 
-	got, err := PublicCaDisco(t, sc)
+	got, err := ComputeDisco(t, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Name != sc.Name {
-		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
+	want := &api.API{
+		Name:        sc.Name,
+		Title:       sc.Title,
+		Description: sc.Documentation.Summary,
+		Revision:    "20250810",
+		PackageName: "google.cloud.secretmanager.v1",
 	}
-	if got.Title != sc.Title {
-		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
-	}
-	if diff := cmp.Diff(sc.Documentation.Summary, got.Description); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 	if len(sc.Apis) != 2 {
 		t.Fatalf("expected 2 APIs in service config")
-	}
-	if got.PackageName == "" {
-		t.Errorf("got empty package name")
 	}
 	if !strings.HasPrefix(sc.Apis[1].Name, got.PackageName) {
 		t.Errorf("mismatched package name want = %q, got = %q", sc.Apis[1].Name, got.PackageName)
@@ -129,52 +113,88 @@ func TestBadParse(t *testing.T) {
 		{"resource with bad child", `{"resources": {"badResource": {"resources": {"badChild": {"methods": {"badResponse": {"response": {"$ref": "notThere"}}}}}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if _, err := NewAPI(nil, contents); err == nil {
+		if _, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input", test.Name)
 		}
 	}
 }
 
 func TestMessage(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	id := "..ExternalAccountKey"
+	id := "..WeightedBackendService"
 	got, ok := model.State.MessageByID[id]
 	if !ok {
 		t.Fatalf("expected message %s in the API model", id)
 	}
 	want := &api.Message{
-		Name:          "ExternalAccountKey",
+		Name:          "WeightedBackendService",
 		ID:            id,
 		Package:       "",
-		Documentation: "A representation of an ExternalAccountKey used for [external account binding](https://tools.ietf.org/html/rfc8555#section-7.3.4) within ACME.",
+		Documentation: "In contrast to a single BackendService in HttpRouteAction to which all matching traffic is directed to, WeightedBackendService allows traffic to be split across multiple backend services. The volume of traffic for each backend service is proportional to the weight specified in each WeightedBackendService",
 		Fields: []*api.Field{
 			{
-				Name:          "b64MacKey",
-				JSONName:      "b64MacKey",
-				Documentation: "Output only. Base64-URL-encoded HS256 key. It is generated by the PublicCertificateAuthorityService when the ExternalAccountKey is created",
-				Typez:         api.BYTES_TYPE,
-				TypezID:       "bytes",
-			},
-			{
-				Name:          "keyId",
-				JSONName:      "keyId",
-				Documentation: "Output only. Key ID. It is generated by the PublicCertificateAuthorityService when the ExternalAccountKey is created",
+				Name:          "backendService",
+				JSONName:      "backendService",
+				ID:            "..WeightedBackendService.backendService",
+				Documentation: "The full or partial URL to the default BackendService resource. Before forwarding the request to backendService, the load balancer applies any relevant headerActions specified as part of this backendServiceWeight.",
 				Typez:         api.STRING_TYPE,
 				TypezID:       "string",
+				Optional:      true,
 			},
 			{
-				Name:          "name",
-				JSONName:      "name",
-				Documentation: "Output only. Resource name. projects/{project}/locations/{location}/externalAccountKeys/{key_id}",
-				Typez:         api.STRING_TYPE,
-				TypezID:       "string",
+				Name:          "headerAction",
+				JSONName:      "headerAction",
+				ID:            "..WeightedBackendService.headerAction",
+				Documentation: "Specifies changes to request and response headers that need to take effect for the selected backendService. headerAction specified here take effect before headerAction in the enclosing HttpRouteRule, PathMatcher and UrlMap. headerAction is not supported for load balancers that have their loadBalancingScheme set to EXTERNAL. Not supported when the URL map is bound to a target gRPC proxy that has validateForProxyless field set to true.",
+				Typez:         api.MESSAGE_TYPE,
+				TypezID:       "..HttpHeaderAction",
+				Optional:      true,
+			},
+			{
+				Name:          "weight",
+				JSONName:      "weight",
+				ID:            "..WeightedBackendService.weight",
+				Documentation: "Specifies the fraction of traffic sent to a backend service, computed as weight / (sum of all weightedBackendService weights in routeAction) . The selection of a backend service is determined only for new traffic. Once a user's request has been directed to a backend service, subsequent requests are sent to the same backend service as determined by the backend service's session affinity policy. Don't configure session affinity if you're using weighted traffic splitting. If you do, the weighted traffic splitting configuration takes precedence. The value must be from 0 to 1000.",
+				Typez:         api.UINT32_TYPE,
+				TypezID:       "uint32",
+				Optional:      true,
 			},
 		},
 	}
 	apitest.CheckMessage(t, got, want)
+}
+
+func TestDeprecatedField(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := "..BackendService"
+	gotMessage, ok := model.State.MessageByID[id]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", id)
+	}
+	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name == "port" })
+	if idx == -1 {
+		t.Fatalf("expected a `port` field in the message, got=%v", gotMessage)
+	}
+	gotField := gotMessage.Fields[idx]
+	wantField := &api.Field{
+		Name:          "port",
+		JSONName:      "port",
+		ID:            "..BackendService.port",
+		Deprecated:    true,
+		Documentation: gotField.Documentation,
+		Typez:         api.INT32_TYPE,
+		TypezID:       "int32",
+		Optional:      true,
+	}
+	if diff := cmp.Diff(wantField, gotField, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
 }
 
 func TestMessageErrors(t *testing.T) {
@@ -185,7 +205,7 @@ func TestMessageErrors(t *testing.T) {
 		{"bad message field", `{"schemas": {"withBadField": {"type": "object", "properties": {"badFormat": {"type": "string", "format": "--bad--"}}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if _, err := NewAPI(nil, contents); err == nil {
+		if _, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input", test.Name)
 		}
 	}
@@ -199,17 +219,26 @@ func TestServiceErrors(t *testing.T) {
 		{"bad method", `{"resources": {"withBadMethod": {"methods": {"uploadNotSupported": { "mediaUpload": {} }}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if got, err := NewAPI(nil, contents); err == nil {
+		if got, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input, got=%v", test.Name, got)
 		}
 	}
 }
 
-func PublicCaDisco(t *testing.T, sc *serviceconfig.Service) (*api.API, error) {
+func ComputeDisco(t *testing.T, sc *serviceconfig.Service) (*api.API, error) {
 	t.Helper()
-	contents, err := os.ReadFile("../../../testdata/disco/publicca.v1.json")
+	contents, err := os.ReadFile(computeDiscoveryFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return NewAPI(sc, contents, nil)
+}
+
+func ComputeDiscoWithLros(t *testing.T, cfg *config.Config) (*api.API, error) {
+	t.Helper()
+	contents, err := os.ReadFile(computeDiscoveryFile)
 	if err != nil {
 		return nil, err
 	}
-	return NewAPI(sc, contents)
+	return NewAPI(nil, contents, cfg)
 }

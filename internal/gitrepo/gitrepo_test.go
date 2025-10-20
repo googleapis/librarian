@@ -15,8 +15,11 @@
 package gitrepo
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -305,6 +308,153 @@ func TestIsClean(t *testing.T) {
 	}
 }
 
+func TestChangedFiles(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		setup      func(t *testing.T, dir string, w *git.Worktree)
+		wantFiles  []string
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "clean repository",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				// No changes
+			},
+		},
+		{
+			name: "untracked file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "untracked.txt")
+				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+			wantFiles: []string{"untracked.txt"},
+		},
+		{
+			name: "added file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "added.txt")
+				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("added.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+			},
+			wantFiles: []string{"added.txt"},
+		},
+		{
+			name: "modified file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "modified.txt")
+				if err := os.WriteFile(filePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("modified.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				_, err := w.Commit("commit", &git.CommitOptions{
+					Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+				})
+				if err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+
+				if err := os.WriteFile(filePath, []byte("modified"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+			wantFiles: []string{"modified.txt"},
+		},
+		{
+			name: "deleted file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "deleted.txt")
+				if err := os.WriteFile(filePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("deleted.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				_, err := w.Commit("commit", &git.CommitOptions{
+					Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+				})
+				if err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+				if err := os.Remove(filePath); err != nil {
+					t.Fatalf("failed to remove file: %v", err)
+				}
+			},
+			wantFiles: []string{"deleted.txt"},
+		},
+		{
+			name: "multiple changes",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				// Untracked
+				untrackedFilePath := filepath.Join(dir, "untracked.txt")
+				if err := os.WriteFile(untrackedFilePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+
+				// Modified
+				modifiedFilePath := filepath.Join(dir, "modified.txt")
+				if err := os.WriteFile(modifiedFilePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("modified.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				_, err := w.Commit("commit", &git.CommitOptions{
+					Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+				})
+				if err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+				if err := os.WriteFile(modifiedFilePath, []byte("modified"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+			wantFiles: []string{"modified.txt", "untracked.txt"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			w, err := repo.Worktree()
+			if err != nil {
+				t.Fatalf("failed to get worktree: %v", err)
+			}
+
+			r := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+
+			test.setup(t, dir, w)
+			gotFiles, err := r.ChangedFiles()
+			if (err != nil) != test.wantErr {
+				t.Errorf("ChangedFiles() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if test.wantErr {
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("ChangedFiles() error message = %q, want to contain %q", err.Error(), test.wantErrMsg)
+				}
+				return
+			}
+
+			slices.Sort(gotFiles) // Sorting makes the test deterministic.
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("ChangedFiles() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAddAll(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -355,7 +505,7 @@ func TestAddAll(t *testing.T) {
 
 			test.setup(t, dir)
 
-			status, err := r.AddAll()
+			err := r.AddAll()
 			if (err != nil) != test.wantErr {
 				t.Errorf("AddAll() error = %v, wantErr %v", err, test.wantErr)
 				return
@@ -363,9 +513,12 @@ func TestAddAll(t *testing.T) {
 			if err != nil {
 				return
 			}
-
-			if status.IsClean() != test.wantStatusIsClean {
-				t.Errorf("AddAll() status.IsClean() = %v, want %v", status.IsClean(), test.wantStatusIsClean)
+			isClean, err := r.IsClean()
+			if err != nil {
+				t.Fatalf("IsClean() returned an error: %v", err)
+			}
+			if isClean != test.wantStatusIsClean {
+				t.Errorf("AddAll() status.IsClean() = %v, want %v", isClean, test.wantStatusIsClean)
 			}
 		})
 	}
@@ -587,7 +740,7 @@ func TestRemotes(t *testing.T) {
 
 			gotRemotes := make(map[string][]string)
 			for _, r := range got {
-				gotRemotes[r.Config().Name] = r.Config().URLs
+				gotRemotes[r.Name] = r.URLs
 			}
 			if diff := cmp.Diff(test.setupRemotes, gotRemotes); diff != "" {
 				t.Errorf("Remotes() mismatch (-want +got):\n%s", diff)
@@ -974,6 +1127,13 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 			wantErr:       true,
 			wantErrPhrase: "did not find commit",
 		},
+		{
+			name:        "root path matches all commits",
+			paths:       []string{"."},
+			sinceCommit: "",
+			// The current implementation skips the initial commit.
+			wantCommits: []string{"feat: commit 3", "feat: commit 2"},
+		},
 	} {
 
 		t.Run(test.name, func(t *testing.T) {
@@ -1016,7 +1176,6 @@ func TestGetCommitsForPathsSinceCommit(t *testing.T) {
 
 func TestGetCommitsForPathsSinceTag(t *testing.T) {
 	t.Parallel()
-
 	repo, _ := setupRepoForGetCommitsTest(t)
 
 	for _, test := range []struct {
@@ -1112,6 +1271,206 @@ func TestCreateBranchAndCheckout(t *testing.T) {
 			head, _ := repo.repo.Head()
 			if diff := cmp.Diff(test.branchName, head.Name().Short()); diff != "" {
 				t.Errorf("CreateBranchAndCheckout() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRestore(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		paths         []string
+		wantErr       bool
+		wantErrPhrase string
+	}{
+		{
+			name: "restore files in paths",
+			paths: []string{
+				"first/path",
+				"second/path",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+			// Create files in test.paths and commit the change.
+			for _, path := range test.paths {
+				file := filepath.Join(path, "example.txt")
+				createAndCommit(t, repo, file, []byte("old content"), fmt.Sprintf("commit path, %s", path))
+			}
+
+			// Change file contents.
+			for _, path := range test.paths {
+				file := filepath.Join(dir, path, "example.txt")
+				if err := os.WriteFile(file, []byte("new content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				// Create untracked files.
+				untrackedFile := filepath.Join(dir, path, "untracked.txt")
+				if err := os.WriteFile(untrackedFile, []byte("new content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			err := localRepo.Restore(test.paths)
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("%s should return error", test.name)
+				}
+				if !strings.Contains(err.Error(), test.wantErrPhrase) {
+					t.Errorf("Restore() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, path := range test.paths {
+				got, err := os.ReadFile(filepath.Join(dir, path, "example.txt"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				// Verify file contents are restored.
+				if diff := cmp.Diff("old content", string(got)); diff != "" {
+					t.Errorf("Restore() mismatch (-want +got):\n%s", diff)
+				}
+				// Verify the untracked files are untouched.
+				untrackedFile := filepath.Join(dir, path, "untracked.txt")
+				if _, err := os.Stat(untrackedFile); err != nil {
+					t.Errorf("untracked file, %s should not be removed", untrackedFile)
+				}
+			}
+		})
+	}
+}
+
+func TestCleanUntracked(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		paths []string
+	}{
+		{
+			name: "remove_untracked_files_in_paths",
+			paths: []string{
+				"first/path",
+				"second/path",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+
+			// Create tracked files.
+			for _, path := range test.paths {
+				relPath := filepath.Join(dir, path)
+				if err := os.MkdirAll(relPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+				trackedFile := filepath.Join(relPath, "tracked.txt")
+				if err := os.WriteFile(trackedFile, []byte("new content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := localRepo.AddAll(); err != nil {
+				t.Fatal(err)
+			}
+
+			// Create untracked files.
+			for _, path := range test.paths {
+				relPath := filepath.Join(dir, path)
+				if err := os.MkdirAll(relPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+				untrackedFile := filepath.Join(relPath, "untracked.txt")
+				if err := os.WriteFile(untrackedFile, []byte("new content"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := localRepo.CleanUntracked(test.paths); err != nil {
+				t.Error(err)
+
+				return
+			}
+
+			for _, path := range test.paths {
+				// Verify the untracked files are removed.
+				untrackedFile := filepath.Join(dir, path, "untracked.txt")
+				if _, err := os.Stat(untrackedFile); !os.IsNotExist(err) {
+					t.Errorf("untracked file, %s should be removed", untrackedFile)
+				}
+				// Verify the tracked files are untouched.
+				trackedFile := filepath.Join(dir, path, "tracked.txt")
+				if _, err := os.Stat(trackedFile); err != nil {
+					t.Errorf("tracked file, %s should not be touched: %q", trackedFile, err)
+				}
+			}
+		})
+	}
+}
+
+func TestGetLatestCommit(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		path    string
+		setup   func(t *testing.T, repo *git.Repository, path string)
+		want    *Commit
+		wantErr error
+	}{
+		{
+			name: "get_latest_commit_of_a_path",
+			path: "a/path/example.txt",
+			setup: func(t *testing.T, repo *git.Repository, path string) {
+				createAndCommit(t, repo, path, []byte("1st content"), "first commit")
+				createAndCommit(t, repo, path, []byte("2nd content"), "second commit")
+				createAndCommit(t, repo, "another/path/example.txt", []byte("2nd content"), "second commit")
+			},
+			want: &Commit{
+				Message: "second commit",
+			},
+		},
+		{
+			name: "no_commit_of_a_path",
+			path: "a/path/example.txt",
+			setup: func(t *testing.T, repo *git.Repository, path string) {
+				// Do nothing.
+			},
+			wantErr: plumbing.ErrReferenceNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			test.setup(t, repo, test.path)
+			localRepo := &LocalRepository{Dir: dir, repo: repo}
+			got, err := localRepo.GetLatestCommit(test.path)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)
+				}
+
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(Commit{}, "When", "Hash")); diff != "" {
+				t.Errorf("GetLatestCommit() mismatch in %s (-want +got):\n%s", test.name, diff)
 			}
 		})
 	}
@@ -1213,4 +1572,41 @@ func setupRepoForGetCommitsTest(t *testing.T) (*LocalRepository, map[string]stri
 	commits["commit3"] = commit3.Hash.String()
 
 	return &LocalRepository{Dir: dir, repo: repo}, commits
+}
+
+func TestCanUseSSH(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		remoteURI string
+		want      bool
+	}{
+		{
+			name:      "remote_https_uri",
+			remoteURI: "https://github.com/googleapis/librarian.git",
+			want:      false,
+		},
+		{
+			name:      "remote_ssh_uri",
+			remoteURI: "git@github.com:googleapis/librarian.git",
+			want:      true,
+		},
+		{
+			name:      "remote_ssh_uri_with_scheme",
+			remoteURI: "ssh://git@github.com/googleapis/librarian.git",
+			want:      true,
+		},
+		{
+			name:      "invalid_remote_uri",
+			remoteURI: "nonsense-uri",
+			want:      false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := canUseSSH(test.remoteURI)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("canUseSSH() mismatch in %s (-want +got):\n%s", test.name, diff)
+			}
+		})
+	}
 }

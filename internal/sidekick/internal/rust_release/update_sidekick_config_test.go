@@ -17,6 +17,7 @@ package rustrelease
 import (
 	"os"
 	"path"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -120,6 +121,9 @@ func TestUpdateSidekickConfigNoErrorOnMissingConfig(t *testing.T) {
 }
 
 func TestUpdateSidekickConfigStatError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows, file permissions are not the same as on Unix")
+	}
 	tmpDir := path.Join(t.TempDir(), "not-readable")
 	_ = os.MkdirAll(tmpDir, 0000)
 	manifest := path.Join(tmpDir, "Cargo.toml")

@@ -51,9 +51,9 @@ var commentUrlRegex = regexp.MustCompile(
 		`[a-zA-Z]{2,63}` + // The root domain is far more strict
 		`(/[-a-zA-Z0-9@:%_\+.~#?&/={}\$]*)?`) // Accept just about anything on the query and URL fragments
 
-func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
+func newCodec(specificationFormat string, options map[string]string) (*codec, error) {
 	var sysParams []systemParameter
-	if protobufSource {
+	if specificationFormat == "protobuf" {
 		sysParams = append(sysParams, systemParameter{
 			Name: "$alt", Value: "json;enum-encoding=int",
 		})
@@ -65,13 +65,15 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 
 	year, _, _ := time.Now().Date()
 	codec := &codec{
-		generationYear:   fmt.Sprintf("%04d", year),
-		modulePath:       "crate::model",
-		extraPackages:    []*packagez{},
-		packageMapping:   map[string]*packagez{},
-		version:          "0.0.0",
-		releaseLevel:     "preview",
-		systemParameters: sysParams,
+		generationYear:          fmt.Sprintf("%04d", year),
+		modulePath:              "crate::model",
+		extraPackages:           []*packagez{},
+		packageMapping:          map[string]*packagez{},
+		version:                 "0.0.0",
+		releaseLevel:            "preview",
+		systemParameters:        sysParams,
+		serializeEnumsAsStrings: specificationFormat != "protobuf",
+		bytesUseUrlSafeAlphabet: specificationFormat == "disco",
 	}
 
 	for key, definition := range options {
@@ -111,11 +113,9 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 				codec.packageMapping[source] = pkgOption.pkg
 			}
 		case key == "disabled-rustdoc-warnings":
-			if definition == "" {
-				codec.disabledRustdocWarnings = []string{}
-			} else {
-				codec.disabledRustdocWarnings = strings.Split(definition, ",")
-			}
+			codec.disabledRustdocWarnings = splitOption(definition)
+		case key == "disabled-clippy-warnings":
+			codec.disabledClippyWarnings = splitOption(definition)
 		case key == "template-override":
 			codec.templateOverride = definition
 		case key == "include-grpc-only-methods":
@@ -130,25 +130,48 @@ func newCodec(protobufSource bool, options map[string]string) (*codec, error) {
 				return nil, fmt.Errorf("cannot convert `per-service-features` value %q to boolean: %w", definition, err)
 			}
 			codec.perServiceFeatures = value
+		case key == "default-features":
+			codec.defaultFeatures = splitOption(definition)
+		case key == "detailed-tracing-attributes":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
+			}
+			codec.detailedTracingAttributes = value
 		case key == "has-veneer":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
 				return nil, fmt.Errorf("cannot convert `has-veneer` value %q to boolean: %w", definition, err)
 			}
 			codec.hasVeneer = value
+		case key == "extra-modules":
+			codec.extraModules = splitOption(definition)
 		case key == "internal-types":
-			codec.internalTypes = strings.Split(definition, ",")
+			codec.internalTypes = splitOption(definition)
 		case key == "routing-required":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
 				return nil, fmt.Errorf("cannot convert `routing-required` value %q to boolean: %w", definition, err)
 			}
 			codec.routingRequired = value
+		case key == "generate-setter-samples":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `generate-setter-samples` value %q to boolean: %w", definition, err)
+			}
+			codec.generateSetterSamples = value
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
 	}
 	return codec, nil
+}
+
+func splitOption(definition string) []string {
+	if definition == "" {
+		return []string{}
+	}
+	return strings.Split(definition, ",")
 }
 
 type packageOption struct {
@@ -232,10 +255,16 @@ type codec struct {
 	releaseLevel string
 	// True if the API model includes any services
 	hasServices bool
-	// A list of `rustdoc` warnings disabled for specific services.
+	// A list of `rustdoc` warnings to disable.
 	disabledRustdocWarnings []string
+	// A list of `clippy` warnings to disable.
+	disabledClippyWarnings []string
 	// The default system parameters included in all requests.
 	systemParameters []systemParameter
+	// If true, enums are serialized as strings.
+	serializeEnumsAsStrings bool
+	// If true, bytes are serialized using the url-safe alphabet.
+	bytesUseUrlSafeAlphabet bool
 	// Overrides the template subdirectory.
 	templateOverride string
 	// If true, this includes gRPC-only methods, such as methods without HTTP
@@ -243,8 +272,18 @@ type codec struct {
 	includeGrpcOnlyMethods bool
 	// If true, the generator will produce per-client features.
 	perServiceFeatures bool
+	// If not empty, and if `perServiceFeatures` is true, the default features
+	defaultFeatures []string
+	// If true, the generated code includes detailed tracing attributes on HTTP
+	// requests. This feature flag exists to reduce unexpected changes to the
+	// generated code until the feature is ready and well-tested.
+	// TODO(https://github.com/googleapis/google-cloud-rust/issues/3239) -
+	//   remove this flag once we switch the default.
+	detailedTracingAttributes bool
 	// If true, there is a handwritten client surface.
 	hasVeneer bool
+	// Additional modules, maybe with hand-crafted code.
+	extraModules []string
 	// A list of types which should only be `pub(crate)`.
 	//
 	// In rare cases, it is easiest to manage type visibility via the codec
@@ -257,6 +296,8 @@ type codec struct {
 	// If true, fail requests locally that do not yield a gRPC routing
 	// header.
 	routingRequired bool
+	// If true, the generator will produce reference documentation samples for message fields setters.
+	generateSetterSamples bool
 }
 
 type systemParameter struct {
@@ -284,68 +325,6 @@ type packagez struct {
 	usedIf []string
 }
 
-var wellKnownMessages = []*api.Message{
-	{
-		ID:      ".google.protobuf.Any",
-		Name:    "Any",
-		Package: "google.protobuf",
-	},
-	{
-		ID:      ".google.protobuf.Struct",
-		Name:    "Struct",
-		Package: "google.protobuf",
-	},
-	{
-		ID:      ".google.protobuf.Value",
-		Name:    "Value",
-		Package: "google.protobuf",
-	},
-	{
-		ID:      ".google.protobuf.ListValue",
-		Name:    "ListValue",
-		Package: "google.protobuf",
-	},
-	{
-		ID:      ".google.protobuf.Empty",
-		Name:    "Empty",
-		Package: "google.protobuf",
-	},
-	{
-		ID:      ".google.protobuf.FieldMask",
-		Name:    "FieldMask",
-		Package: "google.protobuf",
-	},
-	{
-		ID:      ".google.protobuf.Duration",
-		Name:    "Duration",
-		Package: "google.protobuf",
-	},
-	{
-		ID:      ".google.protobuf.Timestamp",
-		Name:    "Timestamp",
-		Package: "google.protobuf",
-	},
-	{ID: ".google.protobuf.BytesValue", Name: "BytesValue", Package: "google.protobuf"},
-	{ID: ".google.protobuf.UInt64Value", Name: "UInt64Value", Package: "google.protobuf"},
-	{ID: ".google.protobuf.Int64Value", Name: "Int64Value", Package: "google.protobuf"},
-	{ID: ".google.protobuf.UInt32Value", Name: "UInt32Value", Package: "google.protobuf"},
-	{ID: ".google.protobuf.Int32Value", Name: "Int32Value", Package: "google.protobuf"},
-	{ID: ".google.protobuf.FloatValue", Name: "FloatValue", Package: "google.protobuf"},
-	{ID: ".google.protobuf.DoubleValue", Name: "DoubleValue", Package: "google.protobuf"},
-	{ID: ".google.protobuf.BoolValue", Name: "BoolValue", Package: "google.protobuf"},
-}
-
-func loadWellKnownTypes(s *api.APIState) {
-	for _, message := range wellKnownMessages {
-		s.MessageByID[message.ID] = message
-	}
-	s.EnumByID[".google.protobuf.NullValue"] = &api.Enum{
-		Name:    "NullValue",
-		Package: "google.protobuf",
-		ID:      ".google.protobuf.NullValue",
-	}
-}
-
 func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 	hasServices := len(model.State.ServiceByID) > 0
 	hasLROs := false
@@ -356,7 +335,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 		// not save us any computations.
 
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil {
+			if m.OperationInfo != nil || m.DiscoveryLro != nil {
 				hasLROs = true
 			}
 			if len(m.AutoPopulated) != 0 {
@@ -1421,6 +1400,15 @@ func PackageName(api *api.API, packageNameOverride string) string {
 		name = api.Name
 	}
 	return "google-cloud-" + name
+}
+
+func (c *codec) packageName(model *api.API) string {
+	return PackageName(model, c.packageNameOverride)
+}
+
+func (c *codec) packageNamespace(model *api.API) string {
+	packageName := c.packageName(model)
+	return strings.ReplaceAll(packageName, "-", "_")
 }
 
 // ServiceName returns the service name.

@@ -27,6 +27,7 @@ import (
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/googleapis/gax-go/v2"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 )
 
@@ -73,7 +74,7 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 	wrappedClient := &wrappedCloudBuildClient{
 		client: c,
 	}
-	ghClient := github.NewClient(os.Getenv("LIBRARIAN_GITHUB_TOKEN"), nil)
+	ghClient := github.NewClient(os.Getenv(config.LibrarianGithubToken), nil)
 	return runCommandWithClient(ctx, wrappedClient, ghClient, command, projectId, push, build, forceRun, time.Now())
 }
 

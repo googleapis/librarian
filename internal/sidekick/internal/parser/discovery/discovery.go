@@ -23,12 +23,13 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/svcconfig"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 // NewAPI parses the discovery doc in `contents` and returns the corresponding `api.API` model.
-func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, error) {
+func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, cfg *config.Config) (*api.API, error) {
 	doc, err := newDiscoDocument(contents)
 	if err != nil {
 		return nil, err
@@ -37,6 +38,7 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		Name:        doc.Name,
 		Title:       doc.Title,
 		Description: doc.Description,
+		Revision:    doc.Revision,
 		Messages:    make([]*api.Message, 0),
 		State: &api.APIState{
 			ServiceByID: make(map[string]*api.Service),
@@ -45,6 +47,11 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 			EnumByID:    make(map[string]*api.Enum),
 		},
 	}
+	// Discovery docs use some well-known types inspired by Protobuf. With
+	// protoc these types are automatically included via `import` statements.
+	// In the Discovery docs JSON inputs, these types are not automatically
+	// included.
+	result.LoadWellKnownTypes()
 
 	// Discovery docs do not define a service name or package name. The service
 	// config may provide one.
@@ -67,26 +74,33 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		if schema.Type != "object" {
 			return nil, fmt.Errorf("schema %s is not an object: %q", id, schema.Type)
 		}
-		fields, err := makeMessageFields(id, schema)
-		if err != nil {
-			return nil, err
-		}
 		message := &api.Message{
 			Name:          name,
 			ID:            id,
 			Package:       packageName,
 			Documentation: schema.Description,
-			Fields:        fields,
+		}
+		err := makeMessageFields(result, message, schema)
+		if err != nil {
+			return nil, err
 		}
 		result.Messages = append(result.Messages, message)
 		result.State.MessageByID[id] = message
 	}
+	// The messages must be sorted otherwise the generated code gets different
+	// output on each run.
+	slices.SortStableFunc(result.Messages, compareMessages)
 
 	for _, resource := range doc.Resources {
-		if err := addServiceRecursive(result, resource); err != nil {
+		if err := addServiceRecursive(result, doc, resource); err != nil {
 			return nil, err
 		}
 	}
+	// The services must be sorted otherwise the generated code gets different
+	// output on each run.
+	slices.SortStableFunc(result.Services, compareServices)
+
+	lroAnnotations(result, cfg)
 
 	return result, nil
 }
@@ -98,6 +112,7 @@ type document struct {
 	Version           string             `json:"version"`
 	Title             string             `json:"title"`
 	Description       string             `json:"description"`
+	Revision          string             `json:"revision"`
 	RootURL           string             `json:"rootUrl"`
 	MTLSRootURL       string             `json:"mtlsRootUrl"`
 	ServicePath       string             `json:"servicePath"`
@@ -202,9 +217,11 @@ type schema struct {
 	Ref                  string  `json:"$ref"`
 	Default              string
 	Pattern              string
+	Deprecated           bool
 	Enums                []string `json:"enum"`
 	// Google extensions to JSON Schema
 	EnumDescriptions []string
+	EnumDeprecated   []bool
 	Variant          *variant
 
 	RefSchema *schema `json:"-"` // Schema referred to by $ref
@@ -363,10 +380,11 @@ func (rl *resourceList) UnmarshalJSON(data []byte) error {
 
 // A resource holds information about a Google API resource.
 type resource struct {
-	Name      string
-	FullName  string // {parent.FullName}.{Name}
-	Methods   methodList
-	Resources resourceList
+	Name       string
+	FullName   string // {parent.FullName}.{Name}
+	Methods    methodList
+	Resources  resourceList
+	Deprecated bool
 }
 
 func (r *resource) init(parentFullName string, topLevelSchemas map[string]*schema) error {
@@ -416,6 +434,7 @@ type method struct {
 	MediaUpload           *mediaUpload
 	SupportsMediaDownload bool
 	APIVersion            string
+	Deprecated            bool
 }
 
 type mediaUpload struct {

@@ -16,19 +16,17 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
 
 func TestNew(t *testing.T) {
-	t.Setenv("LIBRARIAN_GITHUB_TOKEN", "")
+	t.Setenv(LibrarianGithubToken, "")
 	for _, test := range []struct {
 		name    string
 		envVars map[string]string
@@ -37,8 +35,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "All environment variables set",
 			envVars: map[string]string{
-				"LIBRARIAN_GITHUB_TOKEN":    "gh_token",
-				"LIBRARIAN_SYNC_AUTH_TOKEN": "sync_token",
+				LibrarianGithubToken: "gh_token",
 			},
 			want: Config{
 				GitHubToken: "gh_token",
@@ -49,14 +46,13 @@ func TestNew(t *testing.T) {
 			name:    "No environment variables set",
 			envVars: map[string]string{},
 			want: Config{
-				GitHubToken: "",
 				CommandName: "test",
 			},
 		},
 		{
 			name: "Some environment variables set",
 			envVars: map[string]string{
-				"LIBRARIAN_GITHUB_TOKEN": "gh_token",
+				LibrarianGithubToken: "gh_token",
 			},
 			want: Config{
 				GitHubToken: "gh_token",
@@ -253,23 +249,17 @@ func TestIsValid(t *testing.T) {
 }
 
 func TestCreateWorkRoot(t *testing.T) {
-	timestamp := time.Now()
 	localTempDir := t.TempDir()
-	now = func() time.Time {
-		return timestamp
-	}
 	tempDir = func() string {
 		return localTempDir
 	}
-	defer func() {
-		now = time.Now
+	t.Cleanup(func() {
 		tempDir = os.TempDir
-	}()
+	})
 	for _, test := range []struct {
 		name   string
 		config *Config
 		setup  func(t *testing.T) (string, func())
-		errMsg string
 	}{
 		{
 			name: "configured root",
@@ -294,50 +284,41 @@ func TestCreateWorkRoot(t *testing.T) {
 			name:   "without override, new dir",
 			config: &Config{},
 			setup: func(t *testing.T) (string, func()) {
-				expectedPath := filepath.Join(localTempDir, fmt.Sprintf("librarian-%s", formatTimestamp(timestamp)))
+				expectedPath := filepath.Join(localTempDir, "librarian-")
 				return expectedPath, func() {
 					if err := os.RemoveAll(expectedPath); err != nil {
 						t.Errorf("os.RemoveAll(%q) = %v; want nil", expectedPath, err)
 					}
 				}
 			},
-		},
-		{
-			name:   "without override, dir exists",
-			config: &Config{},
-			setup: func(t *testing.T) (string, func()) {
-				expectedPath := filepath.Join(localTempDir, fmt.Sprintf("librarian-%s", formatTimestamp(timestamp)))
-				if err := os.Mkdir(expectedPath, 0755); err != nil {
-					t.Fatalf("failed to create test dir: %v", err)
-				}
-				return expectedPath, func() {
-					if err := os.RemoveAll(expectedPath); err != nil {
-						t.Errorf("os.RemoveAll(%q) = %v; want nil", expectedPath, err)
-					}
-				}
-			},
-			errMsg: "working directory already exists",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			want, cleanup := test.setup(t)
 			defer cleanup()
 
-			err := test.config.createWorkRoot()
-			if test.errMsg != "" {
-				if !strings.Contains(err.Error(), test.errMsg) {
-					t.Errorf("createWorkRoot() = %q, want contains %q", err, test.errMsg)
-				}
-				return
-			} else if err != nil {
+			if err := test.config.createWorkRoot(); err != nil {
 				t.Errorf("createWorkRoot() got unexpected error: %v", err)
 				return
 			}
 
-			if test.config.WorkRoot != want {
+			if !strings.HasPrefix(test.config.WorkRoot, want) {
 				t.Errorf("createWorkRoot() = %v, want %v", test.config.WorkRoot, want)
 			}
 		})
+	}
+}
+
+func TestCreateWorkRootError(t *testing.T) {
+	tempDir = func() string {
+		return filepath.Join("--invalid--", "--not-a-directory--")
+	}
+	t.Cleanup(func() {
+		tempDir = os.TempDir
+	})
+	config := &Config{}
+	if err := config.createWorkRoot(); err == nil {
+		t.Errorf("createWorkRoot() expected an error got: %v", config.WorkRoot)
 	}
 }
 
@@ -364,7 +345,7 @@ func TestDeriveRepo(t *testing.T) {
 				if err := os.MkdirAll(stateDir, 0755); err != nil {
 					t.Fatal(err)
 				}
-				stateFile := filepath.Join(stateDir, pipelineStateFile)
+				stateFile := filepath.Join(stateDir, LibrarianStateFile)
 				if err := os.WriteFile(stateFile, []byte("test"), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -417,12 +398,7 @@ func TestSetDefaults(t *testing.T) {
 		}, nil
 	}
 
-	timestamp := time.Now()
-	now = func() time.Time {
-		return timestamp
-	}
 	t.Cleanup(func() {
-		now = time.Now
 		currentUser = user.Current
 	})
 	for _, test := range []struct {
@@ -439,7 +415,7 @@ func TestSetDefaults(t *testing.T) {
 				if err := os.MkdirAll(stateDir, 0755); err != nil {
 					t.Fatal(err)
 				}
-				stateFile := filepath.Join(stateDir, pipelineStateFile)
+				stateFile := filepath.Join(stateDir, LibrarianStateFile)
 				if err := os.WriteFile(stateFile, []byte("test"), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -454,7 +430,7 @@ func TestSetDefaults(t *testing.T) {
 				if err := os.MkdirAll(stateDir, 0755); err != nil {
 					t.Fatal(err)
 				}
-				stateFile := filepath.Join(stateDir, pipelineStateFile)
+				stateFile := filepath.Join(stateDir, LibrarianStateFile)
 				if err := os.WriteFile(stateFile, []byte("test"), 0644); err != nil {
 					t.Fatal(err)
 				}

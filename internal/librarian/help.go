@@ -68,10 +68,12 @@ in '.librarian/state.yaml'.
   the container to compile and validate the generated code.
 - If the '--push' flag is provided, the changes are committed to a new branch,
   and a pull request is created on GitHub. Otherwise, the changes are left in
-  your local working directory for inspection.
+  your local working directory for inspection. When pushing to a remote branch,
+  you have the option of using HTTPS or SSH. Librarian will automatically determine
+  whether to use HTTPS or SSH based on the remote URI.
 
 Example with build and push:
-  SDK_LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`
+  LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build`
 
 	releaseInitLongHelp = `The 'release init' command is the primary entry point for initiating
 a new release. It automates the creation of a release pull request by parsing
@@ -86,11 +88,19 @@ according to semver rules. It then delegates all language-specific file
 modifications, such as updating a CHANGELOG.md or bumping the version in a pom.xml,
 to the configured language-specific container.
 
+If a specific library is configured for release via the '--library' flag, a single
+releasable change is needed to automatically calculate a version bump. If there are
+no releasable changes since the last release, the '--version' flag should be included
+to set a new version for the library. The new version must be "SemVer" greater than the
+current version.
+
 By default, 'release init' leaves the changes in your local working directory
 for inspection. Use the '--push' flag to automatically commit the changes to
 a new branch and create a pull request on GitHub. The '--commit' flag may be
 used to create a local commit without creating a pull request; this flag is
-ignored if '--push' is also specified.
+ignored if '--push' is also specified. When pushing to a remote branch,
+you have the option of using HTTPS or SSH. Librarian will automatically determine
+whether to use HTTPS or SSH based on the remote URI.
 
 Examples:
   # Create a release PR for all libraries with pending changes.
@@ -124,4 +134,20 @@ Examples:
 
   # Find and process all pending merged release PRs in a repository.
   librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go`
+
+	updateImageLongHelp = `The 'update-image' command is used to update the 'image' SHA
+of the language container for a language repository.
+
+This command's primary responsibilities are to:
+
+- Update the 'image' field in '.librarian/state.yaml'
+- Regenerate each library with the new language container using googleapis'
+  proto definitions at the 'last_generated_commit'
+  
+Examples:
+  # Create a PR that updates the language container to latest image.
+  librarian update-image --commit --push
+
+  # Create a PR that updates the language container to the specified image.
+  librarian update-image --commit --push --image=<some-image-with-sha>`
 )

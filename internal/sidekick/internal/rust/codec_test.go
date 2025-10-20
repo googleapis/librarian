@@ -16,7 +16,6 @@ package rust
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"testing"
 
@@ -42,145 +41,320 @@ func createRustCodec() *codec {
 	}
 }
 
-func TestParseOptionsProtobuf(t *testing.T) {
-	options := map[string]string{
-		"version":                   "1.2.3",
-		"package-name-override":     "test-only",
-		"copyright-year":            "2035",
-		"module-path":               "alternative::generated",
-		"package:wkt":               "package=types,source=google.protobuf,source=test-only",
-		"package:gax":               "package=gax,feature=unstable-sdk-client",
-		"package:serde_with":        "package=serde_with",
-		"include-grpc-only-methods": "true",
-		"per-service-features":      "true",
-	}
-	got, err := newCodec(true, options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gp := &packagez{
-		name:        "wkt",
-		packageName: "types",
-	}
-	want := &codec{
-		version:             "1.2.3",
-		releaseLevel:        "preview",
-		packageNameOverride: "test-only",
-		generationYear:      "2035",
-		modulePath:          "alternative::generated",
-		extraPackages: []*packagez{
-			gp,
-			{
-				name:        "gax",
-				packageName: "gax",
-				features: []string{
-					"unstable-sdk-client",
-				},
-			},
-			{
-				name:        "serde_with",
-				packageName: "serde_with",
+func TestParseOptions(t *testing.T) {
+	for _, test := range []struct {
+		Format  string
+		Options map[string]string
+		Update  func(*codec)
+	}{
+		{
+			Format:  "protobuf",
+			Options: map[string]string{},
+			Update: func(c *codec) {
+				c.systemParameters = []systemParameter{
+					{Name: "$alt", Value: "json;enum-encoding=int"},
+				}
 			},
 		},
-		packageMapping: map[string]*packagez{
-			"google.protobuf": gp,
-			"test-only":       gp,
+		{
+			Format:  "openapi",
+			Options: map[string]string{},
+			Update: func(c *codec) {
+				c.systemParameters = []systemParameter{
+					{Name: "$alt", Value: "json"},
+				}
+			},
 		},
-		systemParameters: []systemParameter{
-			{Name: "$alt", Value: "json;enum-encoding=int"},
+		{
+			Format:  "disco",
+			Options: map[string]string{},
+			Update: func(c *codec) {
+				c.systemParameters = []systemParameter{
+					{Name: "$alt", Value: "json"},
+				}
+			},
 		},
-		includeGrpcOnlyMethods: true,
-		perServiceFeatures:     true,
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"package-name-override": "override",
+			},
+			Update: func(c *codec) {
+				c.packageNameOverride = "override"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"name-overrides": "a=b,c=d",
+			},
+			Update: func(c *codec) {
+				c.nameOverrides = map[string]string{
+					"a": "b",
+					"c": "d",
+				}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"module-path": "crate::generated::storage",
+			},
+			Update: func(c *codec) {
+				c.modulePath = "crate::generated::storage"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"copyright-year": "2035",
+			},
+			Update: func(c *codec) {
+				c.generationYear = "2035"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"not-for-publication": "true",
+			},
+			Update: func(c *codec) {
+				c.doNotPublish = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"version": "1.2.3",
+			},
+			Update: func(c *codec) {
+				c.version = "1.2.3"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"release-level": "stable",
+			},
+			Update: func(c *codec) {
+				c.releaseLevel = "stable"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"package:bytes":    "force-used=true,package=bytes",
+				"package:location": "package=google-cloud-location,source=google.cloud.location",
+			},
+			Update: func(c *codec) {
+				c.extraPackages = []*packagez{
+					{
+						name:        "bytes",
+						used:        true,
+						packageName: "bytes",
+					},
+					{
+						name:        "location",
+						packageName: "google-cloud-location",
+					},
+				}
+				c.packageMapping["google.cloud.location"] = c.extraPackages[1]
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"disabled-rustdoc-warnings": "",
+			},
+			Update: func(c *codec) {
+				c.disabledRustdocWarnings = []string{}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"disabled-rustdoc-warnings": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.disabledRustdocWarnings = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"disabled-clippy-warnings": "",
+			},
+			Update: func(c *codec) {
+				c.disabledClippyWarnings = []string{}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"disabled-clippy-warnings": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.disabledClippyWarnings = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"template-override": "templates/http-client",
+			},
+			Update: func(c *codec) {
+				c.templateOverride = "templates/http-client"
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"include-grpc-only-methods": "true",
+			},
+			Update: func(c *codec) {
+				c.includeGrpcOnlyMethods = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"per-service-features": "true",
+			},
+			Update: func(c *codec) {
+				c.perServiceFeatures = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"default-features": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.defaultFeatures = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"default-features": "",
+			},
+			Update: func(c *codec) {
+				c.defaultFeatures = []string{}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"detailed-tracing-attributes": "true",
+			},
+			Update: func(c *codec) {
+				c.detailedTracingAttributes = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"has-veneer": "true",
+			},
+			Update: func(c *codec) {
+				c.hasVeneer = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"extra-modules": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.extraModules = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"internal-types": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.internalTypes = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"routing-required": "true",
+			},
+			Update: func(c *codec) {
+				c.routingRequired = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"generate-setter-samples": "true",
+			},
+			Update: func(c *codec) {
+				c.generateSetterSamples = true
+			},
+		},
+	} {
+		want, err := newCodec(test.Format, map[string]string{})
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		test.Update(want)
+		got, err := newCodec(test.Format, test.Options)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{}), cmpopts.IgnoreFields(codec{}, "extraPackages")); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+		lessPackagez := func(a, b *packagez) bool { return a.name < b.name }
+		if diff := cmp.Diff(want.extraPackages, got.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(lessPackagez)); diff != "" {
+			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
 	}
-	sort.Slice(want.extraPackages, func(i, j int) bool {
-		return want.extraPackages[i].name < want.extraPackages[j].name
-	})
-	sort.Slice(got.extraPackages, func(i, j int) bool {
-		return got.extraPackages[i].name < got.extraPackages[j].name
-	})
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{})); diff != "" {
-		t.Errorf("codec mismatch (-want, +got):\n%s", diff)
-	}
-	if want.packageNameOverride != got.packageNameOverride {
-		t.Errorf("mismatched in packageNameOverride, want=%s, got=%s", want.packageNameOverride, got.packageNameOverride)
-	}
-	checkRustPackages(t, got, want)
 }
 
-func TestParseOptionsOpenAPI(t *testing.T) {
-	options := map[string]string{
-		"version":               "1.2.3",
-		"package-name-override": "test-only",
-		"copyright-year":        "2035",
+func TestParseOptionsErrors(t *testing.T) {
+	for _, test := range []struct {
+		Options map[string]string
+	}{
+		{Options: map[string]string{"name-overrides": "a=b,c"}},
+		{Options: map[string]string{"not-for-publication": ""}},
+		{Options: map[string]string{"package:": ""}},
+		{Options: map[string]string{"include-grpc-only-methods": ""}},
+		{Options: map[string]string{"per-service-features": ""}},
+		{Options: map[string]string{"detailed-tracing-attributes": ""}},
+		{Options: map[string]string{"has-veneer": ""}},
+		{Options: map[string]string{"routing-required": ""}},
+		{Options: map[string]string{"generate-setter-samples": ""}},
+		{Options: map[string]string{"--invalid--": ""}},
+	} {
+		if got, err := newCodec("disco", test.Options); err == nil {
+			t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Options)
+		}
 	}
-	got, err := newCodec(false, options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := &codec{
-		version:             "1.2.3",
-		releaseLevel:        "preview",
-		packageNameOverride: "test-only",
-		generationYear:      "2035",
-		modulePath:          "crate::model",
-		extraPackages:       []*packagez{},
-		packageMapping:      map[string]*packagez{},
-		systemParameters: []systemParameter{
-			{Name: "$alt", Value: "json"},
-		},
-	}
-	sort.Slice(want.extraPackages, func(i, j int) bool {
-		return want.extraPackages[i].name < want.extraPackages[j].name
-	})
-	sort.Slice(got.extraPackages, func(i, j int) bool {
-		return got.extraPackages[i].name < got.extraPackages[j].name
-	})
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{})); diff != "" {
-		t.Errorf("codec mismatch (-want, +got):\n%s", diff)
-	}
-	if want.packageNameOverride != got.packageNameOverride {
-		t.Errorf("mismatched in packageNameOverride, want=%s, got=%s", want.packageNameOverride, got.packageNameOverride)
-	}
-	checkRustPackages(t, got, want)
 }
 
-func TestParseOptionsTemplateOverride(t *testing.T) {
-	options := map[string]string{
-		"version":               "1.2.3",
-		"package-name-override": "test-only",
-		"copyright-year":        "2038",
-		"template-override":     "templates/fancy-templates",
+func TestParsePackageOptionError(t *testing.T) {
+	for _, test := range []struct {
+		Definition string
+	}{
+		{Definition: "package="},
+		{Definition: "ignore=,package=a"},
+		{Definition: "force-used=,package=a"},
+		{Definition: "--invalid--=a,package=b"},
+	} {
+		if got, err := parsePackageOption("package:test", test.Definition); err == nil {
+			t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Definition)
+		}
 	}
-	got, err := newCodec(false, options)
-	if err != nil {
-		t.Fatal(err)
+	if got, err := parsePackageOption("package:", "unused"); err == nil {
+		t.Errorf("expected an error parsing the options, got=%v", got)
 	}
-	want := &codec{
-		version:             "1.2.3",
-		releaseLevel:        "preview",
-		packageNameOverride: "test-only",
-		generationYear:      "2038",
-		modulePath:          "crate::model",
-		extraPackages:       []*packagez{},
-		packageMapping:      map[string]*packagez{},
-		systemParameters: []systemParameter{
-			{Name: "$alt", Value: "json"},
-		},
-		templateOverride: "templates/fancy-templates",
-	}
-	sort.Slice(want.extraPackages, func(i, j int) bool {
-		return want.extraPackages[i].name < want.extraPackages[j].name
-	})
-	sort.Slice(got.extraPackages, func(i, j int) bool {
-		return got.extraPackages[i].name < got.extraPackages[j].name
-	})
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{})); diff != "" {
-		t.Errorf("codec mismatch (-want, +got):\n%s", diff)
-	}
-	if want.packageNameOverride != got.packageNameOverride {
-		t.Errorf("mismatched in packageNameOverride, want=%s, got=%s", want.packageNameOverride, got.packageNameOverride)
-	}
-	checkRustPackages(t, got, want)
 }
 
 func TestPackageName(t *testing.T) {
@@ -202,7 +376,7 @@ func TestPackageName(t *testing.T) {
 
 func rustPackageNameImpl(t *testing.T, want string, opts map[string]string, api *api.API) {
 	t.Helper()
-	c, err := newCodec(true, opts)
+	c, err := newCodec("protobuf", opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +387,7 @@ func rustPackageNameImpl(t *testing.T, want string, opts map[string]string, api 
 }
 
 func TestServiceName(t *testing.T) {
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"name-overrides": ".google.testing.BadName=GoodName,.google.testing.Old=New",
 	})
 	if err != nil {
@@ -223,7 +397,7 @@ func TestServiceName(t *testing.T) {
 	testServiceNameImpl(t, c, "Old", "New")
 	testServiceNameImpl(t, c, "Unchanged", "Unchanged")
 
-	c2, err := newCodec(true, map[string]string{})
+	c2, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +418,7 @@ func testServiceNameImpl(t *testing.T, c *codec, serviceName string, want string
 }
 
 func TestOneOfEnumName(t *testing.T) {
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"name-overrides": ".google.testing.Message.conflict=ConflictOneOf",
 	})
 	if err != nil {
@@ -253,7 +427,7 @@ func TestOneOfEnumName(t *testing.T) {
 	testOneOfEnumNameImpl(t, c, "conflict", "ConflictOneOf")
 	testOneOfEnumNameImpl(t, c, "basic_case", "BasicCase")
 
-	c2, err := newCodec(true, map[string]string{})
+	c2, err := newCodec("protobuf", map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,17 +447,8 @@ func testOneOfEnumNameImpl(t *testing.T, c *codec, name string, want string) {
 	}
 }
 
-func checkRustPackages(t *testing.T, got *codec, want *codec) {
-	t.Helper()
-	less := func(a, b *packagez) bool { return a.name < b.name }
-	if diff := cmp.Diff(want.extraPackages, got.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("package mismatch (-want, +got):\n%s", diff)
-	}
-}
-
 func TestWellKnownTypesExist(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	loadWellKnownTypes(model.State)
 	for _, name := range []string{"Any", "Duration", "Empty", "FieldMask", "Timestamp"} {
 		if _, ok := model.State.MessageByID[fmt.Sprintf(".google.protobuf.%s", name)]; !ok {
 			t.Errorf("cannot find well-known message %s in API", name)
@@ -294,7 +459,6 @@ func TestWellKnownTypesExist(t *testing.T) {
 func TestWellKnownTypesAsMethod(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
-	loadWellKnownTypes(model.State)
 
 	want := "wkt::Empty"
 	got := c.methodInOutTypeName(".google.protobuf.Empty", model.State, model.PackageName)
@@ -371,7 +535,6 @@ func TestMethodInOut(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message, nested}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
-	loadWellKnownTypes(model.State)
 
 	want := "crate::model::Target"
 	got := c.methodInOutTypeName("..Target", model.State, model.PackageName)
@@ -534,7 +697,6 @@ func TestFieldType(t *testing.T) {
 		"f_map":                    "std::collections::HashMap<i32,i32>",
 	}
 	c := createRustCodec()
-	loadWellKnownTypes(model.State)
 	for _, field := range message.Fields {
 		want, ok := expectedTypes[field.Name]
 		if !ok {
@@ -579,7 +741,6 @@ func TestOneOfFieldType(t *testing.T) {
 		"f_map":                    "std::collections::HashMap<i32,i32>",
 	}
 	c := createRustCodec()
-	loadWellKnownTypes(model.State)
 	for _, field := range message.Fields {
 		want, ok := expectedTypes[field.Name]
 		if !ok {
@@ -655,7 +816,6 @@ func TestFieldMapTypeValues(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, other_message, map_thing}, []*api.Enum{}, []*api.Service{})
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		loadWellKnownTypes(model.State)
 		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
 		if got != test.want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
@@ -716,7 +876,6 @@ func TestFieldMapTypeKey(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, map_thing}, []*api.Enum{enum}, []*api.Service{})
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		loadWellKnownTypes(model.State)
 		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
 		if got != test.want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
@@ -725,16 +884,11 @@ func TestFieldMapTypeKey(t *testing.T) {
 }
 
 func TestAsQueryParameter(t *testing.T) {
-	options := &api.Message{
-		Name:   "Options",
-		ID:     "..Options",
-		Fields: []*api.Field{},
-	}
 	optionsField := &api.Field{
 		Name:     "options_field",
 		JSONName: "optionsField",
 		Typez:    api.MESSAGE_TYPE,
-		TypezID:  options.ID,
+		TypezID:  "..Options",
 		Optional: true,
 	}
 	requiredField := &api.Field{
@@ -786,21 +940,6 @@ func TestAsQueryParameter(t *testing.T) {
 		TypezID:  ".google.protobuf.FieldMask",
 		Optional: true,
 	}
-	request := &api.Message{
-		Name: "TestRequest",
-		ID:   "..TestRequest",
-		Fields: []*api.Field{
-			optionsField,
-			requiredField, optionalField, repeatedField,
-			requiredEnumField, optionalEnumField, repeatedEnumField,
-			requiredFieldMaskField, optionalFieldMaskField,
-		},
-	}
-	model := api.NewTestAPI(
-		[]*api.Message{options, request},
-		[]*api.Enum{},
-		[]*api.Service{})
-	loadWellKnownTypes(model.State)
 
 	for _, test := range []struct {
 		field *api.Field
@@ -901,7 +1040,6 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 		[]*api.Enum{},
 		[]*api.Service{})
 	api.CrossReference(model)
-	loadWellKnownTypes(model.State)
 
 	for _, test := range []struct {
 		field *api.Field
@@ -1315,7 +1453,6 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 	// To test the mappings we need a fairly complex model.API instance. Create it
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
-	loadWellKnownTypes(model.State)
 
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -1375,7 +1512,6 @@ func TestFormatDocCommentsRelativeCrossLinks(t *testing.T) {
 	// To test the mappings we need a fairly complex model.API instance. Create it
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
-	loadWellKnownTypes(model.State)
 
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -1435,7 +1571,6 @@ implied enum value reference [SomeMessage.SomeEnum.ENUM_VALUE][]
 	// To test the mappings we need a fairly complex model.API instance. Create it
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
-	loadWellKnownTypes(model.State)
 
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1.Message", "test.v1"})
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -1659,7 +1794,6 @@ Hyperlink: <a href="https://hyperlink.com">Content</a>`
 	// To test the mappings we need a fairly complex model.API instance. Create it
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
-	loadWellKnownTypes(model.State)
 
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -1878,5 +2012,18 @@ func TestBodyAccessor(t *testing.T) {
 		if test.want != got {
 			t.Errorf("incorrect body, for BodyFieldPath=%s\nwant=%s\n got=%s", test.bodyFieldPath, test.want, got)
 		}
+	}
+}
+
+func TestParseOptionsGenerateSetterSamples(t *testing.T) {
+	options := map[string]string{
+		"generate-setter-samples": "true",
+	}
+	got, err := newCodec("", options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.generateSetterSamples {
+		t.Errorf("generateSetterSamples should be true")
 	}
 }

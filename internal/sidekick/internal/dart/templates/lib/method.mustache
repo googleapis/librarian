@@ -17,6 +17,27 @@ limitations under the License.
 {{#Codec.DocLines}}
 {{{.}}}
 {{/Codec.DocLines}}
+///
+/// Throws a [http.ClientException] if there were problems communicating with
+/// the API service. Throws a [StatusException] if the API failed with a
+/// [Status] message. Throws a [ServiceException] if the API failed for any
+/// other reason.
+{{#Codec.ServerSideStreaming}}
+Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
+  final url = Uri.https(_host, '{{PathInfo.Codec.PathFmt}}'
+    {{#Codec.HasQueryLines}}, {
+      {{#Codec.QueryLines}}
+        {{{.}}},
+      {{/Codec.QueryLines}}
+    }
+    {{/Codec.HasQueryLines}}
+  );
+  return _client
+      .{{Codec.RequestMethod}}Streaming(url{{#Codec.HasBody}}, body: {{Codec.BodyMessageName}}{{/Codec.HasBody}})
+      .map({{Codec.ResponseType}}.fromJson);
+}
+{{/Codec.ServerSideStreaming}}
+{{^Codec.ServerSideStreaming}}
 {{#Codec.IsLROGetOperation}}
 ///
 /// This method can be used to get the current status of a long-running
@@ -51,3 +72,4 @@ Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.
   {{/Codec.ReturnsValue}}
 }
 {{/Codec.IsLROGetOperation}}
+{{/Codec.ServerSideStreaming}}

@@ -28,7 +28,7 @@ var templates embed.FS
 
 // Generate generates Rust code from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
-	codec, err := newCodec(cfg.General.SpecificationFormat == "protobuf", cfg.Codec)
+	codec, err := newCodec(cfg.General.SpecificationFormat, cfg.Codec)
 	if err != nil {
 		return err
 	}
@@ -40,12 +40,12 @@ func Generate(model *api.API, outdir string, cfg *config.Config) error {
 
 // GenerateStorage generates Rust code for the storage service.
 func GenerateStorage(outdir string, storageModel *api.API, storageConfig *config.Config, controlModel *api.API, controlConfig *config.Config) error {
-	storageCodec, err := newCodec(storageConfig.General.SpecificationFormat == "protobuf", storageConfig.Codec)
+	storageCodec, err := newCodec(storageConfig.General.SpecificationFormat, storageConfig.Codec)
 	if err != nil {
 		return err
 	}
 	annotateModel(storageModel, storageCodec)
-	controlCodec, err := newCodec(controlConfig.General.SpecificationFormat == "protobuf", controlConfig.Codec)
+	controlCodec, err := newCodec(controlConfig.General.SpecificationFormat, controlConfig.Codec)
 	if err != nil {
 		return err
 	}

@@ -22,14 +22,17 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/google/go-github/v69/github"
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 // PullRequest is a type alias for the go-github type.
 type PullRequest = github.PullRequest
+
+// NewPullRequest is a type alias for the go-github type.
+type NewPullRequest = github.NewPullRequest
 
 // RepositoryCommit is a type alias for the go-github type.
 type RepositoryCommit = github.RepositoryCommit
@@ -39,9 +42,6 @@ type PullRequestReview = github.PullRequestReview
 
 // RepositoryRelease is a type alias for the go-github type.
 type RepositoryRelease = github.RepositoryRelease
-
-// MergeMethodRebase is a constant alias for the go-github constant.
-const MergeMethodRebase = github.MergeMethodRebase
 
 // Client represents this package's abstraction of a GitHub client, including
 // an access token.
@@ -57,8 +57,20 @@ func NewClient(accessToken string, repo *Repository) *Client {
 }
 
 func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) *Client {
+	client := github.NewClient(httpClient)
+	if repo != nil && repo.BaseURL != "" {
+		baseURL, _ := url.Parse(repo.BaseURL)
+		// Ensure the endpoint URL has a trailing slash.
+		if !strings.HasSuffix(baseURL.Path, "/") {
+			baseURL.Path += "/"
+		}
+		client.BaseURL = baseURL
+	}
+	if accessToken != "" {
+		client = client.WithAuthToken(accessToken)
+	}
 	return &Client{
-		Client:      github.NewClient(httpClient).WithAuthToken(accessToken),
+		Client:      client,
 		accessToken: accessToken,
 		repo:        repo,
 	}
@@ -76,6 +88,8 @@ type Repository struct {
 	Owner string
 	// The name of the repository.
 	Name string
+	// Base URL for API requests.
+	BaseURL string
 }
 
 // PullRequestMetadata identifies a pull request within a repository.
@@ -138,7 +152,7 @@ func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, e
 // CreatePullRequest creates a pull request in the remote repo.
 // At the moment this requires a single remote to be configured,
 // which must have a GitHub HTTPS URL. We assume a base branch of "main".
-func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, baseBranch, title, body string) (*PullRequestMetadata, error) {
+func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, baseBranch, title, body string, isDraft bool) (*PullRequestMetadata, error) {
 	if body == "" {
 		slog.Warn("Provided PR body is empty, setting default.")
 		body = "Regenerated all changed APIs. See individual commits for details."
@@ -152,6 +166,7 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 		Base:                &baseBranch,
 		Body:                github.Ptr(body),
 		MaintainerCanModify: github.Ptr(true),
+		Draft:               github.Ptr(isDraft),
 	}
 	pr, _, err := c.PullRequests.Create(ctx, repo.Owner, repo.Name, newPR)
 	if err != nil {
@@ -198,28 +213,6 @@ func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number 
 	slog.Info("Labels added to issue", "number", number, "labels", labels)
 	_, _, err := c.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, number, labels)
 	return err
-}
-
-// FetchGitHubRepoFromRemote parses the GitHub repo name from the remote for this repository.
-// There must be a remote named 'origin' with a GitHub URL (as the first URL), in order to
-// provide an unambiguous result.
-// Remotes without any URLs, or where the first URL does not start with https://github.com/ are ignored.
-func FetchGitHubRepoFromRemote(repo gitrepo.Repository) (*Repository, error) {
-	remotes, err := repo.Remotes()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, remote := range remotes {
-		if remote.Config().Name == "origin" {
-			urls := remote.Config().URLs
-			if len(urls) > 0 {
-				return ParseRemote(urls[0])
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("could not find an 'origin' remote pointing to a GitHub https URL")
 }
 
 // SearchPullRequests searches for pull requests in the repository using the provided raw query.
@@ -291,6 +284,11 @@ func hasLabel(pr *PullRequest, labelName string) bool {
 
 // FindMergedPullRequestsWithPendingReleaseLabel finds all merged pull requests with the "release:pending" label.
 func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*PullRequest, error) {
+	return c.FindMergedPullRequestsWithLabel(ctx, owner, repo, "release:pending")
+}
+
+// FindMergedPullRequestsWithLabel finds all merged pull requests with the "release:pending" label.
+func (c *Client) FindMergedPullRequestsWithLabel(ctx context.Context, owner, repo, label string) ([]*PullRequest, error) {
 	var allPRs []*PullRequest
 	opt := &github.PullRequestListOptions{
 		State: "closed",
@@ -304,7 +302,7 @@ func (c *Client) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Conte
 			return nil, err
 		}
 		for _, pr := range prs {
-			if !pr.GetMergedAt().IsZero() && hasLabel(pr, "release:pending") {
+			if !pr.GetMergedAt().IsZero() && hasLabel(pr, label) {
 				allPRs = append(allPRs, pr)
 			}
 		}
@@ -326,5 +324,15 @@ func (c *Client) CreateTag(ctx context.Context, tagName, commitSHA string) error
 		Object: &github.GitObject{SHA: github.Ptr(commitSHA), Type: github.Ptr("commit")},
 	}
 	_, _, err := c.Git.CreateRef(ctx, c.repo.Owner, c.repo.Name, tagRef)
+	return err
+}
+
+// ClosePullRequest closes the pull request specified by pull request number.
+func (c *Client) ClosePullRequest(ctx context.Context, number int) error {
+	slog.Info("Closing pull request", slog.Int("number", number))
+	state := "closed"
+	_, _, err := c.PullRequests.Edit(ctx, c.repo.Owner, c.repo.Name, number, &github.PullRequest{
+		State: &state,
+	})
 	return err
 }

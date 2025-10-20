@@ -15,7 +15,10 @@
 package parser
 
 import (
+	"slices"
+
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
 const (
@@ -27,70 +30,115 @@ const (
 
 // updateMethodPagination marks all methods that conform to
 // [AIP-4233](https://google.aip.dev/client-libraries/4233) as pageable.
-func updateMethodPagination(a *api.API) {
+func updateMethodPagination(overrides []config.PaginationOverride, a *api.API) {
 	for _, m := range a.State.MethodByID {
-		if m.InputTypeID == "" || m.OutputTypeID == "" {
-			continue
-		}
-
 		reqMsg := a.State.MessageByID[m.InputTypeID]
-		if reqMsg == nil {
-			continue
-		}
-		var hasPageSize bool
-		var hasPageToken *api.Field
-		for _, f := range reqMsg.Fields {
-			// Some legacy services (e.g. sqladmin.googleapis.com)
-			// predate AIP-4233 and use `maxResults` instead of
-			// `pageSize` for the field name.
-			switch f.JSONName {
-			case pageSize:
-				if f.Typez == api.INT32_TYPE {
-					hasPageSize = true
-				}
-			case maxResults:
-				// Legacy maxResults types can be int32/uint32, and protobuf wrappers Int32Value/UInt32Value.
-				if f.Typez == api.INT32_TYPE || f.Typez == api.UINT32_TYPE ||
-					(f.Typez == api.MESSAGE_TYPE &&
-						(f.TypezID == ".google.protobuf.Int32Value" || f.TypezID == ".google.protobuf.UInt32Value")) {
-					hasPageSize = true
-				}
-			}
-			if f.JSONName == pageToken && f.Typez == api.STRING_TYPE {
-				hasPageToken = f
-			}
-			if hasPageSize && hasPageToken != nil {
-				break
-			}
-		}
-		if !hasPageSize || hasPageToken == nil {
+		pageTokenField := paginationRequestInfo(reqMsg)
+		if pageTokenField == nil {
 			continue
 		}
 
 		respMsg := a.State.MessageByID[m.OutputTypeID]
-		if respMsg == nil {
+		paginationInfo := paginationResponseInfo(overrides, m.ID, respMsg)
+		if paginationInfo == nil {
 			continue
 		}
-		var hasNextPageToken bool
-		var hasRepeatedItem bool
-		info := api.PaginationInfo{}
-		for _, f := range respMsg.Fields {
-			if f.JSONName == nextPageToken && f.Typez == api.STRING_TYPE {
-				hasNextPageToken = true
-				info.NextPageToken = f
-			}
-			if f.Repeated && f.Typez == api.MESSAGE_TYPE {
-				hasRepeatedItem = true
-				info.PageableItem = f
-			}
-			if hasNextPageToken && hasRepeatedItem {
-				break
-			}
-		}
-		if !hasNextPageToken || !hasRepeatedItem {
-			continue
-		}
-		m.Pagination = hasPageToken
-		respMsg.Pagination = &info
+		m.Pagination = pageTokenField
+		respMsg.Pagination = paginationInfo
 	}
+}
+
+func paginationRequestInfo(request *api.Message) *api.Field {
+	if request == nil {
+		return nil
+	}
+	if pageSizeField := paginationRequestPageSize(request); pageSizeField == nil {
+		return nil
+	}
+	return paginationRequestToken(request)
+}
+
+func paginationRequestPageSize(request *api.Message) *api.Field {
+	for _, field := range request.Fields {
+		// Some legacy services (e.g. sqladmin.googleapis.com)
+		// predate AIP-4233 and use `maxResults` instead of
+		// `pageSize` for the field name.
+		if field.JSONName == pageSize && isPaginationPageSizeType(field) {
+			return field
+		}
+		if field.JSONName == maxResults && isPaginationMaxResultsType(field) {
+			return field
+		}
+	}
+	return nil
+}
+
+func isPaginationPageSizeType(field *api.Field) bool {
+	return field.Typez == api.INT32_TYPE || field.Typez == api.UINT32_TYPE
+}
+
+func isPaginationMaxResultsType(field *api.Field) bool {
+	// Legacy maxResults types can be int32/uint32, and protobuf wrappers Int32Value/UInt32Value.
+	if isPaginationPageSizeType(field) {
+		return true
+	}
+	return field.Typez == api.MESSAGE_TYPE &&
+		(field.TypezID == ".google.protobuf.Int32Value" ||
+			field.TypezID == ".google.protobuf.UInt32Value")
+}
+
+func paginationRequestToken(request *api.Message) *api.Field {
+	for _, field := range request.Fields {
+		if field.JSONName == pageToken && field.Typez == api.STRING_TYPE {
+			return field
+		}
+	}
+	return nil
+}
+
+func paginationResponseInfo(overrides []config.PaginationOverride, methodID string, response *api.Message) *api.PaginationInfo {
+	if response == nil {
+		return nil
+	}
+	pageableItem := paginationResponseItem(overrides, methodID, response)
+	nextPageToken := paginationResponseNextPageToken(response)
+	if pageableItem == nil || nextPageToken == nil {
+		return nil
+	}
+	return &api.PaginationInfo{
+		PageableItem:  pageableItem,
+		NextPageToken: nextPageToken,
+	}
+}
+
+func paginationResponseItem(overrides []config.PaginationOverride, methodID string, response *api.Message) *api.Field {
+	idx := slices.IndexFunc(overrides, func(o config.PaginationOverride) bool { return o.ID == methodID })
+	if idx != -1 {
+		overrideName := overrides[idx].ItemField
+		fieldIdx := slices.IndexFunc(response.Fields, func(f *api.Field) bool { return f.Name == overrideName })
+		if fieldIdx == -1 {
+			return nil
+		}
+		return response.Fields[fieldIdx]
+	}
+
+	var mapItems *api.Field
+	for _, field := range response.Fields {
+		if field.Map && mapItems == nil {
+			mapItems = field
+		}
+		if field.Repeated && field.Typez == api.MESSAGE_TYPE {
+			return field
+		}
+	}
+	return mapItems
+}
+
+func paginationResponseNextPageToken(response *api.Message) *api.Field {
+	for _, field := range response.Fields {
+		if field.JSONName == nextPageToken && field.Typez == api.STRING_TYPE {
+			return field
+		}
+	}
+	return nil
 }

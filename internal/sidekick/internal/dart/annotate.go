@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -47,11 +48,16 @@ type modelAnnotations struct {
 	DefaultHost       string
 	DocLines          []string
 	// A reference to an optional hand-written part file.
-	PartFileReference   string
-	PackageDependencies []packageDependency
-	Imports             []string
-	DevDependencies     []string
-	DoNotPublish        bool
+	PartFileReference          string
+	PackageDependencies        []packageDependency
+	Imports                    []string
+	DevDependencies            []string
+	DoNotPublish               bool
+	RepositoryURL              string
+	ReadMeAfterTitleText       string
+	ReadMeQuickstartText       string
+	IssueTrackerURL            string
+	ApiKeyEnvironmentVariables []string
 }
 
 // HasServices returns true if the model has services.
@@ -109,15 +115,16 @@ func (m *messageAnnotation) HasToStringLines() bool {
 type methodAnnotation struct {
 	Parent *api.Method
 	// The method name using Dart naming conventions.
-	Name              string
-	RequestMethod     string
-	RequestType       string
-	ResponseType      string
-	DocLines          []string
-	ReturnsValue      bool
-	BodyMessageName   string
-	QueryLines        []string
-	IsLROGetOperation bool
+	Name                string
+	RequestMethod       string
+	RequestType         string
+	ResponseType        string
+	DocLines            []string
+	ReturnsValue        bool
+	BodyMessageName     string
+	QueryLines          []string
+	IsLROGetOperation   bool
+	ServerSideStreaming bool // Whether the server supports streaming via server-sent events (SSE).
 }
 
 // HasBody returns true if the method has a body.
@@ -174,8 +181,16 @@ type annotateModel struct {
 	model *api.API
 	// Mappings from IDs to types.
 	state *api.APIState
-	// The set of imports that have been calculated.
-	imports map[string]string
+	// The set of required imports (e.g. "package:google_cloud_type/type.dart" or
+	// "package:http/http.dart as http") that have been calculated.
+	//
+	// The keys of this map are used to determine what imports to include
+	// in the generated Dart code and what dependencies to include in
+	// pubspec.yaml.
+	//
+	// Every import must have a corresponding entry in .sidekick.toml to specify
+	// its version constraints.
+	imports map[string]bool
 	// The mapping from protobuf packages to Dart import statements.
 	packageMapping map[string]string
 	// The protobuf packages that need to be imported with prefixes.
@@ -190,7 +205,7 @@ func newAnnotateModel(model *api.API) *annotateModel {
 	return &annotateModel{
 		model:                 model,
 		state:                 model.State,
-		imports:               map[string]string{},
+		imports:               map[string]bool{},
 		packageMapping:        map[string]string{},
 		packagePrefixes:       map[string]string{},
 		requiredFields:        map[string]*api.Field{},
@@ -204,20 +219,37 @@ func newAnnotateModel(model *api.API) *annotateModel {
 // [Template.Services] field.
 func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	var (
-		packageNameOverride string
-		generationYear      string
-		packageVersion      string
-		partFileReference   string
-		doNotPublish        bool
-		devDependencies     = []string{}
+		packageNameOverride        string
+		generationYear             string
+		packageVersion             string
+		partFileReference          string
+		doNotPublish               bool
+		devDependencies            = []string{}
+		repositoryURL              string
+		readMeAfterTitleText       string
+		readMeQuickstartText       string
+		issueTrackerURL            string
+		apiKeyEnvironmentVariables = []string{}
 	)
 
 	for key, definition := range options {
 		switch {
+		case key == "api-keys-environment-variables":
+			// api-keys-environment-variables = "GOOGLE_API_KEY,GEMINI_API_KEY"
+			// A comma-separated list of environment variables to look for searching for
+			// a API key.
+			apiKeyEnvironmentVariables = strings.Split(definition, ",")
+			for i := range apiKeyEnvironmentVariables {
+				apiKeyEnvironmentVariables[i] = strings.TrimSpace(apiKeyEnvironmentVariables[i])
+			}
 		case key == "package-name-override":
 			packageNameOverride = definition
 		case key == "copyright-year":
 			generationYear = definition
+		case key == "issue-tracker-url":
+			// issue-tracker-url = "http://www.example.com/issues"
+			// A link to the issue tracker for the service.
+			issueTrackerURL = definition
 		case key == "version":
 			packageVersion = definition
 		case key == "part-file":
@@ -234,6 +266,16 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 				)
 			}
 			doNotPublish = value
+		case key == "readme-after-title-text":
+			// Markdown that will be inserted into the README.md after the title section.
+			readMeAfterTitleText = definition
+		case key == "readme-quickstart-text":
+			// Markdown that will appear as a "Quickstart" section of README.md. Does not include
+			// the section title, i.e., you probably want it to start with "## Getting Started"`
+			// or similar.
+			readMeQuickstartText = definition
+		case key == "repository-url":
+			repositoryURL = definition
 		case strings.HasPrefix(key, "proto:"):
 			// "proto:google.protobuf" = "package:google_cloud_protobuf/protobuf.dart"
 			keys := strings.Split(key, ":")
@@ -276,7 +318,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 
 	// Traverse and annotate the messages defined in this API.
 	for _, m := range model.Messages {
-		annotate.annotateMessage(m, annotate.imports)
+		annotate.annotateMessage(m)
 	}
 
 	for _, s := range model.Services {
@@ -290,9 +332,20 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	devDependencies = append(devDependencies, "lints")
 
 	// Add the import for the google_cloud_gax package.
-	annotate.imports["cloud_gax"] = commonImport
+	annotate.imports[commonImport] = true
 
-	packageDependencies := calculateDependencies(annotate.imports, annotate.dependencyConstraints)
+	packageDependencies, err := calculateDependencies(annotate.imports, annotate.dependencyConstraints)
+	if err != nil {
+		return err
+	}
+
+	if len(model.Services) > 0 && len(apiKeyEnvironmentVariables) == 0 {
+		return errors.New("all packages that define a service must define 'api-keys-environment-variables'")
+	}
+
+	if issueTrackerURL == "" {
+		return errors.New("all packages must define 'issue-tracker-url'")
+	}
 
 	ann := &modelAnnotations{
 		Parent:         model,
@@ -309,12 +362,17 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:            formatDocComments(model.Description, model.State),
-		Imports:             calculateImports(annotate.imports),
-		PartFileReference:   partFileReference,
-		PackageDependencies: packageDependencies,
-		DevDependencies:     devDependencies,
-		DoNotPublish:        doNotPublish,
+		DocLines:                   formatDocComments(model.Description, model.State),
+		Imports:                    calculateImports(annotate.imports),
+		PartFileReference:          partFileReference,
+		PackageDependencies:        packageDependencies,
+		DevDependencies:            devDependencies,
+		DoNotPublish:               doNotPublish,
+		RepositoryURL:              repositoryURL,
+		IssueTrackerURL:            issueTrackerURL,
+		ReadMeAfterTitleText:       readMeAfterTitleText,
+		ReadMeQuickstartText:       readMeQuickstartText,
+		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
 	}
 
 	model.Codec = ann
@@ -347,10 +405,10 @@ func calculateRequiredFields(model *api.API) map[string]*api.Field {
 }
 
 // calculateDependencies calculates package dependencies based on `package:` imports.
-func calculateDependencies(imports map[string]string, constraints map[string]string) []packageDependency {
+func calculateDependencies(imports map[string]bool, constraints map[string]string) ([]packageDependency, error) {
 	deps := []packageDependency{}
 
-	for _, imp := range imports {
+	for imp := range imports {
 		if name, hadPrefix := strings.CutPrefix(imp, "package:"); hadPrefix {
 			name = strings.Split(name, "/")[0]
 
@@ -359,9 +417,7 @@ func calculateDependencies(imports map[string]string, constraints map[string]str
 			}) {
 				constraint := constraints[name]
 				if len(constraint) == 0 {
-					// TODO(https://github.com/googleapis/librarian/issues/1989):
-					// Never emit "any" constraints.
-					constraint = "any"
+					return nil, fmt.Errorf("unknown version constraint for package %q (did you forget to add it to .sidekick.toml?)", name)
 				}
 				deps = append(deps, packageDependency{Name: name, Constraint: constraint})
 			}
@@ -372,12 +428,12 @@ func calculateDependencies(imports map[string]string, constraints map[string]str
 		return deps[i].Name < deps[j].Name
 	})
 
-	return deps
+	return deps, nil
 }
 
-func calculateImports(imports map[string]string) []string {
+func calculateImports(imports map[string]bool) []string {
 	var dartImports []string
-	for _, imp := range imports {
+	for imp := range imports {
 		dartImports = append(dartImports, imp)
 	}
 	sort.Strings(dartImports)
@@ -409,7 +465,8 @@ func calculateImports(imports map[string]string) []string {
 
 func (annotate *annotateModel) annotateService(s *api.Service) {
 	// Add a package:http import if we're generating a service.
-	annotate.imports["http"] = httpImport
+	annotate.imports[httpImport] = true
+	annotate.imports[authImport] = true
 
 	// Some methods are skipped.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
@@ -430,9 +487,9 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 	s.Codec = ann
 }
 
-func (annotate *annotateModel) annotateMessage(m *api.Message, imports map[string]string) {
+func (annotate *annotateModel) annotateMessage(m *api.Message) {
 	// Add the import for the common JSON helpers.
-	imports["cloud_gax_helpers"] = commonHelpersImport
+	annotate.imports[commonHelpersImport] = true
 
 	for _, f := range m.Fields {
 		annotate.annotateField(f)
@@ -444,7 +501,7 @@ func (annotate *annotateModel) annotateMessage(m *api.Message, imports map[strin
 		annotate.annotateEnum(e)
 	}
 	for _, m := range m.Messages {
-		annotate.annotateMessage(m, imports)
+		annotate.annotateMessage(m)
 	}
 
 	constructorBody := ";"
@@ -504,12 +561,11 @@ func createToStringLines(message *api.Message) []string {
 
 func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	// Ignore imports added from the input and output messages.
-	tempImports := map[string]string{}
 	if method.InputType.Codec == nil {
-		annotate.annotateMessage(method.InputType, tempImports)
+		annotate.annotateMessage(method.InputType)
 	}
 	if method.OutputType.Codec == nil {
-		annotate.annotateMessage(method.OutputType, tempImports)
+		annotate.annotateMessage(method.OutputType)
 	}
 
 	pathInfoAnnotation := &pathInfoAnnotation{
@@ -545,16 +601,17 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	}
 
 	annotation := &methodAnnotation{
-		Parent:            method,
-		Name:              strcase.ToLowerCamel(method.Name),
-		RequestMethod:     strings.ToLower(method.PathInfo.Bindings[0].Verb),
-		RequestType:       annotate.resolveTypeName(state.MessageByID[method.InputTypeID], true),
-		ResponseType:      annotate.resolveTypeName(state.MessageByID[method.OutputTypeID], true),
-		DocLines:          formatDocComments(method.Documentation, state),
-		ReturnsValue:      !method.ReturnsEmpty,
-		BodyMessageName:   bodyMessageName,
-		QueryLines:        queryLines,
-		IsLROGetOperation: isGetOperation,
+		Parent:              method,
+		Name:                strcase.ToLowerCamel(method.Name),
+		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
+		RequestType:         annotate.resolveTypeName(state.MessageByID[method.InputTypeID], true),
+		ResponseType:        annotate.resolveTypeName(state.MessageByID[method.OutputTypeID], true),
+		DocLines:            formatDocComments(method.Documentation, state),
+		ReturnsValue:        !method.ReturnsEmpty,
+		BodyMessageName:     bodyMessageName,
+		QueryLines:          queryLines,
+		IsLROGetOperation:   isGetOperation,
+		ServerSideStreaming: method.ServerSideStreaming,
 	}
 	method.Codec = annotation
 }
@@ -894,7 +951,7 @@ func (annotate *annotateModel) updateUsedPackages(packageName string) {
 			if needsImportPrefix {
 				dartImport += " as " + importPrefix
 			}
-			annotate.imports[packageName] = dartImport
+			annotate.imports[dartImport] = true
 		}
 	}
 }

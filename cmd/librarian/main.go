@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Librarian manages Google API client libraries by automating onboarding,
-// regeneration, and release. It runs language‑agnostic workflows while
-// delegating language‑specific tasks—such as code generation, building, and
-// testing—to Docker images.
 package main
 
 import (

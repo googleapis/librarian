@@ -32,13 +32,18 @@ rust-version.workspace = true
 {{#Codec.NotForPublication}}
 publish                = false
 {{/Codec.NotForPublication}}
+{{#Codec.DetailedTracingAttributes}}
+
+[lints]
+workspace = true
+{{/Codec.DetailedTracingAttributes}}
 {{#Codec.PerServiceFeatures}}
 
 [features]
 default = [
-    {{#Codec.Services}}
-    "{{Codec.FeatureName}}",
-    {{/Codec.Services}}
+    {{#Codec.DefaultFeatures}}
+    "{{{.}}}",
+    {{/Codec.DefaultFeatures}}
 ]
 {{#Codec.Services}}
 # Enables `client::{{Codec.Name}}` and all the types it depends on.

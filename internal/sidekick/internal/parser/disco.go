@@ -16,26 +16,41 @@ package parser
 
 import (
 	"os"
+	"path"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/discovery"
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 // ParseDisco reads discovery docs specifications and converts them into
 // the `api.API` model.
-func ParseDisco(source, serviceConfigFile string, options map[string]string) (*api.API, error) {
+func ParseDisco(cfg *config.Config) (*api.API, error) {
+	source := cfg.General.SpecificationSource
+	for _, opt := range config.SourceRoots(cfg.Source) {
+		location, ok := cfg.Source[opt]
+		if !ok {
+			// Ignore options that are not set
+			continue
+		}
+		fullName := path.Join(location, source)
+		if _, err := os.Stat(fullName); err == nil {
+			source = fullName
+			break
+		}
+	}
 	contents, err := os.ReadFile(source)
 	if err != nil {
 		return nil, err
 	}
-	var serviceConfig *serviceconfig.Service
-	if serviceConfigFile != "" {
-		cfg, err := readServiceConfig(findServiceConfigPath(serviceConfigFile, options))
-		if err != nil {
-			return nil, err
-		}
-		serviceConfig = cfg
+	serviceConfig, err := loadServiceConfig(cfg)
+	if err != nil {
+		return nil, err
 	}
-	return discovery.NewAPI(serviceConfig, contents)
+	result, err := discovery.NewAPI(serviceConfig, contents, cfg)
+	if err != nil {
+		return nil, err
+	}
+	updateAutoPopulatedFields(serviceConfig, result)
+	return result, nil
 }

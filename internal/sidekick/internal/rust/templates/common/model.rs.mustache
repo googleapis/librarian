@@ -22,11 +22,18 @@ limitations under the License.
 {{#Codec.DisabledRustdocWarnings}}
 #![allow(rustdoc::{{.}})]
 {{/Codec.DisabledRustdocWarnings}}
+{{#Codec.DisabledClippyWarnings}}
+#![allow(clippy::{{.}})]
+{{/Codec.DisabledClippyWarnings}}
 #![no_implicit_prelude]
 extern crate std;
 {{#Codec.ExternPackages}}
 extern crate {{.}};
 {{/Codec.ExternPackages}}
+
+mod debug;
+mod deserialize;
+mod serialize;
 {{#Messages}}
 {{> message}}
 {{/Messages}}

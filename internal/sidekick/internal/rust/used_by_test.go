@@ -28,14 +28,13 @@ func TestUsedByServicesWithServices(t *testing.T) {
 		ID:   ".test.Service",
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"package:tracing":  "used-if=services,package=tracing",
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -57,14 +56,13 @@ func TestUsedByServicesWithServices(t *testing.T) {
 
 func TestUsedByServicesNoServices(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"package:tracing":  "used-if=services,package=tracing",
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -94,14 +92,13 @@ func TestUsedByLROsWithLRO(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 		"package:lro":      "used-if=lro,package=google-cloud-lro",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -131,14 +128,13 @@ func TestUsedByLROsWithoutLRO(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 		"package:lro":      "used-if=lro,package=google-cloud-lro",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -172,14 +168,13 @@ func TestUsedByUuidWithAutoPopulation(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 		"package:uuid":     "used-if=autopopulated,package=uuid,feature=v4",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -210,14 +205,13 @@ func TestUsedByUuidWithoutAutoPopulation(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 		"package:uuid":     "used-if=autopopulated,package=uuid,feature=v4",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	resolveUsedPackages(model, c.extraPackages)
 	want := []*packagez{
 		{
@@ -246,7 +240,7 @@ func TestRequiredPackages(t *testing.T) {
 		"package:gax":         "package=gcp-sdk-gax,force-used=true",
 		"package:auth":        "ignore=true",
 	}
-	c, err := newCodec(true, options)
+	c, err := newCodec("protobuf", options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,7 +262,7 @@ func TestRequiredPackagesLocal(t *testing.T) {
 	options := map[string]string{
 		"package:gtype": "package=types,source=google.type,source=test-only,force-used=true",
 	}
-	c, err := newCodec(true, options)
+	c, err := newCodec("protobuf", options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,14 +310,13 @@ func TestFindUsedPackages(t *testing.T) {
 		Package: "google.cloud.common",
 	}
 
-	c, err := newCodec(true, map[string]string{
+	c, err := newCodec("protobuf", map[string]string{
 		"package:common":      "package=google-cloud-common,source=google.cloud.common",
 		"package:longrunning": "package=google-longrunning,source=google.longrunning",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	loadWellKnownTypes(model.State)
 	findUsedPackages(model, c)
 	want := []*packagez{
 		{

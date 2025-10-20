@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: Librarian
-on: [push, pull_request]
+on: [push, pull_request, merge_group]
 permissions:
   contents: read
 jobs:
@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
       - name: Display Go version
         run: go version
       - name: Install tools
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
       - name: Install tools
         run: |
           set -e

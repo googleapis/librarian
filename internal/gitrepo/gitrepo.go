@@ -19,7 +19,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -27,24 +30,34 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	httpAuth "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 // Repository defines the interface for git repository operations.
 type Repository interface {
-	AddAll() (git.Status, error)
+	AddAll() error
 	Commit(msg string) error
 	IsClean() (bool, error)
-	Remotes() ([]*git.Remote, error)
+	Remotes() ([]*Remote, error)
 	GetDir() string
 	HeadHash() (string, error)
 	ChangedFilesInCommit(commitHash string) ([]string, error)
+	ChangedFiles() ([]string, error)
 	GetCommit(commitHash string) (*Commit, error)
+	GetLatestCommit(path string) (*Commit, error)
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
 	Push(branchName string) error
+	Restore(paths []string) error
+	CleanUntracked(paths []string) error
+	pushRefSpec(refSpec string) error
+	Checkout(commitHash string) error
 }
+
+const RootPath = "."
 
 // LocalRepository represents a git repository.
 type LocalRepository struct {
@@ -58,6 +71,12 @@ type Commit struct {
 	Hash    plumbing.Hash
 	Message string
 	When    time.Time
+}
+
+// Remote represent a git remote.
+type Remote struct {
+	Name string
+	URLs []string
 }
 
 // RepositoryOptions are used to configure a [LocalRepository].
@@ -162,16 +181,16 @@ func clone(dir, url, branch, ci string, depth int) (*LocalRepository, error) {
 
 // AddAll adds all pending changes from the working tree to the index,
 // so that the changes can later be committed.
-func (r *LocalRepository) AddAll() (git.Status, error) {
+func (r *LocalRepository) AddAll() error {
 	worktree, err := r.repo.Worktree()
 	if err != nil {
-		return git.Status{}, err
+		return err
 	}
 	err = worktree.AddWithOptions(&git.AddOptions{All: true})
 	if err != nil {
-		return git.Status{}, err
+		return err
 	}
-	return worktree.Status()
+	return nil
 }
 
 // Commit creates a new commit with the provided message and author
@@ -216,9 +235,39 @@ func (r *LocalRepository) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
+// ChangedFiles returns a list of files that have been modified, added, or deleted
+// in the working tree, including both staged and unstaged changes.
+func (r *LocalRepository) ChangedFiles() ([]string, error) {
+	slog.Info("Getting changed files")
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	status, err := worktree.Status()
+	if err != nil {
+		return nil, err
+	}
+	var changedFiles []string
+	for file, fileStatus := range status {
+		if fileStatus.Staging != git.Unmodified || fileStatus.Worktree != git.Unmodified {
+			changedFiles = append(changedFiles, file)
+		}
+	}
+	return changedFiles, nil
+}
+
 // Remotes returns the remotes within the repository.
-func (r *LocalRepository) Remotes() ([]*git.Remote, error) {
-	return r.repo.Remotes()
+func (r *LocalRepository) Remotes() ([]*Remote, error) {
+	gitRemotes, err := r.repo.Remotes()
+	if err != nil {
+		return nil, err
+	}
+	var remotes []*Remote
+	for _, remote := range gitRemotes {
+		remotes = append(remotes, &Remote{Name: remote.Config().Name, URLs: remote.Config().URLs})
+	}
+
+	return remotes, nil
 }
 
 // HeadHash returns hash of the commit for the repository's HEAD.
@@ -238,6 +287,30 @@ func (r *LocalRepository) GetDir() string {
 // GetCommit returns a commit for the given commit hash.
 func (r *LocalRepository) GetCommit(commitHash string) (*Commit, error) {
 	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Commit{
+		Hash:    commit.Hash,
+		Message: commit.Message,
+		When:    commit.Author.When,
+	}, nil
+}
+
+// GetLatestCommit returns the latest commit of the given path in the repository.
+func (r *LocalRepository) GetLatestCommit(path string) (*Commit, error) {
+	slog.Info("Retrieving the latest commit", "path", path)
+	opt := &git.LogOptions{
+		Order:    git.LogOrderCommitterTime,
+		FileName: &path,
+	}
+	log, err := r.repo.Log(opt)
+	if err != nil {
+		return nil, err
+	}
+
+	commit, err := log.Next()
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +356,7 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 	if len(paths) == 0 {
 		return nil, errors.New("no paths to check for commits")
 	}
-	commits := []*Commit{}
+	var commits []*Commit
 	finalHash := plumbing.NewHash(sinceCommit)
 	logOptions := git.LogOptions{Order: git.LogOrderCommitterTime}
 	logIterator, err := r.repo.Log(&logOptions)
@@ -315,18 +388,13 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 		// In theory, we should be able to remember our "current" commit for each
 		// path, but that's likely to be significantly more complex.
 		for _, candidatePath := range paths {
-			currentPathHash, err := getHashForPathOrEmpty(commit, candidatePath)
-			if err != nil {
-				return err
-			}
-			parentPathHash, err := getHashForPathOrEmpty(parentCommit, candidatePath)
+			matching, err := commitMatchesPath(candidatePath, commit, parentCommit)
 			if err != nil {
 				return err
 			}
 			// If we've found a change (including a path being added or removed),
 			// add it to our list of commits and proceed to the next commit.
-			if currentPathHash != parentPathHash {
-
+			if matching {
 				commits = append(commits, &Commit{
 					Hash:    commit.Hash,
 					Message: commit.Message,
@@ -338,13 +406,28 @@ func (r *LocalRepository) GetCommitsForPathsSinceCommit(paths []string, sinceCom
 
 		return nil
 	})
-	if err != nil && err != ErrStopIterating {
+	if err != nil && !errors.Is(err, ErrStopIterating) {
 		return nil, err
 	}
-	if sinceCommit != "" && err != ErrStopIterating {
+	if sinceCommit != "" && !errors.Is(err, ErrStopIterating) {
 		return nil, fmt.Errorf("did not find commit %s when iterating", sinceCommit)
 	}
 	return commits, nil
+}
+
+func commitMatchesPath(path string, commit *object.Commit, parentCommit *object.Commit) (bool, error) {
+	if path == RootPath {
+		return true, nil
+	}
+	currentPathHash, err := getHashForPathOrEmpty(commit, path)
+	if err != nil {
+		return false, err
+	}
+	parentPathHash, err := getHashForPathOrEmpty(parentCommit, path)
+	if err != nil {
+		return false, err
+	}
+	return currentPathHash != parentPathHash, nil
 }
 
 // getHashForPathOrEmpty returns the hash for a path at a given commit, or an
@@ -355,7 +438,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 		return "", err
 	}
 	treeEntry, err := tree.FindEntry(path)
-	if err == object.ErrEntryNotFound || err == object.ErrDirectoryNotFound {
+	if errors.Is(err, object.ErrEntryNotFound) || errors.Is(err, object.ErrDirectoryNotFound) {
 		return "", nil
 	}
 	if err != nil {
@@ -366,6 +449,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 
 // ChangedFilesInCommit returns the files changed in the given commit.
 func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, error) {
+	slog.Info("Getting changed files in commit", "hash", commitHash)
 	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for hash %s: %w", commitHash, err)
@@ -427,25 +511,155 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 // Push pushes the local branch to the origin remote.
 func (r *LocalRepository) Push(branchName string) error {
 	// https://stackoverflow.com/a/75727620
-	refSpec := config.RefSpec(fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName))
+	refSpec := fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName)
 	slog.Info("Pushing changes", "branch name", branchName, slog.Any("refspec", refSpec))
-	var auth *httpAuth.BasicAuth
-	if r.gitPassword != "" {
-		slog.Info("Authenticating with basic auth")
-		auth = &httpAuth.BasicAuth{
-			// GitHub's authentication needs the username set to a non-empty value, but
-			// it does not need to match the token
-			Username: "cloud-sdk-librarian",
-			Password: r.gitPassword,
+	return r.pushRefSpec(refSpec)
+}
+
+// DeleteBranch deletes a branch on the origin remote.
+func (r *LocalRepository) DeleteBranch(branchName string) error {
+	refSpec := fmt.Sprintf(":refs/heads/%s", branchName)
+	return r.pushRefSpec(refSpec)
+}
+
+func (r *LocalRepository) pushRefSpec(refSpec string) error {
+	slog.Info("Pushing changes", "refSpec", refSpec)
+
+	// Check for the configured URI for the `origin` remote.
+	// If there are multiple URLs, the first one is selected.
+	var remoteURI string
+	remotes, err := r.Remotes()
+	if err != nil {
+		return err
+	}
+	for _, remote := range remotes {
+		if remote.Name == "origin" {
+			if len(remote.URLs) > 0 {
+				remoteURI = remote.URLs[0]
+			}
 		}
+	}
+
+	useSSH := canUseSSH(remoteURI)
+	// While cloning a public repo does not require any authCreds, pushing
+	// to the repo requires authentication and verification of identity
+	auth, err := r.authCreds(useSSH)
+	if err != nil {
+		return err
 	}
 	if err := r.repo.Push(&git.PushOptions{
 		RemoteName: "origin",
-		RefSpecs:   []config.RefSpec{refSpec},
+		RefSpecs:   []config.RefSpec{config.RefSpec(refSpec)},
 		Auth:       auth,
 	}); err != nil {
 		return err
 	}
-	slog.Info("Successfully pushed branch to remote 'origin", "branch", branchName)
+	slog.Info("Successfully pushed changes", "refSpec", refSpec)
 	return nil
+}
+
+// canUseSSH returns if the remote URI can connect via https ssh. It attempts to
+// automatically determine the type and returns false as a default if it's unable
+// to make a determination.
+func canUseSSH(remoteURI string) bool {
+	// First, try to parse it as a standard URL
+	// e.g. "https://github.com/golang/go.git", "ssh://git@github.com/golang/go.git"
+	parsedURL, err := url.Parse(remoteURI)
+	if err == nil && parsedURL.Scheme != "" {
+		// Check the scheme directly
+		switch parsedURL.Scheme {
+		case "https":
+			return false
+		case "ssh":
+			return true
+		}
+	}
+
+	// If parsing fails or the scheme is not standard, check for the `user@hostname`
+	// SSH syntax (e.g., "git@github.com:user/repo.git"). This format doesn't
+	// have a "://" and contains a ":"
+	if !strings.Contains(remoteURI, "://") && strings.Contains(remoteURI, ":") {
+		return true
+	}
+
+	return false
+}
+
+// authCreds returns the configured AuthMethod to used to pushing to the
+// remote repository. The useSSH determines if Basic Auth or SSH is used.
+func (r *LocalRepository) authCreds(useSSH bool) (transport.AuthMethod, error) {
+	if useSSH {
+		slog.Info("Authenticating with SSH")
+		// This is the generic `git` username when cloning via SSH. It is the value
+		// that exists before the URL. e.g. git@github.com:googleapis/librarian.git
+		auth, err := ssh.DefaultAuthBuilder("git")
+		if err != nil {
+			return nil, err
+		}
+		return auth, nil
+	}
+	slog.Info("Authenticating with basic auth")
+	return &httpAuth.BasicAuth{
+		// GitHub's authentication needs the username set to a non-empty value, but
+		// it does not need to match the token
+		Username: "cloud-sdk-librarian",
+		Password: r.gitPassword,
+	}, nil
+}
+
+// Restore restores changes in the working tree, leaving staged area untouched.
+// Note that untracked files, if any, are not touched.
+//
+// Wrap git operations in exec, because [git.Worktree.Restore] does not support
+// this operation.
+func (r *LocalRepository) Restore(paths []string) error {
+	args := []string{"restore"}
+	args = append(args, paths...)
+	slog.Info("Restoring uncommitted changes", "paths", strings.Join(paths, ","))
+	cmd := exec.Command("git", args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Dir = r.Dir
+	return cmd.Run()
+}
+
+// CleanUntracked removes untracked files within the given paths.
+func (r *LocalRepository) CleanUntracked(paths []string) error {
+	slog.Info("Cleaning untracked files", "paths", strings.Join(paths, ","))
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+
+	// Remove an untracked file if it lives within one of the given paths.
+	for _, path := range paths {
+		for file, fileStatue := range status {
+			if !strings.Contains(file, path) || fileStatue.Worktree != git.Untracked {
+				continue
+			}
+
+			relPath := filepath.Join(r.Dir, file)
+			if err := os.Remove(relPath); err != nil {
+				return fmt.Errorf("failed to remove untracked file, %s: %q", relPath, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Checkout checks out the local repository at the provided git SHA.
+func (r *LocalRepository) Checkout(commitSha string) error {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Hash: plumbing.NewHash(commitSha),
+	})
 }

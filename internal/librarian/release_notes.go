@@ -16,21 +16,21 @@ package librarian
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
-	"log/slog"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
-	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 var (
+	errPiperNotFound = errors.New("piper id not found")
+
 	commitTypeToHeading = map[string]string{
 		"feat":     "Features",
 		"fix":      "Bug Fixes",
@@ -56,41 +56,69 @@ var (
 	}
 
 	shortSHA = func(sha string) string {
-		if len(sha) < 7 {
+		if len(sha) < 8 {
 			return sha
 		}
-		return sha[:7]
+		return sha[:8]
 	}
 
 	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
 	}).Parse(`Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
-
+{{ $prInfo := . }}
 {{- range .NoteSections -}}
-{{ $noteSection := . }}
 <details><summary>{{.LibraryID}}: {{.NewVersion}}</summary>
 
-## [{{.NewVersion}}]({{"https://github.com/"}}{{.RepoOwner}}/{{.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{.Date}})
+## [{{.NewVersion}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{$prInfo.Date}})
 {{ range .CommitSections }}
 ### {{.Heading}}
 {{ range .Commits }}
-{{ if index .Footers "PiperOrigin-RevId" -}}
-* {{.Subject}} (PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}) ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+{{ if not .IsBulkCommit -}}
+{{ if .PiperCLNumber -}}
+* {{.Subject}} (PiperOrigin-RevId: {{.PiperCLNumber}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/commit/{{shortSHA .CommitHash}}))
 {{- else -}}
-* {{.Subject}} ([{{shortSHA .SHA}}]({{"https://github.com/"}}{{$noteSection.RepoOwner}}/{{$noteSection.RepoName}}/commit/{{.SHA}}))
+* {{.Subject}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/commit/{{shortSHA .CommitHash}}))
+{{- end }}
 {{- end }}
 {{ end }}
 
 {{- end }}
 </details>
 
+
+{{ end }}
+{{- if .BulkChanges -}}
+<details><summary>Bulk Changes</summary>
+{{ range .BulkChanges }}
+{{ if .PiperCLNumber -}}
+* {{.Type}}: {{.Subject}} (PiperOrigin-RevId: {{.PiperCLNumber}}) ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/commit/{{shortSHA .CommitHash}}))
+  Libraries: {{.LibraryIDs}}
+{{- else -}}
+* {{.Type}}: {{.Subject}} ([{{shortSHA .CommitHash}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/commit/{{shortSHA .CommitHash}}))
+  Libraries: {{.LibraryIDs}}
+{{- end }}
+{{- end }}
+</details>
 {{ end }}
 `))
 
 	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
-	}).Parse(`This pull request is generated with proto changes between
+	}).Parse(`BEGIN_COMMIT_OVERRIDE
+{{ range .Commits }}
+BEGIN_NESTED_COMMIT
+{{.Type}}: {{.Subject}}
+{{.Body}}
+
+PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
+Library-IDs: {{index .Footers "Library-IDs"}}
+Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{shortSHA .CommitHash}})
+END_NESTED_COMMIT
+{{ end }}
+END_COMMIT_OVERRIDE
+
+This pull request is generated with proto changes between
 [googleapis/googleapis@{{shortSHA .StartSHA}}](https://github.com/googleapis/googleapis/commit/{{.StartSHA}})
 (exclusive) and
 [googleapis/googleapis@{{shortSHA .EndSHA}}](https://github.com/googleapis/googleapis/commit/{{.EndSHA}})
@@ -106,157 +134,77 @@ Language Image: {{.ImageVersion}}
 - {{ . }}
 {{- end -}}
 {{- end }}
+`))
 
-BEGIN_COMMIT_OVERRIDE
-{{ range .Commits }}
-BEGIN_NESTED_COMMIT
-{{.Type}}: [{{.LibraryID}}] {{.Subject}}
-{{.Body}}
+	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`feat: onboard a new library
 
-PiperOrigin-RevId: {{index .Footers "PiperOrigin-RevId"}}
-
-Source-link: [googleapis/googleapis@{{shortSHA .SHA}}](https://github.com/googleapis/googleapis/commit/{{.SHA}})
-END_NESTED_COMMIT
-{{ end }}
-END_COMMIT_OVERRIDE
+PiperOrigin-RevId: {{.PiperID}}
+Library-IDs: {{.LibraryID}}
+Librarian Version: {{.LibrarianVersion}}
+Language Image: {{.ImageVersion}}
 `))
 )
 
-type generationPRBody struct {
-	StartSHA         string
-	EndSHA           string
+type releasePRBody struct {
 	LibrarianVersion string
 	ImageVersion     string
-	Commits          []*conventionalcommits.ConventionalCommit
-	FailedLibraries  []string
-}
-
-type releaseNote struct {
-	LibrarianVersion string
-	ImageVersion     string
+	RepoOwner        string
+	RepoName         string
+	Date             string
 	NoteSections     []*releaseNoteSection
+	BulkChanges      []*config.Commit
 }
 
 type releaseNoteSection struct {
-	RepoOwner      string
-	RepoName       string
 	LibraryID      string
 	PreviousTag    string
 	NewTag         string
 	NewVersion     string
-	Date           string
 	CommitSections []*commitSection
 }
 
 type commitSection struct {
 	Heading string
-	Commits []*conventionalcommits.ConventionalCommit
-}
-
-// formatGenerationPRBody creates the body of a generation pull request.
-// Only consider libraries whose ID appears in idToCommits.
-func formatGenerationPRBody(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string, failedLibraries []string) (string, error) {
-	var allCommits []*conventionalcommits.ConventionalCommit
-	for _, library := range state.Libraries {
-		lastGenCommit, ok := idToCommits[library.ID]
-		if !ok {
-			continue
-		}
-
-		commits, err := getConventionalCommitsSinceLastGeneration(repo, library, lastGenCommit)
-		if err != nil {
-			return "", fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
-		}
-		allCommits = append(allCommits, commits...)
-	}
-
-	if len(allCommits) == 0 {
-		return "No commit is found since last generation", nil
-	}
-
-	startCommit, err := findLatestGenerationCommit(repo, state, idToCommits)
-	if err != nil {
-		return "", fmt.Errorf("failed to find the start commit: %w", err)
-	}
-	// Even though startCommit might be nil, it shouldn't happen in production
-	// because this function will return early if no conventional commit is found
-	// since last generation.
-	startSHA := startCommit.Hash.String()
-
-	// Sort the slice by commit time in reverse order,
-	// so that the latest commit appears first.
-	sort.Slice(allCommits, func(i, j int) bool {
-		return allCommits[i].When.After(allCommits[j].When)
-	})
-	endSHA := allCommits[0].SHA
-	librarianVersion := cli.Version()
-	data := &generationPRBody{
-		StartSHA:         startSHA,
-		EndSHA:           endSHA,
-		LibrarianVersion: librarianVersion,
-		ImageVersion:     state.Image,
-		Commits:          allCommits,
-		FailedLibraries:  failedLibraries,
-	}
-	var out bytes.Buffer
-	if err := genBodyTemplate.Execute(&out, data); err != nil {
-		return "", fmt.Errorf("error executing template: %w", err)
-	}
-
-	return strings.TrimSpace(out.String()), nil
-}
-
-// findLatestGenerationCommit returns the latest commit among the last generated
-// commit of all the libraries.
-// A libray is skipped if the last generated commit is empty.
-//
-// Note that it is possible that the returned commit is nil.
-func findLatestGenerationCommit(repo gitrepo.Repository, state *config.LibrarianState, idToCommits map[string]string) (*gitrepo.Commit, error) {
-	latest := time.UnixMilli(0) // the earliest timestamp.
-	var res *gitrepo.Commit
-	for _, library := range state.Libraries {
-		commitHash, ok := idToCommits[library.ID]
-		if !ok || commitHash == "" {
-			slog.Info("skip getting last generated commit", "library", library.ID)
-			continue
-		}
-		commit, err := repo.GetCommit(commitHash)
-		if err != nil {
-			return nil, fmt.Errorf("can't find last generated commit for %s: %w", library.ID, err)
-		}
-		if latest.Before(commit.When) {
-			latest = commit.When
-			res = commit
-		}
-	}
-
-	if res == nil {
-		slog.Warn("no library has non-empty last generated commit")
-	}
-
-	return res, nil
+	Commits []*config.Commit
 }
 
 // formatReleaseNotes generates the body for a release pull request.
-func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (string, error) {
+func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
 	librarianVersion := cli.Version()
 	var releaseSections []*releaseNoteSection
+	// create a map to deduplicate bulk changes based on their commit hash
+	// and subject
+	bulkChangesMap := make(map[string]*config.Commit)
 	for _, library := range state.Libraries {
 		if !library.ReleaseTriggered {
 			continue
 		}
 
-		section, err := formatLibraryReleaseNotes(repo, library)
-		if err != nil {
-			return "", fmt.Errorf("failed to format release notes for library %s: %w", library.ID, err)
+		for _, commit := range library.Changes {
+			if commit.IsBulkCommit() {
+				bulkChangesMap[commit.CommitHash+commit.Subject] = commit
+			}
 		}
+
+		section := formatLibraryReleaseNotes(library)
 		releaseSections = append(releaseSections, section)
 	}
+	var bulkChanges []*config.Commit
+	for _, commit := range bulkChangesMap {
+		bulkChanges = append(bulkChanges, commit)
+	}
+	sort.Slice(bulkChanges, func(i, j int) bool {
+		return bulkChanges[i].CommitHash < bulkChanges[j].CommitHash
+	})
 
-	data := &releaseNote{
+	data := &releasePRBody{
 		LibrarianVersion: librarianVersion,
+		Date:             time.Now().Format("2006-01-02"),
+		RepoOwner:        ghRepo.Owner,
+		RepoName:         ghRepo.Name,
 		ImageVersion:     state.Image,
 		NoteSections:     releaseSections,
+		BulkChanges:      bulkChanges,
 	}
 
 	var out bytes.Buffer
@@ -269,20 +217,18 @@ func formatReleaseNotes(repo gitrepo.Repository, state *config.LibrarianState) (
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
-func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryState) (*releaseNoteSection, error) {
-	ghRepo, err := github.FetchGitHubRepoFromRemote(repo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch github repo from remote: %w", err)
-	}
-
+func formatLibraryReleaseNotes(library *config.LibraryState) *releaseNoteSection {
 	// The version should already be updated to the next version.
 	newVersion := library.Version
-	newTag := formatTag(library, newVersion)
-	previousTag := formatTag(library, library.PreviousVersion)
+	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
+	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
+	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
-	commitsByType := make(map[string][]*conventionalcommits.ConventionalCommit)
+	commitsByType := make(map[string][]*config.Commit)
 	for _, commit := range library.Changes {
-		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
+		if !commit.IsBulkCommit() {
+			commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
+		}
 	}
 
 	var sections []*commitSection
@@ -299,15 +245,12 @@ func formatLibraryReleaseNotes(repo gitrepo.Repository, library *config.LibraryS
 	}
 
 	section := &releaseNoteSection{
-		RepoOwner:      ghRepo.Owner,
-		RepoName:       ghRepo.Name,
 		LibraryID:      library.ID,
 		NewVersion:     newVersion,
 		PreviousTag:    previousTag,
 		NewTag:         newTag,
-		Date:           time.Now().Format("2006-01-02"),
 		CommitSections: sections,
 	}
 
-	return section, nil
+	return section
 }

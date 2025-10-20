@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -45,24 +47,48 @@ var (
 type tagAndReleaseRunner struct {
 	ghClient    GitHubClient
 	pullRequest string
-	repo        gitrepo.Repository
-	state       *config.LibrarianState
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
-	runner, err := newCommandRunner(cfg)
+	if cfg.GitHubToken == "" {
+		return nil, fmt.Errorf("`%s` must be set", config.LibrarianGithubToken)
+	}
+	repo, err := parseRemote(cfg.Repo)
 	if err != nil {
 		return nil, err
 	}
-	if cfg.GitHubToken == "" {
-		return nil, fmt.Errorf("`LIBRARIAN_GITHUB_TOKEN` must be set")
+	ghClient := github.NewClient(cfg.GitHubToken, repo)
+	// If a custom GitHub API endpoint is provided (for testing),
+	// parse it and set it as the BaseURL on the GitHub client.
+	if cfg.GitHubAPIEndpoint != "" {
+		endpoint, err := url.Parse(cfg.GitHubAPIEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse github-api-endpoint: %w", err)
+		}
+		ghClient.BaseURL = endpoint
 	}
 	return &tagAndReleaseRunner{
-		ghClient:    runner.ghClient,
+		ghClient:    ghClient,
 		pullRequest: cfg.PullRequest,
-		repo:        runner.repo,
-		state:       runner.state,
 	}, nil
+}
+
+func parseRemote(repo string) (*github.Repository, error) {
+	if isURL(repo) {
+		return github.ParseRemote(repo)
+	}
+	// repo is a directory
+	absRepoRoot, err := filepath.Abs(repo)
+	if err != nil {
+		return nil, err
+	}
+	githubRepo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
+		Dir: absRepoRoot,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return GetGitHubRepositoryFromGitRepo(githubRepo)
 }
 
 func (r *tagAndReleaseRunner) run(ctx context.Context) error {
@@ -130,24 +156,35 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 		return nil
 	}
 
-	// Add a tag to the release commit to trigger louhi flow: "release-please-{pr number}"
-	//TODO: remove this logic as part of https://github.com/googleapis/librarian/issues/2044
+	// Load library state from remote repo
+	targetBranch := *p.Base.Ref
+	librarianState, err := loadRepoStateFromGitHub(ctx, r.ghClient, targetBranch)
+	if err != nil {
+		return err
+	}
+
+	librarianConfig, err := loadLibrarianConfigFromGitHub(ctx, r.ghClient, targetBranch)
+	if err != nil {
+		slog.Warn("error loading .librarian/config.yaml", slog.Any("err", err))
+	}
+
+	// Add a tag to the release commit to trigger louhi flow: "release-{pr number}".
+	// See: go/sdk-librarian:louhi-trigger for details.
 	commitSha := p.GetMergeCommitSHA()
-	tagName := fmt.Sprintf("release-please-%d", p.GetNumber())
+	tagName := fmt.Sprintf("release-%d", p.GetNumber())
 	if err := r.ghClient.CreateTag(ctx, tagName, commitSha); err != nil {
 		return fmt.Errorf("failed to create tag %s: %w", tagName, err)
 	}
-
 	for _, release := range releases {
 		slog.Info("creating release", "library", release.Library, "version", release.Version)
-
-		lib := r.state.LibraryByID(release.Library)
-		if lib == nil {
+		libraryState := librarianState.LibraryByID(release.Library)
+		if libraryState == nil {
 			return fmt.Errorf("library %s not found", release.Library)
 		}
 
 		// Create the release.
-		tagName := formatTag(lib, release.Version)
+		tagFormat := config.DetermineTagFormat(release.Library, libraryState, librarianConfig)
+		tagName := config.FormatTag(tagFormat, release.Library, release.Version)
 		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
 		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
 			return fmt.Errorf("failed to create release: %w", err)
@@ -174,6 +211,9 @@ func parsePullRequestBody(body string) []libraryRelease {
 	matches := detailsRegex.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		summary := match[1]
+		if summary == "Bulk Changes" {
+			continue
+		}
 		content := strings.TrimSpace(match[2])
 
 		summaryMatches := summaryRegex.FindStringSubmatch(summary)
@@ -186,8 +226,9 @@ func parsePullRequestBody(body string) []libraryRelease {
 				Library: library,
 				Body:    content,
 			})
+		} else {
+			slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 		}
-		slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 	}
 
 	return parsedBodies

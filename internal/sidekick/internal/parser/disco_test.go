@@ -18,11 +18,20 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 )
 
 func TestDisco_Parse(t *testing.T) {
-	// Mixing Compute and Secret Manager like this is fine in tests.
-	got, err := ParseDisco(discoSourceFile, secretManagerYamlFullPath, map[string]string{})
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			// Mixing Compute and Secret Manager like this is fine in tests.
+			SpecificationSource: discoSourceFile,
+			ServiceConfig:       secretManagerYamlFullPath,
+		},
+	}
+	got, err := ParseDisco(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,8 +53,42 @@ func TestDisco_Parse(t *testing.T) {
 	}
 }
 
+func TestDisco_FindSources(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationSource: discoSourceFileRelative,
+		},
+		Source: map[string]string{
+			"test-root": testdataDir,
+			"roots":     "undefined,test",
+		},
+	}
+	got, err := ParseDisco(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantName := "compute"
+	wantTitle := "Compute Engine API"
+	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
+	if got.Name != wantName {
+		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	}
+	if got.Title != wantTitle {
+		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
+	}
+	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+}
+
 func TestDisco_ParseNoServiceConfig(t *testing.T) {
-	got, err := ParseDisco(discoSourceFile, "", map[string]string{})
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationSource: discoSourceFile,
+		},
+	}
+	got, err := ParseDisco(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,12 +106,97 @@ func TestDisco_ParseNoServiceConfig(t *testing.T) {
 	}
 }
 
-func TestDisco_ParseBadFiles(t *testing.T) {
-	if _, err := ParseDisco("-invalid-file-name-", secretManagerYamlFullPath, map[string]string{}); err == nil {
-		t.Fatalf("expected error with invalid source file name")
+func TestDisco_ParsePagination(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationSource: discoSourceFile,
+		},
 	}
+	model, err := ParseDisco(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updateMethodPagination(nil, model)
+	wantID := "..zones.list"
+	got, ok := model.State.MethodByID[wantID]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", wantID)
+	}
+	wantPagination := &api.Field{
+		Name:     "pageToken",
+		JSONName: "pageToken",
+		ID:       "..zones.listRequest.pageToken",
+		Typez:    api.STRING_TYPE,
+		TypezID:  "string",
+		Optional: true,
+	}
+	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
 
-	if _, err := ParseDisco(discoSourceFile, "-invalid-file-name-", map[string]string{}); err == nil {
-		t.Fatalf("expected error with invalid service config yaml file name")
+func TestDisco_ParsePaginationAggregate(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationSource: discoSourceFile,
+		},
+	}
+	model, err := ParseDisco(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updateMethodPagination(nil, model)
+	wantID := "..machineTypes.aggregatedList"
+	got, ok := model.State.MethodByID[wantID]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", wantID)
+	}
+	wantPagination := &api.Field{
+		Name:     "pageToken",
+		JSONName: "pageToken",
+		ID:       "..machineTypes.aggregatedListRequest.pageToken",
+		Typez:    api.STRING_TYPE,
+		TypezID:  "string",
+		Optional: true,
+	}
+	if diff := cmp.Diff(wantPagination, got.Pagination, cmpopts.IgnoreFields(api.Field{}, "Documentation")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestDisco_ParseDeprecatedEnum(t *testing.T) {
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationSource: discoSourceFile,
+		},
+	}
+	model, err := ParseDisco(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantEnum := &api.Enum{
+		ID: "..AcceleratorTypeAggregatedList.warning.code",
+	}
+	got, ok := model.State.EnumByID[wantEnum.ID]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", wantEnum.ID)
+	}
+	if len(got.Values) < 7 {
+		t.Fatalf("expected at least 7 values in the enum value list, got=%v", got)
+	}
+	if !got.Values[6].Deprecated {
+		t.Errorf("expected a deprecated enum value, got=%v", got.Values[6])
+	}
+}
+
+func TestDisco_ParseBadFiles(t *testing.T) {
+	for _, cfg := range []config.GeneralConfig{
+		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
+		{SpecificationSource: discoSourceFile, ServiceConfig: "-invalid-file-name-"},
+		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},
+	} {
+		if got, err := ParseDisco(&config.Config{General: cfg}); err == nil {
+			t.Fatalf("expected error with missing source file, got=%v", got)
+		}
 	}
 }

@@ -166,3 +166,55 @@ func TestLibraryConfigFor(t *testing.T) {
 		})
 	}
 }
+
+func TestGetGlobalFiles(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		config *LibrarianConfig
+		want   []string
+	}{
+		{
+			name: "get_global_files",
+			config: &LibrarianConfig{
+				GlobalFilesAllowlist: []*GlobalFile{
+					{
+						Path:        "a/path",
+						Permissions: "read-only",
+					},
+					{
+						Path:        "another/path",
+						Permissions: "write-only",
+					},
+					{
+						Path:        "other/paths",
+						Permissions: "read-write",
+					},
+				},
+			},
+			want: []string{
+				"a/path",
+				"another/path",
+				"other/paths",
+			},
+		},
+		{
+			name: "empty_global_files",
+			config: &LibrarianConfig{
+				GlobalFilesAllowlist: []*GlobalFile{},
+			},
+			want: nil,
+		},
+		{
+			name:   "nil_global_files",
+			config: &LibrarianConfig{},
+			want:   nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.config.GetGlobalFiles()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("GetGlobalFiles() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

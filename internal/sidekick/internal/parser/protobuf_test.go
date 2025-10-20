@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
@@ -1080,6 +1081,7 @@ func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
 func TestProtobuf_Pagination(t *testing.T) {
 	requireProtoc(t)
 	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "pagination.proto"))
+	updateMethodPagination(nil, test)
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
@@ -1799,6 +1801,22 @@ func TestProtobuf_Deprecated(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestProtobuf_ParseBadFiles(t *testing.T) {
+	requireProtoc(t)
+	for _, general := range []config.GeneralConfig{
+		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
+		{SpecificationSource: protobufFile, ServiceConfig: "-invalid-file-name-"},
+		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},
+	} {
+		cfg := &config.Config{
+			General: general,
+		}
+		if got, err := ParseProtobuf(cfg); err == nil {
+			t.Fatalf("expected error with missing source file, got=%v", got)
+		}
+	}
 }
 
 func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGeneratorRequest {

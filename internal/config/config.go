@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 )
 
 const (
@@ -54,12 +53,16 @@ const (
 	// ReleaseInitResponse is a JSON file that describes which library to change
 	// after release.
 	ReleaseInitResponse = "release-init-response.json"
-	pipelineStateFile   = "state.yaml"
+	// LibrarianStateFile is the name of the pipeline state file.
+	LibrarianStateFile = "state.yaml"
+	// LibrarianConfigFile is the name of the language-repository config file.
+	LibrarianConfigFile = "config.yaml"
+	// LibrarianGithubToken is the name of the env var used to store the github token.
+	LibrarianGithubToken = "LIBRARIAN_GITHUB_TOKEN"
 )
 
 // are variables so it can be replaced during testing.
 var (
-	now         = time.Now
 	tempDir     = os.TempDir
 	currentUser = user.Current
 )
@@ -125,6 +128,12 @@ type Config struct {
 	//
 	// This flag is ignored if Push is set to true.
 	Commit bool
+
+	// GitHubAPIEndpoint is the GitHub API endpoint to use for all GitHub API
+	// operations.
+	//
+	// This is intended for testing and should not be used in production.
+	GitHubAPIEndpoint string
 
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
@@ -243,7 +252,7 @@ type Config struct {
 func New(cmdName string) *Config {
 	return &Config{
 		CommandName: cmdName,
-		GitHubToken: os.Getenv("LIBRARIAN_GITHUB_TOKEN"),
+		GitHubToken: os.Getenv(LibrarianGithubToken),
 	}
 }
 
@@ -265,19 +274,9 @@ func (c *Config) createWorkRoot() error {
 		slog.Info("Using specified working directory", "dir", c.WorkRoot)
 		return nil
 	}
-	t := now()
-	path := filepath.Join(tempDir(), fmt.Sprintf("librarian-%s", formatTimestamp(t)))
-
-	_, err := os.Stat(path)
-	switch {
-	case os.IsNotExist(err):
-		if err := os.Mkdir(path, 0755); err != nil {
-			return fmt.Errorf("unable to create temporary working directory '%s': %w", path, err)
-		}
-	case err == nil:
-		return fmt.Errorf("temporary working directory already exists: %s", path)
-	default:
-		return fmt.Errorf("unable to check directory '%s': %w", path, err)
+	path, err := os.MkdirTemp(tempDir(), "librarian-*")
+	if err != nil {
+		return err
 	}
 
 	slog.Info("Temporary working directory", "dir", path)
@@ -294,7 +293,7 @@ func (c *Config) deriveRepo() error {
 	if err != nil {
 		return fmt.Errorf("getting working directory: %w", err)
 	}
-	stateFile := filepath.Join(wd, LibrarianDir, pipelineStateFile)
+	stateFile := filepath.Join(wd, LibrarianDir, LibrarianStateFile)
 	if _, err := os.Stat(stateFile); err != nil {
 		return fmt.Errorf("repo flag not specified and no state file found in current working directory: %w", err)
 	}
@@ -356,9 +355,4 @@ func validateHostMount(hostMount, defaultValue string) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func formatTimestamp(t time.Time) string {
-	const yyyyMMddHHmmss = "20060102T150405Z" // Expected format by time library
-	return t.Format(yyyyMMddHHmmss)
 }

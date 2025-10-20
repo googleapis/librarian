@@ -20,7 +20,8 @@ librarian generate [flags]
 | `-library`     | string  | No (Yes for onboarding) | The ID of a single library to update or onboard.  If updating this should match the library ID in the state.yaml file. |
 | `-repo`        | string  | No       | Code repository for the generated code. Can be a remote URL (e.g., `https://github.com/{owner}/{repo}`) or a local path. If not specified, will try to detect the current working directory as a language repository. |
 | `-output`      | string  | No       | Working directory root. If not specified, a working directory will be created in `/tmp`. |
-| `-push`        | bool    | No       | Whether to push the generated code and create a pull request. |
+| `-commit`      | bool    | No       | Whether to commit the generated code change locally. |
+| `-push`        | bool    | No       | Whether to push the change and create a pull request in GitHub. |
 
 ## Example
 

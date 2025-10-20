@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,64 +26,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
-	gogitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
-
-func TestFindLibraryByID(t *testing.T) {
-	lib1 := &config.LibraryState{ID: "lib1"}
-	lib2 := &config.LibraryState{ID: "lib2"}
-	stateWithLibs := &config.LibrarianState{
-		Libraries: []*config.LibraryState{lib1, lib2},
-	}
-	stateNoLibs := &config.LibrarianState{
-		Libraries: []*config.LibraryState{},
-	}
-
-	for _, test := range []struct {
-		name      string
-		state     *config.LibrarianState
-		libraryID string
-		want      *config.LibraryState
-	}{
-		{
-			name:      "found first library",
-			state:     stateWithLibs,
-			libraryID: "lib1",
-			want:      lib1,
-		},
-		{
-			name:      "found second library",
-			state:     stateWithLibs,
-			libraryID: "lib2",
-			want:      lib2,
-		},
-		{
-			name:      "not found",
-			state:     stateWithLibs,
-			libraryID: "lib3",
-			want:      nil,
-		},
-		{
-			name:      "empty libraries slice",
-			state:     stateNoLibs,
-			libraryID: "lib1",
-			want:      nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := findLibraryByID(test.state, test.libraryID)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findLibraryByID() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
 
 func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
@@ -1293,67 +1241,56 @@ func TestCompileRegexps(t *testing.T) {
 
 func TestCommitAndPush(t *testing.T) {
 	for _, test := range []struct {
-		name            string
-		setupMockRepo   func(t *testing.T) gitrepo.Repository
-		setupMockClient func(t *testing.T) GitHubClient
-		state           *config.LibrarianState
-		prType          string
-		commit          bool
-		push            bool
-		wantErr         bool
-		expectedErrMsg  string
+		name              string
+		setupMockRepo     func(t *testing.T) gitrepo.Repository
+		setupMockClient   func(t *testing.T) GitHubClient
+		state             *config.LibrarianState
+		prType            pullRequestType
+		failedGenerations int
+		commit            bool
+		push              bool
+		wantErr           bool
+		expectedErrMsg    string
+		check             func(t *testing.T, repo gitrepo.Repository)
+		wantPRBodyFile    bool
+		prBodyBuilder     func() (string, error)
 	}{
 		{
 			name: "Push flag and Commit flag are not specified",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				repoDir := newTestGitRepoWithCommit(t, "")
-				repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: repoDir})
-				if err != nil {
-					t.Fatalf("Failed to create test repo: %v", err)
+				return &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
 				}
-				return repo
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType: "generate",
+			state:  &config.LibrarianState{},
+			prType: pullRequestRelease,
+			check: func(t *testing.T, repo gitrepo.Repository) {
+				mockRepo := repo.(*MockRepository)
+				if mockRepo.PushCalls != 0 {
+					t.Errorf("Push was called %d times, expected 0", mockRepo.PushCalls)
+				}
+			},
+			wantPRBodyFile: true,
 		},
 		{
 			name: "create a commit",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
-				}
-			},
-			setupMockClient: func(t *testing.T) GitHubClient {
-				return &mockGitHubClient{
-					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
-				}
-			},
-			prType: "generate",
-			commit: true,
-		},
-		{
-			name: "create a generate pull request",
-			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
-					Name: "origin",
-					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
-				return &MockRepository{
-					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
+					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
@@ -1362,22 +1299,47 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:  &config.LibrarianState{},
-			prType: "generate",
+			prType: pullRequestRelease,
+			commit: true,
+			check: func(t *testing.T, repo gitrepo.Repository) {
+				mockRepo := repo.(*MockRepository)
+				if mockRepo.PushCalls != 0 {
+					t.Errorf("Push was called %d times, expected 0", mockRepo.PushCalls)
+				}
+			},
+			wantPRBodyFile: true,
+		},
+		{
+			name: "create a generate pull request",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := &gitrepo.Remote{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{
+					createdPR: &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
+				}
+			},
+			state:  &config.LibrarianState{},
+			prType: pullRequestGenerate,
 			push:   true,
 		},
 		{
 			name: "create a release pull request",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
+					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
@@ -1386,45 +1348,43 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:  &config.LibrarianState{},
-			prType: "release",
+			prType: pullRequestRelease,
 			push:   true,
 		},
 		{
 			name: "No GitHub Remote",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{}, // No remotes
+					RemotesValue: []*gitrepo.Remote{}, // No remotes
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
+			state:          &config.LibrarianState{},
 			wantErr:        true,
 			expectedErrMsg: "could not find an 'origin' remote",
 		},
 		{
 			name: "AddAll error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
+				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					RemotesValue: []*git.Remote{remote},
+					RemotesValue: []*gitrepo.Remote{remote},
 					AddAllError:  errors.New("mock add all error"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "mock add all error",
@@ -1432,24 +1392,20 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Create branch error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				}
 				return &MockRepository{
 					Dir:                          t.TempDir(),
-					AddAllStatus:                 status,
-					RemotesValue:                 []*git.Remote{remote},
+					RemotesValue:                 []*gitrepo.Remote{remote},
 					CreateBranchAndCheckoutError: errors.New("create branch error"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "create branch error",
@@ -1457,24 +1413,20 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Commit error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
+					RemotesValue: []*gitrepo.Remote{remote},
 					CommitError:  errors.New("commit error"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
@@ -1482,24 +1434,20 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Push error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
+					RemotesValue: []*gitrepo.Remote{remote},
 					PushError:    errors.New("push error"),
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "push error",
@@ -1507,42 +1455,35 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "Create PR body error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
+					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return &mockGitHubClient{}
 			},
 			state:          &config.LibrarianState{},
-			prType:         "random",
+			prType:         100,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request body",
+			prBodyBuilder:  func() (string, error) { return "", fmt.Errorf("failed to create pull request body") },
 		},
 		{
 			name: "Create pull request error",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
-
-				status := make(git.Status)
-				status["file.txt"] = &git.FileStatus{Worktree: git.Modified}
+				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: status,
-					RemotesValue: []*git.Remote{remote},
+					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
@@ -1551,7 +1492,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:          &config.LibrarianState{},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request",
@@ -1559,35 +1500,68 @@ func TestCommitAndPush(t *testing.T) {
 		{
 			name: "No changes to commit",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
-				remote := git.NewRemote(memory.NewStorage(), &gogitConfig.RemoteConfig{
+				remote := &gitrepo.Remote{
 					Name: "origin",
 					URLs: []string{"https://github.com/googleapis/librarian.git"},
-				})
+				}
 				return &MockRepository{
 					Dir:          t.TempDir(),
-					AddAllStatus: git.Status{}, // Clean status
-					RemotesValue: []*git.Remote{remote},
+					IsCleanValue: true,
+					RemotesValue: []*gitrepo.Remote{remote},
 				}
 			},
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType: "generate",
+			prType: pullRequestGenerate,
 			push:   true,
+		},
+		{
+			name: "create_a_comment_on_generation_pr_error",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				remote := &gitrepo.Remote{
+					Name: "origin",
+					URLs: []string{"https://github.com/googleapis/librarian.git"},
+				}
+				return &MockRepository{
+					Dir:          t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{remote},
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return &mockGitHubClient{
+					createdPR:      &github.PullRequestMetadata{Number: 123, Repo: &github.Repository{Owner: "test-owner", Name: "test-repo"}},
+					createIssueErr: errors.New("simulate comment creation error"),
+				}
+			},
+			state:             &config.LibrarianState{},
+			prType:            pullRequestGenerate,
+			failedGenerations: 1,
+			push:              true,
+			wantErr:           true,
+			expectedErrMsg:    "failed to add pull request comment",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
 
+			// set default PR body builder
+			if test.prBodyBuilder == nil {
+				test.prBodyBuilder = func() (string, error) { return "some pr body", nil }
+			}
+
 			commitInfo := &commitInfo{
-				commit:        test.commit,
-				commitMessage: "",
-				ghClient:      client,
-				prType:        test.prType,
-				push:          test.push,
-				repo:          repo,
-				state:         test.state,
+				commit:            test.commit,
+				commitMessage:     "",
+				ghClient:          client,
+				prType:            test.prType,
+				push:              test.push,
+				languageRepo:      repo,
+				state:             test.state,
+				failedGenerations: test.failedGenerations,
+				workRoot:          t.TempDir(),
+				prBodyBuilder:     test.prBodyBuilder,
 			}
 
 			err := commitAndPush(context.Background(), commitInfo)
@@ -1605,8 +1579,129 @@ func TestCommitAndPush(t *testing.T) {
 				t.Errorf("%s: commitAndPush() returned unexpected error: %v", test.name, err)
 				return
 			}
+
+			if test.check != nil {
+				test.check(t, repo)
+			}
+
+			gotPRBodyFile := gotPRBodyFile(t, commitInfo.workRoot)
+			if test.wantPRBodyFile != gotPRBodyFile {
+				t.Errorf("commitAndPush() wantPRBodyFile = %t, gotPRBodyFile = %t", test.wantPRBodyFile, gotPRBodyFile)
+			}
 		})
 	}
+}
+
+func TestWritePRBody(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		info     *commitInfo
+		wantErr  bool
+		wantFile bool
+	}{
+		{
+			name: "success",
+			info: &commitInfo{
+				languageRepo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:        pullRequestRelease,
+				state:         &config.LibrarianState{},
+				workRoot:      t.TempDir(),
+				prBodyBuilder: func() (string, error) { return "some pr body", nil },
+			},
+			wantFile: true,
+		},
+		{
+			name: "unable to build PR body",
+			info: &commitInfo{
+				languageRepo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "not-origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:        pullRequestRelease,
+				workRoot:      t.TempDir(),
+				prBodyBuilder: func() (string, error) { return "", fmt.Errorf("some error") },
+			},
+			wantErr: true,
+		},
+		{
+			name: "unable to save file",
+			info: &commitInfo{
+				languageRepo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:        pullRequestRelease,
+				state:         &config.LibrarianState{},
+				workRoot:      filepath.Join(t.TempDir(), "missing-directory"),
+				prBodyBuilder: func() (string, error) { return "some pr body", nil },
+			},
+			wantErr: true,
+		},
+		{
+			name: "no body builder",
+			info: &commitInfo{
+				languageRepo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:   pullRequestRelease,
+				state:    &config.LibrarianState{},
+				workRoot: filepath.Join(t.TempDir(), "missing-directory"),
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := writePRBody(test.info)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("writePRBody() expected error, but no error returned")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error %v", err)
+			}
+
+			gotFile := gotPRBodyFile(t, test.info.workRoot)
+			if test.wantFile != gotFile {
+				t.Errorf("writePRBody() wantFile = %t, gotFile = %t", test.wantFile, gotFile)
+			}
+		})
+	}
+}
+
+func gotPRBodyFile(t *testing.T, workRoot string) bool {
+	possibleFilePath := filepath.Join(workRoot, prBodyFile)
+	_, err := os.Stat(possibleFilePath)
+	if err != nil && !os.IsNotExist(err) {
+		t.Fatalf("error other than IsNotExist finding status of %s", possibleFilePath)
+	}
+	return err == nil
 }
 
 func TestAddLabelsToPullRequest(t *testing.T) {
@@ -1674,14 +1769,14 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 
 func TestCopyLibraryFiles(t *testing.T) {
 	t.Parallel()
-	setup := func(foo string, files []string) {
+	setup := func(foo, contents string, files []string) {
 		for _, relPath := range files {
 			fullPath := filepath.Join(foo, relPath)
 			if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 				t.Error(err)
 			}
 
-			if _, err := os.Create(fullPath); err != nil {
+			if err := os.WriteFile(fullPath, []byte(contents), 0755); err != nil {
 				t.Error(err)
 			}
 		}
@@ -1692,6 +1787,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		outputDir     string
 		libraryID     string
 		state         *config.LibrarianState
+		existingFiles []string
 		filesToCreate []string
 		setup         func(t *testing.T, outputDir string)
 		verify        func(t *testing.T, repoDir string)
@@ -1837,10 +1933,40 @@ func TestCopyLibraryFiles(t *testing.T) {
 				"skipped/path/example.txt",
 			},
 		},
+		{
+			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			name:      "only_delta_files_are_copied",
+			outputDir: filepath.Join(t.TempDir(), "foo"),
+			libraryID: "example-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			},
+			existingFiles: []string{
+				"a/path/example.txt",
+			},
+			filesToCreate: []string{
+				"another/path/example.txt",
+			},
+			wantFiles: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if len(test.existingFiles) > 0 {
+				setup(test.repoDir, "old contents", test.existingFiles)
+			}
 			if len(test.filesToCreate) > 0 {
-				setup(test.outputDir, test.filesToCreate)
+				setup(test.outputDir, "new contents", test.filesToCreate)
 			}
 			if test.setup != nil {
 				test.setup(t, test.outputDir)
@@ -1867,12 +1993,24 @@ func TestCopyLibraryFiles(t *testing.T) {
 				}
 			}
 
+			for _, file := range test.existingFiles {
+				fullPath := filepath.Join(test.repoDir, file)
+				got, err := os.ReadFile(fullPath)
+				if err != nil {
+					t.Error(err)
+				}
+				if diff := cmp.Diff("old contents", string(got)); diff != "" {
+					t.Errorf("file contents mismatch (-want +got):\n%s", diff)
+				}
+			}
+
 			for _, file := range test.skipFiles {
 				fullPath := filepath.Join(test.repoDir, file)
 				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
 					t.Errorf("file %s should not be copied to %s", file, test.repoDir)
 				}
 			}
+
 			if test.verify != nil {
 				test.verify(t, test.repoDir)
 			}
@@ -1939,6 +2077,213 @@ func TestCopyFile(t *testing.T) {
 				return
 			}
 
+		})
+	}
+}
+
+func TestCopyGlobalAllowlist(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name              string
+		cfg               *config.LibrarianConfig
+		files             []string
+		copied            []string
+		skipped           []string
+		doNotCreateOutput bool // do not create files in output dir.
+		wantErr           bool
+		wantErrMsg        string
+		copyReadOnly      bool
+	}{
+		{
+			name: "copied all global allowlist",
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "write-only",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			copied: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+			},
+			skipped: []string{
+				"ignored/path/example.txt",
+			},
+		},
+		{
+			name: "read only file is not copied",
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			copied: []string{
+				"one/path/example.txt",
+			},
+			skipped: []string{
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+		},
+		{
+			name: "repo doesn't have the global file",
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			files: []string{
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to lstat file",
+		},
+		{
+			name: "output doesn't have the global file",
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+			},
+			doNotCreateOutput: true,
+			wantErr:           true,
+			wantErrMsg:        "failed to copy global file",
+		},
+		{
+			name:         "copies read-only files",
+			copyReadOnly: true,
+			cfg: &config.LibrarianConfig{
+				GlobalFilesAllowlist: []*config.GlobalFile{
+					{
+						Path:        "one/path/example.txt",
+						Permissions: "read-write",
+					},
+					{
+						Path:        "another/path/example.txt",
+						Permissions: "read-only",
+					},
+				},
+			},
+			files: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+				"ignored/path/example.txt",
+			},
+			copied: []string{
+				"one/path/example.txt",
+				"another/path/example.txt",
+			},
+			skipped: []string{
+				"ignored/path/example.txt",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			repo := t.TempDir()
+			for _, oneFile := range test.files {
+				// Create files in repo directory.
+				file := filepath.Join(repo, oneFile)
+				dir := filepath.Dir(file)
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					t.Error(err)
+				}
+
+				err := os.WriteFile(file, []byte("old content"), 0755)
+				if err != nil {
+					t.Error(err)
+				}
+
+				if test.doNotCreateOutput {
+					continue
+				}
+
+				// Create files in output directory.
+				file = filepath.Join(output, oneFile)
+				dir = filepath.Dir(file)
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					t.Error(err)
+				}
+
+				err = os.WriteFile(file, []byte("new content"), 0755)
+				if err != nil {
+					t.Error(err)
+				}
+			}
+
+			err := copyGlobalAllowlist(test.cfg, repo, output, test.copyReadOnly)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("cleanAndCopyGlobalAllowlist() should return error")
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
+
+				return
+			}
+			if err != nil {
+				t.Errorf("failed to run cleanAndCopyGlobalAllowlist(): %q", err.Error())
+			}
+
+			for _, wantFile := range test.copied {
+				got, err := os.ReadFile(filepath.Join(repo, wantFile))
+				if err != nil {
+					return
+				}
+				if diff := cmp.Diff("new content", string(got)); diff != "" {
+					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, wantFile)
+				}
+			}
+			// Make sure the skipped files are not changed.
+			for _, skippedFile := range test.skipped {
+				got, err := os.ReadFile(filepath.Join(repo, skippedFile))
+				if err != nil {
+					return
+				}
+				if diff := cmp.Diff("old content", string(got)); diff != "" {
+					t.Errorf("state mismatch (-want +got):\n%s in %s", diff, skippedFile)
+				}
+			}
 		})
 	}
 }

@@ -22,57 +22,158 @@ import (
 )
 
 func TestService(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := model.State.ServiceByID["..projects"]; ok {
-		t.Errorf("expected no service for `projects` resource as it has no methods")
-	}
 
-	id := "..externalAccountKeys"
+	id := "..zones"
 	got, ok := model.State.ServiceByID[id]
 	if !ok {
 		t.Fatalf("expected service %s in the API model", id)
 	}
 	want := &api.Service{
-		Name:          "externalAccountKeys",
+		Name:          "zones",
 		ID:            id,
 		Package:       "",
-		Documentation: "Service for the `externalAccountKeys` resource.",
+		Documentation: "Service for the `zones` resource.",
+		DefaultHost:   "compute.googleapis.com",
 		Methods: []*api.Method{
 			{
-				ID:            "..externalAccountKeys.create",
-				Name:          "create",
-				Documentation: "Creates a new ExternalAccountKey bound to the project.",
-				InputTypeID:   "..ExternalAccountKey",
-				OutputTypeID:  "..ExternalAccountKey",
+				ID:            "..zones.get",
+				Name:          "get",
+				Documentation: "Returns the specified Zone resource.",
+				InputTypeID:   "..zones.getRequest",
+				OutputTypeID:  "..Zone",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("compute").
+								WithLiteral("v1").
+								WithLiteral("projects").
+								WithVariableNamed("project").
+								WithLiteral("zones").
+								WithVariableNamed("zone"),
+							QueryParameters: map[string]bool{},
+						},
+					},
+					BodyFieldPath: "",
+				},
+			},
+			{
+				ID:            "..zones.list",
+				Name:          "list",
+				Documentation: "Retrieves the list of Zone resources available to the specified project.",
+				InputTypeID:   "..zones.listRequest",
+				OutputTypeID:  "..ZoneList",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: api.NewPathTemplate().
+								WithLiteral("compute").
+								WithLiteral("v1").
+								WithLiteral("projects").
+								WithVariableNamed("project").
+								WithLiteral("zones"),
+							QueryParameters: map[string]bool{
+								"filter":               true,
+								"maxResults":           true,
+								"orderBy":              true,
+								"pageToken":            true,
+								"returnPartialSuccess": true,
+							},
+						},
+					},
+					BodyFieldPath: "",
+				},
 			},
 		},
 	}
 	apitest.CheckService(t, got, want)
 }
 
-func TestServiceTopLevelMethodErrors(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+func TestServiceDeprecated(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	doc := document{}
+	input := resource{
+		Name:       "TestDeprecated",
+		Deprecated: true,
+	}
+	if err := addService(model, &doc, &input); err != nil {
+		t.Fatal(err)
+	}
+	want := &api.Service{
+		ID:            "..TestDeprecated",
+		Name:          "TestDeprecated",
+		Documentation: "Service for the `TestDeprecated` resource.",
+		Deprecated:    true,
+	}
+	got, ok := model.State.ServiceByID[want.ID]
+	if !ok {
+		t.Fatalf("missing service %s", want.ID)
+	}
+	apitest.CheckService(t, got, want)
+}
+
+func TestServiceMessages(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	getMessage, ok := model.State.MessageByID["..zones.getRequest"]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", "..zones.getRequest")
+	}
+	listMessage, ok := model.State.MessageByID["..zones.listRequest"]
+	if !ok {
+		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
+	}
+
+	want := &api.Message{
+		Name:               "zones",
+		ID:                 "..zones",
+		Package:            "",
+		Documentation:      "Synthetic messages for the [zones][.zones] service",
+		ServicePlaceholder: true,
+		Messages:           []*api.Message{getMessage, listMessage},
+	}
+
+	got, ok := model.State.MessageByID[want.ID]
+	if !ok {
+		t.Fatalf("expected service %s in the API model", want.ID)
+	}
+	apitest.CheckMessage(t, got, want)
+}
+
+func TestServiceTopLevelMethodErrors(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := document{}
 	input := resource{
 		Methods: []*method{
 			{MediaUpload: &mediaUpload{}},
 		},
 	}
-	if err := addServiceRecursive(model, &input); err == nil {
+	if err := addServiceRecursive(model, &doc, &input); err == nil {
 		t.Errorf("expected error in addServiceRecursive invalid top-level method, got=%v", model.Services)
 	}
 }
 
 func TestServiceChildMethodErrors(t *testing.T) {
-	model, err := PublicCaDisco(t, nil)
+	model, err := ComputeDisco(t, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	doc := document{}
 	input := resource{
 		Resources: []*resource{
 			{
@@ -82,7 +183,7 @@ func TestServiceChildMethodErrors(t *testing.T) {
 			},
 		},
 	}
-	if err := addServiceRecursive(model, &input); err == nil {
+	if err := addServiceRecursive(model, &doc, &input); err == nil {
 		t.Errorf("expected error in addServiceRecursive invalid child method, got=%v", model.Services)
 	}
 }

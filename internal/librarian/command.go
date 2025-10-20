@@ -30,17 +30,47 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/docker"
-
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
 const (
-	generate = "generate"
-	release  = "release"
+	defaultAPISourceBranch  = "master"
+	prBodyFile              = "pr-body.txt"
+	failedGenerationComment = `One or more libraries have failed to generate, please review PR description for a list of failed libraries.
+For each failed library, open a ticket in that library’s repository and then you may resolve this comment and merge.
+`
 )
+
+var errBuilderNotProvided = fmt.Errorf("no prBodyBuilder provided")
+
+type pullRequestType int
+
+const (
+	pullRequestUnspecified pullRequestType = iota
+	pullRequestOnboard
+	pullRequestGenerate
+	pullRequestRelease
+	pullRequestUpdateImage
+)
+
+// String returns the string representation of a pullRequestType.
+// It returns unknown if the type is not a recognized constant.
+func (t pullRequestType) String() string {
+	names := map[pullRequestType]string{
+		pullRequestUnspecified: "unspecified",
+		pullRequestOnboard:     "onboard",
+		pullRequestGenerate:    "generate",
+		pullRequestRelease:     "release",
+		pullRequestUpdateImage: "update image",
+	}
+	if name, ok := names[t]; ok {
+		return name
+	}
+	return "unspecified"
+}
 
 var globalPreservePatterns = []string{
 	fmt.Sprintf(`^%s(/.*)?$`, regexp.QuoteMeta(config.GeneratorInputDir)), // Preserve the generator-input directory and its contents.
@@ -49,7 +79,7 @@ var globalPreservePatterns = []string{
 // GitHubClient is an abstraction over the GitHub client.
 type GitHubClient interface {
 	GetRawContent(ctx context.Context, path, ref string) ([]byte, error)
-	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error)
+	CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string, isDraft bool) (*github.PullRequestMetadata, error)
 	AddLabelsToIssue(ctx context.Context, repo *github.Repository, number int, labels []string) error
 	GetLabels(ctx context.Context, number int) ([]string, error)
 	ReplaceLabels(ctx context.Context, number int, labels []string) error
@@ -69,20 +99,38 @@ type ContainerClient interface {
 }
 
 type commitInfo struct {
-	branch            string
-	commit            bool
-	commitMessage     string
-	failedLibraries   []string
-	ghClient          GitHubClient
-	idToCommits       map[string]string
-	library           string
-	libraryVersion    string
-	prType            string
+	// branch is the base branch of the created pull request.
+	branch string
+	// commit declares whether to create a commit.
+	commit bool
+	// commitMessage is used as the message on the actual git commit.
+	commitMessage string
+	// ghClient is used to interact with the GitHub API.
+	ghClient GitHubClient
+	// prType is an enum for which type of librarian pull request we are creating.
+	prType pullRequestType
+	// pullRequestLabels is a list of labels to add to the created pull request.
 	pullRequestLabels []string
-	push              bool
-	repo              gitrepo.Repository
-	sourceRepo        gitrepo.Repository
-	state             *config.LibrarianState
+	// push declares whether to push the commits to GitHub.
+	push bool
+	// languageRepo is the git repository containing the language-specific libraries.
+	languageRepo gitrepo.Repository
+	// sourceRepo is the git repository containing the source protos.
+	sourceRepo gitrepo.Repository
+	// state is the librarian state.yaml contents.
+	state *config.LibrarianState
+	// workRoot is the directory that we stage code changes in.
+	workRoot string
+	// failedGenerations is the number of generations that failed.
+	failedGenerations int
+	// api is the api path of a library, only set this value during api onboarding.
+	api string
+	// library is the ID of a library, only set this value during api onboarding.
+	library string
+	// prBodyBuilder is a callback function for building the pull request body
+	prBodyBuilder func() (string, error)
+	// isDraft declares whether to create the pull request as a draft.
+	isDraft bool
 }
 
 type commandRunner struct {
@@ -96,8 +144,6 @@ type commandRunner struct {
 	workRoot        string
 }
 
-const defaultAPISourceBranch = "master"
-
 func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	languageRepo, err := cloneOrOpenRepo(cfg.WorkRoot, cfg.Repo, cfg.APISourceDepth, cfg.Branch, cfg.CI, cfg.GitHubToken)
 	if err != nil {
@@ -108,7 +154,9 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		sourceRepo    gitrepo.Repository
 		sourceRepoDir string
 	)
-	if cfg.CommandName == generateCmdName {
+
+	// If APISource is set, checkout the protos repository.
+	if cfg.APISource != "" {
 		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
@@ -127,21 +175,17 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 
 	image := deriveImage(cfg.Image, state)
 
-	var gitRepo *github.Repository
-	if isURL(cfg.Repo) {
-		gitRepo, err = github.ParseRemote(cfg.Repo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse repo url: %w", err)
-		}
-	} else {
-		gitRepo, err = github.FetchGitHubRepoFromRemote(languageRepo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get GitHub repo from remote: %w", err)
-		}
+	gitHubRepo, err := GetGitHubRepository(cfg, languageRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get GitHub repository: %w", err)
 	}
-	ghClient := github.NewClient(cfg.GitHubToken, gitRepo)
 
-	container, err := docker.New(cfg.WorkRoot, image, cfg.UserUID, cfg.UserGID)
+	ghClient := github.NewClient(cfg.GitHubToken, gitHubRepo)
+	container, err := docker.New(cfg.WorkRoot, image, &docker.DockerOptions{
+		UserUID:   cfg.UserUID,
+		UserGID:   cfg.UserGID,
+		HostMount: cfg.HostMount,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -225,18 +269,6 @@ func findLibraryIDByAPIPath(state *config.LibrarianState, apiPath string) string
 	return ""
 }
 
-func findLibraryByID(state *config.LibrarianState, libraryID string) *config.LibraryState {
-	if state == nil {
-		return nil
-	}
-	for _, lib := range state.Libraries {
-		if lib.ID == libraryID {
-			return lib
-		}
-	}
-	return nil
-}
-
 func formatTimestamp(t time.Time) string {
 	const yyyyMMddHHmmss = "20060102T150405Z" // Expected format by time library
 	return t.Format(yyyyMMddHHmmss)
@@ -245,7 +277,7 @@ func formatTimestamp(t time.Time) string {
 // cleanAndCopyLibrary cleans the files of the given library in repoDir and copies
 // the new files from outputDir.
 func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outputDir string) error {
-	library := findLibraryByID(state, libraryID)
+	library := state.LibraryByID(libraryID)
 	if library == nil {
 		return fmt.Errorf("library %q not found during clean and copy, despite being found in earlier steps", libraryID)
 	}
@@ -276,7 +308,7 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 // If a file is being copied to the library's SourceRoots in the dest folder but the folder does
 // not exist, the copy fails.
 func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string) error {
-	library := findLibraryByID(state, libraryID)
+	library := state.LibraryByID(libraryID)
 	if library == nil {
 		return fmt.Errorf("library %q not found", libraryID)
 	}
@@ -335,15 +367,19 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 func commitAndPush(ctx context.Context, info *commitInfo) error {
 	if !info.push && !info.commit {
 		slog.Info("Push flag and Commit flag are not specified, skipping committing")
-		return nil
+		return writePRBody(info)
 	}
 
-	repo := info.repo
-	status, err := repo.AddAll()
+	repo := info.languageRepo
+	if err := repo.AddAll(); err != nil {
+		return err
+	}
+	isClean, err := repo.IsClean()
 	if err != nil {
 		return err
 	}
-	if status.IsClean() {
+
+	if isClean {
 		slog.Info("No changes to commit, skipping commit and push.")
 		return nil
 	}
@@ -358,33 +394,66 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 		return err
 	}
 
+	if !info.push {
+		slog.Info("Push flag is not specified, skipping pull request creation")
+		return writePRBody(info)
+	}
+
 	if err := repo.Push(branch); err != nil {
 		return err
 	}
 
-	if !info.push {
-		slog.Info("Push flag is not specified, skipping pull request creation")
-		return nil
-	}
-
-	// Ensure we have a GitHub repository
-	gitHubRepo, err := github.FetchGitHubRepoFromRemote(repo)
+	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.languageRepo)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get GitHub repository: %w", err)
 	}
 
 	title := fmt.Sprintf("chore: librarian %s pull request: %s", info.prType, datetimeNow)
-	prBody, err := createPRBody(info)
+	prBody, err := info.prBodyBuilder()
 	if err != nil {
 		return fmt.Errorf("failed to create pull request body: %w", err)
 	}
 
-	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, info.branch, title, prBody)
+	pullRequestMetadata, err := info.ghClient.CreatePullRequest(ctx, gitHubRepo, branch, info.branch, title, prBody, info.isDraft)
 	if err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 
+	if info.failedGenerations != 0 {
+		if err := info.ghClient.CreateIssueComment(ctx, pullRequestMetadata.Number, failedGenerationComment); err != nil {
+			return fmt.Errorf("failed to add pull request comment: %w", err)
+		}
+	}
+
 	return addLabelsToPullRequest(ctx, info.ghClient, info.pullRequestLabels, pullRequestMetadata)
+}
+
+// writePRBody attempts to log the body of a PR that would have been created if the
+// -push flag had been specified. This logs any errors and returns them to the
+// caller.
+func writePRBody(info *commitInfo) error {
+	if info.prBodyBuilder == nil {
+		return errBuilderNotProvided
+	}
+
+	prBody, err := info.prBodyBuilder()
+	if err != nil {
+		slog.Warn("Unable to create PR body", "error", err)
+		return err
+	}
+	// Note: we can't accurately predict whether a PR would have been created,
+	// as we're not checking whether the repo is clean or not. The intention is to be
+	// as light-touch as possible.
+	fullPath := filepath.Join(info.workRoot, prBodyFile)
+	// Ensure that "cat [path-to-pr-body.txt]" gives useful output.
+	prBody = prBody + "\n"
+	err = os.WriteFile(fullPath, []byte(prBody), 0644)
+	if err != nil {
+		slog.Warn("Unable to save PR body", "error", err)
+		return err
+	}
+	slog.Info("Wrote body of pull request that might have been created", "file", fullPath)
+	return nil
 }
 
 // addLabelsToPullRequest adds a list of labels to a single pull request (specified by the id number).
@@ -404,15 +473,25 @@ func addLabelsToPullRequest(ctx context.Context, ghClient GitHubClient, pullRequ
 	return nil
 }
 
-func createPRBody(info *commitInfo) (string, error) {
-	switch info.prType {
-	case generate:
-		return formatGenerationPRBody(info.sourceRepo, info.state, info.idToCommits, info.failedLibraries)
-	case release:
-		return formatReleaseNotes(info.repo, info.state)
-	default:
-		return "", fmt.Errorf("unrecognized pull request type: %s", info.prType)
+// copyGlobalAllowlist copies files in the global file allowlist from src to dst.
+func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadOnly bool) error {
+	if cfg == nil {
+		slog.Info("librarian config is not setup, skip copying global allowlist")
+		return nil
 	}
+	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
+	for _, globalFile := range cfg.GlobalFilesAllowlist {
+		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
+			slog.Debug("skipping read-only file", "path", globalFile.Path)
+			continue
+		}
+		srcPath := filepath.Join(src, globalFile.Path)
+		dstPath := filepath.Join(dst, globalFile.Path)
+		if err := copyFile(dstPath, srcPath); err != nil {
+			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)
+		}
+	}
+	return nil
 }
 
 func copyFile(dst, src string) (err error) {
@@ -555,7 +634,7 @@ func findSubDirRelPaths(dir, subDir string) ([]string, error) {
 		return nil, fmt.Errorf("subDir is not nested within the dir: %s, %s", subDir, dir)
 	}
 
-	paths := []string{}
+	var paths []string
 	err = filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

@@ -32,6 +32,15 @@ library;
 
 part '{{Codec.PartFileReference}}';
 {{/Codec.PartFileReference}}
+
+{{#Codec.HasServices}}
+const _apiKeys = [
+{{#Codec.ApiKeyEnvironmentVariables}}
+"{{{.}}}",
+{{/Codec.ApiKeyEnvironmentVariables}}
+];
+{{/Codec.HasServices}}
+
 {{#Services}}
 {{> service}}
 {{/Services}}

@@ -16,42 +16,39 @@ package discovery
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 )
 
-func addServiceRecursive(model *api.API, resource *resource) error {
+func addServiceRecursive(model *api.API, doc *document, resource *resource) error {
 	if len(resource.Methods) != 0 {
-		if err := addService(model, resource); err != nil {
+		if err := addService(model, doc, resource); err != nil {
 			return err
 		}
 	}
 	for _, child := range resource.Resources {
-		if err := addServiceRecursive(model, child); err != nil {
+		if err := addServiceRecursive(model, doc, child); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func addService(model *api.API, resource *resource) error {
+func addService(model *api.API, doc *document, resource *resource) error {
 	id := fmt.Sprintf(".%s.%s", model.PackageName, resource.Name)
-	methods, err := makeServiceMethods(model, id, resource)
-	if err != nil {
+	service := &api.Service{
+		ID:            id,
+		Name:          resource.Name,
+		Package:       model.PackageName,
+		Documentation: fmt.Sprintf("Service for the `%s` resource.", resource.Name),
+		DefaultHost:   strings.TrimSuffix(strings.TrimPrefix(doc.RootURL, "https://"), "/"),
+		Deprecated:    resource.Deprecated,
+	}
+	if err := makeServiceMethods(model, service, doc, resource); err != nil {
 		return err
 	}
-
-	var service *api.Service
-	if _, ok := model.State.ServiceByID[id]; !ok {
-		service = &api.Service{
-			ID:            id,
-			Name:          resource.Name,
-			Package:       model.PackageName,
-			Documentation: fmt.Sprintf("Service for the `%s` resource.", resource.Name),
-			Methods:       methods,
-		}
-		model.Services = append(model.Services, service)
-		model.State.ServiceByID[id] = service
-	}
+	model.Services = append(model.Services, service)
+	model.State.ServiceByID[id] = service
 	return nil
 }
