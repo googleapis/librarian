@@ -241,7 +241,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 				for _, library := range strings.Split(libraries, ",") {
 					// Bulk change doesn't have a version, put an empty string so that
 					// the version is not overwritten if exists.
-					putVersionAndBody(idToVersionAndBody, library, title, "")
+					updateVersionAndBody(idToVersionAndBody, library, title, "")
 				}
 			}
 
@@ -253,7 +253,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 			slog.Info("parsed pull request body", "library", summaryMatches[1], "version", summaryMatches[2])
 			library := strings.TrimSpace(summaryMatches[1])
 			version := strings.TrimSpace(summaryMatches[2])
-			putVersionAndBody(idToVersionAndBody, library, content, version)
+			updateVersionAndBody(idToVersionAndBody, library, content, version)
 		} else {
 			slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 		}
@@ -291,8 +291,8 @@ func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github
 	return nil
 }
 
-// putVersionAndBody is a helper function to update a map tracking release information for each library.
-func putVersionAndBody(idToVersionAndBody map[string]*versionAndBody, library, title, version string) {
+// updateVersionAndBody is a helper function to update a map tracking release information for each library.
+func updateVersionAndBody(idToVersionAndBody map[string]*versionAndBody, library, title, version string) {
 	vab, ok := idToVersionAndBody[library]
 	if !ok {
 		idToVersionAndBody[library] = &versionAndBody{
