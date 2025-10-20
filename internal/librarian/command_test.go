@@ -32,56 +32,6 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
-func TestFindLibraryByID(t *testing.T) {
-	lib1 := &config.LibraryState{ID: "lib1"}
-	lib2 := &config.LibraryState{ID: "lib2"}
-	stateWithLibs := &config.LibrarianState{
-		Libraries: []*config.LibraryState{lib1, lib2},
-	}
-	stateNoLibs := &config.LibrarianState{
-		Libraries: []*config.LibraryState{},
-	}
-
-	for _, test := range []struct {
-		name      string
-		state     *config.LibrarianState
-		libraryID string
-		want      *config.LibraryState
-	}{
-		{
-			name:      "found first library",
-			state:     stateWithLibs,
-			libraryID: "lib1",
-			want:      lib1,
-		},
-		{
-			name:      "found second library",
-			state:     stateWithLibs,
-			libraryID: "lib2",
-			want:      lib2,
-		},
-		{
-			name:      "not found",
-			state:     stateWithLibs,
-			libraryID: "lib3",
-			want:      nil,
-		},
-		{
-			name:      "empty libraries slice",
-			state:     stateNoLibs,
-			libraryID: "lib1",
-			want:      nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := findLibraryByID(test.state, test.libraryID)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findLibraryByID() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
 		name          string

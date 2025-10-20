@@ -226,7 +226,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 	}
 
 	// At this point, we should have a library in the state.
-	libraryState := findLibraryByID(r.state, libraryID)
+	libraryState := r.state.LibraryByID(libraryID)
 	if libraryState == nil {
 		return nil, fmt.Errorf("library %q not configured yet, generation stopped", libraryID)
 	}
@@ -261,7 +261,7 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 }
 
 func (r *generateRunner) needsConfigure() bool {
-	return r.api != "" && r.library != "" && findLibraryByID(r.state, r.library) == nil
+	return r.api != "" && r.library != "" && r.state.LibraryByID(r.library) == nil
 }
 
 func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error {
@@ -375,7 +375,11 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 
 // getExistingSrc returns source roots as-is of a given library ID, if the source roots exist in the language repo.
 func (r *generateRunner) getExistingSrc(libraryID string) []string {
-	library := findLibraryByID(r.state, libraryID)
+	library := r.state.LibraryByID(libraryID)
+	if library == nil {
+		return nil
+	}
+
 	var existingSrc []string
 	for _, src := range library.SourceRoots {
 		relPath := filepath.Join(r.repo.GetDir(), src)

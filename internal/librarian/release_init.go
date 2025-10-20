@@ -133,7 +133,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
 	if r.library != "" {
-		library := findLibraryByID(r.state, r.library)
+		library := r.state.LibraryByID(r.library)
 		if library == nil {
 			return fmt.Errorf("unable to find library for release: %s", r.library)
 		}

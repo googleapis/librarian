@@ -662,6 +662,20 @@ Language Image: %s`,
 			wantErr:       true,
 			wantErrPhrase: errPiperNotFound.Error(),
 		},
+		{
+			name: "library_not_found_in_state",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "one-library",
+					},
+				},
+			},
+			library:       "another-library",
+			wantErr:       true,
+			wantErrPhrase: "library another-library not found",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			req := &onboardPRRequest{

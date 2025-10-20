@@ -1059,6 +1059,81 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 	}
 }
 
+func TestGetExistingSrc(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		libraryID string
+		paths     []string
+		want      []string
+	}{
+		{
+			name:      "all_source_paths_existed",
+			libraryID: "some-library",
+			paths: []string{
+				"a/path",
+				"another/path",
+			},
+			want: []string{
+				"a/path",
+				"another/path",
+			},
+		},
+		{
+			name:      "one_source_paths_existed",
+			libraryID: "some-library",
+			paths: []string{
+				"a/path",
+			},
+			want: []string{
+				"a/path",
+			},
+		},
+		{
+			name:      "no_source_paths_existed",
+			libraryID: "some-library",
+			want:      nil,
+		},
+		{
+			name:      "no_library_existed",
+			libraryID: "another-library",
+			want:      nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo := newTestGitRepo(t)
+			state := &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			}
+			for _, path := range test.paths {
+				relPath := filepath.Join(repo.GetDir(), path)
+				if err := os.MkdirAll(relPath, 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			r := &generateRunner{
+				repo:  repo,
+				state: state,
+			}
+
+			got := r.getExistingSrc(test.libraryID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("getExistingSrc() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
 func TestUpdateLastGeneratedCommitState(t *testing.T) {
 	t.Parallel()
 	sourceRepo := newTestGitRepo(t)

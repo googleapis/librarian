@@ -66,7 +66,7 @@ func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) 
 	return m.rawContent, m.rawErr
 }
 
-func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error) {
+func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string, isDraft bool) (*github.PullRequestMetadata, error) {
 	m.createPullRequestCalls++
 	if m.createPullRequestErr != nil {
 		return nil, m.createPullRequestErr

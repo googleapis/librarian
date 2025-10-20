@@ -28,9 +28,9 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/external"
 )
 
-// Publish finds all the crates that should be published, runs
+// Publish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
-func Publish(config *config.Release, dryRun bool) error {
+func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 	if err := PreFlight(config); err != nil {
 		return err
 	}
@@ -74,13 +74,15 @@ func Publish(config *config.Release, dryRun bool) error {
 		return fmt.Errorf("mismatched workspace plan vs. changed crates, probably missing some version bumps (-plan, +changed):\n%s", diff)
 	}
 
-	for name, manifest := range manifests {
-		if isNewFile(config, lastTag, manifest) {
-			continue
-		}
-		slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)
-		if err := external.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
-			return err
+	if !skipSemverChecks {
+		for name, manifest := range manifests {
+			if isNewFile(config, lastTag, manifest) {
+				continue
+			}
+			slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)
+			if err := external.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
+				return err
+			}
 		}
 	}
 	slog.Info("publishing crates with: cargo workspaces publish --skip-published ...")

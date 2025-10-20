@@ -175,7 +175,7 @@ func TestPullRequestSystem(t *testing.T) {
 
 	// Create a pull request
 	client := github.NewClient(testToken, repo)
-	createdPullRequest, err := client.CreatePullRequest(t.Context(), repo, branchName, "main", "test: integration test", "do not merge")
+	createdPullRequest, err := client.CreatePullRequest(t.Context(), repo, branchName, "main", "test: integration test", "do not merge", true)
 	if err != nil {
 		t.Fatalf("unexpected error in CreatePullRequest() %s", err)
 	}
@@ -258,6 +258,10 @@ func TestPullRequestSystem(t *testing.T) {
 				// Expect that we found a comment
 				if pullRequest.GetComments() == 0 {
 					t.Fatalf("Expected to have created a comment on the pull request.")
+				}
+
+				if !pullRequest.GetDraft() {
+					t.Fatalf("Expected created pull request to have been a draft.")
 				}
 				break
 			}

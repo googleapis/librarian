@@ -321,7 +321,7 @@ func TestCreatePullRequest(t *testing.T) {
 			client := newClientWithHTTP("fake-token", repo, server.Client())
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
-			metadata, err := client.CreatePullRequest(t.Context(), repo, test.remoteBranch, test.remoteBase, test.title, test.body)
+			metadata, err := client.CreatePullRequest(t.Context(), repo, test.remoteBranch, test.remoteBase, test.title, test.body, false)
 
 			if test.wantErr {
 				if err == nil {
