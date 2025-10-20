@@ -388,19 +388,20 @@ func TestRunConfigureCommand(t *testing.T) {
 func TestGenerateScenarios(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name               string
-		api                string
-		library            string
-		state              *config.LibrarianState
-		librarianConfig    *config.LibrarianConfig
-		container          *mockContainerClient
-		ghClient           GitHubClient
-		build              bool
-		wantErr            bool
-		wantErrMsg         string
-		wantGenerateCalls  int
-		wantBuildCalls     int
-		wantConfigureCalls int
+		name                     string
+		api                      string
+		library                  string
+		state                    *config.LibrarianState
+		librarianConfig          *config.LibrarianConfig
+		container                *mockContainerClient
+		ghClient                 GitHubClient
+		build                    bool
+		forceShouldGenerateError bool
+		wantErr                  bool
+		wantErrMsg               string
+		wantGenerateCalls        int
+		wantBuildCalls           int
+		wantConfigureCalls       int
 	}{
 		{
 			name:    "generate_single_library_including_initial_configuration",
@@ -875,6 +876,28 @@ func TestGenerateScenarios(t *testing.T) {
 			wantBuildCalls:     2,
 			wantConfigureCalls: 0,
 		},
+		// We only have one library to generate, and we force shouldGenerate
+		// to fail by making the source repo's HeadHash function fail.
+		// As this ends up being all the libraries, the overall result is an error.
+		// (Forcing shouldGenerate to fail selectively would be very complicated.)
+		{
+			name: "shouldGenerate error",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+						// We need the LastGeneratedCommit to force shouldGenerate
+						// to ask the source repo for the head hash.
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			forceShouldGenerateError: true,
+			wantErr:                  true,
+			wantErrMsg:               "all 1 libraries failed to generate",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := newTestGitRepoWithState(t, test.state)
@@ -909,6 +932,12 @@ func TestGenerateScenarios(t *testing.T) {
 			message := "feat: add an api\n\nPiperOrigin-RevId: 123456"
 			if err := r.sourceRepo.Commit(message); err != nil {
 				t.Fatal(err)
+			}
+
+			if test.forceShouldGenerateError {
+				r.sourceRepo = &MockRepository{
+					HeadHashError: errors.New("fail"),
+				}
 			}
 
 			// Create a symlink in the output directory to trigger an error.
