@@ -61,7 +61,7 @@ type libraryRelease struct {
 	Version string
 }
 
-type versionAnBody struct {
+type versionAndBody struct {
 	version string
 	body    []string
 }
@@ -223,7 +223,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 // parsePullRequestBody parses a string containing release notes and returns a slice of ParsedPullRequestBody.
 func parsePullRequestBody(body string) []libraryRelease {
 	slog.Info("parsing pull request body")
-	idToVersionAndBody := make(map[string]*versionAnBody)
+	idToVersionAndBody := make(map[string]*versionAndBody)
 	matches := detailsRegex.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		summary := match[1]
@@ -292,10 +292,10 @@ func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github
 }
 
 // putVersionAndBody is a helper function to update a map tracking release information for each library.
-func putVersionAndBody(idToVersionAndBody map[string]*versionAnBody, library, title, version string) {
+func putVersionAndBody(idToVersionAndBody map[string]*versionAndBody, library, title, version string) {
 	vab, ok := idToVersionAndBody[library]
 	if !ok {
-		idToVersionAndBody[library] = &versionAnBody{
+		idToVersionAndBody[library] = &versionAndBody{
 			version: version,
 			body:    []string{title},
 		}
@@ -303,9 +303,7 @@ func putVersionAndBody(idToVersionAndBody map[string]*versionAnBody, library, ti
 		if version == "" {
 			version = vab.version
 		}
-		idToVersionAndBody[library] = &versionAnBody{
-			version: version,
-			body:    append(idToVersionAndBody[library].body, title),
-		}
+		vab.version = version
+		vab.body = append(vab.body, title)
 	}
 }
