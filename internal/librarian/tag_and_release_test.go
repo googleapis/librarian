@@ -263,9 +263,9 @@ Language Image: gcr.io/test/image:latest
 
 </details>
 
-<details><summary>another-library-name: 2.3.4</summary>
+<details><summary>library-two: 2.3.4</summary>
 
-[2.3.4](https://github.com/googleapis/repo/compare/another-library-name-v2.3.3...another-library-name-v2.3.4) (2025-08-15)
+[2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
 
 ### Bug Fixes
 
@@ -284,8 +284,8 @@ Language Image: gcr.io/test/image:latest
 				},
 				{
 					Version: "2.3.4",
-					Library: "another-library-name",
-					Body: `[2.3.4](https://github.com/googleapis/repo/compare/another-library-name-v2.3.3...another-library-name-v2.3.4) (2025-08-15)
+					Library: "library-two",
+					Body: `[2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
 
 ### Bug Fixes
 
@@ -347,6 +347,54 @@ some content
 					Version: "v1.2.3",
 					Library: "google-cloud-storage",
 					Body:    "[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)",
+				},
+			},
+		},
+		{
+			name: "bulk_changes_appears_in_github_release",
+			body: `
+<details><summary>google-cloud-storage: v1.2.3</summary>
+
+[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+
+</details>
+
+
+<details><summary>Bulk Changes</summary>
+
+* feat: this is a bulk change
+Libraries: a,b,google-cloud-storage
+
+* fix: this is another bulk change
+Libraries: a,b,c
+
+</details>`,
+			want: []libraryRelease{
+				{
+					Version: "",
+					Library: "a",
+					Body: `feat: this is a bulk change
+
+fix: this is another bulk change`,
+				},
+				{
+					Version: "",
+					Library: "b",
+					Body: `feat: this is a bulk change
+
+fix: this is another bulk change`,
+				},
+				{
+					Version: "",
+					Library: "c",
+					Body:    "fix: this is another bulk change",
+				},
+				{
+					Version: "v1.2.3",
+					Library: "google-cloud-storage",
+					Body: `[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+
+feat: this is a bulk change`,
 				},
 			},
 		},
