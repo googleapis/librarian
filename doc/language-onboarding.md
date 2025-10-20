@@ -40,6 +40,7 @@ Repository maintainers are expected to maintain this file. Librarian will not mo
 For a detailed breakdown of all the fields in the `config.yaml` file, please refer to [config-schema.md].
 
 ### Language repository settings
+
 To correctly parse the commit message of a merge commit, only allow squash merging
 and set the default commit message to **Pull request title and description**.
 ![Pull request settings](assets/setting-pull-requests.webp)
@@ -342,8 +343,3 @@ go run ./cmd/librarian/ generate -repo=<your repository> -push
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ release init -repo=<your repository> -push
 ```
-## Language repository settings
-
-To correctly parse the commit message of a merge commit, only allow squash merging
-and set the default commit message to **Pull request title and description**.
-![Pull request settings](assets/setting-pull-requests.webp)
