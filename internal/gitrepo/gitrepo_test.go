@@ -1046,7 +1046,6 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 // otherwise tested in TestGetHashForPathOrEmpty, where we can't
 // get the commit for the hash.
 func TestGetHashForPathOrEmptyBadCommitHash(t *testing.T) {
-	t.Helper()
 	repo, dir := initTestRepo(t)
 	localRepository := LocalRepository{
 		Dir:  dir,

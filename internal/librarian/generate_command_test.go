@@ -1365,6 +1365,28 @@ func TestShouldGenerate(t *testing.T) {
 			libraryIDToTest: "TestLibrary",
 			want:            true,
 		},
+		{
+			name: "second call to GetHashForPathOrEmpty fails",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue: "HeadCommit",
+				GetHashForPathOrEmptyValue: map[string]string{
+					"LastGeneratedCommit:google/cloud/test": "hash",
+					// Entry which deliberately returns an error
+					"HeadCommit:google/cloud/test": "error",
+				},
+			},
+			libraryIDToTest: "TestLibrary",
+			wantErr:         true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &generateRunner{

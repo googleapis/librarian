@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -349,6 +350,8 @@ type MockRepository struct {
 	GetHashForPathOrEmptyError             error
 	// GetHashForPathOrEmptyValue is a map where each key is of the form "commitHash:path",
 	// and the value is the hash to return. Every requested entry must be populated.
+	// If the value is "error", an error is returned instead. (This is useful when some
+	// calls must be successful, and others must fail.)
 	GetHashForPathOrEmptyValue map[string]string
 }
 
@@ -523,9 +526,12 @@ func (m *MockRepository) GetHashForPathOrEmpty(commitHash, path string) (string,
 	if m.GetHashForPathOrEmptyValue != nil {
 		key := commitHash + ":" + path
 		if hash, ok := m.GetHashForPathOrEmptyValue[key]; ok {
+			if hash == "error" {
+				return "", errors.New("deliberate error from GetHashForPathOrEmpty")
+			}
 			return hash, nil
 		}
 
 	}
-	return "", errors.New("should not reach here")
+	return "", fmt.Errorf("should not reach here: GetHashForPathOrEmpty called with unhandled input (commitHash: %q, path: %q)", commitHash, path)
 }

@@ -458,6 +458,10 @@ func (r *generateRunner) shouldGenerate(library *config.LibraryState) (bool, err
 			return false, err
 		}
 		newHash, err := r.sourceRepo.GetHashForPathOrEmpty(headHash, api.Path)
+		if err != nil {
+			slog.Error("failed to get hash for API path", "library", library.ID, "path", api.Path, "commit", library.LastGeneratedCommit, "err", err)
+			return false, err
+		}
 		if oldHash != newHash {
 			return true, nil
 		}
