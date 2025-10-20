@@ -104,6 +104,9 @@ Flags:
 	-build
 	  	If true, Librarian will build each generated library by invoking the
 	  	language-specific container.
+	-generate-unchanged
+	  	If true, librarian generates libraries even if none of their associated APIs
+	  	have changed. This does not override generation being blocked by configuration.
 	-host-mount string
 	  	For use when librarian is running in a container. A mapping of a
 	  	directory from the host to the container, in the format

@@ -55,6 +55,7 @@ type Repository interface {
 	CleanUntracked(paths []string) error
 	pushRefSpec(refSpec string) error
 	Checkout(commitHash string) error
+	GetHashForPathOrEmpty(commitHash, path string) (string, error)
 }
 
 const RootPath = "."
@@ -662,4 +663,20 @@ func (r *LocalRepository) Checkout(commitSha string) error {
 	return worktree.Checkout(&git.CheckoutOptions{
 		Hash: plumbing.NewHash(commitSha),
 	})
+}
+
+// GetHashForPathOrEmpty returns a tree hash for the specified path,
+// at the given commit in this repository. If the path does not exist
+// at the commit, an empty string is returned rather than an error,
+// as the purpose of this function is to allow callers to determine changes
+// in the tree. (A path going from missing to anything else, or vice versa,
+// indicates a change. A path being missing at two different commits is not a change.)
+func (r *LocalRepository) GetHashForPathOrEmpty(commitHash, path string) (string, error) {
+	// This public function just delegates to the internal function that uses a Commit
+	// object instead of the hash.
+	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
+	if err != nil {
+		return "", err
+	}
+	return getHashForPathOrEmpty(commit, path)
 }

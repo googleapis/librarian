@@ -783,7 +783,7 @@ func TestGenerateScenarios(t *testing.T) {
 			ghClient:   &mockGitHubClient{},
 			build:      true,
 			wantErr:    true,
-			wantErrMsg: "all 1 libraries failed to generate (blocked: 1)",
+			wantErrMsg: "all 1 libraries failed to generate (skipped: 1)",
 		},
 		{
 			name: "generate all, all fail should report error",
@@ -1156,5 +1156,231 @@ func TestUpdateLastGeneratedCommitState(t *testing.T) {
 	}
 	if r.state.Libraries[0].LastGeneratedCommit != hash {
 		t.Errorf("updateState() got = %v, want %v", r.state.Libraries[0].LastGeneratedCommit, hash)
+	}
+}
+
+func TestShouldGenerate(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name              string
+		config            *config.LibrarianConfig
+		state             *config.LibrarianState
+		generateUnchanged bool
+		sourceRepo        gitrepo.Repository
+		libraryIDToTest   string
+		want              bool
+		wantErr           bool
+	}{
+		// Tests that don't get as far as checking for hashes.
+		// (The mock repo will fail if we do get that far.)
+		{
+			name: "generation blocked",
+			config: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:       "TestLibrary",
+						GenerateBlocked: true,
+					},
+				},
+			},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedHash",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Shouldn't get as far as checking head"),
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            false,
+		},
+		{
+			name: "library has no APIs",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "TestLibrary",
+						// This may be present even if it's meaningless.
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Shouldn't get as far as checking head"),
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            false,
+		},
+		{
+			name: "generateUnchanged specified",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			generateUnchanged: true,
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Shouldn't get as far as checking head"),
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            true,
+		},
+		{
+			name: "no LastGeneratedCommit",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "TestLibrary",
+						APIs: []*config.API{{Path: "google/cloud/test"}},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Shouldn't get as far as checking head"),
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            true,
+		},
+		{
+			name: "error from HeadHash",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Can't get head commit"),
+			},
+			libraryIDToTest: "TestLibrary",
+			wantErr:         true,
+		},
+		// Tests that do perform hash checking.
+		{
+			name: "error from GetHashForPathOrEmpty",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue:              "HeadCommit",
+				GetHashForPathOrEmptyError: errors.New("Can't get hash for path"),
+			},
+			libraryIDToTest: "TestLibrary",
+			wantErr:         true,
+		},
+		{
+			name: "config present but generation not blocked",
+			config: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:       "OtherLibrary",
+						GenerateBlocked: true,
+					},
+					{
+						LibraryID: "TestLibrary",
+						// Just to have some reason to make it configured...
+						ReleaseBlocked: true,
+					}},
+			},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue: "HeadCommit",
+				GetHashForPathOrEmptyValue: map[string]string{
+					"LastGeneratedCommit:google/cloud/test": "hash1",
+					"HeadCommit:google/cloud/test":          "hash2",
+				},
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            true,
+		},
+		{
+			name: "API hasn't changed",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue: "HeadCommit",
+				GetHashForPathOrEmptyValue: map[string]string{
+					"LastGeneratedCommit:google/cloud/test": "hash",
+					"HeadCommit:google/cloud/test":          "hash",
+				},
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            false,
+		},
+		{
+			name: "one API hasn't changed, one has",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "TestLibrary",
+						APIs: []*config.API{
+							{Path: "google/cloud/test1"},
+							{Path: "google/cloud/test2"},
+						},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue: "HeadCommit",
+				GetHashForPathOrEmptyValue: map[string]string{
+					"LastGeneratedCommit:google/cloud/test1": "hash1",
+					"HeadCommit:google/cloud/test1":          "hash1",
+					"LastGeneratedCommit:google/cloud/test2": "hash2a",
+					"HeadCommit:google/cloud/test2":          "hash2b",
+				},
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			r := &generateRunner{
+				generateUnchanged: test.generateUnchanged,
+				librarianConfig:   test.config,
+				state:             test.state,
+				sourceRepo:        test.sourceRepo,
+			}
+			library := test.state.LibraryByID(test.libraryIDToTest)
+			got, err := r.shouldGenerate(library)
+			if test.wantErr != (err != nil) {
+				t.Fatalf("shouldGenerate() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if got != test.want {
+				t.Errorf("shouldGenerate() got = %v, want %v", got, test.want)
+			}
+		})
 	}
 }

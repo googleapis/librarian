@@ -45,6 +45,12 @@ func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
 a pull request. This flag is ignored if push is set to true.`)
 }
 
+func addFlagGenerateUnchanged(fs *flag.FlagSet, cfg *config.Config) {
+	fs.BoolVar(&cfg.GenerateUnchanged, "generate-unchanged", false,
+		`If true, librarian generates libraries even if none of their associated APIs
+have changed. This does not override generation being blocked by configuration.`)
+}
+
 func addFlagGitHubAPIEndpoint(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.GitHubAPIEndpoint, "github-api-endpoint", "",
 		`The GitHub API endpoint to use for all GitHub API operations.

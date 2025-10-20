@@ -346,6 +346,10 @@ type MockRepository struct {
 	HeadHashError                          error
 	CheckoutCalls                          int
 	CheckoutError                          error
+	GetHashForPathOrEmptyError             error
+	// GetHashForPathOrEmptyValue is a map where each key is of the form "commitHash:path",
+	// and the value is the hash to return. Every requested entry must be populated.
+	GetHashForPathOrEmptyValue map[string]string
 }
 
 func (m *MockRepository) HeadHash() (string, error) {
@@ -510,4 +514,18 @@ type mockImagesClient struct {
 func (m *mockImagesClient) FindLatest(ctx context.Context, imageName string) (string, error) {
 	m.findLatestCalls++
 	return m.latestImage, m.err
+}
+
+func (m *MockRepository) GetHashForPathOrEmpty(commitHash, path string) (string, error) {
+	if m.GetHashForPathOrEmptyError != nil {
+		return "", m.GetHashForPathOrEmptyError
+	}
+	if m.GetHashForPathOrEmptyValue != nil {
+		key := commitHash + ":" + path
+		if hash, ok := m.GetHashForPathOrEmptyValue[key]; ok {
+			return hash, nil
+		}
+
+	}
+	return "", errors.New("should not reach here")
 }
