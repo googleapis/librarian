@@ -310,9 +310,3 @@ global file edits. The libraries that are being released will be marked by the `
 
 [config-schema.md]:config-schema.md
 [state-schema.md]: state-schema.md
-
-## Language repository settings
-
-To correctly parse the commit message of a merge commit, only allow squash merging
-and set the default commit message to **Pull request title and description**.
-![Pull request settings](assets/setting-pull-requests.webp)

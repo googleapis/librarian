@@ -7,6 +7,9 @@ This guide should be followed when onboarding new repositories/libraries.
 2) You should only start with 1 library to validate the flow (follow instructions below)
 3) If your repository contains multiple libraries, start ramping up slowly until all libraries are in your state.yaml file and have migrated to librarian.
 4) To complete onboarding you should run the librarian test-container generate (WIP) command to validate that all libraries are getting generated correctly.
+5) To correctly parse the commit message of a merge commit, only allow squash merging
+and set the default commit message to **Pull request title and description**.
+![Pull request settings](assets/setting-pull-requests.webp)
 
 ## Library Setup:
 1) Ensure all OwlBot PRs for that library have been merged and then release the library using a release-please PR
