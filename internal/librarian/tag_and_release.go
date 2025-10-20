@@ -291,6 +291,7 @@ func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github
 	return nil
 }
 
+// putVersionAndBody is a helper function to update a map tracking release information for each library.
 func putVersionAndBody(idToVersionAndBody map[string]*versionAnBody, library, title, version string) {
 	vab, ok := idToVersionAndBody[library]
 	if !ok {
