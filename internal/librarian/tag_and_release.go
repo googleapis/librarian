@@ -41,12 +41,24 @@ const (
 
 var (
 	detailsRegex = regexp.MustCompile(`(?s)<details><summary>(.*?)</summary>(.*?)</details>`)
+	libraryRegex = regexp.MustCompile(`Libraries:(.*?)`)
 	summaryRegex = regexp.MustCompile(`(.*?): (v?\d+\.\d+\.\d+)`)
+	titleRegex   = regexp.MustCompile(`(feat|fix|perf|revert|docs): (.*?)`)
 )
 
 type tagAndReleaseRunner struct {
 	ghClient    GitHubClient
 	pullRequest string
+}
+
+// libraryRelease holds the parsed information from a pull request body.
+type libraryRelease struct {
+	// Body contains the release notes.
+	Body string
+	// Library is the library id of the library being released
+	Library string
+	// Version is the version that is being released
+	Version string
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
@@ -203,41 +215,48 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 	return r.replacePendingLabel(ctx, p)
 }
 
-// libraryRelease holds the parsed information from a pull request body.
-type libraryRelease struct {
-	// Body contains the release notes.
-	Body string
-	// Library is the library id of the library being released
-	Library string
-	// Version is the version that is being released
-	Version string
-}
-
 // parsePullRequestBody parses a string containing release notes and returns a slice of ParsedPullRequestBody.
 func parsePullRequestBody(body string) []libraryRelease {
 	slog.Info("parsing pull request body")
-	var parsedBodies []libraryRelease
+	idToBody := make(map[string][]string)
+	idToVersion := make(map[string]string)
 	matches := detailsRegex.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		summary := match[1]
+		content := strings.TrimSpace(match[2])
 		if summary == "Bulk Changes" {
+			titleMatches := titleRegex.FindStringSubmatch(content)
+			libraryMatches := libraryRegex.FindStringSubmatch(content)
+			if len(titleMatches) != 1 || len(libraryMatches) != 1 {
+				slog.Warn("bulk change does not associated with a library id", "content", content)
+				continue
+			}
+			for _, libraryID := range strings.Split(libraryMatches[1], ",") {
+				idToBody[libraryID] = append(idToBody[libraryID], strings.TrimSpace(titleMatches[1]))
+			}
+
 			continue
 		}
-		content := strings.TrimSpace(match[2])
 
 		summaryMatches := summaryRegex.FindStringSubmatch(summary)
 		if len(summaryMatches) == 3 {
 			slog.Info("parsed pull request body", "library", summaryMatches[1], "version", summaryMatches[2])
 			library := strings.TrimSpace(summaryMatches[1])
 			version := strings.TrimSpace(summaryMatches[2])
-			parsedBodies = append(parsedBodies, libraryRelease{
-				Version: version,
-				Library: library,
-				Body:    content,
-			})
+			idToVersion[library] = version
+			idToBody[library] = append(idToBody[library], content)
 		} else {
 			slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
 		}
+	}
+
+	var parsedBodies []libraryRelease
+	for libraryID, contents := range idToBody {
+		parsedBodies = append(parsedBodies, libraryRelease{
+			Body:    strings.Join(contents, "\n"),
+			Library: libraryID,
+			Version: idToVersion[libraryID],
+		})
 	}
 
 	return parsedBodies

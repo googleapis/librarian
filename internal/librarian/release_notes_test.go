@@ -551,8 +551,8 @@ func TestLanguageRepoChangedFiles(t *testing.T) {
 				IsCleanValue:  true,
 				HeadHashValue: "1234",
 				ChangedFilesInCommitValueByHash: map[string][]string{
-					"abcd": []string{"a/b/c", "d/e/f"},
-					"1234": []string{"g/h/i", "j/k/l"},
+					"abcd": {"a/b/c", "d/e/f"},
+					"1234": {"g/h/i", "j/k/l"},
 				},
 			},
 			want: []string{"g/h/i", "j/k/l"},
