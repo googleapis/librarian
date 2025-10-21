@@ -357,6 +357,14 @@ some content
 
 [v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
 
+### Features
+
+* add SaveToGcsFindingsOutput ([1234567](https://github.com/googleapis/google-cloud-go/commit/1234567))
+
+### Documentation
+
+* minor doc revision ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))
+
 </details>
 
 
@@ -393,6 +401,14 @@ fix: this is another bulk change`,
 					Version: "v1.2.3",
 					Library: "google-cloud-storage",
 					Body: `[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+
+### Features
+
+* add SaveToGcsFindingsOutput ([1234567](https://github.com/googleapis/google-cloud-go/commit/1234567))
+
+### Documentation
+
+* minor doc revision ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))
 
 feat: this is a bulk change`,
 				},
