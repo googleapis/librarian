@@ -262,7 +262,7 @@ rolled back in anything like a "clean" way.
 ### Impact of automated releases
 
 When automated releases are enabled, they will be initiated on a regular
-cadence, in release PRs that contain other libraries needing releasing from
+[cadence](https://goto.google.com/g3doc-librarian-automation), in release PRs that contain other libraries needing releasing from
 the same repository. These pull requests will be approved and merged by the
 Cloud SDK Platform team.
 
