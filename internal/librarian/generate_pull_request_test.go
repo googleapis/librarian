@@ -602,12 +602,10 @@ func TestFormatOnboardPRBody(t *testing.T) {
 			library: "one-library",
 			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
 
-BEGIN_NESTED_COMMIT
 feat: onboard a new library
 
 PiperOrigin-RevId: 98765
 Library-IDs: one-library
-END_NESTED_COMMIT
 
 END_COMMIT_OVERRIDE
 
