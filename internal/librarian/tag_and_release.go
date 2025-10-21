@@ -71,7 +71,7 @@ type libraryRelease struct {
 	Version string
 }
 
-type versionAndBody struct {
+type releaseSection struct {
 	body    map[string][]string
 	title   string
 	version string
@@ -234,7 +234,7 @@ func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.
 // parsePullRequestBody parses a string containing release notes and returns a slice of ParsedPullRequestBody.
 func parsePullRequestBody(body string) []libraryRelease {
 	slog.Info("parsing pull request body")
-	idToVersionAndBody := make(map[string]*versionAndBody)
+	idToSection := make(map[string]*releaseSection)
 	matches := detailsRegex.FindAllStringSubmatch(body, -1)
 	for _, match := range matches {
 		summary := match[1]
@@ -258,7 +258,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 				for _, library := range strings.Split(libraries, ",") {
 					// Bulk change doesn't have title and version, put an empty string so that
 					// title and version are not overwritten, if exists.
-					updateVersionAndBody(idToVersionAndBody, library, commitType, "", message, "")
+					updateVersionAndBody(idToSection, library, commitType, "", message, "")
 				}
 			}
 
@@ -279,7 +279,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 		title := contentMatches[0]
 		if len(typeMatches) == 0 {
 			// No commit message in a library.
-			updateVersionAndBody(idToVersionAndBody, library, "", title, "", version)
+			updateVersionAndBody(idToSection, library, "", title, "", version)
 		}
 		for i, typeMatch := range typeMatches {
 			commitType := typeMatch[1]
@@ -288,7 +288,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 			for _, message := range messages {
 				message = strings.TrimSpace(message)
 				if message != "" {
-					updateVersionAndBody(idToVersionAndBody, library, commitType, title, message, version)
+					updateVersionAndBody(idToSection, library, commitType, title, message, version)
 				}
 			}
 		}
@@ -296,7 +296,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 	}
 
 	var parsedBodies []libraryRelease
-	for libraryID, vab := range idToVersionAndBody {
+	for libraryID, vab := range idToSection {
 		parsedBodies = append(parsedBodies, libraryRelease{
 			Body:    updateReleaseBody(vab.body, vab.title),
 			Library: libraryID,
@@ -328,10 +328,10 @@ func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github
 }
 
 // updateVersionAndBody is a helper function to update a map tracking release information for each library.
-func updateVersionAndBody(idToVersionAndBody map[string]*versionAndBody, library, commitType, title, message, version string) {
+func updateVersionAndBody(idToVersionAndBody map[string]*releaseSection, library, commitType, title, message, version string) {
 	vab, ok := idToVersionAndBody[library]
 	if !ok {
-		idToVersionAndBody[library] = &versionAndBody{
+		idToVersionAndBody[library] = &releaseSection{
 			body: map[string][]string{
 				commitType: {message},
 			},
