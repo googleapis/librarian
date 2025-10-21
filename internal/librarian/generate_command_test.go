@@ -388,19 +388,20 @@ func TestRunConfigureCommand(t *testing.T) {
 func TestGenerateScenarios(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name               string
-		api                string
-		library            string
-		state              *config.LibrarianState
-		librarianConfig    *config.LibrarianConfig
-		container          *mockContainerClient
-		ghClient           GitHubClient
-		build              bool
-		wantErr            bool
-		wantErrMsg         string
-		wantGenerateCalls  int
-		wantBuildCalls     int
-		wantConfigureCalls int
+		name                     string
+		api                      string
+		library                  string
+		state                    *config.LibrarianState
+		librarianConfig          *config.LibrarianConfig
+		container                *mockContainerClient
+		ghClient                 GitHubClient
+		build                    bool
+		forceShouldGenerateError bool
+		wantErr                  bool
+		wantErrMsg               string
+		wantGenerateCalls        int
+		wantBuildCalls           int
+		wantConfigureCalls       int
 	}{
 		{
 			name:    "generate_single_library_including_initial_configuration",
@@ -783,7 +784,7 @@ func TestGenerateScenarios(t *testing.T) {
 			ghClient:   &mockGitHubClient{},
 			build:      true,
 			wantErr:    true,
-			wantErrMsg: "all 1 libraries failed to generate (blocked: 1)",
+			wantErrMsg: "all 1 libraries failed to generate (skipped: 1)",
 		},
 		{
 			name: "generate all, all fail should report error",
@@ -875,6 +876,28 @@ func TestGenerateScenarios(t *testing.T) {
 			wantBuildCalls:     2,
 			wantConfigureCalls: 0,
 		},
+		// We only have one library to generate, and we force shouldGenerate
+		// to fail by making the source repo's HeadHash function fail.
+		// As this ends up being all the libraries, the overall result is an error.
+		// (Forcing shouldGenerate to fail selectively would be very complicated.)
+		{
+			name: "shouldGenerate error",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+						// We need the LastGeneratedCommit to force shouldGenerate
+						// to ask the source repo for the head hash.
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			forceShouldGenerateError: true,
+			wantErr:                  true,
+			wantErrMsg:               "all 1 libraries failed to generate",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := newTestGitRepoWithState(t, test.state)
@@ -909,6 +932,12 @@ func TestGenerateScenarios(t *testing.T) {
 			message := "feat: add an api\n\nPiperOrigin-RevId: 123456"
 			if err := r.sourceRepo.Commit(message); err != nil {
 				t.Fatal(err)
+			}
+
+			if test.forceShouldGenerateError {
+				r.sourceRepo = &MockRepository{
+					HeadHashError: errors.New("fail"),
+				}
 			}
 
 			// Create a symlink in the output directory to trigger an error.
@@ -1156,5 +1185,253 @@ func TestUpdateLastGeneratedCommitState(t *testing.T) {
 	}
 	if r.state.Libraries[0].LastGeneratedCommit != hash {
 		t.Errorf("updateState() got = %v, want %v", r.state.Libraries[0].LastGeneratedCommit, hash)
+	}
+}
+
+func TestShouldGenerate(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name              string
+		config            *config.LibrarianConfig
+		state             *config.LibrarianState
+		generateUnchanged bool
+		sourceRepo        gitrepo.Repository
+		libraryIDToTest   string
+		want              bool
+		wantErr           bool
+	}{
+		// Tests that don't get as far as checking for hashes.
+		// (The mock repo will fail if we do get that far.)
+		{
+			name: "generation blocked",
+			config: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:       "TestLibrary",
+						GenerateBlocked: true,
+					},
+				},
+			},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedHash",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Shouldn't get as far as checking head"),
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            false,
+		},
+		{
+			name: "library has no APIs",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "TestLibrary",
+						// This may be present even if it's meaningless.
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Shouldn't get as far as checking head"),
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            false,
+		},
+		{
+			name: "generateUnchanged specified",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			generateUnchanged: true,
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Shouldn't get as far as checking head"),
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            true,
+		},
+		{
+			name: "no LastGeneratedCommit",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "TestLibrary",
+						APIs: []*config.API{{Path: "google/cloud/test"}},
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Shouldn't get as far as checking head"),
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            true,
+		},
+		{
+			name: "error from HeadHash",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashError: errors.New("Can't get head commit"),
+			},
+			libraryIDToTest: "TestLibrary",
+			wantErr:         true,
+		},
+		// Tests that do perform hash checking.
+		{
+			name: "error from GetHashForPath",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue:       "HeadCommit",
+				GetHashForPathError: errors.New("Can't get hash for path"),
+			},
+			libraryIDToTest: "TestLibrary",
+			wantErr:         true,
+		},
+		{
+			name: "config present but generation not blocked",
+			config: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:       "OtherLibrary",
+						GenerateBlocked: true,
+					},
+					{
+						LibraryID: "TestLibrary",
+						// Just to have some reason to make it configured...
+						ReleaseBlocked: true,
+					}},
+			},
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue: "HeadCommit",
+				GetHashForPathValue: map[string]string{
+					"LastGeneratedCommit:google/cloud/test": "hash1",
+					"HeadCommit:google/cloud/test":          "hash2",
+				},
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            true,
+		},
+		{
+			name: "API hasn't changed",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue: "HeadCommit",
+				GetHashForPathValue: map[string]string{
+					"LastGeneratedCommit:google/cloud/test": "hash",
+					"HeadCommit:google/cloud/test":          "hash",
+				},
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            false,
+		},
+		{
+			name: "one API hasn't changed, one has",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "TestLibrary",
+						APIs: []*config.API{
+							{Path: "google/cloud/test1"},
+							{Path: "google/cloud/test2"},
+						},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue: "HeadCommit",
+				GetHashForPathValue: map[string]string{
+					"LastGeneratedCommit:google/cloud/test1": "hash1",
+					"HeadCommit:google/cloud/test1":          "hash1",
+					"LastGeneratedCommit:google/cloud/test2": "hash2a",
+					"HeadCommit:google/cloud/test2":          "hash2b",
+				},
+			},
+			libraryIDToTest: "TestLibrary",
+			want:            true,
+		},
+		{
+			name: "second call to GetHashForPath fails",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "TestLibrary",
+						APIs:                []*config.API{{Path: "google/cloud/test"}},
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			sourceRepo: &MockRepository{
+				HeadHashValue: "HeadCommit",
+				GetHashForPathValue: map[string]string{
+					"LastGeneratedCommit:google/cloud/test": "hash",
+					// Entry which deliberately returns an error
+					"HeadCommit:google/cloud/test": "error",
+				},
+			},
+			libraryIDToTest: "TestLibrary",
+			wantErr:         true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			r := &generateRunner{
+				generateUnchanged: test.generateUnchanged,
+				librarianConfig:   test.config,
+				state:             test.state,
+				sourceRepo:        test.sourceRepo,
+			}
+			library := test.state.LibraryByID(test.libraryIDToTest)
+			got, err := r.shouldGenerate(library)
+			if test.wantErr != (err != nil) {
+				t.Fatalf("shouldGenerate() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if got != test.want {
+				t.Errorf("shouldGenerate() got = %v, want %v", got, test.want)
+			}
+		})
 	}
 }

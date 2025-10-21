@@ -32,21 +32,22 @@ const (
 )
 
 type generateRunner struct {
-	api             string
-	branch          string
-	build           bool
-	commit          bool
-	containerClient ContainerClient
-	ghClient        GitHubClient
-	hostMount       string
-	image           string
-	library         string
-	push            bool
-	repo            gitrepo.Repository
-	sourceRepo      gitrepo.Repository
-	state           *config.LibrarianState
-	librarianConfig *config.LibrarianConfig
-	workRoot        string
+	api               string
+	branch            string
+	build             bool
+	commit            bool
+	generateUnchanged bool
+	containerClient   ContainerClient
+	ghClient          GitHubClient
+	hostMount         string
+	image             string
+	library           string
+	push              bool
+	repo              gitrepo.Repository
+	sourceRepo        gitrepo.Repository
+	state             *config.LibrarianState
+	librarianConfig   *config.LibrarianConfig
+	workRoot          string
 }
 
 // generationStatus represents the result of a single library generation.
@@ -62,21 +63,22 @@ func newGenerateRunner(cfg *config.Config) (*generateRunner, error) {
 		return nil, err
 	}
 	return &generateRunner{
-		api:             cfg.API,
-		branch:          cfg.Branch,
-		build:           cfg.Build,
-		commit:          cfg.Commit,
-		containerClient: runner.containerClient,
-		ghClient:        runner.ghClient,
-		hostMount:       cfg.HostMount,
-		image:           runner.image,
-		library:         cfg.Library,
-		push:            cfg.Push,
-		repo:            runner.repo,
-		sourceRepo:      runner.sourceRepo,
-		state:           runner.state,
-		librarianConfig: runner.librarianConfig,
-		workRoot:        runner.workRoot,
+		api:               cfg.API,
+		branch:            cfg.Branch,
+		build:             cfg.Build,
+		commit:            cfg.Commit,
+		containerClient:   runner.containerClient,
+		generateUnchanged: cfg.GenerateUnchanged,
+		ghClient:          runner.ghClient,
+		hostMount:         cfg.HostMount,
+		image:             runner.image,
+		library:           cfg.Library,
+		push:              cfg.Push,
+		repo:              runner.repo,
+		sourceRepo:        runner.sourceRepo,
+		state:             runner.state,
+		librarianConfig:   runner.librarianConfig,
+		workRoot:          runner.workRoot,
 	}, nil
 }
 
@@ -95,7 +97,6 @@ func (r *generateRunner) run(ctx context.Context) error {
 	// generation since we need these commits to create pull request body.
 	idToCommits := make(map[string]string)
 	var failedLibraries []string
-	failedGenerations := 0
 	prType := pullRequestGenerate
 	if r.api != "" || r.library != "" {
 		libraryID := r.library
@@ -109,22 +110,26 @@ func (r *generateRunner) run(ctx context.Context) error {
 		idToCommits[libraryID] = status.oldCommit
 		prType = status.prType
 	} else {
-		succeededGenerations := 0
-		blockedGenerations := 0
+		var succeededGenerations int
+		var skippedGenerations int
 		for _, library := range r.state.Libraries {
-			if r.librarianConfig != nil {
-				libConfig := r.librarianConfig.LibraryConfigFor(library.ID)
-				if libConfig != nil && libConfig.GenerateBlocked {
-					slog.Info("library has generate_blocked, skipping", "id", library.ID)
-					blockedGenerations++
-					continue
-				}
+			shouldGenerate, err := r.shouldGenerate(library)
+			if err != nil {
+				slog.Error("failed to determine whether or not to generate library", "id", library.ID, "err", err)
+				// While this isn't strictly a failed generation, it's a library for which
+				// the generate command failed, so it's close enough.
+				failedLibraries = append(failedLibraries, library.ID)
+				continue
+			}
+			if !shouldGenerate {
+				// We assume that the cause will have been logged in shouldGenerateLibrary.
+				skippedGenerations++
+				continue
 			}
 			status, err := r.generateSingleLibrary(ctx, library.ID, outputDir)
 			if err != nil {
 				slog.Error("failed to generate library", "id", library.ID, "err", err)
 				failedLibraries = append(failedLibraries, library.ID)
-				failedGenerations++
 			} else {
 				// Only add the mapping if library generation is successful so that
 				// failed library will not appear in generation PR body.
@@ -137,11 +142,11 @@ func (r *generateRunner) run(ctx context.Context) error {
 			"generation statistics",
 			"all", len(r.state.Libraries),
 			"successes", succeededGenerations,
-			"blocked", blockedGenerations,
-			"failures", failedGenerations)
-		if failedGenerations > 0 && failedGenerations+blockedGenerations == len(r.state.Libraries) {
-			return fmt.Errorf("all %d libraries failed to generate (blocked: %d)",
-				failedGenerations, blockedGenerations)
+			"skipped", skippedGenerations,
+			"failures", len(failedLibraries))
+		if len(failedLibraries) > 0 && len(failedLibraries)+skippedGenerations == len(r.state.Libraries) {
+			return fmt.Errorf("all %d libraries failed to generate (skipped: %d)",
+				len(failedLibraries), skippedGenerations)
 		}
 	}
 
@@ -189,7 +194,7 @@ func (r *generateRunner) run(ctx context.Context) error {
 		workRoot:          r.workRoot,
 		api:               r.api,
 		library:           r.library,
-		failedGenerations: failedGenerations,
+		failedGenerations: len(failedLibraries),
 		prBodyBuilder:     prBodyBuilder,
 	}
 
@@ -397,4 +402,66 @@ func setAllAPIStatus(state *config.LibrarianState, status string) {
 			api.Status = status
 		}
 	}
+}
+
+// shouldGenerate determines whether a library should be generated by the generate
+// command. It does *not* observe the -library or -api flag, as those are handled
+// higher up in run. If this function returns false (with a nil error), it always
+// logs why the library was skipped.
+//
+// The decision of whether or not a library should be generated is relatively complex,
+// and should be kept centrally in this function, with a comment for each path in the flow
+// for clarity.
+func (r *generateRunner) shouldGenerate(library *config.LibraryState) (bool, error) {
+	// If the library has a manual configuration which indicates generation is blocked,
+	// the library is skipped.
+	if r.librarianConfig != nil {
+		libConfig := r.librarianConfig.LibraryConfigFor(library.ID)
+		if libConfig != nil && libConfig.GenerateBlocked {
+			slog.Info("library has generate_blocked, skipping", "id", library.ID)
+			return false, nil
+		}
+	}
+
+	// If the library has no APIs, it is skipped.
+	if len(library.APIs) == 0 {
+		slog.Info("library has no APIs, skipping", "id", library.ID)
+		return false, nil
+	}
+
+	// If we've been asked to generate libraries even with unchanged APIs,
+	// we don't need to check whether any have changed: we should definitely generate.
+	if r.generateUnchanged {
+		return true, nil
+	}
+
+	// If we don't know the last commit at which the library was generated,
+	// we can't tell whether or not it's changed, so we always generate.
+	if library.LastGeneratedCommit == "" {
+		return true, nil
+	}
+
+	// Most common case: a non-generation-blocked library with APIs, and without the
+	// -generate-unchanged flag. Check each API to see whether anything under API.Path
+	// has changed between the last_generated_commit and the HEAD commit of r.sourceRepo.
+	// If any API has changed, the library is generated - otherwise it's skipped.
+	headHash, err := r.sourceRepo.HeadHash()
+	if err != nil {
+		return false, fmt.Errorf("failed to get head hash for source repo: %v", err)
+	}
+	for _, api := range library.APIs {
+		oldHash, err := r.sourceRepo.GetHashForPath(library.LastGeneratedCommit, api.Path)
+		if err != nil {
+			return false, fmt.Errorf("failed to get hash for path %v at commit %v: %v", api.Path, library.LastGeneratedCommit, err)
+		}
+		newHash, err := r.sourceRepo.GetHashForPath(headHash, api.Path)
+		if err != nil {
+			return false, fmt.Errorf("failed to get hash for path %v at commit %v: %v", api.Path, headHash, err)
+		}
+		if oldHash != newHash {
+			return true, nil
+		}
+	}
+	slog.Info("no APIs have changed; skipping", "library", library.ID)
+	return false, nil
 }

@@ -600,10 +600,15 @@ func TestFormatOnboardPRBody(t *testing.T) {
 			},
 			api:     "path/to",
 			library: "one-library",
-			want: fmt.Sprintf(`feat: onboard a new library
+			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
+
+feat: onboard a new library
 
 PiperOrigin-RevId: 98765
 Library-IDs: one-library
+
+END_COMMIT_OVERRIDE
+
 Librarian Version: %s
 Language Image: %s`,
 				librarianVersion, "go:1.21"),

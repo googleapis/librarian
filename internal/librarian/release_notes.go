@@ -136,10 +136,15 @@ Language Image: {{.ImageVersion}}
 {{- end }}
 `))
 
-	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`feat: onboard a new library
+	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`BEGIN_COMMIT_OVERRIDE
+
+feat: onboard a new library
 
 PiperOrigin-RevId: {{.PiperID}}
 Library-IDs: {{.LibraryID}}
+
+END_COMMIT_OVERRIDE
+
 Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
 `))

@@ -103,6 +103,7 @@ func newCmdGenerate() *cli.Command {
 	addFlagAPI(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagAPISource(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagBuild(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagGenerateUnchanged(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagHostMount(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagImage(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagLibrary(cmdGenerate.Flags, cmdGenerate.Config)

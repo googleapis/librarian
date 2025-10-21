@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -333,6 +334,7 @@ type MockRepository struct {
 	GetCommitsForPathsSinceTagValue        []*gitrepo.Commit
 	GetCommitsForPathsSinceTagValueByTag   map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceTagError        error
+	GetCommitsForPathsSinceTagLastTagName  string
 	GetCommitsForPathsSinceLastGenValue    []*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByCommit map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByPath   map[string][]*gitrepo.Commit
@@ -351,6 +353,12 @@ type MockRepository struct {
 	HeadHashError                          error
 	CheckoutCalls                          int
 	CheckoutError                          error
+	GetHashForPathError                    error
+	// GetHashForPathValue is a map where each key is of the form "commitHash:path",
+	// and the value is the hash to return. Every requested entry must be populated.
+	// If the value is "error", an error is returned instead. (This is useful when some
+	// calls must be successful, and others must fail.)
+	GetHashForPathValue map[string]string
 }
 
 func (m *MockRepository) HeadHash() (string, error) {
@@ -420,6 +428,7 @@ func (m *MockRepository) GetLatestCommit(path string) (*gitrepo.Commit, error) {
 }
 
 func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*gitrepo.Commit, error) {
+	m.GetCommitsForPathsSinceTagLastTagName = tagName
 	if m.GetCommitsForPathsSinceTagError != nil {
 		return nil, m.GetCommitsForPathsSinceTagError
 	}
@@ -515,4 +524,21 @@ type mockImagesClient struct {
 func (m *mockImagesClient) FindLatest(ctx context.Context, imageName string) (string, error) {
 	m.findLatestCalls++
 	return m.latestImage, m.err
+}
+
+func (m *MockRepository) GetHashForPath(commitHash, path string) (string, error) {
+	if m.GetHashForPathError != nil {
+		return "", m.GetHashForPathError
+	}
+	if m.GetHashForPathValue != nil {
+		key := commitHash + ":" + path
+		if hash, ok := m.GetHashForPathValue[key]; ok {
+			if hash == "error" {
+				return "", errors.New("deliberate error from GetHashForPath")
+			}
+			return hash, nil
+		}
+
+	}
+	return "", fmt.Errorf("should not reach here: GetHashForPath called with unhandled input (commitHash: %q, path: %q)", commitHash, path)
 }

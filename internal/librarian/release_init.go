@@ -202,8 +202,11 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 // processLibrary wrapper to process the library for release. Helps retrieve latest commits
 // since the last release and passing the changes to updateLibrary.
 func (r *initRunner) processLibrary(library *config.LibraryState) error {
-	tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
-	tagName := config.FormatTag(tagFormat, library.ID, library.Version)
+	var tagName string
+	if library.Version != "0.0.0" {
+		tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
+		tagName = config.FormatTag(tagFormat, library.ID, library.Version)
+	}
 	commits, err := getConventionalCommitsSinceLastRelease(r.repo, library, tagName)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)

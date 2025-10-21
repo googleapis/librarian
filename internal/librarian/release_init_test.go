@@ -1322,6 +1322,14 @@ func TestProcessLibrary(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to fetch conventional commits for library",
 		},
+		{
+			name: "does not search for git tag for 0.0.0 version",
+			libraryState: &config.LibraryState{
+				ID:      "one-id",
+				Version: "0.0.0",
+			},
+			repo: &MockRepository{},
+		},
 	} {
 		state := &config.LibrarianState{
 			Libraries: []*config.LibraryState{
@@ -1344,6 +1352,9 @@ func TestProcessLibrary(t *testing.T) {
 		}
 		if err != nil {
 			t.Errorf("failed to run processLibrary(): %q", err.Error())
+		}
+		if test.libraryState.Version == "0.0.0" && test.repo.(*MockRepository).GetCommitsForPathsSinceTagLastTagName != "" {
+			t.Errorf("GetCommitsForPathsSinceTag should be called with an empty tag name for version 0.0.0, got %q", test.repo.(*MockRepository).GetCommitsForPathsSinceTagLastTagName)
 		}
 	}
 }
