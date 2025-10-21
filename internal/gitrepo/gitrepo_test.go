@@ -904,10 +904,10 @@ func TestGetDir(t *testing.T) {
 	}
 }
 
-// TestGetHashForPathOrEmpty tests the internal getHashForPathOrEmpty, but
-// via the public GetHashForPathOrEmpty function which accepts a commit hash
+// TestGetHashForPath tests the internal getHashForPath, but
+// via the public GetHashForPath function which accepts a commit hash
 // instead of a Commit object, to avoid duplicate testing.
-func TestGetHashForPathOrEmpty(t *testing.T) {
+func TestGetHashForPath(t *testing.T) {
 	t.Parallel()
 
 	setupInitialRepo := func(t *testing.T) (LocalRepository, *object.Commit) {
@@ -1028,24 +1028,24 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 
 			localRepository, commit, path := test.setup(t)
 
-			got, err := localRepository.GetHashForPathOrEmpty(commit.Hash.String(), path)
+			got, err := localRepository.GetHashForPath(commit.Hash.String(), path)
 			if (err != nil) != test.wantErr {
-				t.Errorf("getHashForPathOrEmpty() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("getHashForPath() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
 
 			wantHash := test.wantHash(commit, path)
 			if diff := cmp.Diff(wantHash, got); diff != "" {
-				t.Errorf("getHashForPathOrEmpty() mismatch (-want +got):\n%s", diff)
+				t.Errorf("getHashForPath() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-// TestGetHashForPathOrEmptyBadCommitHash tests the one path not
-// otherwise tested in TestGetHashForPathOrEmpty, where we can't
+// TestGetHashForPathBadCommitHash tests the one path not
+// otherwise tested in TestGetHashForPath, where we can't
 // get the commit for the hash.
-func TestGetHashForPathOrEmptyBadCommitHash(t *testing.T) {
+func TestGetHashForPathBadCommitHash(t *testing.T) {
 	repo, dir := initTestRepo(t)
 	localRepository := LocalRepository{
 		Dir:  dir,
@@ -1069,9 +1069,9 @@ func TestGetHashForPathOrEmptyBadCommitHash(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := localRepository.GetHashForPathOrEmpty(test.commitHash, "path/to/file")
+			_, err := localRepository.GetHashForPath(test.commitHash, "path/to/file")
 			if err == nil {
-				t.Error("GetHashForPathOrEmpty() err = nil, should fail when an invalid or absent hash is provided")
+				t.Error("GetHashForPath() err = nil, should fail when an invalid or absent hash is provided")
 			}
 		})
 	}

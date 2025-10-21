@@ -1297,7 +1297,7 @@ func TestShouldGenerate(t *testing.T) {
 		},
 		// Tests that do perform hash checking.
 		{
-			name: "error from GetHashForPathOrEmpty",
+			name: "error from GetHashForPath",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -1308,8 +1308,8 @@ func TestShouldGenerate(t *testing.T) {
 				},
 			},
 			sourceRepo: &MockRepository{
-				HeadHashValue:              "HeadCommit",
-				GetHashForPathOrEmptyError: errors.New("Can't get hash for path"),
+				HeadHashValue:       "HeadCommit",
+				GetHashForPathError: errors.New("Can't get hash for path"),
 			},
 			libraryIDToTest: "TestLibrary",
 			wantErr:         true,
@@ -1339,7 +1339,7 @@ func TestShouldGenerate(t *testing.T) {
 			},
 			sourceRepo: &MockRepository{
 				HeadHashValue: "HeadCommit",
-				GetHashForPathOrEmptyValue: map[string]string{
+				GetHashForPathValue: map[string]string{
 					"LastGeneratedCommit:google/cloud/test": "hash1",
 					"HeadCommit:google/cloud/test":          "hash2",
 				},
@@ -1360,7 +1360,7 @@ func TestShouldGenerate(t *testing.T) {
 			},
 			sourceRepo: &MockRepository{
 				HeadHashValue: "HeadCommit",
-				GetHashForPathOrEmptyValue: map[string]string{
+				GetHashForPathValue: map[string]string{
 					"LastGeneratedCommit:google/cloud/test": "hash",
 					"HeadCommit:google/cloud/test":          "hash",
 				},
@@ -1384,7 +1384,7 @@ func TestShouldGenerate(t *testing.T) {
 			},
 			sourceRepo: &MockRepository{
 				HeadHashValue: "HeadCommit",
-				GetHashForPathOrEmptyValue: map[string]string{
+				GetHashForPathValue: map[string]string{
 					"LastGeneratedCommit:google/cloud/test1": "hash1",
 					"HeadCommit:google/cloud/test1":          "hash1",
 					"LastGeneratedCommit:google/cloud/test2": "hash2a",
@@ -1395,7 +1395,7 @@ func TestShouldGenerate(t *testing.T) {
 			want:            true,
 		},
 		{
-			name: "second call to GetHashForPathOrEmpty fails",
+			name: "second call to GetHashForPath fails",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -1407,7 +1407,7 @@ func TestShouldGenerate(t *testing.T) {
 			},
 			sourceRepo: &MockRepository{
 				HeadHashValue: "HeadCommit",
-				GetHashForPathOrEmptyValue: map[string]string{
+				GetHashForPathValue: map[string]string{
 					"LastGeneratedCommit:google/cloud/test": "hash",
 					// Entry which deliberately returns an error
 					"HeadCommit:google/cloud/test": "error",

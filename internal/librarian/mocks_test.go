@@ -347,12 +347,12 @@ type MockRepository struct {
 	HeadHashError                          error
 	CheckoutCalls                          int
 	CheckoutError                          error
-	GetHashForPathOrEmptyError             error
-	// GetHashForPathOrEmptyValue is a map where each key is of the form "commitHash:path",
+	GetHashForPathError                    error
+	// GetHashForPathValue is a map where each key is of the form "commitHash:path",
 	// and the value is the hash to return. Every requested entry must be populated.
 	// If the value is "error", an error is returned instead. (This is useful when some
 	// calls must be successful, and others must fail.)
-	GetHashForPathOrEmptyValue map[string]string
+	GetHashForPathValue map[string]string
 }
 
 func (m *MockRepository) HeadHash() (string, error) {
@@ -519,19 +519,19 @@ func (m *mockImagesClient) FindLatest(ctx context.Context, imageName string) (st
 	return m.latestImage, m.err
 }
 
-func (m *MockRepository) GetHashForPathOrEmpty(commitHash, path string) (string, error) {
-	if m.GetHashForPathOrEmptyError != nil {
-		return "", m.GetHashForPathOrEmptyError
+func (m *MockRepository) GetHashForPath(commitHash, path string) (string, error) {
+	if m.GetHashForPathError != nil {
+		return "", m.GetHashForPathError
 	}
-	if m.GetHashForPathOrEmptyValue != nil {
+	if m.GetHashForPathValue != nil {
 		key := commitHash + ":" + path
-		if hash, ok := m.GetHashForPathOrEmptyValue[key]; ok {
+		if hash, ok := m.GetHashForPathValue[key]; ok {
 			if hash == "error" {
-				return "", errors.New("deliberate error from GetHashForPathOrEmpty")
+				return "", errors.New("deliberate error from GetHashForPath")
 			}
 			return hash, nil
 		}
 
 	}
-	return "", fmt.Errorf("should not reach here: GetHashForPathOrEmpty called with unhandled input (commitHash: %q, path: %q)", commitHash, path)
+	return "", fmt.Errorf("should not reach here: GetHashForPath called with unhandled input (commitHash: %q, path: %q)", commitHash, path)
 }
