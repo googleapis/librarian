@@ -50,6 +50,8 @@ error and will halt the current workflow. If a container would like to send an e
 so by including a field in the various response files outlined below. Additionally, any logs sent to stderr/stdout will
 be surfaced to the CLI.
 
+The runtime of the language container for processing any command should not exceed 1 minute.  This is not a hard requirement, we understand that certain libraries may take longer, however this can adversely affect your ability to roll out changes in the case of emergencies.  The CLI will only call the container for libraries with changes, however in the case of releasing a generator update, this could potentially run the container for all your libraries and therefore make rolling out emergency updates extremely delayed. 
+
 Additionally, Librarian specifies a user and group ID when executing the language-specific container. This means that
 the container **MUST** be able to run as an arbitrary user (the caller of Librarian's user). Any commands used will
 need to be executable by any user ID within the container.
