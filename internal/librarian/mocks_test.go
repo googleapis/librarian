@@ -332,6 +332,10 @@ type MockRepository struct {
 	HeadHashError                          error
 }
 
+func (m *MockRepository) Checkout(branch string) error {
+	return nil
+}
+
 func (m *MockRepository) HeadHash() (string, error) {
 	if m.HeadHashError != nil {
 		return "", m.HeadHashError

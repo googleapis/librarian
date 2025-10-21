@@ -39,6 +39,20 @@ func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 language-specific container.`)
 }
 
+func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.Branch, "branch", "main",
+		`The branch to use with remote code repositories. This is used to specify
+which branch to clone and which branch to use as the base for a pull
+request.`)
+}
+
+func addFlagCheckUnexpectedChanges(fs *flag.FlagSet, cfg *config.Config) {
+	fs.BoolVar(&cfg.CheckUnexpectedChanges, "check-unexpected-changes", false,
+		`Used in test-container generate. Default to false. Specify true to include 
+additional steps to check for no addition/deletion of files and no extra file changes 
+other than the ones affected by proto changes.`)
+}
+
 func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Commit, "commit", false,
 		`If true, librarian will create a commit for the change but not create
@@ -100,13 +114,6 @@ in the format of a remote URL such as https://github.com/{owner}/{repo} or a
 local file path like /path/to/repo. Both absolute and relative paths are
 supported. If not specified, will try to detect if the current working directory
 is configured as a language repository.`)
-}
-
-func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
-	fs.StringVar(&cfg.Branch, "branch", "main",
-		`The branch to use with remote code repositories. This is used to specify
-which branch to clone and which branch to use as the base for a pull
-request.`)
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {

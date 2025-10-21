@@ -116,12 +116,13 @@ func newCmdTestContainerGenerate() *cli.Command {
 	}
 	cmdTestGenerate.Init()
 	addFlagAPISource(cmdTestGenerate.Flags, cmdTestGenerate.Config)
+	addFlagBranch(cmdTestGenerate.Flags, cmdTestGenerate.Config)
+	addFlagCheckUnexpectedChanges(cmdTestGenerate.Flags, cmdTestGenerate.Config)
 	addFlagImage(cmdTestGenerate.Flags, cmdTestGenerate.Config)
 	addFlagLibrary(cmdTestGenerate.Flags, cmdTestGenerate.Config)
 	addFlagRepo(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	addFlagBranch(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	addFlagWorkRoot(cmdTestGenerate.Flags, cmdTestGenerate.Config)
 	addFlagVerbose(cmdTestGenerate.Flags, &verbose)
+	addFlagWorkRoot(cmdTestGenerate.Flags, cmdTestGenerate.Config)
 	return cmdTestGenerate
 }
 

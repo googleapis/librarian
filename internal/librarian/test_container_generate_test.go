@@ -126,7 +126,7 @@ func TestValidateGenerateTest(t *testing.T) {
 				NewAndDeletedFilesValue: tt.newAndDeletedFiles,
 			}
 
-			err := validateGenerateTest(nil, mockRepo, tt.protoFileToGUID)
+			err := validateGenerateTest(nil, mockRepo, tt.protoFileToGUID, true)
 
 			if tt.wantErrMsg != "" {
 				if err == nil {
@@ -139,5 +139,92 @@ func TestValidateGenerateTest(t *testing.T) {
 				t.Fatalf("validateGenerateTest() returned unexpected error: %v", err)
 			}
 		})
+	}
+}
+func TestPrepareForGenerateTest(t *testing.T) {
+	t.Parallel()
+	// Create a temporary directory to act as the repo
+	repoDir := t.TempDir()
+
+	// Create a proto file in the temp directory
+	protoPath := "google/cloud/aiplatform/v1"
+	protoFilename := "prediction_service.proto"
+	fullProtoDir := filepath.Join(repoDir, protoPath)
+	if err := os.MkdirAll(fullProtoDir, 0755); err != nil {
+		t.Fatalf("os.MkdirAll() error = %v", err)
+	}
+	protoContent := `
+syntax = "proto3";
+
+package google.cloud.aiplatform.v1;
+
+import "google/api/annotations.proto";
+
+service PredictionService {
+  rpc Predict(PredictRequest) returns (PredictResponse) {
+    option (google.api.http) = {
+      post: "/v1/{endpoint=projects/*/locations/*/endpoints/*}:predict"
+      body: "*"
+    };
+  }
+}
+
+message PredictRequest {}
+message PredictResponse {}
+`
+	fullProtoPath := filepath.Join(fullProtoDir, protoFilename)
+	if err := os.WriteFile(fullProtoPath, []byte(protoContent), 0644); err != nil {
+		t.Fatalf("os.WriteFile() error = %v", err)
+	}
+
+	initialCommit := "abcdef1234567890abcdef1234567890abcdef12"
+	mockRepo := &MockRepository{
+		Dir: repoDir,
+	}
+
+	state := &config.LibrarianState{
+		Libraries: []*config.LibraryState{
+			{
+				ID:                  "google-cloud-aiplatform-v1",
+				LastGeneratedCommit: initialCommit,
+				APIs: []*config.API{
+					{
+						Path: protoPath,
+					},
+				},
+			},
+		},
+	}
+	libraryID := "google-cloud-aiplatform-v1"
+
+	protoFileToGUID, err := prepareForGenerateTest(state, libraryID, mockRepo)
+	if err != nil {
+		t.Fatalf("prepareForGenerateTest() error = %v", err)
+	}
+
+	if len(protoFileToGUID) != 1 {
+		t.Fatalf("len(protoFileToGUID) = %d, want 1", len(protoFileToGUID))
+	}
+
+	var guid string
+	for proto, g := range protoFileToGUID {
+		if proto != filepath.Join(protoPath, protoFilename) {
+			t.Errorf("protoFileToGUID key = %q, want %q", proto, filepath.Join(protoPath, protoFilename))
+		}
+		guid = g
+	}
+
+	// Check that the file was modified
+	newContent, err := os.ReadFile(fullProtoPath)
+	if err != nil {
+		t.Fatalf("os.ReadFile() error = %v", err)
+	}
+	if !strings.Contains(string(newContent), guid) {
+		t.Errorf("proto file does not contain GUID %q", guid)
+	}
+
+	// Check that a new commit was made
+	if mockRepo.CommitCalls != 1 {
+		t.Errorf("mockRepo.CommitCalls = %d, want 1", mockRepo.CommitCalls)
 	}
 }

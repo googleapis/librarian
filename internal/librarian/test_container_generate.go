@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/googleapis/librarian/internal/config"
@@ -30,16 +29,17 @@ import (
 )
 
 type testGenerateRunner struct {
-	branch          string
-	image           string
-	library         string
-	repo            gitrepo.Repository
-	sourceRepo      gitrepo.Repository
-	state           *config.LibrarianState
-	librarianConfig *config.LibrarianConfig
-	workRoot        string
-	containerClient ContainerClient
-	ghClient        GitHubClient
+	branch                 string
+	image                  string
+	library                string
+	repo                   gitrepo.Repository
+	sourceRepo             gitrepo.Repository
+	state                  *config.LibrarianState
+	librarianConfig        *config.LibrarianConfig
+	workRoot               string
+	containerClient        ContainerClient
+	ghClient               GitHubClient
+	checkUnexpectedChanges bool
 }
 
 func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
@@ -48,49 +48,45 @@ func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
 		return nil, err
 	}
 	return &testGenerateRunner{
-		branch:          cfg.Branch,
-		image:           runner.image,
-		library:         cfg.Library,
-		repo:            runner.repo,
-		sourceRepo:      runner.sourceRepo,
-		state:           runner.state,
-		librarianConfig: runner.librarianConfig,
-		workRoot:        runner.workRoot,
-		containerClient: runner.containerClient,
-		ghClient:        runner.ghClient,
+		branch:                 cfg.Branch,
+		image:                  runner.image,
+		library:                cfg.Library,
+		repo:                   runner.repo,
+		sourceRepo:             runner.sourceRepo,
+		state:                  runner.state,
+		librarianConfig:        runner.librarianConfig,
+		workRoot:               runner.workRoot,
+		containerClient:        runner.containerClient,
+		ghClient:               runner.ghClient,
+		checkUnexpectedChanges: cfg.CheckUnexpectedChanges,
 	}, nil
 }
 
 func (r *testGenerateRunner) run(ctx context.Context) error {
-	slog.Info("running test-container generate")
-
-	prepareStart := time.Now()
+	slog.Debug("prepare for test", "library", r.library)
 	protoFileToGUID, err := prepareForGenerateTest(r.state, r.library, r.sourceRepo)
 	if err != nil {
 		return err
 	}
-	slog.Info("r.prepare finished", "duration", time.Since(prepareStart))
 
 	outputDir := filepath.Join(r.workRoot, "output")
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
 	}
 
-	generateStart := time.Now()
 	// We capture the error here and pass it to the validation step.
+	slog.Debug("run generate", "library", r.library)
 	_, generateErr := r.runGenerateCommand(ctx, r.library, outputDir)
-	slog.Info("r.runGenerateCommand finished", "duration", time.Since(generateStart))
 
-	validateStart := time.Now()
-	if err := validateGenerateTest(generateErr, r.repo, protoFileToGUID); err != nil {
+	slog.Debug("validate", "library", r.library)
+	if err := validateGenerateTest(generateErr, r.repo, protoFileToGUID, r.checkUnexpectedChanges); err != nil {
 		return err
 	}
-	slog.Info("r.validate finished", "duration", time.Since(validateStart))
 
 	return nil
 }
 
-func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileToGUID map[string]string) error {
+func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileToGUID map[string]string, checkUnexpectedChanges bool) error {
 	slog.Info("running validation")
 	if generateErr != nil {
 		return fmt.Errorf("generation failed: %w", generateErr)
@@ -102,11 +98,7 @@ func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileT
 		return fmt.Errorf("failed to get changed files from worktree: %w", err)
 	}
 
-	// TODO(zhumin): Add flags to config to control these validations.
-	validateNoUnrelatedChanges := true
-	validateFileAdditionOrDeletion := true
-
-	if validateFileAdditionOrDeletion {
+	if checkUnexpectedChanges {
 		newAndDeleted, err := repo.NewAndDeletedFiles()
 		if err != nil {
 			return fmt.Errorf("failed to get new and deleted files: %w", err)
@@ -154,7 +146,7 @@ func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileT
 	}
 	slog.Info("validation succeeded: all proto changes resulted in generated file changes")
 
-	if validateNoUnrelatedChanges {
+	if checkUnexpectedChanges {
 		var unrelatedChanges []string
 		for _, filePath := range changedFiles {
 			if !filesWithGUIDs[filePath] {
