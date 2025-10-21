@@ -8,14 +8,14 @@ delegate tasks to.
 
 Before diving into the specifics, it's important to understand the key components of the Librarian ecosystem:
 
-* **Librarian:** The core orchestration tool that automates the generation, release, and maintenance of client
+- **Librarian:** The core orchestration tool that automates the generation, release, and maintenance of client
   libraries.
-* **Language-Specific Container:** A Docker container, built by each language team, that encapsulates the logic for
+- **Language-Specific Container:** A Docker container, built by each language team, that encapsulates the logic for
   generating, building, and releasing libraries for that specific language. Librarian interacts with this container by
   invoking different commands.
-* **`state.yaml`:** A manifest file within each language repository that defines the libraries managed by Librarian,
+- **`state.yaml`:** A manifest file within each language repository that defines the libraries managed by Librarian,
   their versions, and other essential metadata.
-* **`config.yaml`:** A configuration file that allows for repository-level customization of Librarian's behavior, such
+- **`config.yaml`:** A configuration file that allows for repository-level customization of Librarian's behavior, such
   as specifying which files the container can access.
 
 ## Configure repository to work with Librarian CLI
@@ -50,14 +50,19 @@ error and will halt the current workflow. If a container would like to send an e
 so by including a field in the various response files outlined below. Additionally, any logs sent to stderr/stdout will
 be surfaced to the CLI.
 
-We recommend you keep the average runtime of the language container for processing any command ~1 minute. We understand that some libraries may take longer to process. However, long runtimes can adversely affect your ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a generator update could trigger a run for all your libraries, which would significantly delay emergency updates.
-
 Additionally, Librarian specifies a user and group ID when executing the language-specific container. This means that
 the container **MUST** be able to run as an arbitrary user (the caller of Librarian's user). Any commands used will
 need to be executable by any user ID within the container.
 
-* Create a docker file for your container [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/Dockerfile)
-* Create a cloudbuild file [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/cloudbuild-exitgate.yaml) that uploads your image to us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev
+- Create a docker file for your container [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/Dockerfile)
+- Create a cloudbuild file [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/cloudbuild-exitgate.yaml) that uploads your image to us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev
+
+### Guidelines on Language Container Runtimes
+
+You should be able to run the generate and release command for an API such as Google Cloud Functions in less than a
+minute. We understand that some libraries may take longer to process, however, long runtimes can adversely affect your
+ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a
+generator update could trigger a run for all your libraries.
 
 ### Implement Container Contracts
 
@@ -70,26 +75,26 @@ the new API information and generate the necessary configuration for the library
 
 The container is expected to produce up to two artifacts:
 
-* A `configure-response.json` file, which is derived from the `configure-request.json` and contains language-specific
+- A `configure-response.json` file, which is derived from the `configure-request.json` and contains language-specific
   details. This response will be committed back to the `state.yaml` file by Librarian.
-* Any "side-configuration" files that the language may need for its libraries. These should be written to the `/input`
+- Any "side-configuration" files that the language may need for its libraries. These should be written to the `/input`
   mount, which corresponds to the `.librarian/generator-input` directory in the language repository.
 
 **Contract:**
 
-| Context      | Type                | Description                                                                                                                                                                                                                                                   |
-| :----------- | :------------------ |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `/librarian` | Mount (Read/Write)  | Contains `configure-request.json`. The container must process this and write back `configure-response.json`.                                                                                                                                                  |
-| `/input`     | Mount (Read/Write)  | The contents of the `.librarian/generator-input` directory. The container can add new language-specific configuration here.                                                                                                                                   |
-| `/repo`      | Mount (Read)        | Contains all of the files are specified in the libraries source_roots , if any already exist, as well as the files specified in the global_files_allowlist from `config.yaml`.                                                                                  |
-| `/source`    | Mount (Read).       | Contains the complete contents of the API definition repository (e.g., [googleapis/googleapis](https://github.com/googleapis/googleapis)).                                                                                                                    |
-| `/output`    | Mount (Read/Write)  | An output directory for writing any global file edits allowed by `global_files_allowlist`.<br/>Additionally, the container can write arbitrary files as long as they are contained within the library’s source_roots specified in the container's response message.|
-| `command`    | Positional Argument | The value will always be `configure`.                                                                                                                                                                                                                         |
-| flags        | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--input`, `--source`, `--repo`, `--output`                                                                                                                                                      |
+| Context      | Type                | Description                                                                                                                                                                                                                                                         |
+| :----------- | :------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/librarian` | Mount (Read/Write)  | Contains `configure-request.json`. The container must process this and write back `configure-response.json`.                                                                                                                                                        |
+| `/input`     | Mount (Read/Write)  | The contents of the `.librarian/generator-input` directory. The container can add new language-specific configuration here.                                                                                                                                         |
+| `/repo`      | Mount (Read)        | Contains all of the files are specified in the libraries source_roots , if any already exist, as well as the files specified in the global_files_allowlist from `config.yaml`.                                                                                      |
+| `/source`    | Mount (Read).       | Contains the complete contents of the API definition repository (e.g., [googleapis/googleapis](https://github.com/googleapis/googleapis)).                                                                                                                          |
+| `/output`    | Mount (Read/Write)  | An output directory for writing any global file edits allowed by `global_files_allowlist`.<br/>Additionally, the container can write arbitrary files as long as they are contained within the library’s source_roots specified in the container's response message. |
+| `command`    | Positional Argument | The value will always be `configure`.                                                                                                                                                                                                                               |
+| flags        | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--input`, `--source`, `--repo`, `--output`                                                                                                                                                            |
 
 **Example `configure-request.json`:**
 
-*Note: There will be only one API with a `status` of `new`.*
+_Note: There will be only one API with a `status` of `new`._
 
 ```json
 {
@@ -102,7 +107,7 @@ The container is expected to produce up to two artifacts:
           "service_config": "secretmanager_v1.yaml",
           "status": "new"
         }
-      ],
+      ]
     },
     {
       "id": "google-cloud-pubsub-v1",
@@ -113,7 +118,7 @@ The container is expected to produce up to two artifacts:
           "status": "existing"
         }
       ],
-      "source_roots": [ "pubsub" ]
+      "source_roots": ["pubsub"]
     }
   ]
 }
@@ -121,23 +126,19 @@ The container is expected to produce up to two artifacts:
 
 **Example `configure-response.json`:**
 
-*Note: Only the library with a `status` of `new` should be returned.*
+_Note: Only the library with a `status` of `new` should be returned._
 
 ```json
 {
   "id": "google-cloud-secretmanager",
   "apis": [
     {
-      "path": "google/cloud/secretmanager/v1",
+      "path": "google/cloud/secretmanager/v1"
     }
   ],
-  "source_roots": [ "secretmanager" ],
-  "preserve_regex": [
-    "secretmanager/subdir/handwritten-file.go"
-  ],
-  "remove_regex": [
-    "secretmanager/generated-dir"
-  ],
+  "source_roots": ["secretmanager"],
+  "preserve_regex": ["secretmanager/subdir/handwritten-file.go"],
+  "remove_regex": ["secretmanager/generated-dir"],
   "version": "0.0.0",
   "tag_format": "{id}/v{version}",
   "error": "An optional field to share error context back to Librarian."
@@ -150,14 +151,14 @@ The `generate` command is where the core work of code generation happens. The co
 
 **Contract:**
 
-| Context      | Type                | Description                                                                     |
-| :----------- | :------------------ | :------------------------------------------------------------------------------ |
+| Context      | Type                | Description                                                                                       |
+| :----------- | :------------------ | :------------------------------------------------------------------------------------------------ |
 | `/librarian` | Mount (Read/Write)  | Contains `generate-request.json`. Container can optionally write back a `generate-response.json`. |
-| `/input`     | Mount (Read/Write)  | The contents of the `.librarian/generator-input` directory. |
-| `/output`    | Mount (Write)       | The destination for the generated code. The output structure should match the target repository. |
-| `/source`    | Mount (Read)        | The complete contents of the API definition repository. (e.g. googlapis/googleapis) |
-| `command`    | Positional Argument | The value will always be `generate`. |
-| flags        | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--input`, `--output`, `--source` |
+| `/input`     | Mount (Read/Write)  | The contents of the `.librarian/generator-input` directory.                                       |
+| `/output`    | Mount (Write)       | The destination for the generated code. The output structure should match the target repository.  |
+| `/source`    | Mount (Read)        | The complete contents of the API definition repository. (e.g. googlapis/googleapis)               |
+| `command`    | Positional Argument | The value will always be `generate`.                                                              |
+| flags        | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--input`, `--output`, `--source`    |
 
 **Example `generate-request.json`:**
 
@@ -170,15 +171,9 @@ The `generate` command is where the core work of code generation happens. The co
       "service_config": "secretmanager_v1.yaml"
     }
   ],
-  "source_paths": [
-    "secretmanager"
-  ],
-  "preserve_regex": [
-    "secretmanager/subdir/handwritten-file.go"
-  ],
-  "remove_regex": [
-    "secretmanager/generated-dir"
-  ],
+  "source_paths": ["secretmanager"],
+  "preserve_regex": ["secretmanager/subdir/handwritten-file.go"],
+  "remove_regex": ["secretmanager/generated-dir"],
   "version": "0.0.0",
   "tag_format": "{id}/v{version}"
 }
@@ -201,12 +196,12 @@ The `build` command is responsible for building and testing the newly generated 
 
 **Contract:**
 
-| Context      | Type                | Description                                                                     |
-| :----------- | :------------------ | :------------------------------------------------------------------------------ |
-| `/librarian` | Mount (Read/Write)  | Contains `build-request.json`. Container can optionally write back a `build-response.json`. |
+| Context      | Type                | Description                                                                                                             |
+| :----------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------- |
+| `/librarian` | Mount (Read/Write)  | Contains `build-request.json`. Container can optionally write back a `build-response.json`.                             |
 | `/repo`      | Mount (Read/Write)  | The entire language repository. This is a deep copy, so any changes made here will not affect the final generated code. |
-| `command`    | Positional Argument | The value will always be `build`. |
-| flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo` |
+| `command`    | Positional Argument | The value will always be `build`.                                                                                       |
+| flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo`                                                   |
 
 **Example `build-request.json`:**
 
@@ -219,15 +214,9 @@ The `build` command is responsible for building and testing the newly generated 
       "service_config": "secretmanager_v1.yaml"
     }
   ],
-  "source_paths": [
-    "secretmanager"
-  ],
-  "preserve_regex": [
-    "secretmanager/subdir/handwritten-file.go"
-  ],
-  "remove_regex": [
-    "secretmanager/generated-dir"
-  ],
+  "source_paths": ["secretmanager"],
+  "preserve_regex": ["secretmanager/subdir/handwritten-file.go"],
+  "remove_regex": ["secretmanager/generated-dir"],
   "version": "0.0.0",
   "tag_format": "{id}/v{version}"
 }
@@ -253,13 +242,13 @@ global files that reference the libraries being released.
 
 **Contract:**
 
-| Context      | Type                | Description                                                                     |
-| :----------- | :------------------ | :------------------------------------------------------------------------------ |
-| `/librarian` | Mount (Read/Write)  | Contains `release-init-request.json`. Container writes back a `release-init-response.json`. |
-| `/repo`      | Mount (Read)        | Read-only contents of the language repo including any global files declared in the `config.yaml`. |
+| Context      | Type                | Description                                                                                                    |
+| :----------- | :------------------ | :------------------------------------------------------------------------------------------------------------- |
+| `/librarian` | Mount (Read/Write)  | Contains `release-init-request.json`. Container writes back a `release-init-response.json`.                    |
+| `/repo`      | Mount (Read)        | Read-only contents of the language repo including any global files declared in the `config.yaml`.              |
 | `/output`    | Mount (Write)       | Any files updated during the release phase should be moved to this directory, preserving their original paths. |
-| `command`    | Positional Argument | The value will always be `release-init`. |
-| flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo`, `--output` |
+| `command`    | Positional Argument | The value will always be `release-init`.                                                                       |
+| flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo`, `--output`                              |
 
 **Example `release-init-request.json`:**
 
@@ -297,10 +286,7 @@ global file edits. The libraries that are being released will be marked by the `
           "path": "google/cloud/secretmanager/v1beta"
         }
       ],
-      "source_roots": [
-        "secretmanager",
-        "other/location/secretmanager"
-      ],
+      "source_roots": ["secretmanager", "other/location/secretmanager"],
       "release_triggered": true
     }
   ]
@@ -315,7 +301,7 @@ global file edits. The libraries that are being released will be marked by the `
 }
 ```
 
-[config-schema.md]:config-schema.md
+[config-schema.md]: config-schema.md
 [state-schema.md]: state-schema.md
 
 ## Validate Commands are working
@@ -323,18 +309,21 @@ global file edits. The libraries that are being released will be marked by the `
 For each command you should be able to run the CLI on your remote desktop and have it create the expected PR.
 
 **Configure Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ generate -repo=<your repository> -library=<name of library that exists in googleapis but not your repository> -push
 ```
 
 **Generate Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ generate -repo=<your repository> -push
 ```
 
 **Release Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ release init -repo=<your repository> -push
