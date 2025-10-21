@@ -50,14 +50,19 @@ error and will halt the current workflow. If a container would like to send an e
 so by including a field in the various response files outlined below. Additionally, any logs sent to stderr/stdout will
 be surfaced to the CLI.
 
-We recommend you keep the average runtime of the language container for processing any command ~1 minute. We understand that some libraries may take longer to process. However, long runtimes can adversely affect your ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a generator update could trigger a run for all your libraries, which would significantly delay emergency updates.
-
 Additionally, Librarian specifies a user and group ID when executing the language-specific container. This means that
 the container **MUST** be able to run as an arbitrary user (the caller of Librarian's user). Any commands used will
 need to be executable by any user ID within the container.
 
 * Create a docker file for your container [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/Dockerfile)
 * Create a cloudbuild file [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/cloudbuild-exitgate.yaml) that uploads your image to us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev
+
+### Guidelines on Language Container Runtimes
+
+You should be able to run the generate and release command for an API such as Google Cloud Functions in less than a
+minute. We understand that some libraries may take longer to process, however, long runtimes can adversely affect your
+ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a
+generator update could trigger a run for all your libraries.
 
 ### Implement Container Contracts
 
