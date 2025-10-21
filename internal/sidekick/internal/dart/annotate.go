@@ -59,7 +59,7 @@ type modelAnnotations struct {
 	IssueTrackerURL            string
 	ApiKeyEnvironmentVariables []string
 	// Dart `export` statements e.g.
-	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"']
+	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
 	Exports []string
 }
 
