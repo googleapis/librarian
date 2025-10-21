@@ -333,6 +333,7 @@ type MockRepository struct {
 	GetCommitsForPathsSinceTagValue        []*gitrepo.Commit
 	GetCommitsForPathsSinceTagValueByTag   map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceTagError        error
+	GetCommitsForPathsSinceTagLastTagName  string
 	GetCommitsForPathsSinceLastGenValue    []*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByCommit map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByPath   map[string][]*gitrepo.Commit
@@ -420,6 +421,7 @@ func (m *MockRepository) GetLatestCommit(path string) (*gitrepo.Commit, error) {
 }
 
 func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*gitrepo.Commit, error) {
+	m.GetCommitsForPathsSinceTagLastTagName = tagName
 	if m.GetCommitsForPathsSinceTagError != nil {
 		return nil, m.GetCommitsForPathsSinceTagError
 	}
