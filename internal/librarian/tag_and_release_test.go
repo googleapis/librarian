@@ -361,6 +361,8 @@ some content
 
 * add SaveToGcsFindingsOutput ([1234567](https://github.com/googleapis/google-cloud-go/commit/1234567))
 
+* another feature ([9876543](https://github.com/googleapis/google-cloud-go/commit/9876543))
+
 ### Documentation
 
 * minor doc revision ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))
@@ -370,7 +372,7 @@ some content
 
 <details><summary>Bulk Changes</summary>
 
-* feat: this is a bulk change
+* feat: this is a bulk change ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))
 Libraries: a,b,google-cloud-storage
 
 * fix: this is another bulk change
@@ -381,21 +383,31 @@ Libraries: a,b,c
 				{
 					Version: "",
 					Library: "a",
-					Body: `feat: this is a bulk change
+					Body: `### Features
 
-fix: this is another bulk change`,
+* this is a bulk change ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))
+
+### Bug Fixes
+
+* this is another bulk change`,
 				},
 				{
 					Version: "",
 					Library: "b",
-					Body: `feat: this is a bulk change
+					Body: `### Features
 
-fix: this is another bulk change`,
+* this is a bulk change ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))
+
+### Bug Fixes
+
+* this is another bulk change`,
 				},
 				{
 					Version: "",
 					Library: "c",
-					Body:    "fix: this is another bulk change",
+					Body: `### Bug Fixes
+
+* this is another bulk change`,
 				},
 				{
 					Version: "v1.2.3",
@@ -406,11 +418,13 @@ fix: this is another bulk change`,
 
 * add SaveToGcsFindingsOutput ([1234567](https://github.com/googleapis/google-cloud-go/commit/1234567))
 
+* another feature ([9876543](https://github.com/googleapis/google-cloud-go/commit/9876543))
+
+* this is a bulk change ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))
+
 ### Documentation
 
-* minor doc revision ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))
-
-feat: this is a bulk change`,
+* minor doc revision ([abcdefgh](https://github.com/googleapis/google-cloud-go/commit/abcdefgh))`,
 				},
 			},
 		},

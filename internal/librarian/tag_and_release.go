@@ -15,9 +15,11 @@
 package librarian
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/url"
 	"path/filepath"
@@ -42,8 +44,16 @@ const (
 
 var (
 	bulkChangeSectionRegex = regexp.MustCompile(`(feat|fix|perf|revert|docs): (.*)\nLibraries: (.*)`)
+	contentRegex           = regexp.MustCompile(`### (Features|Bug Fixes|Performance Improvements|Reverts|Documentation)\n`)
 	detailsRegex           = regexp.MustCompile(`(?s)<details><summary>(.*?)</summary>(.*?)</details>`)
 	summaryRegex           = regexp.MustCompile(`(.*?): (v?\d+\.\d+\.\d+)`)
+
+	libraryReleaseTemplate = template.Must(template.New("libraryRelease").Parse(`### {{.Type}}
+{{ range .Messages }}
+{{.}}
+{{ end }}
+
+`))
 )
 
 type tagAndReleaseRunner struct {
@@ -62,8 +72,9 @@ type libraryRelease struct {
 }
 
 type versionAndBody struct {
+	body    map[string][]string
+	title   string
 	version string
-	body    []string
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
@@ -236,33 +247,54 @@ func parsePullRequestBody(body string) []libraryRelease {
 					slog.Warn("bulk change does not associated with a library id", "content", section)
 					continue
 				}
-				title := fmt.Sprintf("%s: %s", section[1], section[2])
+
+				commitType, ok := commitTypeToHeading[strings.TrimSpace(section[1])]
+				if !ok {
+					slog.Warn("unrecognized commit type", "commit", section[1])
+					continue
+				}
+				message := fmt.Sprintf("* %s", strings.TrimSpace(section[2]))
 				libraries := section[3]
 				for _, library := range strings.Split(libraries, ",") {
-					// Bulk change doesn't have a version, put an empty string so that
-					// the version is not overwritten if exists.
-					updateVersionAndBody(idToVersionAndBody, library, title, "")
+					// Bulk change doesn't have title and version, put an empty string so that
+					// title and version are not overwritten, if exists.
+					updateVersionAndBody(idToVersionAndBody, library, commitType, "", message, "")
 				}
 			}
 
 			continue
 		}
 
-		summaryMatches := summaryRegex.FindStringSubmatch(summary)
-		if len(summaryMatches) == 3 {
-			slog.Info("parsed pull request body", "library", summaryMatches[1], "version", summaryMatches[2])
-			library := strings.TrimSpace(summaryMatches[1])
-			version := strings.TrimSpace(summaryMatches[2])
-			updateVersionAndBody(idToVersionAndBody, library, content, version)
-		} else {
+		summaryMatch := summaryRegex.FindStringSubmatch(summary)
+		if len(summaryMatch) != 3 {
 			slog.Warn("failed to parse pull request body", "match", strings.Join(match, "\n"))
+			continue
 		}
+
+		slog.Info("parsed pull request body", "library", summaryMatch[1], "version", summaryMatch[2])
+		library := strings.TrimSpace(summaryMatch[1])
+		version := strings.TrimSpace(summaryMatch[2])
+		typeMatches := contentRegex.FindAllStringSubmatch(content, -1)
+		contentMatches := contentRegex.Split(content, -1)
+		title := contentMatches[0]
+		for i, typeMatch := range typeMatches {
+			commitType := typeMatch[1]
+			contentMatch := contentMatches[i+1]
+			messages := strings.Split(contentMatch, "\n\n")
+			for _, message := range messages {
+				message = strings.TrimSpace(message)
+				if message != "" {
+					updateVersionAndBody(idToVersionAndBody, library, commitType, title, message, version)
+				}
+			}
+		}
+
 	}
 
 	var parsedBodies []libraryRelease
 	for libraryID, vab := range idToVersionAndBody {
 		parsedBodies = append(parsedBodies, libraryRelease{
-			Body:    strings.Join(vab.body, "\n\n"),
+			Body:    updateReleaseBody(vab.body, vab.title),
 			Library: libraryID,
 			Version: vab.version,
 		})
@@ -292,18 +324,56 @@ func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github
 }
 
 // updateVersionAndBody is a helper function to update a map tracking release information for each library.
-func updateVersionAndBody(idToVersionAndBody map[string]*versionAndBody, library, title, version string) {
+func updateVersionAndBody(idToVersionAndBody map[string]*versionAndBody, library, commitType, title, message, version string) {
 	vab, ok := idToVersionAndBody[library]
 	if !ok {
 		idToVersionAndBody[library] = &versionAndBody{
+			body: map[string][]string{
+				commitType: {message},
+			},
 			version: version,
-			body:    []string{title},
+			title:   title,
 		}
-	} else {
-		if version == "" {
-			version = vab.version
-		}
-		vab.version = version
-		vab.body = append(vab.body, title)
+
+		return
 	}
+
+	vab.body[commitType] = append(vab.body[commitType], message)
+	if version == "" {
+		version = vab.version
+	}
+	vab.version = version
+	if title == "" {
+		title = vab.title
+	}
+	vab.title = title
+}
+
+func updateReleaseBody(body map[string][]string, title string) string {
+	var builder strings.Builder
+	builder.WriteString(title)
+	for _, commitType := range commitTypeOrder {
+		heading := commitTypeToHeading[commitType]
+		messages, ok := body[heading]
+		if !ok {
+			continue
+		}
+		var out bytes.Buffer
+		data := &struct {
+			Type     string
+			Messages []string
+		}{
+			Type:     heading,
+			Messages: messages,
+		}
+		if err := libraryReleaseTemplate.Execute(&out, data); err != nil {
+			slog.Error("error executing template", "error", err)
+			continue
+		}
+
+		builder.WriteString(strings.TrimSpace(out.String()))
+		builder.WriteString("\n\n")
+	}
+
+	return strings.TrimSpace(builder.String())
 }
