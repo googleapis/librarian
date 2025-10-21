@@ -277,6 +277,10 @@ func parsePullRequestBody(body string) []libraryRelease {
 		typeMatches := contentRegex.FindAllStringSubmatch(content, -1)
 		contentMatches := contentRegex.Split(content, -1)
 		title := contentMatches[0]
+		if len(typeMatches) == 0 {
+			// No commit message in a library.
+			updateVersionAndBody(idToVersionAndBody, library, "", title, "", version)
+		}
 		for i, typeMatch := range typeMatches {
 			commitType := typeMatch[1]
 			contentMatch := contentMatches[i+1]
