@@ -280,7 +280,7 @@ a single manual release does not interrupt automated releases - any subsequent
 
 If the repository containing the library is not already using automated releases
 for other libraries (i.e. if it's a split repo instead of a monorepo),
-first contact the Cloud Platform SDK team to enable automated releases.
+first [open a ticket](https://buganizer.corp.google.com/issues/new?component=1198207&template=2190445) with the Cloud Platform SDK team to enable automated releases.
 
 Next, edit the `.librarian/config.yaml` file in your repository. You will
 see YAML describing additional configuration for the libraries in the
