@@ -72,9 +72,9 @@ type libraryRelease struct {
 }
 
 type releaseSection struct {
-	body    map[string][]string
-	title   string
-	version string
+	typeToMessages map[string][]string
+	title          string
+	version        string
 }
 
 func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
@@ -298,7 +298,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 	var parsedBodies []libraryRelease
 	for libraryID, vab := range idToSection {
 		parsedBodies = append(parsedBodies, libraryRelease{
-			Body:    updateReleaseBody(vab.body, vab.title),
+			Body:    updateReleaseBody(vab.typeToMessages, vab.title),
 			Library: libraryID,
 			Version: vab.version,
 		})
@@ -332,7 +332,7 @@ func updateVersionAndBody(idToVersionAndBody map[string]*releaseSection, library
 	vab, ok := idToVersionAndBody[library]
 	if !ok {
 		idToVersionAndBody[library] = &releaseSection{
-			body: map[string][]string{
+			typeToMessages: map[string][]string{
 				commitType: {message},
 			},
 			version: version,
@@ -342,7 +342,7 @@ func updateVersionAndBody(idToVersionAndBody map[string]*releaseSection, library
 		return
 	}
 
-	vab.body[commitType] = append(vab.body[commitType], message)
+	vab.typeToMessages[commitType] = append(vab.typeToMessages[commitType], message)
 	if version == "" {
 		version = vab.version
 	}
