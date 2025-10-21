@@ -12,7 +12,7 @@ for a more comprehensive list of commands and flags.
 This guide uses the term Librarian (capital L, regular font) for the overall
 Librarian system, and `librarian` (lower case L, code font) for the CLI.
 
-## Internal support
+## Internal support (Googlers)
 
 If anything in this guide is unclear, please see go/g3doc-cloud-sdk-librarian-support
 for appropriate ways of obtaining more support.
