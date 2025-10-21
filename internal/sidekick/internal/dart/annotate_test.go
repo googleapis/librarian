@@ -87,7 +87,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 				if diff := cmp.Diff([]string{
 					"export 'package:google_cloud_gax/gax.dart' show Any",
 					"export 'package:google_cloud_gax/gax.dart' show Status"}, codec.Exports); diff != "" {
-					t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch in Codec.Exports (-want, +got)\n:%s", diff)
 				}
 			},
 		},
