@@ -274,9 +274,12 @@ func parsePullRequestBody(body string) []libraryRelease {
 		slog.Info("parsed pull request body", "library", summaryMatch[1], "version", summaryMatch[2])
 		library := strings.TrimSpace(summaryMatch[1])
 		version := strings.TrimSpace(summaryMatch[2])
-		typeMatches := contentRegex.FindAllStringSubmatch(content, -1)
+		// Split the content using commit types, e.g., Features, Bug Fixes, etc.
+		// For non-bulk changes, the first match (i = 0) is the release title, the i-th match is
+		// the commit messages of typeMatches[i-1].
 		contentMatches := contentRegex.Split(content, -1)
 		title := contentMatches[0]
+		typeMatches := contentRegex.FindAllStringSubmatch(content, -1)
 		if len(typeMatches) == 0 {
 			// No commit message in a library.
 			updateVersionAndBody(idToSection, library, "", title, "", version)
