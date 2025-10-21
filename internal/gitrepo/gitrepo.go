@@ -50,7 +50,7 @@ type Repository interface {
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
-	Checkout(commitHash string) error
+	CheckoutCommitAndCreateBranch(name, commitHash string) error
 	NewAndDeletedFiles() ([]string, error)
 	Push(branchName string) error
 	Restore(paths []string) error
@@ -529,15 +529,18 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 	})
 }
 
-// Checkout checks out a specific commit hash.
-func (r *LocalRepository) Checkout(commitHash string) error {
-	slog.Info("Checking out commit", "hash", commitHash)
+// CheckoutCommitAndCreateBranch creates a new git branch from a specific commit hash
+// and checks out the branch in the local git repository.
+func (r *LocalRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
+	slog.Info("Creating branch from commit and checking out", "name", name, "commit", commitHash)
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
 	}
 	return worktree.Checkout(&git.CheckoutOptions{
-		Hash: plumbing.NewHash(commitHash),
+		Hash:   plumbing.NewHash(commitHash),
+		Branch: plumbing.NewBranchReferenceName(name),
+		Create: true,
 	})
 }
 
