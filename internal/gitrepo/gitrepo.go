@@ -50,6 +50,8 @@ type Repository interface {
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
+	Checkout(commitHash string) error
+	NewAndDeletedFiles() ([]string, error)
 	Push(branchName string) error
 	Restore(paths []string) error
 	CleanUntracked(paths []string) error
@@ -253,6 +255,26 @@ func (r *LocalRepository) ChangedFiles() ([]string, error) {
 		}
 	}
 	return changedFiles, nil
+}
+
+// NewAndDeletedFiles returns a list of files that are new or deleted.
+func (r *LocalRepository) NewAndDeletedFiles() ([]string, error) {
+	slog.Info("Getting new and deleted files")
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	status, err := worktree.Status()
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for file, fileStatus := range status {
+		if fileStatus.Worktree == git.Untracked || fileStatus.Staging == git.Added || fileStatus.Worktree == git.Deleted || fileStatus.Staging == git.Deleted {
+			files = append(files, file)
+		}
+	}
+	return files, nil
 }
 
 // Remotes returns the remotes within the repository.
@@ -504,6 +526,18 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 		Branch: plumbing.NewBranchReferenceName(name),
 		Create: true,
 		Keep:   true,
+	})
+}
+
+// Checkout checks out a specific commit hash.
+func (r *LocalRepository) Checkout(commitHash string) error {
+	slog.Info("Checking out commit", "hash", commitHash)
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Hash: plumbing.NewHash(commitHash),
 	})
 }
 

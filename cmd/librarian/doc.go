@@ -269,6 +269,54 @@ Flags:
 	  	is configured as a language repository.
 	-v	enables verbose logging
 
+# test-container
+
+test-container commands for librarian
+
+Usage:
+
+	librarian test-container <command> [arguments]
+
+Commands:
+
+	generate                   runs test on language container
+
+# test-container generate
+
+The 'test-container generate' command is provided to test
+
+	language containers and their interaction with Librarian CLI.
+
+Usage:
+
+	librarian test-container generate [flags]
+
+Flags:
+
+	-api-source string
+	  	The location of an API specification repository.
+	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
+	-branch string
+	  	The branch to use with remote code repositories. This is used to specify
+	  	which branch to clone and which branch to use as the base for a pull
+	  	request. (default "main")
+	-image string
+	  	Language specific image used to invoke code generation and releasing.
+	  	If not specified, the image configured in the state.yaml is used.
+	-library string
+	  	The library ID to generate or release (e.g. google-cloud-secretmanager-v1).
+	  	This corresponds to a releasable language unit.
+	-output string
+	  	Working directory root. When this is not specified, a working directory
+	  	will be created in /tmp.
+	-repo string
+	  	Code repository where the generated code will reside. Can be a remote
+	  	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
+	  	local file path like /path/to/repo. Both absolute and relative paths are
+	  	supported. If not specified, will try to detect if the current working directory
+	  	is configured as a language repository.
+	-v	enables verbose logging
+
 # version
 
 Version prints version information for the librarian binary.
