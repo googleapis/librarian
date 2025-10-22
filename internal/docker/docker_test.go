@@ -716,6 +716,37 @@ func TestWriteLibraryState(t *testing.T) {
 			wantFile: "successful-marshaling-and-writing.json",
 		},
 		{
+			name: "omit empty status",
+			state: &config.LibrarianState{
+				Image: "v1.0.0",
+				Libraries: []*config.LibraryState{
+					{
+						ID:      "google-cloud-go",
+						Version: "1.0.0",
+						APIs: []*config.API{
+							{
+								Path:          "google/cloud/compute/v1",
+								ServiceConfig: "example_service_config.yaml",
+								Status:        "",
+							},
+						},
+						SourceRoots: []string{
+							"src/example/path",
+						},
+						PreserveRegex: []string{
+							"example-preserve-regex",
+						},
+						RemoveRegex: []string{
+							"example-remove-regex",
+						},
+					},
+				},
+			},
+			path:     os.TempDir(),
+			filename: "omit-empty-status.json",
+			wantFile: "omit-empty-status.json",
+		},
+		{
 			name:     "empty library state",
 			state:    &config.LibrarianState{},
 			path:     os.TempDir(),

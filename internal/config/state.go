@@ -243,7 +243,7 @@ type API struct {
 	ServiceConfig string `yaml:"service_config" json:"service_config"`
 	// The status of the API, one of "new" or "existing".
 	// This field is ignored when writing to state.yaml.
-	Status string `yaml:"-" json:"status"`
+	Status string `yaml:"-" json:"status,omitempty"`
 }
 
 // Validate checks that the API is valid.
