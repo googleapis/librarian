@@ -62,7 +62,7 @@ func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
 }
 
 func (r *testGenerateRunner) run(ctx context.Context) error {
-	slog.Debug("prepare for test", "library", r.library)
+	slog.Info("running test for", "library", r.library)
 	libraryState := r.state.LibraryByID(r.library)
 	if libraryState == nil {
 		return fmt.Errorf("library %q not found in state", r.library)
@@ -78,96 +78,12 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 	}
 
 	// We capture the error here and pass it to the validation step.
-	slog.Debug("run generate", "library", r.library)
-
 	generateErr := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir)
 
-	slog.Debug("validate", "library", r.library)
 	if err := validateGenerateTest(generateErr, r.repo, protoFileToGUID, r.checkUnexpectedChanges); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-// validateGenerateTest checks the results of the generation process. It ensures
-// that the generation command did not fail, that every injected proto change
-// resulted in a corresponding change in the generated code, and optionally
-// verifies that no other unexpected files were added, deleted, or modified.
-func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileToGUID map[string]string, checkUnexpectedChanges bool) error {
-	slog.Info("running validation")
-	if generateErr != nil {
-		return fmt.Errorf("generation failed: %w", generateErr)
-	}
-
-	// Get the list of uncommitted changed files from the worktree.
-	changedFiles, err := repo.ChangedFiles()
-	if err != nil {
-		return fmt.Errorf("failed to get changed files from worktree: %w", err)
-	}
-
-	if checkUnexpectedChanges {
-		newAndDeleted, err := repo.NewAndDeletedFiles()
-		if err != nil {
-			return fmt.Errorf("failed to get new and deleted files: %w", err)
-		}
-		if len(newAndDeleted) > 0 {
-			return fmt.Errorf("expected no new or deleted files, but found: %s", strings.Join(newAndDeleted, ", "))
-		}
-		slog.Info("validation succeeded: no new or deleted files")
-	}
-
-	guidsToFind := make(map[string]bool)
-	for _, guid := range protoFileToGUID {
-		guidsToFind[guid] = false
-	}
-	filesWithGUIDs := make(map[string]bool)
-	repoDir := repo.GetDir()
-
-	for _, filePath := range changedFiles {
-		fullPath := filepath.Join(repoDir, filePath)
-		content, err := os.ReadFile(fullPath)
-		if err != nil {
-			if os.IsNotExist(err) { // The file was deleted, which is a valid change.
-				continue
-			}
-			return fmt.Errorf("failed to read changed file %s: %w", filePath, err)
-		}
-
-		contentStr := string(content)
-		wasModifiedByTest := false
-		for guid := range guidsToFind {
-			if strings.Contains(contentStr, guid) {
-				guidsToFind[guid] = true
-				wasModifiedByTest = true
-			}
-		}
-		if wasModifiedByTest {
-			filesWithGUIDs[filePath] = true
-		}
-	}
-
-	for protoFile, guid := range protoFileToGUID {
-		if !guidsToFind[guid] {
-			return fmt.Errorf("proto change in %s (GUID %s) did not result in any generated file changes", protoFile, guid)
-		}
-	}
-	slog.Info("validation succeeded: all proto changes resulted in generated file changes")
-
-	if checkUnexpectedChanges {
-		var unrelatedChanges []string
-		for _, filePath := range changedFiles {
-			if !filesWithGUIDs[filePath] {
-				unrelatedChanges = append(unrelatedChanges, filePath)
-			}
-		}
-		if len(unrelatedChanges) > 0 {
-			return fmt.Errorf("found unrelated file changes: %s", strings.Join(unrelatedChanges, ", "))
-		}
-		slog.Info("validation succeeded: no unrelated file changes found")
-	}
-
-	slog.Info("all validation checks passed")
 	return nil
 }
 
@@ -186,7 +102,6 @@ func prepareForGenerateTest(libraryState *config.LibraryState, libraryID string,
 	}
 
 	branchName := "test-generate-" + uuid.New().String()
-	slog.Info(fmt.Sprintf("checking out new branch %s from %s", branchName, libraryState.LastGeneratedCommit))
 	if err := sourceRepo.CheckoutCommitAndCreateBranch(branchName, libraryState.LastGeneratedCommit); err != nil {
 		return nil, err
 	}
@@ -201,7 +116,6 @@ func prepareForGenerateTest(libraryState *config.LibraryState, libraryID string,
 		return nil, err
 	}
 
-	slog.Info("committing test changes")
 	if err := sourceRepo.AddAll(); err != nil {
 		return nil, err
 	}
@@ -304,4 +218,85 @@ func findProtoInsertionLine(lines []string) int {
 		}
 	}
 	return -1
+}
+
+// validateGenerateTest checks the results of the generation process. It ensures
+// that the generation command did not fail, that every injected proto change
+// resulted in a corresponding change in the generated code, and optionally
+// verifies that no other unexpected files were added, deleted, or modified.
+func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileToGUID map[string]string, checkUnexpectedChanges bool) error {
+	slog.Info("running test validation for library")
+	if generateErr != nil {
+		return fmt.Errorf("generation failed: %w", generateErr)
+	}
+
+	// Get the list of uncommitted changed files from the worktree.
+	changedFiles, err := repo.ChangedFiles()
+	if err != nil {
+		return fmt.Errorf("failed to get changed files from worktree: %w", err)
+	}
+
+	if checkUnexpectedChanges {
+		newAndDeleted, err := repo.NewAndDeletedFiles()
+		if err != nil {
+			return fmt.Errorf("failed to get new and deleted files: %w", err)
+		}
+		if len(newAndDeleted) > 0 {
+			return fmt.Errorf("expected no new or deleted files, but found: %s", strings.Join(newAndDeleted, ", "))
+		}
+		slog.Debug("validation succeeded: no new or deleted files")
+	}
+
+	guidsToFind := make(map[string]bool)
+	for _, guid := range protoFileToGUID {
+		guidsToFind[guid] = false
+	}
+	filesWithGUIDs := make(map[string]bool)
+	repoDir := repo.GetDir()
+
+	for _, filePath := range changedFiles {
+		fullPath := filepath.Join(repoDir, filePath)
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			if os.IsNotExist(err) { // The file was deleted, which is a valid change.
+				continue
+			}
+			return fmt.Errorf("failed to read changed file %s: %w", filePath, err)
+		}
+
+		contentStr := string(content)
+		wasModifiedByTest := false
+		for guid := range guidsToFind {
+			if strings.Contains(contentStr, guid) {
+				guidsToFind[guid] = true
+				wasModifiedByTest = true
+			}
+		}
+		if wasModifiedByTest {
+			filesWithGUIDs[filePath] = true
+		}
+	}
+
+	for protoFile, guid := range protoFileToGUID {
+		if !guidsToFind[guid] {
+			return fmt.Errorf("proto change in %s (GUID %s) did not result in any generated file changes", protoFile, guid)
+		}
+	}
+	slog.Debug("validation succeeded: all proto changes resulted in generated file changes")
+
+	if checkUnexpectedChanges {
+		var unrelatedChanges []string
+		for _, filePath := range changedFiles {
+			if !filesWithGUIDs[filePath] {
+				unrelatedChanges = append(unrelatedChanges, filePath)
+			}
+		}
+		if len(unrelatedChanges) > 0 {
+			return fmt.Errorf("found unrelated file changes: %s", strings.Join(unrelatedChanges, ", "))
+		}
+		slog.Debug("validation succeeded: no unrelated file changes found")
+	}
+
+	slog.Info("all validation checks passed")
+	return nil
 }
