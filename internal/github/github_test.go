@@ -1000,6 +1000,77 @@ func TestCreateTag(t *testing.T) {
 	}
 }
 
+func TestRetryableTransport(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name             string
+		handler          func(w http.ResponseWriter, r *http.Request, requestCount int)
+		wantStatusCode   int
+		wantErr          bool
+		wantRequestCount int
+	}{
+		{
+			name: "Success after retries",
+			handler: func(w http.ResponseWriter, r *http.Request, requestCount int) {
+				if requestCount < 3 {
+					w.WriteHeader(http.StatusServiceUnavailable)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+			},
+			wantStatusCode:   http.StatusOK,
+			wantErr:          false,
+			wantRequestCount: 3,
+		},
+		{
+			name: "Failure after all retries",
+			handler: func(w http.ResponseWriter, r *http.Request, _ int) {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			},
+			wantStatusCode:   http.StatusServiceUnavailable,
+			wantErr:          true,
+			wantRequestCount: 3,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var requestCount int
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestCount++
+				test.handler(w, r, requestCount)
+			}))
+			defer server.Close()
+
+			repo := &Repository{Owner: "owner", Name: "repo"}
+			client := newClientWithHTTP("fake-token", repo, server.Client())
+			client.BaseURL, _ = url.Parse(server.URL + "/")
+
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, nil)
+			if err != nil {
+				t.Fatalf("http.NewRequestWithContext() failed: %v", err)
+			}
+			resp, err := client.Do(t.Context(), req, nil)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("client.Do() err = nil, want error")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("client.Do() failed: %v", err)
+				}
+				defer resp.Body.Close()
+			}
+
+			if resp.StatusCode != test.wantStatusCode {
+				t.Errorf("client.Do() status = %d, want %d", resp.StatusCode, test.wantStatusCode)
+			}
+			if requestCount != test.wantRequestCount {
+				t.Errorf("requestCount = %d, want %d", requestCount, test.wantRequestCount)
+			}
+		})
+	}
+}
+
 func TestNewClient(t *testing.T) {
 
 	t.Parallel()

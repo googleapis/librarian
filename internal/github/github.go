@@ -24,9 +24,35 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v69/github"
 )
+
+const (
+	maxRetries = 3
+	retryDelay = 2 * time.Second
+)
+
+type retryableTransport struct {
+	transport http.RoundTripper
+}
+
+// RoundTrip implements the http.RoundTripper interface and adds retry logic
+// for transient server errors.
+func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	var resp *http.Response
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		resp, err = t.transport.RoundTrip(req)
+		if err == nil && resp.StatusCode != http.StatusServiceUnavailable {
+			return resp, nil
+		}
+		slog.Warn("retrying due to error", "err", err, "status_code", resp.StatusCode)
+		time.Sleep(retryDelay)
+	}
+	return resp, err
+}
 
 // PullRequest is a type alias for the go-github type.
 type PullRequest = github.PullRequest
@@ -57,6 +83,14 @@ func NewClient(accessToken string, repo *Repository) *Client {
 }
 
 func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Client) *Client {
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+	transport := httpClient.Transport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+	httpClient.Transport = &retryableTransport{transport: transport}
 	client := github.NewClient(httpClient)
 	if repo != nil && repo.BaseURL != "" {
 		baseURL, _ := url.Parse(repo.BaseURL)
