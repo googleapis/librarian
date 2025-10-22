@@ -24,9 +24,12 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/api/apitest"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/sample"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
+
+const computeDiscoveryFile = "../../../testdata/disco/compute.v1.json"
 
 func TestSorted(t *testing.T) {
 	got, err := ComputeDisco(t, nil)
@@ -46,20 +49,14 @@ func TestInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantName := "compute"
-	wantTitle := "Compute Engine API"
-	wantDescription := "Creates and runs virtual machines on Google Cloud Platform. "
-	if got.Name != wantName {
-		t.Errorf("want = %q; got = %q", wantName, got.Name)
+	want := &api.API{
+		Name:        "compute",
+		Title:       "Compute Engine API",
+		Description: "Creates and runs virtual machines on Google Cloud Platform. ",
+		Revision:    "20250810",
 	}
-	if got.Title != wantTitle {
-		t.Errorf("want = %q; got = %q", wantTitle, got.Title)
-	}
-	if diff := cmp.Diff(wantDescription, got.Description); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	if got.PackageName != "" {
-		t.Errorf("expected empty package name")
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
 
@@ -73,20 +70,18 @@ func TestServiceConfigOverridesInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Name != sc.Name {
-		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
+	want := &api.API{
+		Name:        sc.Name,
+		Title:       sc.Title,
+		Description: sc.Documentation.Summary,
+		Revision:    "20250810",
+		PackageName: "google.cloud.secretmanager.v1",
 	}
-	if got.Title != sc.Title {
-		t.Errorf("want = %q; got = %q", sc.Title, got.Title)
-	}
-	if diff := cmp.Diff(sc.Documentation.Summary, got.Description); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 	if len(sc.Apis) != 2 {
 		t.Fatalf("expected 2 APIs in service config")
-	}
-	if got.PackageName == "" {
-		t.Errorf("got empty package name")
 	}
 	if !strings.HasPrefix(sc.Apis[1].Name, got.PackageName) {
 		t.Errorf("mismatched package name want = %q, got = %q", sc.Apis[1].Name, got.PackageName)
@@ -118,7 +113,7 @@ func TestBadParse(t *testing.T) {
 		{"resource with bad child", `{"resources": {"badResource": {"resources": {"badChild": {"methods": {"badResponse": {"response": {"$ref": "notThere"}}}}}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if _, err := NewAPI(nil, contents); err == nil {
+		if _, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input", test.Name)
 		}
 	}
@@ -210,7 +205,7 @@ func TestMessageErrors(t *testing.T) {
 		{"bad message field", `{"schemas": {"withBadField": {"type": "object", "properties": {"badFormat": {"type": "string", "format": "--bad--"}}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if _, err := NewAPI(nil, contents); err == nil {
+		if _, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input", test.Name)
 		}
 	}
@@ -224,7 +219,7 @@ func TestServiceErrors(t *testing.T) {
 		{"bad method", `{"resources": {"withBadMethod": {"methods": {"uploadNotSupported": { "mediaUpload": {} }}}}}`},
 	} {
 		contents := []byte(test.Contents)
-		if got, err := NewAPI(nil, contents); err == nil {
+		if got, err := NewAPI(nil, contents, nil); err == nil {
 			t.Fatalf("expected error for %s input, got=%v", test.Name, got)
 		}
 	}
@@ -232,9 +227,18 @@ func TestServiceErrors(t *testing.T) {
 
 func ComputeDisco(t *testing.T, sc *serviceconfig.Service) (*api.API, error) {
 	t.Helper()
-	contents, err := os.ReadFile("../../../testdata/disco/compute.v1.json")
+	contents, err := os.ReadFile(computeDiscoveryFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return NewAPI(sc, contents, nil)
+}
+
+func ComputeDiscoWithLros(t *testing.T, cfg *config.Config) (*api.API, error) {
+	t.Helper()
+	contents, err := os.ReadFile(computeDiscoveryFile)
 	if err != nil {
 		return nil, err
 	}
-	return NewAPI(sc, contents)
+	return NewAPI(nil, contents, cfg)
 }

@@ -38,6 +38,8 @@ type LibraryConfig struct {
 	NextVersion     string `yaml:"next_version"`
 	ReleaseBlocked  bool   `yaml:"release_blocked"`
 	TagFormat       string `yaml:"tag_format"`
+	// Whether to create a GitHub release for this library.
+	SkipGitHubReleaseCreation bool `yaml:"skip_github_release_creation"`
 }
 
 // GlobalFile defines the global files in language repositories.

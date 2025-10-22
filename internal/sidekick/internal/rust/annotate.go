@@ -46,13 +46,17 @@ type modelAnnotations struct {
 	Services          []*api.Service
 	NameToLower       string
 	NotForPublication bool
-	// If true, disable rustdoc warnings known to be triggered by our generated
-	// documentation.
+	// A list of `#[allow(rustdoc::*)]` warnings to disable.
 	DisabledRustdocWarnings []string
-	// Sets the default system parameters
+	// A list of `#[allow(clippy::*)]` warnings to disable.
+	DisabledClippyWarnings []string
+	// Sets the default system parameters.
 	DefaultSystemParameters []systemParameter
-	// Enables per-service features
+	// Enables per-service features.
 	PerServiceFeatures bool
+	// The set of default features, only applicable if `PerServiceFeatures` is
+	// true.
+	DefaultFeatures []string
 	// A list of additional modules loaded by the `lib.rs` file.
 	ExtraModules []string
 	// If true, at lease one service has a method we cannot wrap (yet).
@@ -131,7 +135,10 @@ func (m *methodAnnotation) HasBindingSubstitutions() bool {
 
 // HasLROs returns true if this service includes methods that return long-running operations.
 func (s *serviceAnnotations) HasLROs() bool {
-	return len(s.LROTypes) > 0
+	if len(s.LROTypes) > 0 {
+		return true
+	}
+	return slices.IndexFunc(s.Methods, func(m *api.Method) bool { return m.DiscoveryLro != nil }) != -1
 }
 
 // FeatureName returns the feature name for the service.
@@ -200,6 +207,7 @@ type messageAnnotation struct {
 
 type methodAnnotation struct {
 	Name                      string
+	NameNoMangling            string
 	BuilderName               string
 	DocLines                  []string
 	PathInfo                  *api.PathInfo
@@ -260,6 +268,17 @@ func (info *operationInfo) BothAreEmpty() bool {
 // NoneAreEmpty returns true if neither the metadata nor the response are empty.
 func (info *operationInfo) NoneAreEmpty() bool {
 	return info.MetadataType != "wkt::Empty" && info.ResponseType != "wkt::Empty"
+}
+
+type discoveryLroAnnotations struct {
+	MethodName            string
+	ReturnType            string
+	PollingPathParameters []discoveryLroPathParameter
+}
+
+type discoveryLroPathParameter struct {
+	Name       string
+	SetterName string
 }
 
 type routingVariantAnnotations struct {
@@ -377,11 +396,20 @@ type oneOfAnnotation struct {
 	QualifiedName string
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
+	// This is always relative to `ScopeInExamples`.
 	RelativeName string
 	// The Rust `struct` that contains this oneof, fully qualified
 	StructQualifiedName string
-	FieldType           string
-	DocLines            []string
+	// The scope to show in examples. For messages in external packages
+	// this is basically `QualifiedName`. For messages in the current package
+	// this includes `modelAnnotations.PackageName`.
+	ScopeInExamples string
+	FieldType       string
+	DocLines        []string
+	// The best field to show in a oneof related samples.
+	// Non deprecated fields are preferred, then scalar, repeated, map fields
+	// in that order.
+	ExampleField *api.Field
 	// If set, this enum is only enabled when some features are enabled.
 	FeatureGates   []string
 	FeatureGatesOp string
@@ -422,6 +450,9 @@ type fieldAnnotations struct {
 	// If true, this is a `wkt::NullValue` field, and also requires super-extra
 	// custom deserialization.
 	IsWktNullValue bool
+	// If this field is part of a oneof group, this will contain the other fields
+	// in the group.
+	OtherFieldsInGroup []*api.Field
 }
 
 // SkipIfIsEmpty returns true if the field should be skipped if it is empty.
@@ -509,7 +540,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 	hasLROs := false
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil {
+			if m.OperationInfo != nil || m.DiscoveryLro != nil {
 				hasLROs = true
 			}
 			if !codec.generateMethod(m) {
@@ -569,6 +600,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		NameToLower:             strings.ToLower(model.Name),
 		NotForPublication:       codec.doNotPublish,
 		DisabledRustdocWarnings: codec.disabledRustdocWarnings,
+		DisabledClippyWarnings:  codec.disabledClippyWarnings,
 		PerServiceFeatures:      codec.perServiceFeatures && len(servicesSubset) > 0,
 		ExtraModules:            codec.extraModules,
 		Incomplete: slices.ContainsFunc(model.Services, func(s *api.Service) bool {
@@ -650,6 +682,10 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		}
 		annotation.FeatureGatesOp = "all"
 		annotation.FeatureGates = allFeatures
+	}
+	ann.DefaultFeatures = c.defaultFeatures
+	if ann.DefaultFeatures == nil {
+		ann.DefaultFeatures = allFeatures
 	}
 }
 
@@ -770,6 +806,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 	serviceName := c.ServiceName(m.Service)
 	annotation := &methodAnnotation{
 		Name:                      toSnake(m.Name),
+		NameNoMangling:            toSnakeNoMangling(m.Name),
 		BuilderName:               toPascal(m.Name),
 		Body:                      bodyAccessor(m),
 		DocLines:                  c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes()),
@@ -796,6 +833,20 @@ func (c *codec) annotateMethod(m *api.Method) {
 			ResponseType:     responseType,
 			PackageNamespace: c.packageNamespace(m.Model),
 		}
+	}
+	if m.DiscoveryLro != nil {
+		lroAnnotation := &discoveryLroAnnotations{
+			MethodName: annotation.Name,
+			ReturnType: returnType,
+		}
+		for _, p := range m.DiscoveryLro.PollingPathParameters {
+			a := discoveryLroPathParameter{
+				Name:       toSnake(p),
+				SetterName: toSnakeNoMangling(p),
+			}
+			lroAnnotation.PollingPathParameters = append(lroAnnotation.PollingPathParameters, a)
+		}
+		m.DiscoveryLro.Codec = lroAnnotation
 	}
 	m.Codec = annotation
 }
@@ -945,6 +996,39 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
+	scopeInExamples := scope
+	if strings.HasPrefix(scope, c.modulePath+"::") {
+		scopeInExamples = strings.Replace(scope, c.modulePath, fmt.Sprintf("%s::model", c.packageNamespace(model)), 1)
+	}
+
+	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
+		if f1.Deprecated == f2.Deprecated {
+			if f1.Map == f2.Map {
+				if f1.Repeated == f2.Repeated {
+					if f1.MessageType != nil && f2.MessageType == nil {
+						return -1
+					} else if f1.MessageType == nil && f2.MessageType != nil {
+						return 1
+					} else {
+						return 0
+					}
+				} else if f1.Repeated {
+					return -1
+				} else {
+					return 1
+				}
+			} else if f1.Map {
+				return -1
+			} else {
+				return 1
+			}
+		} else if f1.Deprecated {
+			return -1
+		} else {
+			return 1
+		}
+	})
+
 	oneof.Codec = &oneOfAnnotation{
 		FieldName:           toSnake(oneof.Name),
 		SetterName:          toSnakeNoMangling(oneof.Name),
@@ -952,8 +1036,10 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		QualifiedName:       qualifiedName,
 		RelativeName:        relativeEnumName,
 		StructQualifiedName: structQualifiedName,
+		ScopeInExamples:     scopeInExamples,
 		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),
 		DocLines:            c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes()),
+		ExampleField:        bestField,
 	}
 }
 
@@ -1063,6 +1149,9 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		} else {
 			ann.SerdeAs = c.messageFieldSerdeAs(field)
 		}
+	}
+	if field.Group != nil {
+		ann.OtherFieldsInGroup = language.FilterSlice(field.Group.Fields, func(f *api.Field) bool { return field != f })
 	}
 }
 

@@ -28,6 +28,11 @@ library;
 {{#Codec.Imports}}
 {{{.}}}
 {{/Codec.Imports}}
+
+{{#Codec.Exports}}
+{{{.}}};
+{{/Codec.Exports}}
+
 {{#Codec.PartFileReference}}
 
 part '{{Codec.PartFileReference}}';
@@ -36,7 +41,7 @@ part '{{Codec.PartFileReference}}';
 {{#Codec.HasServices}}
 const _apiKeys = [
 {{#Codec.ApiKeyEnvironmentVariables}}
-"{{{.}}}",
+'{{{.}}}',
 {{/Codec.ApiKeyEnvironmentVariables}}
 ];
 {{/Codec.HasServices}}

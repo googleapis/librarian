@@ -127,11 +127,17 @@ type Config struct {
 	// expected.
 	CommandName string
 
-	// Commit determines whether to creat a commit for the release but not create
+	// Commit determines whether to create a commit for the release but not create
 	// a pull request.
 	//
 	// This flag is ignored if Push is set to true.
 	Commit bool
+
+	// GenerateUnchanged determines whether to generate libraries where none of
+	// the associated APIs have changed since the commit at which they were last
+	// generated. Note that this does not override any configuration indicating
+	// that the library should not be automatically generated.
+	GenerateUnchanged bool
 
 	// GitHubAPIEndpoint is the GitHub API endpoint to use for all GitHub API
 	// operations.

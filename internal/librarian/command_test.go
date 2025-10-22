@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,56 +31,6 @@ import (
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
-
-func TestFindLibraryByID(t *testing.T) {
-	lib1 := &config.LibraryState{ID: "lib1"}
-	lib2 := &config.LibraryState{ID: "lib2"}
-	stateWithLibs := &config.LibrarianState{
-		Libraries: []*config.LibraryState{lib1, lib2},
-	}
-	stateNoLibs := &config.LibrarianState{
-		Libraries: []*config.LibraryState{},
-	}
-
-	for _, test := range []struct {
-		name      string
-		state     *config.LibrarianState
-		libraryID string
-		want      *config.LibraryState
-	}{
-		{
-			name:      "found first library",
-			state:     stateWithLibs,
-			libraryID: "lib1",
-			want:      lib1,
-		},
-		{
-			name:      "found second library",
-			state:     stateWithLibs,
-			libraryID: "lib2",
-			want:      lib2,
-		},
-		{
-			name:      "not found",
-			state:     stateWithLibs,
-			libraryID: "lib3",
-			want:      nil,
-		},
-		{
-			name:      "empty libraries slice",
-			state:     stateNoLibs,
-			libraryID: "lib1",
-			want:      nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := findLibraryByID(test.state, test.libraryID)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findLibraryByID() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
 
 func TestDeriveImage(t *testing.T) {
 	for _, test := range []struct {
@@ -1294,7 +1245,7 @@ func TestCommitAndPush(t *testing.T) {
 		setupMockRepo     func(t *testing.T) gitrepo.Repository
 		setupMockClient   func(t *testing.T) GitHubClient
 		state             *config.LibrarianState
-		prType            string
+		prType            pullRequestType
 		failedGenerations int
 		commit            bool
 		push              bool
@@ -1302,6 +1253,7 @@ func TestCommitAndPush(t *testing.T) {
 		expectedErrMsg    string
 		check             func(t *testing.T, repo gitrepo.Repository)
 		wantPRBodyFile    bool
+		prBodyBuilder     func() (string, error)
 	}{
 		{
 			name: "Push flag and Commit flag are not specified",
@@ -1320,7 +1272,7 @@ func TestCommitAndPush(t *testing.T) {
 				return nil
 			},
 			state:  &config.LibrarianState{},
-			prType: "release",
+			prType: pullRequestRelease,
 			check: func(t *testing.T, repo gitrepo.Repository) {
 				mockRepo := repo.(*MockRepository)
 				if mockRepo.PushCalls != 0 {
@@ -1347,7 +1299,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:  &config.LibrarianState{},
-			prType: "release",
+			prType: pullRequestRelease,
 			commit: true,
 			check: func(t *testing.T, repo gitrepo.Repository) {
 				mockRepo := repo.(*MockRepository)
@@ -1375,7 +1327,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:  &config.LibrarianState{},
-			prType: "generate",
+			prType: pullRequestGenerate,
 			push:   true,
 		},
 		{
@@ -1396,7 +1348,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:  &config.LibrarianState{},
-			prType: "release",
+			prType: pullRequestRelease,
 			push:   true,
 		},
 		{
@@ -1410,7 +1362,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			state:          &config.LibrarianState{},
 			wantErr:        true,
@@ -1432,7 +1384,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "mock add all error",
@@ -1453,7 +1405,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "create branch error",
@@ -1474,7 +1426,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "commit error",
@@ -1495,7 +1447,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "push error",
@@ -1516,10 +1468,11 @@ func TestCommitAndPush(t *testing.T) {
 				return &mockGitHubClient{}
 			},
 			state:          &config.LibrarianState{},
-			prType:         "random",
+			prType:         100,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request body",
+			prBodyBuilder:  func() (string, error) { return "", fmt.Errorf("failed to create pull request body") },
 		},
 		{
 			name: "Create pull request error",
@@ -1539,7 +1492,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:          &config.LibrarianState{},
-			prType:         "generate",
+			prType:         pullRequestGenerate,
 			push:           true,
 			wantErr:        true,
 			expectedErrMsg: "failed to create pull request",
@@ -1560,7 +1513,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			prType: "generate",
+			prType: pullRequestGenerate,
 			push:   true,
 		},
 		{
@@ -1582,7 +1535,7 @@ func TestCommitAndPush(t *testing.T) {
 				}
 			},
 			state:             &config.LibrarianState{},
-			prType:            "generate",
+			prType:            pullRequestGenerate,
 			failedGenerations: 1,
 			push:              true,
 			wantErr:           true,
@@ -1592,6 +1545,11 @@ func TestCommitAndPush(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			repo := test.setupMockRepo(t)
 			client := test.setupMockClient(t)
+
+			// set default PR body builder
+			if test.prBodyBuilder == nil {
+				test.prBodyBuilder = func() (string, error) { return "some pr body", nil }
+			}
 
 			commitInfo := &commitInfo{
 				commit:            test.commit,
@@ -1603,6 +1561,7 @@ func TestCommitAndPush(t *testing.T) {
 				state:             test.state,
 				failedGenerations: test.failedGenerations,
 				workRoot:          t.TempDir(),
+				prBodyBuilder:     test.prBodyBuilder,
 			}
 
 			err := commitAndPush(context.Background(), commitInfo)
@@ -1637,6 +1596,7 @@ func TestWritePRBody(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		info     *commitInfo
+		wantErr  bool
 		wantFile bool
 	}{
 		{
@@ -1651,14 +1611,15 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   "release",
-				state:    &config.LibrarianState{},
-				workRoot: t.TempDir(),
+				prType:        pullRequestRelease,
+				state:         &config.LibrarianState{},
+				workRoot:      t.TempDir(),
+				prBodyBuilder: func() (string, error) { return "some pr body", nil },
 			},
 			wantFile: true,
 		},
 		{
-			name: "invalid repo",
+			name: "unable to build PR body",
 			info: &commitInfo{
 				languageRepo: &MockRepository{
 					Dir: t.TempDir(),
@@ -1669,25 +1630,11 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   "release",
-				workRoot: t.TempDir(),
+				prType:        pullRequestRelease,
+				workRoot:      t.TempDir(),
+				prBodyBuilder: func() (string, error) { return "", fmt.Errorf("some error") },
 			},
-		},
-		{
-			name: "invalid-pr-type",
-			info: &commitInfo{
-				languageRepo: &MockRepository{
-					Dir: t.TempDir(),
-					RemotesValue: []*gitrepo.Remote{
-						{
-							Name: "origin",
-							URLs: []string{"https://github.com/googleapis/librarian.git"},
-						},
-					},
-				},
-				prType:   "invalid-pr-type",
-				workRoot: t.TempDir(),
-			},
+			wantErr: true,
 		},
 		{
 			name: "unable to save file",
@@ -1701,14 +1648,45 @@ func TestWritePRBody(t *testing.T) {
 						},
 					},
 				},
-				prType:   "release",
+				prType:        pullRequestRelease,
+				state:         &config.LibrarianState{},
+				workRoot:      filepath.Join(t.TempDir(), "missing-directory"),
+				prBodyBuilder: func() (string, error) { return "some pr body", nil },
+			},
+			wantErr: true,
+		},
+		{
+			name: "no body builder",
+			info: &commitInfo{
+				languageRepo: &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+				},
+				prType:   pullRequestRelease,
 				state:    &config.LibrarianState{},
 				workRoot: filepath.Join(t.TempDir(), "missing-directory"),
 			},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			writePRBody(test.info)
+			err := writePRBody(test.info)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("writePRBody() expected error, but no error returned")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error %v", err)
+			}
+
 			gotFile := gotPRBodyFile(t, test.info.workRoot)
 			if test.wantFile != gotFile {
 				t.Errorf("writePRBody() wantFile = %t, gotFile = %t", test.wantFile, gotFile)

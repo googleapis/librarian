@@ -12,6 +12,11 @@ for a more comprehensive list of commands and flags.
 This guide uses the term Librarian (capital L, regular font) for the overall
 Librarian system, and `librarian` (lower case L, code font) for the CLI.
 
+## Internal support (Googlers)
+
+If anything in this guide is unclear, please see go/g3doc-cloud-sdk-librarian-support
+for appropriate ways of obtaining more support.
+
 ## Prerequisites
 
 `librarian` requires:
@@ -37,6 +42,13 @@ follow the sudoless part.
 > there are enough Googlers who require Docker to work on gLinux that it won't
 > actually go away any time soon. We may investigate using podman instead if
 > necessary.
+
+Docker needs to be configured to use gcloud for authentication. The following
+command line needs to be run, just once:
+
+```sh
+gcloud auth configure-docker us-central1-docker.pkg.dev
+```
 
 ## Running `librarian`
 
@@ -239,3 +251,45 @@ $ cd ../google-cloud-go
 $ git checkout -b test-generated-api-changes
 $ librarian generate -api-source=../googleapis -library=bigtable
 ```
+
+## Using automated releases
+
+Maintainers *may* configure Librarian for automated releases, but should do so
+with a significant amount of care. Using automated releases is convenient, but
+cedes control - and once a release has been published, it can't generally be
+rolled back in anything like a "clean" way.
+
+### Impact of automated releases
+
+When automated releases are enabled, they will be initiated on a regular
+[cadence](https://goto.google.com/g3doc-librarian-automation), in release PRs that contain other libraries needing releasing from
+the same repository. These pull requests will be approved and merged by the
+Cloud SDK Platform team.
+
+The version number and release notes will be automatically determined by
+Librarian from conventional commits. These will *not* be vetted by the
+Cloud SDK Platform team before merging.
+
+Using automated releases doesn't *prevent* manual releases - a maintainer team
+can always use the process above to create and merge release PRs themselves,
+customizing the version number and release notes as they see fit. Creating
+a single manual release does not interrupt automated releases - any subsequent
+"release-worthy" changes will still cause an automated release to be created.
+
+### Enabling automated releases
+
+If the repository containing the library is not already using automated releases
+for other libraries (i.e. if it's a split repo instead of a monorepo),
+first [open a ticket](https://buganizer.corp.google.com/issues/new?component=1198207&template=2190445) with the Cloud Platform SDK team to enable automated releases.
+
+Next, edit the `.librarian/config.yaml` file in your repository. You will
+see YAML describing additional configuration for the libraries in the
+repository, particularly those which have release automation blocked. Find
+the library for which you wish to enable release automation, and remove or
+comment out the `release_blocked` key. We recommend commenting out rather
+than deleting, ideally adding an explanation and potentially caveats, for
+future readers.
+
+Create a PR with the configuration change, get it reviewed and merged, and
+the next time release automation runs against the repository, it will consider
+the library eligible for automatic releases.

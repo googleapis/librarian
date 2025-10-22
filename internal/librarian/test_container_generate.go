@@ -173,7 +173,7 @@ func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileT
 // changes. It returns a map of the modified proto file paths to the GUIDs that
 // were injected.
 func prepareForGenerateTest(state *config.LibrarianState, libraryID string, sourceRepo gitrepo.Repository) (map[string]string, error) {
-	libraryState := findLibraryByID(state, libraryID)
+	libraryState := state.LibraryByID(libraryID)
 	if libraryState == nil {
 		return nil, fmt.Errorf("library %q not found in state", libraryID)
 	}

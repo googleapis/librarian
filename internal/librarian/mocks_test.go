@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -57,16 +58,21 @@ type mockGitHubClient struct {
 	pullRequest             *github.PullRequest
 	createdRelease          *github.RepositoryRelease
 	librarianState          *config.LibrarianState
+	librarianConfig         *config.LibrarianConfig
 }
 
 func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) ([]byte, error) {
 	if path == ".librarian/state.yaml" && m.librarianState != nil {
 		return yaml.Marshal(m.librarianState)
 	}
+
+	if path == ".librarian/config.yaml" && m.librarianConfig != nil {
+		return yaml.Marshal(m.librarianConfig)
+	}
 	return m.rawContent, m.rawErr
 }
 
-func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string) (*github.PullRequestMetadata, error) {
+func (m *mockGitHubClient) CreatePullRequest(ctx context.Context, repo *github.Repository, remoteBranch, remoteBase, title, body string, isDraft bool) (*github.PullRequestMetadata, error) {
 	m.createPullRequestCalls++
 	if m.createPullRequestErr != nil {
 		return nil, m.createPullRequestErr
@@ -131,7 +137,13 @@ type mockContainerClient struct {
 	failGenerateForID string
 	// Set this value if you want an error when
 	// generate a library with a specific id.
-	generateErrForID    error
+	generateErrForID error
+	// Set this value if you want an error when
+	// build a library with a specific id.
+	failBuildForID string
+	// Set this value if you want an error when
+	// build a library with a specific id.
+	buildErrForID       error
 	requestLibraryID    string
 	noBuildResponse     bool
 	noConfigureResponse bool
@@ -164,6 +176,13 @@ func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRe
 	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.BuildResponse), []byte(libraryStr), 0755); err != nil {
 		return err
 	}
+
+	if m.failBuildForID != "" {
+		if request.LibraryID == m.failBuildForID {
+			return m.buildErrForID
+		}
+	}
+
 	return m.buildErr
 }
 
@@ -308,14 +327,18 @@ type MockRepository struct {
 	RemotesValue                           []*gitrepo.Remote
 	RemotesError                           error
 	CommitCalls                            int
+	LastCommitMessage                      string
 	GetCommitError                         error
+	GetLatestCommitError                   error
 	GetCommitByHash                        map[string]*gitrepo.Commit
 	GetCommitsForPathsSinceTagValue        []*gitrepo.Commit
 	GetCommitsForPathsSinceTagValueByTag   map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceTagError        error
+	GetCommitsForPathsSinceTagLastTagName  string
 	GetCommitsForPathsSinceLastGenValue    []*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByCommit map[string][]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenByPath   map[string][]*gitrepo.Commit
+	GetLatestCommitByPath                  map[string]*gitrepo.Commit
 	GetCommitsForPathsSinceLastGenError    error
 	ChangedFilesInCommitValue              []string
 	ChangedFilesInCommitValueByHash        map[string][]string
@@ -330,6 +353,14 @@ type MockRepository struct {
 	RestoreError                           error
 	HeadHashValue                          string
 	HeadHashError                          error
+	CheckoutCalls                          int
+	CheckoutError                          error
+	GetHashForPathError                    error
+	// GetHashForPathValue is a map where each key is of the form "commitHash:path",
+	// and the value is the hash to return. Every requested entry must be populated.
+	// If the value is "error", an error is returned instead. (This is useful when some
+	// calls must be successful, and others must fail.)
+	GetHashForPathValue map[string]string
 }
 
 func (m *MockRepository) Checkout(branch string) error {
@@ -359,6 +390,7 @@ func (m *MockRepository) AddAll() error {
 
 func (m *MockRepository) Commit(msg string) error {
 	m.CommitCalls++
+	m.LastCommitMessage = msg
 	return m.CommitError
 }
 
@@ -387,7 +419,22 @@ func (m *MockRepository) GetCommit(commitHash string) (*gitrepo.Commit, error) {
 	return nil, errors.New("should not reach here")
 }
 
+func (m *MockRepository) GetLatestCommit(path string) (*gitrepo.Commit, error) {
+	if m.GetLatestCommitError != nil {
+		return nil, m.GetLatestCommitError
+	}
+
+	if m.GetLatestCommitByPath != nil {
+		if commit, ok := m.GetLatestCommitByPath[path]; ok {
+			return commit, nil
+		}
+	}
+
+	return nil, errors.New("should not reach here")
+}
+
 func (m *MockRepository) GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*gitrepo.Commit, error) {
+	m.GetCommitsForPathsSinceTagLastTagName = tagName
 	if m.GetCommitsForPathsSinceTagError != nil {
 		return nil, m.GetCommitsForPathsSinceTagError
 	}
@@ -466,4 +513,37 @@ func (m *MockRepository) Push(name string) error {
 
 func (m *MockRepository) Restore(paths []string) error {
 	return m.RestoreError
+}
+
+func (m *MockRepository) CleanUntracked(paths []string) error {
+	return nil
+}
+
+// mockImagesClient is a mock implementation of the ImageRegistryClient interface for testing.
+type mockImagesClient struct {
+	latestImage     string
+	err             error
+	findLatestCalls int
+}
+
+func (m *mockImagesClient) FindLatest(ctx context.Context, imageName string) (string, error) {
+	m.findLatestCalls++
+	return m.latestImage, m.err
+}
+
+func (m *MockRepository) GetHashForPath(commitHash, path string) (string, error) {
+	if m.GetHashForPathError != nil {
+		return "", m.GetHashForPathError
+	}
+	if m.GetHashForPathValue != nil {
+		key := commitHash + ":" + path
+		if hash, ok := m.GetHashForPathValue[key]; ok {
+			if hash == "error" {
+				return "", errors.New("deliberate error from GetHashForPath")
+			}
+			return hash, nil
+		}
+
+	}
+	return "", fmt.Errorf("should not reach here: GetHashForPath called with unhandled input (commitHash: %q, path: %q)", commitHash, path)
 }

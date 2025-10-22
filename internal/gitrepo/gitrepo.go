@@ -56,6 +56,8 @@ type Repository interface {
 	Restore(paths []string) error
 	CleanUntracked(paths []string) error
 	pushRefSpec(refSpec string) error
+	Checkout(commitHash string) error
+	GetHashForPath(commitHash, path string) (string, error)
 }
 
 const RootPath = "."
@@ -239,7 +241,7 @@ func (r *LocalRepository) IsClean() (bool, error) {
 // ChangedFiles returns a list of files that have been modified, added, or deleted
 // in the working tree, including both staged and unstaged changes.
 func (r *LocalRepository) ChangedFiles() ([]string, error) {
-	slog.Info("Getting changed files")
+	slog.Debug("Getting changed files")
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return nil, err
@@ -440,20 +442,20 @@ func commitMatchesPath(path string, commit *object.Commit, parentCommit *object.
 	if path == RootPath {
 		return true, nil
 	}
-	currentPathHash, err := getHashForPathOrEmpty(commit, path)
+	currentPathHash, err := getHashForPath(commit, path)
 	if err != nil {
 		return false, err
 	}
-	parentPathHash, err := getHashForPathOrEmpty(parentCommit, path)
+	parentPathHash, err := getHashForPath(parentCommit, path)
 	if err != nil {
 		return false, err
 	}
 	return currentPathHash != parentPathHash, nil
 }
 
-// getHashForPathOrEmpty returns the hash for a path at a given commit, or an
+// getHashForPath returns the hash for a path at a given commit, or an
 // empty string if the path (file or directory) did not exist.
-func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
+func getHashForPath(commit *object.Commit, path string) (string, error) {
 	tree, err := commit.Tree()
 	if err != nil {
 		return "", err
@@ -470,7 +472,7 @@ func getHashForPathOrEmpty(commit *object.Commit, path string) (string, error) {
 
 // ChangedFilesInCommit returns the files changed in the given commit.
 func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, error) {
-	slog.Info("Getting changed files in commit", "hash", commitHash)
+	slog.Debug("Getting changed files in commit", "hash", commitHash)
 	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for hash %s: %w", commitHash, err)
@@ -497,18 +499,21 @@ func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, err
 		}
 	}
 
-	patch, err := fromTree.Patch(toTree)
+	changes, err := fromTree.Diff(toTree)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get patch for commit %s: %w", commitHash, err)
+		return nil, fmt.Errorf("failed to get diff for commit %s: %w", commitHash, err)
 	}
 	var files []string
-	for _, filePatch := range patch.FilePatches() {
-		from, to := filePatch.Files()
-		if from != nil {
-			files = append(files, from.Path())
+	for _, change := range changes {
+		from := change.From.Name
+		to := change.To.Name
+		// Deletion or modification
+		if from != "" {
+			files = append(files, from)
 		}
-		if to != nil && (from == nil || from.Path() != to.Path()) {
-			files = append(files, to.Path())
+		// Insertion or rename
+		if to != "" && from != to {
+			files = append(files, to)
 		}
 	}
 	return files, nil
@@ -687,4 +692,31 @@ func (r *LocalRepository) CleanUntracked(paths []string) error {
 	}
 
 	return nil
+}
+
+// Checkout checks out the local repository at the provided git SHA.
+func (r *LocalRepository) Checkout(commitSha string) error {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Hash: plumbing.NewHash(commitSha),
+	})
+}
+
+// GetHashForPath returns a tree hash for the specified path,
+// at the given commit in this repository. If the path does not exist
+// at the commit, an empty string is returned rather than an error,
+// as the purpose of this function is to allow callers to determine changes
+// in the tree. (A path going from missing to anything else, or vice versa,
+// indicates a change. A path being missing at two different commits is not a change.)
+func (r *LocalRepository) GetHashForPath(commitHash, path string) (string, error) {
+	// This public function just delegates to the internal function that uses a Commit
+	// object instead of the hash.
+	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
+	if err != nil {
+		return "", err
+	}
+	return getHashForPath(commit, path)
 }

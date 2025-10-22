@@ -23,12 +23,13 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/svcconfig"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 // NewAPI parses the discovery doc in `contents` and returns the corresponding `api.API` model.
-func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, error) {
+func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, cfg *config.Config) (*api.API, error) {
 	doc, err := newDiscoDocument(contents)
 	if err != nil {
 		return nil, err
@@ -37,6 +38,7 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 		Name:        doc.Name,
 		Title:       doc.Title,
 		Description: doc.Description,
+		Revision:    doc.Revision,
 		Messages:    make([]*api.Message, 0),
 		State: &api.APIState{
 			ServiceByID: make(map[string]*api.Service),
@@ -98,6 +100,8 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte) (*api.API, er
 	// output on each run.
 	slices.SortStableFunc(result.Services, compareServices)
 
+	lroAnnotations(result, cfg)
+
 	return result, nil
 }
 
@@ -108,6 +112,7 @@ type document struct {
 	Version           string             `json:"version"`
 	Title             string             `json:"title"`
 	Description       string             `json:"description"`
+	Revision          string             `json:"revision"`
 	RootURL           string             `json:"rootUrl"`
 	MTLSRootURL       string             `json:"mtlsRootUrl"`
 	ServicePath       string             `json:"servicePath"`

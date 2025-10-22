@@ -15,6 +15,7 @@
 package api
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -137,8 +138,11 @@ type API struct {
 	PackageName string
 	// The API Title (e.g. "Secret Manager API" or "Cloud Spanner API").
 	Title string
-	// The API Description
+	// The API Description.
 	Description string
+	// The API Revision. In discovery-based services this is the "revision"
+	// attribute.
+	Revision string
 	// Services are a collection of services that make up the API.
 	Services []*Service
 	// Messages are a collection of messages used to process request and
@@ -146,7 +150,7 @@ type API struct {
 	Messages []*Message
 	// Enums
 	Enums []*Enum
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 
 	// State contains helpful information that can be used when generating
@@ -204,7 +208,7 @@ type Service struct {
 	// The model this service belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 }
 
@@ -245,6 +249,8 @@ type Method struct {
 	ServerSideStreaming bool
 	// OperationInfo contains information for methods returning long-running operations.
 	OperationInfo *OperationInfo
+	// DiscoveryLro has a value if this is a discovery-style long-running operation.
+	DiscoveryLro *DiscoveryLro
 	// Routing contains the routing annotations, if any.
 	Routing []*RoutingInfo
 	// AutoPopulated contains the auto-populated (request_id) field, if any, as defined in
@@ -366,7 +372,7 @@ type PathInfo struct {
 	//
 	// If this is empty then the body is not used.
 	BodyFieldPath string
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 }
 
@@ -385,7 +391,7 @@ type PathBinding struct {
 	PathTemplate *PathTemplate
 	// Query parameter fields.
 	QueryParameters map[string]bool
-	// Language specific annotations
+	// Language specific annotations.
 	Codec any
 }
 
@@ -399,7 +405,15 @@ type OperationInfo struct {
 	ResponseTypeID string
 	// The method.
 	Method *Method
-	// Language specific annotations
+	// Language specific annotations.
+	Codec any
+}
+
+// DiscoveryLro contains old-style long-running operation descriptors.
+type DiscoveryLro struct {
+	// The path parameters required by the polling operation.
+	PollingPathParameters []string
+	// Language specific annotations.
 	Codec any
 }
 
@@ -487,6 +501,27 @@ const (
 type PathTemplate struct {
 	Segments []PathSegment
 	Verb     *string
+}
+
+// FlatPath returns a simplified representation of the path template as a string.
+//
+// In the context of discovery LROs it is useful to get the path template as a
+// simplified string, such as "compute/v1/projects/{project}/zones/{zone}/instances".
+// The path can be matched against LRO prefixes and then mapped to the correct
+// poller RPC.
+func (template *PathTemplate) FlatPath() string {
+	var buffer strings.Builder
+	sep := ""
+	for _, segment := range template.Segments {
+		buffer.WriteString(sep)
+		if segment.Literal != nil {
+			buffer.WriteString(*segment.Literal)
+		} else if segment.Variable != nil {
+			buffer.WriteString(fmt.Sprintf("{%s}", strings.Join(segment.Variable.FieldPath, ".")))
+		}
+		sep = "/"
+	}
+	return buffer.String()
 }
 
 // PathSegment is a segment of a path.
@@ -583,7 +618,7 @@ type Message struct {
 	// These messages are created by sidekick when parsing Discovery docs and
 	// OpenAPI specifications. All the synthetic messages for a service need to
 	// be grouped under a unique namespace to avoid clashes with similar
-	// synthetic messages in other service. Sidekick creates a placeholder
+	// synthetic messages in other services. Sidekick creates a placeholder
 	// message that represents "the service".
 	//
 	// That is, `service1` and `service2` may both have a synthetic `getRequest`

@@ -56,7 +56,11 @@ type modelAnnotations struct {
 	RepositoryURL              string
 	ReadMeAfterTitleText       string
 	ReadMeQuickstartText       string
+	IssueTrackerURL            string
 	ApiKeyEnvironmentVariables []string
+	// Dart `export` statements e.g.
+	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
+	Exports []string
 }
 
 // HasServices returns true if the model has services.
@@ -227,7 +231,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		repositoryURL              string
 		readMeAfterTitleText       string
 		readMeQuickstartText       string
+		issueTrackerURL            string
 		apiKeyEnvironmentVariables = []string{}
+		exports                    = []string{}
 	)
 
 	for key, definition := range options {
@@ -244,10 +250,21 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			packageNameOverride = definition
 		case key == "copyright-year":
 			generationYear = definition
+		case key == "issue-tracker-url":
+			// issue-tracker-url = "http://www.example.com/issues"
+			// A link to the issue tracker for the service.
+			issueTrackerURL = definition
 		case key == "version":
 			packageVersion = definition
 		case key == "part-file":
 			partFileReference = definition
+		case key == "extra-exports":
+			// extra-export = "export 'package:google_cloud_gax/gax.dart' show Any; export 'package:google_cloud_gax/gax.dart' show Status;"
+			// Dart `export` statements that should be appended after any imports.
+			exports = strings.FieldsFunc(definition, func(c rune) bool { return c == ';' })
+			for i := range exports {
+				exports[i] = strings.TrimSpace(exports[i])
+			}
 		case key == "dev-dependencies":
 			devDependencies = strings.Split(definition, ",")
 		case key == "not-for-publication":
@@ -337,6 +354,10 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return errors.New("all packages that define a service must define 'api-keys-environment-variables'")
 	}
 
+	if issueTrackerURL == "" {
+		return errors.New("all packages must define 'issue-tracker-url'")
+	}
+
 	ann := &modelAnnotations{
 		Parent:         model,
 		PackageName:    packageName(model, packageNameOverride),
@@ -359,9 +380,11 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		DevDependencies:            devDependencies,
 		DoNotPublish:               doNotPublish,
 		RepositoryURL:              repositoryURL,
+		IssueTrackerURL:            issueTrackerURL,
 		ReadMeAfterTitleText:       readMeAfterTitleText,
 		ReadMeQuickstartText:       readMeQuickstartText,
 		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
+		Exports:                    exports,
 	}
 
 	model.Codec = ann

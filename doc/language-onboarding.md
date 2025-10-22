@@ -18,7 +18,7 @@ Before diving into the specifics, it's important to understand the key component
 * **`config.yaml`:** A configuration file that allows for repository-level customization of Librarian's behavior, such
   as specifying which files the container can access.
 
-## Configuration Files
+## Configure repository to work with Librarian CLI
 
 Librarian relies on two key configuration files to manage its operations: `state.yaml` and `config.yaml`. These files
 must be present in the `.librarian` directory at the root of the language repository.
@@ -39,7 +39,7 @@ Repository maintainers are expected to maintain this file. Librarian will not mo
 
 For a detailed breakdown of all the fields in the `config.yaml` file, please refer to [config-schema.md].
 
-## Container Contracts
+## Implement a Language Container
 
 Librarian orchestrates its workflows by making a series of invocations to a language-specific container. Each invocation
 corresponds to a specific command and is designed to perform a distinct task. For the container to function correctly,
@@ -53,6 +53,11 @@ be surfaced to the CLI.
 Additionally, Librarian specifies a user and group ID when executing the language-specific container. This means that
 the container **MUST** be able to run as an arbitrary user (the caller of Librarian's user). Any commands used will
 need to be executable by any user ID within the container.
+
+* Create a docker file for your container [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/Dockerfile)
+* Create a cloudbuild file [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/cloudbuild-exitgate.yaml) that uploads your image to us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev
+
+### Implement Container Contracts
 
 The following sections detail the contracts for each container command.
 
@@ -311,8 +316,24 @@ global file edits. The libraries that are being released will be marked by the `
 [config-schema.md]:config-schema.md
 [state-schema.md]: state-schema.md
 
-## Language repository settings
+## Validate Commands are working
 
-To correctly parse the commit message of a merge commit, only allow squash merging
-and set the default commit message to **Pull request title and description**.
-![Pull request settings](assets/setting-pull-requests.webp)
+For each command you should be able to run the CLI on your remote desktop and have it create the expected PR.
+
+**Configure Command:**
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ generate -repo=<your repository> -library=<name of library that exists in googleapis but not your repository> -push
+```
+
+**Generate Command:**
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ generate -repo=<your repository> -push
+```
+
+**Release Command:**
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ release init -repo=<your repository> -push
+```

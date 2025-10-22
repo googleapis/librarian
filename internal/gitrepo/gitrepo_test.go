@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -445,6 +446,8 @@ func TestChangedFiles(t *testing.T) {
 				}
 				return
 			}
+
+			slices.Sort(gotFiles) // Sorting makes the test deterministic.
 			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
 				t.Errorf("ChangedFiles() mismatch (-want +got):\n%s", diff)
 			}
@@ -901,27 +904,34 @@ func TestGetDir(t *testing.T) {
 	}
 }
 
-func TestGetHashForPathOrEmpty(t *testing.T) {
+// TestGetHashForPath tests the internal getHashForPath, but
+// via the public GetHashForPath function which accepts a commit hash
+// instead of a Commit object, to avoid duplicate testing.
+func TestGetHashForPath(t *testing.T) {
 	t.Parallel()
 
-	setupInitialRepo := func(t *testing.T) (*git.Repository, *object.Commit) {
+	setupInitialRepo := func(t *testing.T) (LocalRepository, *object.Commit) {
 		t.Helper()
-		repo, _ := initTestRepo(t)
+		repo, dir := initTestRepo(t)
 		commit := createAndCommit(t, repo, "initial.txt", []byte("initial content"), "initial commit")
-		return repo, commit
+		localRepository := LocalRepository{
+			Dir:  dir,
+			repo: repo,
+		}
+		return localRepository, commit
 	}
 
 	for _, test := range []struct {
 		name     string
-		setup    func(t *testing.T) (commit *object.Commit, path string)
+		setup    func(t *testing.T) (repo LocalRepository, commit *object.Commit, path string)
 		wantHash func(commit *object.Commit, path string) string
 		wantErr  bool
 	}{
 		{
 			name: "existing file",
-			setup: func(t *testing.T) (*object.Commit, string) {
-				_, commit := setupInitialRepo(t)
-				return commit, "initial.txt"
+			setup: func(t *testing.T) (LocalRepository, *object.Commit, string) {
+				localRepository, commit := setupInitialRepo(t)
+				return localRepository, commit, "initial.txt"
 			},
 			wantHash: func(commit *object.Commit, path string) string {
 				tree, err := commit.Tree()
@@ -937,8 +947,9 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 		},
 		{
 			name: "existing directory",
-			setup: func(t *testing.T) (*object.Commit, string) {
-				repo, _ := setupInitialRepo(t)
+			setup: func(t *testing.T) (LocalRepository, *object.Commit, string) {
+				localRepository, _ := setupInitialRepo(t)
+				repo := localRepository.repo
 				// Create a directory and a file inside it to ensure the directory gets a hash
 				_ = createAndCommit(t, repo, "my_dir/file_in_dir.txt", []byte("content of file in dir"), "add dir and file")
 				head, err := repo.Head()
@@ -949,7 +960,7 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 				if err != nil {
 					t.Fatalf("repo.CommitObject failed: %v", err)
 				}
-				return commit, "my_dir"
+				return localRepository, commit, "my_dir"
 			},
 			wantHash: func(commit *object.Commit, path string) string {
 				tree, err := commit.Tree()
@@ -965,9 +976,9 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 		},
 		{
 			name: "non-existent file",
-			setup: func(t *testing.T) (*object.Commit, string) {
-				_, commit := setupInitialRepo(t)
-				return commit, "non_existent_file.txt"
+			setup: func(t *testing.T) (LocalRepository, *object.Commit, string) {
+				localRepository, commit := setupInitialRepo(t)
+				return localRepository, commit, "non_existent_file.txt"
 			},
 			wantHash: func(commit *object.Commit, path string) string {
 				return ""
@@ -975,9 +986,9 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 		},
 		{
 			name: "non-existent directory",
-			setup: func(t *testing.T) (*object.Commit, string) {
-				_, commit := setupInitialRepo(t)
-				return commit, "non_existent_dir"
+			setup: func(t *testing.T) (LocalRepository, *object.Commit, string) {
+				localRepository, commit := setupInitialRepo(t)
+				return localRepository, commit, "non_existent_dir"
 			},
 			wantHash: func(commit *object.Commit, path string) string {
 				return ""
@@ -985,8 +996,9 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 		},
 		{
 			name: "file in subdirectory",
-			setup: func(t *testing.T) (*object.Commit, string) {
-				repo, _ := setupInitialRepo(t)
+			setup: func(t *testing.T) (LocalRepository, *object.Commit, string) {
+				localRepository, _ := setupInitialRepo(t)
+				repo := localRepository.repo
 				_ = createAndCommit(t, repo, "another_dir/sub_dir/nested_file.txt", []byte("nested content"), "add nested file")
 				head, err := repo.Head()
 				if err != nil {
@@ -996,7 +1008,7 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 				if err != nil {
 					t.Fatalf("repo.CommitObject failed: %v", err)
 				}
-				return commit, "another_dir/sub_dir/nested_file.txt"
+				return localRepository, commit, "another_dir/sub_dir/nested_file.txt"
 			},
 			wantHash: func(commit *object.Commit, path string) string {
 				tree, err := commit.Tree()
@@ -1014,17 +1026,52 @@ func TestGetHashForPathOrEmpty(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			commit, path := test.setup(t)
+			localRepository, commit, path := test.setup(t)
 
-			got, err := getHashForPathOrEmpty(commit, path)
+			got, err := localRepository.GetHashForPath(commit.Hash.String(), path)
 			if (err != nil) != test.wantErr {
-				t.Errorf("getHashForPathOrEmpty() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("getHashForPath() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
 
 			wantHash := test.wantHash(commit, path)
 			if diff := cmp.Diff(wantHash, got); diff != "" {
-				t.Errorf("getHashForPathOrEmpty() mismatch (-want +got):\n%s", diff)
+				t.Errorf("getHashForPath() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestGetHashForPathBadCommitHash tests the one path not
+// otherwise tested in TestGetHashForPath, where we can't
+// get the commit for the hash.
+func TestGetHashForPathBadCommitHash(t *testing.T) {
+	repo, dir := initTestRepo(t)
+	localRepository := LocalRepository{
+		Dir:  dir,
+		repo: repo,
+	}
+	for _, test := range []struct {
+		name       string
+		commitHash string
+	}{
+		{
+			name:       "empty hash",
+			commitHash: "",
+		},
+		{
+			name:       "invalid hash",
+			commitHash: "bad-hash",
+		},
+		{
+			name:       "hash not in repo",
+			commitHash: "d93e160f57f0a6eccd6e230dd40f465988bede63",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := localRepository.GetHashForPath(test.commitHash, "path/to/file")
+			if err == nil {
+				t.Error("GetHashForPath() err = nil, should fail when an invalid or absent hash is provided")
 			}
 		})
 	}
@@ -1054,6 +1101,16 @@ func TestChangedFilesInCommit(t *testing.T) {
 			name:       "commit 3",
 			commitHash: commitHashes["commit 3"],
 			wantFiles:  []string{"file2.txt"},
+		},
+		{
+			name:       "commit 4",
+			commitHash: commitHashes["commit 4"],
+			wantFiles:  []string{"file2.txt"},
+		},
+		{
+			name:       "commit 5",
+			commitHash: commitHashes["commit 5"],
+			wantFiles:  []string{"file1.txt", "file3.txt"},
 		},
 		{
 			name:       "invalid commit hash",
@@ -1505,9 +1562,53 @@ func createAndCommit(t *testing.T, repo *git.Repository, path string, content []
 			t.Fatalf("os.MkdirAll failed: %v", err)
 		}
 	}
+	return commitChanges(t, repo, commitMsg, path)
 
-	if _, err := w.Add(path); err != nil {
-		t.Fatalf("w.Add failed: %v", err)
+}
+
+// deleteAndCommit deletes a file in a repository and commits the change.
+func deleteAndCommit(t *testing.T, repo *git.Repository, path string, commitMsg string) *object.Commit {
+	t.Helper()
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree() failed: %v", err)
+	}
+
+	fullPath := filepath.Join(w.Filesystem.Root(), path)
+	if err := os.Remove(fullPath); err != nil {
+		t.Fatalf("Remove() failed: %v", err)
+	}
+	return commitChanges(t, repo, commitMsg, path)
+}
+
+// renameAndCommit renames a file in a repository and commits the change.
+func renameAndCommit(t *testing.T, repo *git.Repository, fromPath, toPath string, commitMsg string) *object.Commit {
+	t.Helper()
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree() failed: %v", err)
+	}
+
+	fullFromPath := filepath.Join(w.Filesystem.Root(), fromPath)
+	fullToPath := filepath.Join(w.Filesystem.Root(), toPath)
+	if err := os.Rename(fullFromPath, fullToPath); err != nil {
+		t.Fatalf("Rename() failed: %v", err)
+	}
+	return commitChanges(t, repo, commitMsg, fromPath, toPath)
+}
+
+// commitChanges adds the specified paths to the repository and commits the change.
+func commitChanges(t *testing.T, repo *git.Repository, commitMsg string, paths ...string) *object.Commit {
+	t.Helper()
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree() failed: %v", err)
+	}
+
+	for _, path := range paths {
+		if _, err := w.Add(path); err != nil {
+			t.Fatalf("w.Add failed: %v", err)
+		}
 	}
 	hash, err := w.Commit(commitMsg, &git.CommitOptions{
 		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
@@ -1541,6 +1642,14 @@ func setupRepoForChangedFilesTest(t *testing.T) (*LocalRepository, map[string]st
 	// Commit 3 (add file2.txt)
 	commit3 := createAndCommit(t, repo, "file2.txt", []byte("content3"), "commit 3")
 	commitHashes["commit 3"] = commit3.Hash.String()
+
+	// Commit 4 (delete file2.txt)
+	commit4 := deleteAndCommit(t, repo, "file2.txt", "commit 4")
+	commitHashes["commit 4"] = commit4.Hash.String()
+
+	// Commit 5 (rename file1.txt to file3.txt)
+	commit5 := renameAndCommit(t, repo, "file1.txt", "file3.txt", "commit 5")
+	commitHashes["commit 5"] = commit5.Hash.String()
 
 	return &LocalRepository{Dir: dir, repo: repo}, commitHashes
 }

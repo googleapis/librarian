@@ -49,3 +49,5 @@ steps:
       - '.'
       - '-f'
       - 'infra/dispatcher/Dockerfile'
+options:
+  logging: CLOUD_LOGGING_ONLY

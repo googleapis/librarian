@@ -259,7 +259,7 @@ Language Image: gcr.io/test/image:latest
 
 ### Features
 
-* some feature ([1234567](https://github.com/googleapis/repo/commit/1234567))
+* some feature ([12345678](https://github.com/googleapis/repo/commit/12345678))
 
 </details>
 
@@ -280,7 +280,7 @@ Language Image: gcr.io/test/image:latest
 
 ### Features
 
-* some feature ([1234567](https://github.com/googleapis/repo/commit/1234567))`,
+* some feature ([12345678](https://github.com/googleapis/repo/commit/12345678))`,
 				},
 				{
 					Version: "2.3.4",
@@ -317,6 +317,29 @@ some content
 <details><summary>google-cloud-storage: v1.2.3</summary>
 
 [v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+
+</details>`,
+			want: []libraryRelease{
+				{
+					Version: "v1.2.3",
+					Library: "google-cloud-storage",
+					Body:    "[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)",
+				},
+			},
+		},
+		{
+			name: "with bulk changes",
+			body: `
+<details><summary>google-cloud-storage: v1.2.3</summary>
+
+[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+
+</details>
+
+
+<details><summary>Bulk Changes</summary>
+
+some content
 
 </details>`,
 			want: []libraryRelease{
@@ -429,6 +452,32 @@ func TestProcessPullRequest(t *testing.T) {
 				},
 			},
 			wantCreateReleaseCalls: 1,
+			wantReplaceLabelsCalls: 1,
+			wantCreateTagCalls:     1,
+		},
+		{
+			name: "skip_a_library_release",
+			pr:   prWithRelease,
+			ghClient: &mockGitHubClient{
+				librarianState: &config.LibrarianState{
+					Image: "gcr.io/some-project-id/some-test-image:latest",
+					Libraries: []*config.LibraryState{
+						{
+							ID:          "google-cloud-storage",
+							SourceRoots: []string{"some/path"},
+						},
+					},
+				},
+				librarianConfig: &config.LibrarianConfig{
+					Libraries: []*config.LibraryConfig{
+						{
+							LibraryID:                 "google-cloud-storage",
+							SkipGitHubReleaseCreation: true,
+						},
+					},
+				},
+			},
+			wantCreateReleaseCalls: 0,
 			wantReplaceLabelsCalls: 1,
 			wantCreateTagCalls:     1,
 		},

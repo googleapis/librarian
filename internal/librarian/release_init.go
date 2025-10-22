@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 	"github.com/googleapis/librarian/internal/semver"
@@ -89,14 +88,19 @@ func (r *initRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	prBodyBuilder := func() (string, error) {
+		gitHubRepo, err := GetGitHubRepositoryFromGitRepo(r.repo)
+		if err != nil {
+			return "", fmt.Errorf("failed to get GitHub repository: %w", err)
+		}
+		return formatReleaseNotes(r.state, gitHubRepo)
+	}
 	commitInfo := &commitInfo{
-		branch:         r.branch,
-		commit:         r.commit,
-		commitMessage:  "chore: create a release",
-		ghClient:       r.ghClient,
-		library:        r.library,
-		libraryVersion: r.libraryVersion,
-		prType:         release,
+		branch:        r.branch,
+		commit:        r.commit,
+		commitMessage: "chore: create a release",
+		ghClient:      r.ghClient,
+		prType:        pullRequestRelease,
 		// Newly created PRs from the `release init` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
@@ -105,6 +109,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		sourceRepo:        r.sourceRepo,
 		state:             r.state,
 		workRoot:          r.workRoot,
+		prBodyBuilder:     prBodyBuilder,
 	}
 	if err := commitAndPush(ctx, commitInfo); err != nil {
 		return fmt.Errorf("failed to commit and push: %w", err)
@@ -128,7 +133,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
 	if r.library != "" {
-		library := findLibraryByID(r.state, r.library)
+		library := r.state.LibraryByID(r.library)
 		if library == nil {
 			return fmt.Errorf("unable to find library for release: %s", r.library)
 		}
@@ -197,8 +202,11 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 // processLibrary wrapper to process the library for release. Helps retrieve latest commits
 // since the last release and passing the changes to updateLibrary.
 func (r *initRunner) processLibrary(library *config.LibraryState) error {
-	tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
-	tagName := config.FormatTag(tagFormat, library.ID, library.Version)
+	var tagName string
+	if library.Version != "0.0.0" {
+		tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
+		tagName = config.FormatTag(tagFormat, library.ID, library.Version)
+	}
 	commits, err := getConventionalCommitsSinceLastRelease(r.repo, library, tagName)
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
@@ -210,8 +218,8 @@ func (r *initRunner) processLibrary(library *config.LibraryState) error {
 
 // filterCommitsByLibraryID keeps the conventional commits if the given libraryID appears in the Footer or matches
 // the libraryID in the commit.
-func filterCommitsByLibraryID(commits []*conventionalcommits.ConventionalCommit, libraryID string) []*conventionalcommits.ConventionalCommit {
-	var filteredCommits []*conventionalcommits.ConventionalCommit
+func filterCommitsByLibraryID(commits []*gitrepo.ConventionalCommit, libraryID string) []*gitrepo.ConventionalCommit {
+	var filteredCommits []*gitrepo.ConventionalCommit
 	for _, commit := range commits {
 		if commit.Footers != nil {
 			ids, ok := commit.Footers["Library-IDs"]
@@ -235,7 +243,7 @@ func filterCommitsByLibraryID(commits []*conventionalcommits.ConventionalCommit,
 // 2. Updates the library's previous version and the new current version.
 //
 // 3. Set the library's release trigger to true.
-func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conventionalcommits.ConventionalCommit) error {
+func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitrepo.ConventionalCommit) error {
 	var nextVersion string
 	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
 	if r.libraryVersion != "" {
@@ -264,12 +272,12 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 			// Library was inputted for release, but does not contain a releasable unit
 			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to force a release for: %s", library.ID)
 		}
-		slog.Info("Updating library to the next version", "library", r.library, "currentVersion", library.Version, "nextVersion", nextVersion)
+		slog.Info("Updating library to the next version", "library", library.ID, "currentVersion", library.Version, "nextVersion", nextVersion)
 	}
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
-	library.Changes = commits
+	library.Changes = toCommit(commits)
 	library.Version = nextVersion
 	library.ReleaseTriggered = true
 	return nil
@@ -277,24 +285,42 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*conv
 
 // determineNextVersion determines the next valid SemVer version from the commits or from
 // the next_version override value in the config.yaml file.
-func (r *initRunner) determineNextVersion(commits []*conventionalcommits.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
 	if err != nil {
 		return "", err
 	}
 
 	if r.librarianConfig == nil {
-		slog.Info("No librarian config")
+		slog.Debug("No librarian config")
 		return nextVersionFromCommits, nil
 	}
 
 	// Look for next_version override from config.yaml
 	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
-	slog.Info("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
+	slog.Debug("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
 	if libraryConfig == nil || libraryConfig.NextVersion == "" {
 		return nextVersionFromCommits, nil
 	}
 
 	// Compare versions and pick latest
 	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
+}
+
+// toCommit converts a slice of gitrepo.ConventionalCommit to a slice of config.Commit.
+// If the ConventionalCommit has NestedCommits, they are also extracted and
+// converted.
+func toCommit(c []*gitrepo.ConventionalCommit) []*config.Commit {
+	var commits []*config.Commit
+	for _, cc := range c {
+		commits = append(commits, &config.Commit{
+			Type:          cc.Type,
+			Subject:       cc.Subject,
+			Body:          cc.Body,
+			CommitHash:    cc.CommitHash,
+			PiperCLNumber: cc.Footers["PiperOrigin-RevId"],
+			LibraryIDs:    cc.Footers["Library-IDs"],
+		})
+	}
+	return commits
 }

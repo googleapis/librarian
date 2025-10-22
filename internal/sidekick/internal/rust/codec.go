@@ -113,11 +113,9 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				codec.packageMapping[source] = pkgOption.pkg
 			}
 		case key == "disabled-rustdoc-warnings":
-			if definition == "" {
-				codec.disabledRustdocWarnings = []string{}
-			} else {
-				codec.disabledRustdocWarnings = strings.Split(definition, ",")
-			}
+			codec.disabledRustdocWarnings = splitOption(definition)
+		case key == "disabled-clippy-warnings":
+			codec.disabledClippyWarnings = splitOption(definition)
 		case key == "template-override":
 			codec.templateOverride = definition
 		case key == "include-grpc-only-methods":
@@ -132,6 +130,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `per-service-features` value %q to boolean: %w", definition, err)
 			}
 			codec.perServiceFeatures = value
+		case key == "default-features":
+			codec.defaultFeatures = splitOption(definition)
 		case key == "detailed-tracing-attributes":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -145,9 +145,9 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			}
 			codec.hasVeneer = value
 		case key == "extra-modules":
-			codec.extraModules = strings.Split(definition, ",")
+			codec.extraModules = splitOption(definition)
 		case key == "internal-types":
-			codec.internalTypes = strings.Split(definition, ",")
+			codec.internalTypes = splitOption(definition)
 		case key == "routing-required":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -165,6 +165,13 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 		}
 	}
 	return codec, nil
+}
+
+func splitOption(definition string) []string {
+	if definition == "" {
+		return []string{}
+	}
+	return strings.Split(definition, ",")
 }
 
 type packageOption struct {
@@ -248,8 +255,10 @@ type codec struct {
 	releaseLevel string
 	// True if the API model includes any services
 	hasServices bool
-	// A list of `rustdoc` warnings disabled for specific services.
+	// A list of `rustdoc` warnings to disable.
 	disabledRustdocWarnings []string
+	// A list of `clippy` warnings to disable.
+	disabledClippyWarnings []string
 	// The default system parameters included in all requests.
 	systemParameters []systemParameter
 	// If true, enums are serialized as strings.
@@ -263,6 +272,8 @@ type codec struct {
 	includeGrpcOnlyMethods bool
 	// If true, the generator will produce per-client features.
 	perServiceFeatures bool
+	// If not empty, and if `perServiceFeatures` is true, the default features
+	defaultFeatures []string
 	// If true, the generated code includes detailed tracing attributes on HTTP
 	// requests. This feature flag exists to reduce unexpected changes to the
 	// generated code until the feature is ready and well-tested.
@@ -324,7 +335,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 		// not save us any computations.
 
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil {
+			if m.OperationInfo != nil || m.DiscoveryLro != nil {
 				hasLROs = true
 			}
 			if len(m.AutoPopulated) != 0 {

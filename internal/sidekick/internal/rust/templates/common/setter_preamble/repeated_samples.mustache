@@ -1,0 +1,55 @@
+{{!
+Copyright 2025 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{#IsString}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(["a", "b", "c"]);
+{{/IsString}}
+{{#IsBytes}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let b1 = bytes::Bytes::from_static(b"abc");
+/// let b2 = bytes::Bytes::from_static(b"xyz");
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([b1, b2]);
+{{/IsBytes}}
+{{#IsLikeBool}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([true, false, true]);
+{{/IsLikeBool}}
+{{#IsLikeInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1, 2, 3]);
+{{/IsLikeInt}}
+{{#IsLikeFloat}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1.0, 2.0, 3.0]);
+{{/IsLikeFloat}}
+{{#IsEnum}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{EnumType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+{{#EnumType.Codec.ValuesForExamples}}
+///     {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}},
+{{/EnumType.Codec.ValuesForExamples}}
+/// ]);
+{{/IsEnum}}
+{{#IsObject}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{MessageType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new()
+///     .set_{{Codec.SetterName}}([
+///         {{MessageType.Codec.Name}}::default()/* use setters */,
+///         {{MessageType.Codec.Name}}::default()/* use (different) setters */,
+///     ]);
+{{/IsObject}}

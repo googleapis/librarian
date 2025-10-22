@@ -23,718 +23,11 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/github"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
-
-func TestFormatGenerationPRBody(t *testing.T) {
-	t.Parallel()
-
-	today := time.Now()
-	hash1 := plumbing.NewHash("1234567890abcdef")
-	hash2 := plumbing.NewHash("fedcba0987654321")
-	librarianVersion := cli.Version()
-
-	for _, test := range []struct {
-		name            string
-		state           *config.LibrarianState
-		sourceRepo      gitrepo.Repository
-		languageRepo    gitrepo.Repository
-		idToCommits     map[string]string
-		failedLibraries []string
-		want            string
-		wantErr         bool
-		wantErrPhrase   string
-	}{
-		{
-			// This test verifies that only changed libraries appear in the pull request
-			// body.
-			name: "multiple libraries generation",
-			state: &config.LibrarianState{
-				Image: "go:1.21",
-				Libraries: []*config.LibraryState{
-					{
-						ID:          "one-library",
-						SourceRoots: []string{"path/to"},
-						APIs: []*config.API{
-							{
-								Path: "path/to",
-							},
-						},
-					},
-					{
-						ID:          "another-library",
-						SourceRoots: []string{"path/to"},
-						APIs: []*config.API{
-							{
-								Path: "path/to",
-							},
-						},
-					},
-				},
-			},
-			sourceRepo: &MockRepository{
-				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
-				GetCommitByHash: map[string]*gitrepo.Commit{
-					"1234567890": {
-						Hash: plumbing.NewHash("1234567890"),
-						When: time.UnixMilli(200),
-					},
-					"abcdefg": {
-						Hash: plumbing.NewHash("abcdefg"),
-						When: time.UnixMilli(300),
-					},
-				},
-				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
-					"1234567890": {
-						{
-							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
-							Hash:    hash2,
-							When:    today.Add(time.Hour),
-						},
-					},
-					"abcdefg": {}, // no new commits since commit "abcdefg".
-				},
-				ChangedFilesInCommitValueByHash: map[string][]string{
-					hash2.String(): {
-						"path/to/file",
-					},
-				},
-			},
-			languageRepo: &MockRepository{
-				IsCleanValue:              true,
-				HeadHashValue:             "5678",
-				ChangedFilesInCommitValue: []string{"path/to/a.go"},
-			},
-			idToCommits: map[string]string{
-				"one-library":     "1234567890",
-				"another-library": "abcdefg",
-			},
-			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
-
-BEGIN_NESTED_COMMIT
-fix: a bug fix
-This is another body.
-
-PiperOrigin-RevId: 573342
-Library-IDs: one-library
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
-END_NESTED_COMMIT
-
-END_COMMIT_OVERRIDE
-
-This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s`,
-				librarianVersion, "go:1.21"),
-		},
-		{
-			name: "group_commit_messages",
-			state: &config.LibrarianState{
-				Image: "go:1.21",
-				Libraries: []*config.LibraryState{
-					{
-						ID:          "one-library",
-						SourceRoots: []string{"path/to"},
-						APIs: []*config.API{
-							{
-								Path: "path/to",
-							},
-						},
-					},
-					{
-						ID:          "another-library",
-						SourceRoots: []string{"path/to"},
-						APIs: []*config.API{
-							{
-								Path: "path/to",
-							},
-						},
-					},
-				},
-			},
-			sourceRepo: &MockRepository{
-				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
-				GetCommitByHash: map[string]*gitrepo.Commit{
-					"1234567890": {
-						Hash: plumbing.NewHash("1234567890"),
-						When: time.UnixMilli(200),
-					},
-					"abcdefg": {
-						Hash: plumbing.NewHash("abcdefg"),
-						When: time.UnixMilli(300),
-					},
-				},
-				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
-					"1234567890": {
-						{
-							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
-							Hash:    hash2,
-							When:    today.Add(time.Hour),
-						},
-					},
-					"abcdefg": {
-						{
-							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
-							Hash:    hash2,
-							When:    today.Add(time.Hour),
-						},
-					},
-				},
-				ChangedFilesInCommitValueByHash: map[string][]string{
-					hash2.String(): {
-						"path/to/file",
-					},
-				},
-			},
-			languageRepo: &MockRepository{
-				IsCleanValue:              true,
-				HeadHashValue:             "5678",
-				ChangedFilesInCommitValue: []string{"path/to/a.go"},
-			},
-			idToCommits: map[string]string{
-				"one-library":     "1234567890",
-				"another-library": "abcdefg",
-			},
-			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
-
-BEGIN_NESTED_COMMIT
-fix: a bug fix
-This is another body.
-
-PiperOrigin-RevId: 573342
-Library-IDs: one-library,another-library
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
-END_NESTED_COMMIT
-
-END_COMMIT_OVERRIDE
-
-This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s`,
-				librarianVersion, "go:1.21"),
-		},
-		{
-			name: "multiple libraries generation with failed libraries",
-			state: &config.LibrarianState{
-				Image: "go:1.21",
-				Libraries: []*config.LibraryState{
-					{
-						ID:          "one-library",
-						SourceRoots: []string{"path/to"},
-						APIs: []*config.API{
-							{
-								Path: "path/to",
-							},
-						},
-					},
-					{
-						ID:          "another-library",
-						SourceRoots: []string{"path/to"},
-						APIs: []*config.API{
-							{
-								Path: "path/to",
-							},
-						},
-					},
-				},
-			},
-			sourceRepo: &MockRepository{
-				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
-				GetCommitByHash: map[string]*gitrepo.Commit{
-					"1234567890": {
-						Hash: plumbing.NewHash("1234567890"),
-						When: time.UnixMilli(200),
-					},
-					"abcdefg": {
-						Hash: plumbing.NewHash("abcdefg"),
-						When: time.UnixMilli(300),
-					},
-				},
-				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
-					"1234567890": {
-						{
-							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
-							Hash:    hash2,
-							When:    today.Add(time.Hour),
-						},
-					},
-					"abcdefg": {}, // no new commits since commit "abcdefg".
-				},
-				ChangedFilesInCommitValueByHash: map[string][]string{
-					hash2.String(): {
-						"path/to/file",
-					},
-				},
-			},
-			languageRepo: &MockRepository{
-				IsCleanValue:              true,
-				HeadHashValue:             "5678",
-				ChangedFilesInCommitValue: []string{"path/to/a.go"},
-			},
-			idToCommits: map[string]string{
-				"one-library":     "1234567890",
-				"another-library": "abcdefg",
-			},
-			failedLibraries: []string{
-				"failed-library-a",
-				"failed-library-b",
-			},
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
-
-BEGIN_NESTED_COMMIT
-fix: a bug fix
-This is another body.
-
-PiperOrigin-RevId: 573342
-Library-IDs: one-library
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
-END_NESTED_COMMIT
-
-END_COMMIT_OVERRIDE
-
-This pull request is generated with proto changes between
-[googleapis/googleapis@abcdef0](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s
-
-## Generation failed for
-- failed-library-a
-- failed-library-b`,
-				librarianVersion, "go:1.21"),
-		},
-		{
-			name: "single library generation",
-			state: &config.LibrarianState{
-				Image: "go:1.21",
-				Libraries: []*config.LibraryState{
-					{
-						ID:          "one-library",
-						SourceRoots: []string{"path/to"},
-						APIs: []*config.API{
-							{
-								Path: "path/to",
-							},
-						},
-					},
-				},
-			},
-			sourceRepo: &MockRepository{
-				RemotesValue: []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
-				GetCommitByHash: map[string]*gitrepo.Commit{
-					"1234567890": {
-						Hash: plumbing.NewHash("1234567890"),
-						When: time.UnixMilli(200),
-					},
-				},
-				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
-					"1234567890": {
-						{
-							Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
-							Hash:    hash1,
-							When:    today,
-						},
-						{
-							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
-							Hash:    hash2,
-							When:    today.Add(time.Hour),
-						},
-					},
-				},
-				ChangedFilesInCommitValueByHash: map[string][]string{
-					hash1.String(): {
-						"path/to/file",
-						"path/to/another/file",
-					},
-					hash2.String(): {
-						"path/to/file",
-					},
-				},
-			},
-			languageRepo: &MockRepository{
-				IsCleanValue:              true,
-				HeadHashValue:             "5678",
-				ChangedFilesInCommitValue: []string{"path/to/a.go"},
-			},
-			idToCommits: map[string]string{
-				"one-library": "1234567890",
-			},
-			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
-
-BEGIN_NESTED_COMMIT
-fix: a bug fix
-This is another body.
-
-PiperOrigin-RevId: 573342
-Library-IDs: one-library
-Source-link: [googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0)
-END_NESTED_COMMIT
-
-BEGIN_NESTED_COMMIT
-feat: new feature
-This is body.
-
-PiperOrigin-RevId: 98765
-Library-IDs: one-library
-Source-link: [googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567)
-END_NESTED_COMMIT
-
-END_COMMIT_OVERRIDE
-
-This pull request is generated with proto changes between
-[googleapis/googleapis@1234567](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
-(exclusive) and
-[googleapis/googleapis@fedcba0](https://github.com/googleapis/googleapis/commit/fedcba0987654321000000000000000000000000)
-(inclusive).
-
-Librarian Version: %s
-Language Image: %s`,
-				librarianVersion, "go:1.21"),
-		},
-		{
-			name: "no conventional commit is found since last generation",
-			state: &config.LibrarianState{
-				Image: "go:1.21",
-				Libraries: []*config.LibraryState{
-					{
-						ID:          "one-library",
-						SourceRoots: []string{"path/to"},
-						// Intentionally set this value to verify the test can pass.
-						LastGeneratedCommit: "randomCommit",
-						APIs: []*config.API{
-							{
-								Path: "path/to",
-							},
-						},
-					},
-				},
-			},
-			sourceRepo: &MockRepository{
-				RemotesValue:   []*gitrepo.Remote{{Name: "origin", URLs: []string{"https://github.com/owner/repo.git"}}},
-				GetCommitError: errors.New("simulated get commit error"),
-				GetCommitsForPathsSinceLastGenByCommit: map[string][]*gitrepo.Commit{
-					"1234567890": {
-						{
-							Message: "feat: new feature\n\nThis is body.\n\nPiperOrigin-RevId: 98765",
-							Hash:    hash1,
-							When:    today,
-						},
-						{
-							Message: "fix: a bug fix\n\nThis is another body.\n\nPiperOrigin-RevId: 573342",
-							Hash:    hash2,
-							When:    today.Add(time.Hour),
-						},
-					},
-				},
-				ChangedFilesInCommitValueByHash: map[string][]string{
-					hash1.String(): {
-						"path/to/file",
-						"path/to/another/file",
-					},
-					hash2.String(): {
-						"path/to/file",
-					},
-				},
-			},
-			languageRepo: &MockRepository{
-				IsCleanValue:              true,
-				HeadHashValue:             "5678",
-				ChangedFilesInCommitValue: []string{"path/to/a.go"},
-			},
-			idToCommits: map[string]string{
-				"one-library": "1234567890",
-			},
-			wantErr:       true,
-			wantErrPhrase: "failed to find the start commit",
-		},
-		{
-			name: "no conventional commits since last generation",
-			state: &config.LibrarianState{
-				Image:     "go:1.21",
-				Libraries: []*config.LibraryState{{ID: "one-library", SourceRoots: []string{"path/to"}}},
-			},
-			sourceRepo: &MockRepository{},
-			languageRepo: &MockRepository{
-				HeadHashValue:             "5678",
-				ChangedFilesInCommitValue: []string{"path/to/a.go"},
-			},
-			idToCommits: map[string]string{
-				"one-library": "",
-			},
-			want: "No commit is found since last generation",
-		},
-		{
-			name: "failed to get conventional commits",
-			state: &config.LibrarianState{
-				Image: "go:1.21",
-				Libraries: []*config.LibraryState{
-					{
-						ID:          "one-library",
-						SourceRoots: []string{"path/to"},
-					},
-				},
-			},
-			sourceRepo: &MockRepository{
-				GetCommitsForPathsSinceLastGenError: errors.New("simulated error"),
-			},
-			languageRepo: &MockRepository{
-				HeadHashValue:             "5678",
-				ChangedFilesInCommitValue: []string{"path/to/a.go"},
-			},
-			idToCommits: map[string]string{
-				"one-library": "1234567890",
-			},
-			wantErr:       true,
-			wantErrPhrase: "failed to fetch conventional commits for library",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := formatGenerationPRBody(test.sourceRepo, test.languageRepo, test.state, test.idToCommits, test.failedLibraries)
-			if test.wantErr {
-				if err == nil {
-					t.Fatalf("%s should return error", test.name)
-				}
-				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("formatGenerationPRBody() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("formatGenerationPRBody() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestFindLatestCommit(t *testing.T) {
-	t.Parallel()
-
-	today := time.Now()
-	hash1 := plumbing.NewHash("1234567890abcdef")
-	hash2 := plumbing.NewHash("fedcba0987654321")
-	hash3 := plumbing.NewHash("ghfgsfgshfsdf232")
-	for _, test := range []struct {
-		name          string
-		state         *config.LibrarianState
-		repo          gitrepo.Repository
-		idToCommits   map[string]string
-		want          *gitrepo.Commit
-		wantErr       bool
-		wantErrPhrase string
-	}{
-		{
-			name: "find the last generated commit",
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID: "one-library",
-					},
-					{
-						ID: "another-library",
-					},
-					{
-						ID: "yet-another-library",
-					},
-					{
-						ID: "skipped-library",
-					},
-				},
-			},
-			repo: &MockRepository{
-				GetCommitByHash: map[string]*gitrepo.Commit{
-					hash1.String(): {
-						Hash:    hash1,
-						Message: "this is a message",
-						When:    today.Add(time.Hour),
-					},
-					hash2.String(): {
-						Hash:    hash2,
-						Message: "this is another message",
-						When:    today.Add(2 * time.Hour).Add(time.Minute),
-					},
-					hash3.String(): {
-						Hash:    hash3,
-						Message: "yet another message",
-						When:    today.Add(2 * time.Hour),
-					},
-				},
-			},
-			idToCommits: map[string]string{
-				"one-library":         hash1.String(),
-				"another-library":     hash2.String(),
-				"yet-another-library": hash3.String(),
-			},
-			want: &gitrepo.Commit{
-				Hash:    hash2,
-				Message: "this is another message",
-				When:    today.Add(2 * time.Hour).Add(time.Minute),
-			},
-		},
-		{
-			name: "failed to find last generated commit",
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
-					{
-						ID: "one-library",
-					},
-				},
-			},
-			repo: &MockRepository{
-				GetCommitError: errors.New("simulated error"),
-			},
-			idToCommits: map[string]string{
-				"one-library": "1234567890",
-			},
-			wantErr:       true,
-			wantErrPhrase: "can't find last generated commit for",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := findLatestGenerationCommit(test.repo, test.state, test.idToCommits)
-			if test.wantErr {
-				if err == nil {
-					t.Fatalf("%s should return error", test.name)
-				}
-				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("findLatestCommit() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findLatestCommit() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestGroupByPiperID(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name    string
-		commits []*conventionalcommits.ConventionalCommit
-		want    []*conventionalcommits.ConventionalCommit
-	}{
-		{
-			name: "group_commits_with_same_piper_id_and_subject",
-			commits: []*conventionalcommits.ConventionalCommit{
-				{
-					LibraryID: "library-1",
-					Subject:   "one subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "123456",
-					},
-				},
-				{
-					LibraryID: "library-2",
-					Subject:   "a different subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "123456",
-					},
-				},
-				{
-					LibraryID: "library-3",
-					Subject:   "the same subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "987654",
-					},
-				},
-				{
-					LibraryID: "library-4",
-					Subject:   "the same subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "987654",
-					},
-				},
-				{
-					LibraryID: "library-5",
-				},
-				{
-					LibraryID: "library-6",
-					Footers: map[string]string{
-						"random-key": "random-value",
-					},
-				},
-			},
-			want: []*conventionalcommits.ConventionalCommit{
-				{
-					LibraryID: "library-1",
-					Subject:   "one subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "123456",
-						"Library-IDs":       "library-1",
-					},
-				},
-				{
-					LibraryID: "library-2",
-					Subject:   "a different subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "123456",
-						"Library-IDs":       "library-2",
-					},
-				},
-				{
-					LibraryID: "library-3",
-					Subject:   "the same subject",
-					Footers: map[string]string{
-						"PiperOrigin-RevId": "987654",
-						"Library-IDs":       "library-3,library-4",
-					},
-				},
-				{
-					LibraryID: "library-5",
-					Footers: map[string]string{
-						"Library-IDs": "library-5",
-					},
-				},
-				{
-					LibraryID: "library-6",
-					Footers: map[string]string{
-						"random-key":  "random-value",
-						"Library-IDs": "library-6",
-					},
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := groupByIDAndSubject(test.commits)
-			// We don't care the order in the slice but sorting makes the test deterministic.
-			opts := cmpopts.SortSlices(func(a, b *conventionalcommits.ConventionalCommit) bool {
-				return a.LibraryID < b.LibraryID
-			})
-			if diff := cmp.Diff(test.want, got, opts); diff != "" {
-				t.Errorf("groupByIDAndSubject() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
 
 func TestFormatReleaseNotes(t *testing.T) {
 	t.Parallel()
@@ -742,6 +35,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 	today := time.Now().Format("2006-01-02")
 	hash1 := plumbing.NewHash("1234567890abcdef")
 	hash2 := plumbing.NewHash("fedcba0987654321")
+	hash3 := plumbing.NewHash("abcdefg123456789")
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
@@ -762,7 +56,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -787,11 +81,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 ### Bug Fixes
 
-* a bug fix ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -806,22 +100,18 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
-								Type:       "feat",
-								Subject:    "new feature",
-								CommitHash: hash1.String(),
-								Footers: map[string]string{
-									"PiperOrigin-RevId": "123456",
-								},
+								Type:          "feat",
+								Subject:       "new feature",
+								CommitHash:    hash1.String(),
+								PiperCLNumber: "123456",
 							},
 							{
-								Type:       "fix",
-								Subject:    "a bug fix",
-								CommitHash: hash2.String(),
-								Footers: map[string]string{
-									"PiperOrigin-RevId": "987654",
-								},
+								Type:          "fix",
+								Subject:       "a bug fix",
+								CommitHash:    hash2.String(),
+								PiperCLNumber: "987654",
 							},
 						},
 						ReleaseTriggered: true,
@@ -837,11 +127,11 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature (PiperOrigin-RevId: 123456) ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature (PiperOrigin-RevId: 123456) ([12345678](https://github.com/owner/repo/commit/12345678))
 
 ### Bug Fixes
 
-* a bug fix (PiperOrigin-RevId: 987654) ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* a bug fix (PiperOrigin-RevId: 987654) ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -856,7 +146,7 @@ Language Image: go:1.21
 						// this is the NewVersion in the release note.
 						Version:         "1.1.0",
 						PreviousVersion: "1.0.0",
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -881,9 +171,9 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
-* another new feature ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* another new feature ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -899,7 +189,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "feature for a",
@@ -913,7 +203,7 @@ Language Image: go:1.21
 						Version:          "2.0.1",
 						PreviousVersion:  "2.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "fix",
 								Subject:    "fix for b",
@@ -932,7 +222,7 @@ Language Image: go:1.21
 
 ### Features
 
-* feature for a ([1234567](https://github.com/owner/repo/commit/1234567))
+* feature for a ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>
 
@@ -943,7 +233,7 @@ Language Image: go:1.21
 
 ### Bug Fixes
 
-* fix for b ([fedcba0](https://github.com/owner/repo/commit/fedcba0))
+* fix for b ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today, today),
@@ -959,7 +249,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -983,7 +273,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>`,
 				librarianVersion, today),
@@ -999,7 +289,7 @@ Language Image: go:1.21
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",
 						ReleaseTriggered: true,
-						Changes: []*conventionalcommits.ConventionalCommit{
+						Changes: []*config.Commit{
 							{
 								Type:       "feat",
 								Subject:    "new feature",
@@ -1019,7 +309,7 @@ Language Image: go:1.21
 
 ### Features
 
-* new feature ([1234567](https://github.com/owner/repo/commit/1234567))
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 </details>`,
 				librarianVersion, today),
@@ -1032,6 +322,115 @@ Language Image: go:1.21
 			},
 			ghRepo:          &github.Repository{},
 			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21", librarianVersion),
+		},
+		{
+			name: "generate with chore",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the newVersion in the release note.
+						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "some chore",
+								Body:       "this is the body",
+								CommitHash: hash1.String(),
+							},
+						},
+					},
+				},
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+</details>`,
+				librarianVersion, today),
+		},
+		{
+			name: "release with bulk commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:               "j",
+						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
+							},
+							{
+								Type:       "fix",
+								Subject:    "bulk change",
+								CommitHash: hash2.String(),
+								LibraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
+							},
+							{
+								Type:          "chore",
+								Subject:       "bulk change 2",
+								CommitHash:    hash3.String(),
+								LibraryIDs:    "j,k,l,m,n,o,p,q,r,s",
+								PiperCLNumber: "12345",
+							},
+						},
+					},
+					{
+						ID:               "k",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "fix",
+								Subject:    "bulk change",
+								CommitHash: hash2.String(),
+								LibraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
+							},
+						},
+					},
+				},
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+Language Image: go:1.21
+<details><summary>j: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (%s)
+
+### Features
+
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
+
+</details>
+
+
+<details><summary>k: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/k-2.3.0...k-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>Bulk Changes</summary>
+
+* chore: bulk change 2 (PiperOrigin-RevId: 12345) ([abcdef00](https://github.com/owner/repo/commit/abcdef00))
+  Libraries: j,k,l,m,n,o,p,q,r,s
+* fix: bulk change ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
+  Libraries: a,b,c,d,e,f,g,h,i,j,k
+</details>`,
+				librarianVersion, today, today),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1051,6 +450,129 @@ Language Image: go:1.21
 			}
 			if diff := cmp.Diff(test.wantReleaseNote, got); diff != "" {
 				t.Errorf("formatReleaseNotes() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindPiperIDFrom(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		commit  *gitrepo.Commit
+		want    string
+		wantErr error
+	}{
+		{
+			name: "found_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API\n\nPiperOrigin-RevId: 745187558",
+			},
+			want: "745187558",
+		},
+		{
+			name: "invalid_commit",
+			commit: &gitrepo.Commit{
+				Message: "",
+			},
+			wantErr: gitrepo.ErrEmptyCommitMessage,
+		},
+		{
+			name: "unconventional_commit",
+			commit: &gitrepo.Commit{
+				Message: "unconventional commit message",
+			},
+			wantErr: errPiperNotFound,
+		},
+		{
+			name: "does_not_contain_piper_id",
+			commit: &gitrepo.Commit{
+				Message: "feat: add a new API",
+			},
+			wantErr: errPiperNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findPiperIDFrom(test.commit, "example-id")
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("unexpected error type: got %v, want %v", err, test.wantErr)
+				}
+
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findPiperIDFrom() mismatch (-want +got):%s", diff)
+			}
+		})
+	}
+}
+
+func TestLanguageRepoChangedFiles(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		repo    gitrepo.Repository
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "IsClean fails",
+			repo: &MockRepository{
+				IsCleanError: fmt.Errorf("mock failure from IsClean"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean, HeadHash fails",
+			repo: &MockRepository{
+				IsCleanValue:  true,
+				HeadHashError: fmt.Errorf("mock failure from HeadHash"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean, ChangedFilesInCommit fails",
+			repo: &MockRepository{
+				IsCleanValue:              true,
+				HeadHashValue:             "1234",
+				ChangedFilesInCommitError: fmt.Errorf("mock failure from ChangedFilesInCommit"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "dirty, ChangedFiles fails",
+			repo: &MockRepository{
+				ChangedFilesError: fmt.Errorf("mock failure from ChangedFiles"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "clean success",
+			repo: &MockRepository{
+				IsCleanValue:  true,
+				HeadHashValue: "1234",
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					"abcd": []string{"a/b/c", "d/e/f"},
+					"1234": []string{"g/h/i", "j/k/l"},
+				},
+			},
+			want: []string{"g/h/i", "j/k/l"},
+		},
+		{
+			name: "dirty success",
+			repo: &MockRepository{
+				ChangedFilesValue: []string{"a/b/c", "d/e/f"},
+			},
+			want: []string{"a/b/c", "d/e/f"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := languageRepoChangedFiles(test.repo)
+			if (err != nil) != test.wantErr {
+				t.Errorf("languageRepoChangedFiles() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -20,7 +20,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/conventionalcommits"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -114,7 +113,7 @@ type LibraryState struct {
 	LastGeneratedCommit string `yaml:"last_generated_commit" json:"-"`
 	// The changes from the language repository since the library was last released.
 	// This field is ignored when writing to state.yaml.
-	Changes []*conventionalcommits.ConventionalCommit `yaml:"-" json:"changes,omitempty"`
+	Changes []*Commit `yaml:"-" json:"changes,omitempty"`
 	// A list of APIs that are part of this library.
 	APIs []*API `yaml:"apis" json:"apis"`
 	// A list of directories in the language repository where Librarian contributes code.
@@ -141,6 +140,28 @@ type LibraryState struct {
 	// An error message from the docker response.
 	// This field is ignored when writing to state.yaml.
 	ErrorMessage string `yaml:"-" json:"error,omitempty"`
+}
+
+// Commit represents a single commit in the release notes.
+type Commit struct {
+	// Type is the type of change (e.g., "feat", "fix", "docs").
+	Type string `json:"type"`
+	// Subject is the short summary of the change.
+	Subject string `json:"subject"`
+	// Body is the long-form description of the change.
+	Body string `json:"body"`
+	// CommitHash is the full commit hash.
+	CommitHash string `json:"commit_hash,omitempty"`
+	// PiperCLNumber is the Piper CL number associated with the commit.
+	PiperCLNumber string `json:"piper_cl_number,omitempty"`
+	// A list of library IDs associated with the commit.
+	LibraryIDs string `json:"-"`
+}
+
+// IsBulkCommit returns true if the commit is associated with 10 or more
+// libraries.
+func (c *Commit) IsBulkCommit() bool {
+	return len(strings.Split(c.LibraryIDs, ",")) >= 10
 }
 
 var (

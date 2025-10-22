@@ -182,6 +182,24 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: "protobuf",
 			Options: map[string]string{
+				"disabled-clippy-warnings": "",
+			},
+			Update: func(c *codec) {
+				c.disabledClippyWarnings = []string{}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"disabled-clippy-warnings": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.disabledClippyWarnings = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
 				"template-override": "templates/http-client",
 			},
 			Update: func(c *codec) {
@@ -204,6 +222,24 @@ func TestParseOptions(t *testing.T) {
 			},
 			Update: func(c *codec) {
 				c.perServiceFeatures = true
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"default-features": "a,b,c",
+			},
+			Update: func(c *codec) {
+				c.defaultFeatures = []string{"a", "b", "c"}
+			},
+		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"default-features": "",
+			},
+			Update: func(c *codec) {
+				c.defaultFeatures = []string{}
 			},
 		},
 		{
