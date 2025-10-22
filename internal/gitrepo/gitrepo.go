@@ -477,18 +477,21 @@ func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, err
 		}
 	}
 
-	patch, err := fromTree.Patch(toTree)
+	changes, err := fromTree.Diff(toTree)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get patch for commit %s: %w", commitHash, err)
+		return nil, fmt.Errorf("failed to get diff for commit %s: %w", commitHash, err)
 	}
 	var files []string
-	for _, filePatch := range patch.FilePatches() {
-		from, to := filePatch.Files()
-		if from != nil {
-			files = append(files, from.Path())
+	for _, change := range changes {
+		from := change.From.Name
+		to := change.To.Name
+		// Deletion or modification
+		if from != "" {
+			files = append(files, from)
 		}
-		if to != nil && (from == nil || from.Path() != to.Path()) {
-			files = append(files, to.Path())
+		// Insertion or rename
+		if from != to {
+			files = append(files, to)
 		}
 	}
 	return files, nil
