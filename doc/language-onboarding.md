@@ -337,3 +337,9 @@ go run ./cmd/librarian/ generate -repo=<your repository> -push
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ release init -repo=<your repository> -push
 ```
+
+**Update Image Command:**
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ update-image -repo=<your repository> -push
+```
