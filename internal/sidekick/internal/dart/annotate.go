@@ -58,6 +58,9 @@ type modelAnnotations struct {
 	ReadMeQuickstartText       string
 	IssueTrackerURL            string
 	ApiKeyEnvironmentVariables []string
+	// Dart `export` statements e.g.
+	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
+	Exports []string
 }
 
 // HasServices returns true if the model has services.
@@ -230,6 +233,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		readMeQuickstartText       string
 		issueTrackerURL            string
 		apiKeyEnvironmentVariables = []string{}
+		exports                    = []string{}
 	)
 
 	for key, definition := range options {
@@ -254,6 +258,13 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			packageVersion = definition
 		case key == "part-file":
 			partFileReference = definition
+		case key == "extra-exports":
+			// extra-export = "export 'package:google_cloud_gax/gax.dart' show Any; export 'package:google_cloud_gax/gax.dart' show Status;"
+			// Dart `export` statements that should be appended after any imports.
+			exports = strings.FieldsFunc(definition, func(c rune) bool { return c == ';' })
+			for i := range exports {
+				exports[i] = strings.TrimSpace(exports[i])
+			}
 		case key == "dev-dependencies":
 			devDependencies = strings.Split(definition, ",")
 		case key == "not-for-publication":
@@ -373,6 +384,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		ReadMeAfterTitleText:       readMeAfterTitleText,
 		ReadMeQuickstartText:       readMeQuickstartText,
 		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
+		Exports:                    exports,
 	}
 
 	model.Codec = ann

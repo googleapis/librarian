@@ -272,7 +272,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitr
 			// Library was inputted for release, but does not contain a releasable unit
 			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to force a release for: %s", library.ID)
 		}
-		slog.Info("Updating library to the next version", "library", r.library, "currentVersion", library.Version, "nextVersion", nextVersion)
+		slog.Info("Updating library to the next version", "library", library.ID, "currentVersion", library.Version, "nextVersion", nextVersion)
 	}
 
 	// Update the previous version, we need this value when creating release note.
@@ -292,13 +292,13 @@ func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit,
 	}
 
 	if r.librarianConfig == nil {
-		slog.Info("No librarian config")
+		slog.Debug("No librarian config")
 		return nextVersionFromCommits, nil
 	}
 
 	// Look for next_version override from config.yaml
 	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
-	slog.Info("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
+	slog.Debug("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
 	if libraryConfig == nil || libraryConfig.NextVersion == "" {
 		return nextVersionFromCommits, nil
 	}

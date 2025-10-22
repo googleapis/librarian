@@ -81,6 +81,17 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
+			map[string]string{"extra-exports": "export 'package:google_cloud_gax/gax.dart' show Any; export 'package:google_cloud_gax/gax.dart' show Status;"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff([]string{
+					"export 'package:google_cloud_gax/gax.dart' show Any",
+					"export 'package:google_cloud_gax/gax.dart' show Status"}, codec.Exports); diff != "" {
+					t.Errorf("mismatch in Codec.Exports (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
 			map[string]string{"version": "1.2.3"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
