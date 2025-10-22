@@ -239,7 +239,7 @@ func (r *LocalRepository) IsClean() (bool, error) {
 // ChangedFiles returns a list of files that have been modified, added, or deleted
 // in the working tree, including both staged and unstaged changes.
 func (r *LocalRepository) ChangedFiles() ([]string, error) {
-	slog.Info("Getting changed files")
+	slog.Debug("Getting changed files")
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return nil, err
@@ -450,7 +450,7 @@ func getHashForPath(commit *object.Commit, path string) (string, error) {
 
 // ChangedFilesInCommit returns the files changed in the given commit.
 func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, error) {
-	slog.Info("Getting changed files in commit", "hash", commitHash)
+	slog.Debug("Getting changed files in commit", "hash", commitHash)
 	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for hash %s: %w", commitHash, err)

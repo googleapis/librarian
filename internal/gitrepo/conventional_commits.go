@@ -217,9 +217,9 @@ func parseSimpleCommit(commitPart commitPart, commit *Commit, libraryID string) 
 	for _, bodyLine := range bodyLines {
 		header, ok := parseHeader(bodyLine)
 		if !ok {
-			slog.Warn("bodyLine is not a header", "bodyLine", bodyLine, "hash", commit.Hash.String())
 			if len(commits) == 0 {
 				// This should not happen as we expect a conventional commit message inside a nested commit.
+				slog.Warn("bodyLine is not a header, not in a commit", "bodyLine", bodyLine, "hash", commit.Hash.String())
 				continue
 			}
 
