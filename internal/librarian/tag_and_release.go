@@ -301,7 +301,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 	var parsedBodies []libraryRelease
 	for libraryID, builder := range idToBuilder {
 		parsedBodies = append(parsedBodies, libraryRelease{
-			Body:    builderReleaseBody(builder.typeToMessages, builder.title),
+			Body:    buildReleaseBody(builder.typeToMessages, builder.title),
 			Library: libraryID,
 			Version: builder.version,
 		})
@@ -330,6 +330,8 @@ func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github
 	return nil
 }
 
+// updateLibraryReleaseBuilder finds or creates a libraryReleaseBuilder for a given library
+// and updates it with new information.
 func updateLibraryReleaseBuilder(idToVersionAndBody map[string]*libraryReleaseBuilder, library, commitType, title, message, version string) {
 	vab, ok := idToVersionAndBody[library]
 	if !ok {
@@ -355,12 +357,12 @@ func updateLibraryReleaseBuilder(idToVersionAndBody map[string]*libraryReleaseBu
 	vab.title = title
 }
 
-// builderReleaseBody formats the release notes for a single library.
+// buildReleaseBody formats the release notes for a single library.
 //
 // It takes a map of commit types (e.g., "Features", "Bug Fixes") to their corresponding messages and a title string.
 // It returns a formatted string containing the title and all commit messages organized by type, following the order
 // defined in commitTypeOrder.
-func builderReleaseBody(body map[string][]string, title string) string {
+func buildReleaseBody(body map[string][]string, title string) string {
 	var builder strings.Builder
 	builder.WriteString(title)
 	for _, commitType := range commitTypeOrder {
