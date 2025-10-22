@@ -348,6 +348,7 @@ type MockRepository struct {
 	NewAndDeletedFilesValue                []string
 	NewAndDeletedFilesError                error
 	CreateBranchAndCheckoutError           error
+	CheckoutCommitAndCreateBranchError     error
 	PushCalls                              int
 	PushError                              error
 	RestoreError                           error
@@ -361,10 +362,6 @@ type MockRepository struct {
 	// If the value is "error", an error is returned instead. (This is useful when some
 	// calls must be successful, and others must fail.)
 	GetHashForPathValue map[string]string
-}
-
-func (m *MockRepository) Checkout(branch string) error {
-	return nil
 }
 
 func (m *MockRepository) HeadHash() (string, error) {
@@ -503,6 +500,13 @@ func (m *MockRepository) CreateBranchAndCheckout(name string) error {
 	return nil
 }
 
+func (m *MockRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
+	if m.CheckoutCommitAndCreateBranchError != nil {
+		return m.CheckoutCommitAndCreateBranchError
+	}
+	return nil
+}
+
 func (m *MockRepository) Push(name string) error {
 	m.PushCalls++
 	if m.PushError != nil {
@@ -516,6 +520,14 @@ func (m *MockRepository) Restore(paths []string) error {
 }
 
 func (m *MockRepository) CleanUntracked(paths []string) error {
+	return nil
+}
+
+func (m *MockRepository) Checkout(commitHash string) error {
+	m.CheckoutCalls++
+	if m.CheckoutError != nil {
+		return m.CheckoutError
+	}
 	return nil
 }
 

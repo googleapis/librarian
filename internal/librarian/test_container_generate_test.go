@@ -182,22 +182,18 @@ message PredictResponse {}
 		Dir: repoDir,
 	}
 
-	state := &config.LibrarianState{
-		Libraries: []*config.LibraryState{
+	libraryState := &config.LibraryState{
+		ID:                  "google-cloud-aiplatform-v1",
+		LastGeneratedCommit: initialCommit,
+		APIs: []*config.API{
 			{
-				ID:                  "google-cloud-aiplatform-v1",
-				LastGeneratedCommit: initialCommit,
-				APIs: []*config.API{
-					{
-						Path: protoPath,
-					},
-				},
+				Path: protoPath,
 			},
 		},
 	}
 	libraryID := "google-cloud-aiplatform-v1"
 
-	protoFileToGUID, err := prepareForGenerateTest(state, libraryID, mockRepo)
+	protoFileToGUID, err := prepareForGenerateTest(libraryState, libraryID, mockRepo)
 	if err != nil {
 		t.Fatalf("prepareForGenerateTest() error = %v", err)
 	}

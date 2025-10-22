@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/docker"
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
@@ -64,7 +63,11 @@ func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
 
 func (r *testGenerateRunner) run(ctx context.Context) error {
 	slog.Debug("prepare for test", "library", r.library)
-	protoFileToGUID, err := prepareForGenerateTest(r.state, r.library, r.sourceRepo)
+	libraryState := r.state.LibraryByID(r.library)
+	if libraryState == nil {
+		return fmt.Errorf("library %q not found in state", r.library)
+	}
+	protoFileToGUID, err := prepareForGenerateTest(libraryState, r.library, r.sourceRepo)
 	if err != nil {
 		return err
 	}
@@ -76,7 +79,8 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 
 	// We capture the error here and pass it to the validation step.
 	slog.Debug("run generate", "library", r.library)
-	_, generateErr := r.runGenerateCommand(ctx, r.library, outputDir)
+
+	generateErr := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir)
 
 	slog.Debug("validate", "library", r.library)
 	if err := validateGenerateTest(generateErr, r.repo, protoFileToGUID, r.checkUnexpectedChanges); err != nil {
@@ -172,11 +176,11 @@ func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileT
 // GUIDs as comments into the relevant proto files, and commits these temporary
 // changes. It returns a map of the modified proto file paths to the GUIDs that
 // were injected.
-func prepareForGenerateTest(state *config.LibrarianState, libraryID string, sourceRepo gitrepo.Repository) (map[string]string, error) {
-	libraryState := state.LibraryByID(libraryID)
-	if libraryState == nil {
-		return nil, fmt.Errorf("library %q not found in state", libraryID)
-	}
+func prepareForGenerateTest(libraryState *config.LibraryState, libraryID string, sourceRepo gitrepo.Repository) (map[string]string, error) {
+	// libraryState := state.LibraryByID(libraryID)
+	// if libraryState == nil {
+	// 	return nil, fmt.Errorf("library %q not found in state", libraryID)
+	// }
 	if libraryState.LastGeneratedCommit == "" {
 		return nil, fmt.Errorf("last_generated_commit is not set for library %q", libraryID)
 	}
@@ -300,43 +304,4 @@ func findProtoInsertionLine(lines []string) int {
 		}
 	}
 	return -1
-}
-
-// runGenerateCommand executes the 'generate' command within a container. It constructs
-// the generation request, invokes the container client, and processes the response,
-// checking for any errors returned by the generator.
-func (r *testGenerateRunner) runGenerateCommand(ctx context.Context, libraryID, outputDir string) (string, error) {
-	apiRoot, err := filepath.Abs(r.sourceRepo.GetDir())
-	if err != nil {
-		return "", err
-	}
-
-	generateRequest := &docker.GenerateRequest{
-		ApiRoot:   apiRoot,
-		LibraryID: libraryID,
-		Output:    outputDir,
-		RepoDir:   r.repo.GetDir(),
-		State:     r.state,
-	}
-	slog.Info("Performing generation for library", "id", libraryID, "outputDir", outputDir)
-	if err := r.containerClient.Generate(ctx, generateRequest); err != nil {
-		return "", err
-	}
-
-	// Read the library state from the response and check for generator-side errors.
-	libraryState, err := readLibraryState(
-		filepath.Join(generateRequest.RepoDir, config.LibrarianDir, config.GenerateResponse))
-	if err != nil {
-		return "", fmt.Errorf("failed to read library state from generator response: %w", err)
-	}
-	if libraryState.ErrorMessage != "" {
-		return "", fmt.Errorf("generator container returned an error: %s", libraryState.ErrorMessage)
-	}
-
-	if err := cleanAndCopyLibrary(r.state, r.repo.GetDir(), libraryID, outputDir); err != nil {
-		return "", err
-	}
-
-	slog.Info("Generation succeeds", "id", libraryID)
-	return libraryID, nil
 }
