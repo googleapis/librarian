@@ -250,7 +250,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 
 				commitType, ok := commitTypeToHeading[strings.TrimSpace(section[1])]
 				if !ok {
-					slog.Warn("unrecognized commit type", "commit", section[1])
+					slog.Warn("unrecognized commit type, skipping", "commit", section[1])
 					continue
 				}
 				message := fmt.Sprintf("* %s", strings.TrimSpace(section[2]))
