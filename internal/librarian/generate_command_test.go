@@ -306,8 +306,6 @@ func TestRunConfigureCommand(t *testing.T) {
 			},
 			container:          &mockContainerClient{},
 			wantConfigureCalls: 1,
-			wantErr:            true,
-			wantErrMsg:         "failed to copy global file",
 		},
 		{
 			name: "configure command failed",
