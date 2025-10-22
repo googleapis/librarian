@@ -357,6 +357,10 @@ func updateVersionAndBody(idToVersionAndBody map[string]*releaseSection, library
 }
 
 // updateReleaseBody formats the release notes for a single library.
+//
+// It takes a map of commit types (e.g., "Features", "Bug Fixes") to their corresponding messages and a title string.
+// It returns a formatted string containing the title and all commit messages organized by type, following the order
+// defined in commitTypeOrder.
 func updateReleaseBody(body map[string][]string, title string) string {
 	var builder strings.Builder
 	builder.WriteString(title)
