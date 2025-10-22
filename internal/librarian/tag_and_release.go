@@ -356,6 +356,7 @@ func updateVersionAndBody(idToVersionAndBody map[string]*releaseSection, library
 	vab.title = title
 }
 
+// updateReleaseBody formats the release notes for a single library.
 func updateReleaseBody(body map[string][]string, title string) string {
 	var builder strings.Builder
 	builder.WriteString(title)
