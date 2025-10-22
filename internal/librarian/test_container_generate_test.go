@@ -15,6 +15,8 @@
 package librarian
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,47 +24,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 )
-
-func TestNewTestGenerateRunner(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name       string
-		cfg        *config.Config
-		wantErr    bool
-		wantErrMsg string
-	}{
-		{
-			name: "valid config",
-			cfg: &config.Config{
-				Repo:     newTestGitRepo(t).GetDir(),
-				WorkRoot: t.TempDir(),
-				Image:    "gcr.io/test/test-image",
-			},
-		},
-		{
-			name: "missing image",
-			cfg: &config.Config{
-				Repo:     "https://github.com/googleapis/librarian.git",
-				WorkRoot: t.TempDir(),
-			},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := newTestGenerateRunner(test.cfg)
-			if test.wantErr {
-				if err == nil {
-					t.Fatalf("newTestGenerateRunner() error = %v, wantErr %v", err, test.wantErr)
-				}
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Fatalf("want error message: %s, got: %s", test.wantErrMsg, err.Error())
-				}
-				return
-			}
-		})
-	}
-}
 
 func TestValidateGenerateTest(t *testing.T) {
 	t.Parallel()
@@ -108,12 +69,11 @@ func TestValidateGenerateTest(t *testing.T) {
 			wantErrMsg:         "expected no new or deleted files, but found",
 		},
 	} {
-		tt := test
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			var changedFiles []string
-			for filename, content := range tt.filesToWrite {
+			for filename, content := range test.filesToWrite {
 				path := filepath.Join(tmpDir, filename)
 				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 					t.Fatalf("failed to write file %s: %v", filename, err)
@@ -123,17 +83,17 @@ func TestValidateGenerateTest(t *testing.T) {
 			mockRepo := &MockRepository{
 				Dir:                     tmpDir,
 				ChangedFilesValue:       changedFiles,
-				NewAndDeletedFilesValue: tt.newAndDeletedFiles,
+				NewAndDeletedFilesValue: test.newAndDeletedFiles,
 			}
 
-			err := validateGenerateTest(nil, mockRepo, tt.protoFileToGUID, true)
+			err := validateGenerateTest(nil, mockRepo, test.protoFileToGUID, true)
 
-			if tt.wantErrMsg != "" {
+			if test.wantErrMsg != "" {
 				if err == nil {
 					t.Fatalf("validateGenerateTest() did not return an error, but one was expected")
 				}
-				if !strings.Contains(err.Error(), tt.wantErrMsg) {
-					t.Errorf("validateGenerateTest() returned error %q, want error containing %q", err.Error(), tt.wantErrMsg)
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("validateGenerateTest() returned error %q, want error containing %q", err.Error(), test.wantErrMsg)
 				}
 			} else if err != nil {
 				t.Fatalf("validateGenerateTest() returned unexpected error: %v", err)
@@ -143,10 +103,11 @@ func TestValidateGenerateTest(t *testing.T) {
 }
 func TestPrepareForGenerateTest(t *testing.T) {
 	t.Parallel()
-	// Create a temporary directory to act as the repo
+	// Create a temporary directory to act as a mock git repository.
 	repoDir := t.TempDir()
 
-	// Create a proto file in the temp directory
+	// Create a sample proto file within the mock repository.
+	// This represents the API definition that will be processed.
 	protoPath := "google/cloud/aiplatform/v1"
 	protoFilename := "prediction_service.proto"
 	fullProtoDir := filepath.Join(repoDir, protoPath)
@@ -177,11 +138,11 @@ message PredictResponse {}
 		t.Fatalf("os.WriteFile() error = %v", err)
 	}
 
+	// Setup mock repository and library state configuration.
 	initialCommit := "abcdef1234567890abcdef1234567890abcdef12"
 	mockRepo := &MockRepository{
 		Dir: repoDir,
 	}
-
 	libraryState := &config.LibraryState{
 		ID:                  "google-cloud-aiplatform-v1",
 		LastGeneratedCommit: initialCommit,
@@ -193,11 +154,13 @@ message PredictResponse {}
 	}
 	libraryID := "google-cloud-aiplatform-v1"
 
+	// Execute the function under test.
 	protoFileToGUID, err := prepareForGenerateTest(libraryState, libraryID, mockRepo)
 	if err != nil {
 		t.Fatalf("prepareForGenerateTest() error = %v", err)
 	}
 
+	// Check that the function returned a map with the correct proto file and a GUID.
 	if len(protoFileToGUID) != 1 {
 		t.Fatalf("len(protoFileToGUID) = %d, want 1", len(protoFileToGUID))
 	}
@@ -210,7 +173,7 @@ message PredictResponse {}
 		guid = g
 	}
 
-	// Check that the file was modified
+	// Check that the proto file was modified to include the GUID.
 	newContent, err := os.ReadFile(fullProtoPath)
 	if err != nil {
 		t.Fatalf("os.ReadFile() error = %v", err)
@@ -219,8 +182,155 @@ message PredictResponse {}
 		t.Errorf("proto file does not contain GUID %q", guid)
 	}
 
-	// Check that a new commit was made
+	// Check that a new commit was made in the mock repository.
 	if mockRepo.CommitCalls != 1 {
 		t.Errorf("mockRepo.CommitCalls = %d, want 1", mockRepo.CommitCalls)
+	}
+}
+
+func TestTestGenerateRunnerRun(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name                   string
+		state                  *config.LibrarianState
+		libraryID              string
+		prepareErr             error
+		generateErr            error
+		validateErr            error
+		wantErrMsg             string
+		checkUnexpectedChanges bool
+		repoChangedFiles       []string
+	}{
+		{
+			name:       "library not found",
+			state:      &config.LibrarianState{},
+			libraryID:  "non-existent-library",
+			wantErrMsg: "library \"non-existent-library\" not found in state",
+		},
+		{
+			name: "prepareForGenerateTest error",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "google-cloud-aiplatform-v1",
+						LastGeneratedCommit: "initial-commit",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/aiplatform/v1",
+							},
+						},
+					},
+				},
+			},
+			libraryID:  "google-cloud-aiplatform-v1",
+			prepareErr: fmt.Errorf("checkout error"),
+			wantErrMsg: "checkout error",
+		},
+		{
+			name: "generateSingleLibrary error",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "google-cloud-aiplatform-v1",
+						LastGeneratedCommit: "initial-commit",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/aiplatform/v1",
+							},
+						},
+					},
+				},
+			},
+			libraryID:   "google-cloud-aiplatform-v1",
+			generateErr: fmt.Errorf("generate error"),
+			wantErrMsg:  "generation failed: generate error",
+		},
+		{
+			name: "validateGenerateTest error",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "google-cloud-aiplatform-v1",
+						LastGeneratedCommit: "initial-commit",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/aiplatform/v1",
+							},
+						},
+					},
+				},
+			},
+			libraryID:              "google-cloud-aiplatform-v1",
+			checkUnexpectedChanges: true,
+			repoChangedFiles:       []string{"unrelated.txt"},
+			wantErrMsg:             "did not result in any generated file changes",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			// 1. Setup the runner with mocked dependencies based on the test case.
+			// Create a temporary directory to act as a mock git repository.
+			repoDir := t.TempDir()
+
+			// Create a dummy proto file within the mock repository if the test case needs it.
+			// This is needed because the prepare step searches for .proto files to modify.
+			if test.state != nil && len(test.state.Libraries) > 0 && len(test.state.Libraries[0].APIs) > 0 {
+				protoPath := test.state.Libraries[0].APIs[0].Path
+				protoFilename := "prediction_service.proto"
+				fullProtoDir := filepath.Join(repoDir, protoPath)
+				if err := os.MkdirAll(fullProtoDir, 0755); err != nil {
+					t.Fatalf("os.MkdirAll() error = %v", err)
+				}
+				protoContent := "service PredictionService {}"
+				if err := os.WriteFile(filepath.Join(fullProtoDir, protoFilename), []byte(protoContent), 0644); err != nil {
+					t.Fatalf("os.WriteFile() error = %v", err)
+				}
+			}
+
+			// Set up the mock repositories and clients with behavior defined by the test case.
+			mockSourceRepo := &MockRepository{
+				Dir:                                repoDir,
+				CheckoutCommitAndCreateBranchError: test.prepareErr,
+			}
+			mockRepoDir := t.TempDir()
+			for _, f := range test.repoChangedFiles {
+				if err := os.WriteFile(filepath.Join(mockRepoDir, f), []byte("some content"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			}
+			mockRepo := &MockRepository{
+				Dir:               mockRepoDir,
+				ChangedFilesValue: test.repoChangedFiles,
+			}
+			mockContainerClient := &mockContainerClient{
+				generateErr: test.generateErr,
+			}
+
+			// Create testGenerateRunner with the mocked dependencies.
+			runner := &testGenerateRunner{
+				library:                test.libraryID,
+				repo:                   mockRepo,
+				sourceRepo:             mockSourceRepo,
+				state:                  test.state,
+				workRoot:               t.TempDir(),
+				containerClient:        mockContainerClient,
+				checkUnexpectedChanges: test.checkUnexpectedChanges,
+			}
+
+			// 2. Execute the run method.
+			err := runner.run(context.Background())
+
+			// 3. Assert the outcome.
+			if test.wantErrMsg != "" {
+				if err == nil {
+					t.Fatal("runner.run() did not return an error, but one was expected")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("runner.run() returned error %q, want error containing %q", err.Error(), test.wantErrMsg)
+				}
+			} else if err != nil {
+				t.Fatalf("runner.run() returned unexpected error: %v", err)
+			}
+		})
 	}
 }
