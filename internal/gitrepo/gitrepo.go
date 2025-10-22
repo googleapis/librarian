@@ -490,7 +490,7 @@ func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, err
 			files = append(files, from)
 		}
 		// Insertion or rename
-		if from != to {
+		if to != "" && from != to {
 			files = append(files, to)
 		}
 	}

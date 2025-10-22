@@ -1103,6 +1103,16 @@ func TestChangedFilesInCommit(t *testing.T) {
 			wantFiles:  []string{"file2.txt"},
 		},
 		{
+			name:       "commit 4",
+			commitHash: commitHashes["commit 4"],
+			wantFiles:  []string{"file2.txt"},
+		},
+		{
+			name:       "commit 5",
+			commitHash: commitHashes["commit 5"],
+			wantFiles:  []string{"file1.txt", "file3.txt"},
+		},
+		{
 			name:       "invalid commit hash",
 			commitHash: "invalid",
 			wantErr:    true,
@@ -1552,9 +1562,53 @@ func createAndCommit(t *testing.T, repo *git.Repository, path string, content []
 			t.Fatalf("os.MkdirAll failed: %v", err)
 		}
 	}
+	return commitChanges(t, repo, commitMsg, path)
 
-	if _, err := w.Add(path); err != nil {
-		t.Fatalf("w.Add failed: %v", err)
+}
+
+// deleteAndCommit deletes a file in a repository and commits the change.
+func deleteAndCommit(t *testing.T, repo *git.Repository, path string, commitMsg string) *object.Commit {
+	t.Helper()
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree() failed: %v", err)
+	}
+
+	fullPath := filepath.Join(w.Filesystem.Root(), path)
+	if err := os.Remove(fullPath); err != nil {
+		t.Fatalf("Remove() failed: %v", err)
+	}
+	return commitChanges(t, repo, commitMsg, path)
+}
+
+// renameAndCommit renames a file in a repository and commits the change.
+func renameAndCommit(t *testing.T, repo *git.Repository, fromPath, toPath string, commitMsg string) *object.Commit {
+	t.Helper()
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree() failed: %v", err)
+	}
+
+	fullFromPath := filepath.Join(w.Filesystem.Root(), fromPath)
+	fullToPath := filepath.Join(w.Filesystem.Root(), toPath)
+	if err := os.Rename(fullFromPath, fullToPath); err != nil {
+		t.Fatalf("Rename() failed: %v", err)
+	}
+	return commitChanges(t, repo, commitMsg, fromPath, toPath)
+}
+
+// commitChanges adds the specified paths to the repository and commits the change.
+func commitChanges(t *testing.T, repo *git.Repository, commitMsg string, paths ...string) *object.Commit {
+	t.Helper()
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("Worktree() failed: %v", err)
+	}
+
+	for _, path := range paths {
+		if _, err := w.Add(path); err != nil {
+			t.Fatalf("w.Add failed: %v", err)
+		}
 	}
 	hash, err := w.Commit(commitMsg, &git.CommitOptions{
 		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
@@ -1588,6 +1642,14 @@ func setupRepoForChangedFilesTest(t *testing.T) (*LocalRepository, map[string]st
 	// Commit 3 (add file2.txt)
 	commit3 := createAndCommit(t, repo, "file2.txt", []byte("content3"), "commit 3")
 	commitHashes["commit 3"] = commit3.Hash.String()
+
+	// Commit 4 (delete file2.txt)
+	commit4 := deleteAndCommit(t, repo, "file2.txt", "commit 4")
+	commitHashes["commit 4"] = commit4.Hash.String()
+
+	// Commit 5 (rename file1.txt to file3.txt)
+	commit5 := renameAndCommit(t, repo, "file1.txt", "file3.txt", "commit 5")
+	commitHashes["commit 5"] = commit5.Hash.String()
 
 	return &LocalRepository{Dir: dir, repo: repo}, commitHashes
 }
