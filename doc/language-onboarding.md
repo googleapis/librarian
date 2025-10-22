@@ -59,7 +59,7 @@ need to be executable by any user ID within the container.
 
 ### Guidelines on Language Container Runtimes
 
-You should be able to run the generate and release command for an API such as Google Cloud Functions in less than a
+You should be able to run the `generate` or `release-init` commands for an API such as Google Cloud Functions in less than a
 minute. We understand that some libraries may take longer to process, however, long runtimes can adversely affect your
 ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a
 generator update could trigger a run for all your libraries.
