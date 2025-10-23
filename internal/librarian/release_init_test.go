@@ -1246,6 +1246,7 @@ func TestRunInitCommand(t *testing.T) {
 								Type:       "feat",
 								Subject:    "bump version",
 								CommitHash: "1234560000000000000000000000000000000000",
+								LibraryIDs: "another-example-id",
 							},
 						},
 						ReleaseTriggered: true,
@@ -1266,6 +1267,7 @@ func TestRunInitCommand(t *testing.T) {
 								Type:       "feat",
 								Subject:    "bump version",
 								CommitHash: "1234560000000000000000000000000000000000",
+								LibraryIDs: "example-id",
 							},
 						},
 						ReleaseTriggered: true,
@@ -1556,14 +1558,16 @@ func TestUpdateLibrary(t *testing.T) {
 				PreviousVersion: "1.2.3",
 				Changes: []*config.Commit{
 					{
-						Type:    "fix",
-						Subject: "change a typo",
+						Type:       "fix",
+						Subject:    "change a typo",
+						LibraryIDs: "one-id",
 					},
 					{
 						Type:          "feat",
 						Subject:       "add a config file",
 						Body:          "This is the body.",
 						PiperCLNumber: "12345",
+						LibraryIDs:    "one-id",
 					},
 				},
 				ReleaseTriggered: true,
@@ -1594,14 +1598,16 @@ func TestUpdateLibrary(t *testing.T) {
 				PreviousVersion: "1.2.3",
 				Changes: []*config.Commit{
 					{
-						Type:    "fix",
-						Subject: "change a typo",
+						Type:       "fix",
+						Subject:    "change a typo",
+						LibraryIDs: "one-id",
 					},
 					{
 						Type:          "feat",
 						Subject:       "add a config file",
 						Body:          "This is the body.",
 						PiperCLNumber: "12345",
+						LibraryIDs:    "one-id",
 					},
 				},
 				ReleaseTriggered: true,
@@ -1686,13 +1692,15 @@ func TestUpdateLibrary(t *testing.T) {
 				PreviousVersion: "1.2.3",
 				Changes: []*config.Commit{
 					{
-						Type:    "feat",
-						Subject: "add another config file",
-						Body:    "This is the body",
+						Type:       "feat",
+						Subject:    "add another config file",
+						Body:       "This is the body",
+						LibraryIDs: "one-id",
 					},
 					{
-						Type:    "feat",
-						Subject: "change a typo",
+						Type:       "feat",
+						Subject:    "change a typo",
+						LibraryIDs: "one-id",
 					},
 				},
 				ReleaseTriggered: true,
@@ -1746,8 +1754,9 @@ func TestUpdateLibrary(t *testing.T) {
 				ReleaseTriggered: true,
 				Changes: []*config.Commit{
 					{
-						Type:    "chore",
-						Subject: "a chore",
+						Type:       "chore",
+						Subject:    "a chore",
+						LibraryIDs: "one-id",
 					},
 				},
 			},
