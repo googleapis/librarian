@@ -62,12 +62,48 @@ func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
 }
 
 func (r *testGenerateRunner) run(ctx context.Context) error {
-	slog.Info("running test for", "library", r.library)
-	libraryState := r.state.LibraryByID(r.library)
-	if libraryState == nil {
-		return fmt.Errorf("library %q not found in state", r.library)
+	sourceRepoHead, err := r.sourceRepo.HeadHash()
+	if err != nil {
+		return fmt.Errorf("failed to get source repo head: %w", err)
 	}
-	protoFileToGUID, err := prepareForGenerateTest(libraryState, r.library, r.sourceRepo)
+
+	if r.library != "" {
+		return r.runAndCleanupTest(ctx, r.library, sourceRepoHead)
+	}
+
+	var failed []string
+	for _, library := range r.state.Libraries {
+		if err := r.runAndCleanupTest(ctx, library.ID, sourceRepoHead); err != nil {
+			slog.Error("test failed for library", "library", library.ID, "error", err)
+			failed = append(failed, library.ID)
+		}
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("tests failed for libraries: %s", strings.Join(failed, ", "))
+	}
+	return nil
+}
+
+func (r *testGenerateRunner) runAndCleanupTest(ctx context.Context, libraryID, sourceRepoHead string) error {
+	defer func() {
+		slog.Info("cleaning up after test", "library", libraryID)
+		if err := r.sourceRepo.Checkout(sourceRepoHead); err != nil {
+			slog.Error("failed to checkout source repo head during cleanup", "error", err)
+		}
+		if err := r.repo.ResetHard(); err != nil {
+			slog.Error("failed to reset repo during cleanup", "error", err)
+		}
+	}()
+	return r.runTestForSingleLibrary(ctx, libraryID)
+}
+
+func (r *testGenerateRunner) runTestForSingleLibrary(ctx context.Context, libraryID string) error {
+	slog.Info("running test for", "library", libraryID)
+	libraryState := r.state.LibraryByID(libraryID)
+	if libraryState == nil {
+		return fmt.Errorf("library %q not found in state", libraryID)
+	}
+	protoFileToGUID, err := prepareForGenerateTest(libraryState, libraryID, r.sourceRepo)
 	if err != nil {
 		return err
 	}

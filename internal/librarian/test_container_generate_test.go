@@ -265,72 +265,97 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			repoChangedFiles:       []string{"unrelated.txt"},
 			wantErrMsg:             "did not result in any generated file changes",
 		},
+		{
+			name: "multiple library failures",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "lib1",
+						LastGeneratedCommit: "initial-commit",
+						APIs: []*config.API{
+							{Path: "google/lib1/v1"},
+						},
+					},
+					{
+						ID:                  "lib2",
+						LastGeneratedCommit: "initial-commit",
+						APIs: []*config.API{
+							{Path: "google/lib2/v1"},
+						},
+					},
+				},
+			},
+			libraryID:   "", // Run for all libraries.
+			generateErr: fmt.Errorf("generate error"),
+			wantErrMsg:  "tests failed for libraries: lib1, lib2",
+		},
 	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			// 1. Setup the runner with mocked dependencies based on the test case.
-			// Create a temporary directory to act as a mock git repository.
-			repoDir := t.TempDir()
+		// 1. Setup the runner with mocked dependencies based on the test case.
+		// Create a temporary directory to act as a mock git repository.
+		repoDir := t.TempDir()
 
-			// Create a dummy proto file within the mock repository if the test case needs it.
-			// This is needed because the prepare step searches for .proto files to modify.
-			if test.state != nil && len(test.state.Libraries) > 0 && len(test.state.Libraries[0].APIs) > 0 {
-				protoPath := test.state.Libraries[0].APIs[0].Path
-				protoFilename := "prediction_service.proto"
-				fullProtoDir := filepath.Join(repoDir, protoPath)
-				if err := os.MkdirAll(fullProtoDir, 0755); err != nil {
-					t.Fatalf("os.MkdirAll() error = %v", err)
-				}
-				protoContent := "service PredictionService {}"
-				if err := os.WriteFile(filepath.Join(fullProtoDir, protoFilename), []byte(protoContent), 0644); err != nil {
-					t.Fatalf("os.WriteFile() error = %v", err)
-				}
-			}
-
-			// Set up the mock repositories and clients with behavior defined by the test case.
-			mockSourceRepo := &MockRepository{
-				Dir:                                repoDir,
-				CheckoutCommitAndCreateBranchError: test.prepareErr,
-			}
-			mockRepoDir := t.TempDir()
-			for _, f := range test.repoChangedFiles {
-				if err := os.WriteFile(filepath.Join(mockRepoDir, f), []byte("some content"), 0644); err != nil {
-					t.Fatalf("failed to write file: %v", err)
+		// Create dummy proto files within the mock repository if the test case needs them.
+		// This is needed because the prepare step searches for .proto files to modify.
+		if test.state != nil {
+			for _, lib := range test.state.Libraries {
+				if len(lib.APIs) > 0 {
+					protoPath := lib.APIs[0].Path
+					protoFilename := "service.proto"
+					fullProtoDir := filepath.Join(repoDir, protoPath)
+					if err := os.MkdirAll(fullProtoDir, 0755); err != nil {
+						t.Fatalf("os.MkdirAll() error = %v", err)
+					}
+					protoContent := "service MyService {}"
+					if err := os.WriteFile(filepath.Join(fullProtoDir, protoFilename), []byte(protoContent), 0644); err != nil {
+						t.Fatalf("os.WriteFile() error = %v", err)
+					}
 				}
 			}
-			mockRepo := &MockRepository{
-				Dir:               mockRepoDir,
-				ChangedFilesValue: test.repoChangedFiles,
-			}
-			mockContainerClient := &mockContainerClient{
-				generateErr: test.generateErr,
-			}
+		}
 
-			// Create testGenerateRunner with the mocked dependencies.
-			runner := &testGenerateRunner{
-				library:                test.libraryID,
-				repo:                   mockRepo,
-				sourceRepo:             mockSourceRepo,
-				state:                  test.state,
-				workRoot:               t.TempDir(),
-				containerClient:        mockContainerClient,
-				checkUnexpectedChanges: test.checkUnexpectedChanges,
+		// Set up the mock repositories and clients with behavior defined by the test case.
+		mockSourceRepo := &MockRepository{
+			Dir:                                repoDir,
+			CheckoutCommitAndCreateBranchError: test.prepareErr,
+		}
+		mockRepoDir := t.TempDir()
+		for _, f := range test.repoChangedFiles {
+			if err := os.WriteFile(filepath.Join(mockRepoDir, f), []byte("some content"), 0644); err != nil {
+				t.Fatalf("failed to write file: %v", err)
 			}
+		}
+		mockRepo := &MockRepository{
+			Dir:               mockRepoDir,
+			ChangedFilesValue: test.repoChangedFiles,
+		}
+		mockContainerClient := &mockContainerClient{
+			generateErr: test.generateErr,
+		}
 
-			// 2. Execute the run method.
-			err := runner.run(context.Background())
+		// Create testGenerateRunner with the mocked dependencies.
+		runner := &testGenerateRunner{
+			library:                test.libraryID,
+			repo:                   mockRepo,
+			sourceRepo:             mockSourceRepo,
+			state:                  test.state,
+			workRoot:               t.TempDir(),
+			containerClient:        mockContainerClient,
+			checkUnexpectedChanges: test.checkUnexpectedChanges,
+		}
 
-			// 3. Assert the outcome.
-			if test.wantErrMsg != "" {
-				if err == nil {
-					t.Fatal("runner.run() did not return an error, but one was expected")
-				}
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("runner.run() returned error %q, want error containing %q", err.Error(), test.wantErrMsg)
-				}
-			} else if err != nil {
-				t.Fatalf("runner.run() returned unexpected error: %v", err)
+		// 2. Execute the run method.
+		err := runner.run(context.Background())
+
+		// 3. Assert the outcome.
+		if test.wantErrMsg != "" {
+			if err == nil {
+				t.Fatal("runner.run() did not return an error, but one was expected")
 			}
-		})
+			if !strings.Contains(err.Error(), test.wantErrMsg) {
+				t.Errorf("runner.run() returned error %q, want error containing %q", err.Error(), test.wantErrMsg)
+			}
+		} else if err != nil {
+			t.Fatalf("runner.run() returned unexpected error: %v", err)
+		}
 	}
 }

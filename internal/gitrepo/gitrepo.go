@@ -58,6 +58,7 @@ type Repository interface {
 	pushRefSpec(refSpec string) error
 	Checkout(commitHash string) error
 	GetHashForPath(commitHash, path string) (string, error)
+	ResetHard() error
 }
 
 const RootPath = "."
@@ -719,4 +720,16 @@ func (r *LocalRepository) GetHashForPath(commitHash, path string) (string, error
 		return "", err
 	}
 	return getHashForPath(commit, path)
+}
+
+// ResetHard resets the repository to HEAD, discarding all local changes.
+func (r *LocalRepository) ResetHard() error {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	return worktree.Reset(&git.ResetOptions{
+		Mode: git.HardReset,
+	})
 }

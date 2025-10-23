@@ -531,6 +531,10 @@ func (m *MockRepository) Checkout(commitHash string) error {
 	return nil
 }
 
+func (m *MockRepository) ResetHard() error {
+	return nil
+}
+
 // mockImagesClient is a mock implementation of the ImageRegistryClient interface for testing.
 type mockImagesClient struct {
 	latestImage     string
