@@ -315,6 +315,9 @@ func concatenateLibraryIDs(commits []*config.Commit) *config.Commit {
 		libraryIDs = append(libraryIDs, commit.LibraryIDs)
 	}
 
+	sort.Slice(libraryIDs, func(i, j int) bool {
+		return libraryIDs[i] < libraryIDs[j]
+	})
 	commits[0].LibraryIDs = strings.Join(libraryIDs, ",")
 	return commits[0]
 }
