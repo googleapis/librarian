@@ -222,6 +222,9 @@ func formatLibraryReleaseNotes(library *config.LibraryState, commits []*config.C
 	newTag := config.FormatTag(tagFormat, library.ID, newVersion)
 	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
+	sort.Slice(commits, func(i, j int) bool {
+		return commits[i].CommitHash < commits[j].CommitHash
+	})
 	commitsByType := make(map[string][]*config.Commit)
 	for _, commit := range commits {
 		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
