@@ -310,6 +310,8 @@ func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit,
 // toCommit converts a slice of gitrepo.ConventionalCommit to a slice of config.Commit.
 // If the ConventionalCommit has NestedCommits, they are also extracted and
 // converted.
+// Set LibraryIDs to the given libraryID if the conventional commit doesn't have key `Library-IDs` in the Footers;
+// otherwise use the value in the Footers as LibraryIDs.
 func toCommit(c []*gitrepo.ConventionalCommit, libraryID string) []*config.Commit {
 	var commits []*config.Commit
 	for _, cc := range c {
