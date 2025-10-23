@@ -176,24 +176,17 @@ type commitSection struct {
 // formatReleaseNotes generates the body for a release pull request.
 func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
 	librarianVersion := cli.Version()
+	bulkChangesMap, libraryChanges := separateCommits(state)
+	// Process library specific changes.
 	var releaseSections []*releaseNoteSection
-	// create a map to deduplicate bulk changes based on their commit hash
-	// and subject
-	bulkChangesMap := make(map[string]*config.Commit)
 	for _, library := range state.Libraries {
-		if !library.ReleaseTriggered {
-			continue
-		}
-
-		for _, commit := range library.Changes {
-			if commit.IsBulkCommit() {
-				bulkChangesMap[commit.CommitHash+commit.Subject] = commit
-			}
-		}
-
-		section := formatLibraryReleaseNotes(library)
+		// No need to check the existence of the key because a library without changes should appear
+		// in the release notes.
+		commits := libraryChanges[library.ID]
+		section := formatLibraryReleaseNotes(library, commits)
 		releaseSections = append(releaseSections, section)
 	}
+	// Process bulk changes
 	var bulkChanges []*config.Commit
 	for _, commit := range bulkChangesMap {
 		bulkChanges = append(bulkChanges, commit)
@@ -222,7 +215,7 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
-func formatLibraryReleaseNotes(library *config.LibraryState) *releaseNoteSection {
+func formatLibraryReleaseNotes(library *config.LibraryState, commits []*config.Commit) *releaseNoteSection {
 	// The version should already be updated to the next version.
 	newVersion := library.Version
 	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
@@ -230,10 +223,8 @@ func formatLibraryReleaseNotes(library *config.LibraryState) *releaseNoteSection
 	previousTag := config.FormatTag(tagFormat, library.ID, library.PreviousVersion)
 
 	commitsByType := make(map[string][]*config.Commit)
-	for _, commit := range library.Changes {
-		if !commit.IsBulkCommit() {
-			commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
-		}
+	for _, commit := range commits {
+		commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
 	}
 
 	var sections []*commitSection
@@ -258,4 +249,54 @@ func formatLibraryReleaseNotes(library *config.LibraryState) *releaseNoteSection
 	}
 
 	return section
+}
+
+func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, map[string][]*config.Commit) {
+	maybeBulkChanges := make(map[string][]*config.Commit)
+	for _, library := range state.Libraries {
+		if !library.ReleaseTriggered {
+			continue
+		}
+
+		for _, commit := range library.Changes {
+			key := commit.CommitHash + commit.Subject
+			maybeBulkChanges[key] = append(maybeBulkChanges[key], commit)
+		}
+	}
+
+	bulkChanges := make(map[string]*config.Commit)
+	libraryChanges := make(map[string][]*config.Commit)
+	for key, commits := range maybeBulkChanges {
+		// A commit has multiple library IDs in the footer, this should come from librarian generation PR.
+		// We assume this is the ONLY type of commits that have more than one library id in Footers.
+		if commits[0].IsBulkCommit() {
+			bulkChanges[key] = commits[0]
+			continue
+		}
+		// More than one commits have the same commit subject and sha, this should come from other sources,
+		// e.g., dependency updates, README updates, etc.
+		// We assume this type of commits has only one library id in Footers and each id is unique among all
+		// commits.
+		if len(commits) > 1 {
+			bulkChanges[key] = concatenateLibraryIDs(commits)
+			continue
+		}
+		// Only one commit has a unique subject and sha, we assume this commit is specific to one library.
+		// We assume this type of commits has only one library id in Footers and each id is unique among all
+		// commits.
+		libraryID := commits[0].LibraryIDs
+		libraryChanges[libraryID] = append(libraryChanges[libraryID], commits[0])
+	}
+
+	return bulkChanges, libraryChanges
+}
+
+func concatenateLibraryIDs(commits []*config.Commit) *config.Commit {
+	var libraryIDs []string
+	for _, commit := range commits {
+		libraryIDs = append(libraryIDs, commit.LibraryIDs)
+	}
+
+	commits[0].LibraryIDs = strings.Join(libraryIDs, ",")
+	return commits[0]
 }
