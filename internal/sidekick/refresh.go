@@ -16,16 +16,19 @@ package sidekick
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/codec_sample"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config/gcloudyaml"
 	"github.com/googleapis/librarian/internal/sidekick/internal/dart"
 	"github.com/googleapis/librarian/internal/sidekick/internal/gcloud"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser"
 	"github.com/googleapis/librarian/internal/sidekick/internal/rust"
 	"github.com/googleapis/librarian/internal/sidekick/internal/rust_prost"
+	"gopkg.in/yaml.v3"
 )
 
 func init() {
@@ -55,6 +58,18 @@ func loadDir(rootConfig *config.Config, output string) (*api.API, *config.Config
 	if err != nil {
 		return nil, nil, err
 	}
+	if config.General.Language == "gcloud" {
+		gcloudConfigPath := path.Join(output, config.General.GcloudConfig)
+		gcloudBytes, err := ioutil.ReadFile(gcloudConfigPath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error reading gcloud.yaml: %w", err)
+		}
+		var gcloudConfig gcloudyaml.Config
+		if err := yaml.Unmarshal(gcloudBytes, &gcloudConfig); err != nil {
+			return nil, nil, fmt.Errorf("error unmarshalling gcloud.yaml: %w", err)
+		}
+		config.Gcloud = &gcloudConfig
+	}
 	if config.General.SpecificationFormat == "" {
 		return nil, nil, fmt.Errorf("must provide general.specification-format")
 	}
@@ -75,6 +90,12 @@ func refreshDir(rootConfig *config.Config, cmdLine *CommandLine, output string) 
 	}
 	if cmdLine.DryRun {
 		return nil
+	}
+
+	if config.Gcloud == nil {
+		fmt.Println("DEBUG: config.Gcloud is nil")
+	} else {
+		fmt.Println("DEBUG: config.Gcloud was loaded successfully")
 	}
 
 	switch config.General.Language {

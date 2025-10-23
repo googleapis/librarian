@@ -74,6 +74,7 @@ type GeneralConfig struct {
 	SpecificationSource string   `toml:"specification-source,omitempty"`
 	ServiceConfig       string   `toml:"service-config,omitempty"`
 	IgnoredDirectories  []string `toml:"ignored-directories,omitempty"`
+	GcloudConfig        string   `toml:"gcloud-config,omitempty"`
 }
 
 // LoadConfig loads the top-level configuration file and validates its contents.
@@ -150,6 +151,7 @@ func mergeConfigs(rootConfig, local *Config) *Config {
 	// configuration. It makes no sense to set those globally.
 	merged.General.SpecificationSource = local.General.SpecificationSource
 	merged.General.ServiceConfig = local.General.ServiceConfig
+	merged.General.GcloudConfig = local.General.GcloudConfig
 	if local.General.SpecificationFormat != "" {
 		merged.General.SpecificationFormat = local.General.SpecificationFormat
 	}
