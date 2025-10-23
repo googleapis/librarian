@@ -287,7 +287,7 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			},
 			libraryID:   "", // Run for all libraries.
 			generateErr: fmt.Errorf("generate error"),
-			wantErrMsg:  "tests failed for libraries: lib1, lib2",
+			wantErrMsg:  "2 test(s) failed",
 		},
 	} {
 		// 1. Setup the runner with mocked dependencies based on the test case.

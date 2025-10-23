@@ -71,7 +71,7 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 		}
 	}
 	if len(failed) > 0 {
-		return fmt.Errorf("tests failed for libraries: %s", strings.Join(failed, ", "))
+		return fmt.Errorf("%d test(s) failed for libraries: %s", len(failed), strings.Join(failed, ", "))
 	}
 	return nil
 }
