@@ -285,6 +285,7 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 	libraryChanges := make(map[string][]*config.Commit)
 	for key, commits := range maybeBulkChanges {
 		// A commit has multiple library IDs in the footer, this should come from librarian generation PR.
+		// All commits should be identical.
 		// We assume this is the ONLY type of commits that have more than one library id in Footers.
 		if commits[0].IsBulkCommit() {
 			bulkChanges[key] = commits[0]
@@ -292,6 +293,7 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 		}
 		// More than one commits have the same commit subject and sha, this should come from other sources,
 		// e.g., dependency updates, README updates, etc.
+		// All commits should be identical except for the library id.
 		// We assume this type of commits has only one library id in Footers and each id is unique among all
 		// commits.
 		if len(commits) > 1 {
