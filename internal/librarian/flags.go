@@ -48,9 +48,10 @@ request.`)
 
 func addFlagCheckUnexpectedChanges(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.CheckUnexpectedChanges, "check-unexpected-changes", false,
-		`Used in test-container generate. Default to false. Specify true to include 
-additional steps to check for no addition/deletion of files and no extra file changes 
-other than the ones affected by proto changes.`)
+		`Default to false. Specify true to include additional steps to check that 
+no addition/deletion of files and no extra file changes introduced other than the 
+ones affected by proto changes. Note: you may want to skip this check if you are 
+testing a container image change that is expected to add or delete files.`)
 }
 
 func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
