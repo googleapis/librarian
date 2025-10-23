@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -217,7 +218,7 @@ message PredictResponse {}
 				APIs:                []*config.API{{Path: protoPath}},
 			},
 			mockRepo: &MockRepository{
-				CheckoutCommitAndCreateBranchError: fmt.Errorf(checkoutErrStr),
+				CheckoutCommitAndCreateBranchError: errors.New(checkoutErrStr),
 			},
 			protoContent:        defaultProtoContent,
 			wantErrMsg:          checkoutErrStr,
@@ -232,7 +233,7 @@ message PredictResponse {}
 				APIs:                []*config.API{{Path: protoPath}},
 			},
 			mockRepo: &MockRepository{
-				AddAllError: fmt.Errorf(addAllErrStr),
+				AddAllError: errors.New(addAllErrStr),
 			},
 			protoContent:        defaultProtoContent,
 			wantErrMsg:          addAllErrStr,
@@ -247,7 +248,7 @@ message PredictResponse {}
 				APIs:                []*config.API{{Path: protoPath}},
 			},
 			mockRepo: &MockRepository{
-				CommitError: fmt.Errorf(commitErrStr),
+				CommitError: errors.New(commitErrStr),
 			},
 			protoContent:        defaultProtoContent,
 			wantErrMsg:          commitErrStr,

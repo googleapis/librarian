@@ -349,7 +349,7 @@ Commands:
 
 The 'test-container generate' command is provided to test
 language containers and their interaction with the Librarian CLI when running 'generate'.
-This command is crucial for verifying that language-specific generation containers
+This command conducts tests to verify that language-specific generation containers
 are correctly processing proto file changes and producing the expected output.
 
 This command automates the testing of the generation process for one or more libraries.
@@ -357,7 +357,7 @@ For each library, it performs the following steps:
  1. Checks out the 'last_generated_commit' from the source repository.
  2. Injects a unique GUID into each proto file to simulate a change.
  3. Commits these temporary changes.
- 4. Runs the 'generate' command for the library on the last generated commit.
+ 4. Runs the 'generate' command for the library.
  5. Validates that the injected GUIDs appear in the generated output, ensuring that
     the simulated changes triggered a corresponding update.
  6. Optionally, it can check for any unexpected file additions, deletions, or modifications.
@@ -385,9 +385,10 @@ Flags:
 	  	which branch to clone and which branch to use as the base for a pull
 	  	request. (default "main")
 	-check-unexpected-changes
-	  	Used in test-container generate. Default to false. Specify true to include
-	  	additional steps to check for no addition/deletion of files and no extra file changes
-	  	other than the ones affected by proto changes.
+	  	Default to false. Specify true to include additional steps to check that
+	  	no addition/deletion of files and no extra file changes introduced other than the
+	  	ones affected by proto changes. Note: you may want to skip this check if you are
+	  	testing a container image change that is expected to add or delete files.
 	-image string
 	  	Language specific image used to invoke code generation and releasing.
 	  	If not specified, the image configured in the state.yaml is used.
