@@ -1433,3 +1433,189 @@ func TestShouldGenerate(t *testing.T) {
 		})
 	}
 }
+
+func TestAddAPIToLibrary(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name          string
+		initialState  *config.LibrarianState
+		libraryID     string
+		apiPath       string
+		expectedState *config.LibrarianState
+	}{
+		{
+			name: "add api to existing library",
+			initialState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "lib1",
+						APIs: []*config.API{
+							{Path: "api1"},
+						},
+					},
+				},
+			},
+			libraryID: "lib1",
+			apiPath:   "api2",
+			expectedState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "lib1",
+						APIs: []*config.API{
+							{Path: "api1"},
+							{Path: "api2", Status: config.StatusNew},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "add api to new library",
+			initialState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "lib1",
+						APIs: []*config.API{
+							{Path: "api1"},
+						},
+					},
+				},
+			},
+			libraryID: "lib2",
+			apiPath:   "api2",
+			expectedState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "lib1",
+						APIs: []*config.API{
+							{Path: "api1"},
+						},
+					},
+					{
+						ID: "lib2",
+						APIs: []*config.API{
+							{Path: "api2", Status: config.StatusNew},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "add existing api to existing library",
+			initialState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "lib1",
+						APIs: []*config.API{
+							{Path: "api1"},
+						},
+					},
+				},
+			},
+			libraryID: "lib1",
+			apiPath:   "api1",
+			expectedState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "lib1",
+						APIs: []*config.API{
+							{Path: "api1"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "add api to empty state",
+			initialState: &config.LibrarianState{},
+			libraryID:    "lib1",
+			apiPath:      "api1",
+			expectedState: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "lib1",
+						APIs: []*config.API{
+							{Path: "api1", Status: config.StatusNew},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			addAPIToLibrary(tc.initialState, tc.libraryID, tc.apiPath)
+			if diff := cmp.Diff(tc.expectedState, tc.initialState); diff != "" {
+				t.Errorf("addAPIToLibrary() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNeedsConfigure(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name    string
+		api     string
+		library string
+		state   *config.LibrarianState
+		want    bool
+	}{
+		{
+			name:    "api and library set, library does not exist",
+			api:     "some/api",
+			library: "some-library",
+			state:   &config.LibrarianState{},
+			want:    true,
+		},
+		{
+			name:    "api and library set, library exists",
+			api:     "some/api",
+			library: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "api not set",
+			api:     "",
+			library: "some-library",
+			state:   &config.LibrarianState{},
+			want:    false,
+		},
+		{
+			name:    "library not set",
+			api:     "some/api",
+			library: "",
+			state:   &config.LibrarianState{},
+			want:    false,
+		},
+		{
+			name:    "api and library not set",
+			api:     "",
+			library: "",
+			state:   &config.LibrarianState{},
+			want:    false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := &generateRunner{
+				api:     tc.api,
+				library: tc.library,
+				state:   tc.state,
+			}
+			got := r.needsConfigure()
+			if got != tc.want {
+				t.Errorf("needsConfigure() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

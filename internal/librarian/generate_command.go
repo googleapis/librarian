@@ -266,7 +266,19 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 }
 
 func (r *generateRunner) needsConfigure() bool {
-	return r.api != "" && r.library != "" && r.state.LibraryByID(r.library) == nil
+	if r.api == "" || r.library == "" {
+		return false
+	}
+	libraryState := r.state.LibraryByID(r.library)
+	if libraryState == nil {
+		return true
+	}
+	for _, api := range libraryState.APIs {
+		if api.Path == r.api {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *generateRunner) updateLastGeneratedCommitState(libraryID string) error {
@@ -312,11 +324,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 	}
 
 	setAllAPIStatus(r.state, config.StatusExisting)
-	// Record to state, not write to state.yaml
-	r.state.Libraries = append(r.state.Libraries, &config.LibraryState{
-		ID:   r.library,
-		APIs: []*config.API{{Path: r.api, Status: config.StatusNew}},
-	})
+	addAPIToLibrary(r.state, r.library, r.api)
 
 	if err := populateServiceConfigIfEmpty(
 		r.state,
@@ -464,4 +472,27 @@ func (r *generateRunner) shouldGenerate(library *config.LibraryState) (bool, err
 	}
 	slog.Info("no APIs have changed; skipping", "library", library.ID)
 	return false, nil
+}
+
+// addAPIToLibrary adds a new API to a library in the state.
+// If the library does not exist, it creates a new one.
+// If the API already exists in the library, do nothing.
+func addAPIToLibrary(state *config.LibrarianState, libraryID, apiPath string) {
+	for _, lib := range state.Libraries {
+		if lib.ID == libraryID {
+			for _, api := range lib.APIs {
+				if api.Path == apiPath {
+					return
+				}
+			}
+			// For new API paths, set the status to "new"
+			lib.APIs = append(lib.APIs, &config.API{Path: apiPath, Status: config.StatusNew})
+			return
+		}
+	}
+	// If the library is not found, create a new one.
+	state.Libraries = append(state.Libraries, &config.LibraryState{
+		ID:   libraryID,
+		APIs: []*config.API{{Path: apiPath, Status: config.StatusNew}},
+	})
 }
