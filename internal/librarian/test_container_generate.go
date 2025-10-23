@@ -28,16 +28,12 @@ import (
 )
 
 type testGenerateRunner struct {
-	branch                 string
-	image                  string
 	library                string
 	repo                   gitrepo.Repository
 	sourceRepo             gitrepo.Repository
 	state                  *config.LibrarianState
-	librarianConfig        *config.LibrarianConfig
 	workRoot               string
 	containerClient        ContainerClient
-	ghClient               GitHubClient
 	checkUnexpectedChanges bool
 }
 
@@ -47,16 +43,12 @@ func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
 		return nil, err
 	}
 	return &testGenerateRunner{
-		branch:                 cfg.Branch,
-		image:                  runner.image,
 		library:                cfg.Library,
 		repo:                   runner.repo,
 		sourceRepo:             runner.sourceRepo,
 		state:                  runner.state,
-		librarianConfig:        runner.librarianConfig,
 		workRoot:               runner.workRoot,
 		containerClient:        runner.containerClient,
-		ghClient:               runner.ghClient,
 		checkUnexpectedChanges: cfg.CheckUnexpectedChanges,
 	}, nil
 }
