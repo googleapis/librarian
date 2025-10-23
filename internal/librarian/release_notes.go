@@ -291,12 +291,12 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 			bulkChanges[key] = commits[0]
 			continue
 		}
-		// More than one commits have the same commit subject and sha, this should come from other sources,
+		// More than ten commits have the same commit subject and sha, this should come from other sources,
 		// e.g., dependency updates, README updates, etc.
 		// All commits should be identical except for the library id.
 		// We assume this type of commits has only one library id in Footers and each id is unique among all
 		// commits.
-		if len(commits) > 1 {
+		if len(commits) >= 10 {
 			bulkChanges[key] = concatenateLibraryIDs(commits)
 			continue
 		}

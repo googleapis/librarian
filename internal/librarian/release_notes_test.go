@@ -504,6 +504,118 @@ Language Image: go:1.21
 							},
 						},
 					},
+					{
+						ID:               "library-1",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-1",
+							},
+						},
+					},
+					{
+						ID:               "library-2",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-2",
+							},
+						},
+					},
+					{
+						ID:               "library-3",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-3",
+							},
+						},
+					},
+					{
+						ID:               "library-4",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-4",
+							},
+						},
+					},
+					{
+						ID:               "library-5",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-5",
+							},
+						},
+					},
+					{
+						ID:               "library-6",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-6",
+							},
+						},
+					},
+					{
+						ID:               "library-7",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-7",
+							},
+						},
+					},
+					{
+						ID:               "library-8",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-8",
+							},
+						},
+					},
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
@@ -527,16 +639,72 @@ Language Image: go:1.21
 </details>
 
 
+<details><summary>library-1: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-1-2.3.0...library-1-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-2: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-2-2.3.0...library-2-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-3: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-3-2.3.0...library-3-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-4: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-4-2.3.0...library-4-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-5: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-5-2.3.0...library-5-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-6: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-6-2.3.0...library-6-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-7: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-7-2.3.0...library-7-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-8: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-8-2.3.0...library-8-2.4.0) (%s)
+
+</details>
+
+
 <details><summary>Bulk Changes</summary>
 
 * chore: bulk change 2 (PiperOrigin-RevId: 12345) ([abcdef00](https://github.com/owner/repo/commit/abcdef00))
   Libraries: j,k,l,m,n,o,p,q,r,s
 * chore: update dependency ([acdef123](https://github.com/owner/repo/commit/acdef123))
-  Libraries: j,k
+  Libraries: j,k,library-1,library-2,library-3,library-4,library-5,library-6,library-7,library-8
 * fix: bulk change ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
   Libraries: a,b,c,d,e,f,g,h,i,j,k
 </details>`,
-				librarianVersion, today, today),
+				librarianVersion, today, today, today, today, today, today, today, today, today, today),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
