@@ -15,11 +15,22 @@
 package gcloud
 
 import (
+	"fmt"
+	// "os"
+	// "path/filepath"
+
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	// "gopkg.in/yaml.v3"
 )
 
 // Generate generates gcloud commands from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
+	for _, service := range model.Services {
+		for _, method := range service.Methods {
+			fmt.Printf("service: %v\n", service)
+			fmt.Printf("method: %v\n", method)
+		}
+	}
 	return nil
 }
