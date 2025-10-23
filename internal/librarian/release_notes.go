@@ -254,6 +254,20 @@ func formatLibraryReleaseNotes(library *config.LibraryState, commits []*config.C
 	return section
 }
 
+// separateCommits analyzes all commits associated with triggered releases in the
+// given state and categorizes them into two groups:
+//
+// 1. Bulk Changes: Commits that affect multiple libraries. This includes:
+//   - Commits identified by IsBulkCommit() (e.g., librarian generation PRs).
+//   - Commits that appear in multiple libraries' change sets but are not
+//     marked as bulk commits (e.g., dependency updates, README changes).
+//     The Library-IDs for these are concatenated.
+//
+// 2. Library Changes: Commits that are unique to a single library.
+//
+// It returns two maps:
+//   - The first map contains bulk changes, keyed by a composite of commit hash and subject.
+//   - The second map contains library-specific changes, keyed by LibraryID.
 func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, map[string][]*config.Commit) {
 	maybeBulkChanges := make(map[string][]*config.Commit)
 	for _, library := range state.Libraries {
@@ -294,6 +308,7 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 	return bulkChanges, libraryChanges
 }
 
+// concatenateLibraryIDs merges the LibraryIDs from a slice of commits into the first commit.
 func concatenateLibraryIDs(commits []*config.Commit) *config.Commit {
 	var libraryIDs []string
 	for _, commit := range commits {
