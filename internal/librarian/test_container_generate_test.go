@@ -28,11 +28,14 @@ import (
 func TestValidateGenerateTest(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name               string
-		filesToWrite       map[string]string
-		newAndDeletedFiles []string
-		protoFileToGUID    map[string]string
-		wantErrMsg         string
+		name                   string
+		filesToWrite           map[string]string
+		changedFiles           []string
+		newAndDeletedFiles     []string
+		setup                  func(dir string) error
+		protoFileToGUID        map[string]string
+		checkUnexpectedChanges bool
+		wantErrMsg             string
 	}{
 		{
 			name: "unrelated changes",
@@ -40,53 +43,92 @@ func TestValidateGenerateTest(t *testing.T) {
 				"related.go":    "// some generated code\n// test-change-guid-123",
 				"unrelated.txt": "some other content",
 			},
-			protoFileToGUID: map[string]string{"some.proto": "guid-123"},
-			wantErrMsg:      "found unrelated file changes: unrelated.txt",
+			protoFileToGUID:        map[string]string{"some.proto": "guid-123"},
+			checkUnexpectedChanges: true,
+			wantErrMsg:             "found unrelated file changes: unrelated.txt",
 		},
 		{
 			name: "missing change",
 			filesToWrite: map[string]string{
 				"somefile.go": "some content",
 			},
-			protoFileToGUID: map[string]string{"some.proto": "guid-not-found"},
-			wantErrMsg:      "did not result in any generated file changes",
+			protoFileToGUID:        map[string]string{"some.proto": "guid-not-found"},
+			checkUnexpectedChanges: true,
+			wantErrMsg:             "did not result in any generated file changes",
 		},
 		{
 			name: "success",
 			filesToWrite: map[string]string{
 				"some.go": "// some generated code\n// test-change-guid-123",
 			},
-			protoFileToGUID: map[string]string{"some.proto": "guid-123"},
-			wantErrMsg:      "",
+			protoFileToGUID:        map[string]string{"some.proto": "guid-123"},
+			checkUnexpectedChanges: true,
+			wantErrMsg:             "",
 		},
 		{
 			name: "expected no file changes, but found changes",
 			filesToWrite: map[string]string{
 				"somefile.go": "some content",
 			},
-			newAndDeletedFiles: []string{"somefile.go"},
-			protoFileToGUID:    map[string]string{},
-			wantErrMsg:         "expected no new or deleted files, but found",
+			newAndDeletedFiles:     []string{"somefile.go"},
+			protoFileToGUID:        map[string]string{},
+			checkUnexpectedChanges: true,
+			wantErrMsg:             "expected no new or deleted files, but found",
+		},
+		{
+			name:         "deleted file is a valid change when not checking for unexpected changes",
+			filesToWrite: map[string]string{
+				// "deleted.go" is not written to the filesystem
+			},
+			changedFiles:           []string{"deleted.go"},
+			newAndDeletedFiles:     []string{"deleted.go"},
+			protoFileToGUID:        map[string]string{},
+			checkUnexpectedChanges: false, // This is the key
+			wantErrMsg:             "",    // No error expected
+		},
+		{
+			name: "unreadable file causes an error",
+			filesToWrite: map[string]string{
+				"unreadable.go": "some content",
+			},
+			changedFiles: []string{"unreadable.go"},
+			setup: func(dir string) error {
+				// Make the file unreadable
+				return os.Chmod(filepath.Join(dir, "unreadable.go"), 0000)
+			},
+			protoFileToGUID:        map[string]string{},
+			checkUnexpectedChanges: true,
+			wantErrMsg:             "failed to read changed file",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
-			var changedFiles []string
+			var filesConsideredChanged []string
 			for filename, content := range test.filesToWrite {
 				path := filepath.Join(tmpDir, filename)
 				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 					t.Fatalf("failed to write file %s: %v", filename, err)
 				}
-				changedFiles = append(changedFiles, filename)
-			}
-			mockRepo := &MockRepository{
-				Dir:                     tmpDir,
-				ChangedFilesValue:       changedFiles,
-				NewAndDeletedFilesValue: test.newAndDeletedFiles,
+				filesConsideredChanged = append(filesConsideredChanged, filename)
 			}
 
-			err := validateGenerateTest(nil, mockRepo, test.protoFileToGUID, true)
+			if test.setup != nil {
+				if err := test.setup(tmpDir); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+			}
+
+			mockRepo := &MockRepository{
+				Dir:                     tmpDir,
+				ChangedFilesValue:       filesConsideredChanged,
+				NewAndDeletedFilesValue: test.newAndDeletedFiles,
+			}
+			if test.changedFiles != nil {
+				mockRepo.ChangedFilesValue = test.changedFiles
+			}
+
+			err := validateGenerateTest(nil, mockRepo, test.protoFileToGUID, test.checkUnexpectedChanges)
 
 			if test.wantErrMsg != "" {
 				if err == nil {
@@ -101,26 +143,24 @@ func TestValidateGenerateTest(t *testing.T) {
 		})
 	}
 }
+
 func TestPrepareForGenerateTest(t *testing.T) {
 	t.Parallel()
-	// Create a temporary directory to act as a mock git repository.
-	repoDir := t.TempDir()
 
-	// Create a sample proto file within the mock repository.
-	// This represents the API definition that will be processed.
-	protoPath := "google/cloud/aiplatform/v1"
-	protoFilename := "prediction_service.proto"
-	fullProtoDir := filepath.Join(repoDir, protoPath)
-	if err := os.MkdirAll(fullProtoDir, 0755); err != nil {
-		t.Fatalf("os.MkdirAll() error = %v", err)
-	}
-	protoContent := `
+	// Common setup for all test cases
+	const (
+		protoPath      = "google/cloud/aiplatform/v1"
+		protoFilename  = "prediction_service.proto"
+		initialCommit  = "abcdef1234567890abcdef1234567890abcdef12"
+		libraryID      = "google-cloud-aiplatform-v1"
+		checkoutErrStr = "checkout error"
+		addAllErrStr   = "add all error"
+		commitErrStr   = "commit error"
+	)
+	defaultProtoContent := `
 syntax = "proto3";
-
 package google.cloud.aiplatform.v1;
-
 import "google/api/annotations.proto";
-
 service PredictionService {
   rpc Predict(PredictRequest) returns (PredictResponse) {
     option (google.api.http) = {
@@ -129,62 +169,174 @@ service PredictionService {
     };
   }
 }
-
 message PredictRequest {}
 message PredictResponse {}
 `
-	fullProtoPath := filepath.Join(fullProtoDir, protoFilename)
-	if err := os.WriteFile(fullProtoPath, []byte(protoContent), 0644); err != nil {
-		t.Fatalf("os.WriteFile() error = %v", err)
-	}
 
-	// Setup mock repository and library state configuration.
-	initialCommit := "abcdef1234567890abcdef1234567890abcdef12"
-	mockRepo := &MockRepository{
-		Dir: repoDir,
-	}
-	libraryState := &config.LibraryState{
-		ID:                  "google-cloud-aiplatform-v1",
-		LastGeneratedCommit: initialCommit,
-		APIs: []*config.API{
-			{
-				Path: protoPath,
+	for _, test := range []struct {
+		name                string
+		libraryState        *config.LibraryState
+		mockRepo            *MockRepository
+		protoContent        string
+		setup               func(repoDir string) error
+		wantErrMsg          string
+		wantCommitCalls     int
+		wantProtoFileToGUID bool
+	}{
+		{
+			name: "success",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: initialCommit,
+				APIs:                []*config.API{{Path: protoPath}},
 			},
+			mockRepo:            &MockRepository{},
+			protoContent:        defaultProtoContent,
+			wantErrMsg:          "",
+			wantCommitCalls:     1,
+			wantProtoFileToGUID: true,
 		},
-	}
-	libraryID := "google-cloud-aiplatform-v1"
+		{
+			name: "missing last generated commit",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: "", // Missing commit
+				APIs:                []*config.API{{Path: protoPath}},
+			},
+			mockRepo:            &MockRepository{},
+			protoContent:        defaultProtoContent,
+			wantErrMsg:          "last_generated_commit is not set",
+			wantCommitCalls:     0,
+			wantProtoFileToGUID: false,
+		},
+		{
+			name: "checkout commit error",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: initialCommit,
+				APIs:                []*config.API{{Path: protoPath}},
+			},
+			mockRepo: &MockRepository{
+				CheckoutCommitAndCreateBranchError: fmt.Errorf(checkoutErrStr),
+			},
+			protoContent:        defaultProtoContent,
+			wantErrMsg:          checkoutErrStr,
+			wantCommitCalls:     0,
+			wantProtoFileToGUID: false,
+		},
+		{
+			name: "add all error",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: initialCommit,
+				APIs:                []*config.API{{Path: protoPath}},
+			},
+			mockRepo: &MockRepository{
+				AddAllError: fmt.Errorf(addAllErrStr),
+			},
+			protoContent:        defaultProtoContent,
+			wantErrMsg:          addAllErrStr,
+			wantCommitCalls:     0,
+			wantProtoFileToGUID: false,
+		},
+		{
+			name: "commit error",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: initialCommit,
+				APIs:                []*config.API{{Path: protoPath}},
+			},
+			mockRepo: &MockRepository{
+				CommitError: fmt.Errorf(commitErrStr),
+			},
+			protoContent:        defaultProtoContent,
+			wantErrMsg:          commitErrStr,
+			wantCommitCalls:     1, // Commit is still called
+			wantProtoFileToGUID: false,
+		},
+		{
+			name: "empty proto file",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: initialCommit,
+				APIs:                []*config.API{{Path: protoPath}},
+			},
+			mockRepo:            &MockRepository{},
+			protoContent:        "", // Empty content
+			wantErrMsg:          "",
+			wantCommitCalls:     1,
+			wantProtoFileToGUID: false, // No GUID injected
+		},
+		{
+			name: "proto file with no insertion point",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: initialCommit,
+				APIs:                []*config.API{{Path: protoPath}},
+			},
+			mockRepo: &MockRepository{},
+			protoContent: `
+syntax = "proto3";
+package google.cloud.aiplatform.v1;
+import "google/api/annotations.proto";
+// no message, service or enum
+`,
+			wantErrMsg:          "",
+			wantCommitCalls:     1,
+			wantProtoFileToGUID: false, // No GUID injected
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repoDir := t.TempDir()
+			test.mockRepo.Dir = repoDir
 
-	// Execute the function under test.
-	protoFileToGUID, err := prepareForGenerateTest(libraryState, libraryID, mockRepo)
-	if err != nil {
-		t.Fatalf("prepareForGenerateTest() error = %v", err)
-	}
+			// Setup proto files
+			fullProtoDir := filepath.Join(repoDir, protoPath)
+			if err := os.MkdirAll(fullProtoDir, 0755); err != nil {
+				t.Fatalf("os.MkdirAll() error = %v", err)
+			}
+			fullProtoPath := filepath.Join(fullProtoDir, protoFilename)
+			if err := os.WriteFile(fullProtoPath, []byte(test.protoContent), 0644); err != nil {
+				t.Fatalf("os.WriteFile() error = %v", err)
+			}
 
-	// Check that the function returned a map with the correct proto file and a GUID.
-	if len(protoFileToGUID) != 1 {
-		t.Fatalf("len(protoFileToGUID) = %d, want 1", len(protoFileToGUID))
-	}
+			if test.setup != nil {
+				if err := test.setup(repoDir); err != nil {
+					t.Fatalf("setup() error = %v", err)
+				}
+			}
 
-	var guid string
-	for proto, g := range protoFileToGUID {
-		if proto != filepath.Join(protoPath, protoFilename) {
-			t.Errorf("protoFileToGUID key = %q, want %q", proto, filepath.Join(protoPath, protoFilename))
-		}
-		guid = g
-	}
+			protoFileToGUID, err := prepareForGenerateTest(test.libraryState, test.libraryState.ID, test.mockRepo)
 
-	// Check that the proto file was modified to include the GUID.
-	newContent, err := os.ReadFile(fullProtoPath)
-	if err != nil {
-		t.Fatalf("os.ReadFile() error = %v", err)
-	}
-	if !strings.Contains(string(newContent), guid) {
-		t.Errorf("proto file does not contain GUID %q", guid)
-	}
+			// Check for error
+			if test.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("prepareForGenerateTest() did not return an error, but one was expected")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("prepareForGenerateTest() returned error %q, want error containing %q", err.Error(), test.wantErrMsg)
+				}
+			} else if err != nil {
+				t.Fatalf("prepareForGenerateTest() returned unexpected error: %v", err)
+			}
 
-	// Check that a new commit was made in the mock repository.
-	if mockRepo.CommitCalls != 1 {
-		t.Errorf("mockRepo.CommitCalls = %d, want 1", mockRepo.CommitCalls)
+			// Check if a GUID was expected to be injected.
+			if test.wantProtoFileToGUID {
+				if len(protoFileToGUID) != 1 {
+					t.Fatalf("len(protoFileToGUID) = %d, want 1", len(protoFileToGUID))
+				}
+			} else {
+				if len(protoFileToGUID) != 0 {
+					t.Fatalf("len(protoFileToGUID) = %d, want 0", len(protoFileToGUID))
+				}
+			}
+
+			// Check if the expected number of commits were made.
+			if test.mockRepo.CommitCalls != test.wantCommitCalls {
+				t.Errorf("mockRepo.CommitCalls = %d, want %d", test.mockRepo.CommitCalls, test.wantCommitCalls)
+			}
+		})
 	}
 }
 
@@ -290,72 +442,74 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			wantErrMsg:  "2 test(s) failed",
 		},
 	} {
-		// 1. Setup the runner with mocked dependencies based on the test case.
-		// Create a temporary directory to act as a mock git repository.
-		repoDir := t.TempDir()
+		t.Run(test.name, func(t *testing.T) {
+			// 1. Setup the runner with mocked dependencies based on the test case.
+			// Create a temporary directory to act as a mock git repository.
+			repoDir := t.TempDir()
 
-		// Create dummy proto files within the mock repository if the test case needs them.
-		// This is needed because the prepare step searches for .proto files to modify.
-		if test.state != nil {
-			for _, lib := range test.state.Libraries {
-				if len(lib.APIs) > 0 {
-					protoPath := lib.APIs[0].Path
-					protoFilename := "service.proto"
-					fullProtoDir := filepath.Join(repoDir, protoPath)
-					if err := os.MkdirAll(fullProtoDir, 0755); err != nil {
-						t.Fatalf("os.MkdirAll() error = %v", err)
-					}
-					protoContent := "service MyService {}"
-					if err := os.WriteFile(filepath.Join(fullProtoDir, protoFilename), []byte(protoContent), 0644); err != nil {
-						t.Fatalf("os.WriteFile() error = %v", err)
+			// Create dummy proto files within the mock repository if the test case needs them.
+			// This is needed because the prepare step searches for .proto files to modify.
+			if test.state != nil {
+				for _, lib := range test.state.Libraries {
+					if len(lib.APIs) > 0 {
+						protoPath := lib.APIs[0].Path
+						protoFilename := "service.proto"
+						fullProtoDir := filepath.Join(repoDir, protoPath)
+						if err := os.MkdirAll(fullProtoDir, 0755); err != nil {
+							t.Fatalf("os.MkdirAll() error = %v", err)
+						}
+						protoContent := "service MyService {}"
+						if err := os.WriteFile(filepath.Join(fullProtoDir, protoFilename), []byte(protoContent), 0644); err != nil {
+							t.Fatalf("os.WriteFile() error = %v", err)
+						}
 					}
 				}
 			}
-		}
 
-		// Set up the mock repositories and clients with behavior defined by the test case.
-		mockSourceRepo := &MockRepository{
-			Dir:                                repoDir,
-			CheckoutCommitAndCreateBranchError: test.prepareErr,
-		}
-		mockRepoDir := t.TempDir()
-		for _, f := range test.repoChangedFiles {
-			if err := os.WriteFile(filepath.Join(mockRepoDir, f), []byte("some content"), 0644); err != nil {
-				t.Fatalf("failed to write file: %v", err)
+			// Set up the mock repositories and clients with behavior defined by the test case.
+			mockSourceRepo := &MockRepository{
+				Dir:                                repoDir,
+				CheckoutCommitAndCreateBranchError: test.prepareErr,
 			}
-		}
-		mockRepo := &MockRepository{
-			Dir:               mockRepoDir,
-			ChangedFilesValue: test.repoChangedFiles,
-		}
-		mockContainerClient := &mockContainerClient{
-			generateErr: test.generateErr,
-		}
-
-		// Create testGenerateRunner with the mocked dependencies.
-		runner := &testGenerateRunner{
-			library:                test.libraryID,
-			repo:                   mockRepo,
-			sourceRepo:             mockSourceRepo,
-			state:                  test.state,
-			workRoot:               t.TempDir(),
-			containerClient:        mockContainerClient,
-			checkUnexpectedChanges: test.checkUnexpectedChanges,
-		}
-
-		// 2. Execute the run method.
-		err := runner.run(context.Background())
-
-		// 3. Assert the outcome.
-		if test.wantErrMsg != "" {
-			if err == nil {
-				t.Fatal("runner.run() did not return an error, but one was expected")
+			mockRepoDir := t.TempDir()
+			for _, f := range test.repoChangedFiles {
+				if err := os.WriteFile(filepath.Join(mockRepoDir, f), []byte("some content"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
 			}
-			if !strings.Contains(err.Error(), test.wantErrMsg) {
-				t.Errorf("runner.run() returned error %q, want error containing %q", err.Error(), test.wantErrMsg)
+			mockRepo := &MockRepository{
+				Dir:               mockRepoDir,
+				ChangedFilesValue: test.repoChangedFiles,
 			}
-		} else if err != nil {
-			t.Fatalf("runner.run() returned unexpected error: %v", err)
-		}
+			mockContainerClient := &mockContainerClient{
+				generateErr: test.generateErr,
+			}
+
+			// Create testGenerateRunner with the mocked dependencies.
+			runner := &testGenerateRunner{
+				library:                test.libraryID,
+				repo:                   mockRepo,
+				sourceRepo:             mockSourceRepo,
+				state:                  test.state,
+				workRoot:               t.TempDir(),
+				containerClient:        mockContainerClient,
+				checkUnexpectedChanges: test.checkUnexpectedChanges,
+			}
+
+			// 2. Execute the run method.
+			err := runner.run(context.Background())
+
+			// 3. Assert the outcome.
+			if test.wantErrMsg != "" {
+				if err == nil {
+					t.Fatal("runner.run() did not return an error, but one was expected")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("runner.run() returned error %q, want error containing %q", err.Error(), test.wantErrMsg)
+				}
+			} else if err != nil {
+				t.Fatalf("runner.run() returned unexpected error: %v", err)
+			}
+		})
 	}
 }

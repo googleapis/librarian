@@ -209,7 +209,7 @@ func injectGUIDIntoProto(absPath string) (string, error) {
 		return "", err
 	}
 	lines := strings.Split(string(content), "\n")
-	if len(lines) == 0 {
+	if len(content) == 0 {
 		return "", nil
 	}
 
