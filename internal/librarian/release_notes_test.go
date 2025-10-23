@@ -37,7 +37,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 	hash2 := plumbing.NewHash("fedcba0987654321")
 	hash3 := plumbing.NewHash("abcdefg123456789")
 	hash4 := plumbing.NewHash("acdef12345678901")
-	hash5 := plumbing.NewHash("qwertyuiopasdfgg")
+	hash5 := plumbing.NewHash("bcdef12345678901")
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
@@ -658,7 +658,7 @@ Language Image: go:1.21
 
 ### Documentation
 
-* update README ([00000000](https://github.com/owner/repo/commit/00000000))
+* update README ([bcdef123](https://github.com/owner/repo/commit/bcdef123))
 
 </details>
 
@@ -669,7 +669,7 @@ Language Image: go:1.21
 
 ### Documentation
 
-* update README ([00000000](https://github.com/owner/repo/commit/00000000))
+* update README ([bcdef123](https://github.com/owner/repo/commit/bcdef123))
 
 </details>
 
