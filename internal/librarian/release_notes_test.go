@@ -37,6 +37,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 	hash2 := plumbing.NewHash("fedcba0987654321")
 	hash3 := plumbing.NewHash("abcdefg123456789")
 	hash4 := plumbing.NewHash("acdef12345678901")
+	hash5 := plumbing.NewHash("qwertyuiopasdfgg")
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
@@ -516,6 +517,12 @@ Language Image: go:1.21
 								CommitHash: hash4.String(),
 								LibraryIDs: "library-1",
 							},
+							{
+								Type:       "docs",
+								Subject:    "update README",
+								CommitHash: hash5.String(),
+								LibraryIDs: "library-1",
+							},
 						},
 					},
 					{
@@ -528,6 +535,12 @@ Language Image: go:1.21
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
+								LibraryIDs: "library-2",
+							},
+							{
+								Type:       "docs",
+								Subject:    "update README",
+								CommitHash: hash5.String(),
 								LibraryIDs: "library-2",
 							},
 						},
@@ -643,12 +656,20 @@ Language Image: go:1.21
 
 ## [2.4.0](https://github.com/owner/repo/compare/library-1-2.3.0...library-1-2.4.0) (%s)
 
+### Documentation
+
+* update README ([00000000](https://github.com/owner/repo/commit/00000000))
+
 </details>
 
 
 <details><summary>library-2: 2.4.0</summary>
 
 ## [2.4.0](https://github.com/owner/repo/compare/library-2-2.3.0...library-2-2.4.0) (%s)
+
+### Documentation
+
+* update README ([00000000](https://github.com/owner/repo/commit/00000000))
 
 </details>
 
