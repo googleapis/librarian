@@ -343,13 +343,33 @@ Usage:
 
 Commands:
 
-	generate                   runs test on language container
+	generate                   runs test on language container generate command
 
 # test-container generate
 
 The 'test-container generate' command is provided to test
+language containers and their interaction with the Librarian CLI when running 'generate'.
+This command is crucial for verifying that language-specific generation containers
+are correctly processing proto file changes and producing the expected output.
 
-	language containers and their interaction with Librarian CLI.
+This command automates the testing of the generation process for one or more libraries.
+For each library, it performs the following steps:
+ 1. Checks out the 'last_generated_commit' from the source repository.
+ 2. Injects a unique GUID into each proto file to simulate a change.
+ 3. Commits these temporary changes.
+ 4. Runs the 'generate' command for the library on the last generated commit.
+ 5. Validates that the injected GUIDs appear in the generated output, ensuring that
+    the simulated changes triggered a corresponding update.
+ 6. Optionally, it can check for any unexpected file additions, deletions, or modifications.
+ 7. Cleans up by resetting the repositories to their original state.
+
+Examples:
+
+	# Test all libraries defined in librarian.state.yaml
+	librarian test-container generate
+
+	# Test a single library with strict checks for unexpected changes
+	librarian test-container generate --library=my-library --check-unexpected-changes
 
 Usage:
 

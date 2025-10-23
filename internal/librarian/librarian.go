@@ -94,10 +94,9 @@ func newCmdTestContainer() *cli.Command {
 func newCmdTestContainerGenerate() *cli.Command {
 	var verbose bool
 	cmdTestGenerate := &cli.Command{
-		Short:     "generate runs test on language container",
+		Short:     "generate runs test on language container generate command",
 		UsageLine: "librarian test-container generate [flags]",
-		Long: `The 'test-container generate' command is provided to test 
-		language containers and their interaction with Librarian CLI.`,
+		Long:      testContainerGenerateLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			setupLogger(verbose)
 			slog.Debug("test-container generate command verbose logging")
