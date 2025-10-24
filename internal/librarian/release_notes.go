@@ -302,6 +302,7 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 		}
 		// We assume the rest of commits are specific to one library.
 		for _, commit := range commits {
+			// Non-bulk commits may have 1 - 9 library IDs.
 			libraryIDs := strings.Split(commit.LibraryIDs, ",")
 			for _, libraryID := range libraryIDs {
 				libraryChanges[libraryID] = append(libraryChanges[libraryID], commit)
