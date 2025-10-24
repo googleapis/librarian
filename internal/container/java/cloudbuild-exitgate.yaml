@@ -31,7 +31,7 @@ steps:
       - "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest"
       - "-f"
       - "internal/container/java/Dockerfile"
-      - "." 
+      - "."
 options:
   machineType: 'E2_HIGHCPU_8'
   requestedVerifyOption: VERIFIED # For provenance attestation generation
