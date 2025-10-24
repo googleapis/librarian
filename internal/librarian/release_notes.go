@@ -176,6 +176,8 @@ type commitSection struct {
 // formatReleaseNotes generates the body for a release pull request.
 func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
 	librarianVersion := cli.Version()
+	// Separate commits to bulk changes (affects multiple libraries) or library-specific changes because they
+	// appear in different section in the release notes.
 	bulkChangesMap, libraryChanges := separateCommits(state)
 	// Process library specific changes.
 	var releaseSections []*releaseNoteSection
