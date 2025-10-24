@@ -326,9 +326,6 @@ You can optionally specify an image using the `-image` flag.
 
 *Note: If the `-image` flag is not specified, the latest container image will be used.*
 
-It's recommended to run the `update-image` command using automation, as regenerating all libraries may take more than 1 hour in
-some languages.
-
 When the job completes, a PR will be opened by librarian with the changes related to the container update. You can edit the pull
 request title to set a global commit message which will be applied to all libraries.
 
