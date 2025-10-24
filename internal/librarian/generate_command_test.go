@@ -1583,7 +1583,7 @@ func TestNeedsConfigure(t *testing.T) {
 			want: true,
 		},
 		{
-			name:    "api and library set, library exists, different api path in state.yaml",
+name:    "apiAndLibrarySetLibraryExistsDifferentApiPathInStateYaml",
 			api:     "some/api",
 			library: "some-library",
 			state: &config.LibrarianState{
