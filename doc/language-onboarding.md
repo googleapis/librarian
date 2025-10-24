@@ -318,7 +318,7 @@ global file edits. The libraries that are being released will be marked by the `
 
 ## Pin the Language Container version in `state.yaml`
 
-It's recommended to pin the container version so that changes that appear as a result of updates to the language specific container
+You should pin the container version so that changes that appear as a result of updates to the language specific container
 can be tracked and properly documented in client library release notes.
 
 The `update-image` command is used to update and pin the language specific container in `state.yaml` and re-generate all libraries.
