@@ -1603,6 +1603,22 @@ func TestNeedsConfigure(t *testing.T) {
 			state:   &config.LibrarianState{},
 			want:    false,
 		},
+		{
+			name:    "api and library set, library and api exist",
+			api:     "some/api",
+			library: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+						APIs: []*config.API{
+							{Path: "some/api"},
+						},
+					},
+				},
+			},
+			want: false,
+		},
 	}
 
 	for _, tc := range testCases {
