@@ -478,21 +478,23 @@ func (r *generateRunner) shouldGenerate(library *config.LibraryState) (bool, err
 // If the library does not exist, it creates a new one.
 // If the API already exists in the library, do nothing.
 func addAPIToLibrary(state *config.LibrarianState, libraryID, apiPath string) {
-	for _, lib := range state.Libraries {
-		if lib.ID == libraryID {
-			for _, api := range lib.APIs {
-				if api.Path == apiPath {
-					return
-				}
-			}
-			// For new API paths, set the status to "new"
-			lib.APIs = append(lib.APIs, &config.API{Path: apiPath, Status: config.StatusNew})
+	lib := state.LibraryByID(libraryID)
+	if lib == nil {
+		// If the library is not found, create a new one.
+		state.Libraries = append(state.Libraries, &config.LibraryState{
+			ID:   libraryID,
+			APIs: []*config.API{{Path: apiPath, Status: config.StatusNew}},
+		})
+		return
+	}
+
+	// If the library is found, check if the API already exists.
+	for _, api := range lib.APIs {
+		if api.Path == apiPath {
 			return
 		}
 	}
-	// If the library is not found, create a new one.
-	state.Libraries = append(state.Libraries, &config.LibraryState{
-		ID:   libraryID,
-		APIs: []*config.API{{Path: apiPath, Status: config.StatusNew}},
-	})
+
+	// For new API paths, set the status to "new".
+	lib.APIs = append(lib.APIs, &config.API{Path: apiPath, Status: config.StatusNew})
 }
