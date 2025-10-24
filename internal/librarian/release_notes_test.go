@@ -454,6 +454,20 @@ Language Image: go:1.21
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
+						ID:               "ignored-library",
+						Version:          "1.4.0",
+						PreviousVersion:  "1.3.0",
+						ReleaseTriggered: false,
+						Changes: []*config.Commit{
+							{
+								Type:       "fix",
+								Subject:    "this commit is ignored",
+								CommitHash: "123456789012345",
+								LibraryIDs: "ignored-library",
+							},
+						},
+					},
+					{
 						ID:               "j",
 						Version:          "1.1.0",
 						PreviousVersion:  "1.0.0",

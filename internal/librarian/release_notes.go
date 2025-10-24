@@ -184,6 +184,9 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 	// Process library specific changes.
 	var releaseSections []*releaseNoteSection
 	for _, library := range state.Libraries {
+		if !library.ReleaseTriggered {
+			continue
+		}
 		// No need to check the existence of the key, library.ID, because a library without library-specific changes
 		// may appear in the release notes, i.e., in the bulk changes section.
 		commits := libraryChanges[library.ID]
