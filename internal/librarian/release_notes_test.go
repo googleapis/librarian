@@ -38,6 +38,7 @@ func TestFormatReleaseNotes(t *testing.T) {
 	hash3 := plumbing.NewHash("abcdefg123456789")
 	hash4 := plumbing.NewHash("acdef12345678901")
 	hash5 := plumbing.NewHash("bcdef12345678901")
+	hash6 := plumbing.NewHash("cdefg12345678901")
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
@@ -478,6 +479,8 @@ Language Image: go:1.21
 								PiperCLNumber: "12345",
 							},
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -498,6 +501,8 @@ Language Image: go:1.21
 								LibraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
 							},
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -512,6 +517,8 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -532,6 +539,8 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -552,10 +561,21 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
 								LibraryIDs: "library-3",
+							},
+							{
+								// This is a non-bulk commit because it only has two
+								// library ids.
+								// This commit will appear in library section.
+								Type:       "fix",
+								Subject:    "non bulk fix",
+								CommitHash: hash6.String(),
+								LibraryIDs: "library-3,library-4",
 							},
 						},
 					},
@@ -566,6 +586,8 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -580,6 +602,8 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -594,6 +618,8 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -608,6 +634,8 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -622,6 +650,8 @@ Language Image: go:1.21
 						ReleaseTriggered: true,
 						Changes: []*config.Commit{
 							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
 								Type:       "chore",
 								Subject:    "update dependency",
 								CommitHash: hash4.String(),
@@ -678,12 +708,20 @@ Language Image: go:1.21
 
 ## [2.4.0](https://github.com/owner/repo/compare/library-3-2.3.0...library-3-2.4.0) (%s)
 
+### Bug Fixes
+
+* non bulk fix ([cdef0000](https://github.com/owner/repo/commit/cdef0000))
+
 </details>
 
 
 <details><summary>library-4: 2.4.0</summary>
 
 ## [2.4.0](https://github.com/owner/repo/compare/library-4-2.3.0...library-4-2.4.0) (%s)
+
+### Bug Fixes
+
+* non bulk fix ([cdef0000](https://github.com/owner/repo/commit/cdef0000))
 
 </details>
 
