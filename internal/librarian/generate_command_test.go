@@ -1570,7 +1570,7 @@ func TestNeedsConfigure(t *testing.T) {
 			want:    true,
 		},
 		{
-			name:    "api and library set, library exists, no api path in state.yaml",
+name:    "apiAndLibrarySetLibraryExistsNoApiPathInStateYaml",
 			api:     "some/api",
 			library: "some-library",
 			state: &config.LibrarianState{
