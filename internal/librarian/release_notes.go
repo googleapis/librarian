@@ -301,10 +301,11 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 			continue
 		}
 		// We assume the rest of commits are specific to one library.
-		// We assume this type of commits has only one library id in Footers.
 		for _, commit := range commits {
-			libraryID := commit.LibraryIDs
-			libraryChanges[libraryID] = append(libraryChanges[libraryID], commit)
+			libraryIDs := strings.Split(commit.LibraryIDs, ",")
+			for _, libraryID := range libraryIDs {
+				libraryChanges[libraryID] = append(libraryChanges[libraryID], commit)
+			}
 		}
 	}
 
