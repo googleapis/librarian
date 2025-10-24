@@ -262,7 +262,7 @@ func (r *LocalRepository) ChangedFiles() ([]string, error) {
 
 // NewAndDeletedFiles returns a list of files that are new or deleted.
 func (r *LocalRepository) NewAndDeletedFiles() ([]string, error) {
-	slog.Info("Getting new and deleted files")
+	slog.Debug("Getting new and deleted files")
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return nil, err
@@ -273,7 +273,11 @@ func (r *LocalRepository) NewAndDeletedFiles() ([]string, error) {
 	}
 	var files []string
 	for file, fileStatus := range status {
-		if fileStatus.Worktree == git.Untracked || fileStatus.Staging == git.Added || fileStatus.Worktree == git.Deleted || fileStatus.Staging == git.Deleted {
+		switch {
+		case fileStatus.Worktree == git.Untracked,
+			fileStatus.Staging == git.Added,
+			fileStatus.Worktree == git.Deleted,
+			fileStatus.Staging == git.Deleted:
 			files = append(files, file)
 		}
 	}
@@ -538,7 +542,7 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 // CheckoutCommitAndCreateBranch creates a new git branch from a specific commit hash
 // and checks out the branch in the local git repository.
 func (r *LocalRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
-	slog.Info("Creating branch from commit and checking out", "name", name, "commit", commitHash)
+	slog.Debug("Creating branch from commit and checking out", "name", name, "commit", commitHash)
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -728,7 +732,6 @@ func (r *LocalRepository) ResetHard() error {
 	if err != nil {
 		return err
 	}
-
 	return worktree.Reset(&git.ResetOptions{
 		Mode: git.HardReset,
 	})
