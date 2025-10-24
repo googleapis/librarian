@@ -321,24 +321,28 @@ global file edits. The libraries that are being released will be marked by the `
 For each command you should be able to run the CLI on your remote desktop and have it create the expected PR.
 
 **Configure Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ generate -repo=<your repository> -library=<name of library that exists in googleapis but not your repository> -push
 ```
 
 **Generate Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ generate -repo=<your repository> -push
 ```
 
 **Release Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ release init -repo=<your repository> -push
 ```
 
 **Update Image Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ update-image -repo=<your repository> -push
