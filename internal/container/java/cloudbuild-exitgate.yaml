@@ -23,8 +23,7 @@ steps:
       - |
         docker pull us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest || exit 0
   - name: gcr.io/cloud-builders/docker
-    args: ["build", "--cache-from", "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest", "-t", "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest", "-f", "Dockerfile", "."]
-    dir: internal/container/java
+    args: ["build", "--cache-from", "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest", "-t", "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest", "-f", "internal/container/java/Dockerfile", "."]
 options:
   machineType: 'E2_HIGHCPU_8'
   requestedVerifyOption: VERIFIED # For provenance attestation generation

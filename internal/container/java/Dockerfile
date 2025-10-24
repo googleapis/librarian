@@ -50,7 +50,7 @@ WORKDIR /src
 COPY . .
 
 # Build the librariangen binary.
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o /librariangen .
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /librariangen ./internal/container/java
 
 # --- Final Stage ---
 # This stage creates the final, minimal image with the compiled binary and
