@@ -28,6 +28,10 @@ import (
 	"github.com/googleapis/librarian/internal/github"
 )
 
+const (
+	bulkCommitThreshold = 10
+)
+
 var (
 	errPiperNotFound = errors.New("piper id not found")
 
@@ -295,11 +299,11 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 		// All commits should be identical except for the library id.
 		// We assume this type of commits has only one library id in Footers and each id is unique among all
 		// commits.
-		if len(commits) >= 10 {
+		if len(commits) >= bulkCommitThreshold {
 			bulkChanges[key] = concatenateLibraryIDs(commits)
 			continue
 		}
-		// We assume the rest of commits are specific to one library.
+		// We assume the rest of commits are library-specific.
 		for _, commit := range commits {
 			// Non-bulk commits may have 1 - 9 library IDs.
 			libraryIDs := strings.Split(commit.LibraryIDs, ",")
