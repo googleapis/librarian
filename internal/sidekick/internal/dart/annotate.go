@@ -500,7 +500,6 @@ func calculateImports(imports map[string]bool) []string {
 func (annotate *annotateModel) annotateService(s *api.Service) {
 	// Add a package:http import if we're generating a service.
 	annotate.imports[httpImport] = true
-	annotate.imports[authImport] = true
 
 	// Some methods are skipped.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
