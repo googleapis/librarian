@@ -14,7 +14,6 @@
 
 # note: /workspace is a special directory in the docker image where all the files in this folder
 # get placed on your behalf
-
 timeout: 7200s # 2 hours
 steps:
   # Attempt to pull the latest image to use as a cache source.
@@ -25,28 +24,17 @@ steps:
       - |
         docker pull us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest || exit 0
   - name: gcr.io/cloud-builders/docker
-    args:
-      [
-        "build",
-        "--cache-from",
-        "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest",
-        "-t",
-        "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest",
-        "-f",
-        "Dockerfile",
-        ".",
-      ]
+    args: ["build", "--cache-from", "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest", "-t", "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest", "-f", "Dockerfile", "."]
     dir: internal/librariangen
 options:
-    machineType: 'E2_HIGHCPU_8'
-    requestedVerifyOption: VERIFIED  # For provenance attestation generation
-    logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+  requestedVerifyOption: VERIFIED # For provenance attestation generation
+  logging: CLOUD_LOGGING_ONLY
 images:
   - us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-java:latest
 dependencies:
-- gitSource:
-    repository:
-      url: "${_LOUHI_REPOSITORY_URL}"
-    revision: "${_LOUHI_REF_SHA}"
-    destPath: "."
-
+  - gitSource:
+      repository:
+        url: "${_LOUHI_REPOSITORY_URL}"
+      revision: "${_LOUHI_REF_SHA}"
+      destPath: "."
