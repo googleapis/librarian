@@ -24,11 +24,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"cloud.google.com/java/internal/librariangen/bazel"
-	"cloud.google.com/java/internal/librariangen/execv"
-	"cloud.google.com/java/internal/librariangen/languagecontainer/generate"
-	"cloud.google.com/java/internal/librariangen/message"
-	"cloud.google.com/java/internal/librariangen/protoc"
+	"github.com/googleapis/librarian/internal/container/java/bazel"
+	"github.com/googleapis/librarian/internal/container/java/execv"
+	"github.com/googleapis/librarian/internal/container/java/languagecontainer/generate"
+	"github.com/googleapis/librarian/internal/container/java/message"
+	"github.com/googleapis/librarian/internal/container/java/protoc"
 )
 
 // Test substitution vars.

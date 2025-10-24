@@ -29,9 +29,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"cloud.google.com/java/internal/librariangen/languagecontainer/generate"
-	"cloud.google.com/java/internal/librariangen/languagecontainer/release"
-	"cloud.google.com/java/internal/librariangen/message"
+	"github.com/googleapis/librarian/internal/container/java/languagecontainer/generate"
+	"github.com/googleapis/librarian/internal/container/java/languagecontainer/release"
+	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
 // LanguageContainer defines the functions for language-specific container operations.

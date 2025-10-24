@@ -19,8 +19,8 @@ import (
 	"context"
 	"log/slog"
 
-	"cloud.google.com/java/internal/librariangen/languagecontainer/release"
-	"cloud.google.com/java/internal/librariangen/message"
+	"github.com/googleapis/librarian/internal/container/java/languagecontainer/release"
+	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
 // Init executes the release init command.

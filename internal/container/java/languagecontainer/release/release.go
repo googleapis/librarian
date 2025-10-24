@@ -15,7 +15,7 @@
 // Package release contains types for language container's release command.
 package release
 
-import "cloud.google.com/java/internal/librariangen/message"
+import "github.com/googleapis/librarian/internal/container/java/message"
 
 // Context has the directory paths for the release-init command.
 // https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#release-init

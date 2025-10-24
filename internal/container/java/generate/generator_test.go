@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"cloud.google.com/java/internal/librariangen/languagecontainer/generate"
-	"cloud.google.com/java/internal/librariangen/protoc"
+	"github.com/googleapis/librarian/internal/container/java/languagecontainer/generate"
+	"github.com/googleapis/librarian/internal/container/java/protoc"
 )
 
 // testEnv encapsulates a temporary test environment.
@@ -37,10 +37,7 @@ type testEnv struct {
 // newTestEnv creates a new test environment.
 func newTestEnv(t *testing.T) *testEnv {
 	t.Helper()
-	tmpDir, err := os.MkdirTemp("", "generator-test")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
+	tmpDir := t.TempDir()
 	e := &testEnv{tmpDir: tmpDir}
 	e.librarianDir = filepath.Join(tmpDir, "librarian")
 	e.sourceDir = filepath.Join(tmpDir, "source")
@@ -223,9 +220,9 @@ java_gapic_library(
 		{
 			name: "restructureOutput fails",
 			setup: func(e *testEnv, t *testing.T) {
-				e.writeRequestFile(t, singleAPIRequest)
-				e.writeBazelFile(t, "api/v1", validBazel)
-				e.writeServiceYAML(t, "api/v1", "My API")
+				e.writeRequestFile(t, `{"id": "foo", "apis": [{"path": "api/v2"}]}`)
+				e.writeBazelFile(t, "api/v2", validBazel)
+				e.writeServiceYAML(t, "api/v2", "My API 2")
 				// Make a directory that restructureOutput needs to write to read-only.
 				readOnlyDir := filepath.Join(e.outputDir, "google-cloud-foo")
 				if err := os.Mkdir(readOnlyDir, 0400); err != nil {
@@ -491,10 +488,7 @@ func TestMoveFiles(t *testing.T) {
 	e := newTestEnv(t)
 	defer e.cleanup(t)
 
-	sourceDir, err := os.MkdirTemp(e.tmpDir, "source-move-test")
-	if err != nil {
-		t.Fatalf("failed to create temp source dir: %v", err)
-	}
+	sourceDir := t.TempDir()
 	destDir := filepath.Join(e.tmpDir, "dest-move-test")
 	if err := os.Mkdir(destDir, 0755); err != nil {
 		t.Fatalf("failed to create dest dir: %v", err)

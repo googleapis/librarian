@@ -21,10 +21,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"cloud.google.com/java/internal/librariangen/languagecontainer/generate"
-	"cloud.google.com/java/internal/librariangen/languagecontainer/release"
-	"cloud.google.com/java/internal/librariangen/message"
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/container/java/languagecontainer/generate"
+	"github.com/googleapis/librarian/internal/container/java/languagecontainer/release"
+	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
 func TestRun(t *testing.T) {

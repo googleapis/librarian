@@ -19,9 +19,9 @@ import (
 	"log/slog"
 	"os"
 
-	"cloud.google.com/java/internal/librariangen/generate"
-	"cloud.google.com/java/internal/librariangen/languagecontainer"
-	"cloud.google.com/java/internal/librariangen/release"
+	"github.com/googleapis/librarian/internal/container/java/generate"
+	"github.com/googleapis/librarian/internal/container/java/languagecontainer"
+	"github.com/googleapis/librarian/internal/container/java/release"
 )
 
 const version = "0.1.0"

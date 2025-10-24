@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"cloud.google.com/java/internal/librariangen/message"
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
 func TestReadReleaseInitRequest(t *testing.T) {
@@ -36,14 +36,14 @@ func TestReadReleaseInitRequest(t *testing.T) {
 						Subject:       "add new UpdateRepository API",
 						Body:          "This adds the ability to update a repository's properties.",
 						PiperCLNumber: "786353207",
-						CommitHash: "9461532e7d19c8d71709ec3b502e5d81340fb661",
+						CommitHash:    "9461532e7d19c8d71709ec3b502e5d81340fb661",
 					},
 					{
 						Type:          "docs",
 						Subject:       "fix typo in BranchRule comment",
 						Body:          "",
 						PiperCLNumber: "786353207",
-						CommitHash: "9461532e7d19c8d71709ec3b502e5d81340fb661",
+						CommitHash:    "9461532e7d19c8d71709ec3b502e5d81340fb661",
 					},
 				},
 				APIs: []message.API{

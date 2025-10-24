@@ -21,7 +21,7 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	"cloud.google.com/java/internal/librariangen/message"
+	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
 // Context holds the directory paths for the generate command.

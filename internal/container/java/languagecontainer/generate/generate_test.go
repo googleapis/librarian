@@ -18,8 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"cloud.google.com/java/internal/librariangen/message"
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
 func TestNewConfig(t *testing.T) {
