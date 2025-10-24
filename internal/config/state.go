@@ -26,6 +26,8 @@ import (
 const (
 	StatusNew      = "new"
 	StatusExisting = "existing"
+	// BulkChangeThreshold is a threshold to determine whether a commit is a bulk change.
+	BulkChangeThreshold = 10
 )
 
 // LibrarianState defines the contract for the state.yaml file.
@@ -161,7 +163,7 @@ type Commit struct {
 // IsBulkCommit returns true if the commit is associated with 10 or more
 // libraries.
 func (c *Commit) IsBulkCommit() bool {
-	return len(strings.Split(c.LibraryIDs, ",")) >= 10
+	return len(strings.Split(c.LibraryIDs, ",")) >= BulkChangeThreshold
 }
 
 var (
