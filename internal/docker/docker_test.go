@@ -727,7 +727,6 @@ func TestWriteLibraryState(t *testing.T) {
 							{
 								Path:          "google/cloud/compute/v1",
 								ServiceConfig: "example_service_config.yaml",
-								Status:        "",
 							},
 						},
 						SourceRoots: []string{
