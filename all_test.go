@@ -33,7 +33,7 @@ import (
 
 var noHeaderRequiredFiles = []string{
 	".gcloudignore",
-	".github/CODEOWNERS",
+	"CODEOWNERS",
 	".gitignore",
 	"Dockerfile",
 	"LICENSE",
@@ -51,6 +51,7 @@ var ignoredExts = map[string]bool{
 	".yaml":       true,
 	".txt":        true,
 	".webp":       true,
+	".sh":         true,
 }
 
 var ignoredDirs = []string{
@@ -84,7 +85,7 @@ func TestHeaders(t *testing.T) {
 			}
 			return nil
 		}
-		if slices.Contains(noHeaderRequiredFiles, path) || ignoredExts[filepath.Ext(path)] {
+		if slices.Contains(noHeaderRequiredFiles, filepath.Base(path)) || ignoredExts[filepath.Ext(path)] {
 			return nil
 		}
 
