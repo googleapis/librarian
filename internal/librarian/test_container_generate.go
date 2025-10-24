@@ -121,10 +121,6 @@ func (r *testGenerateRunner) runTestForSingleLibrary(ctx context.Context, librar
 // changes. It returns a map of the modified proto file paths to the GUIDs that
 // were injected.
 func prepareForGenerateTest(libraryState *config.LibraryState, libraryID string, sourceRepo gitrepo.Repository) (map[string]string, error) {
-	// libraryState := state.LibraryByID(libraryID)
-	// if libraryState == nil {
-	// 	return nil, fmt.Errorf("library %q not found in state", libraryID)
-	// }
 	if libraryState.LastGeneratedCommit == "" {
 		return nil, fmt.Errorf("last_generated_commit is not set for library %q", libraryID)
 	}

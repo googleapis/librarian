@@ -385,8 +385,8 @@ Flags:
 	  	which branch to clone and which branch to use as the base for a pull
 	  	request. (default "main")
 	-check-unexpected-changes
-	  	Default to false. Specify true to include additional steps to check that
-	  	no addition/deletion of files and no extra file changes introduced other than the
+	  	Defaults to false. Specify true to include additional steps to check that
+	  	no files are added or deleted, and no extra file changes are introduced other than the
 	  	ones affected by proto changes. Note: you may want to skip this check if you are
 	  	testing a container image change that is expected to add or delete files.
 	-image string
