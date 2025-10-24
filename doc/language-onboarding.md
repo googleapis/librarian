@@ -334,8 +334,8 @@ request title to set a global commit message which will be applied to all librar
 
 *Note: If the container SHA in `state.yaml` was updated without using `update-image`, there could be unrelated diffs.*
 
-As a quick check to ensure that all changes are a result of the language specific container, run the `update-image` command
-for the current SHA to make sure that there is zero diff prior to updating to a newer version of a language specific container.
+As a quick check to verify that changes are solely due to the language-specific container, execute the `update-image` command
+for the current SHA to ensure a clean state before updating to a newer version of a language specific container.
 
 `librarian update-image -image=us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/<language>-librarian-generator@sha256:<current SHA> -push`
 
