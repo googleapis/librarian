@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This Dockerfile creates a MOSS-compliant image for the Go librariangen,
-# which is invoked by the Librarian tool. It uses a multi-stage build to
-# create a minimal final image.
+# This Dockerfile creates a MOSS-compliant image for the Java
+# language container, which is invoked by the Librarian tool.
+# It uses a multi-stage build to create a minimal final image.
 
 # --- Builder Stage ---
 # This stage builds the librariangen binary using the MOSS-compliant base image.

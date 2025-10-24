@@ -85,7 +85,7 @@ func handleGenerate(flags []string, container *LanguageContainer) int {
 	generateFlags := flag.NewFlagSet("generate", flag.ContinueOnError)
 	generateFlags.StringVar(&genCtx.LibrarianDir, "librarian", "/librarian", "Path to the librarian-tool input directory. Contains generate-request.json.")
 	generateFlags.StringVar(&genCtx.InputDir, "input", "/input", "Path to the .librarian/generator-input directory from the language repository.")
-	generateFlags.StringVar(&genCtx.OutputDir, "output", "/output", "Path to the empty directory where librariangen writes its output.")
+	generateFlags.StringVar(&genCtx.OutputDir, "output", "/output", "Path to the empty directory where a language container writes its output.")
 	generateFlags.StringVar(&genCtx.SourceDir, "source", "/source", "Path to a complete checkout of the googleapis repository.")
 	if err := generateFlags.Parse(flags); err != nil {
 		slog.Error("failed to parse flags", "error", err)

@@ -33,7 +33,7 @@ type Context struct {
 	// InputDir is the path to the .librarian/generator-input directory from the
 	// language repository.
 	InputDir string
-	// OutputDir is the path to the empty directory where librariangen writes
+	// OutputDir is the path to the empty directory where a language container writes
 	// its output.
 	OutputDir string
 	// SourceDir is the path to a complete checkout of the googleapis repository.
