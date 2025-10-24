@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # note: /workspace is a special directory in the docker image where all the files in this folder
 # get placed on your behalf
 timeout: 7200s # 2 hours
