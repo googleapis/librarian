@@ -316,6 +316,32 @@ global file edits. The libraries that are being released will be marked by the `
 [config-schema.md]:config-schema.md
 [state-schema.md]: state-schema.md
 
+## Pin the Language Container version in `state.yaml`
+
+It's recommended to pin the container version so that changes that appear as a result of updates to the language specific container
+can be tracked and properly documented in client library release notes.
+
+The `update-image` command is used to update and pin the language specific container in `state.yaml` and re-generate all libraries.
+You can optionally specify a specific image using the `-image` flag.
+
+*Note: If the `-image` flag is not specified, the latest container image will be used.*
+
+It's recommended to run the `update-image` command using automation, as regenerating all libraries may take more than 1 hour in
+some languages.
+
+When the job completes, a PR will be opened by librarian with the changes related to the container update. You can edit the pull
+request title to set a global commit message which will be applied to all libraries.
+
+*Note: If the container SHA in `state.yaml` was updated without using `update-image`, there could be unrelated diffs.*
+
+As a quick check to ensure that all changes are a result of the language specific container, run the `update-image` command
+for the current SHA to make sure that there is zero diff prior to updating to a newer version of a language specific container.
+
+`librarian update-image -image=us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/<language>-librarian-generator@sha256:<current SHA> -push`
+
+Merge the PR which includes changes for the current container SHA prior to updating to a new container SHA. Moving forward, always use `update-image`
+to update the language specific SHA in `state.yaml` to ensure that all changes are correctly tracked and documented.
+
 ## Validate Commands are working
 
 For each command you should be able to run the CLI on your remote desktop and have it create the expected PR.
