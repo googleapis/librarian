@@ -75,11 +75,9 @@ func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 	}
 
 	crateSummary := slices.Collect(maps.Keys(manifests))
-	if len(crateSummary) < 20 {
-		slog.Info("publishing", "crates", crateSummary)
-	} else {
-		slog.Info("publishing", "crates[0:20]", crateSummary[0:20], "total", len(crateSummary))
-	}
+	totalCrates := len(crateSummary)
+	crateSummary = crateSummary[0:min(20, totalCrates)]
+	slog.Info(fmt.Sprintf("there are %d crates in need of publishing, summary=%v", totalCrates, crateSummary))
 
 	if !skipSemverChecks {
 		for name, manifest := range manifests {
