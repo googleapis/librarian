@@ -3,8 +3,7 @@
 This guide should be followed when onboarding new repositories/libraries.
 
 ## Repository Setup:
-1) [Create ticket](https://buganizer.corp.google.com/issues/new?component=1198207&template=2190445) to onboard repository to Librarian automation. At a minimum, you
-   should onboard to Tag and Release automation.
+1) [Create ticket](go/onboard-repository-to-librarian) to onboard repository to Librarian automation. At a minimum, you should onboard to Tag and Release automation.
 2) Add .librarian directory to your repository with appropriate configuration files. See details [here](https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#configuration-files)
 3) You should only start with 1 library to validate the flow (follow instructions below)
 4) If your repository contains multiple libraries, start ramping up slowly until all libraries are in your state.yaml file and have migrated to librarian.
@@ -12,7 +11,7 @@ This guide should be followed when onboarding new repositories/libraries.
 6) To correctly parse the commit message of a merge commit, only allow squash merging
 and set the default commit message to **Pull request title and description**.
 ![Pull request settings](assets/setting-pull-requests.webp)
-   
+
 ## Library Setup:
 1) Ensure all OwlBot PRs for that library have been merged and then release the library using a release-please PR
 2) Remove the library from your OwlBot config
