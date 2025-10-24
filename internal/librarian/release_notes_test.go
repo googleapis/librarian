@@ -454,9 +454,11 @@ Language Image: go:1.21
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
 					{
-						ID:               "ignored-library",
-						Version:          "1.4.0",
-						PreviousVersion:  "1.3.0",
+						ID:              "ignored-library",
+						Version:         "1.4.0",
+						PreviousVersion: "1.3.0",
+						// This library will not appear in the release notes because
+						// release is not triggered for.
 						ReleaseTriggered: false,
 						Changes: []*config.Commit{
 							{
