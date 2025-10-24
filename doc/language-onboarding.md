@@ -322,7 +322,7 @@ It's recommended to pin the container version so that changes that appear as a r
 can be tracked and properly documented in client library release notes.
 
 The `update-image` command is used to update and pin the language specific container in `state.yaml` and re-generate all libraries.
-You can optionally specify a specific image using the `-image` flag.
+You can optionally specify an image using the `-image` flag.
 
 *Note: If the `-image` flag is not specified, the latest container image will be used.*
 
