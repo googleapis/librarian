@@ -53,7 +53,6 @@ func TestFromProtobuf(t *testing.T) {
 			"not-for-publication":            "true",
 			"version":                        "0.1.0",
 			"skip-format":                    "true",
-			"package:googleapis_auth":        "^2.0.0",
 			"package:google_cloud_gax":       "^1.2.3",
 			"package:http":                   "^4.5.6",
 			"package:google_cloud_location":  "^7.8.9",

@@ -44,12 +44,7 @@ final class {{Codec.Name}} {
   ///
   /// See [API Keys Overview](https://cloud.google.com/api-keys/docs/overview).
   factory {{Codec.Name}}.fromApiKey([String? apiKey]) {
-    apiKey ??= _apiKeys.map(environmentVariable).nonNulls.firstOrNull;
-    if (apiKey == null) {
-      throw ArgumentError('apiKey or one of these environment variables must '
-        'be set to an API key: ${_apiKeys.join(', ')}');
-    }
-    return {{Codec.Name}}(client: auth.clientViaApiKey(apiKey));
+    return {{Codec.Name}}(client: httpClientFromApiKey(apiKey, _apiKeys));
   }
 
   {{#Codec.Methods}}
