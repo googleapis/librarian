@@ -1570,13 +1570,29 @@ func TestNeedsConfigure(t *testing.T) {
 			want:    true,
 		},
 		{
-			name:    "api and library set, library exists",
+			name:    "apiAndLibrarySetLibraryExistsNoApiPathInStateYaml",
 			api:     "some/api",
 			library: "some-library",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
 						ID: "some-library",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name:    "apiAndLibrarySetLibraryExistsDifferentApiPathInStateYaml",
+			api:     "some/api",
+			library: "some-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "some-library",
+						APIs: []*config.API{
+							{Path: "another/api"},
+						},
 					},
 				},
 			},
