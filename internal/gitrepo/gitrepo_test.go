@@ -1716,3 +1716,152 @@ func TestCanUseSSH(t *testing.T) {
 		})
 	}
 }
+
+func TestNewAndDeletedFiles(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		setup     func(t *testing.T, dir string, w *git.Worktree)
+		wantFiles []string
+	}{
+		{
+			name:  "clean repository",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {},
+		},
+		{
+			name: "new untracked file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "untracked.txt")
+				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+			wantFiles: []string{"untracked.txt"},
+		},
+		{
+			name: "new staged file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "added.txt")
+				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("added.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+			},
+			wantFiles: []string{"added.txt"},
+		},
+		{
+			name: "deleted file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "deleted.txt")
+				if err := os.WriteFile(filePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("deleted.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				if _, err := w.Commit("commit deleted.txt", &git.CommitOptions{Author: &object.Signature{Name: "Test", Email: "test@example.com"}}); err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+				if err := os.Remove(filePath); err != nil {
+					t.Fatalf("failed to remove file: %v", err)
+				}
+			},
+			wantFiles: []string{"deleted.txt"},
+		},
+		{
+			name: "modified file should not be included",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "modified.txt")
+				if err := os.WriteFile(filePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("modified.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				if _, err := w.Commit("commit modified.txt", &git.CommitOptions{Author: &object.Signature{Name: "Test", Email: "test@example.com"}}); err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+				if err := os.WriteFile(filePath, []byte("modified"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			w, err := repo.Worktree()
+			if err != nil {
+				t.Fatalf("failed to get worktree: %v", err)
+			}
+
+			r := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+
+			test.setup(t, dir, w)
+			gotFiles, err := r.NewAndDeletedFiles()
+			if err != nil {
+				t.Fatalf("NewAndDeletedFiles() returned an error: %v", err)
+			}
+
+			slices.Sort(gotFiles)
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("NewAndDeletedFiles() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestResetHard(t *testing.T) {
+	t.Parallel()
+	repo, dir := initTestRepo(t)
+	localRepo := &LocalRepository{Dir: dir, repo: repo}
+
+	// Commit an initial file.
+	trackedFilePath := filepath.Join(dir, "tracked.txt")
+	initialContent := "initial content"
+	createAndCommit(t, repo, "tracked.txt", []byte(initialContent), "initial commit")
+
+	// 1. Modify the tracked file.
+	if err := os.WriteFile(trackedFilePath, []byte("modified content"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	// 2. Create a new untracked file.
+	untrackedFilePath := filepath.Join(dir, "untracked.txt")
+	if err := os.WriteFile(untrackedFilePath, []byte("untracked"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	// Call ResetHard.
+	if err := localRepo.ResetHard(); err != nil {
+		t.Fatalf("ResetHard() failed: %v", err)
+	}
+
+	// Check that the repo is clean.
+	isClean, err := localRepo.IsClean()
+	if err != nil {
+		t.Fatalf("IsClean() failed: %v", err)
+	}
+	if !isClean {
+		t.Error("ResetHard() should result in a clean repository")
+	}
+
+	// Check that the untracked file is gone.
+	if _, err := os.Stat(untrackedFilePath); !os.IsNotExist(err) {
+		t.Errorf("untracked file should have been deleted by ResetHard(), but it still exists")
+	}
+
+	// Check that the tracked file is restored to its original content.
+	content, err := os.ReadFile(trackedFilePath)
+	if err != nil {
+		t.Fatalf("failed to read tracked file after reset: %v", err)
+	}
+	if string(content) != initialContent {
+		t.Errorf("tracked file content mismatch after reset: got %q, want %q", string(content), initialContent)
+	}
+}

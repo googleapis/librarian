@@ -50,12 +50,15 @@ type Repository interface {
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
+	CheckoutCommitAndCreateBranch(name, commitHash string) error
+	NewAndDeletedFiles() ([]string, error)
 	Push(branchName string) error
 	Restore(paths []string) error
 	CleanUntracked(paths []string) error
 	pushRefSpec(refSpec string) error
 	Checkout(commitHash string) error
 	GetHashForPath(commitHash, path string) (string, error)
+	ResetHard() error
 }
 
 const RootPath = "."
@@ -255,6 +258,30 @@ func (r *LocalRepository) ChangedFiles() ([]string, error) {
 		}
 	}
 	return changedFiles, nil
+}
+
+// NewAndDeletedFiles returns a list of files that are new or deleted.
+func (r *LocalRepository) NewAndDeletedFiles() ([]string, error) {
+	slog.Debug("Getting new and deleted files")
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	status, err := worktree.Status()
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for file, fileStatus := range status {
+		switch {
+		case fileStatus.Worktree == git.Untracked,
+			fileStatus.Staging == git.Added,
+			fileStatus.Worktree == git.Deleted,
+			fileStatus.Staging == git.Deleted:
+			files = append(files, file)
+		}
+	}
+	return files, nil
 }
 
 // Remotes returns the remotes within the repository.
@@ -512,6 +539,21 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 	})
 }
 
+// CheckoutCommitAndCreateBranch creates a new git branch from a specific commit hash
+// and checks out the branch in the local git repository.
+func (r *LocalRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
+	slog.Debug("Creating branch from commit and checking out", "name", name, "commit", commitHash)
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Hash:   plumbing.NewHash(commitHash),
+		Branch: plumbing.NewBranchReferenceName(name),
+		Create: true,
+	})
+}
+
 // Push pushes the local branch to the origin remote.
 func (r *LocalRepository) Push(branchName string) error {
 	// https://stackoverflow.com/a/75727620
@@ -682,4 +724,15 @@ func (r *LocalRepository) GetHashForPath(commitHash, path string) (string, error
 		return "", err
 	}
 	return getHashForPath(commit, path)
+}
+
+// ResetHard resets the repository to HEAD, discarding all local changes.
+func (r *LocalRepository) ResetHard() error {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Reset(&git.ResetOptions{
+		Mode: git.HardReset,
+	})
 }

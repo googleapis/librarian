@@ -345,7 +345,10 @@ type MockRepository struct {
 	ChangedFilesInCommitError              error
 	ChangedFilesValue                      []string
 	ChangedFilesError                      error
+	NewAndDeletedFilesValue                []string
+	NewAndDeletedFilesError                error
 	CreateBranchAndCheckoutError           error
+	CheckoutCommitAndCreateBranchError     error
 	PushCalls                              int
 	PushError                              error
 	RestoreError                           error
@@ -483,9 +486,23 @@ func (m *MockRepository) ChangedFiles() ([]string, error) {
 	return m.ChangedFilesValue, nil
 }
 
+func (m *MockRepository) NewAndDeletedFiles() ([]string, error) {
+	if m.NewAndDeletedFilesError != nil {
+		return nil, m.NewAndDeletedFilesError
+	}
+	return m.NewAndDeletedFilesValue, nil
+}
+
 func (m *MockRepository) CreateBranchAndCheckout(name string) error {
 	if m.CreateBranchAndCheckoutError != nil {
 		return m.CreateBranchAndCheckoutError
+	}
+	return nil
+}
+
+func (m *MockRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
+	if m.CheckoutCommitAndCreateBranchError != nil {
+		return m.CheckoutCommitAndCreateBranchError
 	}
 	return nil
 }
@@ -511,6 +528,10 @@ func (m *MockRepository) Checkout(commitHash string) error {
 	if m.CheckoutError != nil {
 		return m.CheckoutError
 	}
+	return nil
+}
+
+func (m *MockRepository) ResetHard() error {
 	return nil
 }
 
