@@ -54,18 +54,24 @@ func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
 }
 
 func (r *testGenerateRunner) run(ctx context.Context) error {
+	// remember repo head for cleanup after test
 	sourceRepoHead, err := r.sourceRepo.HeadHash()
 	if err != nil {
 		return fmt.Errorf("failed to get source repo head: %w", err)
 	}
 
+	outputDir := filepath.Join(r.workRoot, "output")
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
+	}
+
 	if r.library != "" {
-		return r.runAndCleanupTest(ctx, r.library, sourceRepoHead)
+		return r.runAndCleanupTest(ctx, r.library, sourceRepoHead, outputDir)
 	}
 
 	var failed []string
 	for _, library := range r.state.Libraries {
-		if err := r.runAndCleanupTest(ctx, library.ID, sourceRepoHead); err != nil {
+		if err := r.runAndCleanupTest(ctx, library.ID, sourceRepoHead, outputDir); err != nil {
 			slog.Error("test failed for library", "library", library.ID, "error", err)
 			failed = append(failed, library.ID)
 		}
@@ -76,7 +82,7 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 	return nil
 }
 
-func (r *testGenerateRunner) runAndCleanupTest(ctx context.Context, libraryID, sourceRepoHead string) error {
+func (r *testGenerateRunner) runAndCleanupTest(ctx context.Context, libraryID, sourceRepoHead, outputDir string) error {
 	defer func() {
 		slog.Info("cleaning up after test", "library", libraryID)
 		if err := r.sourceRepo.Checkout(sourceRepoHead); err != nil {
@@ -86,29 +92,27 @@ func (r *testGenerateRunner) runAndCleanupTest(ctx context.Context, libraryID, s
 			slog.Error("failed to reset repo during cleanup", "error", err)
 		}
 	}()
-	return r.runTestForSingleLibrary(ctx, libraryID)
+	return testSingleLibrary(ctx, libraryID, r.repo, r.sourceRepo, r.state, r.containerClient, r.checkUnexpectedChanges, outputDir)
 }
 
-func (r *testGenerateRunner) runTestForSingleLibrary(ctx context.Context, libraryID string) error {
+// testSingleLibrary runs a generation test for a single library.
+// It prepares the source repository, runs generation, and validates the output.
+// It does NOT perform any cleanup or setup of output directories.
+func testSingleLibrary(ctx context.Context, libraryID string, repo gitrepo.Repository, sourceRepo gitrepo.Repository, state *config.LibrarianState, containerClient ContainerClient, checkUnexpectedChanges bool, outputDir string) error {
 	slog.Info("running test for", "library", libraryID)
-	libraryState := r.state.LibraryByID(libraryID)
+	libraryState := state.LibraryByID(libraryID)
 	if libraryState == nil {
 		return fmt.Errorf("library %q not found in state", libraryID)
 	}
-	protoFileToGUID, err := prepareForGenerateTest(libraryState, libraryID, r.sourceRepo)
+	protoFileToGUID, err := prepareForGenerateTest(libraryState, libraryID, sourceRepo)
 	if err != nil {
 		return err
 	}
 
-	outputDir := filepath.Join(r.workRoot, "output")
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
-	}
-
 	// We capture the error here and pass it to the validation step.
-	generateErr := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir)
+	generateErr := generateSingleLibrary(ctx, containerClient, state, libraryState, repo, sourceRepo, outputDir)
 
-	if err := validateGenerateTest(generateErr, r.repo, protoFileToGUID, r.checkUnexpectedChanges); err != nil {
+	if err := validateGenerateTest(generateErr, repo, protoFileToGUID, checkUnexpectedChanges); err != nil {
 		return err
 	}
 
