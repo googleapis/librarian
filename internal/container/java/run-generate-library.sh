@@ -33,7 +33,7 @@ cd "$(dirname "$0")" # Change to the script's directory to make relative paths w
 
 # --- Configuration ---
 WORKSPACE="$(pwd)/workspace"
-LIBRARIANGEN_GOOGLEAPIS_DIR=../../../googleapis
+LIBRARIANGEN_GOOGLEAPIS_DIR=../../../../googleapis
 LIBRARIANGEN_GOTOOLCHAIN=local
 GAPIC_GENERATOR_VERSION="2.62.3"
 GRPC_PLUGIN_VERSION="1.65.0"
@@ -48,7 +48,7 @@ echo "Working directory: $WORKSPACE"
 # --- Dependency Checks & Version Info ---
 (
   echo "--- Tool Versions ---"
-  echo "Go: $(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go version)"
+  echo "Go: $(GOWORK=off go version)"
   echo "protoc: $(protoc --version 2>&1)"
   echo "---------------------\n"
 ) >> "$LIBRARIANGEN_LOG" 2>&1
@@ -57,6 +57,12 @@ echo "Working directory: $WORKSPACE"
 if ! command -v "protoc" &> /dev/null; then
   echo "Error: protoc not found in PATH. Please install it."
   exit 1
+fi
+
+# Ensure that mvn is available in PATH.
+if ! command -v "mvn" &> /dev/null; then
+    echo "Error: mvn not found in PATH. Please install it."
+    exit 1
 fi
 
 # --- Download and Prepare Tools ---
@@ -97,11 +103,11 @@ cp "testdata/generate/librarian/generate-request.json" "$LIBRARIAN_DIR/"
 # Compile the librariangen binary.
 BINARY_PATH="$WORKSPACE/librariangen"
 echo "Compiling librariangen..."
-GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go build -o "$BINARY_PATH" .
+GOWORK=off go build -o "$BINARY_PATH" .
 
 # Run the librariangen generate command.
 echo "Running librariangen..."
-PATH="$WORKSPACE:$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go env GOPATH)/bin:$HOME/go/bin:$PATH" \
+PATH="$WORKSPACE:$(GOWORK=off go env GOPATH)/bin:$HOME/go/bin:$PATH" \
 "$BINARY_PATH" generate \
   --source="$SOURCE_DIR" \
   --librarian="$LIBRARIAN_DIR" \
@@ -111,3 +117,10 @@ PATH="$WORKSPACE:$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go env GOP
 echo "Library generation complete."
 echo "Generated files are available in: $OUTPUT_DIR"
 echo "Librariangen logs are available in: $LIBRARIANGEN_LOG"
+
+# --- Build Generated Library ---
+echo "Building generated library with Maven..."
+(cd "$OUTPUT_DIR" && mvn clean install -Dcheckstyle.skip) >> "$LIBRARIANGEN_LOG" 2>&1
+
+echo "Maven build complete."
+echo "Build logs are available in: $LIBRARIANGEN_LOG"

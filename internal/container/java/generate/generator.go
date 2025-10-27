@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/container/java/execv"
 	"github.com/googleapis/librarian/internal/container/java/languagecontainer/generate"
 	"github.com/googleapis/librarian/internal/container/java/message"
+	"github.com/googleapis/librarian/internal/container/java/pom"
 	"github.com/googleapis/librarian/internal/container/java/protoc"
 )
 
@@ -67,6 +68,11 @@ func Generate(ctx context.Context, cfg *generate.Config) error {
 
 	if err := restructureOutput(cfg.Context.OutputDir, generateReq.ID); err != nil {
 		return fmt.Errorf("librariangen: failed to restructure output: %w", err)
+	}
+
+	// Generate pom.xml files
+	if err := pom.Generate(cfg.Context.OutputDir, generateReq.ID); err != nil {
+		return fmt.Errorf("librariangen: failed to generate poms for API %s: %w", generateReq.ID, err)
 	}
 
 	slog.Debug("librariangen: generate command finished")

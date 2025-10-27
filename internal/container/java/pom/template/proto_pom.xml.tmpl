@@ -1,0 +1,38 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>{{.Module.GroupId}}</groupId>
+  <artifactId>{{.Module.ArtifactId}}</artifactId>
+  <version>{{.Module.Version}}</version><!-- {x-version-update:{{.Module.ArtifactId}}:current} -->
+  <name>{{.Module.ArtifactId}}</name>
+  <description>Proto library for {{.MainModule.ArtifactId}}</description>
+  <parent>
+    <groupId>{{.ParentModule.GroupId}}</groupId>
+    <artifactId>{{.ParentModule.ArtifactId}}</artifactId>
+    <version>{{.ParentModule.Version}}</version><!-- {x-version-update:{{.MainModule.ArtifactId}}:current} -->
+  </parent>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-common-protos</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-iam-v1</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.api</groupId>
+      <artifactId>api-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+  </dependencies>
+
+</project>
