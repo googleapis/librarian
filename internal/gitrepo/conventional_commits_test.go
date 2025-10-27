@@ -304,65 +304,7 @@ END_NESTED_COMMIT
 			},
 		},
 		{
-			// This test verifies that the deprecated mark, BEGIN_COMMIT_OVERRIDE and END_COMMIT_OVERRIDE
-			// can be used to separate nested commits.
 			name: "begin_commit_with_nested_commits",
-			message: `feat: API regeneration main commit
-
-This pull request is generated with proto changes between
-... ...
-
-Librarian Version: {librarian_version}
-Language Image: {language_image_name_and_digest}
-
-BEGIN_COMMIT_OVERRIDE
-BEGIN_NESTED_COMMIT
-feat: [abc] nested commit 1
-
-body of nested commit 1
-...
-
-PiperOrigin-RevId: 123456
-
-Source-Link: fake-link
-END_NESTED_COMMIT
-BEGIN_NESTED_COMMIT
-feat: [abc] nested commit 2
-
-body of nested commit 2
-...
-
-PiperOrigin-RevId: 654321
-
-Source-Link: fake-link
-END_NESTED_COMMIT
-END_COMMIT_OVERRIDE
-`,
-			want: []*ConventionalCommit{
-				{
-					Type:       "feat",
-					Subject:    "[abc] nested commit 1",
-					Body:       "body of nested commit 1\n...",
-					LibraryID:  "abc",
-					IsNested:   true,
-					Footers:    map[string]string{"PiperOrigin-RevId": "123456", "Source-Link": "fake-link"},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-				{
-					Type:       "feat",
-					Subject:    "[abc] nested commit 2",
-					IsNested:   true,
-					Body:       "body of nested commit 2\n...",
-					LibraryID:  "abc",
-					Footers:    map[string]string{"PiperOrigin-RevId": "654321", "Source-Link": "fake-link"},
-					CommitHash: sha.String(),
-					When:       now,
-				},
-			},
-		},
-		{
-			name: "begin_commit_override_with_nested_commits",
 			message: `feat: API regeneration main commit
 
 This pull request is generated with proto changes between
@@ -393,6 +335,64 @@ PiperOrigin-RevId: 654321
 Source-Link: fake-link
 END_NESTED_COMMIT
 END_COMMIT
+`,
+			want: []*ConventionalCommit{
+				{
+					Type:       "feat",
+					Subject:    "[abc] nested commit 1",
+					Body:       "body of nested commit 1\n...",
+					LibraryID:  "abc",
+					IsNested:   true,
+					Footers:    map[string]string{"PiperOrigin-RevId": "123456", "Source-Link": "fake-link"},
+					CommitHash: sha.String(),
+					When:       now,
+				},
+				{
+					Type:       "feat",
+					Subject:    "[abc] nested commit 2",
+					IsNested:   true,
+					Body:       "body of nested commit 2\n...",
+					LibraryID:  "abc",
+					Footers:    map[string]string{"PiperOrigin-RevId": "654321", "Source-Link": "fake-link"},
+					CommitHash: sha.String(),
+					When:       now,
+				},
+			},
+		},
+		{
+			// This test verifies that the deprecated mark, BEGIN_COMMIT_OVERRIDE and END_COMMIT_OVERRIDE
+			// can be used to separate nested commits.
+			name: "begin_commit_override_with_nested_commits",
+			message: `feat: API regeneration main commit
+
+This pull request is generated with proto changes between
+... ...
+
+Librarian Version: {librarian_version}
+Language Image: {language_image_name_and_digest}
+
+BEGIN_COMMIT_OVERRIDE
+BEGIN_NESTED_COMMIT
+feat: [abc] nested commit 1
+
+body of nested commit 1
+...
+
+PiperOrigin-RevId: 123456
+
+Source-Link: fake-link
+END_NESTED_COMMIT
+BEGIN_NESTED_COMMIT
+feat: [abc] nested commit 2
+
+body of nested commit 2
+...
+
+PiperOrigin-RevId: 654321
+
+Source-Link: fake-link
+END_NESTED_COMMIT
+END_COMMIT_OVERRIDE
 `,
 			want: []*ConventionalCommit{
 				{
