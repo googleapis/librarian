@@ -113,7 +113,7 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 
 // ParseCommits parses a commit message into a slice of ConventionalCommit structs.
 //
-// It supports an override block wrapped in BEGIN_COMMIT and END_COMMIT.
+// It supports a top-level commit wrapped in BEGIN_COMMIT and END_COMMIT.
 // If found, this block takes precedence, and only its content will be parsed.
 //
 // The message can also contain multiple nested commits, each wrapped in
@@ -127,7 +127,7 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 	if strings.TrimSpace(message) == "" {
 		return nil, ErrEmptyCommitMessage
 	}
-	message = extractCommitMessageOverride(message)
+	message = extractBeginCommitMessage(message)
 
 	var commits []*ConventionalCommit
 
@@ -146,7 +146,7 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 	return commits, nil
 }
 
-func extractCommitMessageOverride(message string) string {
+func extractBeginCommitMessage(message string) string {
 	beginIndex := strings.Index(message, beginCommit)
 	if beginIndex == -1 {
 		return message

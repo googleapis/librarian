@@ -200,7 +200,7 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name: "commit_override",
+			name: "begin_commit",
 			message: `feat: original message
 
 BEGIN_COMMIT
@@ -304,7 +304,7 @@ END_NESTED_COMMIT
 			},
 		},
 		{
-			name: "commit_override_with_nested_commits",
+			name: "begin_commit_with_nested_commits",
 			message: `feat: API regeneration main commit
 
 This pull request is generated with proto changes between
@@ -360,7 +360,7 @@ END_COMMIT
 			},
 		},
 		{
-			name: "nest_commit_outside_of_override_ignored",
+			name: "nest_commit_outside_of_begin_commit_ignored",
 			message: `feat: original message
 
 BEGIN_NESTED_COMMIT
