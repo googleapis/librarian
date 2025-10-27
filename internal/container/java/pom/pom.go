@@ -27,6 +27,12 @@ import (
 //go:embed template/*.tmpl
 var templatesFS embed.FS
 
+var templates *template.Template
+
+func init() {
+	templates = template.Must(template.New("").ParseFS(templatesFS, "template/*.tmpl"))
+}
+
 // Module represents a Maven module.
 type Module struct {
 	GroupId    string
@@ -44,41 +50,56 @@ func Generate(libraryPath, libraryID string) error {
 	}
 
 	// 2. Find other modules (proto, grpc).
-	modules, err := findModules(libraryPath, mainModule)
+	modules, protoModules, grpcModules, err := findModules(libraryPath, mainModule)
 	if err != nil {
 		return fmt.Errorf("could not find modules: %w", err)
 	}
 
 	// 3. Render templates
-	if err := renderTemplates(libraryPath, mainModule, modules, libraryID); err != nil {
+	if err := renderTemplates(libraryPath, mainModule, modules, protoModules, grpcModules, libraryID); err != nil {
 		return fmt.Errorf("could not render templates: %w", err)
 	}
 
 	return nil
 }
 
-func findModules(libraryPath string, mainModule *Module) (map[string]*Module, error) {
+func findModules(libraryPath string, mainModule *Module) (map[string]*Module, []*Module, []*Module, error) {
 	modules := make(map[string]*Module)
+	protoModules := []*Module{}
+	grpcModules := []*Module{}
+
 	modules[mainModule.ArtifactId] = mainModule
 
 	files, err := os.ReadDir(libraryPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	for _, f := range files {
-		if f.IsDir() && (strings.HasPrefix(f.Name(), "proto-") || strings.HasPrefix(f.Name(), "grpc-")) {
-			modules[f.Name()] = &Module{
-				GroupId:    "com.google.api.grpc",
-				ArtifactId: f.Name(),
-				Version:    mainModule.Version,
+		if f.IsDir() {
+			if strings.HasPrefix(f.Name(), "proto-") {
+				module := &Module{
+					GroupId:    "com.google.api.grpc",
+					ArtifactId: f.Name(),
+					Version:    mainModule.Version,
+				}
+				modules[f.Name()] = module
+				protoModules = append(protoModules, module)
+			} else if strings.HasPrefix(f.Name(), "grpc-") {
+				module := &Module{
+					GroupId:    "com.google.api.grpc",
+					ArtifactId: f.Name(),
+					Version:    mainModule.Version,
+				}
+				modules[f.Name()] = module
+				grpcModules = append(grpcModules, module)
 			}
 		}
 	}
-	return modules, nil
+	return modules, protoModules, grpcModules, nil
 }
 
-func renderTemplates(libraryPath string, mainModule *Module, modules map[string]*Module, libraryID string) error {
+func renderTemplates(libraryPath string, mainModule *Module, modules map[string]*Module, protoModules, grpcModules []*Module, libraryID string) error {
 	// Render the parent pom.xml
 	if err := renderParentPom(libraryPath, mainModule, modules, libraryID); err != nil {
 		return err
@@ -99,17 +120,6 @@ func renderTemplates(libraryPath string, mainModule *Module, modules map[string]
 			if err := renderGrpcPom(filepath.Join(libraryPath, path), mainModule, module, protoModule); err != nil {
 				return err
 			}
-		}
-	}
-	// Render the main pom.xml
-	protoModules := []*Module{}
-	grpcModules := []*Module{}
-	for _, m := range modules {
-		if strings.HasPrefix(m.ArtifactId, "proto-") {
-			protoModules = append(protoModules, m)
-		}
-		if strings.HasPrefix(m.ArtifactId, "grpc-") {
-			grpcModules = append(grpcModules, m)
 		}
 	}
 	mainArtifactDir := filepath.Join(libraryPath, mainModule.ArtifactId)
@@ -141,23 +151,18 @@ func renderParentPom(libraryPath string, mainModule *Module, modules map[string]
 		Name:       fmt.Sprintf("Google Cloud %s", libraryID),
 		Modules:    moduleList,
 	}
-	return renderPom(filepath.Join(libraryPath, "pom.xml"), "template/parent_pom.xml.tmpl", data)
+	return renderPom(filepath.Join(libraryPath, "pom.xml"), "parent_pom.xml.tmpl", data)
 }
 
 // renderPom executes a template with the given data and writes the output to the outputPath.
-func renderPom(outputPath, templatePath string, data interface{}) error {
-	tmpl, err := template.ParseFS(templatesFS, templatePath)
-	if err != nil {
-		return err
-	}
-
+func renderPom(outputPath, templateName string, data interface{}) error {
 	pomFile, err := os.Create(outputPath)
 	if err != nil {
 		return err
 	}
 	defer pomFile.Close()
 
-	return tmpl.Execute(pomFile, data)
+	return templates.ExecuteTemplate(pomFile, templateName, data)
 }
 
 func renderProtoPom(modulePath string, mainModule, module *Module) error {
@@ -176,7 +181,7 @@ func renderProtoPom(modulePath string, mainModule, module *Module) error {
 		Module:       module,
 		ParentModule: parentModule,
 	}
-	return renderPom(filepath.Join(modulePath, "pom.xml"), "template/proto_pom.xml.tmpl", data)
+	return renderPom(filepath.Join(modulePath, "pom.xml"), "proto_pom.xml.tmpl", data)
 }
 
 func renderGrpcPom(modulePath string, mainModule, module, protoModule *Module) error {
@@ -197,21 +202,10 @@ func renderGrpcPom(modulePath string, mainModule, module, protoModule *Module) e
 		ParentModule: parentModule,
 		ProtoModule:  protoModule,
 	}
-	return renderPom(filepath.Join(modulePath, "pom.xml"), "template/grpc_pom.xml.tmpl", data)
+	return renderPom(filepath.Join(modulePath, "pom.xml"), "grpc_pom.xml.tmpl", data)
 }
 
 func renderCloudPom(modulePath string, mainModule *Module, protoModules, grpcModules []*Module, libraryID string) error {
-	tmpl, err := template.ParseFS(templatesFS, "template/cloud_pom.xml.tmpl")
-	if err != nil {
-		return err
-	}
-
-	pomFile, err := os.Create(filepath.Join(modulePath, "pom.xml"))
-	if err != nil {
-		return err
-	}
-	defer pomFile.Close()
-
 	parentModule := &Module{
 		GroupId:    mainModule.GroupId,
 		ArtifactId: mainModule.ArtifactId + "-parent",
@@ -236,7 +230,7 @@ func renderCloudPom(modulePath string, mainModule *Module, protoModules, grpcMod
 		Repo:         "googleapis/google-cloud-java",
 	}
 
-	return tmpl.Execute(pomFile, data)
+	return renderPom(filepath.Join(modulePath, "pom.xml"), "cloud_pom.xml.tmpl", data)
 }
 
 func renderBomPom(modulePath string, mainModule *Module, modules map[string]*Module, libraryID string) error {
@@ -262,5 +256,5 @@ func renderBomPom(modulePath string, mainModule *Module, modules map[string]*Mod
 		Name:       fmt.Sprintf("Google Cloud %s", libraryID),
 		Modules:    moduleList,
 	}
-	return renderPom(filepath.Join(modulePath, "pom.xml"), "template/bom_pom.xml.tmpl", data)
+	return renderPom(filepath.Join(modulePath, "pom.xml"), "bom_pom.xml.tmpl", data)
 }

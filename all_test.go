@@ -52,6 +52,8 @@ var ignoredExts = map[string]bool{
 	".txt":        true,
 	".webp":       true,
 	".sh":         true,
+	".xml":        true,
+	".tmpl":       true,
 }
 
 var ignoredDirs = []string{
