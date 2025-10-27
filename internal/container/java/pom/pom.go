@@ -41,6 +41,7 @@ type Module struct {
 }
 
 // Generate generates the pom.xml files for a library.
+// Precondition: module directories exist except for for the *-bom.
 func Generate(libraryPath, libraryID string) error {
 	// 1. Create main module from libraryID.
 	mainModule := &Module{
