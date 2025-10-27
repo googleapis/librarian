@@ -116,7 +116,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				"another-library": "abcdefg",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: a bug fix
@@ -127,7 +127,7 @@ Library-IDs: one-library
 Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE
+END_COMMIT
 
 This pull request is generated with proto changes between
 [googleapis/googleapis@abcdef00](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
@@ -208,7 +208,7 @@ Language Image: %s`,
 				"another-library": "abcdefg",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: a bug fix
@@ -219,7 +219,7 @@ Library-IDs: one-library,another-library
 Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE
+END_COMMIT
 
 This pull request is generated with proto changes between
 [googleapis/googleapis@abcdef00](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
@@ -297,7 +297,7 @@ Language Image: %s`,
 				"failed-library-a",
 				"failed-library-b",
 			},
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: a bug fix
@@ -308,7 +308,7 @@ Library-IDs: one-library
 Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE
+END_COMMIT
 
 This pull request is generated with proto changes between
 [googleapis/googleapis@abcdef00](https://github.com/googleapis/googleapis/commit/abcdef0000000000000000000000000000000000)
@@ -381,7 +381,7 @@ Language Image: %s
 				"one-library": "1234567890",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: a bug fix
@@ -401,7 +401,7 @@ Library-IDs: one-library
 Source-link: [googleapis/googleapis@12345678](https://github.com/googleapis/googleapis/commit/12345678)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE
+END_COMMIT
 
 This pull request is generated with proto changes between
 [googleapis/googleapis@12345678](https://github.com/googleapis/googleapis/commit/1234567890000000000000000000000000000000)
@@ -600,14 +600,14 @@ func TestFormatOnboardPRBody(t *testing.T) {
 			},
 			api:     "path/to",
 			library: "one-library",
-			want: fmt.Sprintf(`BEGIN_COMMIT_OVERRIDE
+			want: fmt.Sprintf(`BEGIN_COMMIT
 
 feat: onboard a new library
 
 PiperOrigin-RevId: 98765
 Library-IDs: one-library
 
-END_COMMIT_OVERRIDE
+END_COMMIT
 
 Librarian Version: %s
 Language Image: %s`,

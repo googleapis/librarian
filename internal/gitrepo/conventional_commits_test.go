@@ -203,13 +203,13 @@ func TestParseCommits(t *testing.T) {
 			name: "commit_override",
 			message: `feat: original message
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 fix(override): this is the override message
 
 This is the body of the override.
 
 Reviewed-by: Jane Doe
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:       "fix",
@@ -313,7 +313,7 @@ This pull request is generated with proto changes between
 Librarian Version: {librarian_version}
 Language Image: {language_image_name_and_digest}
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 BEGIN_NESTED_COMMIT
 feat: [abc] nested commit 1
 
@@ -334,7 +334,7 @@ PiperOrigin-RevId: 654321
 
 Source-Link: fake-link
 END_NESTED_COMMIT
-END_COMMIT_OVERRIDE
+END_COMMIT
 `,
 			want: []*ConventionalCommit{
 				{
@@ -365,13 +365,13 @@ END_COMMIT_OVERRIDE
 
 BEGIN_NESTED_COMMIT
 ignored line
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 fix(override): this is the override message
 
 This is the body of the override.
 
 Reviewed-by: Jane Doe
-END_COMMIT_OVERRIDE
+END_COMMIT
 END_NESTED_COMMIT`,
 			want: []*ConventionalCommit{
 				{
@@ -397,7 +397,7 @@ This pull request is generated with proto changes between
 [googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
 (inclusive).
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 BEGIN_NESTED_COMMIT
 feat: [texttospeech] Support promptable voices by specifying a model name and a prompt
 feat: [texttospeech] Add enum value M4A to enum AudioEncoding
@@ -407,7 +407,7 @@ PiperOrigin-RevId: 799242210
 
 Source-Link: [googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
 END_NESTED_COMMIT
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:      "feat",
@@ -458,7 +458,7 @@ This pull request is generated with proto changes between
 [googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
 (inclusive).
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 BEGIN_NESTED_COMMIT
 feat: [texttospeech] Support promptable voices by specifying a model
 name and a prompt
@@ -467,7 +467,7 @@ docs: [texttospeech] A comment for method 'StreamingSynthesize' in
 service 'TextToSpeech' is changed
 
 END_NESTED_COMMIT
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:       "feat",
@@ -511,7 +511,7 @@ This pull request is generated with proto changes between
 [googleapis/googleapis@36533b0](googleapis/googleapis@36533b0)
 (inclusive).
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 BEGIN_NESTED_COMMIT
 docs: [google-cloud-video-live-stream] Update requirements of resource ID fields to be more clear
 
@@ -521,7 +521,7 @@ BEGIN_NESTED_COMMIT
 feat: [google-cloud-eventarc] add new fields to Eventarc resources
 
 END_NESTED_COMMIT
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:       "docs",
