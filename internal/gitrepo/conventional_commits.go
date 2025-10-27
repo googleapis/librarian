@@ -25,14 +25,16 @@ import (
 )
 
 const (
-	beginCommit         = "BEGIN_COMMIT"
+	beginCommit = "BEGIN_COMMIT"
+	// Deprecated: use beginCommit instead.
 	beginCommitOverride = "BEGIN_COMMIT_OVERRIDE"
 	endCommit           = "END_COMMIT"
-	endCommitOverride   = "END_COMMIT_OVERRIDE"
-	beginNestedCommit   = "BEGIN_NESTED_COMMIT"
-	endNestedCommit     = "END_NESTED_COMMIT"
-	breakingChangeKey   = "BREAKING CHANGE"
-	sourceLinkKey       = "Source-Link"
+	// Deprecated: use endCommit instead.
+	endCommitOverride = "END_COMMIT_OVERRIDE"
+	beginNestedCommit = "BEGIN_NESTED_COMMIT"
+	endNestedCommit   = "END_NESTED_COMMIT"
+	breakingChangeKey = "BREAKING CHANGE"
+	sourceLinkKey     = "Source-Link"
 )
 
 var (
