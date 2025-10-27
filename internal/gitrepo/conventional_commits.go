@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	beginCommitOverride = "BEGIN_COMMIT_OVERRIDE"
-	endCommitOverride   = "END_COMMIT_OVERRIDE"
+	beginCommitOverride = "BEGIN_COMMIT"
+	endCommitOverride   = "END_COMMIT"
 	beginNestedCommit   = "BEGIN_NESTED_COMMIT"
 	endNestedCommit     = "END_NESTED_COMMIT"
 	breakingChangeKey   = "BREAKING CHANGE"
@@ -113,9 +113,8 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 
 // ParseCommits parses a commit message into a slice of ConventionalCommit structs.
 //
-// It supports an override block wrapped in BEGIN_COMMIT_OVERRIDE and
-// END_COMMIT_OVERRIDE. If found, this block takes precedence, and only its
-// content will be parsed.
+// It supports an override block wrapped in BEGIN_COMMIT and END_COMMIT.
+// If found, this block takes precedence, and only its content will be parsed.
 //
 // The message can also contain multiple nested commits, each wrapped in
 // BEGIN_NESTED_COMMIT and END_NESTED_COMMIT markers.
