@@ -155,19 +155,22 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 }
 
 func extractBeginCommitMessage(message string) string {
-	beginIndex := strings.Index(message, beginCommit)
+	// Search the deprecated marker first because beginCommit is the prefix
+	// of beginCommitOverride.
+	beginMarker := beginCommitOverride
+	endMarker := endCommitOverride
+	beginIndex := strings.Index(message, beginMarker)
 	if beginIndex == -1 {
-		beginIndex = strings.Index(message, beginCommitOverride)
+		beginMarker = beginCommit
+		endMarker = endCommit
+		beginIndex = strings.Index(message, beginMarker)
 	}
 	if beginIndex == -1 {
 		return message
 	}
 
-	afterBegin := message[beginIndex+len(beginCommit):]
-	endIndex := strings.Index(afterBegin, endCommit)
-	if endIndex == -1 {
-		endIndex = strings.Index(message, endCommitOverride)
-	}
+	afterBegin := message[beginIndex+len(beginMarker):]
+	endIndex := strings.Index(afterBegin, endMarker)
 	if endIndex == -1 {
 		return message
 	}
