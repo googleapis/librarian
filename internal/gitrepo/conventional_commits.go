@@ -25,10 +25,14 @@ import (
 )
 
 const (
+	// beginCommit marks the start of the commit message block. It is used in conjunction with endCommit.
 	beginCommit = "BEGIN_COMMIT"
+	// beginCommitOverride marks the start of the commit message block. It is used in conjunction with endCommitOverride.
 	// Deprecated: use beginCommit instead.
 	beginCommitOverride = "BEGIN_COMMIT_OVERRIDE"
-	endCommit           = "END_COMMIT"
+	// endCommit marks the end of the commit message block.
+	endCommit = "END_COMMIT"
+	// endCommitOverride marks the end of the commit message block.
 	// Deprecated: use endCommit instead.
 	endCommitOverride = "END_COMMIT_OVERRIDE"
 	beginNestedCommit = "BEGIN_NESTED_COMMIT"
