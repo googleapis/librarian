@@ -121,7 +121,8 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 
 // ParseCommits parses a commit message into a slice of ConventionalCommit structs.
 //
-// It supports a top-level commit wrapped in BEGIN_COMMIT and END_COMMIT.
+// It supports a top-level commit wrapped in BEGIN_COMMIT and END_COMMIT (BEGIN_COMMIT_OVERRIDE and
+// END_COMMIT_OVERRIDE are also supported for backward compatibility).
 // If found, this block takes precedence, and only its content will be parsed.
 //
 // The message can also contain multiple nested commits, each wrapped in
@@ -157,6 +158,8 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 func extractBeginCommitMessage(message string) string {
 	// Search the deprecated marker first because beginCommit is the prefix
 	// of beginCommitOverride.
+	// TODO: remove usage when we drop support for `BEGIN_COMMIT_OVERRIDE` and `END_COMMIT_OVERRIDE`.
+	// see https://github.com/googleapis/librarian/issues/2684
 	beginMarker := beginCommitOverride
 	endMarker := endCommitOverride
 	beginIndex := strings.Index(message, beginMarker)
