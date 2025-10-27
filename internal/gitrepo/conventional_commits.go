@@ -25,12 +25,12 @@ import (
 )
 
 const (
-	beginCommitOverride = "BEGIN_COMMIT"
-	endCommitOverride   = "END_COMMIT"
-	beginNestedCommit   = "BEGIN_NESTED_COMMIT"
-	endNestedCommit     = "END_NESTED_COMMIT"
-	breakingChangeKey   = "BREAKING CHANGE"
-	sourceLinkKey       = "Source-Link"
+	beginCommit       = "BEGIN_COMMIT"
+	endCommit         = "END_COMMIT"
+	beginNestedCommit = "BEGIN_NESTED_COMMIT"
+	endNestedCommit   = "END_NESTED_COMMIT"
+	breakingChangeKey = "BREAKING CHANGE"
+	sourceLinkKey     = "Source-Link"
 )
 
 var (
@@ -147,12 +147,12 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 }
 
 func extractCommitMessageOverride(message string) string {
-	beginIndex := strings.Index(message, beginCommitOverride)
+	beginIndex := strings.Index(message, beginCommit)
 	if beginIndex == -1 {
 		return message
 	}
-	afterBegin := message[beginIndex+len(beginCommitOverride):]
-	endIndex := strings.Index(afterBegin, endCommitOverride)
+	afterBegin := message[beginIndex+len(beginCommit):]
+	endIndex := strings.Index(afterBegin, endCommit)
 	if endIndex == -1 {
 		return message
 	}
