@@ -116,7 +116,7 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				"another-library": "abcdefg",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+			want: fmt.Sprintf(`PR created by the Librarian CLI to generate Cloud Client Libraries code from protos.
 
 BEGIN_COMMIT
 
@@ -210,7 +210,7 @@ Language Image: %s`,
 				"another-library": "abcdefg",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+			want: fmt.Sprintf(`PR created by the Librarian CLI to generate Cloud Client Libraries code from protos.
 
 BEGIN_COMMIT
 
@@ -301,7 +301,7 @@ Language Image: %s`,
 				"failed-library-a",
 				"failed-library-b",
 			},
-			want: fmt.Sprintf(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+			want: fmt.Sprintf(`PR created by the Librarian CLI to generate Cloud Client Libraries code from protos.
 
 BEGIN_COMMIT
 
@@ -387,7 +387,7 @@ Language Image: %s
 				"one-library": "1234567890",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+			want: fmt.Sprintf(`PR created by the Librarian CLI to generate Cloud Client Libraries code from protos.
 
 BEGIN_COMMIT
 
