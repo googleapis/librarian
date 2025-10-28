@@ -33,6 +33,7 @@ func TestValidateGenerateTest(t *testing.T) {
 		filesToWrite           map[string]string
 		changedFiles           []string
 		newAndDeletedFiles     []string
+		libraryState           *config.LibraryState
 		setup                  func(dir string) error
 		protoFileToGUID        map[string]string
 		checkUnexpectedChanges bool
@@ -47,6 +48,17 @@ func TestValidateGenerateTest(t *testing.T) {
 			protoFileToGUID:        map[string]string{"some.proto": "guid-123"},
 			checkUnexpectedChanges: true,
 			wantErrMsg:             "found unrelated file changes: unrelated.txt",
+		},
+		{
+			name: "unrelated changes outside source root",
+			filesToWrite: map[string]string{
+				"src/related.go": "// some generated code\n// test-change-guid-123",
+				"unrelated.txt":  "some other content",
+			},
+			protoFileToGUID:        map[string]string{"some.proto": "guid-123"},
+			libraryState:           &config.LibraryState{SourceRoots: []string{"src"}},
+			checkUnexpectedChanges: true,
+			wantErrMsg:             "", // No error, because unrelated.txt is ignored.
 		},
 		{
 			name: "missing change",
@@ -108,6 +120,9 @@ func TestValidateGenerateTest(t *testing.T) {
 			var filesConsideredChanged []string
 			for filename, content := range test.filesToWrite {
 				path := filepath.Join(tmpDir, filename)
+				if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+					t.Fatalf("failed to create directory for %s: %v", filename, err)
+				}
 				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 					t.Fatalf("failed to write file %s: %v", filename, err)
 				}
@@ -133,7 +148,12 @@ func TestValidateGenerateTest(t *testing.T) {
 				repo:                   mockRepo,
 				checkUnexpectedChanges: test.checkUnexpectedChanges,
 			}
-			err := runner.validateGenerateTest(nil, test.protoFileToGUID)
+			libraryState := test.libraryState
+			if libraryState == nil {
+				// Default to the root directory if not specified.
+				libraryState = &config.LibraryState{SourceRoots: []string{""}}
+			}
+			err := runner.validateGenerateTest(nil, test.protoFileToGUID, libraryState)
 
 			if test.wantErrMsg != "" {
 				if err == nil {

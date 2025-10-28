@@ -53,7 +53,7 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if r.library != "" {
-		if err := r.runAndCleanupTest(ctx, r.library, sourceRepoHead, outputDir); err != nil {
+		if err := r.runTestWithCleanup(ctx, r.library, sourceRepoHead, outputDir); err != nil {
 			return fmt.Errorf("test failed for library %s: %w", r.library, err)
 		}
 		slog.Info("test succeeded for library", "library", r.library)
@@ -63,7 +63,7 @@ func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string
 	slog.Info("running tests for all libraries")
 	var failed []string
 	for _, library := range r.state.Libraries {
-		if err := r.runAndCleanupTest(ctx, library.ID, sourceRepoHead, outputDir); err != nil {
+		if err := r.runTestWithCleanup(ctx, library.ID, sourceRepoHead, outputDir); err != nil {
 			slog.Error("test failed for library", "library", library.ID, "error", err)
 			failed = append(failed, library.ID)
 		} else {
@@ -77,7 +77,7 @@ func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string
 	return nil
 }
 
-func (r *testGenerateRunner) runAndCleanupTest(ctx context.Context, libraryID, sourceRepoHead, outputDir string) error {
+func (r *testGenerateRunner) runTestWithCleanup(ctx context.Context, libraryID, sourceRepoHead, outputDir string) error {
 	defer func() {
 		slog.Debug("cleaning up after test", "library", libraryID)
 		if err := r.sourceRepo.Checkout(sourceRepoHead); err != nil {
@@ -107,7 +107,7 @@ func (r *testGenerateRunner) testSingleLibrary(ctx context.Context, libraryID st
 	// We capture the error here and pass it to the validation step.
 	generateErr := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir)
 
-	if err := r.validateGenerateTest(generateErr, protoFileToGUID); err != nil {
+	if err := r.validateGenerateTest(generateErr, protoFileToGUID, libraryState); err != nil {
 		return fmt.Errorf("failed in test validation steps: %w", err)
 	}
 
@@ -248,7 +248,7 @@ func findProtoInsertionLine(lines []string) int {
 // that the generation command did not fail, that every injected proto change
 // resulted in a corresponding change in the generated code, and optionally
 // verifies that no other unexpected files were added, deleted, or modified.
-func (r *testGenerateRunner) validateGenerateTest(generateErr error, protoFileToGUID map[string]string) error {
+func (r *testGenerateRunner) validateGenerateTest(generateErr error, protoFileToGUID map[string]string, libraryState *config.LibraryState) error {
 	slog.Debug("validating generation results")
 	if generateErr != nil {
 		return fmt.Errorf("the generation command failed: %w", generateErr)
@@ -260,11 +260,14 @@ func (r *testGenerateRunner) validateGenerateTest(generateErr error, protoFileTo
 		return fmt.Errorf("failed to get changed files from working tree: %w", err)
 	}
 
+	changedFiles = filterFilesBySourceRoots(changedFiles, libraryState.SourceRoots)
+
 	if r.checkUnexpectedChanges {
 		newAndDeleted, err := r.repo.NewAndDeletedFiles()
 		if err != nil {
 			return fmt.Errorf("failed to get new and deleted files: %w", err)
 		}
+		newAndDeleted = filterFilesBySourceRoots(newAndDeleted, libraryState.SourceRoots)
 		if len(newAndDeleted) > 0 {
 			return fmt.Errorf("expected no new or deleted files, but found: %s", strings.Join(newAndDeleted, ", "))
 		}
@@ -323,4 +326,18 @@ func (r *testGenerateRunner) validateGenerateTest(generateErr error, protoFileTo
 
 	slog.Debug("all generation validation passed")
 	return nil
+}
+
+func filterFilesBySourceRoots(files []string, sourceRoots []string) []string {
+	var filteredFiles []string
+	for _, file := range files {
+		for _, sourceRoot := range sourceRoots {
+			relPath, err := filepath.Rel(sourceRoot, file)
+			if err == nil && !strings.HasPrefix(relPath, "..") {
+				filteredFiles = append(filteredFiles, file)
+				break
+			}
+		}
+	}
+	return filteredFiles
 }
