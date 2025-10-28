@@ -70,60 +70,12 @@ func newLibrarianCommand() *cli.Command {
 			newCmdGenerate(),
 			cmdRelease,
 			newCmdUpdateImage(),
-			newCmdTestContainer(),
+
 			cmdVersion,
 		},
 	}
 	cmd.Init()
 	return cmd
-}
-
-func newCmdTestContainer() *cli.Command {
-	cmdTestContainer := &cli.Command{
-		Short:     "test-container commands for librarian",
-		UsageLine: "librarian test-container <command> [arguments]",
-		Long:      "test-container commands for librarian",
-		Commands: []*cli.Command{
-			newCmdTestContainerGenerate(),
-		},
-	}
-	cmdTestContainer.Init()
-	return cmdTestContainer
-}
-
-func newCmdTestContainerGenerate() *cli.Command {
-	var verbose bool
-	cmdTestGenerate := &cli.Command{
-		Short:     "generate runs test on language container generate command",
-		UsageLine: "librarian test-container generate [flags]",
-		Long:      testContainerGenerateLongHelp,
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			setupLogger(verbose)
-			slog.Debug("test-container generate command verbose logging")
-			if err := cmd.Config.SetDefaults(); err != nil {
-				return fmt.Errorf("failed to initialize config: %w", err)
-			}
-
-			if _, err := cmd.Config.IsValid(); err != nil {
-				return fmt.Errorf("failed to validate config: %s", err)
-			}
-			runner, err := newTestGenerateRunner(cmd.Config)
-			if err != nil {
-				return err
-			}
-			return runner.run(ctx)
-		},
-	}
-	cmdTestGenerate.Init()
-	addFlagAPISource(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	addFlagBranch(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	addFlagCheckUnexpectedChanges(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	addFlagImage(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	addFlagLibrary(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	addFlagRepo(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	addFlagVerbose(cmdTestGenerate.Flags, &verbose)
-	addFlagWorkRoot(cmdTestGenerate.Flags, cmdTestGenerate.Config)
-	return cmdTestGenerate
 }
 
 func newCmdGenerate() *cli.Command {

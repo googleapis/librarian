@@ -37,22 +37,6 @@ type testGenerateRunner struct {
 	checkUnexpectedChanges bool
 }
 
-func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
-	runner, err := newCommandRunner(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return &testGenerateRunner{
-		library:                cfg.Library,
-		repo:                   runner.repo,
-		sourceRepo:             runner.sourceRepo,
-		state:                  runner.state,
-		workRoot:               runner.workRoot,
-		containerClient:        runner.containerClient,
-		checkUnexpectedChanges: cfg.CheckUnexpectedChanges,
-	}, nil
-}
-
 func (r *testGenerateRunner) run(ctx context.Context) error {
 	sourceRepoHead, err := r.sourceRepo.HeadHash()
 	if err != nil {

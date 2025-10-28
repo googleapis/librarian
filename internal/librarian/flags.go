@@ -46,14 +46,6 @@ which branch to clone and which branch to use as the base for a pull
 request.`)
 }
 
-func addFlagCheckUnexpectedChanges(fs *flag.FlagSet, cfg *config.Config) {
-	fs.BoolVar(&cfg.CheckUnexpectedChanges, "check-unexpected-changes", false,
-		`Defaults to false. Specify true to include additional steps to check that 
-no files are added or deleted, and no extra file changes are introduced other than the 
-ones affected by proto changes. Note: you may want to skip this check if you are 
-testing a container image change that is expected to add or delete files.`)
-}
-
 func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Commit, "commit", false,
 		`If true, librarian will create a commit for the change but not create

@@ -113,10 +113,6 @@ type Config struct {
 	// Build is specified with the -build flag.
 	Build bool
 
-	// CheckUnexpectedChanges determines whether to do additional checks for
-	// unexpected changes during test-container generate.
-	CheckUnexpectedChanges bool
-
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
