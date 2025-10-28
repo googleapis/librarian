@@ -329,7 +329,7 @@ func TestRestructureOutput(t *testing.T) {
 				"v1/gapic/proto/src/main/java/com/google/v1/resname.java": "",
 				"v1/proto/google/cloud/CommonResources.java":              "",
 				"v2/proto/google/cloud/CommonResources.java":              "",
-				"v1/gapic/src/main/java/com/google/v2/foo.java":           "",
+				"v2/gapic/src/main/java/com/google/v2/foo.java":           "",
 				"v2/gapic/src/test/java/com/google/v2/foo_test.java":      "",
 				"v2/proto/com/google/v2/bar.proto":                        "",
 				"v2/grpc/com/google/v2/bar_grpc.java":                     "",

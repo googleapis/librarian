@@ -43,46 +43,54 @@ var (
 // the entire generation process.
 func Generate(ctx context.Context, cfg *generate.Config) error {
 	slog.Debug("librariangen: generate command started")
-	generateReq := cfg.Request
-	for _, api := range generateReq.APIs {
-		version := extractVersion(api.Path)
-		if version == "" {
-			slog.Warn("skipping api with no version", "api", api.Path)
-			continue
-		}
-		slog.Info("processing api", "path", api.Path, "version", version)
-		outputConfig := &protoc.OutputConfig{
-			GAPICDir: filepath.Join(cfg.Context.OutputDir, version, "gapic"),
-			GRPCDir:  filepath.Join(cfg.Context.OutputDir, version, "grpc"),
-			ProtoDir: filepath.Join(cfg.Context.OutputDir, version, "proto"),
-		}
-		defer func(oc *protoc.OutputConfig) {
-			if err := cleanupIntermediateFiles(oc); err != nil {
-				slog.Error("librariangen: failed to clean up intermediate files", "error", err)
-			}
-		}(outputConfig)
-
-		if err := invokeProtoc(ctx, cfg.Context, &api, outputConfig); err != nil {
-			return fmt.Errorf("librariangen: gapic generation failed: %w", err)
-		}
-		// Unzip the temp-codegen.srcjar.
-		srcjarPath := filepath.Join(outputConfig.GAPICDir, "temp-codegen.srcjar")
-		srcjarDest := outputConfig.GAPICDir
-		if err := unzip(srcjarPath, srcjarDest); err != nil {
-			return fmt.Errorf("librariangen: failed to unzip %s: %w", srcjarPath, err)
-		}
-
-		if err := restructureOutput(cfg.Context.OutputDir, generateReq.ID, version); err != nil {
-			return fmt.Errorf("librariangen: failed to restructure output: %w", err)
-		}
+	libraryID := cfg.Request.ID
+	for _, api := range cfg.Request.APIs {
+		if err := processAPI(ctx, cfg, libraryID, api); err != nil {
+			return err
+		}		
 	}
 
 	// Generate pom.xml files
-	if err := pom.Generate(cfg.Context.OutputDir, generateReq.ID); err != nil {
-		return fmt.Errorf("librariangen: failed to generate poms for API %s: %w", generateReq.ID, err)
+	if err := pom.Generate(cfg.Context.OutputDir, libraryID); err != nil {
+		return fmt.Errorf("librariangen: failed to generate poms for API %s: %w", libraryID, err)
 	}
 
 	slog.Debug("librariangen: generate command finished")
+	return nil
+}
+
+func processAPI(ctx context.Context, cfg *generate.Config, libraryID string, api message.API) error {
+	version := extractVersion(api.Path)
+	if version == "" {
+		slog.Warn("skipping api with no version", "api", api.Path)
+		return nil
+	}
+	slog.Info("processing api", "path", api.Path, "version", version)
+	outputConfig := &protoc.OutputConfig{
+		GAPICDir: filepath.Join(cfg.Context.OutputDir, version, "gapic"),
+		GRPCDir:  filepath.Join(cfg.Context.OutputDir, version, "grpc"),
+		ProtoDir: filepath.Join(cfg.Context.OutputDir, version, "proto"),
+	}
+	defer func() {
+		if err := cleanupIntermediateFiles(outputConfig); err != nil {
+			slog.Error("failed to cleanup", "err", err)
+		}
+	}()
+
+	if err := invokeProtoc(ctx, cfg.Context, &api, outputConfig); err != nil {
+		return fmt.Errorf("librariangen: gapic generation failed: %w", err)
+	}
+	// Unzip the temp-codegen.srcjar.
+	srcjarPath := filepath.Join(outputConfig.GAPICDir, "temp-codegen.srcjar")
+	srcjarDest := outputConfig.GAPICDir
+	if err := unzip(srcjarPath, srcjarDest); err != nil {
+		return fmt.Errorf("librariangen: failed to unzip %s: %w", srcjarPath, err)
+	}
+
+	if err := restructureOutput(cfg.Context.OutputDir, libraryID, version); err != nil {
+		return fmt.Errorf("librariangen: failed to restructure output: %w", err)
+	}
+
 	return nil
 }
 
