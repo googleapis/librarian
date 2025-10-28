@@ -129,7 +129,11 @@ func TestValidateGenerateTest(t *testing.T) {
 				mockRepo.ChangedFilesValue = test.changedFiles
 			}
 
-			err := validateGenerateTest(nil, mockRepo, test.protoFileToGUID, test.checkUnexpectedChanges)
+			runner := &testGenerateRunner{
+				repo:                   mockRepo,
+				checkUnexpectedChanges: test.checkUnexpectedChanges,
+			}
+			err := runner.validateGenerateTest(nil, test.protoFileToGUID)
 
 			if test.wantErrMsg != "" {
 				if err == nil {
@@ -308,7 +312,10 @@ import "google/api/annotations.proto";
 				}
 			}
 
-			protoFileToGUID, err := prepareForGenerateTest(test.libraryState, test.libraryState.ID, test.mockRepo)
+			runner := &testGenerateRunner{
+				sourceRepo: test.mockRepo,
+			}
+			protoFileToGUID, err := runner.prepareForGenerateTest(test.libraryState, test.libraryState.ID)
 
 			// Check for error
 			if test.wantErrMsg != "" {

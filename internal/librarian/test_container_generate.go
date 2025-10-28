@@ -54,26 +54,38 @@ func newTestGenerateRunner(cfg *config.Config) (*testGenerateRunner, error) {
 }
 
 func (r *testGenerateRunner) run(ctx context.Context) error {
-	// remember repo head for cleanup after test
 	sourceRepoHead, err := r.sourceRepo.HeadHash()
 	if err != nil {
 		return fmt.Errorf("failed to get source repo head: %w", err)
 	}
 
+	if err := os.MkdirAll(filepath.Join(r.workRoot, "output"), 0755); err != nil {
+		return fmt.Errorf("failed to make output directory: %w", err)
+	}
+
+	return r.runTests(ctx, sourceRepoHead)
+}
+
+func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string) error {
 	outputDir := filepath.Join(r.workRoot, "output")
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
-	}
-
 	if r.library != "" {
-		return r.runAndCleanupTest(ctx, r.library, sourceRepoHead, outputDir)
+		slog.Debug("running test for library", "library", r.library)
+		if err := r.runAndCleanupTest(ctx, r.library, sourceRepoHead, outputDir); err != nil {
+			return fmt.Errorf("test failed for library %s: %w", r.library, err)
+		}
+		slog.Debug("test succeeded for library", "library", r.library)
+		return nil
 	}
 
+	slog.Info("running tests for all libraries")
 	var failed []string
 	for _, library := range r.state.Libraries {
+		slog.Debug("running test for library", "library", library.ID)
 		if err := r.runAndCleanupTest(ctx, library.ID, sourceRepoHead, outputDir); err != nil {
 			slog.Error("test failed for library", "library", library.ID, "error", err)
 			failed = append(failed, library.ID)
+		} else {
+			slog.Debug("test succeeded for library", "library", library.ID)
 		}
 	}
 	if len(failed) > 0 {
@@ -92,27 +104,27 @@ func (r *testGenerateRunner) runAndCleanupTest(ctx context.Context, libraryID, s
 			slog.Error("failed to reset repo during cleanup", "error", err)
 		}
 	}()
-	return testSingleLibrary(ctx, libraryID, r.repo, r.sourceRepo, r.state, r.containerClient, r.checkUnexpectedChanges, outputDir)
+	return r.testSingleLibrary(ctx, libraryID, outputDir)
 }
 
 // testSingleLibrary runs a generation test for a single library.
 // It prepares the source repository, runs generation, and validates the output.
 // It does NOT perform any cleanup or setup of output directories.
-func testSingleLibrary(ctx context.Context, libraryID string, repo gitrepo.Repository, sourceRepo gitrepo.Repository, state *config.LibrarianState, containerClient ContainerClient, checkUnexpectedChanges bool, outputDir string) error {
+func (r *testGenerateRunner) testSingleLibrary(ctx context.Context, libraryID string, outputDir string) error {
 	slog.Info("running test for", "library", libraryID)
-	libraryState := state.LibraryByID(libraryID)
+	libraryState := r.state.LibraryByID(libraryID)
 	if libraryState == nil {
 		return fmt.Errorf("library %q not found in state", libraryID)
 	}
-	protoFileToGUID, err := prepareForGenerateTest(libraryState, libraryID, sourceRepo)
+	protoFileToGUID, err := r.prepareForGenerateTest(libraryState, libraryID)
 	if err != nil {
 		return err
 	}
 
 	// We capture the error here and pass it to the validation step.
-	generateErr := generateSingleLibrary(ctx, containerClient, state, libraryState, repo, sourceRepo, outputDir)
+	generateErr := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir)
 
-	if err := validateGenerateTest(generateErr, repo, protoFileToGUID, checkUnexpectedChanges); err != nil {
+	if err := r.validateGenerateTest(generateErr, protoFileToGUID); err != nil {
 		return err
 	}
 
@@ -124,30 +136,30 @@ func testSingleLibrary(ctx context.Context, libraryID string, repo gitrepo.Repos
 // GUIDs as comments into the relevant proto files, and commits these temporary
 // changes. It returns a map of the modified proto file paths to the GUIDs that
 // were injected.
-func prepareForGenerateTest(libraryState *config.LibraryState, libraryID string, sourceRepo gitrepo.Repository) (map[string]string, error) {
+func (r *testGenerateRunner) prepareForGenerateTest(libraryState *config.LibraryState, libraryID string) (map[string]string, error) {
 	if libraryState.LastGeneratedCommit == "" {
 		return nil, fmt.Errorf("last_generated_commit is not set for library %q", libraryID)
 	}
 
 	branchName := "test-generate-" + uuid.New().String()
-	if err := sourceRepo.CheckoutCommitAndCreateBranch(branchName, libraryState.LastGeneratedCommit); err != nil {
+	if err := r.sourceRepo.CheckoutCommitAndCreateBranch(branchName, libraryState.LastGeneratedCommit); err != nil {
 		return nil, err
 	}
 
-	protoFiles, err := findProtoFiles(libraryState, sourceRepo)
+	protoFiles, err := findProtoFiles(libraryState, r.sourceRepo)
 	if err != nil {
 		return nil, err
 	}
 
-	protoFileToGUID, err := injectTestGUIDsIntoProtoFiles(protoFiles, sourceRepo.GetDir())
+	protoFileToGUID, err := injectTestGUIDsIntoProtoFiles(protoFiles, r.sourceRepo.GetDir())
 	if err != nil {
 		return nil, err
 	}
 
-	if err := sourceRepo.AddAll(); err != nil {
+	if err := r.sourceRepo.AddAll(); err != nil {
 		return nil, err
 	}
-	if err := sourceRepo.Commit("test(changes): temporary changes for generate test"); err != nil {
+	if err := r.sourceRepo.Commit("test(changes): temporary changes for generate test"); err != nil {
 		return nil, err
 	}
 
@@ -252,20 +264,20 @@ func findProtoInsertionLine(lines []string) int {
 // that the generation command did not fail, that every injected proto change
 // resulted in a corresponding change in the generated code, and optionally
 // verifies that no other unexpected files were added, deleted, or modified.
-func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileToGUID map[string]string, checkUnexpectedChanges bool) error {
+func (r *testGenerateRunner) validateGenerateTest(generateErr error, protoFileToGUID map[string]string) error {
 	slog.Info("running test validation for library")
 	if generateErr != nil {
 		return fmt.Errorf("generation failed: %w", generateErr)
 	}
 
 	// Get the list of uncommitted changed files from the worktree.
-	changedFiles, err := repo.ChangedFiles()
+	changedFiles, err := r.repo.ChangedFiles()
 	if err != nil {
 		return fmt.Errorf("failed to get changed files from worktree: %w", err)
 	}
 
-	if checkUnexpectedChanges {
-		newAndDeleted, err := repo.NewAndDeletedFiles()
+	if r.checkUnexpectedChanges {
+		newAndDeleted, err := r.repo.NewAndDeletedFiles()
 		if err != nil {
 			return fmt.Errorf("failed to get new and deleted files: %w", err)
 		}
@@ -280,7 +292,7 @@ func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileT
 		guidsToFind[guid] = false
 	}
 	filesWithGUIDs := make(map[string]bool)
-	repoDir := repo.GetDir()
+	repoDir := r.repo.GetDir()
 
 	for _, filePath := range changedFiles {
 		fullPath := filepath.Join(repoDir, filePath)
@@ -312,7 +324,7 @@ func validateGenerateTest(generateErr error, repo gitrepo.Repository, protoFileT
 	}
 	slog.Debug("validation succeeded: all proto changes resulted in generated file changes")
 
-	if checkUnexpectedChanges {
+	if r.checkUnexpectedChanges {
 		var unrelatedChanges []string
 		for _, filePath := range changedFiles {
 			if !filesWithGUIDs[filePath] {
