@@ -231,7 +231,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 0,
 			wantGenerateCalls:   1,
 			wantBuildCalls:      0, // no -build flag
-			wantCheckoutCalls:   1,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name:  "no change image",
@@ -280,7 +280,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   1,
 			wantBuildCalls:      0, // no -build flag
-			wantCheckoutCalls:   1,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name: "finds image error",
@@ -333,7 +333,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   1,
 			wantBuildCalls:      1,
-			wantCheckoutCalls:   1,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name: "updates multiple",
@@ -367,7 +367,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   2,
 			wantBuildCalls:      2,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 		},
 		{
 			name: "skips libraries without APIs",
@@ -401,7 +401,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   1,
 			wantBuildCalls:      1,
-			wantCheckoutCalls:   1,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name: "partial generate success",
@@ -438,7 +438,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   2,
 			wantBuildCalls:      1, // build for failed generate should not run
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 		},
 		{
 			name: "partial build success",
@@ -475,7 +475,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   2,
 			wantBuildCalls:      2,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 		},
 		{
 			name: "checkout error",
@@ -545,7 +545,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   2,
 			wantBuildCalls:      2,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 			wantCommitMsg:       "feat: update image to gcr.io/test/image@sha256:abc123",
 		},
 		{
@@ -632,7 +632,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls:        1,
 			wantGenerateCalls:          2,
 			wantBuildCalls:             2,
-			wantCheckoutCalls:          2,
+			wantCheckoutCalls:          3,
 			wantCreatePullRequestCalls: 1,
 			wantCommitMsg:              "feat: update image to gcr.io/test/image@sha256:abc123",
 		},
@@ -681,7 +681,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls:        1,
 			wantGenerateCalls:          2,
 			wantBuildCalls:             2,
-			wantCheckoutCalls:          2,
+			wantCheckoutCalls:          3,
 			wantCreatePullRequestCalls: 1,
 			wantCreateIssueCalls:       1,
 			wantCommitMsg:              "feat: update image to gcr.io/test/image@sha256:abc123",
