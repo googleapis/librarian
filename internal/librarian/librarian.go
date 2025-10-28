@@ -70,7 +70,6 @@ func newLibrarianCommand() *cli.Command {
 			newCmdGenerate(),
 			cmdRelease,
 			newCmdUpdateImage(),
-
 			cmdVersion,
 		},
 	}
