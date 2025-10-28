@@ -116,7 +116,9 @@ func TestFormatGenerationPRBody(t *testing.T) {
 				"another-library": "abcdefg",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT
+			want: fmt.Sprintf(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+
+BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: a bug fix
@@ -208,7 +210,9 @@ Language Image: %s`,
 				"another-library": "abcdefg",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT
+			want: fmt.Sprintf(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+
+BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: a bug fix
@@ -297,7 +301,9 @@ Language Image: %s`,
 				"failed-library-a",
 				"failed-library-b",
 			},
-			want: fmt.Sprintf(`BEGIN_COMMIT
+			want: fmt.Sprintf(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+
+BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: a bug fix
@@ -381,7 +387,9 @@ Language Image: %s
 				"one-library": "1234567890",
 			},
 			failedLibraries: []string{},
-			want: fmt.Sprintf(`BEGIN_COMMIT
+			want: fmt.Sprintf(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+
+BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: a bug fix
@@ -600,7 +608,9 @@ func TestFormatOnboardPRBody(t *testing.T) {
 			},
 			api:     "path/to",
 			library: "one-library",
-			want: fmt.Sprintf(`BEGIN_COMMIT
+			want: fmt.Sprintf(`PR created by the Librarian CLI to onboard a new GAPIC client library.
+
+BEGIN_COMMIT
 
 feat: onboard a new library
 
