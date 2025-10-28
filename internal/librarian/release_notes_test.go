@@ -346,8 +346,11 @@ Language Image: go:1.21
 				Image:     "go:1.21",
 				Libraries: []*config.LibraryState{},
 			},
-			ghRepo:          &github.Repository{},
-			wantReleaseNote: fmt.Sprintf("PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.\n\nLibrarian Version: %s\nLanguage Image: go:1.21", librarianVersion),
+			ghRepo: &github.Repository{},
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
+Language Image: go:1.21`, librarianVersion),
 		},
 		{
 			name: "generate with chore",
