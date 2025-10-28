@@ -140,7 +140,7 @@ Language Image: {{.ImageVersion}}
 {{- end }}
 `))
 
-	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`PR created by the Librarian CLI to onboard a new GAPIC client library.
+	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`PR created by the Librarian CLI to onboard a new Cloud Client Library.
 
 BEGIN_COMMIT
 
