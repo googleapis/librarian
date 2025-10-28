@@ -107,7 +107,7 @@ Language Image: {{.ImageVersion}}
 
 	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
-	}).Parse(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+	}).Parse(`PR created by the Librarian CLI to generate Cloud Client Libraries code from protos.
 
 BEGIN_COMMIT
 {{ range .Commits }}
