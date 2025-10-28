@@ -5,7 +5,7 @@ maintainers. See the
 [generated CLI documentation](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian)
 for a more comprehensive list of commands and flags.
 
-For libraries onboarded to automation, please see [automation section below](https://github.com/googleapis/librarian/blob/main/doc/library-maintainer-guide.md#using-automated-releases).
+For libraries onboarded to automation, please see [automation section below](#using-automated-releases).
 
 This guide uses the term Librarian (capital L, regular font) for the overall
 Librarian system, and `librarian` (lower case L, code font) for the CLI.
