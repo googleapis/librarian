@@ -64,7 +64,9 @@ var (
 
 	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
-	}).Parse(`Librarian Version: {{.LibrarianVersion}}
+	}).Parse(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
 {{ $prInfo := . }}
 {{- range .NoteSections -}}
@@ -105,7 +107,9 @@ Language Image: {{.ImageVersion}}
 
 	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
-	}).Parse(`BEGIN_COMMIT
+	}).Parse(`PR created by the Librarian CLI to generate client library GAPIC code from protos.
+
+BEGIN_COMMIT
 {{ range .Commits }}
 BEGIN_NESTED_COMMIT
 {{.Type}}: {{.Subject}}
@@ -136,7 +140,9 @@ Language Image: {{.ImageVersion}}
 {{- end }}
 `))
 
-	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`BEGIN_COMMIT
+	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`PR created by the Librarian CLI to onboard a new GAPIC client library.
+
+BEGIN_COMMIT
 
 feat: onboard a new library
 
