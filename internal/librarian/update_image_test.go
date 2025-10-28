@@ -509,7 +509,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   0,
 			wantBuildCalls:      0,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 			checkoutError:       fmt.Errorf("some checkout error"),
 		},
 		{

@@ -138,7 +138,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	}
 	// Restore api source repo
 	if err := r.sourceRepo.Checkout(sourceHead); err != nil {
-		return err
+		slog.Error(err.Error(), "repository", r.sourceRepo, "HEAD", sourceHead)
 	}
 	commitMessage := fmt.Sprintf("feat: update image to %s", r.image)
 	return commitAndPush(ctx, &commitInfo{
