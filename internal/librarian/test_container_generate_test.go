@@ -55,7 +55,7 @@ func TestValidateGenerateTest(t *testing.T) {
 			},
 			protoFileToGUID:        map[string]string{"some.proto": "guid-not-found"},
 			checkUnexpectedChanges: true,
-			wantErrMsg:             "did not result in any generated file changes",
+			wantErrMsg:             "produced no corresponding generated file changes",
 		},
 		{
 			name: "success",
@@ -403,7 +403,7 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			},
 			libraryID:   "google-cloud-aiplatform-v1",
 			generateErr: fmt.Errorf("generate error"),
-			wantErrMsg:  "generation failed: generate error",
+			wantErrMsg:  "generation command failed: generate error",
 		},
 		{
 			name: "validateGenerateTest error",
@@ -423,7 +423,7 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			libraryID:              "google-cloud-aiplatform-v1",
 			checkUnexpectedChanges: true,
 			repoChangedFiles:       []string{"unrelated.txt"},
-			wantErrMsg:             "did not result in any generated file changes",
+			wantErrMsg:             "produced no corresponding generated file changes",
 		},
 		{
 			name: "multiple library failures",
@@ -447,7 +447,7 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			},
 			libraryID:   "", // Run for all libraries.
 			generateErr: fmt.Errorf("generate error"),
-			wantErrMsg:  "2 test(s) failed",
+			wantErrMsg:  "generation tests failed for 2 libraries",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
