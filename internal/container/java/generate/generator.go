@@ -47,7 +47,7 @@ func Generate(ctx context.Context, cfg *generate.Config) error {
 	for _, api := range cfg.Request.APIs {
 		if err := processAPI(ctx, cfg, libraryID, api); err != nil {
 			return err
-		}		
+		}
 	}
 
 	// Generate pom.xml files
