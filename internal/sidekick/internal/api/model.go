@@ -270,6 +270,11 @@ type Method struct {
 	Codec any
 }
 
+// MethodFullName returns the fully qualified name of the method.
+func (m *Method) MethodFullName() string {
+	return m.Service.Package + "." + m.Service.Name + "." + m.Name
+}
+
 // RoutingCombos returns all combinations of routing parameters.
 //
 // The routing info is stored as a map from the key to a list of the variants.

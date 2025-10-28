@@ -16,20 +16,56 @@ package gcloud
 
 import (
 	"fmt"
-	// "os"
-	// "path/filepath"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
-	// "gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/sidekick/internal/config/gcloudyaml"
+	"gopkg.in/yaml.v3"
 )
 
 // Generate generates gcloud commands from the model.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
-			fmt.Printf("service: %v\n", service)
-			fmt.Printf("method: %v\n", method)
+			cmd := newCommand(method, cfg)
+
+			b, err := yaml.Marshal(cmd)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(string(b))
+		}
+	}
+	return nil
+}
+
+func newCommand(method *api.Method, cfg *config.Config) *Command {
+	rule := findHelpTextRule(method, cfg)
+	cmd := &Command{}
+	if rule != nil {
+		cmd.HelpText = &CommandHelpText{
+			Brief:       rule.HelpText.Brief,
+			Description: rule.HelpText.Description,
+		}
+	}
+	return cmd
+}
+
+func findHelpTextRule(method *api.Method, cfg *config.Config) *gcloudyaml.HelpTextRule {
+	if cfg.Gcloud == nil || cfg.Gcloud.APIs == nil {
+		return nil
+	}
+	for _, api := range cfg.Gcloud.APIs {
+		if api.HelpText == nil {
+			continue
+		}
+		for _, rule := range api.HelpText.MethodRules {
+			fmt.Printf("DEBUG: Checking selector: '%s' == '%s'\n", rule.Selector, method.MethodFullName())
+			if rule.Selector == method.MethodFullName() {
+				fmt.Println("DEBUG: Found matching help text rule.")
+				return rule
+			}
 		}
 	}
 	return nil
