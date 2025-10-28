@@ -34,7 +34,7 @@ func TestGoGenerate(t *testing.T) {
 	cmd = exec.Command("git", "diff", "--exit-code", "--", "cmd/librarian/doc.go")
 	if err := cmd.Run(); err != nil {
 		t.Errorf("go generate produced a diff, please run `go generate ./...` and commit the changes")
-		cmd := exec.Command("git", "diff", "--", "cmd/librarian/doc.go")
+		cmd = exec.Command("git", "diff", "--", "cmd/librarian/doc.go")
 		out, _ := cmd.CombinedOutput()
 		t.Logf("diff:\n%s", out)
 	}
