@@ -78,6 +78,7 @@ func TestBuild(t *testing.T) {
 				}, ","),
 				"-I=" + sourceDir,
 				filepath.Join(sourceDir, "google/cloud/workflows/v1/workflows.proto"),
+				filepath.Join(sourceDir, "google/cloud/common_resources.proto"),
 			},
 		},
 		{
@@ -104,9 +105,9 @@ func TestBuild(t *testing.T) {
 				}, ","),
 				"-I=" + sourceDir,
 				filepath.Join(sourceDir, "google/cloud/secretmanager/v1beta2/secretmanager.proto"),
+				filepath.Join(sourceDir, "google/cloud/common_resources.proto"),
 			},
-		},
-		{
+		}, {
 			// Note: we don't have a separate test directory with a proto-only library;
 			// the config is used to say "don't generate GAPIC".
 			name:    "proto-only",
@@ -120,6 +121,7 @@ func TestBuild(t *testing.T) {
 				"--java_out=/output/proto",
 				"-I=" + sourceDir,
 				filepath.Join(sourceDir, "google/cloud/secretmanager/v1beta2/secretmanager.proto"),
+				filepath.Join(sourceDir, "google/cloud/common_resources.proto"),
 			},
 		},
 	}

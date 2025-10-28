@@ -54,6 +54,8 @@ func Build(apiServiceDir string, config ConfigProvider, sourceDir string, output
 			protoFiles = append(protoFiles, filepath.Join(apiServiceDir, entry.Name()))
 		}
 	}
+	// Add common protos to the list of proto files to be compiled.
+	protoFiles = append(protoFiles, filepath.Join(sourceDir, "google", "cloud", "common_resources.proto"))
 
 	if len(protoFiles) == 0 {
 		return nil, fmt.Errorf("librariangen: no .proto files found in %s", apiServiceDir)

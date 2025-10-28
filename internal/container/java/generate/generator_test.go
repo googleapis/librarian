@@ -118,22 +118,32 @@ func createFakeZip(t *testing.T, path string) {
 	}
 }
 
-func setupFakeProtocOutput(t *testing.T, e *testEnv) {
-	// Simulate protoc creating the zip file.
-	zipPath := filepath.Join(e.outputDir, "gapic", "temp-codegen.srcjar")
-	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
-		t.Fatalf("failed to create directory: %v", err)
-	}
-	createFakeZip(t, zipPath)
-	// Create the directory that is expected by restructureOutput.
-	if err := os.MkdirAll(filepath.Join(e.outputDir, "gapic", "src", "main", "java"), 0755); err != nil {
-		t.Fatalf("failed to create directory: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(e.outputDir, "gapic", "src", "test", "java"), 0755); err != nil {
-		t.Fatalf("failed to create directory: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(e.outputDir, "gapic", "samples", "snippets"), 0755); err != nil {
-		t.Fatalf("failed to create directory: %v", err)
+func setupFakeProtocOutput(t *testing.T, e *testEnv, versions []string) {
+	for _, v := range versions {
+		// Simulate protoc creating the zip file.
+		zipPath := filepath.Join(e.outputDir, v, "gapic", "temp-codegen.srcjar")
+		if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+			t.Fatalf("failed to create directory: %v", err)
+		}
+		createFakeZip(t, zipPath)
+		// Create the directory that is expected by restructureOutput.
+		if err := os.MkdirAll(filepath.Join(e.outputDir, v, "gapic", "src", "main", "java"), 0755); err != nil {
+			t.Fatalf("failed to create directory: %v", err)
+		}
+		if err := os.MkdirAll(filepath.Join(e.outputDir, v, "gapic", "src", "test", "java"), 0755); err != nil {
+			t.Fatalf("failed to create directory: %v", err)
+		}
+		if err := os.MkdirAll(filepath.Join(e.outputDir, v, "gapic", "samples", "snippets"), 0755); err != nil {
+			t.Fatalf("failed to create directory: %v", err)
+		}
+		// Create a fake CommonResources.java file.
+		p := filepath.Join(e.outputDir, v, "proto", "google", "cloud", "CommonResources.java")
+		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+			t.Fatalf("failed to create directory for CommonResources.java: %v", err)
+		}
+		if err := os.WriteFile(p, nil, 0644); err != nil {
+			t.Fatalf("failed to write CommonResources.java: %v", err)
+		}
 	}
 }
 
@@ -245,7 +255,7 @@ java_gapic_library(
 					t.Errorf("protocRun called with %s; want %s", args[0], want)
 				}
 				if tt.protocErr == nil && tt.name != "unzip fails" {
-					setupFakeProtocOutput(t, e)
+					setupFakeProtocOutput(t, e, []string{"v1"})
 				}
 				protocRunCount++
 				return tt.protocErr
@@ -275,47 +285,103 @@ java_gapic_library(
 }
 
 func TestRestructureOutput(t *testing.T) {
-	e := newTestEnv(t)
-	defer e.cleanup(t)
+	tests := []struct {
+		name          string
+		libraryName   string
+		versions      []string
+		sourceFiles   map[string]string
+		expectedFiles []string
+		wantErr       bool
+	}{
+		{
+			name:        "single version happy path",
+			libraryName: "my-library",
+			versions:    []string{"v1"},
+			sourceFiles: map[string]string{
+				"v1/gapic/src/main/java/com/google/foo.java":           "",
+				"v1/gapic/src/test/java/com/google/foo_test.java":      "",
+				"v1/proto/com/google/bar.proto":                        "",
+				"v1/grpc/com/google/bar_grpc.java":                     "",
+				"v1/gapic/samples/snippets/com/google/baz.java":        "",
+				"v1/gapic/proto/src/main/java/com/google/resname.java": "",
+				"v1/proto/google/cloud/CommonResources.java":           "",
+			},
+			expectedFiles: []string{
+				"google-cloud-my-library/src/main/java/com/google/foo.java",
+				"google-cloud-my-library/src/test/java/com/google/foo_test.java",
+				"proto-google-cloud-my-library-v1/src/main/java/com/google/bar.proto",
+				"grpc-google-cloud-my-library-v1/src/main/java/com/google/bar_grpc.java",
+				"samples/snippets/com/google/baz.java",
+				"proto-google-cloud-my-library-v1/src/main/java/com/google/resname.java",
+			},
+			wantErr: false,
+		},
+		{
+			name:        "multiple versions in one library",
+			libraryName: "my-multi-version-library",
+			versions:    []string{"v1", "v2"},
+			sourceFiles: map[string]string{
+				"v1/gapic/src/main/java/com/google/v1/foo.java":           "",
+				"v1/gapic/src/test/java/com/google/v1/foo_test.java":      "",
+				"v1/proto/com/google/v1/bar.proto":                        "",
+				"v1/grpc/com/google/v1/bar_grpc.java":                     "",
+				"v1/gapic/samples/snippets/com/google/v1/baz.java":        "",
+				"v1/gapic/proto/src/main/java/com/google/v1/resname.java": "",
+				"v1/proto/google/cloud/CommonResources.java":              "",
+				"v2/proto/google/cloud/CommonResources.java":              "",
+				"v1/gapic/src/main/java/com/google/v2/foo.java":           "",
+				"v2/gapic/src/test/java/com/google/v2/foo_test.java":      "",
+				"v2/proto/com/google/v2/bar.proto":                        "",
+				"v2/grpc/com/google/v2/bar_grpc.java":                     "",
+				"v2/gapic/samples/snippets/com/google/v2/baz.java":        "",
+				"v2/gapic/proto/src/main/java/com/google/v2/resname.java": "",
+			},
+			expectedFiles: []string{
+				"google-cloud-my-multi-version-library/src/main/java/com/google/v1/foo.java",
+				"google-cloud-my-multi-version-library/src/test/java/com/google/v1/foo_test.java",
+				"proto-google-cloud-my-multi-version-library-v1/src/main/java/com/google/v1/bar.proto",
+				"grpc-google-cloud-my-multi-version-library-v1/src/main/java/com/google/v1/bar_grpc.java",
+				"samples/snippets/com/google/v1/baz.java",
+				"proto-google-cloud-my-multi-version-library-v1/src/main/java/com/google/v1/resname.java",
+				"google-cloud-my-multi-version-library/src/main/java/com/google/v2/foo.java",
+				"google-cloud-my-multi-version-library/src/test/java/com/google/v2/foo_test.java",
+				"proto-google-cloud-my-multi-version-library-v2/src/main/java/com/google/v2/bar.proto",
+				"grpc-google-cloud-my-multi-version-library-v2/src/main/java/com/google/v2/bar_grpc.java",
+				"samples/snippets/com/google/v2/baz.java",
+				"proto-google-cloud-my-multi-version-library-v2/src/main/java/com/google/v2/resname.java",
+			},
+			wantErr: false,
+		},
+	}
 
-	// 1. Setup: Create all the source directories and dummy files.
-	sourceFiles := map[string]string{
-		"gapic/src/main/java/com/google/foo.java":           "",
-		"gapic/src/test/java/com/google/foo_test.java":      "",
-		"proto/com/google/bar.proto":                        "",
-		"grpc/com/google/bar_grpc.java":                     "",
-		"gapic/samples/snippets/com/google/baz.java":        "",
-		"gapic/proto/src/main/java/com/google/resname.java": "",
-	}
-	for path, content := range sourceFiles {
-		fullPath := filepath.Join(e.outputDir, path)
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-			t.Fatalf("failed to create source directory for %s: %v", path, err)
-		}
-		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
-			t.Fatalf("failed to write source file for %s: %v", path, err)
-		}
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newTestEnv(t)
+			defer e.cleanup(t)
 
-	// 2. Execute: Call the function under test.
-	if err := restructureOutput(e.outputDir, "my-library"); err != nil {
-		t.Fatalf("restructureOutput() failed: %v", err)
-	}
+			for path, content := range tt.sourceFiles {
+				fullPath := filepath.Join(e.outputDir, path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatalf("failed to create source directory for %s: %v", path, err)
+				}
+				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+					t.Fatalf("failed to write source file for %s: %v", path, err)
+				}
+			}
 
-	// 3. Verify: Check that all files were moved to their expected destinations.
-	expectedFiles := []string{
-		"google-cloud-my-library/src/main/java/com/google/foo.java",
-		"google-cloud-my-library/src/test/java/com/google/foo_test.java",
-		"proto-google-cloud-my-library-v1/src/main/java/com/google/bar.proto",
-		"grpc-google-cloud-my-library-v1/src/main/java/com/google/bar_grpc.java",
-		"samples/snippets/com/google/baz.java",
-		"proto-google-cloud-my-library-v1/src/main/java/com/google/resname.java",
-	}
-	for _, path := range expectedFiles {
-		fullPath := filepath.Join(e.outputDir, path)
-		if _, err := os.Stat(fullPath); err != nil {
-			t.Errorf("expected file not found at %s: %v", fullPath, err)
-		}
+			for _, version := range tt.versions {
+				if err := restructureOutput(e.outputDir, tt.libraryName, version); (err != nil) != tt.wantErr {
+					t.Errorf("restructureOutput() for version %s error = %v, wantErr %v", version, err, tt.wantErr)
+				}
+			}
+
+			for _, path := range tt.expectedFiles {
+				fullPath := filepath.Join(e.outputDir, path)
+				if _, err := os.Stat(fullPath); err != nil {
+					t.Errorf("expected file not found at %s: %v", fullPath, err)
+				}
+			}
+		})
 	}
 }
 
@@ -528,5 +594,41 @@ func TestCleanupIntermediateFiles(t *testing.T) {
 	}
 	if err := cleanupIntermediateFiles(outputConfig); err == nil {
 		t.Error("cleanupIntermediateFiles() should return an error on failure, but did not")
+	}
+}
+
+func TestExtractVersion(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "simple path",
+			path: "google/cloud/secretmanager/v1",
+			want: "v1",
+		},
+		{
+			name: "no version",
+			path: "google/cloud/secretmanager",
+			want: "",
+		},
+		{
+			name: "version in the middle",
+			path: "google/cloud/v1/secretmanager",
+			want: "v1",
+		},
+		{
+			name: "empty path",
+			path: "",
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractVersion(tt.path); got != tt.want {
+				t.Errorf("extractVersion() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

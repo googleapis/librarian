@@ -97,7 +97,7 @@ echo "Using googleapis source from $LIBRARIANGEN_GOOGLEAPIS_DIR"
 SOURCE_DIR=$(cd "$LIBRARIANGEN_GOOGLEAPIS_DIR" && pwd)
 
 # Copy the generate-request.json into the librarian directory.
-cp "testdata/generate/librarian/generate-request.json" "$LIBRARIAN_DIR/"
+cp "testdata/generate/librarian/secret-manager-generate-request.json" "$LIBRARIAN_DIR/generate-request.json"
 
 # --- Execute ---
 # Compile the librariangen binary.
