@@ -608,7 +608,7 @@ func TestFormatOnboardPRBody(t *testing.T) {
 			},
 			api:     "path/to",
 			library: "one-library",
-			want: fmt.Sprintf(`PR created by the Librarian CLI to onboard a new GAPIC client library.
+			want: fmt.Sprintf(`PR created by the Librarian CLI to onboard a new Cloud Client Library.
 
 BEGIN_COMMIT
 
