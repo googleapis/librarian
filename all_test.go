@@ -64,28 +64,28 @@ var ignoredDirs = []string{
 	"testdata",
 }
 
-var ignoredPackages = []string{
-	"api",
-	"apitest",
-	"automation",
-	"bazel",
-	"codec_sample",
-	"dart",
-	"discovery",
-	"execv",
-	"gcloud",
-	"gcloudyaml",
-	"httprule",
-	"language",
-	"librarian",
-	"license",
-	"pom",
-	"protobuf",
-	"protoc",
-	"rust",
-	"rust_prost",
-	"rustrelease",
-	"semver",
+var ignoredPackages = map[string]bool{
+	"api":          true,
+	"apitest":      true,
+	"automation":   true,
+	"bazel":        true,
+	"codec_sample": true,
+	"dart":         true,
+	"discovery":    true,
+	"execv":        true,
+	"gcloud":       true,
+	"gcloudyaml":   true,
+	"httprule":     true,
+	"language":     true,
+	"librarian":    true,
+	"license":      true,
+	"pom":          true,
+	"protobuf":     true,
+	"protoc":       true,
+	"rust":         true,
+	"rust_prost":   true,
+	"rustrelease":  true,
+	"semver":       true,
 }
 
 // expectedHeader defines the regex for the required copyright header.
@@ -271,7 +271,7 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	}
 
 	for name, hasPkgComment := range seenPackages {
-		if slices.Contains(ignoredPackages, name) {
+		if _, ok := ignoredPackages[name]; ok {
 			continue
 		}
 		if !hasPkgComment {
