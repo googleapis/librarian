@@ -302,6 +302,9 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 			continue
 		}
 
+		// We don't parse library id from commit message and always assign the passed in library id.
+		// Therefore, the commits may be identical. Dedup the commits so that only commits with unique library id
+		// are left.
 		filteredCommits := dedupLibraryIDs(commits)
 		// More than ten commits have the same commit subject and sha, this should come from other sources,
 		// e.g., dependency updates, README updates, etc.
@@ -342,6 +345,8 @@ func concatenateLibraryIDs(commits []*config.Commit) *config.Commit {
 	return commits[0]
 }
 
+// dedupLibraryIDs filters a slice of commits, returning a new slice that
+// contains only the first commit encountered for each unique LibraryIDs string.
 func dedupLibraryIDs(commits []*config.Commit) []*config.Commit {
 	var filteredCommits []*config.Commit
 	seen := make(map[string]bool)
