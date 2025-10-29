@@ -229,7 +229,7 @@ func rungo(t *testing.T, args ...string) {
 }
 
 func TestExportedSymbolsHaveDocs(t *testing.T) {
-	seenPackages := make(map[string]bool)
+	packageHasComment := make(map[string]bool)
 	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
 			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") || strings.Contains(path, "testdata") {
@@ -243,7 +243,7 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 			return nil
 		}
 
-		checkPackageComment(t, node, seenPackages)
+		recordPackageCommentStatus(t, node, packageHasComment)
 
 		// Visit every top-level declaration in the file.
 		for _, decl := range node.Decls {
@@ -270,7 +270,7 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for name, hasPkgComment := range seenPackages {
+	for name, hasPkgComment := range packageHasComment {
 		if _, ok := ignoredPackages[name]; ok {
 			continue
 		}
@@ -291,11 +291,13 @@ func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string)
 	}
 }
 
-func checkPackageComment(t *testing.T, file *ast.File, seen map[string]bool) {
+// recordPackageCommentStatus updates the seen map with the package comment status for a given package, processing each
+// package only once.
+func recordPackageCommentStatus(t *testing.T, file *ast.File, packageHasComment map[string]bool) {
 	t.Helper()
 	pkg := file.Name.String()
-	if seen[pkg] {
+	if packageHasComment[pkg] {
 		return
 	}
-	seen[pkg] = file.Doc != nil
+	packageHasComment[pkg] = file.Doc != nil
 }
