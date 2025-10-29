@@ -983,6 +983,11 @@ func TestDedupLibraryIDs(t *testing.T) {
 			commits: nil,
 			want:    nil,
 		},
+		{
+			name:    "empty_slice",
+			commits: []*config.Commit{},
+			want:    nil,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := dedupLibraryIDs(test.commits)
