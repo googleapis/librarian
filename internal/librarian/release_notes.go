@@ -329,7 +329,12 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 // concatenateLibraryIDs merges the LibraryIDs from a slice of commits into the first commit.
 func concatenateLibraryIDs(commits []*config.Commit) *config.Commit {
 	var libraryIDs []string
+	seen := make(map[string]bool)
 	for _, commit := range commits {
+		if _, ok := seen[commit.LibraryIDs]; ok {
+			continue
+		}
+		seen[commit.LibraryIDs] = true
 		libraryIDs = append(libraryIDs, commit.LibraryIDs)
 	}
 
