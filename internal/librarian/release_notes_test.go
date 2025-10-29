@@ -979,6 +979,65 @@ func TestDedupLibraryIDs(t *testing.T) {
 			},
 		},
 		{
+			name: "no duplicates",
+			commits: []*config.Commit{
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-1",
+				},
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-2",
+				},
+			},
+			want: []*config.Commit{
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-1",
+				},
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-2",
+				},
+			},
+		},
+		{
+			name: "multiple_duplicates_and_out_of_order",
+			commits: []*config.Commit{
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-1",
+				},
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-2",
+				},
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-1",
+				},
+			},
+			want: []*config.Commit{
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-1",
+				},
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-2",
+				},
+			},
+		},
+		{
 			name:    "nil_slice",
 			commits: nil,
 			want:    nil,
