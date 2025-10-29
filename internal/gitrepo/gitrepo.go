@@ -59,6 +59,7 @@ type Repository interface {
 	Checkout(commitHash string) error
 	GetHashForPath(commitHash, path string) (string, error)
 	ResetHard() error
+	DeleteLocalBranch(name string) error
 }
 
 const RootPath = "."
@@ -735,4 +736,10 @@ func (r *LocalRepository) ResetHard() error {
 	return worktree.Reset(&git.ResetOptions{
 		Mode: git.HardReset,
 	})
+}
+
+// DeleteLocalBranch deletes a local branch.
+func (r *LocalRepository) DeleteLocalBranch(name string) error {
+	slog.Debug("Deleting local branch", "name", name)
+	return r.repo.DeleteBranch(name)
 }

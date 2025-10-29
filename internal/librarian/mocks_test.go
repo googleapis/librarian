@@ -363,7 +363,9 @@ type MockRepository struct {
 	// and the value is the hash to return. Every requested entry must be populated.
 	// If the value is "error", an error is returned instead. (This is useful when some
 	// calls must be successful, and others must fail.)
-	GetHashForPathValue map[string]string
+	GetHashForPathValue    map[string]string
+	DeleteLocalBranchCalls int
+	DeleteLocalBranchError error
 }
 
 func (m *MockRepository) HeadHash() (string, error) {
@@ -536,6 +538,11 @@ func (m *MockRepository) Checkout(commitHash string) error {
 func (m *MockRepository) ResetHard() error {
 	m.ResetHardCalls++
 	return m.ResetHardError
+}
+
+func (m *MockRepository) DeleteLocalBranch(name string) error {
+	m.DeleteLocalBranchCalls++
+	return m.DeleteLocalBranchError
 }
 
 // mockImagesClient is a mock implementation of the ImageRegistryClient interface for testing.

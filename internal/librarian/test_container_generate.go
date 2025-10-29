@@ -35,6 +35,7 @@ type testGenerateRunner struct {
 	workRoot               string
 	containerClient        ContainerClient
 	checkUnexpectedChanges bool
+	branchesToDelete       []string
 }
 
 func (r *testGenerateRunner) run(ctx context.Context) error {
@@ -53,21 +54,18 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if r.library != "" {
-		if err := r.runTestWithCleanup(ctx, r.library, sourceRepoHead, outputDir); err != nil {
-			return fmt.Errorf("test failed for library %s: %w", r.library, err)
+		if err := r.testSingleLibrary(ctx, r.library, sourceRepoHead, outputDir); err != nil {
+			return fmt.Errorf("test failed for library %s, keeping changes for debugging: %w", r.library, err)
 		}
 		slog.Info("test succeeded for library", "library", r.library)
-		// Reset the code repo worktree to discard temp test changes at success
-		if err := r.repo.ResetHard(); err != nil {
-			slog.Error("failed to reset repo during cleanup", "error", err)
-		}
+		r.cleanup()
 		return nil
 	}
 
 	slog.Info("running tests for all libraries")
 	var failed []string
 	for _, library := range r.state.Libraries {
-		if err := r.runTestWithCleanup(ctx, library.ID, sourceRepoHead, outputDir); err != nil {
+		if err := r.testSingleLibrary(ctx, library.ID, sourceRepoHead, outputDir); err != nil {
 			slog.Error("test failed for library", "library", library.ID, "error", err)
 			failed = append(failed, library.ID)
 		} else {
@@ -75,30 +73,41 @@ func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string
 		}
 	}
 	if len(failed) > 0 {
+		slog.Info("some tests failed, keeping changes for debugging", "branches", r.branchesToDelete)
 		return fmt.Errorf("generation tests failed for %d libraries: %s", len(failed), strings.Join(failed, ", "))
 	}
 	slog.Info("generation tests succeeded for all libraries")
-	// Reset the code repo worktree to discard temp test changes at success
-	if err := r.repo.ResetHard(); err != nil {
-		slog.Error("failed to reset repo during cleanup", "error", err)
-	}
+	r.cleanup()
 	return nil
 }
 
-func (r *testGenerateRunner) runTestWithCleanup(ctx context.Context, libraryID, sourceRepoHead, outputDir string) error {
+func (r *testGenerateRunner) cleanup() {
+	// Delete branches created during test in source repo
+	for _, branchName := range r.branchesToDelete {
+		slog.Debug("deleting test branch", "branch", branchName)
+		if err := r.sourceRepo.DeleteLocalBranch(branchName); err != nil {
+			slog.Error("failed to delete branch during cleanup", "branch", branchName, "error", err)
+		}
+	}
+	// Reset the code repo worktree to discard temp test changes at success
+	if err := r.repo.ResetHard(); err != nil {
+		slog.Error("failed to reset repo during cleanup, test changes kept in worktree for debugging",
+			"error", err)
+	}
+}
+
+// testSingleLibrary runs a generation test for a single library.
+// It prepares the source repository, runs generation, validates the output,
+// and cleans up the source repository by checking out the original commit.
+// It does not cleanup the source repository branch or worktree in code repository
+// created during test.
+func (r *testGenerateRunner) testSingleLibrary(ctx context.Context, libraryID, sourceRepoHead, outputDir string) error {
 	defer func() {
-		slog.Debug("cleaning up after test", "library", libraryID)
+		slog.Debug("resetting source repo to original commit", "library", libraryID)
 		if err := r.sourceRepo.Checkout(sourceRepoHead); err != nil {
 			slog.Error("failed to checkout source repo head during cleanup", "error", err)
 		}
 	}()
-	return r.testSingleLibrary(ctx, libraryID, outputDir)
-}
-
-// testSingleLibrary runs a generation test for a single library.
-// It prepares the source repository, runs generation, and validates the output.
-// It does NOT perform any cleanup or setup of output directories.
-func (r *testGenerateRunner) testSingleLibrary(ctx context.Context, libraryID string, outputDir string) error {
 	slog.Info("running generation test", "library", libraryID)
 	libraryState := r.state.LibraryByID(libraryID)
 	if libraryState == nil {
@@ -133,6 +142,7 @@ func (r *testGenerateRunner) prepareForGenerateTest(libraryState *config.Library
 	if err := r.sourceRepo.CheckoutCommitAndCreateBranch(branchName, libraryState.LastGeneratedCommit); err != nil {
 		return nil, err
 	}
+	r.branchesToDelete = append(r.branchesToDelete, branchName)
 
 	protoFiles, err := findProtoFiles(libraryState, r.sourceRepo)
 	if err != nil {
