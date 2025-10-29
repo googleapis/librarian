@@ -380,6 +380,7 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 		wantErrMsg             string
 		checkUnexpectedChanges bool
 		repoChangedFiles       []string
+		wantResetHardCalls     int
 	}{
 		{
 			name:       "library not found",
@@ -469,6 +470,39 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			generateErr: fmt.Errorf("generate error"),
 			wantErrMsg:  "generation tests failed for 2 libraries",
 		},
+		{
+			name: "success with cleanup",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "google-cloud-aiplatform-v1",
+						LastGeneratedCommit: "initial-commit",
+						APIs:                []*config.API{},
+					},
+				},
+			},
+			libraryID:          "google-cloud-aiplatform-v1",
+			wantResetHardCalls: 1,
+		},
+		{
+			name: "success with multiple libraries and cleanup",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "lib1",
+						LastGeneratedCommit: "initial-commit",
+						APIs:                []*config.API{},
+					},
+					{
+						ID:                  "lib2",
+						LastGeneratedCommit: "initial-commit",
+						APIs:                []*config.API{},
+					},
+				},
+			},
+			libraryID:          "", // Run for all libraries
+			wantResetHardCalls: 1,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// 1. Setup the runner with mocked dependencies based on the test case.
@@ -537,6 +571,10 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 				}
 			} else if err != nil {
 				t.Fatalf("runner.run() returned unexpected error: %v", err)
+			}
+
+			if mockRepo.ResetHardCalls != test.wantResetHardCalls {
+				t.Errorf("mockRepo.ResetHardCalls = %d, want %d", mockRepo.ResetHardCalls, test.wantResetHardCalls)
 			}
 		})
 	}

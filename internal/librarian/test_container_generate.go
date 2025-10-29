@@ -57,6 +57,10 @@ func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string
 			return fmt.Errorf("test failed for library %s: %w", r.library, err)
 		}
 		slog.Info("test succeeded for library", "library", r.library)
+		// Reset the code repo worktree to discard temp test changes at success
+		if err := r.repo.ResetHard(); err != nil {
+			slog.Error("failed to reset repo during cleanup", "error", err)
+		}
 		return nil
 	}
 
@@ -74,6 +78,10 @@ func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string
 		return fmt.Errorf("generation tests failed for %d libraries: %s", len(failed), strings.Join(failed, ", "))
 	}
 	slog.Info("generation tests succeeded for all libraries")
+	// Reset the code repo worktree to discard temp test changes at success
+	if err := r.repo.ResetHard(); err != nil {
+		slog.Error("failed to reset repo during cleanup", "error", err)
+	}
 	return nil
 }
 
@@ -82,9 +90,6 @@ func (r *testGenerateRunner) runTestWithCleanup(ctx context.Context, libraryID, 
 		slog.Debug("cleaning up after test", "library", libraryID)
 		if err := r.sourceRepo.Checkout(sourceRepoHead); err != nil {
 			slog.Error("failed to checkout source repo head during cleanup", "error", err)
-		}
-		if err := r.repo.ResetHard(); err != nil {
-			slog.Error("failed to reset repo during cleanup", "error", err)
 		}
 	}()
 	return r.testSingleLibrary(ctx, libraryID, outputDir)

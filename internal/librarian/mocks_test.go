@@ -327,6 +327,7 @@ type MockRepository struct {
 	RemotesValue                           []*gitrepo.Remote
 	RemotesError                           error
 	CommitCalls                            int
+	ResetHardCalls                         int
 	LastCommitMessage                      string
 	GetCommitError                         error
 	GetLatestCommitError                   error
@@ -356,6 +357,7 @@ type MockRepository struct {
 	HeadHashError                          error
 	CheckoutCalls                          int
 	CheckoutError                          error
+	ResetHardError                         error
 	GetHashForPathError                    error
 	// GetHashForPathValue is a map where each key is of the form "commitHash:path",
 	// and the value is the hash to return. Every requested entry must be populated.
@@ -532,7 +534,8 @@ func (m *MockRepository) Checkout(commitHash string) error {
 }
 
 func (m *MockRepository) ResetHard() error {
-	return nil
+	m.ResetHardCalls++
+	return m.ResetHardError
 }
 
 // mockImagesClient is a mock implementation of the ImageRegistryClient interface for testing.
