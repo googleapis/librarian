@@ -294,21 +294,8 @@ func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string)
 func checkPackageComment(t *testing.T, file *ast.File, seen map[string]bool) {
 	t.Helper()
 	pkg := file.Name.String()
-	got, ok := seen[pkg]
-	if !ok {
-		if file.Doc != nil {
-			// An unseen package and it has package comment, set the value to true.
-			seen[pkg] = true
-		} else {
-			// An unseen package but it doesn't have package comment, set the
-			// value to false.
-			seen[pkg] = false
-		}
-
+	if seen[pkg] {
 		return
 	}
-	if !got && file.Doc != nil {
-		// A seen package without package comment, set the value to true.
-		seen[pkg] = true
-	}
+	seen[pkg] = file.Doc != nil
 }
