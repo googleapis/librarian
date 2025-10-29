@@ -375,8 +375,12 @@ When reviewing a pull request:
 
 All pull requests require passing CI checks to be merged.
 
-The `main` branch must always be stable, and tests should never fail at HEAD.
-When viewing the
-[commit history](https://github.com/googleapis/librarian/commits/main), the CI
-status should always be green. A red build on `main` is considered a critical
-issue that must be fixed immediately.
+The main branch must always be stable, and tests should never fail at HEAD. A
+red build on main is a critical issue that must be fixed immediately. If tests
+become flaky or the
+[main branch](https://github.com/googleapis/librarian/commits/main) is not
+consistently green, the team's top priority should shift to restoring
+stability.
+
+All other development should be deprioritized until green builds can
+be guaranteed.
