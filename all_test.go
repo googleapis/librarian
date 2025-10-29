@@ -64,6 +64,30 @@ var ignoredDirs = []string{
 	"testdata",
 }
 
+var ignoredPackages = []string{
+	"api",
+	"apitest",
+	"automation",
+	"bazel",
+	"codec_sample",
+	"dart",
+	"discovery",
+	"execv",
+	"gcloud",
+	"gcloudyaml",
+	"httprule",
+	"language",
+	"librarian",
+	"license",
+	"pom",
+	"protobuf",
+	"protoc",
+	"rust",
+	"rust_prost",
+	"rustrelease",
+	"semver",
+}
+
 // expectedHeader defines the regex for the required copyright header.
 const expectedHeader = `// Copyright 202\d Google LLC
 //
@@ -205,9 +229,10 @@ func rungo(t *testing.T, args ...string) {
 }
 
 func TestExportedSymbolsHaveDocs(t *testing.T) {
+	seenPackages := make(map[string]bool)
 	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
-			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
+			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") || strings.Contains(path, "testdata") {
 			return nil
 		}
 
@@ -217,6 +242,8 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 			t.Errorf("failed to parse file %q: %v", path, err)
 			return nil
 		}
+
+		checkPackageComment(t, node, seenPackages)
 
 		// Visit every top-level declaration in the file.
 		for _, decl := range node.Decls {
@@ -242,6 +269,15 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	for name, hasPkgComment := range seenPackages {
+		if slices.Contains(ignoredPackages, name) {
+			continue
+		}
+		if !hasPkgComment {
+			t.Errorf("package %s does not have package comment", name)
+		}
+	}
 }
 
 func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string) {
@@ -252,5 +288,27 @@ func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string)
 	if doc == nil {
 		t.Errorf("%s: %q is missing doc comment",
 			path, name.Name)
+	}
+}
+
+func checkPackageComment(t *testing.T, file *ast.File, seen map[string]bool) {
+	t.Helper()
+	pkg := file.Name.String()
+	got, ok := seen[pkg]
+	if !ok {
+		if file.Doc != nil {
+			// An unseen package and it has package comment, set the value to true.
+			seen[pkg] = true
+		} else {
+			// An unseen package but it doesn't have package comment, set the
+			// value to false.
+			seen[pkg] = false
+		}
+
+		return
+	}
+	if !got && file.Doc != nil {
+		// A seen package without package comment, set the value to true.
+		seen[pkg] = true
 	}
 }
