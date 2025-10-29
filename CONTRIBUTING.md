@@ -373,7 +373,7 @@ When reviewing a pull request:
 
 ### Test Health
 
-All pull requests require passing CI checks to be merged. 
+All pull requests require passing CI checks to be merged.
 
 The `main` branch must always be stable, and tests should never fail at HEAD.
 When viewing the
