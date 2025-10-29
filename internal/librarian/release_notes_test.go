@@ -947,3 +947,43 @@ func TestLanguageRepoChangedFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestDedupLibraryIDs(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name    string
+		commits []*config.Commit
+		want    []*config.Commit
+	}{
+		{
+			name: "dedup_library_ids",
+			commits: []*config.Commit{
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-1",
+				},
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-1",
+				},
+			},
+			want: []*config.Commit{
+				{
+					Type:       "fix",
+					Subject:    "this is a fix",
+					LibraryIDs: "library-1",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := dedupLibraryIDs(test.commits)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
