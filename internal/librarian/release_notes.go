@@ -301,17 +301,19 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 			bulkChanges[key] = commits[0]
 			continue
 		}
+
+		filteredCommits := dedupLibraryIDs(commits)
 		// More than ten commits have the same commit subject and sha, this should come from other sources,
 		// e.g., dependency updates, README updates, etc.
 		// All commits should be identical except for the library id.
 		// We assume this type of commits has only one library id in Footers and each id is unique among all
 		// commits.
-		if len(commits) >= config.BulkChangeThreshold {
-			bulkChanges[key] = concatenateLibraryIDs(commits)
+		if len(filteredCommits) >= config.BulkChangeThreshold {
+			bulkChanges[key] = concatenateLibraryIDs(filteredCommits)
 			continue
 		}
 		// We assume the rest of commits are library-specific.
-		for _, commit := range commits {
+		for _, commit := range filteredCommits {
 			// Non-bulk commits may have 1 - 9 library IDs.
 			libraryIDs := strings.Split(commit.LibraryIDs, ",")
 			for _, libraryID := range libraryIDs {
@@ -329,12 +331,7 @@ func separateCommits(state *config.LibrarianState) (map[string]*config.Commit, m
 // concatenateLibraryIDs merges the LibraryIDs from a slice of commits into the first commit.
 func concatenateLibraryIDs(commits []*config.Commit) *config.Commit {
 	var libraryIDs []string
-	seen := make(map[string]bool)
 	for _, commit := range commits {
-		if _, ok := seen[commit.LibraryIDs]; ok {
-			continue
-		}
-		seen[commit.LibraryIDs] = true
 		libraryIDs = append(libraryIDs, commit.LibraryIDs)
 	}
 
@@ -343,4 +340,18 @@ func concatenateLibraryIDs(commits []*config.Commit) *config.Commit {
 	})
 	commits[0].LibraryIDs = strings.Join(libraryIDs, ",")
 	return commits[0]
+}
+
+func dedupLibraryIDs(commits []*config.Commit) []*config.Commit {
+	var filteredCommits []*config.Commit
+	seen := make(map[string]bool)
+	for _, commit := range commits {
+		if _, ok := seen[commit.LibraryIDs]; ok {
+			continue
+		}
+		seen[commit.LibraryIDs] = true
+		filteredCommits = append(filteredCommits, commit)
+	}
+
+	return filteredCommits
 }
