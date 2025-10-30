@@ -65,7 +65,6 @@ var ignoredDirs = []string{
 }
 
 var ignoredPackages = map[string]bool{
-	"discovery":  true,
 	"gcloudyaml": true,
 	"httprule":   true,
 }

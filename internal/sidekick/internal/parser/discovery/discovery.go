@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package discovery parses Google Discovery Documents into the sidekick
+// abstract API model (`api.API`).
 package discovery
 
 import (
