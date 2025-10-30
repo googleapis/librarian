@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package pom handles the generation of Maven pom.xml files for a Java library.
 package pom
 
 import (

@@ -73,7 +73,6 @@ var ignoredPackages = map[string]bool{
 	"httprule":     true,
 	"language":     true,
 	"license":      true,
-	"pom":          true,
 	"protobuf":     true,
 	"protoc":       true,
 	"rust":         true,
