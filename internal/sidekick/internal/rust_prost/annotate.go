@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package rust_prost implements a Rust code generator using the prost toolchain.
 package rust_prost
 
 import (

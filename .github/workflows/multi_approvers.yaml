@@ -32,7 +32,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   multi-approvers:
-    runs-on: 'ubuntu-latest'
+    runs-on: ubuntu-24.04
     steps:
       - name: 'Multi-approvers'
         uses: 'abcxyz/actions/.github/actions/multi-approvers@893209ed79a3d2508eeec375ffaf3d21012f5cd0'

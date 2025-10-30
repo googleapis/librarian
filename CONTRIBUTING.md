@@ -294,7 +294,7 @@ standard process is to [revert it through the GitHub interface](https://docs.git
 To revert a pull request:
 1.  Navigate to the merged pull request on GitHub.
 2.  Click the **Revert** button. This action automatically creates a new branch and a pull request containing the revert commit.
-3.  Edit the pull request title and description to comply with the [commit message guidelines](#commit-messages). 
+3.  Edit the pull request title and description to comply with the [commit message guidelines](#commit-messages).
 4.  The newly created revert pull request should be reviewed and merged following the same process as any other pull request.
 
 Using the GitHub "Revert" button is the preferred method over manually creating a revert commit using `git revert`.
@@ -371,7 +371,7 @@ When reviewing a pull request:
   [user-review-requested:@me](https://github.com/googleapis/librarian/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A%40me)
   search view is helpful for tracking PRs awaiting your review.
 
-### Test Health
+### Maintaining a Healthy Main Branch
 
 All pull requests require passing CI checks to be merged.
 
@@ -384,3 +384,10 @@ stability.
 
 All other development should be deprioritized until green builds can
 be guaranteed.
+
+Running `go test ./...` on a fresh clone of this repository should always pass,
+without requiring anything besides `go` installed. Tests that depend on other
+tools or services (e.g., docker, protoc, etc.) should be skipped when those
+tools are not available in the development environment. See
+[doc/onboarding.md](https://github.com/googleapis/librarian/blob/main/doc/onboarding.md)
+for information on how to configure your development environment.

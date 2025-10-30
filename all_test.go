@@ -160,11 +160,11 @@ func hasValidHeader(path string, r io.Reader) (bool, error) {
 }
 
 func TestGolangCILint(t *testing.T) {
-	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest", "run")
+	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0", "run")
 }
 
 func TestGoImports(t *testing.T) {
-	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@latest", "-d", ".")
+	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@v0.38.0", "-d", ".")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
@@ -182,7 +182,7 @@ func TestGoModTidy(t *testing.T) {
 }
 
 func TestGovulncheck(t *testing.T) {
-	rungo(t, "run", "golang.org/x/vuln/cmd/govulncheck@latest", "./...")
+	rungo(t, "run", "golang.org/x/vuln/cmd/govulncheck@v1.1.4", "./...")
 }
 
 func TestGodocLint(t *testing.T) {
@@ -205,9 +205,10 @@ func rungo(t *testing.T, args ...string) {
 }
 
 func TestExportedSymbolsHaveDocs(t *testing.T) {
+	packageHasComment := make(map[string]bool)
 	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
-			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
+			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") || strings.Contains(path, "testdata") {
 			return nil
 		}
 
@@ -217,6 +218,8 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 			t.Errorf("failed to parse file %q: %v", path, err)
 			return nil
 		}
+
+		recordPackageCommentStatus(t, node, packageHasComment)
 
 		// Visit every top-level declaration in the file.
 		for _, decl := range node.Decls {
@@ -242,6 +245,12 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	for name, hasPkgComment := range packageHasComment {
+		if !hasPkgComment {
+			t.Errorf("package %s does not have package comment", name)
+		}
+	}
 }
 
 func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string) {
@@ -252,5 +261,15 @@ func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string)
 	if doc == nil {
 		t.Errorf("%s: %q is missing doc comment",
 			path, name.Name)
+	}
+}
+
+// recordPackageCommentStatus updates the seen map with the package comment status for a given package, processing each
+// package only once.
+func recordPackageCommentStatus(t *testing.T, file *ast.File, packageHasComment map[string]bool) {
+	t.Helper()
+	pkg := file.Name.String()
+	if !packageHasComment[pkg] {
+		packageHasComment[pkg] = file.Doc != nil
 	}
 }

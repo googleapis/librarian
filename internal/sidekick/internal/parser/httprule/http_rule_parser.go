@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package httprule provides a parser for the path templates found in
+// [google.api.http] annotations.
 package httprule
 
 import (

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package gcloud provides utilities for generating gcloud command configurations and related types.
 package gcloud
 
 import "github.com/googleapis/librarian/internal/sidekick/internal/config/gcloudyaml"

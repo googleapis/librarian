@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package rustrelease implements the release automation logic for Rust crates.
 package rustrelease
 
 import (
