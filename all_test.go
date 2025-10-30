@@ -66,7 +66,6 @@ var ignoredDirs = []string{
 
 var ignoredPackages = map[string]bool{
 	"codec_sample": true,
-	"dart":         true,
 	"discovery":    true,
 	"gcloudyaml":   true,
 	"httprule":     true,
