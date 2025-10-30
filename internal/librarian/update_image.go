@@ -140,8 +140,9 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
 
 	if r.test {
-		// TODO: add test code
-		slog.Info("running tests", "libraryToTest", r.libraryToTest, "checkUnexpectedChanges", r.checkUnexpectedChanges)
+		// TODO(https://github.com/googleapis/librarian/issues/2624): add test code once #2623 is fixed
+		slog.Debug("placeholder for test code", "libraryToTest",
+			r.libraryToTest, "checkUnexpectedChanges", r.checkUnexpectedChanges)
 	}
 
 	prBodyBuilder := func() (string, error) {
