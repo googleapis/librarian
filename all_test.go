@@ -74,7 +74,6 @@ var ignoredPackages = map[string]bool{
 	"language":     true,
 	"license":      true,
 	"protobuf":     true,
-	"protoc":       true,
 	"rust":         true,
 	"rust_prost":   true,
 	"rustrelease":  true,
