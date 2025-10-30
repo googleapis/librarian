@@ -213,6 +213,9 @@ func newCmdUpdateImage() *cli.Command {
 	addFlagBranch(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagWorkRoot(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagPush(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagTest(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagLibraryToTest(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagCheckUnexpectedChanges(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagVerbose(cmdUpdateImage.Flags, &verbose)
 	return cmdUpdateImage
 }

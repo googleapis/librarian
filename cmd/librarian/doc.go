@@ -307,6 +307,11 @@ Flags:
 	-build
 	  	If true, Librarian will build each generated library by invoking the
 	  	language-specific container.
+	-check-unexpected-changes
+	  	Defaults to false. Specify true to include additional steps to check that
+	  	no files are added or deleted, and no extra file changes are introduced other than the
+	  	ones affected by proto changes. Note: you may want to skip this check if you are
+	  	testing a container image change that is expected to add or delete files.
 	-commit
 	  	If true, librarian will create a commit for the change but not create
 	  	a pull request. This flag is ignored if push is set to true.
@@ -317,6 +322,8 @@ Flags:
 	-image string
 	  	Language specific image used to invoke code generation and releasing.
 	  	If not specified, the image configured in the state.yaml is used.
+	-library-to-test string
+	  	The library ID to test (e.g. google-cloud-secretmanager-v1).
 	-output string
 	  	Working directory root. When this is not specified, a working directory
 	  	will be created in /tmp.
@@ -331,6 +338,8 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	-test
+	  	If true, Librarian will run a test after generation.
 	-v	enables verbose logging
 
 # version

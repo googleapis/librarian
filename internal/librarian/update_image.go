@@ -33,20 +33,23 @@ const (
 )
 
 type updateImageRunner struct {
-	branch          string
-	containerClient ContainerClient
-	imagesClient    ImageRegistryClient
-	ghClient        GitHubClient
-	hostMount       string
-	librarianConfig *config.LibrarianConfig
-	repo            gitrepo.Repository
-	sourceRepo      gitrepo.Repository
-	state           *config.LibrarianState
-	build           bool
-	push            bool
-	commit          bool
-	image           string
-	workRoot        string
+	branch                 string
+	containerClient        ContainerClient
+	imagesClient           ImageRegistryClient
+	ghClient               GitHubClient
+	hostMount              string
+	librarianConfig        *config.LibrarianConfig
+	repo                   gitrepo.Repository
+	sourceRepo             gitrepo.Repository
+	state                  *config.LibrarianState
+	build                  bool
+	push                   bool
+	commit                 bool
+	image                  string
+	workRoot               string
+	test                   bool
+	libraryToTest          string
+	checkUnexpectedChanges bool
 }
 
 // ImageRegistryClient is an abstraction around interacting with image.
@@ -60,19 +63,22 @@ func newUpdateImageRunner(cfg *config.Config) (*updateImageRunner, error) {
 		return nil, err
 	}
 	return &updateImageRunner{
-		branch:          cfg.Branch,
-		containerClient: runner.containerClient,
-		ghClient:        runner.ghClient,
-		hostMount:       cfg.HostMount,
-		librarianConfig: runner.librarianConfig,
-		repo:            runner.repo,
-		sourceRepo:      runner.sourceRepo,
-		state:           runner.state,
-		build:           cfg.Build,
-		commit:          cfg.Commit,
-		push:            cfg.Push,
-		image:           cfg.Image,
-		workRoot:        runner.workRoot,
+		branch:                 cfg.Branch,
+		containerClient:        runner.containerClient,
+		ghClient:               runner.ghClient,
+		hostMount:              cfg.HostMount,
+		librarianConfig:        runner.librarianConfig,
+		repo:                   runner.repo,
+		sourceRepo:             runner.sourceRepo,
+		state:                  runner.state,
+		build:                  cfg.Build,
+		commit:                 cfg.Commit,
+		push:                   cfg.Push,
+		image:                  cfg.Image,
+		workRoot:               runner.workRoot,
+		test:                   cfg.Test,
+		libraryToTest:          cfg.LibraryToTest,
+		checkUnexpectedChanges: cfg.CheckUnexpectedChanges,
 	}, nil
 }
 
@@ -132,6 +138,11 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 		slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
 	}
 	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
+
+	if r.test {
+		// TODO: add test code
+		slog.Info("running tests", "libraryToTest", r.libraryToTest, "checkUnexpectedChanges", r.checkUnexpectedChanges)
+	}
 
 	prBodyBuilder := func() (string, error) {
 		return formatUpdateImagePRBody(r.image, failedGenerations)

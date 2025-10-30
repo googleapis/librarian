@@ -113,6 +113,10 @@ type Config struct {
 	// Build is specified with the -build flag.
 	Build bool
 
+	// CheckUnexpectedChanges determines whether to do additional checks for
+	// unexpected changes during test-container generate.
+	CheckUnexpectedChanges bool
+
 	// CI is the type of Continuous Integration (CI) environment in which
 	// the tool is executing.
 	CI string
@@ -177,6 +181,9 @@ type Config struct {
 	// api is specified all currently managed libraries will be regenerated.
 	Library string
 
+	// LibraryToTest is the library ID to test (e.g. google-cloud-secretmanager-v1 ).
+	LibraryToTest string
+
 	// LibraryVersion is the library version to release.
 	//
 	// Overrides the automatic semantic version calculation and forces a specific
@@ -228,6 +235,9 @@ type Config struct {
 	//
 	// Repo is specified with the -repo flag.
 	Repo string
+
+	// Test determines whether to run a test after generation.
+	Test bool
 
 	// UserGID is the group ID of the current user. It is used to run Docker
 	// containers with the same user, so that created files have the correct
