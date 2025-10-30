@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package rust implements a native Rust code generator.
 package rust
 
 import (

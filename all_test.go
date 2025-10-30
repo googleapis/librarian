@@ -70,7 +70,6 @@ var ignoredPackages = map[string]bool{
 	"discovery":    true,
 	"gcloudyaml":   true,
 	"httprule":     true,
-	"rust":         true,
 }
 
 // expectedHeader defines the regex for the required copyright header.
