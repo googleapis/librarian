@@ -83,11 +83,17 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
-			map[string]string{"dependencies": "google_cloud_foo", "package:google_cloud_foo": "^1.2.3"},
+			map[string]string{
+				"dependencies":             "google_cloud_foo, google_cloud_bar",
+				"package:google_cloud_bar": "^1.2.3",
+				"package:google_cloud_foo": "^4.5.6"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
-				if !slices.Contains(codec.PackageDependencies, packageDependency{Name: "google_cloud_foo", Constraint: "^1.2.3"}) {
+				if !slices.Contains(codec.PackageDependencies, packageDependency{Name: "google_cloud_foo", Constraint: "^4.5.6"}) {
 					t.Errorf("missing 'google_cloud_foo' in Codec.PackageDependencies, got %v", codec.PackageDependencies)
+				}
+				if !slices.Contains(codec.PackageDependencies, packageDependency{Name: "google_cloud_bar", Constraint: "^1.2.3"}) {
+					t.Errorf("missing 'google_cloud_bar' in Codec.PackageDependencies, got %v", codec.PackageDependencies)
 				}
 			},
 		},

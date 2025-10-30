@@ -274,6 +274,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			// dependencies = "http, googleapis_auth"
 			// A list of dependencies to add to pubspec.yaml. This can be used to add dependencies for hand-written code.
 			dependencies = strings.Split(definition, ",")
+			for i := range dependencies {
+				dependencies[i] = strings.TrimSpace(dependencies[i])
+			}
 		case key == "dev-dependencies":
 			devDependencies = strings.Split(definition, ",")
 		case key == "not-for-publication":
