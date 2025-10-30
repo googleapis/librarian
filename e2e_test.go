@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build e2e
-// +build e2e
-
 package librarian
 
 import (
@@ -37,7 +34,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// regexps for parsing commit messages
+// regexps for parsing commit messages.
 var nestedCommitRegex = regexp.MustCompile(`(?s)BEGIN_NESTED_COMMIT\n(.*?)\nEND_NESTED_COMMIT`)
 var conventionalCommitRegex = regexp.MustCompile(`^(feat|fix|docs|chore): (.+)$`)
 
@@ -811,10 +808,6 @@ func initRepo(t *testing.T, dir, source, message string) error {
 	runGit(t, dir, "commit", "-m", message)
 	runGit(t, dir, "remote", "add", "origin", "https://github.com/googleapis/librarian.git")
 	return nil
-}
-
-type genResponse struct {
-	ErrorMessage string `json:"error,omitempty"`
 }
 
 // runGit runs a git command in the specified directory and returns the trimmed output as a string.
