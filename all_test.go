@@ -72,7 +72,6 @@ var ignoredPackages = map[string]bool{
 	"gcloudyaml":   true,
 	"httprule":     true,
 	"language":     true,
-	"license":      true,
 	"rust":         true,
 	"rust_prost":   true,
 	"rustrelease":  true,
