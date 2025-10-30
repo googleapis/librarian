@@ -51,6 +51,44 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
 impl<T> super::stub::{{Codec.Name}} for {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
+      {{#Codec.DetailedTracingAttributes}}
+    #[cfg(google_cloud_unstable_tracing)]
+    async fn {{Codec.Name}}(
+        &self,
+        req: {{InputType.Codec.QualifiedName}},
+        options: gax::options::RequestOptions,
+    ) -> Result<gax::response::Response<{{Codec.ReturnType}}>> {
+        use tracing::Instrument;
+        let span_name = concat!(
+            env!("CARGO_PKG_NAME"),
+            "::client::",
+            "{{Codec.ServiceNameToPascal}}",
+            "::{{Codec.Name}}"
+        );
+        let client_request_span = gaxi::observability::create_client_request_span(
+            span_name,
+            "{{Codec.Name}}",
+            &crate::info::INSTRUMENTATION_CLIENT_INFO,
+        );
+
+        let result = self.inner.{{Codec.Name}}(req, options)
+            .instrument(client_request_span.clone()).await;
+
+        gaxi::observability::record_client_request_span(&result, &client_request_span);
+        result
+    }
+
+    #[cfg(not(google_cloud_unstable_tracing))]
+    #[tracing::instrument(ret)]
+    async fn {{Codec.Name}}(
+        &self,
+        req: {{InputType.Codec.QualifiedName}},
+        options: gax::options::RequestOptions,
+    ) -> Result<gax::response::Response<{{Codec.ReturnType}}>> {
+        self.inner.{{Codec.Name}}(req, options).await
+    }
+      {{/Codec.DetailedTracingAttributes }}
+      {{^Codec.DetailedTracingAttributes }}
     #[tracing::instrument(ret)]
     async fn {{Codec.Name}}(
         &self,
@@ -60,6 +98,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         self.inner.{{Codec.Name}}(req, options).await
     }
 
+      {{/Codec.DetailedTracingAttributes }}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
 
