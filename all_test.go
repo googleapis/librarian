@@ -64,10 +64,6 @@ var ignoredDirs = []string{
 	"testdata",
 }
 
-var ignoredPackages = map[string]bool{
-	"gcloudyaml": true,
-}
-
 // expectedHeader defines the regex for the required copyright header.
 const expectedHeader = `// Copyright 202\d Google LLC
 //
@@ -251,9 +247,6 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	}
 
 	for name, hasPkgComment := range packageHasComment {
-		if _, ok := ignoredPackages[name]; ok {
-			continue
-		}
 		if !hasPkgComment {
 			t.Errorf("package %s does not have package comment", name)
 		}
