@@ -1865,3 +1865,183 @@ func TestResetHard(t *testing.T) {
 		t.Errorf("tracked file content mismatch after reset: got %q, want %q", string(content), initialContent)
 	}
 }
+
+func TestCheckoutCommitAndCreateBranch(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		branchName string
+		setup      func(t *testing.T, repo *git.Repository) (string, plumbing.Hash)
+		wantErr    bool
+	}{
+		{
+			name:       "success",
+			branchName: "new-branch",
+			setup: func(t *testing.T, repo *git.Repository) (string, plumbing.Hash) {
+				commit := createAndCommit(t, repo, "initial.txt", []byte("initial"), "initial commit")
+				return commit.Hash.String(), commit.Hash
+			},
+		},
+		{
+			name:       "invalid commit",
+			branchName: "new-branch",
+			setup: func(t *testing.T, repo *git.Repository) (string, plumbing.Hash) {
+				return "invalid-hash", plumbing.ZeroHash
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{Dir: dir, repo: repo}
+			commitHashStr, commitHash := test.setup(t, repo)
+
+			err := localRepo.CheckoutCommitAndCreateBranch(test.branchName, commitHashStr)
+
+			if (err != nil) != test.wantErr {
+				t.Fatalf("CheckoutCommitAndCreateBranch() error = %v, wantErr %v", err, test.wantErr)
+			}
+
+			if !test.wantErr {
+				head, err := repo.Head()
+				if err != nil {
+					t.Fatalf("repo.Head() failed: %v", err)
+				}
+
+				if head.Name().Short() != test.branchName {
+					t.Errorf("HEAD is at %q, want %q", head.Name().Short(), test.branchName)
+				}
+
+				if head.Hash() != commitHash {
+					t.Errorf("HEAD hash is %q, want %q", head.Hash(), commitHash)
+				}
+			}
+		})
+	}
+}
+
+func TestDeleteLocalBranches(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name        string
+		branchNames []string
+		setup       func(t *testing.T, repo *LocalRepository)
+		wantErr     bool
+		wantErrMsg  string
+	}{
+		{
+			name:        "delete single existing branch",
+			branchNames: []string{"test-branch"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("test-branch"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				// Checkout master so we are not on the branch to be deleted
+				w, err := repo.repo.Worktree()
+				if err != nil {
+					t.Fatalf("failed to get worktree: %v", err)
+				}
+				if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("master")}); err != nil {
+					t.Fatalf("failed to checkout master: %v", err)
+				}
+			},
+		},
+		{
+			name:        "delete multiple existing branches",
+			branchNames: []string{"branch1", "branch2"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("branch1"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				if err := repo.CreateBranchAndCheckout("branch2"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				// Checkout master so we are not on a branch to be deleted
+				w, err := repo.repo.Worktree()
+				if err != nil {
+					t.Fatalf("failed to get worktree: %v", err)
+				}
+				if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("master")}); err != nil {
+					t.Fatalf("failed to checkout master: %v", err)
+				}
+			},
+		},
+		{
+			name:        "delete non-existing branch",
+			branchNames: []string{"non-existing-branch"},
+			setup:       func(t *testing.T, repo *LocalRepository) {},
+			wantErr:     true,
+			wantErrMsg:  "failed to check existence of branch non-existing-branch",
+		},
+		{
+			name:        "delete current branch",
+			branchNames: []string{"current-branch"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("current-branch"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+			},
+			wantErr:    true,
+			wantErrMsg: "cannot delete branch current-branch: it is the currently checked out branch (HEAD)",
+		},
+		{
+			name:        "attempt to delete multiple branches including non-existing",
+			branchNames: []string{"branch1", "non-existing-branch"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("branch1"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				w, err := repo.repo.Worktree()
+				if err != nil {
+					t.Fatalf("failed to get worktree: %v", err)
+				}
+				if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("master")}); err != nil {
+					t.Fatalf("failed to checkout master: %v", err)
+				}
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to check existence of branch non-existing-branch",
+		},
+		{
+			name:        "attempt to delete multiple branches including current branch",
+			branchNames: []string{"branch1", "current-branch"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("branch1"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				if err := repo.CreateBranchAndCheckout("current-branch"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+			},
+			wantErr:    true,
+			wantErrMsg: "cannot delete branch current-branch: it is the currently checked out branch (HEAD)",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			localRepo, _ := setupRepoForGetCommitsTest(t)
+			tt.setup(t, localRepo)
+
+			err := localRepo.DeleteLocalBranches(tt.branchNames)
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("DeleteLocalBranches() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantErr {
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("DeleteLocalBranches() error message = %q, want to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			for _, branchName := range tt.branchNames {
+				_, err := localRepo.repo.Branch(branchName)
+				if err == nil {
+					t.Errorf("branch %q should have been deleted", branchName)
+				}
+			}
+		})
+	}
+}

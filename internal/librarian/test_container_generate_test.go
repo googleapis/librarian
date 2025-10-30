@@ -371,17 +371,17 @@ import "google/api/annotations.proto";
 func TestTestGenerateRunnerRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name                       string
-		state                      *config.LibrarianState
-		libraryID                  string
-		prepareErr                 error
-		generateErr                error
-		validateErr                error
-		wantErrMsg                 string
-		checkUnexpectedChanges     bool
-		repoChangedFiles           []string
-		wantResetHardCalls         int
-		wantDeleteLocalBranchCalls int
+		name                         string
+		state                        *config.LibrarianState
+		libraryID                    string
+		prepareErr                   error
+		generateErr                  error
+		validateErr                  error
+		wantErrMsg                   string
+		checkUnexpectedChanges       bool
+		repoChangedFiles             []string
+		wantResetHardCalls           int
+		wantDeleteLocalBranchesCalls int
 	}{
 		{
 			name:       "library not found",
@@ -482,9 +482,9 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 					},
 				},
 			},
-			libraryID:                  "google-cloud-aiplatform-v1",
-			wantResetHardCalls:         1,
-			wantDeleteLocalBranchCalls: 1,
+			libraryID:                    "google-cloud-aiplatform-v1",
+			wantResetHardCalls:           1,
+			wantDeleteLocalBranchesCalls: 1,
 		},
 		{
 			name: "success with multiple libraries and cleanup",
@@ -502,9 +502,9 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 					},
 				},
 			},
-			libraryID:                  "", // Run for all libraries
-			wantResetHardCalls:         1,
-			wantDeleteLocalBranchCalls: 2,
+			libraryID:                    "", // Run for all libraries
+			wantResetHardCalls:           1,
+			wantDeleteLocalBranchesCalls: 1,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -580,8 +580,8 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 				t.Errorf("mockRepo.ResetHardCalls = %d, want %d", mockRepo.ResetHardCalls, test.wantResetHardCalls)
 			}
 
-			if mockSourceRepo.DeleteLocalBranchCalls != test.wantDeleteLocalBranchCalls {
-				t.Errorf("mockSourceRepo.DeleteLocalBranchCalls = %d, want %d", mockSourceRepo.DeleteLocalBranchCalls, test.wantDeleteLocalBranchCalls)
+			if mockSourceRepo.DeleteLocalBranchesCalls != test.wantDeleteLocalBranchesCalls {
+				t.Errorf("mockSourceRepo.DeleteLocalBranchesCalls = %d, want %d", mockSourceRepo.DeleteLocalBranchesCalls, test.wantDeleteLocalBranchesCalls)
 			}
 		})
 	}

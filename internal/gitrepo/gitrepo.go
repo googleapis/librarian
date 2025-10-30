@@ -59,7 +59,7 @@ type Repository interface {
 	Checkout(commitHash string) error
 	GetHashForPath(commitHash, path string) (string, error)
 	ResetHard() error
-	DeleteLocalBranch(name string) error
+	DeleteLocalBranches(names []string) error
 }
 
 const RootPath = "."
@@ -738,8 +738,23 @@ func (r *LocalRepository) ResetHard() error {
 	})
 }
 
-// DeleteLocalBranch deletes a local branch.
-func (r *LocalRepository) DeleteLocalBranch(name string) error {
-	slog.Debug("Deleting local branch", "name", name)
-	return r.repo.DeleteBranch(name)
+// DeleteLocalBranches deletes a list of local branches.
+// It returns an error if any branch deletion fails, or nil if all succeed.
+func (r *LocalRepository) DeleteLocalBranches(names []string) error {
+	slog.Debug("Starting batch deletion of local branches", "count", len(names))
+	headRef, headErr := r.repo.Head()
+	for _, name := range names {
+		refName := plumbing.NewBranchReferenceName(name)
+		_, err := r.repo.Storer.Reference(refName)
+		if err != nil {
+			return fmt.Errorf("failed to check existence of branch %s: %w", name, err)
+		}
+		if headErr == nil && headRef.Name() == refName {
+			return fmt.Errorf("cannot delete branch %s: it is the currently checked out branch (HEAD)", name)
+		}
+		if err := r.repo.Storer.RemoveReference(refName); err != nil {
+			return fmt.Errorf("failed to delete branch %s: %w", name, err)
+		}
+	}
+	return nil
 }

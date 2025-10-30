@@ -83,11 +83,8 @@ func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string
 
 func (r *testGenerateRunner) cleanup() {
 	// Delete branches created during test in source repo
-	for _, branchName := range r.branchesToDelete {
-		slog.Debug("deleting test branch", "branch", branchName)
-		if err := r.sourceRepo.DeleteLocalBranch(branchName); err != nil {
-			slog.Error("failed to delete branch during cleanup", "branch", branchName, "error", err)
-		}
+	if err := r.sourceRepo.DeleteLocalBranches(r.branchesToDelete); err != nil {
+		slog.Error("failed to delete branch during cleanup", "error", err)
 	}
 	// Reset the code repo worktree to discard temp test changes at success
 	if err := r.repo.ResetHard(); err != nil {
