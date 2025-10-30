@@ -1,0 +1,13 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.google.cloud</groupId>
+    <artifactId>google-cloud-java</artifactId>
+    <version>1.0.0 <!-- {x-version-update:google-cloud-java:current} --> </version>
+    <packaging>pom</packaging>
+
+    <name>Google Cloud Java</name>
+    <description>Google Cloud Java</description>
+    <url>https://github.com/googleapis/google-cloud-java</url>
+
+</project>

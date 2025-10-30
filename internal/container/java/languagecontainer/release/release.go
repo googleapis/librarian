@@ -15,7 +15,10 @@
 // Package release contains types for language container's release command.
 package release
 
-import "github.com/googleapis/librarian/internal/container/java/message"
+import (
+	"github.com/googleapis/librarian/internal/container/java/message"
+	"github.com/googleapis/librarian/internal/container/java/pom"
+)
 
 // Context has the directory paths for the release-stage command.
 // https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#release-stage
@@ -32,4 +35,14 @@ type Config struct {
 	// This request is parsed from the release-stage-request.json file in
 	// the LibrarianDir of the context.
 	Request *message.ReleaseStageRequest
+}
+
+// ReleaseStage handles the release-stage command.
+func ReleaseStage(request *message.ReleaseStageRequest, response *message.ReleaseStageResponse) {
+	for _, lib := range request.Libraries {
+		if err := pom.UpdateVersions(".", lib.ID, lib.Version); err != nil {
+			response.Error = err.Error()
+			return
+		}
+	}
 }

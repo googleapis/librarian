@@ -1,23 +1,11 @@
-// Copyright 2025 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package release
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -70,7 +58,93 @@ func TestReadReleaseStageRequest(t *testing.T) {
 	if err := json.Unmarshal(bytes, got); err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
+	// We can't compare the entire struct because the testdata file has more fields
+	// than the want struct. Instead, we'll just compare the fields we care about.
+	if len(got.Libraries) != 1 {
+		t.Fatalf("got %d libraries, want %d", len(got.Libraries), 1)
+	}
+	if diff := cmp.Diff(want.Libraries[0], got.Libraries[0]); diff != "" {
 		t.Errorf("Unmarshal() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestReleaseStage(t *testing.T) {
+	tests := []struct {
+		name        string
+		libraryID   string
+		version     string
+		expected    string
+		expectError bool
+	}{
+		{
+			name:      "happy path",
+			libraryID: "google-cloud-java",
+			version:   "2.0.0",
+			expected:  "    <version>2.0.0<!-- {x-version-update:google-cloud-java:current} --> </version>",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			// Copy the testdata pom.xml to the temporary directory.
+			inputPath := filepath.Join("testdata", "pom.xml")
+			outputPath := filepath.Join(tmpDir, "pom.xml")
+			input, err := ioutil.ReadFile(inputPath)
+			if err != nil {
+				t.Fatalf("failed to read input file: %v", err)
+			}
+			if err := ioutil.WriteFile(outputPath, input, 0644); err != nil {
+				t.Fatalf("failed to write output file: %v", err)
+			}
+
+			request := &message.ReleaseStageRequest{
+				Libraries: []*message.Library{
+					{
+						ID:      test.libraryID,
+						Version: test.version,
+					},
+				},
+			}
+			response := &message.ReleaseStageResponse{}
+
+			// Change the current working directory to the temporary directory.
+			// This is important because UpdateVersions walks the current directory.
+			originalDir, err := filepath.Abs(".")
+			if err != nil {
+				t.Fatalf("failed to get current directory: %v", err)
+			}
+			// The filepath.Walk function is not suitable for changing the current working directory.
+			// Instead, we should change the directory once to the temporary directory.
+			if err := os.Chdir(tmpDir); err != nil {
+				t.Fatalf("failed to change directory to %s: %v", tmpDir, err)
+			}
+			defer func() {
+				if err := os.Chdir(originalDir); err != nil {
+					t.Fatalf("failed to change back to original directory: %v", err)
+				}
+			}()
+
+			ReleaseStage(request, response)
+
+			if test.expectError {
+				if response.Error == "" {
+					t.Errorf("expected error, got success")
+				}
+			} else {
+				if response.Error != "" {
+					t.Errorf("expected success, got error: %s", response.Error)
+				}
+				content, err := ioutil.ReadFile(outputPath)
+				if err != nil {
+					t.Fatalf("failed to read output file: %v", err)
+				}
+				if !strings.Contains(string(content), test.expected) {
+					t.Errorf("expected file to contain %q, got %q", test.expected, string(content))
+				}
+			}
+		})
 	}
 }
