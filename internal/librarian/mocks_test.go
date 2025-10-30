@@ -358,14 +358,14 @@ type MockRepository struct {
 	CheckoutCalls                          int
 	CheckoutError                          error
 	ResetHardError                         error
+	DeleteLocalBranchesCalls               int
+	DeleteLocalBranchesError               error
 	GetHashForPathError                    error
 	// GetHashForPathValue is a map where each key is of the form "commitHash:path",
 	// and the value is the hash to return. Every requested entry must be populated.
 	// If the value is "error", an error is returned instead. (This is useful when some
 	// calls must be successful, and others must fail.)
-	GetHashForPathValue    map[string]string
-	DeleteLocalBranchesCalls int
-	DeleteLocalBranchesError error
+	GetHashForPathValue map[string]string
 }
 
 func (m *MockRepository) HeadHash() (string, error) {
