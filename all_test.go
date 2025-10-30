@@ -66,7 +66,6 @@ var ignoredDirs = []string{
 
 var ignoredPackages = map[string]bool{
 	"gcloudyaml": true,
-	"httprule":   true,
 }
 
 // expectedHeader defines the regex for the required copyright header.
