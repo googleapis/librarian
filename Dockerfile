@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25.0 AS build
+FROM golang:1.25.3 AS build
 
 WORKDIR /src
 
@@ -27,7 +27,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
 # while in Docker. Note that for this to work, *this*
 # docker image should be run with
 #  -v /var/run/docker.sock:/var/run/docker.sock
-FROM golang:1.25.0
+FROM golang:1.25.3
 WORKDIR /app
 
 # From https://docs.docker.com/engine/install/debian/
