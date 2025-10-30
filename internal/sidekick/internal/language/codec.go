@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package language provides common utilities for language-specific code
+// generation
 package language
 
 import (
