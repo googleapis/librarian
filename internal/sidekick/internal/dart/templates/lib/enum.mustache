@@ -25,9 +25,16 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoEnum {
   static const {{Codec.Name}} = {{Parent.Codec.Name}}('{{Name}}');
 
   {{/Values}}
+  {{#Codec.DefaultValue}}
+  /// The default value for [{{Codec.Name}}].
+  static const $default = {{Codec.DefaultValue}};
+  {{/Codec.DefaultValue}}
+
   const {{Codec.Name}}(super.value);
 
   factory {{Codec.Name}}.fromJson(String json) => {{Codec.Name}}(json);
+
+  bool get isNotDefault => this != $default;
 
   @override
   String toString() => '{{Name}}.$value';

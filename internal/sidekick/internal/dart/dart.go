@@ -109,6 +109,10 @@ var reservedNames = map[string]string{
 	"while":    "",
 	"with":     "",
 	"yield":    "",
+
+	// Names from dart:core to avoid.
+	"bool":   "",
+	"double": "",
 }
 
 func messageName(m *api.Message) string {
@@ -164,10 +168,13 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 			builder.WriteString("/")
 			builder.WriteString(*segment.Literal)
 		case segment.Variable != nil:
+			// Form '${request.foo!.bar!.baz}'.
 			builder.WriteString("/${request")
+			deref := "."
 			for _, f := range segment.Variable.FieldPath {
-				builder.WriteString(".")
+				builder.WriteString(deref)
 				builder.WriteString(strcase.ToLowerCamel(f))
+				deref = "!."
 			}
 			builder.WriteString("}")
 		}

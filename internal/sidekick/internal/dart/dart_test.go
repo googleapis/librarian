@@ -661,7 +661,7 @@ func TestHttpPathFmt(t *testing.T) {
 		want   string
 	}{
 		{method: sample.MethodCreate(), want: "/v1/projects/${request.project}/secrets"},
-		{method: sample.MethodUpdate(), want: "/v1/${request.secret.name}"},
+		{method: sample.MethodUpdate(), want: "/v1/${request.secret!.name}"},
 		{method: sample.MethodAddSecretVersion(), want: "/v1/projects/${request.project}/secrets/${request.secret}:addVersion"},
 		{method: sample.MethodListSecretVersions(), want: "/v1/projects/${request.parent}/secrets/${request.secret}:listSecretVersions"},
 	} {

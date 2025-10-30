@@ -357,40 +357,6 @@ func TestAnnotateMessageToString(t *testing.T) {
 	}
 }
 
-func TestCalculateRequiredFields(t *testing.T) {
-	service := &api.Service{
-		Name:          sample.ServiceName,
-		Documentation: sample.APIDescription,
-		DefaultHost:   sample.DefaultHost,
-		Methods:       []*api.Method{sample.MethodListSecretVersions()},
-		Package:       sample.Package,
-	}
-	model := api.NewTestAPI(
-		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
-			sample.Secret(), sample.SecretVersion(), sample.Replication()},
-		[]*api.Enum{sample.EnumState()},
-		[]*api.Service{service},
-	)
-	api.Validate(model)
-
-	// Test that field annotations correctly calculate their required state; this
-	// uses the method's PathInfo.
-	requiredFields := calculateRequiredFields(model)
-
-	got := map[string]string{}
-	for key, value := range requiredFields {
-		got[key] = value.Name
-	}
-
-	want := map[string]string{
-		"..Secret.parent": "parent",
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestCalculateRequiredFields (-want, +got)\n:%s", diff)
-	}
-}
-
 func TestBuildQueryLines(t *testing.T) {
 	for _, test := range []struct {
 		field *api.Field
@@ -399,49 +365,85 @@ func TestBuildQueryLines(t *testing.T) {
 		// primitives
 		{
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
-			[]string{"if (result.bool != null) 'bool': '${result.bool}'"},
+			[]string{"if (result.bool$.isNotDefault) 'bool': '${result.bool$}'"},
 		}, {
 			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
-			[]string{"if (result.int32 != null) 'int32': '${result.int32}'"},
+			[]string{"if (result.int32.isNotDefault) 'int32': '${result.int32}'"},
 		}, {
 			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
-			[]string{"if (result.fixed32 != null) 'fixed32': '${result.fixed32}'"},
+			[]string{"if (result.fixed32.isNotDefault) 'fixed32': '${result.fixed32}'"},
 		}, {
 			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE},
-			[]string{"if (result.sfixed32 != null) 'sfixed32': '${result.sfixed32}'"},
+			[]string{"if (result.sfixed32.isNotDefault) 'sfixed32': '${result.sfixed32}'"},
 		}, {
 			&api.Field{Name: "int64", JSONName: "int64", Typez: api.INT64_TYPE},
-			[]string{"if (result.int64 != null) 'int64': '${result.int64}'"},
+			[]string{"if (result.int64.isNotDefault) 'int64': '${result.int64}'"},
 		}, {
 			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.FIXED64_TYPE},
-			[]string{"if (result.fixed64 != null) 'fixed64': '${result.fixed64}'"},
+			[]string{"if (result.fixed64.isNotDefault) 'fixed64': '${result.fixed64}'"},
 		}, {
 			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE},
-			[]string{"if (result.sfixed64 != null) 'sfixed64': '${result.sfixed64}'"},
+			[]string{"if (result.sfixed64.isNotDefault) 'sfixed64': '${result.sfixed64}'"},
 		}, {
 			&api.Field{Name: "double", JSONName: "double", Typez: api.DOUBLE_TYPE},
-			[]string{"if (result.double != null) 'double': '${result.double}'"},
+			[]string{"if (result.double$.isNotDefault) 'double': '${result.double$}'"},
 		}, {
 			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
-			[]string{"if (result.string != null) 'string': result.string!"},
+			[]string{"if (result.string.isNotDefault) 'string': result.string"},
+		},
+
+		// optional primitives
+		{
+			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
+			[]string{"if (result.boolOpt != null) 'bool': '${result.boolOpt}'"},
+		}, {
+			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
+			[]string{"if (result.int32Opt != null) 'int32': '${result.int32Opt}'"},
+		}, {
+			&api.Field{Name: "fixed32_opt", JSONName: "fixed32", Typez: api.FIXED32_TYPE, Optional: true},
+			[]string{"if (result.fixed32Opt != null) 'fixed32': '${result.fixed32Opt}'"},
+		}, {
+			&api.Field{Name: "sfixed32_opt", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE, Optional: true},
+			[]string{"if (result.sfixed32Opt != null) 'sfixed32': '${result.sfixed32Opt}'"},
+		}, {
+			&api.Field{Name: "int64_opt", JSONName: "int64", Typez: api.INT64_TYPE, Optional: true},
+			[]string{"if (result.int64Opt != null) 'int64': '${result.int64Opt}'"},
+		}, {
+			&api.Field{Name: "fixed64_opt", JSONName: "fixed64", Typez: api.FIXED64_TYPE, Optional: true},
+			[]string{"if (result.fixed64Opt != null) 'fixed64': '${result.fixed64Opt}'"},
+		}, {
+			&api.Field{Name: "sfixed64_opt", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE, Optional: true},
+			[]string{"if (result.sfixed64Opt != null) 'sfixed64': '${result.sfixed64Opt}'"},
+		}, {
+			&api.Field{Name: "double_opt", JSONName: "double", Typez: api.DOUBLE_TYPE, Optional: true},
+			[]string{"if (result.doubleOpt != null) 'double': '${result.doubleOpt}'"},
+		}, {
+			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
+			[]string{"if (result.stringOpt != null) 'string': result.stringOpt!"},
 		},
 
 		// repeated primitives
 		{
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
-			[]string{"if (result.boolList != null) 'boolList': result.boolList!.map((e) => '$e')"},
+			[]string{"if (result.boolList.isNotDefault) 'boolList': result.boolList!.map((e) => '$e')"},
 		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
-			[]string{"if (result.int32List != null) 'int32List': result.int32List!.map((e) => '$e')"},
+			[]string{"if (result.int32List.isNotDefault) 'int32List': result.int32List!.map((e) => '$e')"},
 		}, {
 			&api.Field{Name: "int64List", JSONName: "int64List", Typez: api.INT64_TYPE, Repeated: true},
-			[]string{"if (result.int64List != null) 'int64List': result.int64List!.map((e) => '$e')"},
+			[]string{"if (result.int64List.isNotDefault) 'int64List': result.int64List!.map((e) => '$e')"},
 		}, {
 			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.DOUBLE_TYPE, Repeated: true},
-			[]string{"if (result.doubleList != null) 'doubleList': result.doubleList!.map((e) => '$e')"},
+			[]string{"if (result.doubleList.isNotDefault) 'doubleList': result.doubleList!.map((e) => '$e')"},
 		}, {
 			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
-			[]string{"if (result.stringList != null) 'stringList': result.stringList!"},
+			[]string{"if (result.stringList.isNotDefault) 'stringList': result.stringList"},
+		},
+
+		// repeated primitives w/ optional
+		{
+			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
+			[]string{"if (result.int32ListOpt.isNotDefault) 'int32List': result.int32ListOpt!.map((e) => '$e')"},
 		},
 
 		// bytes, repeated bytes
@@ -464,7 +466,7 @@ func TestBuildQueryLines(t *testing.T) {
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{})
 
-			got := buildQueryLines([]string{}, "result.", "", test.field, model.State)
+			got := annotate.buildQueryLines([]string{}, "result.", "", test.field, model.State)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 			}
@@ -491,9 +493,9 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 		TypezID:  enum.ID,
 	}
 
-	got := buildQueryLines([]string{}, "result.", "", enumField, model.State)
+	got := annotate.buildQueryLines([]string{}, "result.", "", enumField, model.State)
 	want := []string{
-		"if (result.enumName != null) 'enumName': result.enumName!.value",
+		"if (result.enumName.isNotDefault) 'enumName': result.enumName.value",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -535,31 +537,205 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	}
 
 	// messages
-	got := buildQueryLines([]string{}, "result.", "", messageField1, model.State)
+	got := annotate.buildQueryLines([]string{}, "result.", "", messageField1, model.State)
 	want := []string{
-		"if (result.message1?.name != null) 'message1.name': result.message1?.name!",
-		"if (result.message1?.state != null) 'message1.state': result.message1?.state!.value",
+		"if (result.message1.name.isNotDefault) 'message1.name': result.message1.name",
+		"if (result.message1.state.isNotDefault) 'message1.state': result.message1.state.value",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 	}
 
-	got = buildQueryLines([]string{}, "result.", "", messageField2, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", "", messageField2, model.State)
 	want = []string{
-		"if (result.message2?.data != null) 'message2.data': encodeBytes(result.message2?.data)!",
-		"if (result.message2?.dataCrc32C != null) 'message2.dataCrc32c': '${result.message2?.dataCrc32C}'",
+		"if (result.message2.data != null) 'message2.data': encodeBytes(result.message2.data)!",
+		"if (result.message2.dataCrc32C != null) 'message2.dataCrc32c': '${result.message2.dataCrc32C}'",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 	}
 
 	// nested messages
-	got = buildQueryLines([]string{}, "result.", "", messageField3, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", "", messageField3, model.State)
 	want = []string{
-		"if (result.message3?.secret?.name != null) 'message3.secret.name': result.message3?.secret?.name!",
-		"if (result.message3?.fieldMask?.paths != null) 'message3.fieldMask.paths': result.message3?.fieldMask?.paths!",
+		"if (result.message3.secret.name.isNotDefault) 'message3.secret.name': result.message3.secret.name",
+		"if (result.message3.fieldMask!.paths.isNotDefault) 'message3.fieldMask.paths': result.message3.fieldMask!.paths",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestCreateFromJsonLine(t *testing.T) {
+	secret := sample.Secret()
+
+	for _, test := range []struct {
+		field *api.Field
+		want  string
+	}{
+		// primitives
+		{
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
+			"json['bool'] ?? false",
+		}, {
+			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
+			"json['int32'] ?? 0",
+		}, {
+			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
+			"json['fixed32'] ?? 0",
+		}, {
+			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
+			"json['string'] ?? ''",
+		},
+
+		// optional primitives
+		{
+			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
+			"json['bool']",
+		}, {
+			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
+			"json['int32']",
+		}, {
+			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
+			"json['string']",
+		},
+
+		// repeated primitives
+		{
+			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
+			"decodeList(json['boolList']) ?? []",
+		}, {
+			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
+			"decodeList(json['int32List']) ?? []",
+		}, {
+			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
+			"decodeList(json['stringList']) ?? []",
+		},
+
+		// repeated primitives w/ optional
+		{
+			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
+			"decodeList(json['int32List']) ?? []",
+		},
+
+		// bytes, repeated bytes
+		{
+			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
+			"decodeBytes(json['bytes'])",
+		}, {
+			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
+			"decodeListBytes(json['bytesList'])",
+		},
+
+		// messages
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
+			"decode(json['message'], Secret.fromJson)",
+		},
+	} {
+		t.Run(test.field.Name, func(t *testing.T) {
+			message := &api.Message{
+				Name:    "UpdateSecretRequest",
+				ID:      "..UpdateRequest",
+				Package: sample.Package,
+				Fields:  []*api.Field{test.field},
+			}
+			model := api.NewTestAPI([]*api.Message{message, secret}, []*api.Enum{}, []*api.Service{})
+			annotate := newAnnotateModel(model)
+			annotate.annotateModel(map[string]string{})
+			codec := test.field.Codec.(*fieldAnnotation)
+
+			got := annotate.createFromJsonLine(test.field, model.State, codec.Required)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+			}
+		})
+	}
+}
+
+func TestCreateToJsonLine(t *testing.T) {
+	secret := sample.Secret()
+
+	for _, test := range []struct {
+		field *api.Field
+		want  string
+	}{
+		// primitives
+		{
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
+			"bool$",
+		}, {
+			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
+			"int32",
+		}, {
+			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
+			"fixed32",
+		}, {
+			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
+			"string",
+		},
+
+		// optional primitives
+		{
+			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
+			"boolOpt",
+		}, {
+			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
+			"int32Opt",
+		}, {
+			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
+			"stringOpt",
+		},
+
+		// repeated primitives
+		{
+			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
+			"boolList",
+		}, {
+			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
+			"int32List",
+		}, {
+			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
+			"stringList",
+		},
+
+		// repeated primitives w/ optional
+		{
+			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
+			"int32ListOpt",
+		},
+
+		// bytes, repeated bytes
+		{
+			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
+			"encodeBytes(bytes)",
+		}, {
+			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
+			"encodeListBytes(bytesList)",
+		},
+
+		// messages
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
+			"message.toJson()",
+		},
+	} {
+		t.Run(test.field.Name, func(t *testing.T) {
+			message := &api.Message{
+				Name:    "UpdateSecretRequest",
+				ID:      "..UpdateRequest",
+				Package: sample.Package,
+				Fields:  []*api.Field{test.field},
+			}
+			model := api.NewTestAPI([]*api.Message{message, secret}, []*api.Enum{}, []*api.Service{})
+			annotate := newAnnotateModel(model)
+			annotate.annotateModel(map[string]string{})
+			codec := test.field.Codec.(*fieldAnnotation)
+
+			got := createToJsonLine(test.field, model.State, codec.Required)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+			}
+		})
 	}
 }
