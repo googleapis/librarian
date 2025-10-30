@@ -288,9 +288,9 @@ message PredictResponse {}
 			},
 			mockRepo:            &MockRepository{},
 			protoContent:        "", // Empty content
-			wantErrMsg:          "",
-			wantCommitCalls:     1,
-			wantProtoFileToGUID: false, // No GUID injected
+			wantErrMsg:          "configured to generate, but nothing to generate",
+			wantCommitCalls:     0,
+			wantProtoFileToGUID: false,
 		},
 		{
 			name: "proto file with no insertion point",
@@ -306,9 +306,9 @@ package google.cloud.aiplatform.v1;
 import "google/api/annotations.proto";
 // no message, service or enum
 `,
-			wantErrMsg:          "",
-			wantCommitCalls:     1,
-			wantProtoFileToGUID: false, // No GUID injected
+			wantErrMsg:          "configured to generate, but nothing to generate",
+			wantCommitCalls:     0,
+			wantProtoFileToGUID: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -371,23 +371,44 @@ import "google/api/annotations.proto";
 func TestTestGenerateRunnerRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name                         string
-		state                        *config.LibrarianState
-		libraryID                    string
-		prepareErr                   error
-		generateErr                  error
-		validateErr                  error
-		wantErrMsg                   string
-		checkUnexpectedChanges       bool
-		repoChangedFiles             []string
-		wantResetHardCalls           int
-		wantDeleteLocalBranchesCalls int
+		name                   string
+		state                  *config.LibrarianState
+		librarianConfig        *config.LibrarianConfig
+		libraryID              string
+		prepareErr             error
+		generateErr            error
+		validateErr            error
+		wantErrMsg             string
+		checkUnexpectedChanges bool
+		repoChangedFiles       []string
 	}{
 		{
 			name:       "library not found",
 			state:      &config.LibrarianState{},
 			libraryID:  "non-existent-library",
 			wantErrMsg: "library \"non-existent-library\" not found in state",
+		},
+		{
+			name: "generate blocked library is skipped",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "blocked-lib",
+						LastGeneratedCommit: "initial-commit",
+						APIs:                []*config.API{{Path: "google/blocked/v1"}},
+					},
+				},
+			},
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:       "blocked-lib",
+						GenerateBlocked: true,
+					},
+				},
+			},
+			libraryID:  "blocked-lib",
+			wantErrMsg: "", // No error expected, as it should be skipped
 		},
 		{
 			name: "prepareForGenerateTest error",
@@ -472,39 +493,32 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			wantErrMsg:  "generation tests failed for 2 libraries",
 		},
 		{
-			name: "success with cleanup",
+			name: "multiple libraries, some skipped",
 			state: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
-					{
-						ID:                  "google-cloud-aiplatform-v1",
-						LastGeneratedCommit: "initial-commit",
-						APIs:                []*config.API{},
-					},
-				},
-			},
-			libraryID:                    "google-cloud-aiplatform-v1",
-			wantResetHardCalls:           1,
-			wantDeleteLocalBranchesCalls: 1,
-		},
-		{
-			name: "success with multiple libraries and cleanup",
-			state: &config.LibrarianState{
-				Libraries: []*config.LibraryState{
+
 					{
 						ID:                  "lib1",
 						LastGeneratedCommit: "initial-commit",
-						APIs:                []*config.API{},
+						APIs:                []*config.API{{Path: "google/lib1/v1"}},
 					},
 					{
 						ID:                  "lib2",
 						LastGeneratedCommit: "initial-commit",
-						APIs:                []*config.API{},
+						APIs:                []*config.API{{Path: "google/lib2/v1"}},
 					},
 				},
 			},
-			libraryID:                    "", // Run for all libraries
-			wantResetHardCalls:           1,
-			wantDeleteLocalBranchesCalls: 1,
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:       "lib2",
+						GenerateBlocked: true, // lib2 will be skipped
+					},
+				},
+			},
+			libraryID:  "", // Run for all libraries
+			wantErrMsg: "generation tests failed for 1 libraries",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -551,11 +565,13 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			}
 
 			// Create testGenerateRunner with the mocked dependencies.
+
 			runner := &testGenerateRunner{
 				library:                test.libraryID,
 				repo:                   mockRepo,
 				sourceRepo:             mockSourceRepo,
 				state:                  test.state,
+				librarianConfig:        test.librarianConfig,
 				workRoot:               t.TempDir(),
 				containerClient:        mockContainerClient,
 				checkUnexpectedChanges: test.checkUnexpectedChanges,
@@ -575,13 +591,79 @@ func TestTestGenerateRunnerRun(t *testing.T) {
 			} else if err != nil {
 				t.Fatalf("runner.run() returned unexpected error: %v", err)
 			}
+		})
+	}
+}
 
-			if mockRepo.ResetHardCalls != test.wantResetHardCalls {
-				t.Errorf("mockRepo.ResetHardCalls = %d, want %d", mockRepo.ResetHardCalls, test.wantResetHardCalls)
+func TestCleanup(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name                         string
+		sourceRepo                   *MockRepository
+		repo                         *MockRepository
+		branchesToDelete             []string
+		wantDeleteLocalBranchesCalls int
+		wantResetHardCalls           int
+		wantErrMsg                   string
+	}{
+		{
+			name:                         "successful cleanup",
+			sourceRepo:                   &MockRepository{},
+			repo:                         &MockRepository{},
+			branchesToDelete:             []string{"test-branch-1"},
+			wantDeleteLocalBranchesCalls: 1,
+			wantResetHardCalls:           1,
+		},
+		{
+			name: "DeleteLocalBranches returns error",
+			sourceRepo: &MockRepository{
+				DeleteLocalBranchesError: errors.New("delete branch error"),
+			},
+			repo:                         &MockRepository{},
+			branchesToDelete:             []string{"test-branch-2"},
+			wantDeleteLocalBranchesCalls: 1,
+			wantResetHardCalls:           0, // ResetHard should not be called
+			wantErrMsg:                   "failed to delete branch",
+		}, {
+			name:       "ResetHard returns error",
+			sourceRepo: &MockRepository{},
+			repo: &MockRepository{
+				ResetHardError: errors.New("reset hard error"),
+			},
+			branchesToDelete:             []string{"test-branch-3"},
+			wantDeleteLocalBranchesCalls: 1,
+			wantResetHardCalls:           1,
+			wantErrMsg:                   "failed to reset repo",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			runner := &testGenerateRunner{
+				sourceRepo:       test.sourceRepo,
+				repo:             test.repo,
+				branchesToDelete: test.branchesToDelete,
 			}
 
-			if mockSourceRepo.DeleteLocalBranchesCalls != test.wantDeleteLocalBranchesCalls {
-				t.Errorf("mockSourceRepo.DeleteLocalBranchesCalls = %d, want %d", mockSourceRepo.DeleteLocalBranchesCalls, test.wantDeleteLocalBranchesCalls)
+			err := runner.cleanup()
+
+			if test.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("cleanup() did not return an error, but one was expected containing %q", test.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("cleanup() returned error %q, want error containing %q", err.Error(), test.wantErrMsg)
+				}
+			} else if err != nil {
+				t.Fatalf("cleanup() returned unexpected error: %v", err)
+			}
+
+			if test.sourceRepo.DeleteLocalBranchesCalls != test.wantDeleteLocalBranchesCalls {
+				t.Errorf("DeleteLocalBranches was called %d times, want %d", test.sourceRepo.DeleteLocalBranchesCalls, test.wantDeleteLocalBranchesCalls)
+			}
+			if test.repo.ResetHardCalls != test.wantResetHardCalls {
+				t.Errorf("ResetHard was called %d times, want %d", test.repo.ResetHardCalls, test.wantResetHardCalls)
 			}
 		})
 	}

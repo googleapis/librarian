@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -27,11 +28,14 @@ import (
 	"github.com/googleapis/librarian/internal/gitrepo"
 )
 
+var errGenerateBlocked = errors.New("generation is blocked for library")
+
 type testGenerateRunner struct {
 	library                string
 	repo                   gitrepo.Repository
 	sourceRepo             gitrepo.Repository
 	state                  *config.LibrarianState
+	librarianConfig        *config.LibrarianConfig
 	workRoot               string
 	containerClient        ContainerClient
 	checkUnexpectedChanges bool
@@ -54,18 +58,32 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if r.library != "" {
-		if err := r.testSingleLibrary(ctx, r.library, sourceRepoHead, outputDir); err != nil {
+		err := r.testSingleLibrary(ctx, r.library, sourceRepoHead, outputDir)
+		if errors.Is(err, errGenerateBlocked) {
+			slog.Info("test skipped for library due to generate_blocked", "library", r.library)
+			return nil
+		}
+		if err != nil {
 			return fmt.Errorf("test failed for library %s, keeping changes for debugging: %w", r.library, err)
 		}
 		slog.Info("test succeeded for library", "library", r.library)
-		r.cleanup()
+		if err := r.cleanup(); err != nil {
+			return err
+		}
 		return nil
 	}
 
 	slog.Info("running tests for all libraries")
 	var failed []string
+	var skippedCount int
 	for _, library := range r.state.Libraries {
-		if err := r.testSingleLibrary(ctx, library.ID, sourceRepoHead, outputDir); err != nil {
+		err := r.testSingleLibrary(ctx, library.ID, sourceRepoHead, outputDir)
+		if errors.Is(err, errGenerateBlocked) {
+			slog.Info("test skipped for library due to generate_blocked", "library", library.ID)
+			skippedCount++
+			continue
+		}
+		if err != nil {
 			slog.Error("test failed for library", "library", library.ID, "error", err)
 			failed = append(failed, library.ID)
 		} else {
@@ -76,21 +94,28 @@ func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string
 		slog.Info("some tests failed, keeping changes for debugging", "branches", r.branchesToDelete)
 		return fmt.Errorf("generation tests failed for %d libraries: %s", len(failed), strings.Join(failed, ", "))
 	}
-	slog.Info("generation tests succeeded for all libraries")
-	r.cleanup()
+
+	if skippedCount > 0 {
+		slog.Info("generation tests completed", "skipped_libraries", skippedCount)
+	} else {
+		slog.Info("generation tests succeeded for all libraries")
+	}
+	if err := r.cleanup(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (r *testGenerateRunner) cleanup() {
+func (r *testGenerateRunner) cleanup() error {
 	// Delete branches created during test in source repo
 	if err := r.sourceRepo.DeleteLocalBranches(r.branchesToDelete); err != nil {
-		slog.Error("failed to delete branch during cleanup", "error", err)
+		return fmt.Errorf("failed to delete branch during cleanup: %w", err)
 	}
 	// Reset the code repo worktree to discard temp test changes at success
 	if err := r.repo.ResetHard(); err != nil {
-		slog.Error("failed to reset repo during cleanup, test changes kept in worktree for debugging",
-			"error", err)
+		return fmt.Errorf("failed to reset repo during cleanup: %w", err)
 	}
+	return nil
 }
 
 // testSingleLibrary runs a generation test for a single library.
@@ -109,6 +134,13 @@ func (r *testGenerateRunner) testSingleLibrary(ctx context.Context, libraryID, s
 	libraryState := r.state.LibraryByID(libraryID)
 	if libraryState == nil {
 		return fmt.Errorf("library %q not found in state", libraryID)
+	}
+
+	if r.librarianConfig != nil {
+		libConfig := r.librarianConfig.LibraryConfigFor(libraryID)
+		if libConfig != nil && libConfig.GenerateBlocked {
+			return errGenerateBlocked
+		}
 	}
 	protoFileToGUID, err := r.prepareForGenerateTest(libraryState, libraryID)
 	if err != nil {
@@ -149,6 +181,10 @@ func (r *testGenerateRunner) prepareForGenerateTest(libraryState *config.Library
 	protoFileToGUID, err := injectTestGUIDsIntoProtoFiles(protoFiles, r.sourceRepo.GetDir())
 	if err != nil {
 		return nil, fmt.Errorf("failed to inject test GUIDs into proto files: %w", err)
+	}
+
+	if len(protoFileToGUID) == 0 {
+		return nil, fmt.Errorf("library %q configured to generate, but nothing to generate", libraryID)
 	}
 
 	if err := r.sourceRepo.AddAll(); err != nil {
