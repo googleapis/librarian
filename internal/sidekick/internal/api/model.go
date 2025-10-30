@@ -613,6 +613,20 @@ type Message struct {
 	Pagination *PaginationInfo
 	// Language specific annotations.
 	Codec any
+	// Resource contains the data from the `google.api.resource` annotation.
+	Resource *Resource
+}
+
+// Resource contains the data from the `google.api.resource` annotation.
+type Resource struct {
+	// Type is the resource type.
+	Type string
+	// Pattern is the resource name pattern.
+	Pattern []string
+	// Plural is the plural form of the resource name.
+	Plural string
+	// Singular is the singular form of the resource name.
+	Singular string
 }
 
 // HasFields returns true if the message has fields.
@@ -730,8 +744,21 @@ type Field struct {
 	MessageType *Message
 	// The enum type for this field, can be nil.
 	EnumType *Enum
+	// ResourceReference contains the data from the `google.api.resource_reference`
+	// annotation.
+	ResourceReference *ResourceReference
 	// A placeholder to put language specific annotations.
 	Codec any
+}
+
+// ResourceReference contains the data from the `google.api.resource_reference`
+// annotation.
+type ResourceReference struct {
+	// Type is the resource type that the field references.
+	Type string
+	// ChildType is the resource type of a child of the resource that the field
+	// references.
+	ChildType string
 }
 
 // DocumentAsRequired returns true if the field should be documented as required.

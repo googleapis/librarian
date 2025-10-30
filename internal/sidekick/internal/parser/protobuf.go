@@ -29,11 +29,30 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/parser/svcconfig"
 	"github.com/googleapis/librarian/internal/sidekick/internal/protobuf"
+	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
+
+func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.Field) {
+	if f.Options == nil {
+		return
+	}
+	if !proto.HasExtension(f.Options, annotations.E_ResourceReference) {
+		return
+	}
+	ext := proto.GetExtension(f.Options, annotations.E_ResourceReference)
+	ref, ok := ext.(*annotations.ResourceReference)
+	if !ok {
+		return
+	}
+	field.ResourceReference = &api.ResourceReference{
+		Type:      ref.Type,
+		ChildType: ref.ChildType,
+	}
+}
 
 // ParseProtobuf reads Protobuf specifications and converts them into
 // the `api.API` model.
@@ -477,8 +496,21 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 		Deprecated: m.GetOptions().GetDeprecated(),
 	}
 	state.MessageByID[mFQN] = message
-	if opts := m.GetOptions(); opts != nil && opts.GetMapEntry() {
-		message.IsMap = true
+	if opts := m.GetOptions(); opts != nil {
+		if opts.GetMapEntry() {
+			message.IsMap = true
+		}
+		if proto.HasExtension(opts, annotations.E_Resource) {
+			ext := proto.GetExtension(opts, annotations.E_Resource)
+			if res, ok := ext.(*annotations.ResourceDescriptor); ok {
+				message.Resource = &api.Resource{
+					Type:     res.GetType(),
+					Pattern:  res.GetPattern(),
+					Plural:   res.GetPlural(),
+					Singular: res.GetSingular(),
+				}
+			}
+		}
 	}
 	if len(m.GetNestedType()) > 0 {
 		for _, nm := range m.GetNestedType() {
@@ -511,6 +543,8 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 			AutoPopulated: protobufIsAutoPopulated(mf),
 			Behavior:      protobufFieldBehavior(mf),
 		}
+		field.Behavior = protobufFieldBehavior(mf)
+		processResourceReference(mf, field)
 		normalizeTypes(state, mf, field)
 		message.Fields = append(message.Fields, field)
 		if field.IsOneOf {

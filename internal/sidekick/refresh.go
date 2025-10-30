@@ -92,12 +92,6 @@ func refreshDir(rootConfig *config.Config, cmdLine *CommandLine, output string) 
 		return nil
 	}
 
-	if config.Gcloud == nil {
-		fmt.Println("DEBUG: config.Gcloud is nil")
-	} else {
-		fmt.Println("DEBUG: config.Gcloud was loaded successfully")
-	}
-
 	switch config.General.Language {
 	case "rust":
 		return rust.Generate(model, output, config)
