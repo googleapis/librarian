@@ -173,11 +173,11 @@ func hasValidHeader(path string, r io.Reader) (bool, error) {
 }
 
 func TestGolangCILint(t *testing.T) {
-	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest", "run")
+	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0", "run")
 }
 
 func TestGoImports(t *testing.T) {
-	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@latest", "-d", ".")
+	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@v0.38.0", "-d", ".")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
@@ -195,7 +195,7 @@ func TestGoModTidy(t *testing.T) {
 }
 
 func TestGovulncheck(t *testing.T) {
-	rungo(t, "run", "golang.org/x/vuln/cmd/govulncheck@latest", "./...")
+	rungo(t, "run", "golang.org/x/vuln/cmd/govulncheck@v1.1.4", "./...")
 }
 
 func TestGodocLint(t *testing.T) {
