@@ -27,8 +27,20 @@ import (
 )
 
 // ReleaseInitRequest is the structure of the release-init-request.json file.
+type Request struct {
+	ReleaseInit *ReleaseInitRequest `json:"release_init,omitempty"`
+}
+
+// Response is the generic response type for all commands.
+type Response struct {
+	Error   string `json:"error,omitempty"`
+	Success bool   `json:"success,omitempty"`
+}
+
+// ReleaseInitRequest is the structure of the release-init-request.json file.
 type ReleaseInitRequest struct {
-	Libraries []*Library `json:"libraries"`
+	LibraryID string `json:"library_id"`
+	Version   string `json:"version"`
 }
 
 // ReleaseInitResponse is the structure of the release-init-response.json file.

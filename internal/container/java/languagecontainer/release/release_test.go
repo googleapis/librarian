@@ -1,76 +1,89 @@
-// Copyright 2025 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package release
 
 import (
-	"encoding/json"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
-func TestReadReleaseInitRequest(t *testing.T) {
-	want := &message.ReleaseInitRequest{
-		Libraries: []*message.Library{
-			{
-				ID:      "google-cloud-secretmanager-v1",
-				Version: "1.3.0",
-				Changes: []*message.Change{
-					{
-						Type:          "feat",
-						Subject:       "add new UpdateRepository API",
-						Body:          "This adds the ability to update a repository's properties.",
-						PiperCLNumber: "786353207",
-						CommitHash:    "9461532e7d19c8d71709ec3b502e5d81340fb661",
-					},
-					{
-						Type:          "docs",
-						Subject:       "fix typo in BranchRule comment",
-						Body:          "",
-						PiperCLNumber: "786353207",
-						CommitHash:    "9461532e7d19c8d71709ec3b502e5d81340fb661",
-					},
-				},
-				APIs: []message.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
-					{
-						Path: "google/cloud/secretmanager/v1beta",
-					},
-				},
-				SourcePaths: []string{
-					"secretmanager",
-					"other/location/secretmanager",
-				},
-				ReleaseTriggered: true,
-			},
-		},
+func TestReleaseInit(t *testing.T) {
+	tests := []struct {
+		name        string
+		libraryID   string
+		version     string
+		expected    string
+		expectError bool
+	}{
+		{
+			name:      "happy path",
+			libraryID: "google-cloud-java",
+			version:   "2.0.0",
+							expected:  "    <version>2.0.0<!-- {x-version-update:google-cloud-java:current} --> </version>",		},
 	}
-	bytes, err := os.ReadFile(filepath.Join("..", "testdata", "release-init-request.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := &message.ReleaseInitRequest{}
-	if err := json.Unmarshal(bytes, got); err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Unmarshal() mismatch (-want +got):\n%s", diff)
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			// Copy the testdata pom.xml to the temporary directory.
+			inputPath := filepath.Join("testdata", "pom.xml")
+			outputPath := filepath.Join(tmpDir, "pom.xml")
+			input, err := ioutil.ReadFile(inputPath)
+			if err != nil {
+				t.Fatalf("failed to read input file: %v", err)
+			}
+			if err := ioutil.WriteFile(outputPath, input, 0644); err != nil {
+				t.Fatalf("failed to write output file: %v", err)
+			}
+
+			request := &message.Request{
+				ReleaseInit: &message.ReleaseInitRequest{
+					LibraryID: test.libraryID,
+					Version:   test.version,
+				},
+			}
+			response := &message.Response{}
+
+			// Change the current working directory to the temporary directory.
+			// This is important because UpdateVersions walks the current directory.
+			originalDir, err := filepath.Abs(".")
+			if err != nil {
+				t.Fatalf("failed to get current directory: %v", err)
+			}
+			// The filepath.Walk function is not suitable for changing the current working directory.
+			// Instead, we should change the directory once to the temporary directory.
+			if err := os.Chdir(tmpDir); err != nil {
+				t.Fatalf("failed to change directory to %s: %v", tmpDir, err)
+			}
+			defer func() {
+				if err := os.Chdir(originalDir); err != nil {
+					t.Fatalf("failed to change back to original directory: %v", err)
+				}
+			}()
+
+			ReleaseInit(request, response)
+
+			if test.expectError {
+				if response.Error == "" {
+					t.Errorf("expected error, got success")
+				}
+			} else {
+				if response.Error != "" {
+					t.Errorf("expected success, got error: %s", response.Error)
+				}
+				content, err := ioutil.ReadFile(outputPath)
+				if err != nil {
+					t.Fatalf("failed to read output file: %v", err)
+				}
+				if !strings.Contains(string(content), test.expected) {
+					t.Errorf("expected file to contain %q, got %q", test.expected, string(content))
+				}
+			}
+		})
 	}
 }
