@@ -324,7 +324,7 @@ func TestCalculateDependencies(t *testing.T) {
 			want:        []packageDependency{},
 		},
 		{
-			testName:    "seperate dependency",
+			testName:    "separate dependency",
 			packages:    map[string]bool{"google_cloud_foo": true},
 			constraints: map[string]string{"google_cloud_foo": "^1.2.3"},
 			packageName: "google_cloud_bar",
