@@ -269,8 +269,7 @@ func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string)
 func recordPackageCommentStatus(t *testing.T, file *ast.File, packageHasComment map[string]bool) {
 	t.Helper()
 	pkg := file.Name.String()
-	if packageHasComment[pkg] {
-		return
+	if !packageHasComment[pkg] {
+		packageHasComment[pkg] = file.Doc != nil
 	}
-	packageHasComment[pkg] = file.Doc != nil
 }
