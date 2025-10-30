@@ -57,6 +57,13 @@ need to be executable by any user ID within the container.
 * Create a docker file for your container [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/Dockerfile)
 * Create a cloudbuild file [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/cloudbuild-exitgate.yaml) that uploads your image to us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev
 
+### Guidelines on Language Container Runtimes
+
+You should be able to run the `generate` or `release-init` commands for an API such as Google Cloud Functions in less than a
+minute. We understand that some libraries may take longer to process, however, long runtimes can adversely affect your
+ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a
+generator update could trigger a run for all your libraries.
+
 ### Implement Container Contracts
 
 The following sections detail the contracts for each container command.
@@ -316,24 +323,57 @@ global file edits. The libraries that are being released will be marked by the `
 [config-schema.md]:config-schema.md
 [state-schema.md]: state-schema.md
 
+## Pin the Language Container version in `state.yaml`
+
+You should pin the container version so that changes that appear as a result of updates to the language specific container
+can be tracked and properly documented in client library release notes.
+
+The `update-image` command is used to update and pin the language specific container in `state.yaml` and re-generate all libraries.
+You can optionally specify an image using the `-image` flag.
+
+*Note: If the `-image` flag is not specified, the latest container image will be used.*
+
+When the job completes, a PR will be opened by librarian with the changes related to the container update. You can edit the pull
+request title to set a global commit message which will be applied to all libraries.
+
+*Note: If the container SHA in `state.yaml` was updated without using `update-image`, there could be unrelated diffs.*
+
+As a quick check to verify that changes are solely due to the language-specific container, execute the `update-image` command
+for the current SHA to ensure a clean state before updating to a newer version of a language specific container.
+
+librarian update-image -image=us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/<language>-librarian-generator@sha256:<current SHA> -push
+
+Merge the PR which includes changes for the current container SHA prior to updating to a new container SHA. Moving forward, always use `update-image`
+to update the language specific SHA in `state.yaml` to ensure that all changes are correctly tracked and documented.
+
 ## Validate Commands are working
 
 For each command you should be able to run the CLI on your remote desktop and have it create the expected PR.
 
 **Configure Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ generate -repo=<your repository> -library=<name of library that exists in googleapis but not your repository> -push
 ```
 
 **Generate Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ generate -repo=<your repository> -push
 ```
 
 **Release Command:**
+
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
 go run ./cmd/librarian/ release init -repo=<your repository> -push
+```
+
+**Update Image Command:**
+
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ update-image -repo=<your repository> -push
 ```

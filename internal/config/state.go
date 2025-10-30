@@ -26,6 +26,8 @@ import (
 const (
 	StatusNew      = "new"
 	StatusExisting = "existing"
+	// BulkChangeThreshold is a threshold to determine whether a commit is a bulk change.
+	BulkChangeThreshold = 10
 )
 
 // LibrarianState defines the contract for the state.yaml file.
@@ -161,7 +163,7 @@ type Commit struct {
 // IsBulkCommit returns true if the commit is associated with 10 or more
 // libraries.
 func (c *Commit) IsBulkCommit() bool {
-	return len(strings.Split(c.LibraryIDs, ",")) >= 10
+	return len(strings.Split(c.LibraryIDs, ",")) >= BulkChangeThreshold
 }
 
 var (
@@ -243,7 +245,7 @@ type API struct {
 	ServiceConfig string `yaml:"service_config" json:"service_config"`
 	// The status of the API, one of "new" or "existing".
 	// This field is ignored when writing to state.yaml.
-	Status string `yaml:"-" json:"status"`
+	Status string `yaml:"-" json:"status,omitempty"`
 }
 
 // Validate checks that the API is valid.

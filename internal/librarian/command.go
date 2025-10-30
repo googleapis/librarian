@@ -485,7 +485,12 @@ func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadO
 			slog.Debug("skipping read-only file", "path", globalFile.Path)
 			continue
 		}
+
 		srcPath := filepath.Join(src, globalFile.Path)
+		if _, err := os.Lstat(srcPath); os.IsNotExist(err) {
+			slog.Info("Skip copying a non-existent global allowlist file", "source", srcPath)
+			continue
+		}
 		dstPath := filepath.Join(dst, globalFile.Path)
 		if err := copyFile(dstPath, srcPath); err != nil {
 			return fmt.Errorf("failed to copy global file %s from %s: %w", dstPath, srcPath, err)

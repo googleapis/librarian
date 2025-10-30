@@ -2149,28 +2149,7 @@ func TestCopyGlobalAllowlist(t *testing.T) {
 			},
 		},
 		{
-			name: "repo doesn't have the global file",
-			cfg: &config.LibrarianConfig{
-				GlobalFilesAllowlist: []*config.GlobalFile{
-					{
-						Path:        "one/path/example.txt",
-						Permissions: "read-write",
-					},
-					{
-						Path:        "another/path/example.txt",
-						Permissions: "read-only",
-					},
-				},
-			},
-			files: []string{
-				"another/path/example.txt",
-				"ignored/path/example.txt",
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to lstat file",
-		},
-		{
-			name: "output doesn't have the global file",
+			name: "source doesn't have the global file",
 			cfg: &config.LibrarianConfig{
 				GlobalFilesAllowlist: []*config.GlobalFile{
 					{
@@ -2183,8 +2162,6 @@ func TestCopyGlobalAllowlist(t *testing.T) {
 				"one/path/example.txt",
 			},
 			doNotCreateOutput: true,
-			wantErr:           true,
-			wantErrMsg:        "failed to copy global file",
 		},
 		{
 			name:         "copies read-only files",
@@ -2213,6 +2190,11 @@ func TestCopyGlobalAllowlist(t *testing.T) {
 			skipped: []string{
 				"ignored/path/example.txt",
 			},
+		},
+		{
+			name:         "nil_librarian_config",
+			copyReadOnly: true,
+			cfg:          nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

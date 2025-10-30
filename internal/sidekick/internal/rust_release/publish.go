@@ -74,6 +74,11 @@ func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 		return fmt.Errorf("mismatched workspace plan vs. changed crates, probably missing some version bumps (-plan, +changed):\n%s", diff)
 	}
 
+	crateSummary := slices.Collect(maps.Keys(manifests))
+	totalCrates := len(crateSummary)
+	crateSummary = crateSummary[0:min(20, totalCrates)]
+	slog.Info(fmt.Sprintf("there are %d crates in need of publishing, summary=%v", totalCrates, crateSummary))
+
 	if !skipSemverChecks {
 		for name, manifest := range manifests {
 			if isNewFile(config, lastTag, manifest) {

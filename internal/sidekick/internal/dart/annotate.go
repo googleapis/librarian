@@ -60,7 +60,8 @@ type modelAnnotations struct {
 	ApiKeyEnvironmentVariables []string
 	// Dart `export` statements e.g.
 	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
-	Exports []string
+	Exports     []string
+	ProtoPrefix string
 }
 
 // HasServices returns true if the model has services.
@@ -97,6 +98,7 @@ type messageAnnotation struct {
 	// A custom body for the message's constructor.
 	ConstructorBody string
 	ToStringLines   []string
+	Model           *api.API
 }
 
 // HasFields returns true if the message has fields.
@@ -167,6 +169,7 @@ type fieldAnnotation struct {
 type enumAnnotation struct {
 	Name     string
 	DocLines []string
+	Model    *api.API
 }
 
 type enumValueAnnotation struct {
@@ -234,6 +237,8 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		issueTrackerURL            string
 		apiKeyEnvironmentVariables = []string{}
 		exports                    = []string{}
+		protobufPrefix             string
+		pkgName                    string
 	)
 
 	for key, definition := range options {
@@ -343,11 +348,18 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	devDependencies = append(devDependencies, "lints")
 
 	// Add the import for the google_cloud_gax package.
-	annotate.imports[commonImport] = true
+	if len(model.Services) > 0 {
+		annotate.imports[gaxImport] = true
+	}
 
-	packageDependencies, err := calculateDependencies(annotate.imports, annotate.dependencyConstraints)
-	if err != nil {
-		return err
+	// `google.protobuf` defines `JsonEncodable`, which is needed by any package that defines a
+	// `message` or `enum`, i.e., all of them.
+	protobufPrefix = annotate.packagePrefixes["google.protobuf"]
+	if protobufPrefix == "" {
+		annotate.imports[protobufImport] = true
+	} else {
+		annotate.imports[protobufImport+" as "+protobufPrefix] = true
+		protobufPrefix += "."
 	}
 
 	if len(model.Services) > 0 && len(apiKeyEnvironmentVariables) == 0 {
@@ -358,9 +370,15 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return errors.New("all packages must define 'issue-tracker-url'")
 	}
 
+	pkgName = packageName(model, packageNameOverride)
+	packageDependencies, err := calculateDependencies(annotate.imports, annotate.dependencyConstraints, pkgName)
+	if err != nil {
+		return err
+	}
+
 	ann := &modelAnnotations{
 		Parent:         model,
-		PackageName:    packageName(model, packageNameOverride),
+		PackageName:    pkgName,
 		PackageVersion: packageVersion,
 		MainFileName:   strcase.ToSnake(model.Name),
 		CopyrightYear:  generationYear,
@@ -385,6 +403,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		ReadMeQuickstartText:       readMeQuickstartText,
 		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
 		Exports:                    exports,
+		ProtoPrefix:                protobufPrefix,
 	}
 
 	model.Codec = ann
@@ -417,7 +436,7 @@ func calculateRequiredFields(model *api.API) map[string]*api.Field {
 }
 
 // calculateDependencies calculates package dependencies based on `package:` imports.
-func calculateDependencies(imports map[string]bool, constraints map[string]string) ([]packageDependency, error) {
+func calculateDependencies(imports map[string]bool, constraints map[string]string, packageName string) ([]packageDependency, error) {
 	deps := []packageDependency{}
 
 	for imp := range imports {
@@ -431,7 +450,10 @@ func calculateDependencies(imports map[string]bool, constraints map[string]strin
 				if len(constraint) == 0 {
 					return nil, fmt.Errorf("unknown version constraint for package %q (did you forget to add it to .sidekick.toml?)", name)
 				}
-				deps = append(deps, packageDependency{Name: name, Constraint: constraint})
+
+				if name != packageName {
+					deps = append(deps, packageDependency{Name: name, Constraint: constraint})
+				}
 			}
 		}
 	}
@@ -478,7 +500,6 @@ func calculateImports(imports map[string]bool) []string {
 func (annotate *annotateModel) annotateService(s *api.Service) {
 	// Add a package:http import if we're generating a service.
 	annotate.imports[httpImport] = true
-	annotate.imports[authImport] = true
 
 	// Some methods are skipped.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
@@ -501,7 +522,8 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
 	// Add the import for the common JSON helpers.
-	annotate.imports[commonHelpersImport] = true
+
+	annotate.imports[encodingImport] = true
 
 	for _, f := range m.Fields {
 		annotate.annotateField(f)
@@ -536,6 +558,7 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 		OmitGeneration:  omit || m.IsMap,
 		ConstructorBody: constructorBody,
 		ToStringLines:   toStringLines,
+		Model:           annotate.model,
 	}
 }
 
@@ -869,6 +892,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	enum.Codec = &enumAnnotation{
 		Name:     enumName(enum),
 		DocLines: formatDocComments(enum.Documentation, annotate.state),
+		Model:    annotate.model,
 	}
 }
 

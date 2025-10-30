@@ -229,7 +229,7 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 		},
 		{
 			path: "foo/something.txt",
-			message: `BEGIN_COMMIT_OVERRIDE 
+			message: `BEGIN_COMMIT 
 
 BEGIN_NESTED_COMMIT
 fix: a bug1 fix
@@ -261,7 +261,7 @@ Library-IDs: foo, bar
 Source-link: [googleapis/googleapis@fedcba09](https://github.com/googleapis/googleapis/commit/fedcba09)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 		},
 	}
 

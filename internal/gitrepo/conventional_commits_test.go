@@ -200,16 +200,16 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
-			name: "commit_override",
+			name: "begin_commit",
 			message: `feat: original message
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 fix(override): this is the override message
 
 This is the body of the override.
 
 Reviewed-by: Jane Doe
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:       "fix",
@@ -304,7 +304,65 @@ END_NESTED_COMMIT
 			},
 		},
 		{
-			name: "commit_override_with_nested_commits",
+			name: "begin_commit_with_nested_commits",
+			message: `feat: API regeneration main commit
+
+This pull request is generated with proto changes between
+... ...
+
+Librarian Version: {librarian_version}
+Language Image: {language_image_name_and_digest}
+
+BEGIN_COMMIT
+BEGIN_NESTED_COMMIT
+feat: [abc] nested commit 1
+
+body of nested commit 1
+...
+
+PiperOrigin-RevId: 123456
+
+Source-Link: fake-link
+END_NESTED_COMMIT
+BEGIN_NESTED_COMMIT
+feat: [abc] nested commit 2
+
+body of nested commit 2
+...
+
+PiperOrigin-RevId: 654321
+
+Source-Link: fake-link
+END_NESTED_COMMIT
+END_COMMIT
+`,
+			want: []*ConventionalCommit{
+				{
+					Type:       "feat",
+					Subject:    "[abc] nested commit 1",
+					Body:       "body of nested commit 1\n...",
+					LibraryID:  "abc",
+					IsNested:   true,
+					Footers:    map[string]string{"PiperOrigin-RevId": "123456", "Source-Link": "fake-link"},
+					CommitHash: sha.String(),
+					When:       now,
+				},
+				{
+					Type:       "feat",
+					Subject:    "[abc] nested commit 2",
+					IsNested:   true,
+					Body:       "body of nested commit 2\n...",
+					LibraryID:  "abc",
+					Footers:    map[string]string{"PiperOrigin-RevId": "654321", "Source-Link": "fake-link"},
+					CommitHash: sha.String(),
+					When:       now,
+				},
+			},
+		},
+		{
+			// This test verifies that the deprecated mark, BEGIN_COMMIT_OVERRIDE and END_COMMIT_OVERRIDE
+			// can be used to separate nested commits.
+			name: "begin_commit_override_with_nested_commits",
 			message: `feat: API regeneration main commit
 
 This pull request is generated with proto changes between
@@ -360,18 +418,18 @@ END_COMMIT_OVERRIDE
 			},
 		},
 		{
-			name: "nest_commit_outside_of_override_ignored",
+			name: "nest_commit_outside_of_begin_commit_ignored",
 			message: `feat: original message
 
 BEGIN_NESTED_COMMIT
 ignored line
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 fix(override): this is the override message
 
 This is the body of the override.
 
 Reviewed-by: Jane Doe
-END_COMMIT_OVERRIDE
+END_COMMIT
 END_NESTED_COMMIT`,
 			want: []*ConventionalCommit{
 				{
@@ -397,7 +455,7 @@ This pull request is generated with proto changes between
 [googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
 (inclusive).
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 BEGIN_NESTED_COMMIT
 feat: [texttospeech] Support promptable voices by specifying a model name and a prompt
 feat: [texttospeech] Add enum value M4A to enum AudioEncoding
@@ -407,7 +465,7 @@ PiperOrigin-RevId: 799242210
 
 Source-Link: [googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
 END_NESTED_COMMIT
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:      "feat",
@@ -458,7 +516,7 @@ This pull request is generated with proto changes between
 [googleapis/googleapis@b738e78](https://github.com/googleapis/googleapis/commit/b738e78ed63effb7d199ed2d61c9e03291b6077f)
 (inclusive).
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 BEGIN_NESTED_COMMIT
 feat: [texttospeech] Support promptable voices by specifying a model
 name and a prompt
@@ -467,7 +525,7 @@ docs: [texttospeech] A comment for method 'StreamingSynthesize' in
 service 'TextToSpeech' is changed
 
 END_NESTED_COMMIT
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:       "feat",
@@ -511,7 +569,7 @@ This pull request is generated with proto changes between
 [googleapis/googleapis@36533b0](googleapis/googleapis@36533b0)
 (inclusive).
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 BEGIN_NESTED_COMMIT
 docs: [google-cloud-video-live-stream] Update requirements of resource ID fields to be more clear
 
@@ -521,7 +579,7 @@ BEGIN_NESTED_COMMIT
 feat: [google-cloud-eventarc] add new fields to Eventarc resources
 
 END_NESTED_COMMIT
-END_COMMIT_OVERRIDE`,
+END_COMMIT`,
 			want: []*ConventionalCommit{
 				{
 					Type:       "docs",

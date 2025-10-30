@@ -26,10 +26,10 @@ import (
 )
 
 var typedDataImport = "dart:typed_data"
-var authImport = "package:googleapis_auth/auth_io.dart as auth"
 var httpImport = "package:http/http.dart as http"
-var commonImport = "package:google_cloud_gax/gax.dart"
-var commonHelpersImport = "package:google_cloud_gax/src/encoding.dart"
+var gaxImport = "package:google_cloud_gax/gax.dart"
+var encodingImport = "package:google_cloud_protobuf/src/encoding.dart"
+var protobufImport = "package:google_cloud_protobuf/protobuf.dart"
 
 var needsCtorValidation = map[string]string{
 	".google.protobuf.Duration":  "",

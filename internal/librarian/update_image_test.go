@@ -231,7 +231,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 0,
 			wantGenerateCalls:   1,
 			wantBuildCalls:      0, // no -build flag
-			wantCheckoutCalls:   1,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name:  "no change image",
@@ -280,7 +280,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   1,
 			wantBuildCalls:      0, // no -build flag
-			wantCheckoutCalls:   1,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name: "finds image error",
@@ -333,7 +333,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   1,
 			wantBuildCalls:      1,
-			wantCheckoutCalls:   1,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name: "updates multiple",
@@ -367,7 +367,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   2,
 			wantBuildCalls:      2,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 		},
 		{
 			name: "skips libraries without APIs",
@@ -401,7 +401,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   1,
 			wantBuildCalls:      1,
-			wantCheckoutCalls:   1,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name: "partial generate success",
@@ -438,7 +438,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   2,
 			wantBuildCalls:      1, // build for failed generate should not run
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 		},
 		{
 			name: "partial build success",
@@ -475,7 +475,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   2,
 			wantBuildCalls:      2,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 		},
 		{
 			name: "checkout error",
@@ -509,7 +509,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   0,
 			wantBuildCalls:      0,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 			checkoutError:       fmt.Errorf("some checkout error"),
 		},
 		{
@@ -545,7 +545,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   2,
 			wantBuildCalls:      2,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 			wantCommitMsg:       "feat: update image to gcr.io/test/image@sha256:abc123",
 		},
 		{
@@ -584,7 +584,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls:        1,
 			wantGenerateCalls:          2,
 			wantBuildCalls:             2,
-			wantCheckoutCalls:          2,
+			wantCheckoutCalls:          3,
 			wantCreatePullRequestCalls: 1,
 			wantCommitMsg:              "feat: update image to gcr.io/test/image@sha256:abc123",
 			wantErr:                    true,
@@ -632,7 +632,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls:        1,
 			wantGenerateCalls:          2,
 			wantBuildCalls:             2,
-			wantCheckoutCalls:          2,
+			wantCheckoutCalls:          3,
 			wantCreatePullRequestCalls: 1,
 			wantCommitMsg:              "feat: update image to gcr.io/test/image@sha256:abc123",
 		},
@@ -681,7 +681,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantFindLatestCalls:        1,
 			wantGenerateCalls:          2,
 			wantBuildCalls:             2,
-			wantCheckoutCalls:          2,
+			wantCheckoutCalls:          3,
 			wantCreatePullRequestCalls: 1,
 			wantCreateIssueCalls:       1,
 			wantCommitMsg:              "feat: update image to gcr.io/test/image@sha256:abc123",
@@ -718,21 +718,6 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 
 			err := r.run(t.Context())
 
-			if test.wantErr {
-				if err == nil {
-					t.Fatalf("%s should return error", test.name)
-				}
-
-				if !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
-				}
-				return
-			} else {
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
-
 			if diff := cmp.Diff(test.wantGenerateCalls, test.containerClient.generateCalls); diff != "" {
 				t.Errorf("%s: run() generateCalls mismatch (-want +got):%s", test.name, diff)
 			}
@@ -750,6 +735,21 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantCreateIssueCalls, test.ghClient.createIssueCalls); diff != "" {
 				t.Errorf("%s: run() createIssueCalls mismatch (-want +got):%s", test.name, diff)
+			}
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("%s should return error", test.name)
+				}
+
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message %s, got %s", test.wantErrMsg, err.Error())
+				}
+				return
+			} else {
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			if test.wantCommitMsg != "" {

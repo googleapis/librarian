@@ -19,11 +19,13 @@ package librarian
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -33,6 +35,10 @@ import (
 	"github.com/googleapis/librarian/internal/github"
 	"gopkg.in/yaml.v3"
 )
+
+// regexps for parsing commit messages
+var nestedCommitRegex = regexp.MustCompile(`(?s)BEGIN_NESTED_COMMIT\n(.*?)\nEND_NESTED_COMMIT`)
+var conventionalCommitRegex = regexp.MustCompile(`^(feat|fix|docs|chore): (.+)$`)
 
 func TestRunGenerate(t *testing.T) {
 	const (
@@ -498,23 +504,19 @@ func TestReleaseInit(t *testing.T) {
 			runGit(t, repo, "tag", tagName)
 
 			// Add a new commit to simulate a change.
-			newFilePath := filepath.Join(repo, test.changePath, "new-file.txt")
-			if err := os.MkdirAll(filepath.Dir(newFilePath), 0755); err != nil {
+			newFilePath := filepath.Join(test.changePath, "new-file.txt")
+			if err := os.MkdirAll(filepath.Join(repo, test.changePath), 0755); err != nil {
 				t.Fatalf("Failed to create directory for new file: %v", err)
 			}
-			if err := os.WriteFile(newFilePath, []byte("new file"), 0644); err != nil {
-				t.Fatal(err)
-			}
-			runGit(t, repo, "add", newFilePath)
 			commitMsgBytes, err := os.ReadFile(commitMsgPath)
 			if err != nil {
 				t.Fatalf("Failed to read commit message file: %v", err)
 			}
-			commitMsg := string(commitMsgBytes)
-			runGit(t, repo, "commit", "-m", commitMsg)
-			runGit(t, repo, "log", "--oneline", fmt.Sprintf("%s..HEAD", tagName), "--", test.changePath)
 
-			server := newMockGitHubServer(t, "release", []string{}, []string{})
+			createCommit(t, repo, newFilePath, string(commitMsgBytes))
+
+			prContentToMatch := parseCommitMessageForPRContent(string(commitMsgBytes))
+			server := newMockGitHubServer(t, "release", prContentToMatch, []string{})
 			defer server.Close()
 
 			cmdArgs := []string{
@@ -765,8 +767,9 @@ func newMockGitHubServer(t *testing.T, prTitleFragment string, expectedContentIn
 				t.Errorf("unexpected PR title: got %q, want to contain %q", *newPR.Title, expectedTitle)
 			}
 			for _, expectedContent := range expectedContentInPr {
-				if !strings.Contains(*newPR.Body, expectedContent) {
-					t.Errorf("unexpected PR description: got %q, missing %q", *newPR.Body, expectedContent)
+				htmlEscapedContent := html.EscapeString(expectedContent)
+				if !strings.Contains(*newPR.Body, htmlEscapedContent) {
+					t.Errorf("unexpected PR description: got %q, missing %q", *newPR.Body, htmlEscapedContent)
 				}
 			}
 			for _, notExpectedContent := range notExpectedContentInPr {
@@ -874,4 +877,22 @@ func setupStateFile(t *testing.T, repoInitDir, lastGeneratedCommit string) {
 	if err := os.WriteFile(filepath.Join(repoInitDir, ".librarian", "state.yaml"), stateBytes, 0644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// parseCommitMessageForPRContent extracts lines that should be included in the PR description from commit message.
+func parseCommitMessageForPRContent(content string) []string {
+	matches := nestedCommitRegex.FindStringSubmatch(content)
+	nestedContent := content
+	if len(matches) > 1 {
+		nestedContent = matches[1]
+	}
+
+	var result []string
+	for _, line := range strings.Split(nestedContent, "\n") {
+		if match := conventionalCommitRegex.FindStringSubmatch(strings.TrimSpace(line)); match != nil {
+			result = append(result, match[2])
+		}
+	}
+
+	return result
 }

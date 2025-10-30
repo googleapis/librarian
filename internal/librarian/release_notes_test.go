@@ -36,6 +36,9 @@ func TestFormatReleaseNotes(t *testing.T) {
 	hash1 := plumbing.NewHash("1234567890abcdef")
 	hash2 := plumbing.NewHash("fedcba0987654321")
 	hash3 := plumbing.NewHash("abcdefg123456789")
+	hash4 := plumbing.NewHash("acdef12345678901")
+	hash5 := plumbing.NewHash("bcdef12345678901")
+	hash6 := plumbing.NewHash("cdefg12345678901")
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
@@ -61,11 +64,13 @@ func TestFormatReleaseNotes(t *testing.T) {
 								Type:       "feat",
 								Subject:    "new feature",
 								CommitHash: hash1.String(),
+								LibraryIDs: "my-library",
 							},
 							{
 								Type:       "fix",
 								Subject:    "a bug fix",
 								CommitHash: hash2.String(),
+								LibraryIDs: "my-library",
 							},
 						},
 						ReleaseTriggered: true,
@@ -73,7 +78,9 @@ func TestFormatReleaseNotes(t *testing.T) {
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -106,12 +113,14 @@ Language Image: go:1.21
 								Subject:       "new feature",
 								CommitHash:    hash1.String(),
 								PiperCLNumber: "123456",
+								LibraryIDs:    "my-library",
 							},
 							{
 								Type:          "fix",
 								Subject:       "a bug fix",
 								CommitHash:    hash2.String(),
 								PiperCLNumber: "987654",
+								LibraryIDs:    "my-library",
 							},
 						},
 						ReleaseTriggered: true,
@@ -119,7 +128,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -151,11 +162,13 @@ Language Image: go:1.21
 								Type:       "feat",
 								Subject:    "new feature",
 								CommitHash: hash1.String(),
+								LibraryIDs: "my-library",
 							},
 							{
 								Type:       "feat",
 								Subject:    "another new feature",
 								CommitHash: hash2.String(),
+								LibraryIDs: "my-library",
 							},
 						},
 						ReleaseTriggered: true,
@@ -163,7 +176,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -194,6 +209,7 @@ Language Image: go:1.21
 								Type:       "feat",
 								Subject:    "feature for a",
 								CommitHash: hash1.String(),
+								LibraryIDs: "lib-a",
 							},
 						},
 					},
@@ -208,13 +224,16 @@ Language Image: go:1.21
 								Type:       "fix",
 								Subject:    "fix for b",
 								CommitHash: hash2.String(),
+								LibraryIDs: "lib-b",
 							},
 						},
 					},
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>lib-a: 1.1.0</summary>
 
@@ -254,18 +273,22 @@ Language Image: go:1.21
 								Type:       "feat",
 								Subject:    "new feature",
 								CommitHash: hash1.String(),
+								LibraryIDs: "my-library",
 							},
 							{
 								Type:       "ci",
 								Subject:    "a ci change",
 								CommitHash: hash2.String(),
+								LibraryIDs: "my-library",
 							},
 						},
 					},
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -295,13 +318,16 @@ Language Image: go:1.21
 								Subject:    "new feature",
 								Body:       "this is the body",
 								CommitHash: hash1.String(),
+								LibraryIDs: "my-library",
 							},
 						},
 					},
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -320,8 +346,11 @@ Language Image: go:1.21
 				Image:     "go:1.21",
 				Libraries: []*config.LibraryState{},
 			},
-			ghRepo:          &github.Repository{},
-			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21", librarianVersion),
+			ghRepo: &github.Repository{},
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
+Language Image: go:1.21`, librarianVersion),
 		},
 		{
 			name: "generate with chore",
@@ -340,13 +369,16 @@ Language Image: go:1.21
 								Subject:    "some chore",
 								Body:       "this is the body",
 								CommitHash: hash1.String(),
+								LibraryIDs: "my-library",
 							},
 						},
 					},
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -356,7 +388,7 @@ Language Image: go:1.21
 				librarianVersion, today),
 		},
 		{
-			name: "release with bulk commits",
+			name: "release_with_bulk_generation_commits",
 			state: &config.LibrarianState{
 				Image: "go:1.21",
 				Libraries: []*config.LibraryState{
@@ -370,6 +402,7 @@ Language Image: go:1.21
 								Type:       "feat",
 								Subject:    "new feature",
 								CommitHash: hash1.String(),
+								LibraryIDs: "j",
 							},
 							{
 								Type:       "fix",
@@ -403,7 +436,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>j: 1.1.0</summary>
 
@@ -431,6 +466,341 @@ Language Image: go:1.21
   Libraries: a,b,c,d,e,f,g,h,i,j,k
 </details>`,
 				librarianVersion, today, today),
+		},
+		{
+			name: "release_with_other_src_bulk_commits",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID:              "ignored-library",
+						Version:         "1.4.0",
+						PreviousVersion: "1.3.0",
+						// This library will not appear in the release notes because
+						// release is not triggered for.
+						ReleaseTriggered: false,
+						Changes: []*config.Commit{
+							{
+								Type:       "fix",
+								Subject:    "this commit is ignored",
+								CommitHash: "123456789012345",
+								LibraryIDs: "ignored-library",
+							},
+						},
+					},
+					{
+						ID:               "j",
+						Version:          "1.1.0",
+						PreviousVersion:  "1.0.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
+								LibraryIDs: "j",
+							},
+							{
+								Type:       "fix",
+								Subject:    "bulk change",
+								CommitHash: hash2.String(),
+								LibraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
+							},
+							{
+								Type:          "chore",
+								Subject:       "bulk change 2",
+								CommitHash:    hash3.String(),
+								LibraryIDs:    "j,k,l,m,n,o,p,q,r,s",
+								PiperCLNumber: "12345",
+							},
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "j",
+							},
+						},
+					},
+					{
+						ID:               "k",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								Type:       "fix",
+								Subject:    "bulk change",
+								CommitHash: hash2.String(),
+								LibraryIDs: "a,b,c,d,e,f,g,h,i,j,k",
+							},
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "k",
+							},
+						},
+					},
+					{
+						ID:               "library-1",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-1",
+							},
+							{
+								Type:       "docs",
+								Subject:    "update README",
+								CommitHash: hash5.String(),
+								LibraryIDs: "library-1",
+							},
+						},
+					},
+					{
+						ID:               "library-2",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-2",
+							},
+							{
+								Type:       "docs",
+								Subject:    "update README",
+								CommitHash: hash5.String(),
+								LibraryIDs: "library-2",
+							},
+						},
+					},
+					{
+						ID:               "library-3",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-3",
+							},
+							{
+								// This is a non-bulk commit because it only has two
+								// library ids.
+								// This commit will appear in library section.
+								Type:       "fix",
+								Subject:    "non bulk fix",
+								CommitHash: hash6.String(),
+								LibraryIDs: "library-3,library-4",
+							},
+						},
+					},
+					{
+						ID:               "library-4",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-4",
+							},
+						},
+					},
+					{
+						ID:               "library-5",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-5",
+							},
+						},
+					},
+					{
+						ID:               "library-6",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-6",
+							},
+						},
+					},
+					{
+						ID:               "library-7",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-7",
+							},
+						},
+					},
+					{
+						ID:               "library-8",
+						Version:          "2.4.0",
+						PreviousVersion:  "2.3.0",
+						ReleaseTriggered: true,
+						Changes: []*config.Commit{
+							{
+								// This is a bulk commit, it appears in
+								// bulk changes section.
+								Type:       "chore",
+								Subject:    "update dependency",
+								CommitHash: hash4.String(),
+								LibraryIDs: "library-8",
+							},
+						},
+					},
+				},
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
+Language Image: go:1.21
+<details><summary>j: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (%s)
+
+### Features
+
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
+
+</details>
+
+
+<details><summary>k: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/k-2.3.0...k-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-1: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-1-2.3.0...library-1-2.4.0) (%s)
+
+### Documentation
+
+* update README ([bcdef123](https://github.com/owner/repo/commit/bcdef123))
+
+</details>
+
+
+<details><summary>library-2: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-2-2.3.0...library-2-2.4.0) (%s)
+
+### Documentation
+
+* update README ([bcdef123](https://github.com/owner/repo/commit/bcdef123))
+
+</details>
+
+
+<details><summary>library-3: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-3-2.3.0...library-3-2.4.0) (%s)
+
+### Bug Fixes
+
+* non bulk fix ([cdef0000](https://github.com/owner/repo/commit/cdef0000))
+
+</details>
+
+
+<details><summary>library-4: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-4-2.3.0...library-4-2.4.0) (%s)
+
+### Bug Fixes
+
+* non bulk fix ([cdef0000](https://github.com/owner/repo/commit/cdef0000))
+
+</details>
+
+
+<details><summary>library-5: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-5-2.3.0...library-5-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-6: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-6-2.3.0...library-6-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-7: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-7-2.3.0...library-7-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-8: 2.4.0</summary>
+
+## [2.4.0](https://github.com/owner/repo/compare/library-8-2.3.0...library-8-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>Bulk Changes</summary>
+
+* chore: bulk change 2 (PiperOrigin-RevId: 12345) ([abcdef00](https://github.com/owner/repo/commit/abcdef00))
+  Libraries: j,k,l,m,n,o,p,q,r,s
+* chore: update dependency ([acdef123](https://github.com/owner/repo/commit/acdef123))
+  Libraries: j,k,library-1,library-2,library-3,library-4,library-5,library-6,library-7,library-8
+* fix: bulk change ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
+  Libraries: a,b,c,d,e,f,g,h,i,j,k
+</details>`,
+				librarianVersion, today, today, today, today, today, today, today, today, today, today),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -551,8 +921,8 @@ func TestLanguageRepoChangedFiles(t *testing.T) {
 				IsCleanValue:  true,
 				HeadHashValue: "1234",
 				ChangedFilesInCommitValueByHash: map[string][]string{
-					"abcd": []string{"a/b/c", "d/e/f"},
-					"1234": []string{"g/h/i", "j/k/l"},
+					"abcd": {"a/b/c", "d/e/f"},
+					"1234": {"g/h/i", "j/k/l"},
 				},
 			},
 			want: []string{"g/h/i", "j/k/l"},

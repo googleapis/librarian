@@ -25,12 +25,20 @@ import (
 )
 
 const (
+	// beginCommit marks the start of the commit message block. It is used in conjunction with endCommit.
+	beginCommit = "BEGIN_COMMIT"
+	// beginCommitOverride marks the start of the commit message block. It is used in conjunction with endCommitOverride.
+	// Deprecated: use beginCommit instead.
 	beginCommitOverride = "BEGIN_COMMIT_OVERRIDE"
-	endCommitOverride   = "END_COMMIT_OVERRIDE"
-	beginNestedCommit   = "BEGIN_NESTED_COMMIT"
-	endNestedCommit     = "END_NESTED_COMMIT"
-	breakingChangeKey   = "BREAKING CHANGE"
-	sourceLinkKey       = "Source-Link"
+	// endCommit marks the end of the commit message block.
+	endCommit = "END_COMMIT"
+	// endCommitOverride marks the end of the commit message block.
+	// Deprecated: use endCommit instead.
+	endCommitOverride = "END_COMMIT_OVERRIDE"
+	beginNestedCommit = "BEGIN_NESTED_COMMIT"
+	endNestedCommit   = "END_NESTED_COMMIT"
+	breakingChangeKey = "BREAKING CHANGE"
+	sourceLinkKey     = "Source-Link"
 )
 
 var (
@@ -113,9 +121,9 @@ func (c *ConventionalCommit) MarshalJSON() ([]byte, error) {
 
 // ParseCommits parses a commit message into a slice of ConventionalCommit structs.
 //
-// It supports an override block wrapped in BEGIN_COMMIT_OVERRIDE and
-// END_COMMIT_OVERRIDE. If found, this block takes precedence, and only its
-// content will be parsed.
+// It supports a top-level commit wrapped in BEGIN_COMMIT and END_COMMIT (BEGIN_COMMIT_OVERRIDE and
+// END_COMMIT_OVERRIDE are also supported for backward compatibility).
+// If found, this block takes precedence, and only its content will be parsed.
 //
 // The message can also contain multiple nested commits, each wrapped in
 // BEGIN_NESTED_COMMIT and END_NESTED_COMMIT markers.
@@ -128,7 +136,7 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 	if strings.TrimSpace(message) == "" {
 		return nil, ErrEmptyCommitMessage
 	}
-	message = extractCommitMessageOverride(message)
+	message = extractBeginCommitMessage(message)
 
 	var commits []*ConventionalCommit
 
@@ -147,16 +155,29 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 	return commits, nil
 }
 
-func extractCommitMessageOverride(message string) string {
-	beginIndex := strings.Index(message, beginCommitOverride)
+func extractBeginCommitMessage(message string) string {
+	// Search the deprecated marker first because beginCommit is the prefix
+	// of beginCommitOverride.
+	// TODO: remove usage when we drop support for `BEGIN_COMMIT_OVERRIDE` and `END_COMMIT_OVERRIDE`.
+	// see https://github.com/googleapis/librarian/issues/2684
+	beginMarker := beginCommitOverride
+	endMarker := endCommitOverride
+	beginIndex := strings.Index(message, beginMarker)
+	if beginIndex == -1 {
+		beginMarker = beginCommit
+		endMarker = endCommit
+		beginIndex = strings.Index(message, beginMarker)
+	}
 	if beginIndex == -1 {
 		return message
 	}
-	afterBegin := message[beginIndex+len(beginCommitOverride):]
-	endIndex := strings.Index(afterBegin, endCommitOverride)
+
+	afterBegin := message[beginIndex+len(beginMarker):]
+	endIndex := strings.Index(afterBegin, endMarker)
 	if endIndex == -1 {
 		return message
 	}
+
 	return strings.TrimSpace(afterBegin[:endIndex])
 }
 

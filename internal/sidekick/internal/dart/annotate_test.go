@@ -27,9 +27,10 @@ var (
 	requiredConfig = map[string]string{
 		"api-keys-environment-variables": "GOOGLE_API_KEY,GEMINI_API_KEY",
 		"issue-tracker-url":              "http://www.example.com/issues",
-		"package:googleapis_auth":        "^2.0.0",
 		"package:google_cloud_gax":       "^1.2.3",
-		"package:http":                   "^4.5.6"}
+		"package:http":                   "^4.5.6",
+		"package:google_cloud_protobuf":  "^7.8.9",
+	}
 )
 
 func TestAnnotateModel(t *testing.T) {
@@ -149,9 +150,9 @@ func TestAnnotateModel_Options(t *testing.T) {
 			map[string]string{"google_cloud_gax": "^1.2.3", "package:http": "1.2.0"},
 			func(t *testing.T, am *annotateModel) {
 				if diff := cmp.Diff(map[string]string{
-					"google_cloud_gax": "^1.2.3",
-					"googleapis_auth":  "^2.0.0",
-					"http":             "1.2.0"},
+					"google_cloud_gax":      "^1.2.3",
+					"google_cloud_protobuf": "^7.8.9",
+					"http":                  "1.2.0"},
 					am.dependencyConstraints); diff != "" {
 					t.Errorf("mismatch in annotateModel.dependencyConstraints (-want, +got)\n:%s", diff)
 				}
@@ -252,31 +253,33 @@ func TestAnnotateMethod(t *testing.T) {
 
 func TestCalculateDependencies(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		imports []string
-		want    []packageDependency
+		testName string
+		pkgName  string
+		imports  []string
+		want     []packageDependency
 	}{
-		{name: "empty", imports: []string{}, want: []packageDependency{}},
-		{name: "dart import", imports: []string{typedDataImport}, want: []packageDependency{}},
-		{name: "package import", imports: []string{httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
-		{name: "dart and package imports", imports: []string{typedDataImport, httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
-		{name: "package imports", imports: []string{
+		{testName: "empty", pkgName: "google_cloud_bar", imports: []string{}, want: []packageDependency{}},
+		{testName: "dart import", pkgName: "google_cloud_bar", imports: []string{typedDataImport}, want: []packageDependency{}},
+		{testName: "package import", pkgName: "google_cloud_bar", imports: []string{httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
+		{testName: "dart and package imports", pkgName: "google_cloud_bar", imports: []string{typedDataImport, httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
+		{testName: "package imports", pkgName: "google_cloud_bar", imports: []string{
 			httpImport,
 			"package:google_cloud_foo/foo.dart",
 		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "^1.2.3"}, {Name: "http", Constraint: "^1.3.0"}}},
+		{testName: "same package", pkgName: "google_cloud_bar", imports: []string{typedDataImport, httpImport, "google_cloud_bar"}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
 	} {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.testName, func(t *testing.T) {
 			deps := map[string]bool{}
 			for _, imp := range test.imports {
 				deps[imp] = true
 			}
-			got, err := calculateDependencies(deps, map[string]string{"google_cloud_foo": "^1.2.3", "http": "^1.3.0"})
+			got, err := calculateDependencies(deps, map[string]string{"google_cloud_foo": "^1.2.3", "http": "^1.3.0"}, test.pkgName)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in calculateDependencies (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch in %q in calculateDependencies (-want, +got)\n:%s", test.testName, diff)
 			}
 		})
 	}

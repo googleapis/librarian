@@ -277,7 +277,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitr
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
-	library.Changes = toCommit(commits)
+	library.Changes = toCommit(commits, library.ID)
 	library.Version = nextVersion
 	library.ReleaseTriggered = true
 	return nil
@@ -310,16 +310,24 @@ func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit,
 // toCommit converts a slice of gitrepo.ConventionalCommit to a slice of config.Commit.
 // If the ConventionalCommit has NestedCommits, they are also extracted and
 // converted.
-func toCommit(c []*gitrepo.ConventionalCommit) []*config.Commit {
+// Set LibraryIDs to the given libraryID if the conventional commit doesn't have key `Library-IDs` in the Footers;
+// otherwise use the value in the Footers as LibraryIDs.
+func toCommit(c []*gitrepo.ConventionalCommit, libraryID string) []*config.Commit {
 	var commits []*config.Commit
 	for _, cc := range c {
+		var libraryIDs string
+		libraryIDs, ok := cc.Footers["Library-IDs"]
+		if !ok {
+			libraryIDs = libraryID
+		}
+
 		commits = append(commits, &config.Commit{
 			Type:          cc.Type,
 			Subject:       cc.Subject,
 			Body:          cc.Body,
 			CommitHash:    cc.CommitHash,
 			PiperCLNumber: cc.Footers["PiperOrigin-RevId"],
-			LibraryIDs:    cc.Footers["Library-IDs"],
+			LibraryIDs:    libraryIDs,
 		})
 	}
 	return commits
