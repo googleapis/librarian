@@ -386,6 +386,8 @@ All other development should be deprioritized until green builds can
 be guaranteed.
 
 Running `go test ./...` on a fresh clone of this repository should always pass,
-without requiring any non-standard services or setup. Tests that depend on
-optional tools or services (e.g., docker, protoc, etc.) should be skipped when those
-tools are not available in the development environment.
+without requiring anything besides `go` installed. Tests that depend on other
+tools or services (e.g., docker, protoc, etc.) should be skipped when those
+tools are not available in the development environment. See
+[doc/onboarding.md](https://github.com/googleapis/librarian/blob/main/doc/onboarding.md)
+for information on how to configure your development environment.
