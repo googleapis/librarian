@@ -68,7 +68,6 @@ var ignoredPackages = map[string]bool{
 	"codec_sample": true,
 	"dart":         true,
 	"discovery":    true,
-	"execv":        true,
 	"gcloud":       true,
 	"gcloudyaml":   true,
 	"httprule":     true,
