@@ -77,7 +77,6 @@ var ignoredPackages = map[string]bool{
 	"gcloudyaml":   true,
 	"httprule":     true,
 	"language":     true,
-	"librarian":    true,
 	"license":      true,
 	"pom":          true,
 	"protobuf":     true,
