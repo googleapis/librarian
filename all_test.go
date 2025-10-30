@@ -67,7 +67,6 @@ var ignoredDirs = []string{
 var ignoredPackages = map[string]bool{
 	"api":          true,
 	"apitest":      true,
-	"automation":   true,
 	"bazel":        true,
 	"codec_sample": true,
 	"dart":         true,
