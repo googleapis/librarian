@@ -27,7 +27,7 @@ import (
 
 var typedDataImport = "dart:typed_data"
 var httpImport = "package:http/http.dart as http"
-var serviceClientImport = "package:google_cloud_rpc/src/service_client.dart"
+var serviceClientImport = "package:google_cloud_rpc/service_client.dart"
 var encodingImport = "package:google_cloud_protobuf/src/encoding.dart"
 var protobufImport = "package:google_cloud_protobuf/protobuf.dart"
 
