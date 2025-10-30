@@ -83,7 +83,6 @@ var ignoredPackages = map[string]bool{
 	"rust":         true,
 	"rust_prost":   true,
 	"rustrelease":  true,
-	"semver":       true,
 }
 
 // expectedHeader defines the regex for the required copyright header.

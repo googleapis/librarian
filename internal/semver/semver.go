@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package semver provides functionality for parsing, comparing, and manipulating
+// semantic version strings according to the SemVer 2.0.0 spec.
 package semver
 
 import (
@@ -25,7 +27,7 @@ import (
 // Version represents a semantic version.
 type Version struct {
 	Major, Minor, Patch int
-	// Prerelease is the non-numeric part of the pre-release string (e.g., "alpha", "beta").
+	// Prerelease is the non-numeric part of the prerelease string (e.g., "alpha", "beta").
 	Prerelease string
 	// PrereleaseSeparator is the separator between the pre-release string and
 	// its version (e.g., ".").
