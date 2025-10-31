@@ -670,6 +670,9 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	if field.Repeated || field.Map {
 		// Repeated fields and maps have implicit presence (non-nullable).
 		implicitPresence = true
+	} else if field.Typez == api.MESSAGE_TYPE {
+		// In proto3, singular message fields have explicit presence and are nullable.
+		implicitPresence = false
 	} else {
 		if field.IsOneOf {
 			// If this field is part of a oneof, it may or may not have a value; we
@@ -826,11 +829,9 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		return fmt.Sprintf("decodeDouble(%s)%s", data, bang)
 	case field.Typez == api.INT32_TYPE || field.Typez == api.FIXED32_TYPE ||
 		field.Typez == api.SFIXED32_TYPE || field.Typez == api.SINT32_TYPE ||
-		field.Typez == api.UINT32_TYPE:
-		return fmt.Sprintf("%s%s", data, bang)
-	case field.Typez == api.BOOL_TYPE:
-		return fmt.Sprintf("%s%s", data, bang)
-	case field.Typez == api.STRING_TYPE:
+		field.Typez == api.UINT32_TYPE ||
+		field.Typez == api.BOOL_TYPE ||
+		field.Typez == api.STRING_TYPE:
 		return fmt.Sprintf("%s%s", data, bang)
 	case field.Typez == api.BYTES_TYPE:
 		return fmt.Sprintf("decodeBytes(%s)%s", data, bang)

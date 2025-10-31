@@ -539,8 +539,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	// messages
 	got := annotate.buildQueryLines([]string{}, "result.", "", messageField1, model.State)
 	want := []string{
-		"if (result.message1.name.isNotDefault) 'message1.name': result.message1.name",
-		"if (result.message1.state.isNotDefault) 'message1.state': result.message1.state.value",
+		"if (result.message1!.name.isNotDefault) 'message1.name': result.message1!.name",
+		"if (result.message1!.state.isNotDefault) 'message1.state': result.message1!.state.value",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -548,8 +548,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 
 	got = annotate.buildQueryLines([]string{}, "result.", "", messageField2, model.State)
 	want = []string{
-		"if (result.message2.data != null) 'message2.data': encodeBytes(result.message2.data)!",
-		"if (result.message2.dataCrc32C != null) 'message2.dataCrc32c': '${result.message2.dataCrc32C}'",
+		"if (result.message2!.data != null) 'message2.data': encodeBytes(result.message2!.data)!",
+		"if (result.message2!.dataCrc32C != null) 'message2.dataCrc32c': '${result.message2!.dataCrc32C}'",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -558,8 +558,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	// nested messages
 	got = annotate.buildQueryLines([]string{}, "result.", "", messageField3, model.State)
 	want = []string{
-		"if (result.message3.secret.name.isNotDefault) 'message3.secret.name': result.message3.secret.name",
-		"if (result.message3.fieldMask!.paths.isNotDefault) 'message3.fieldMask.paths': result.message3.fieldMask!.paths",
+		"if (result.message3!.secret!.name.isNotDefault) 'message3.secret.name': result.message3!.secret!.name",
+		"if (result.message3!.fieldMask!.paths.isNotDefault) 'message3.fieldMask.paths': result.message3!.fieldMask!.paths",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -717,7 +717,7 @@ func TestCreateToJsonLine(t *testing.T) {
 		// messages
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
-			"message.toJson()",
+			"message!.toJson()",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
