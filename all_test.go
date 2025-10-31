@@ -195,7 +195,7 @@ func TestGolangVersion(t *testing.T) {
 
 // recordGoVersion reads the content of the file at the given path, finds all matches of the provided regular
 // expression (re), and records the first capturing group (expected to be the version string) in the goVersions map
-//along with the file path.
+// along with the file path.
 func recordGoVersion(path string, sfs fs.FS, re *regexp.Regexp, goVersions map[string][]string) error {
 	f, err := sfs.Open(path)
 	if err != nil {
