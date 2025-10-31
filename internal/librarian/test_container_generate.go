@@ -55,6 +55,17 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 	return r.runTests(ctx, sourceRepoHead)
 }
 
+// runTests executes the generation test for one or all libraries.
+//
+// If a single library is specified, it runs the test for that library. If the
+// test is skipped (due to errGenerateBlocked), it logs and exits successfully.
+// On failure, it returns an error, preserving the generated files for
+// debugging. On success, it cleans up the temporary work directory.
+//
+// If no specific library is given, it runs tests for all libraries. It keeps
+// track of failed and skipped tests. If any tests fail, it returns an error
+// listing the failed libraries, preserving the generated files. If all tests
+// pass or are skipped, it cleans up the work directory.
 func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if r.library != "" {
