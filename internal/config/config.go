@@ -190,7 +190,7 @@ type Config struct {
 	// PullRequest to target and operate one in the context of a release.
 	//
 	// The pull request should be in the format `https://github.com/{owner}/{repo}/pull/{number}`.
-	// Setting this field for `tag-and-release` means librarian will only attempt
+	// Setting this field for `tag` means librarian will only attempt
 	// to process this exact pull request and not search for other pull requests
 	// that may be ready for tagging and releasing.
 	PullRequest string

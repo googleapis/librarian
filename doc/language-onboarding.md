@@ -331,7 +331,9 @@ can be tracked and properly documented in client library release notes.
 The `update-image` command is used to update and pin the language specific container in `state.yaml` and re-generate all libraries.
 You can optionally specify an image using the `-image` flag.
 
-*Note: If the `-image` flag is not specified, the latest container image will be used.*
+*Note: If the `-image` flag is not specified, the latest container image will be used.
+This requires application default credentials which have access to the corresponding artifact registry.
+Use `gcloud auth application-default login` to configure ADC.*
 
 When the job completes, a PR will be opened by librarian with the changes related to the container update. You can edit the pull
 request title to set a global commit message which will be applied to all libraries.

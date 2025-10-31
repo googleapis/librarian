@@ -37,7 +37,7 @@ import (
 
 const (
 	pullRequestSegments  = 7
-	tagAndReleaseCmdName = "tag-and-release"
+	tagAndReleaseCmdName = "tag"
 	releasePendingLabel  = "release:pending"
 	releaseDoneLabel     = "release:done"
 )
@@ -120,7 +120,7 @@ func parseRemote(repo string) (*github.Repository, error) {
 }
 
 func (r *tagAndReleaseRunner) run(ctx context.Context) error {
-	slog.Info("running tag-and-release command")
+	slog.Info("running tag command")
 	prs, err := r.determinePullRequestsToProcess(ctx)
 	if err != nil {
 		return err

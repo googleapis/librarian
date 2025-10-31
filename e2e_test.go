@@ -617,7 +617,7 @@ func TestReleaseTagAndRelease(t *testing.T) {
 			// Set up a mock GitHub API server using httptest.
 			// This server will intercept HTTP requests made by the librarian command
 			// and provide canned responses, avoiding any real calls to the GitHub API.
-			// The handlers below simulate the endpoints that 'release tag-and-release' interacts with.
+			// The handlers below simulate the endpoints that 'release tag' interacts with.
 			var server *httptest.Server
 			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				// Verify that the GitHub token is being sent correctly.
@@ -727,7 +727,7 @@ libraries:
 				"run",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
-				"tag-and-release",
+				"tag",
 				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--github-api-endpoint=%s/", server.URL),
 				"--pr=https://github.com/googleapis/librarian/pull/123",
@@ -742,7 +742,7 @@ libraries:
 			cmd.Stdout = os.Stdout
 			if err := cmd.Run(); err != nil {
 				if !test.wantErr {
-					t.Fatalf("Failed to run release tag-and-release: %v", err)
+					t.Fatalf("Failed to run release tag: %v", err)
 				}
 			}
 		})

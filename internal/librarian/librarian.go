@@ -119,12 +119,12 @@ func newCmdGenerate() *cli.Command {
 func newCmdTagAndRelease() *cli.Command {
 	var verbose bool
 	cmdTagAndRelease := &cli.Command{
-		Short:     "tag-and-release tags and creates a GitHub release for a merged pull request.",
-		UsageLine: "librarian release tag-and-release [arguments]",
+		Short:     "tag tags and creates a GitHub release for a merged pull request.",
+		UsageLine: "librarian release tag [arguments]",
 		Long:      tagAndReleaseLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			setupLogger(verbose)
-			slog.Debug("tag-and-release command verbose logging")
+			slog.Debug("tag command verbose logging")
 			if err := cmd.Config.SetDefaults(); err != nil {
 				return fmt.Errorf("failed to initialize config: %w", err)
 			}
