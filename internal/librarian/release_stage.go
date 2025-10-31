@@ -29,7 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-type initRunner struct {
+type stageRunner struct {
 	branch          string
 	commit          bool
 	containerClient ContainerClient
@@ -45,12 +45,12 @@ type initRunner struct {
 	workRoot        string
 }
 
-func newInitRunner(cfg *config.Config) (*initRunner, error) {
+func newStageRunner(cfg *config.Config) (*stageRunner, error) {
 	runner, err := newCommandRunner(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create init runner: %w", err)
+		return nil, fmt.Errorf("failed to create stage runner: %w", err)
 	}
-	return &initRunner{
+	return &stageRunner{
 		branch:          cfg.Branch,
 		commit:          cfg.Commit,
 		containerClient: runner.containerClient,
@@ -67,13 +67,13 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	}, nil
 }
 
-func (r *initRunner) run(ctx context.Context) error {
+func (r *stageRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
-	slog.Info("Initiating a release", "dir", outputDir)
-	if err := r.runInitCommand(ctx, outputDir); err != nil {
+	slog.Info("Staging a release", "dir", outputDir)
+	if err := r.runStageCommand(ctx, outputDir); err != nil {
 		return err
 	}
 
@@ -101,7 +101,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		commitMessage: "chore: create a release",
 		ghClient:      r.ghClient,
 		prType:        pullRequestRelease,
-		// Newly created PRs from the `release init` command should have a
+		// Newly created PRs from the `release stage` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
 		push:              r.push,
@@ -129,7 +129,7 @@ func hasLibrariesToRelease(libraryStates []*config.LibraryState) bool {
 	return false
 }
 
-func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
+func (r *stageRunner) runStageCommand(ctx context.Context, outputDir string) error {
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
 	if r.library != "" {
@@ -165,7 +165,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		return nil
 	}
 
-	initRequest := &docker.ReleaseInitRequest{
+	stageRequest := &docker.ReleaseStageRequest{
 		Branch:          r.branch,
 		Commit:          r.commit,
 		LibrarianConfig: r.librarianConfig,
@@ -177,13 +177,13 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		State:           r.state,
 	}
 
-	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
+	if err := r.containerClient.ReleaseStage(ctx, stageRequest); err != nil {
 		return err
 	}
 
 	// Read the response file.
 	if _, err := readLibraryState(
-		filepath.Join(initRequest.RepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
+		filepath.Join(stageRequest.RepoDir, config.LibrarianDir, config.ReleaseStageResponse)); err != nil {
 		return err
 	}
 
@@ -201,7 +201,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 // processLibrary wrapper to process the library for release. Helps retrieve latest commits
 // since the last release and passing the changes to updateLibrary.
-func (r *initRunner) processLibrary(library *config.LibraryState) error {
+func (r *stageRunner) processLibrary(library *config.LibraryState) error {
 	var tagName string
 	if library.Version != "0.0.0" {
 		tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
@@ -243,7 +243,7 @@ func filterCommitsByLibraryID(commits []*gitrepo.ConventionalCommit, libraryID s
 // 2. Updates the library's previous version and the new current version.
 //
 // 3. Set the library's release trigger to true.
-func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitrepo.ConventionalCommit) error {
+func (r *stageRunner) updateLibrary(library *config.LibraryState, commits []*gitrepo.ConventionalCommit) error {
 	var nextVersion string
 	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
 	if r.libraryVersion != "" {
@@ -285,7 +285,7 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitr
 
 // determineNextVersion determines the next valid SemVer version from the commits or from
 // the next_version override value in the config.yaml file.
-func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+func (r *stageRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
 	if err != nil {
 		return "", err

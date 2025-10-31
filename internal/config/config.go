@@ -48,11 +48,11 @@ const (
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
 	LibrarianDir = ".librarian"
-	// ReleaseInitRequest is a JSON file that describes which library to release.
-	ReleaseInitRequest = "release-init-request.json"
-	// ReleaseInitResponse is a JSON file that describes which library to change
+	// ReleaseStageRequest is a JSON file that describes which library to release.
+	ReleaseStageRequest = "release-stage-request.json"
+	// ReleaseStageResponse is a JSON file that describes which library to change
 	// after release.
-	ReleaseInitResponse = "release-init-response.json"
+	ReleaseStageResponse = "release-stage-response.json"
 	// LibrarianStateFile is the name of the pipeline state file.
 	LibrarianStateFile = "state.yaml"
 	// LibrarianConfigFile is the name of the language-repository config file.

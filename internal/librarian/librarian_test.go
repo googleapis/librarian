@@ -63,14 +63,14 @@ func TestVerboseFlag(t *testing.T) {
 			expectDebugLog: false,
 		},
 		{
-			name:              "release init with -v flag",
-			args:              []string{"release", "init", "-v"},
+			name:              "release stage with -v flag",
+			args:              []string{"release", "stage", "-v"},
 			expectDebugLog:    true,
-			expectDebugSubstr: "init command verbose logging",
+			expectDebugSubstr: "stage command verbose logging",
 		},
 		{
-			name:           "release init without -v flag",
-			args:           []string{"release", "init"},
+			name:           "release stage without -v flag",
+			args:           []string{"release", "stage"},
 			expectDebugLog: false,
 		},
 		{

@@ -426,7 +426,7 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 	}
 }
 
-func TestReleaseInit(t *testing.T) {
+func TestReleaseStage(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name        string
@@ -441,7 +441,7 @@ func TestReleaseInit(t *testing.T) {
 	}{
 		{
 			name:        "release with multiple commits",
-			testDataDir: "testdata/e2e/release/init/multiple_commits",
+			testDataDir: "testdata/e2e/release/stage/multiple_commits",
 			libraryID:   "go-google-cloud-pubsub-v1",
 			changePath:  "google-cloud-pubsub/v1",
 			tagID:       "go-google-cloud-pubsub-v1",
@@ -450,7 +450,7 @@ func TestReleaseInit(t *testing.T) {
 		},
 		{
 			name:        "release with multiple commits with push",
-			testDataDir: "testdata/e2e/release/init/multiple_commits",
+			testDataDir: "testdata/e2e/release/stage/multiple_commits",
 			libraryID:   "go-google-cloud-pubsub-v1",
 			changePath:  "google-cloud-pubsub/v1",
 			tagID:       "go-google-cloud-pubsub-v1",
@@ -460,7 +460,7 @@ func TestReleaseInit(t *testing.T) {
 		},
 		{
 			name:        "release with multiple nested commits",
-			testDataDir: "testdata/e2e/release/init/multiple_nested_commits",
+			testDataDir: "testdata/e2e/release/stage/multiple_nested_commits",
 			libraryID:   "python-google-cloud-video-live-stream-v1",
 			changePath:  "packages/google-cloud-video-live-stream",
 			tagID:       "python-google-cloud-video-live-stream-v1",
@@ -469,7 +469,7 @@ func TestReleaseInit(t *testing.T) {
 		},
 		{
 			name:        "release with single commit",
-			testDataDir: "testdata/e2e/release/init/single_commit",
+			testDataDir: "testdata/e2e/release/stage/single_commit",
 			libraryID:   "dlp",
 			changePath:  "dlp",
 			tagID:       "dlp",
@@ -525,7 +525,7 @@ func TestReleaseInit(t *testing.T) {
 				"-tags", "e2etest",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
-				"init",
+				"stage",
 				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--library=%s", test.libraryID),
@@ -541,7 +541,7 @@ func TestReleaseInit(t *testing.T) {
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
 			if err := cmd.Run(); err != nil {
-				t.Fatalf("Failed to run release init: %v", err)
+				t.Fatalf("Failed to run release stage: %v", err)
 			}
 
 			// Verify the state.yaml file content
