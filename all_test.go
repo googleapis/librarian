@@ -166,8 +166,7 @@ func hasValidHeader(path string, r io.Reader) (bool, error) {
 // TestConsistentGoVersions walks the directory tree and checks Dockerfiles and go.mod files for specified Go versions.
 // It ensures that only one unique Go version is specified across all found files to maintain consistency. The test
 // fails if multiple Go versions are detected.
-// TODO: remove this test once https://github.com/googleapis/librarian/issues/2739
-// is resolved.
+// TODO: remove this test once https://github.com/googleapis/librarian/issues/2739 is resolved.
 func TestConsistentGoVersions(t *testing.T) {
 	goVersions := make(map[string][]string)
 	sfs := os.DirFS(".")
