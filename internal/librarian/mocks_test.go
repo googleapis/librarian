@@ -327,6 +327,7 @@ type MockRepository struct {
 	RemotesValue                           []*gitrepo.Remote
 	RemotesError                           error
 	CommitCalls                            int
+	ResetHardCalls                         int
 	LastCommitMessage                      string
 	GetCommitError                         error
 	GetLatestCommitError                   error
@@ -345,7 +346,10 @@ type MockRepository struct {
 	ChangedFilesInCommitError              error
 	ChangedFilesValue                      []string
 	ChangedFilesError                      error
+	NewAndDeletedFilesValue                []string
+	NewAndDeletedFilesError                error
 	CreateBranchAndCheckoutError           error
+	CheckoutCommitAndCreateBranchError     error
 	PushCalls                              int
 	PushError                              error
 	RestoreError                           error
@@ -353,6 +357,9 @@ type MockRepository struct {
 	HeadHashError                          error
 	CheckoutCalls                          int
 	CheckoutError                          error
+	ResetHardError                         error
+	DeleteLocalBranchesCalls               int
+	DeleteLocalBranchesError               error
 	GetHashForPathError                    error
 	// GetHashForPathValue is a map where each key is of the form "commitHash:path",
 	// and the value is the hash to return. Every requested entry must be populated.
@@ -483,9 +490,23 @@ func (m *MockRepository) ChangedFiles() ([]string, error) {
 	return m.ChangedFilesValue, nil
 }
 
+func (m *MockRepository) NewAndDeletedFiles() ([]string, error) {
+	if m.NewAndDeletedFilesError != nil {
+		return nil, m.NewAndDeletedFilesError
+	}
+	return m.NewAndDeletedFilesValue, nil
+}
+
 func (m *MockRepository) CreateBranchAndCheckout(name string) error {
 	if m.CreateBranchAndCheckoutError != nil {
 		return m.CreateBranchAndCheckoutError
+	}
+	return nil
+}
+
+func (m *MockRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
+	if m.CheckoutCommitAndCreateBranchError != nil {
+		return m.CheckoutCommitAndCreateBranchError
 	}
 	return nil
 }
@@ -512,6 +533,16 @@ func (m *MockRepository) Checkout(commitHash string) error {
 		return m.CheckoutError
 	}
 	return nil
+}
+
+func (m *MockRepository) ResetHard() error {
+	m.ResetHardCalls++
+	return m.ResetHardError
+}
+
+func (m *MockRepository) DeleteLocalBranches(names []string) error {
+	m.DeleteLocalBranchesCalls++
+	return m.DeleteLocalBranchesError
 }
 
 // mockImagesClient is a mock implementation of the ImageRegistryClient interface for testing.
