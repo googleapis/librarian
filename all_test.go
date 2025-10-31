@@ -163,7 +163,7 @@ func hasValidHeader(path string, r io.Reader) (bool, error) {
 	return headerRegex.Match(allBytes), nil
 }
 
-func TestGolangVersion(t *testing.T) {
+func TestConsistentGoVersions(t *testing.T) {
 	goVersions := make(map[string][]string)
 	sfs := os.DirFS(".")
 	err := fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, err error) error {
