@@ -50,7 +50,6 @@ func newLibrarianCommand() *cli.Command {
 			return nil
 		},
 	}
-	cmdVersion.Init()
 
 	cmdRelease := &cli.Command{
 		Short:     "release manages releases of libraries.",
@@ -61,7 +60,6 @@ func newLibrarianCommand() *cli.Command {
 			newCmdTagAndRelease(),
 		},
 	}
-	cmdRelease.Init()
 
 	cmd := &cli.Command{
 		Short:     "librarian manages client libraries for Google APIs",

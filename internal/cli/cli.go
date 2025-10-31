@@ -113,11 +113,18 @@ func (c *Command) usage(w io.Writer) {
 // them such that any parsing failures result in the command usage being
 // displayed.
 func (c *Command) Init() *Command {
-	c.Flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
-	c.Flags.Usage = func() {
-		c.usage(c.Flags.Output())
+	if c.Flags == nil {
+		c.Flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
+		c.Flags.Usage = func() {
+			c.usage(c.Flags.Output())
+		}
 	}
-	c.Config = config.New(c.Name())
+	if c.Config == nil {
+		c.Config = config.New(c.Name())
+	}
+	for _, sub := range c.Commands {
+		sub.Init()
+	}
 	return c
 }
 
