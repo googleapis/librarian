@@ -34,7 +34,8 @@ can manually re-trigger it by:
 1. Clicking "View details" on the failed workflow to bring you to the "Actions" page.
 2. Clicking "Re-run failed jobs".
 
-For more information, see [Re-running failed jobs in a workflow](https://docs.github.com/en/actions/how-tos/managing-workflow-runs-and-deployments/managing-workflow-runs/re-running-workflows-and-jobs#re-running-failed-jobs-in-a-workflow).
+For more information, see
+[Re-running failed jobs in a workflow](https://docs.github.com/en/actions/how-tos/managing-workflow-runs-and-deployments/managing-workflow-runs/re-running-workflows-and-jobs#re-running-failed-jobs-in-a-workflow).
 
 ## Community Guidelines
 
@@ -109,6 +110,11 @@ All issues should have a path prefix to indicate the relevant domain. For
 issues related to the librarian codebase, use the package name as a prefix (for
 example, `librarian:` or `cli:`). For issues related to code outside this
 repository, use the repository name (for example, `google-cloud-python`).
+
+This repository also contains language-specific container-related code under
+[internal/container](https://github.com/googleapis/librarian/tree/main/internal/container).
+For these issues, use the lowercase language name as a prefix for brevity (for
+example, `java:`).
 
 Aside from proper nouns, issue titles should use lowercase.
 
