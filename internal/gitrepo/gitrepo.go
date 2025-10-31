@@ -743,6 +743,9 @@ func (r *LocalRepository) ResetHard() error {
 func (r *LocalRepository) DeleteLocalBranches(names []string) error {
 	slog.Debug("Starting batch deletion of local branches", "count", len(names))
 	headRef, headErr := r.repo.Head()
+	if headErr != nil && !errors.Is(headErr, plumbing.ErrReferenceNotFound) {
+		return fmt.Errorf("failed to get HEAD to protect against its deletion: %w", headErr)
+	}
 	for _, name := range names {
 		refName := plumbing.NewBranchReferenceName(name)
 		_, err := r.repo.Storer.Reference(refName)

@@ -1925,11 +1925,12 @@ func TestDeleteLocalBranches(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range []struct {
-		name        string
-		branchNames []string
-		setup       func(t *testing.T, repo *LocalRepository)
-		wantErr     bool
-		wantErrMsg  string
+		name         string
+		branchNames  []string
+		useEmptyRepo bool
+		setup        func(t *testing.T, repo *LocalRepository)
+		wantErr      bool
+		wantErrMsg   string
 	}{
 		{
 			name:        "delete single existing branch",
@@ -2018,9 +2019,21 @@ func TestDeleteLocalBranches(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "cannot delete branch current-branch: it is the currently checked out branch (HEAD)",
 		},
+		{
+			name:         "empty repository",
+			branchNames:  []string{},
+			useEmptyRepo: true,
+			setup:        func(t *testing.T, repo *LocalRepository) {},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			localRepo, _ := setupRepoForGetCommitsTest(t)
+			var localRepo *LocalRepository
+			if tt.useEmptyRepo {
+				gogitRepo, dir := initTestRepo(t)
+				localRepo = &LocalRepository{Dir: dir, repo: gogitRepo}
+			} else {
+				localRepo, _ = setupRepoForGetCommitsTest(t)
+			}
 			tt.setup(t, localRepo)
 
 			err := localRepo.DeleteLocalBranches(tt.branchNames)
