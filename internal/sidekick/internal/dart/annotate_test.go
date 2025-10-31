@@ -503,6 +503,12 @@ func TestBuildQueryLines(t *testing.T) {
 			[]string{"if (result.stringOpt != null) 'string': result.stringOpt!"},
 		},
 
+		// one ofs
+		{
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE, IsOneOf: true},
+			[]string{"if (result.bool$ != null) 'bool': '${result.bool$}'"},
+		},
+
 		// repeated primitives
 		{
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
@@ -681,6 +687,12 @@ func TestCreateFromJsonLine(t *testing.T) {
 			"json['string']",
 		},
 
+		// one ofs
+		{
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE, IsOneOf: true},
+			"json['bool']",
+		},
+
 		// repeated primitives
 		{
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
@@ -736,6 +748,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 
 func TestCreateToJsonLine(t *testing.T) {
 	secret := sample.Secret()
+	enum := sample.EnumState()
 
 	for _, test := range []struct {
 		field *api.Field
@@ -780,6 +793,12 @@ func TestCreateToJsonLine(t *testing.T) {
 			"stringList",
 		},
 
+		// repeated enums
+		{
+			&api.Field{Name: "enumList", JSONName: "enumList", Typez: api.ENUM_TYPE, TypezID: enum.ID, Repeated: true},
+			"encodeList(enumList)",
+		},
+
 		// repeated primitives w/ optional
 		{
 			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
@@ -808,7 +827,7 @@ func TestCreateToJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret}, []*api.Enum{}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message, secret}, []*api.Enum{enum}, []*api.Service{})
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{})
 			codec := test.field.Codec.(*fieldAnnotation)
