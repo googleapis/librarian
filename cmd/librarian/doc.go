@@ -143,12 +143,12 @@ Usage:
 
 Commands:
 
-	stage                      initiates a release by creating a release pull request.
+	stage                      stages a release by creating a release pull request.
 	tag                        tags and creates a GitHub release for a merged pull request.
 
 # release stage
 
-The 'release stage' command is the primary entry point for initiating
+The 'release stage' command is the primary entry point for staging
 a new release. It automates the creation of a release pull request by parsing
 conventional commits, determining the next semantic version for each library,
 and generating a changelog. Librarian is environment aware and will check if the
