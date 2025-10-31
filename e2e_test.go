@@ -608,7 +608,7 @@ func TestReleaseTag(t *testing.T) {
 ### Features
 - feat: new feature
 </details>`,
-			repoPath: "testdata/e2e/release/init/single_commit",
+			repoPath: "testdata/e2e/release/stage/single_commit",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
