@@ -57,8 +57,8 @@ func newLibrarianCommand() *cli.Command {
 		UsageLine: "librarian release <command> [arguments]",
 		Long:      releaseLongHelp,
 		Commands: []*cli.Command{
-			newCmdTag(),
 			newCmdStage(),
+			newCmdTag(),
 		},
 	}
 	cmdRelease.Init()
