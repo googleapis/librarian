@@ -50,7 +50,7 @@ func runCLI(args []string) int {
 
 	container := languagecontainer.LanguageContainer{
 		Generate:     generate.Generate,
-		ReleaseStage: release.Init,
+		ReleaseStage: release.Stage,
 	}
 	return languagecontainer.Run(args[1:], &container)
 }

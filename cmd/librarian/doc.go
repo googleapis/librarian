@@ -143,12 +143,12 @@ Usage:
 
 Commands:
 
-	init                       initiates a release by creating a release pull request.
+	stage                      initiates a release by creating a release pull request.
 	tag                        tags and creates a GitHub release for a merged pull request.
 
-# release init
+# release stage
 
-The 'release init' command is the primary entry point for initiating
+The 'release stage' command is the primary entry point for initiating
 a new release. It automates the creation of a release pull request by parsing
 conventional commits, determining the next semantic version for each library,
 and generating a changelog. Librarian is environment aware and will check if the
@@ -167,7 +167,7 @@ no releasable changes since the last release, the '--version' flag should be inc
 to set a new version for the library. The new version must be "SemVer" greater than the
 current version.
 
-By default, 'release init' leaves the changes in your local working directory
+By default, 'release stage' leaves the changes in your local working directory
 for inspection. Use the '--push' flag to automatically commit the changes to
 a new branch and create a pull request on GitHub. The '--commit' flag may be
 used to create a local commit without creating a pull request; this flag is
@@ -178,17 +178,17 @@ whether to use HTTPS or SSH based on the remote URI.
 Examples:
 
 	# Create a release PR for all libraries with pending changes.
-	librarian release init --push
+	librarian release stage --push
 
 	# Create a release PR for a single library.
-	librarian release init --library=secretmanager --push
+	librarian release stage --library=secretmanager --push
 
 	# Manually specify a version for a single library, overriding the calculation.
-	librarian release init --library=secretmanager --library-version=2.0.0 --push
+	librarian release stage --library=secretmanager --library-version=2.0.0 --push
 
 Usage:
 
-	librarian release init [flags]
+	librarian release stage [flags]
 
 Flags:
 
@@ -228,7 +228,7 @@ Flags:
 
 The 'tag' command is the final step in the release
 process. It is designed to be run after a release pull request, created by
-'release init', has been merged.
+'release stage', has been merged.
 
 This command's primary responsibilities are to:
 
