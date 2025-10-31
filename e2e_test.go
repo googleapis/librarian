@@ -585,7 +585,7 @@ func TestReleaseInit(t *testing.T) {
 	}
 }
 
-func TestReleaseTagAndRelease(t *testing.T) {
+func TestReleaseTag(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		prBody   string

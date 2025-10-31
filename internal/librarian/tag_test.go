@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/github"
 )
 
-func TestNewTagAndReleaseRunner(t *testing.T) {
+func TestNewTagRunner(t *testing.T) {
 	testcases := []struct {
 		name    string
 		cfg     *config.Config
@@ -37,27 +37,27 @@ func TestNewTagAndReleaseRunner(t *testing.T) {
 				GitHubToken: "some-token",
 				Repo:        "https://github.com/googleapis/some-test-repo",
 				WorkRoot:    t.TempDir(),
-				CommandName: tagAndReleaseCmdName,
+				CommandName: tagCmdName,
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing github token",
 			cfg: &config.Config{
-				CommandName: tagAndReleaseCmdName,
+				CommandName: tagCmdName,
 			},
 			wantErr: true,
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			r, err := newTagAndReleaseRunner(tc.cfg)
+			r, err := newTagRunner(tc.cfg)
 			if (err != nil) != tc.wantErr {
-				t.Errorf("newTagAndReleaseRunner() error = %v, wantErr %v", err, tc.wantErr)
+				t.Errorf("newTagRunner() error = %v, wantErr %v", err, tc.wantErr)
 				return
 			}
 			if !tc.wantErr && r == nil {
-				t.Errorf("newTagAndReleaseRunner() got nil runner, want non-nil")
+				t.Errorf("newTagRunner() got nil runner, want non-nil")
 			}
 		})
 	}
@@ -130,7 +130,7 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			r := &tagAndReleaseRunner{
+			r := &tagRunner{
 				pullRequest: test.cfg.PullRequest,
 				ghClient:    test.ghClient,
 			}
@@ -151,7 +151,7 @@ func TestDeterminePullRequestsToProcess(t *testing.T) {
 	}
 }
 
-func Test_tagAndReleaseRunner_run(t *testing.T) {
+func Test_tagRunner_run(t *testing.T) {
 	pr123 := &github.PullRequest{}
 	pr456 := &github.PullRequest{}
 
@@ -191,7 +191,7 @@ func Test_tagAndReleaseRunner_run(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			r := &tagAndReleaseRunner{
+			r := &tagRunner{
 				ghClient: test.ghClient,
 			}
 			err := r.run(t.Context())
@@ -594,7 +594,7 @@ func TestProcessPullRequest(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			r := &tagAndReleaseRunner{
+			r := &tagRunner{
 				ghClient: test.ghClient,
 			}
 			err := r.processPullRequest(t.Context(), test.pr)
@@ -655,7 +655,7 @@ func TestReplacePendingLabel(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			r := &tagAndReleaseRunner{
+			r := &tagRunner{
 				ghClient: test.ghClient,
 			}
 			err := r.replacePendingLabel(t.Context(), test.pr)
@@ -674,7 +674,7 @@ func TestReplacePendingLabel(t *testing.T) {
 	}
 }
 
-func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
+func Test_tagRunner_run_processPullRequests(t *testing.T) {
 	branch := "main"
 	pr1 := &github.PullRequest{
 		Body:           gh.Ptr(`<details><summary>google-cloud-storage: v1.2.3</summary>release notes</details>`),
@@ -709,7 +709,7 @@ func Test_tagAndReleaseRunner_run_processPullRequests(t *testing.T) {
 		},
 	}
 
-	r := &tagAndReleaseRunner{
+	r := &tagRunner{
 		ghClient: ghClient,
 	}
 	err := r.run(t.Context())

@@ -58,7 +58,7 @@ func newLibrarianCommand() *cli.Command {
 		Long:      releaseLongHelp,
 		Commands: []*cli.Command{
 			newCmdInit(),
-			newCmdTagAndRelease(),
+			newCmdTag(),
 		},
 	}
 	cmdRelease.Init()
@@ -116,12 +116,12 @@ func newCmdGenerate() *cli.Command {
 	return cmdGenerate
 }
 
-func newCmdTagAndRelease() *cli.Command {
+func newCmdTag() *cli.Command {
 	var verbose bool
-	cmdTagAndRelease := &cli.Command{
+	cmdTag := &cli.Command{
 		Short:     "tag tags and creates a GitHub release for a merged pull request.",
 		UsageLine: "librarian release tag [arguments]",
-		Long:      tagAndReleaseLongHelp,
+		Long:      tagLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			setupLogger(verbose)
 			slog.Debug("tag command verbose logging")
@@ -131,19 +131,19 @@ func newCmdTagAndRelease() *cli.Command {
 			if _, err := cmd.Config.IsValid(); err != nil {
 				return fmt.Errorf("failed to validate config: %s", err)
 			}
-			runner, err := newTagAndReleaseRunner(cmd.Config)
+			runner, err := newTagRunner(cmd.Config)
 			if err != nil {
 				return err
 			}
 			return runner.run(ctx)
 		},
 	}
-	cmdTagAndRelease.Init()
-	addFlagRepo(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
-	addFlagPR(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
-	addFlagGitHubAPIEndpoint(cmdTagAndRelease.Flags, cmdTagAndRelease.Config)
-	addFlagVerbose(cmdTagAndRelease.Flags, &verbose)
-	return cmdTagAndRelease
+	cmdTag.Init()
+	addFlagRepo(cmdTag.Flags, cmdTag.Config)
+	addFlagPR(cmdTag.Flags, cmdTag.Config)
+	addFlagGitHubAPIEndpoint(cmdTag.Flags, cmdTag.Config)
+	addFlagVerbose(cmdTag.Flags, &verbose)
+	return cmdTag
 }
 
 func newCmdInit() *cli.Command {

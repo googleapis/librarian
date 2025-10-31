@@ -112,7 +112,7 @@ Examples:
   # Manually specify a version for a single library, overriding the calculation.
   librarian release init --library=secretmanager --library-version=2.0.0 --push`
 
-	tagAndReleaseLongHelp = `The 'tag' command is the final step in the release
+	tagLongHelp = `The 'tag' command is the final step in the release
 process. It is designed to be run after a release pull request, created by
 'release init', has been merged.
 
