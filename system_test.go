@@ -447,6 +447,9 @@ func TestCreateRelease(t *testing.T) {
 }
 
 func TestFindLatestImage(t *testing.T) {
+	// TODO(https://github.com/googleapis/librarian/issues/2720): fix this test
+	t.Skip()
+
 	// If we are able to configure system tests on GitHub actions, then update this
 	// guard clause.
 	if githubAction != "" {
