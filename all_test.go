@@ -221,7 +221,7 @@ func recordGoVersion(path string, sfs fs.FS, re *regexp.Regexp, goVersions map[s
 }
 
 func TestGolangCILint(t *testing.T) {
-	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0", "run")
+	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.0", "run")
 }
 
 func TestGoImports(t *testing.T) {
