@@ -71,7 +71,11 @@ const expectedHeader = `// Copyright 202\d Google LLC
 // you may not use this file except in compliance with the License\.
 // You may obtain a copy of the License at`
 
-var headerRegex = regexp.MustCompile("(?s)" + expectedHeader)
+var (
+	headerRegex          = regexp.MustCompile("(?s)" + expectedHeader)
+	dockerGoVersionRegex = regexp.MustCompile(`golang:(?P<version>[^ \n]+)`)
+	modGoVersionRegex    = regexp.MustCompile(`\ngo\s+(?P<version>[^ \n]+)`)
+)
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
@@ -157,6 +161,56 @@ func hasValidHeader(path string, r io.Reader) (bool, error) {
 	}
 
 	return headerRegex.Match(allBytes), nil
+}
+
+func TestGolangVersion(t *testing.T) {
+	goVersions := make(map[string][]string)
+	sfs := os.DirFS(".")
+	err := fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if strings.HasSuffix(path, "Dockerfile") {
+			return recordGoVersion(path, sfs, dockerGoVersionRegex, goVersions)
+		}
+
+		if strings.HasSuffix(path, "go.mod") {
+			return recordGoVersion(path, sfs, modGoVersionRegex, goVersions)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(goVersions) > 1 {
+		for ver, paths := range goVersions {
+			t.Logf("%s found in %s", ver, strings.Join(paths, "\n"))
+		}
+		t.Error("found multiple golang versions")
+	}
+}
+
+func recordGoVersion(path string, sfs fs.FS, re *regexp.Regexp, goVersions map[string][]string) error {
+	f, err := sfs.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	allBytes, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
+
+	matches := re.FindAllStringSubmatch(string(allBytes), -1)
+	for _, match := range matches {
+		goVersions[match[1]] = append(goVersions[match[1]], path)
+	}
+
+	return nil
 }
 
 func TestGolangCILint(t *testing.T) {
