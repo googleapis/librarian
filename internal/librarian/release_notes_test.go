@@ -78,7 +78,9 @@ func TestFormatReleaseNotes(t *testing.T) {
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -126,7 +128,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -172,7 +176,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -225,7 +231,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>lib-a: 1.1.0</summary>
 
@@ -278,7 +286,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -315,7 +325,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -334,8 +346,11 @@ Language Image: go:1.21
 				Image:     "go:1.21",
 				Libraries: []*config.LibraryState{},
 			},
-			ghRepo:          &github.Repository{},
-			wantReleaseNote: fmt.Sprintf("Librarian Version: %s\nLanguage Image: go:1.21", librarianVersion),
+			ghRepo: &github.Repository{},
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
+Language Image: go:1.21`, librarianVersion),
 		},
 		{
 			name: "generate with chore",
@@ -361,7 +376,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>my-library: 1.1.0</summary>
 
@@ -419,7 +436,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>j: 1.1.0</summary>
 
@@ -678,7 +697,9 @@ Language Image: go:1.21
 				},
 			},
 			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
-			wantReleaseNote: fmt.Sprintf(`Librarian Version: %s
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
 Language Image: go:1.21
 <details><summary>j: 1.1.0</summary>
 

@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.google.cloud</groupId>
+  <artifactId>google-cloud-test-bom</artifactId>
+  <version>0.0.1-SNAPSHOT</version><!-- {x-version-update:google-cloud-test:current} -->
+  <packaging>pom</packaging>
+  <parent>
+    <groupId>com.google.cloud</groupId>
+    <artifactId>google-cloud-pom-parent</artifactId>
+    <version>1.72.0</version>
+  </parent>
+
+  <name>Google Cloud test BOM</name>
+  <description>
+    BOM for Google Cloud test
+  </description>
+
+  <properties>
+    <maven.antrun.skip>true</maven.antrun.skip>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-test</artifactId>
+        <version>0.0.1-SNAPSHOT</version><!-- {x-version-update:google-cloud-test:current} -->
+      </dependency>
+      <dependency>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>proto-test</artifactId>
+        <version>0.0.1-SNAPSHOT</version><!-- {x-version-update:proto-test:current} -->
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

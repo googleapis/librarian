@@ -113,6 +113,10 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	// For each library, run generation at the previous commit
 	var failedGenerations []*config.LibraryState
 	var successfulGenerations []*config.LibraryState
+	sourceHead, err := r.sourceRepo.HeadHash()
+	if err != nil {
+		return err
+	}
 	outputDir := filepath.Join(r.workRoot, "output")
 	for _, libraryState := range r.state.Libraries {
 		err := r.regenerateSingleLibrary(ctx, libraryState, outputDir)
@@ -131,6 +135,10 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 
 	prBodyBuilder := func() (string, error) {
 		return formatUpdateImagePRBody(r.image, failedGenerations)
+	}
+	// Restore api source repo
+	if err := r.sourceRepo.Checkout(sourceHead); err != nil {
+		slog.Error(err.Error(), "repository", r.sourceRepo, "HEAD", sourceHead)
 	}
 	commitMessage := fmt.Sprintf("feat: update image to %s", r.image)
 	return commitAndPush(ctx, &commitInfo{

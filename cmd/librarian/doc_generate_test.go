@@ -31,10 +31,10 @@ func TestGoGenerate(t *testing.T) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("%v: %v", cmd, err)
 	}
-	cmd = exec.Command("git", "diff", "--exit-code", "--", "internal/librarian/doc.go")
+	cmd = exec.Command("git", "diff", "--exit-code", "--", "cmd/librarian/doc.go")
 	if err := cmd.Run(); err != nil {
 		t.Errorf("go generate produced a diff, please run `go generate ./...` and commit the changes")
-		cmd := exec.Command("git", "diff", "--", "internal/librarian/doc.go")
+		cmd = exec.Command("git", "diff", "--", "cmd/librarian/doc.go")
 		out, _ := cmd.CombinedOutput()
 		t.Logf("diff:\n%s", out)
 	}

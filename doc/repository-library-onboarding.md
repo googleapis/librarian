@@ -3,11 +3,12 @@
 This guide should be followed when onboarding new repositories/libraries.
 
 ## Repository Setup:
-1) Add .librarian directory to your repository with appropriate configuration files. See details [here](https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#configuration-files)
-2) You should only start with 1 library to validate the flow (follow instructions below)
-3) If your repository contains multiple libraries, start ramping up slowly until all libraries are in your state.yaml file and have migrated to librarian.
-4) To complete onboarding you should run the librarian test-container generate command to validate that all libraries are getting generated correctly. Note this command is WIP, [documentation will be added](https://github.com/googleapis/librarian/issues/2621) once available.  
-5) To correctly parse the commit message of a merge commit, only allow squash merging
+1) [Create ticket](http://go/onboard-repository-to-librarian) to onboard repository to Librarian automation. At a minimum, you should onboard to Tag and Release automation.
+2) Add `.librarian` directory to your repository with appropriate configuration files. See details [here](https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#configuration-files)
+3) You should only start with 1 library to validate the flow (follow instructions below)
+4) If your repository contains multiple libraries, start ramping up slowly until all libraries are in your `state.yaml` file and have migrated to librarian.
+5) To complete onboarding you should run the librarian test-container generate command to validate that all libraries are getting generated correctly. Note this command is WIP, [documentation will be added](https://github.com/googleapis/librarian/issues/2621) once available.  
+6) To correctly parse the commit message of a merge commit, only allow squash merging
 and set the default commit message to **Pull request title and description**.
 ![Pull request settings](assets/setting-pull-requests.webp)
 

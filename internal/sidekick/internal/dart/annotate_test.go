@@ -27,7 +27,6 @@ var (
 	requiredConfig = map[string]string{
 		"api-keys-environment-variables": "GOOGLE_API_KEY,GEMINI_API_KEY",
 		"issue-tracker-url":              "http://www.example.com/issues",
-		"package:googleapis_auth":        "^2.0.0",
 		"package:google_cloud_gax":       "^1.2.3",
 		"package:http":                   "^4.5.6",
 		"package:google_cloud_protobuf":  "^7.8.9",
@@ -153,7 +152,6 @@ func TestAnnotateModel_Options(t *testing.T) {
 				if diff := cmp.Diff(map[string]string{
 					"google_cloud_gax":      "^1.2.3",
 					"google_cloud_protobuf": "^7.8.9",
-					"googleapis_auth":       "^2.0.0",
 					"http":                  "1.2.0"},
 					am.dependencyConstraints); diff != "" {
 					t.Errorf("mismatch in annotateModel.dependencyConstraints (-want, +got)\n:%s", diff)

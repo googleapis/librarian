@@ -64,7 +64,9 @@ var (
 
 	releaseNotesTemplate = template.Must(template.New("releaseNotes").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
-	}).Parse(`Librarian Version: {{.LibrarianVersion}}
+	}).Parse(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
 {{ $prInfo := . }}
 {{- range .NoteSections -}}
@@ -105,7 +107,9 @@ Language Image: {{.ImageVersion}}
 
 	genBodyTemplate = template.Must(template.New("genBody").Funcs(template.FuncMap{
 		"shortSHA": shortSHA,
-	}).Parse(`BEGIN_COMMIT_OVERRIDE
+	}).Parse(`PR created by the Librarian CLI to generate Cloud Client Libraries code from protos.
+
+BEGIN_COMMIT
 {{ range .Commits }}
 BEGIN_NESTED_COMMIT
 {{.Type}}: {{.Subject}}
@@ -116,7 +120,7 @@ Library-IDs: {{index .Footers "Library-IDs"}}
 Source-link: [googleapis/googleapis@{{shortSHA .CommitHash}}](https://github.com/googleapis/googleapis/commit/{{shortSHA .CommitHash}})
 END_NESTED_COMMIT
 {{ end }}
-END_COMMIT_OVERRIDE
+END_COMMIT
 
 This pull request is generated with proto changes between
 [googleapis/googleapis@{{shortSHA .StartSHA}}](https://github.com/googleapis/googleapis/commit/{{.StartSHA}})
@@ -136,14 +140,16 @@ Language Image: {{.ImageVersion}}
 {{- end }}
 `))
 
-	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`BEGIN_COMMIT_OVERRIDE
+	onboardingBodyTemplate = template.Must(template.New("onboardingBody").Parse(`PR created by the Librarian CLI to onboard a new Cloud Client Library.
+
+BEGIN_COMMIT
 
 feat: onboard a new library
 
 PiperOrigin-RevId: {{.PiperID}}
 Library-IDs: {{.LibraryID}}
 
-END_COMMIT_OVERRIDE
+END_COMMIT
 
 Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}

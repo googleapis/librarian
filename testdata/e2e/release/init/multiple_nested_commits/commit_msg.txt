@@ -10,7 +10,7 @@ Librarian Version: v0.0.0-20250918210716-c3c71af9310a
 Language Image:
 us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/python-librarian-generator:latest
 
-BEGIN_COMMIT_OVERRIDE
+BEGIN_COMMIT
 
 BEGIN_NESTED_COMMIT
 fix: [python-google-cloud-eventarc-v1] upgrade gRPC service registration func
@@ -108,4 +108,4 @@ Source-link:
 [googleapis/googleapis@dfce92d](https://github.com/googleapis/googleapis/commit/dfce92d6cc82c6dc133a6974b04e827e9fa4511c)
 END_NESTED_COMMIT
 
-END_COMMIT_OVERRIDE
+END_COMMIT
