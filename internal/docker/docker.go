@@ -43,8 +43,8 @@ const (
 	CommandConfigure Command = "configure"
 	// CommandGenerate performs generation for a configured library.
 	CommandGenerate Command = "generate"
-	// CommandReleaseInit performs release for a library.
-	CommandReleaseInit Command = "release-init"
+	// CommandReleaseStage performs release for a library.
+	CommandReleaseStage Command = "release-stage"
 )
 
 // Docker contains all the information required to run language-specific
@@ -129,9 +129,9 @@ type GenerateRequest struct {
 	State *config.LibrarianState
 }
 
-// ReleaseInitRequest contains all the information required for a language
-// container to run the  init command.
-type ReleaseInitRequest struct {
+// ReleaseStageRequest contains all the information required for a language
+// container to run the stage command.
+type ReleaseStageRequest struct {
 	// Branch is the remote branch of the language repository to use.
 	Branch string
 
@@ -314,15 +314,15 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 	return request.LibraryID, nil
 }
 
-// ReleaseInit initiates a release for a given language repository.
-func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) error {
-	reqFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseInitRequest)
+// ReleaseStage stages a release for a given language repository.
+func (c *Docker) ReleaseStage(ctx context.Context, request *ReleaseStageRequest) error {
+	reqFilePath := filepath.Join(request.RepoDir, config.LibrarianDir, config.ReleaseStageRequest)
 	if err := writeLibrarianState(request.State, reqFilePath); err != nil {
 		return err
 	}
 	defer func() {
 		if b, err := os.ReadFile(reqFilePath); err == nil {
-			slog.Debug("release init request", "content", string(b))
+			slog.Debug("release stage request", "content", string(b))
 		}
 		err := os.Remove(reqFilePath)
 		if err != nil {
@@ -342,7 +342,7 @@ func (c *Docker) ReleaseInit(ctx context.Context, request *ReleaseInitRequest) e
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
-	if err := c.runDocker(ctx, CommandReleaseInit, mounts, commandArgs); err != nil {
+	if err := c.runDocker(ctx, CommandReleaseStage, mounts, commandArgs); err != nil {
 		return err
 	}
 

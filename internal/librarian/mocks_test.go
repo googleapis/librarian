@@ -127,11 +127,11 @@ type mockContainerClient struct {
 	generateCalls  int
 	buildCalls     int
 	configureCalls int
-	initCalls      int
+	stageCalls     int
 	generateErr    error
 	buildErr       error
 	configureErr   error
-	initErr        error
+	stageErr       error
 	// Set this value if you want an error when
 	// generate a library with a specific id.
 	failGenerateForID string
@@ -293,10 +293,10 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	return m.generateErr
 }
 
-func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error {
-	m.initCalls++
+func (m *mockContainerClient) ReleaseStage(ctx context.Context, request *docker.ReleaseStageRequest) error {
+	m.stageCalls++
 	if m.noReleaseResponse {
-		return m.initErr
+		return m.stageErr
 	}
 	// Write a release-init-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, ".librarian"), 0755); err != nil {
@@ -311,10 +311,10 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.ReleaseStageResponse), b, 0755); err != nil {
 		return err
 	}
-	return m.initErr
+	return m.stageErr
 }
 
 type MockRepository struct {

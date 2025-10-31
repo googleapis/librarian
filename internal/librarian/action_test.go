@@ -33,7 +33,7 @@ func TestLibrarianAction(t *testing.T) {
 		},
 		{
 			name: "init",
-			fn:   newCmdInit,
+			fn:   newCmdStage,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

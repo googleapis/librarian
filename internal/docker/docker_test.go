@@ -493,12 +493,12 @@ func TestDockerRun(t *testing.T) {
 				Image: testImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				partialRepoDir := filepath.Join(repoDir, "release-init-all-libraries")
+				partialRepoDir := filepath.Join(repoDir, "release-stage-all-libraries")
 				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
 				}
 
-				releaseInitRequest := &ReleaseInitRequest{
+				releaseInitRequest := &ReleaseStageRequest{
 					State:           state,
 					Output:          testOutput,
 					LibrarianConfig: &config.LibrarianConfig{},
@@ -507,15 +507,15 @@ func TestDockerRun(t *testing.T) {
 
 				defer os.RemoveAll(partialRepoDir)
 
-				return d.ReleaseInit(ctx, releaseInitRequest)
+				return d.ReleaseStage(ctx, releaseInitRequest)
 			},
 			want: []string{
 				"run", "--rm",
-				"-v", fmt.Sprintf("%s/.librarian:/librarian", filepath.Join(repoDir, "release-init-all-libraries")),
-				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-init-all-libraries")),
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", filepath.Join(repoDir, "release-stage-all-libraries")),
+				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-stage-all-libraries")),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
-				string(CommandReleaseInit),
+				string(CommandReleaseStage),
 				"--librarian=/librarian",
 				"--repo=/repo",
 				"--output=/output",
@@ -532,7 +532,7 @@ func TestDockerRun(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				releaseInitRequest := &ReleaseInitRequest{
+				releaseInitRequest := &ReleaseStageRequest{
 					State:           state,
 					RepoDir:         partialRepoDir,
 					Output:          testOutput,
@@ -540,7 +540,7 @@ func TestDockerRun(t *testing.T) {
 				}
 				defer os.RemoveAll(partialRepoDir)
 
-				return d.ReleaseInit(ctx, releaseInitRequest)
+				return d.ReleaseStage(ctx, releaseInitRequest)
 			},
 			wantErr:    true,
 			wantErrMsg: simulateDockerErrMsg,
@@ -551,13 +551,13 @@ func TestDockerRun(t *testing.T) {
 				Image: mockImage,
 			},
 			runCommand: func(ctx context.Context, d *Docker) error {
-				releaseInitRequest := &ReleaseInitRequest{
+				releaseInitRequest := &ReleaseStageRequest{
 					State:   state,
 					RepoDir: "/non-exist-dir",
 					Output:  testOutput,
 				}
 
-				return d.ReleaseInit(ctx, releaseInitRequest)
+				return d.ReleaseStage(ctx, releaseInitRequest)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to make directory",
@@ -572,7 +572,7 @@ func TestDockerRun(t *testing.T) {
 				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
 					t.Fatal(err)
 				}
-				releaseInitRequest := &ReleaseInitRequest{
+				releaseInitRequest := &ReleaseStageRequest{
 					State:           state,
 					RepoDir:         partialRepoDir,
 					Output:          testOutput,
@@ -581,7 +581,7 @@ func TestDockerRun(t *testing.T) {
 				}
 				defer os.RemoveAll(partialRepoDir)
 
-				return d.ReleaseInit(ctx, releaseInitRequest)
+				return d.ReleaseStage(ctx, releaseInitRequest)
 			},
 			want: []string{
 				"run", "--rm",
@@ -589,7 +589,7 @@ func TestDockerRun(t *testing.T) {
 				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-init-one-library")),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
-				string(CommandReleaseInit),
+				string(CommandReleaseStage),
 				"--librarian=/librarian",
 				"--repo=/repo",
 				"--output=/output",
@@ -606,7 +606,7 @@ func TestDockerRun(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				releaseInitRequest := &ReleaseInitRequest{
+				releaseInitRequest := &ReleaseStageRequest{
 					State:           state,
 					RepoDir:         partialRepoDir,
 					Output:          testOutput,
@@ -616,7 +616,7 @@ func TestDockerRun(t *testing.T) {
 				}
 				defer os.RemoveAll(partialRepoDir)
 
-				return d.ReleaseInit(ctx, releaseInitRequest)
+				return d.ReleaseStage(ctx, releaseInitRequest)
 			},
 			want: []string{
 				"run", "--rm",
@@ -624,7 +624,7 @@ func TestDockerRun(t *testing.T) {
 				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-init-one-library-with-version")),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
-				string(CommandReleaseInit),
+				string(CommandReleaseStage),
 				"--librarian=/librarian",
 				"--repo=/repo",
 				"--output=/output",
@@ -943,7 +943,7 @@ func TestDocker_runCommand(t *testing.T) {
 	}
 }
 
-func TestReleaseInitRequestContent(t *testing.T) {
+func TestReleaseStageRequestContent(t *testing.T) {
 	tmpDir := t.TempDir()
 	partialRepoDir := filepath.Join(tmpDir, "partial-repo")
 	librarianDir := filepath.Join(partialRepoDir, config.LibrarianDir)
@@ -980,7 +980,7 @@ func TestReleaseInitRequestContent(t *testing.T) {
 	}
 
 	// Override the run command to intercept the arguments and verify the content
-	// of the release-init-request.json file.
+	// of the release-stage-request.json file.
 	d.run = func(args ...string) error {
 		var librarianDir string
 		for i, arg := range args {
@@ -996,13 +996,13 @@ func TestReleaseInitRequestContent(t *testing.T) {
 			return errors.New("could not find librarian directory mount")
 		}
 
-		jsonPath := filepath.Join(librarianDir, "release-init-request.json")
+		jsonPath := filepath.Join(librarianDir, "release-stage-request.json")
 		gotBytes, err := os.ReadFile(jsonPath)
 		if err != nil {
 			t.Fatalf("ReadFile failed: %v", err)
 		}
 
-		wantFile := filepath.Join("..", "..", "testdata", "docker", "release-init-request", "release-init-request.json")
+		wantFile := filepath.Join("..", "..", "testdata", "docker", "release-stage-request", "release-stage-request.json")
 		wantBytes, err := os.ReadFile(wantFile)
 		if err != nil {
 			t.Fatalf("ReadFile for want file failed: %v", err)
@@ -1014,13 +1014,13 @@ func TestReleaseInitRequestContent(t *testing.T) {
 		return nil
 	}
 
-	req := &ReleaseInitRequest{
+	req := &ReleaseStageRequest{
 		State:           stateWithChanges,
 		RepoDir:         partialRepoDir,
 		Output:          filepath.Join(tmpDir, "output"),
 		LibrarianConfig: &config.LibrarianConfig{},
 	}
-	if err := d.ReleaseInit(context.Background(), req); err != nil {
-		t.Fatalf("d.ReleaseInit() failed: %v", err)
+	if err := d.ReleaseStage(context.Background(), req); err != nil {
+		t.Fatalf("d.ReleaseStage() failed: %v", err)
 	}
 }

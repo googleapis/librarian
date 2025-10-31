@@ -29,7 +29,7 @@ import (
 
 func TestRun(t *testing.T) {
 	tmpDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmpDir, "release-init-request.json"), []byte("{}"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "release-stage-request.json"), []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(tmpDir, "generate-request.json"), []byte("{}"), 0644); err != nil {
@@ -73,13 +73,13 @@ func TestRun(t *testing.T) {
 			wantErr:  true,
 		},
 		{
-			name:     "release-init command success",
-			args:     []string{"release-init", "-librarian", tmpDir},
+			name:     "release-stage command success",
+			args:     []string{"release-stage", "-librarian", tmpDir},
 			wantCode: 0,
 		},
 		{
-			name:     "release-init command failure",
-			args:     []string{"release-init", "-librarian", tmpDir},
+			name:     "release-stage command failure",
+			args:     []string{"release-stage", "-librarian", tmpDir},
 			wantCode: 1,
 			wantErr:  true,
 		},
@@ -93,11 +93,11 @@ func TestRun(t *testing.T) {
 					}
 					return nil
 				},
-				ReleaseInit: func(ctx context.Context, c *release.Config) (*message.ReleaseInitResponse, error) {
+				ReleaseStage: func(ctx context.Context, c *release.Config) (*message.ReleaseStageResponse, error) {
 					if tt.wantErr {
 						return nil, os.ErrNotExist
 					}
-					return &message.ReleaseInitResponse{}, nil
+					return &message.ReleaseStageResponse{}, nil
 				},
 			}
 			if gotCode := Run(tt.args, &container); gotCode != tt.wantCode {
@@ -116,15 +116,15 @@ func TestRun_noArgs(t *testing.T) {
 	Run([]string{}, &LanguageContainer{})
 }
 
-func TestRun_ReleaseInitWritesResponse(t *testing.T) {
+func TestRun_ReleaseStageWritesResponse(t *testing.T) {
 	tmpDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmpDir, "release-init-request.json"), []byte("{}"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, "release-stage-request.json"), []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	args := []string{"release-init", "-librarian", tmpDir}
-	want := &message.ReleaseInitResponse{Error: "test error"}
+	args := []string{"release-stage", "-librarian", tmpDir}
+	want := &message.ReleaseStageResponse{Error: "test error"}
 	container := LanguageContainer{
-		ReleaseInit: func(ctx context.Context, c *release.Config) (*message.ReleaseInitResponse, error) {
+		ReleaseStage: func(ctx context.Context, c *release.Config) (*message.ReleaseStageResponse, error) {
 			return want, nil
 		},
 	}
@@ -133,12 +133,12 @@ func TestRun_ReleaseInitWritesResponse(t *testing.T) {
 		t.Errorf("Run() = %v, want 0", code)
 	}
 
-	responsePath := filepath.Join(tmpDir, "release-init-response.json")
+	responsePath := filepath.Join(tmpDir, "release-stage-response.json")
 	bytes, err := os.ReadFile(responsePath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := &message.ReleaseInitResponse{}
+	got := &message.ReleaseStageResponse{}
 	if err := json.Unmarshal(bytes, got); err != nil {
 		t.Fatal(err)
 	}
@@ -147,13 +147,13 @@ func TestRun_ReleaseInitWritesResponse(t *testing.T) {
 	}
 }
 
-func TestRun_ReleaseInitReadsContextArgs(t *testing.T) {
+func TestRun_ReleaseStageReadsContextArgs(t *testing.T) {
 	tmpDir := t.TempDir()
 	librarianDir := filepath.Join(tmpDir, "librarian")
 	if err := os.Mkdir(librarianDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(librarianDir, "release-init-request.json"), []byte("{}"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(librarianDir, "release-stage-request.json"), []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	repoDir := filepath.Join(tmpDir, "repo")
@@ -164,12 +164,12 @@ func TestRun_ReleaseInitReadsContextArgs(t *testing.T) {
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	args := []string{"release-init", "-librarian", librarianDir, "-repo", repoDir, "-output", outputDir}
+	args := []string{"release-stage", "-librarian", librarianDir, "-repo", repoDir, "-output", outputDir}
 	var gotConfig *release.Config
 	container := LanguageContainer{
-		ReleaseInit: func(ctx context.Context, c *release.Config) (*message.ReleaseInitResponse, error) {
+		ReleaseStage: func(ctx context.Context, c *release.Config) (*message.ReleaseStageResponse, error) {
 			gotConfig = c
-			return &message.ReleaseInitResponse{}, nil
+			return &message.ReleaseStageResponse{}, nil
 		},
 	}
 	if code := Run(args, &container); code != 0 {
@@ -243,14 +243,14 @@ func TestRun_unimplementedCommands(t *testing.T) {
 			name: "generate is nil",
 			args: []string{"generate"},
 			container: &LanguageContainer{
-				ReleaseInit: func(context.Context, *release.Config) (*message.ReleaseInitResponse, error) {
+				ReleaseStage: func(context.Context, *release.Config) (*message.ReleaseStageResponse, error) {
 					return nil, nil
 				},
 			},
 		},
 		{
-			name: "release-init is nil",
-			args: []string{"release-init"},
+			name: "release-stage is nil",
+			args: []string{"release-stage"},
 			container: &LanguageContainer{
 				Generate: func(context.Context, *generate.Config) error {
 					return nil

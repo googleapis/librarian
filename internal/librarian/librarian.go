@@ -57,8 +57,8 @@ func newLibrarianCommand() *cli.Command {
 		UsageLine: "librarian release <command> [arguments]",
 		Long:      releaseLongHelp,
 		Commands: []*cli.Command{
-			newCmdInit(),
 			newCmdTag(),
+			newCmdStage(),
 		},
 	}
 	cmdRelease.Init()
@@ -146,39 +146,39 @@ func newCmdTag() *cli.Command {
 	return cmdTag
 }
 
-func newCmdInit() *cli.Command {
+func newCmdStage() *cli.Command {
 	var verbose bool
-	cmdInit := &cli.Command{
-		Short:     "init initiates a release by creating a release pull request.",
-		UsageLine: "librarian release init [flags]",
-		Long:      releaseInitLongHelp,
+	cmdStage := &cli.Command{
+		Short:     "stage stages a release by creating a release pull request.",
+		UsageLine: "librarian release stage [flags]",
+		Long:      releaseStageLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			setupLogger(verbose)
-			slog.Debug("init command verbose logging")
+			slog.Debug("stage command verbose logging")
 			if err := cmd.Config.SetDefaults(); err != nil {
 				return fmt.Errorf("failed to initialize config: %w", err)
 			}
 			if _, err := cmd.Config.IsValid(); err != nil {
 				return fmt.Errorf("failed to validate config: %s", err)
 			}
-			runner, err := newInitRunner(cmd.Config)
+			runner, err := newStageRunner(cmd.Config)
 			if err != nil {
 				return err
 			}
 			return runner.run(ctx)
 		},
 	}
-	cmdInit.Init()
-	addFlagCommit(cmdInit.Flags, cmdInit.Config)
-	addFlagPush(cmdInit.Flags, cmdInit.Config)
-	addFlagImage(cmdInit.Flags, cmdInit.Config)
-	addFlagLibrary(cmdInit.Flags, cmdInit.Config)
-	addFlagLibraryVersion(cmdInit.Flags, cmdInit.Config)
-	addFlagRepo(cmdInit.Flags, cmdInit.Config)
-	addFlagBranch(cmdInit.Flags, cmdInit.Config)
-	addFlagWorkRoot(cmdInit.Flags, cmdInit.Config)
-	addFlagVerbose(cmdInit.Flags, &verbose)
-	return cmdInit
+	cmdStage.Init()
+	addFlagCommit(cmdStage.Flags, cmdStage.Config)
+	addFlagPush(cmdStage.Flags, cmdStage.Config)
+	addFlagImage(cmdStage.Flags, cmdStage.Config)
+	addFlagLibrary(cmdStage.Flags, cmdStage.Config)
+	addFlagLibraryVersion(cmdStage.Flags, cmdStage.Config)
+	addFlagRepo(cmdStage.Flags, cmdStage.Config)
+	addFlagBranch(cmdStage.Flags, cmdStage.Config)
+	addFlagWorkRoot(cmdStage.Flags, cmdStage.Config)
+	addFlagVerbose(cmdStage.Flags, &verbose)
+	return cmdStage
 }
 
 func newCmdUpdateImage() *cli.Command {

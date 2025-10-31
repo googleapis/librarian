@@ -17,19 +17,19 @@ package release
 
 import "github.com/googleapis/librarian/internal/container/java/message"
 
-// Context has the directory paths for the release-init command.
-// https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#release-init
+// Context has the directory paths for the release-stage command.
+// https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#release-stage
 type Context struct {
 	LibrarianDir string
 	RepoDir      string
 	OutputDir    string
 }
 
-// The Config for the release-init command. This holds the context (the directory paths)
-// and the request parsed from the release-init-request.json file.
+// The Config for the release-stage command. This holds the context (the directory paths)
+// and the request parsed from the release-stage-request.json file.
 type Config struct {
 	Context *Context
-	// This request is parsed from the release-init-request.json file in
+	// This request is parsed from the release-stage-request.json file in
 	// the LibrarianDir of the context.
-	Request *message.ReleaseInitRequest
+	Request *message.ReleaseStageRequest
 }

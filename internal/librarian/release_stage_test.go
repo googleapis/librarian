@@ -28,7 +28,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestNewInitRunner(t *testing.T) {
+func TestNewStageRunner(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name       string
@@ -52,14 +52,14 @@ func TestNewInitRunner(t *testing.T) {
 				APISource: newTestGitRepo(t).GetDir(),
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to create init runner",
+			wantErrMsg: "failed to create stage runner",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := newInitRunner(test.cfg)
+			_, err := newStageRunner(test.cfg)
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("newInitRunner() should return error")
+					t.Fatal("newStageRunner() should return error")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -69,13 +69,13 @@ func TestNewInitRunner(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Errorf("newInitRunner() = %v, want nil", err)
+				t.Errorf("newStageRunner() = %v, want nil", err)
 			}
 		})
 	}
 }
 
-func TestInitRun(t *testing.T) {
+func TestStageRun(t *testing.T) {
 	t.Parallel()
 
 	mockRepoWithReleasableUnit := &MockRepository{
@@ -94,22 +94,22 @@ func TestInitRun(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name            string
-		containerClient *mockContainerClient
-		dockerInitCalls int
+		name             string
+		containerClient  *mockContainerClient
+		dockerStageCalls int
 		// TODO: Pass all setup fields to the setupRunner func
-		setupRunner func(containerClient *mockContainerClient) *initRunner
+		setupRunner func(containerClient *mockContainerClient) *stageRunner
 		files       map[string]string
 		want        *config.LibrarianState
 		wantErr     bool
 		wantErrMsg  string
 	}{
 		{
-			name:            "run release init command for all libraries, update librarian state",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "run release stage command for all libraries, update librarian state",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					state: &config.LibrarianState{
@@ -217,11 +217,11 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "run release init command for one library (library id in cfg)",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "run release stage command for one library (library id in cfg)",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					library:         "example-id",
@@ -289,11 +289,11 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "run release init command for libraries have the same global files in src roots",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "run release stage command for libraries have the same global files in src roots",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					state: &config.LibrarianState{
@@ -397,11 +397,11 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "run release init command, skips blocked libraries!",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "run release stage command, skips blocked libraries!",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					state: &config.LibrarianState{
@@ -479,11 +479,11 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "run release init command, does not skip blocked library if explicitly specified",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "run release stage command, does not skip blocked library if explicitly specified",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					// The library is explicitly specified.
@@ -540,10 +540,10 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "run release init command for one invalid library (invalid library id in cfg)",
+			name:            "run release stage command for one invalid library (invalid library id in cfg)",
 			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					library:         "does-not-exist",
@@ -567,11 +567,11 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "unable to find library for release",
 		},
 		{
-			name:            "run release init command without librarian config (no config.yaml file)",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "run release stage command without librarian config (no config.yaml file)",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					library:         "example-id",
@@ -640,12 +640,12 @@ func TestInitRun(t *testing.T) {
 		{
 			name: "docker command returns error",
 			containerClient: &mockContainerClient{
-				initErr: errors.New("simulated init error"),
+				stageErr: errors.New("simulated init error"),
 			},
 			// error occurred inside the docker container, there was a single request made to the container
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					state: &config.LibrarianState{
@@ -670,9 +670,9 @@ func TestInitRun(t *testing.T) {
 				wantErrorMsg: true,
 			},
 			// error reported from the docker container, there was a single request made to the container
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					state: &config.LibrarianState{
@@ -694,8 +694,8 @@ func TestInitRun(t *testing.T) {
 		{
 			name:            "invalid work root",
 			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        "/invalid/path",
 					containerClient: containerClient,
 					repo: &MockRepository{
@@ -709,8 +709,8 @@ func TestInitRun(t *testing.T) {
 		{
 			name:            "failed to get changes from repo when releasing one library",
 			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					library:         "example-id",
@@ -734,8 +734,8 @@ func TestInitRun(t *testing.T) {
 		{
 			name:            "failed to get changes from repo when releasing multiple libraries",
 			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					state: &config.LibrarianState{
@@ -758,8 +758,8 @@ func TestInitRun(t *testing.T) {
 		{
 			name:            "single library has no releasable units, no state change",
 			containerClient: &mockContainerClient{},
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
 					state: &config.LibrarianState{
@@ -797,11 +797,11 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "release init has multiple libraries but only one library has a releasable unit",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "release init has multiple libraries but only one library has a releasable unit",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
 					state: &config.LibrarianState{
@@ -866,11 +866,11 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "inputted library does not have a releasable unit, version is inputted",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "inputted library does not have a releasable unit, version is inputted",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
 					library:         "another-example-id", // release only for this library
@@ -937,11 +937,11 @@ func TestInitRun(t *testing.T) {
 			},
 		},
 		{
-			name:            "inputted library does not have a releasable unit, no version inputted",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 0, // version was not inputted, do not trigger a release
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "inputted library does not have a releasable unit, no version inputted",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 0, // version was not inputted, do not trigger a release
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
 					library:         "another-example-id", // release only for this library
@@ -983,11 +983,11 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "library does not have a releasable unit and will not be released. Use the version flag to force a release for",
 		},
 		{
-			name:            "failed to commit and push",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "failed to commit and push",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
 					push:            true,
@@ -1025,11 +1025,11 @@ func TestInitRun(t *testing.T) {
 			wantErrMsg: "failed to commit and push",
 		},
 		{
-			name:            "run release init command with symbolic link",
-			containerClient: &mockContainerClient{},
-			dockerInitCalls: 1,
-			setupRunner: func(containerClient *mockContainerClient) *initRunner {
-				return &initRunner{
+			name:             "run release stage command with symbolic link",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
 					workRoot:        t.TempDir(),
 					containerClient: containerClient,
 					library:         "example-id",
@@ -1087,7 +1087,7 @@ func TestInitRun(t *testing.T) {
 				}
 			}
 			// Create a symbolic link for the test case with symbolic links.
-			if test.name == "run release init command with symbolic link" {
+			if test.name == "run release stage command with symbolic link" {
 				if err := os.Symlink(filepath.Join(repoDir, "dir1/file1.txt"),
 					filepath.Join(repoDir, "dir1/symlink.txt")); err != nil {
 					t.Fatalf("os.Symlink() = %v", err)
@@ -1110,11 +1110,11 @@ func TestInitRun(t *testing.T) {
 			err := runner.run(t.Context())
 
 			// Check how many times the docker container has been called. If a release is to proceed
-			// we expect this to be 1. Otherwise, the dockerInitCalls should be 0. Run this check even
+			// we expect this to be 1. Otherwise, the dockerStageCalls should be 0. Run this check even
 			// if there is an error that is wanted to ensure that a docker request is only made when
 			// we want it to.
-			if diff := cmp.Diff(test.dockerInitCalls, test.containerClient.initCalls); diff != "" {
-				t.Errorf("docker init calls mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.dockerStageCalls, test.containerClient.stageCalls); diff != "" {
+				t.Errorf("docker stage calls mismatch (-want +got):\n%s", diff)
 			}
 
 			if test.wantErr {
@@ -1153,7 +1153,7 @@ func TestInitRun(t *testing.T) {
 	}
 }
 
-func TestRunInitCommand(t *testing.T) {
+func TestRunStageCommand(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name   string
@@ -1286,15 +1286,15 @@ func TestRunInitCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		r := &initRunner{
+		r := &stageRunner{
 			repo:            test.repo,
 			state:           test.state,
 			librarianConfig: test.config,
 			containerClient: test.client,
 		}
-		err := r.runInitCommand(t.Context(), output)
+		err := r.runStageCommand(t.Context(), output)
 		if err != nil {
-			t.Errorf("failed to run runInitCommand(): %q", err.Error())
+			t.Errorf("failed to run runStageCommand(): %q", err.Error())
 			return
 		}
 		if diff := cmp.Diff(test.want, r.state); diff != "" {
@@ -1338,7 +1338,7 @@ func TestProcessLibrary(t *testing.T) {
 				test.libraryState,
 			},
 		}
-		r := &initRunner{
+		r := &stageRunner{
 			repo:  test.repo,
 			state: state,
 		}
@@ -1763,7 +1763,7 @@ func TestUpdateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			r := &initRunner{
+			r := &stageRunner{
 				library:        test.library,
 				libraryVersion: test.libraryVersion,
 			}
@@ -1861,7 +1861,7 @@ func TestDetermineNextVersion(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			runner := &initRunner{
+			runner := &stageRunner{
 				libraryVersion:  test.config.LibraryVersion,
 				librarianConfig: test.librarianConfig,
 			}

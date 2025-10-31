@@ -26,13 +26,13 @@ import (
 	"os"
 )
 
-// ReleaseInitRequest is the structure of the release-init-request.json file.
-type ReleaseInitRequest struct {
+// ReleaseStageRequest is the structure of the release-stage-request.json file.
+type ReleaseStageRequest struct {
 	Libraries []*Library `json:"libraries"`
 }
 
-// ReleaseInitResponse is the structure of the release-init-response.json file.
-type ReleaseInitResponse struct {
+// ReleaseStageResponse is the structure of the release-stage-response.json file.
+type ReleaseStageResponse struct {
 	Error string `json:"error,omitempty"`
 }
 

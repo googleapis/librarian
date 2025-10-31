@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This runs the `librarian release init` command with a provided repository,
+# This runs the `librarian release stage` command with a provided repository,
 # secret name, and optional library ID
 steps:
   - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher

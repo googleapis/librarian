@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package release contains the implementation of the release-init command.
+// Package release contains the implementation of the release-stage command.
 package release
 
 import (
@@ -24,8 +24,8 @@ import (
 )
 
 // Init executes the release init command.
-func Init(ctx context.Context, cfg *release.Config) (*message.ReleaseInitResponse, error) {
-	slog.Info("release-init: invoked", "config", cfg)
-	// TODO(suztomo): implement release-init.
-	return &message.ReleaseInitResponse{}, nil
+func Init(ctx context.Context, cfg *release.Config) (*message.ReleaseStageResponse, error) {
+	slog.Info("release-stage: invoked", "config", cfg)
+	// TODO(suztomo): implement release-stage.
+	return &message.ReleaseStageResponse{}, nil
 }
