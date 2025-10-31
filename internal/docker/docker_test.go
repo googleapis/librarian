@@ -488,7 +488,7 @@ func TestDockerRun(t *testing.T) {
 			wantErrMsg: simulateDockerErrMsg,
 		},
 		{
-			name: "Release init for all libraries",
+			name: "Release stage for all libraries",
 			docker: &Docker{
 				Image: testImage,
 			},
@@ -522,7 +522,7 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: "Release init returns error",
+			name: "Release stage returns error",
 			docker: &Docker{
 				Image: mockImage,
 			},
@@ -546,7 +546,7 @@ func TestDockerRun(t *testing.T) {
 			wantErrMsg: simulateDockerErrMsg,
 		},
 		{
-			name: "Release init with invalid partial repo dir",
+			name: "Release stage with invalid partial repo dir",
 			docker: &Docker{
 				Image: mockImage,
 			},
@@ -563,7 +563,7 @@ func TestDockerRun(t *testing.T) {
 			wantErrMsg: "failed to make directory",
 		},
 		{
-			name: "Release init for one library",
+			name: "Release stage for one library",
 			docker: &Docker{
 				Image: testImage,
 			},
@@ -596,7 +596,7 @@ func TestDockerRun(t *testing.T) {
 			},
 		},
 		{
-			name: "Release init for one library with version",
+			name: "Release stage for one library with version",
 			docker: &Docker{
 				Image: testImage,
 			},

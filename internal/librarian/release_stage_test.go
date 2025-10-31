@@ -797,7 +797,7 @@ func TestStageRun(t *testing.T) {
 			},
 		},
 		{
-			name:             "release init has multiple libraries but only one library has a releasable unit",
+			name:             "release stage has multiple libraries but only one library has a releasable unit",
 			containerClient:  &mockContainerClient{},
 			dockerStageCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *stageRunner {

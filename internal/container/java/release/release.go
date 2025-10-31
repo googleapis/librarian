@@ -23,8 +23,8 @@ import (
 	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
-// Init executes the release init command.
-func Init(ctx context.Context, cfg *release.Config) (*message.ReleaseStageResponse, error) {
+// Stage executes the release stage command.
+func Stage(ctx context.Context, cfg *release.Config) (*message.ReleaseStageResponse, error) {
 	slog.Info("release-stage: invoked", "config", cfg)
 	// TODO(suztomo): implement release-stage.
 	return &message.ReleaseStageResponse{}, nil

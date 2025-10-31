@@ -171,7 +171,7 @@ func doReleaseStage(args []string) error {
 	return writeReleaseStageResponseJSON(request)
 }
 
-// readReleaseStageRequestJSON reads the release init request file and creates a librarianState
+// readReleaseStageRequestJSON reads the release stage request file and creates a librarianState
 // object.
 func readReleaseStageRequestJSON(path string) (*librarianState, error) {
 	state := &librarianState{}
@@ -234,7 +234,7 @@ func writeReleaseStageResponseJSON(option *releaseInitOption) error {
 	}
 	slog.Debug("about to write to file", "path", jsonFilePath, "data", string(data))
 	_, err = jsonFile.Write(data)
-	slog.Info("wrote release init response", "path", jsonFilePath)
+	slog.Info("wrote release stage response", "path", jsonFilePath)
 
 	return err
 }
