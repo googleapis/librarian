@@ -26,7 +26,12 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
   {{/Fields}}
   {{Codec.Name}}({{#Codec.HasFields}}{
   {{#Fields}}
+    {{#Codec.FieldBehaviorRequired}}
+    required this.{{Codec.Name}},
+    {{/Codec.FieldBehaviorRequired}}
+    {{^Codec.FieldBehaviorRequired}}
     this.{{Codec.Name}}{{#Codec.DefaultValue}} = {{{Codec.DefaultValue}}}{{/Codec.DefaultValue}},
+    {{/Codec.FieldBehaviorRequired}}
   {{/Fields}}
   }{{/Codec.HasFields}}) : super(fullyQualifiedName){{Codec.ConstructorBody}}
 
@@ -55,7 +60,7 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
       if ({{{Codec.Name}}} != null) '{{{JSONName}}}': {{{Codec.ToJson}}},
       {{/Codec.Nullable}}
       {{^Codec.Nullable}}
-      if ({{{Codec.Name}}}.isNotDefault) '{{{JSONName}}}': {{{Codec.ToJson}}},
+          {{^Codec.FieldBehaviorRequired}}if ({{{Codec.Name}}}.isNotDefault){{/Codec.FieldBehaviorRequired}} '{{{JSONName}}}': {{{Codec.ToJson}}},
       {{/Codec.Nullable}}
       {{/Fields}}
     };

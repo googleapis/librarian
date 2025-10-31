@@ -157,14 +157,15 @@ type operationInfoAnnotation struct {
 }
 
 type fieldAnnotation struct {
-	Name         string
-	Type         string
-	DocLines     []string
-	Required     bool
-	Nullable     bool
-	DefaultValue string
-	FromJson     string
-	ToJson       string
+	Name                  string
+	Type                  string
+	DocLines              []string
+	Required              bool
+	Nullable              bool
+	FieldBehaviorRequired bool
+	DefaultValue          string
+	FromJson              string
+	ToJson                string
 }
 
 type enumAnnotation struct {
@@ -728,14 +729,15 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	state := annotate.state
 
 	field.Codec = &fieldAnnotation{
-		Name:         fieldName(field),
-		Type:         annotate.fieldType(field),
-		DocLines:     formatDocComments(field.Documentation, state),
-		Required:     required,
-		Nullable:     !required,
-		DefaultValue: defaultValue,
-		FromJson:     annotate.createFromJsonLine(field, state, required),
-		ToJson:       createToJsonLine(field, state, required),
+		Name:                  fieldName(field),
+		Type:                  annotate.fieldType(field),
+		DocLines:              formatDocComments(field.Documentation, state),
+		Required:              required,
+		Nullable:              !required,
+		FieldBehaviorRequired: slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED),
+		DefaultValue:          defaultValue,
+		FromJson:              annotate.createFromJsonLine(field, state, required),
+		ToJson:                createToJsonLine(field, state, required),
 	}
 }
 
