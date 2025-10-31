@@ -112,7 +112,7 @@ Examples:
   # Manually specify a version for a single library, overriding the calculation.
   librarian release init --library=secretmanager --library-version=2.0.0 --push`
 
-	tagAndReleaseLongHelp = `The 'tag-and-release' command is the final step in the release
+	tagAndReleaseLongHelp = `The 'tag' command is the final step in the release
 process. It is designed to be run after a release pull request, created by
 'release init', has been merged.
 
@@ -130,10 +130,10 @@ merged pull requests with the 'release:pending' label from the last 30 days.
 
 Examples:
   # Tag and create a GitHub release for a specific merged PR.
-  librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
+  librarian release tag --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
 
   # Find and process all pending merged release PRs in a repository.
-  librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go`
+  librarian release tag --repo=https://github.com/googleapis/google-cloud-go`
 
 	updateImageLongHelp = `The 'update-image' command is used to update the 'image' SHA
 of the language container for a language repository.

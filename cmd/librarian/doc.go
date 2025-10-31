@@ -144,7 +144,7 @@ Usage:
 Commands:
 
 	init                       initiates a release by creating a release pull request.
-	tag-and-release            tags and creates a GitHub release for a merged pull request.
+	tag                        tags and creates a GitHub release for a merged pull request.
 
 # release init
 
@@ -224,9 +224,9 @@ Flags:
 	  	is configured as a language repository.
 	-v	enables verbose logging
 
-# release tag-and-release
+# release tag
 
-The 'tag-and-release' command is the final step in the release
+The 'tag' command is the final step in the release
 process. It is designed to be run after a release pull request, created by
 'release init', has been merged.
 
@@ -245,14 +245,14 @@ merged pull requests with the 'release:pending' label from the last 30 days.
 Examples:
 
 	# Tag and create a GitHub release for a specific merged PR.
-	librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
+	librarian release tag --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
 
 	# Find and process all pending merged release PRs in a repository.
-	librarian release tag-and-release --repo=https://github.com/googleapis/google-cloud-go
+	librarian release tag --repo=https://github.com/googleapis/google-cloud-go
 
 Usage:
 
-	librarian release tag-and-release [arguments]
+	librarian release tag [arguments]
 
 Flags:
 
