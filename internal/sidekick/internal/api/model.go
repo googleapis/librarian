@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package api defines the data model representing a parsed API surface.
 package api
 
 import (

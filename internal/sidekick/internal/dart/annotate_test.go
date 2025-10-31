@@ -16,6 +16,7 @@ package dart
 
 import (
 	"maps"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -27,7 +28,7 @@ var (
 	requiredConfig = map[string]string{
 		"api-keys-environment-variables": "GOOGLE_API_KEY,GEMINI_API_KEY",
 		"issue-tracker-url":              "http://www.example.com/issues",
-		"package:google_cloud_gax":       "^1.2.3",
+		"package:google_cloud_rpc":       "^1.2.3",
 		"package:http":                   "^4.5.6",
 		"package:google_cloud_protobuf":  "^7.8.9",
 	}
@@ -38,7 +39,7 @@ func TestAnnotateModel(t *testing.T) {
 	model.PackageName = "test"
 
 	options := maps.Clone(requiredConfig)
-	maps.Copy(options, map[string]string{"package:google_cloud_gax": "^1.2.3"})
+	maps.Copy(options, map[string]string{"package:google_cloud_rpc": "^1.2.3"})
 
 	annotate := newAnnotateModel(model)
 	err := annotate.annotateModel(options)
@@ -78,6 +79,21 @@ func TestAnnotateModel_Options(t *testing.T) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff([]string{"test", "mockito", "lints"}, codec.DevDependencies); diff != "" {
 					t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{
+				"dependencies":             "google_cloud_foo, google_cloud_bar",
+				"package:google_cloud_bar": "^1.2.3",
+				"package:google_cloud_foo": "^4.5.6"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if !slices.Contains(codec.PackageDependencies, packageDependency{Name: "google_cloud_foo", Constraint: "^4.5.6"}) {
+					t.Errorf("missing 'google_cloud_foo' in Codec.PackageDependencies, got %v", codec.PackageDependencies)
+				}
+				if !slices.Contains(codec.PackageDependencies, packageDependency{Name: "google_cloud_bar", Constraint: "^1.2.3"}) {
+					t.Errorf("missing 'google_cloud_bar' in Codec.PackageDependencies, got %v", codec.PackageDependencies)
 				}
 			},
 		},
@@ -147,10 +163,10 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
-			map[string]string{"google_cloud_gax": "^1.2.3", "package:http": "1.2.0"},
+			map[string]string{"google_cloud_rpc": "^1.2.3", "package:http": "1.2.0"},
 			func(t *testing.T, am *annotateModel) {
 				if diff := cmp.Diff(map[string]string{
-					"google_cloud_gax":      "^1.2.3",
+					"google_cloud_rpc":      "^1.2.3",
 					"google_cloud_protobuf": "^7.8.9",
 					"http":                  "1.2.0"},
 					am.dependencyConstraints); diff != "" {
@@ -251,35 +267,100 @@ func TestAnnotateMethod(t *testing.T) {
 	}
 }
 
+func TestCalculatePubPackages(t *testing.T) {
+	for _, test := range []struct {
+		imports map[string]bool
+		want    map[string]bool
+	}{
+		{imports: map[string]bool{"dart:typed_data": true},
+			want: map[string]bool{}},
+		{imports: map[string]bool{"dart:typed_data as typed_data": true},
+			want: map[string]bool{}},
+		{imports: map[string]bool{"package:http/http.dart": true},
+			want: map[string]bool{"http": true}},
+		{imports: map[string]bool{"package:http/http.dart as http": true},
+			want: map[string]bool{"http": true}},
+		{imports: map[string]bool{"package:google_cloud_protobuf/src/encoding.dart": true},
+			want: map[string]bool{"google_cloud_protobuf": true}},
+		{imports: map[string]bool{"package:google_cloud_protobuf/src/encoding.dart as encoding": true},
+			want: map[string]bool{"google_cloud_protobuf": true}},
+		{imports: map[string]bool{"package:http/http.dart": true, "package:http/http.dart as http": true},
+			want: map[string]bool{"http": true}},
+		{imports: map[string]bool{
+			"package:google_cloud_protobuf/src/encoding.dart": true,
+			"package:http/http.dart":                          true,
+			"dart:typed_data":                                 true},
+			want: map[string]bool{"google_cloud_protobuf": true, "http": true}},
+	} { // package:http/http.dart as http
+		got := calculatePubPackages(test.imports)
+
+		if !maps.Equal(got, test.want) {
+			t.Errorf("calculatePubPackages(%v) = %v, want %v", test.imports, got, test.want)
+		}
+	}
+}
+
 func TestCalculateDependencies(t *testing.T) {
 	for _, test := range []struct {
-		testName string
-		pkgName  string
-		imports  []string
-		want     []packageDependency
+		testName    string
+		packages    map[string]bool
+		constraints map[string]string
+		packageName string
+		want        []packageDependency
+		wantErr     bool
 	}{
-		{testName: "empty", pkgName: "google_cloud_bar", imports: []string{}, want: []packageDependency{}},
-		{testName: "dart import", pkgName: "google_cloud_bar", imports: []string{typedDataImport}, want: []packageDependency{}},
-		{testName: "package import", pkgName: "google_cloud_bar", imports: []string{httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
-		{testName: "dart and package imports", pkgName: "google_cloud_bar", imports: []string{typedDataImport, httpImport}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
-		{testName: "package imports", pkgName: "google_cloud_bar", imports: []string{
-			httpImport,
-			"package:google_cloud_foo/foo.dart",
-		}, want: []packageDependency{{Name: "google_cloud_foo", Constraint: "^1.2.3"}, {Name: "http", Constraint: "^1.3.0"}}},
-		{testName: "same package", pkgName: "google_cloud_bar", imports: []string{typedDataImport, httpImport, "google_cloud_bar"}, want: []packageDependency{{Name: "http", Constraint: "^1.3.0"}}},
+		{
+			testName:    "empty",
+			packages:    map[string]bool{},
+			constraints: map[string]string{},
+			packageName: "google_cloud_bar",
+			want:        []packageDependency{},
+		},
+		{
+			testName:    "self dependency",
+			packages:    map[string]bool{"google_cloud_bar": true},
+			constraints: map[string]string{},
+			packageName: "google_cloud_bar",
+			want:        []packageDependency{},
+		},
+		{
+			testName:    "separate dependency",
+			packages:    map[string]bool{"google_cloud_foo": true},
+			constraints: map[string]string{"google_cloud_foo": "^1.2.3"},
+			packageName: "google_cloud_bar",
+			want:        []packageDependency{{Name: "google_cloud_foo", Constraint: "^1.2.3"}},
+		},
+		{
+			testName:    "missing constraint",
+			packages:    map[string]bool{"google_cloud_foo": true},
+			constraints: map[string]string{},
+			packageName: "google_cloud_bar",
+			wantErr:     true,
+		},
+		{
+			testName:    "multiple dependencies",
+			packages:    map[string]bool{"google_cloud_bar": true, "google_cloud_baz": true, "google_cloud_foo": true},
+			constraints: map[string]string{"google_cloud_baz": "^1.2.3", "google_cloud_foo": "^4.5.6"},
+			packageName: "google_cloud_bar",
+			want: []packageDependency{
+				{Name: "google_cloud_baz", Constraint: "^1.2.3"},
+				{Name: "google_cloud_foo", Constraint: "^4.5.6"}},
+		},
 	} {
 		t.Run(test.testName, func(t *testing.T) {
-			deps := map[string]bool{}
-			for _, imp := range test.imports {
-				deps[imp] = true
+			got, err := calculateDependencies(test.packages, test.constraints, test.packageName)
+			if (err != nil) != test.wantErr {
+				t.Errorf("calculateDependencies(%v, %v, %v) error = %v, want error presence = %t",
+					test.packages, test.constraints, test.packageName, err, test.wantErr)
 			}
-			got, err := calculateDependencies(deps, map[string]string{"google_cloud_foo": "^1.2.3", "http": "^1.3.0"}, test.pkgName)
+
 			if err != nil {
-				t.Fatal(err)
+				return
 			}
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in %q in calculateDependencies (-want, +got)\n:%s", test.testName, diff)
+				t.Errorf("calculateDependencies(%v, %v, %v) = %v, want %v",
+					test.packages, test.constraints, test.packageName, got, test.want)
 			}
 		})
 	}

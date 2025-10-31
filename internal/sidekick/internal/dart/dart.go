@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package dart implements a native Dart code generator.
 package dart
 
 import (
@@ -27,7 +28,7 @@ import (
 
 var typedDataImport = "dart:typed_data"
 var httpImport = "package:http/http.dart as http"
-var gaxImport = "package:google_cloud_gax/gax.dart"
+var serviceClientImport = "package:google_cloud_rpc/service_client.dart"
 var encodingImport = "package:google_cloud_protobuf/src/encoding.dart"
 var protobufImport = "package:google_cloud_protobuf/protobuf.dart"
 

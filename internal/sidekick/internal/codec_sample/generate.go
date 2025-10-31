@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package codec_sample provides an example implementation of a code generator.
 package codec_sample
 
 import (

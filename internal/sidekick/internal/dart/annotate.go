@@ -230,6 +230,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		packageVersion             string
 		partFileReference          string
 		doNotPublish               bool
+		dependencies               = []string{}
 		devDependencies            = []string{}
 		repositoryURL              string
 		readMeAfterTitleText       string
@@ -269,6 +270,13 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			exports = strings.FieldsFunc(definition, func(c rune) bool { return c == ';' })
 			for i := range exports {
 				exports[i] = strings.TrimSpace(exports[i])
+			}
+		case key == "dependencies":
+			// dependencies = "http, googleapis_auth"
+			// A list of dependencies to add to pubspec.yaml. This can be used to add dependencies for hand-written code.
+			dependencies = strings.Split(definition, ",")
+			for i := range dependencies {
+				dependencies[i] = strings.TrimSpace(dependencies[i])
 			}
 		case key == "dev-dependencies":
 			devDependencies = strings.Split(definition, ",")
@@ -344,9 +352,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	// Add a dev dependency on package:lints.
 	devDependencies = append(devDependencies, "lints")
 
-	// Add the import for the google_cloud_gax package.
+	// Add the import for ServiceClient and related functionality.
 	if len(model.Services) > 0 {
-		annotate.imports[gaxImport] = true
+		annotate.imports[serviceClientImport] = true
 	}
 
 	// `google.protobuf` defines `JsonEncodable`, which is needed by any package that defines a
@@ -368,7 +376,12 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	pkgName = packageName(model, packageNameOverride)
-	packageDependencies, err := calculateDependencies(annotate.imports, annotate.dependencyConstraints, pkgName)
+	importedPackages := calculatePubPackages(annotate.imports)
+	for _, d := range dependencies {
+		importedPackages[d] = true
+	}
+
+	packageDependencies, err := calculateDependencies(importedPackages, annotate.dependencyConstraints, pkgName)
 	if err != nil {
 		return err
 	}
@@ -407,29 +420,35 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	return nil
 }
 
-// calculateDependencies calculates package dependencies based on `package:` imports.
-func calculateDependencies(imports map[string]bool, constraints map[string]string, packageName string) ([]packageDependency, error) {
-	deps := []packageDependency{}
-
+// calculatePubPackages returns a set of package names (e.g. "http"), given a
+// set of imports (e.g. "package:http/http.dart as http").
+func calculatePubPackages(imports map[string]bool) map[string]bool {
+	packages := map[string]bool{}
 	for imp := range imports {
 		if name, hadPrefix := strings.CutPrefix(imp, "package:"); hadPrefix {
 			name = strings.Split(name, "/")[0]
-
-			if !slices.ContainsFunc(deps, func(dep packageDependency) bool {
-				return dep.Name == name
-			}) {
-				constraint := constraints[name]
-				if len(constraint) == 0 {
-					return nil, fmt.Errorf("unknown version constraint for package %q (did you forget to add it to .sidekick.toml?)", name)
-				}
-
-				if name != packageName {
-					deps = append(deps, packageDependency{Name: name, Constraint: constraint})
-				}
-			}
+			packages[name] = true
 		}
 	}
+	return packages
+}
 
+// calculateDependencies calculates package dependencies given a set of
+// package names (e.g. "http") and version constraints (e.g. {"http": "^1.2.3"}).
+//
+// Excludes packages that match the current package.
+func calculateDependencies(packages map[string]bool, constraints map[string]string, curPkgName string) ([]packageDependency, error) {
+	deps := []packageDependency{}
+
+	for name := range packages {
+		constraint := constraints[name]
+		if name != curPkgName {
+			if len(constraint) == 0 {
+				return nil, fmt.Errorf("unknown version constraint for package %q (did you forget to add it to .sidekick.toml?)", name)
+			}
+			deps = append(deps, packageDependency{Name: name, Constraint: constraint})
+		}
+	}
 	sort.SliceStable(deps, func(i, j int) bool {
 		return deps[i].Name < deps[j].Name
 	})

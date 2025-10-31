@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package apitest provides helper functions for testing the api package.
 package apitest
 
 import (
