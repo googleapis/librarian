@@ -112,7 +112,6 @@ example, `librarian:` or `cli:`).
 
 For issues related to code outside this
 repository, use the repository name (for example, `google-cloud-python`).
-
 This repository also contains language-specific container-related code under
 [internal/container](https://github.com/googleapis/librarian/tree/main/internal/container).
 For these issues, use the lowercase language name as a prefix for brevity (for
