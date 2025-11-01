@@ -108,7 +108,9 @@ accepted.
 
 All issues should have a path prefix to indicate the relevant domain. For
 issues related to the librarian codebase, use the package name as a prefix (for
-example, `librarian:` or `cli:`). For issues related to code outside this
+example, `librarian:` or `cli:`).
+
+For issues related to code outside this
 repository, use the repository name (for example, `google-cloud-python`).
 
 This repository also contains language-specific container-related code under
