@@ -72,7 +72,7 @@ func (r *stageRunner) run(ctx context.Context) error {
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
-	slog.Info("Staging a release", "dir", outputDir)
+	slog.Info("staging a release", "dir", outputDir)
 	if err := r.runStageCommand(ctx, outputDir); err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (r *stageRunner) run(ctx context.Context) error {
 	// No need to update the librarian state if there are no libraries
 	// that need to be released
 	if !hasLibrariesToRelease(r.state.Libraries) {
-		slog.Info("No release created; skipping the commit/PR")
+		slog.Info("no release created; skipping the commit/PR")
 		return nil
 	}
 
@@ -161,7 +161,7 @@ func (r *stageRunner) runStageCommand(ctx context.Context, outputDir string) err
 	}
 
 	if !foundReleasableLibrary {
-		slog.Info("No libraries need to be released")
+		slog.Info("no libraries need to be released")
 		return nil
 	}
 
@@ -247,9 +247,9 @@ func (r *stageRunner) updateLibrary(library *config.LibraryState, commits []*git
 	var nextVersion string
 	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
 	if r.libraryVersion != "" {
-		slog.Info("Library version override inputted", "currentVersion", library.Version, "inputVersion", r.libraryVersion)
+		slog.Info("library version override inputted", "currentVersion", library.Version, "inputVersion", r.libraryVersion)
 		nextVersion = semver.MaxVersion(library.Version, r.libraryVersion)
-		slog.Debug("Determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
+		slog.Debug("determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
 		// Currently, nextVersion is the max of current version or input version. If nextVersion is equal to the current version,
 		// then the input version is either equal or less than current version and cannot be used for release
 		if nextVersion == library.Version {
@@ -261,18 +261,18 @@ func (r *stageRunner) updateLibrary(library *config.LibraryState, commits []*git
 		if err != nil {
 			return err
 		}
-		slog.Debug("Determined the library's next version from commits", "library", library.ID, "nextVersion", nextVersion)
+		slog.Debug("determined the library's next version from commits", "library", library.ID, "nextVersion", nextVersion)
 		// Unable to find a releasable unit from the changes
 		if nextVersion == library.Version {
 			// No library was inputted for release. Skipping this library for release
 			if r.library == "" {
-				slog.Info("Library does not have any releasable units and will not be released.", "library", library.ID, "version", library.Version)
+				slog.Info("library does not have any releasable units and will not be released.", "library", library.ID, "version", library.Version)
 				return nil
 			}
 			// Library was inputted for release, but does not contain a releasable unit
 			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to force a release for: %s", library.ID)
 		}
-		slog.Info("Updating library to the next version", "library", library.ID, "currentVersion", library.Version, "nextVersion", nextVersion)
+		slog.Info("updating library to the next version", "library", library.ID, "currentVersion", library.Version, "nextVersion", nextVersion)
 	}
 
 	// Update the previous version, we need this value when creating release note.
@@ -292,13 +292,13 @@ func (r *stageRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit
 	}
 
 	if r.librarianConfig == nil {
-		slog.Debug("No librarian config")
+		slog.Debug("no librarian config")
 		return nextVersionFromCommits, nil
 	}
 
 	// Look for next_version override from config.yaml
 	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
-	slog.Debug("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
+	slog.Debug("looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
 	if libraryConfig == nil || libraryConfig.NextVersion == "" {
 		return nextVersionFromCommits, nil
 	}

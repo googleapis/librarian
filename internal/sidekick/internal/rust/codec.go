@@ -399,7 +399,7 @@ func scalarFieldType(f *api.Field) string {
 		out = "i64"
 
 	default:
-		slog.Error("Unexpected field type", "field", *f)
+		slog.Error("unexpected field type", "field", *f)
 		return ""
 	}
 	return out

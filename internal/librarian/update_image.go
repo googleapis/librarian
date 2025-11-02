@@ -90,17 +90,17 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 
 	// Update `image` entry in state.yaml
 	if r.image == "" {
-		slog.Info("No image found, looking up latest")
+		slog.Info("no image found, looking up latest")
 		latestImage, err := imagesClient.FindLatest(ctx, r.state.Image)
 		if err != nil {
-			slog.Error("Unable to determine latest image to use", "image", r.state.Image)
+			slog.Error("unable to determine latest image to use", "image", r.state.Image)
 			return err
 		}
 		r.image = latestImage
 	}
 
 	if r.image == r.state.Image {
-		slog.Info("No update to the image, aborting.")
+		slog.Info("no update to the image, aborting.")
 		return nil
 	}
 

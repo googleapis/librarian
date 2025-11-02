@@ -102,13 +102,13 @@ func (c *ArtifactRegistryClient) FindLatest(ctx context.Context, imageName strin
 	if err != nil {
 		return "", err
 	}
-	slog.Info("Found packages version", "version", version.GetName())
+	slog.Info("found packages version", "version", version.GetName())
 
 	// latest SHA is found as the "subjectDigest" metadata field
 	latestSha := ""
 	for key, field := range version.GetMetadata().GetFields() {
 		if key == "subjectDigest" {
-			slog.Info("Found SHA", "sha", field.GetStringValue())
+			slog.Info("found SHA", "sha", field.GetStringValue())
 			latestSha = field.GetStringValue()
 			break
 		}

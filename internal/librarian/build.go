@@ -35,7 +35,7 @@ func buildSingleLibrary(ctx context.Context, containerClient ContainerClient, st
 		RepoDir:   repo.GetDir(),
 		State:     state,
 	}
-	slog.Info("Performing build for library", "id", libraryState.ID)
+	slog.Info("performing build for library", "id", libraryState.ID)
 	if containerErr := containerClient.Build(ctx, buildRequest); containerErr != nil {
 		if restoreErr := restoreLibrary(libraryState, repo); restoreErr != nil {
 			return errors.Join(containerErr, restoreErr)
@@ -54,6 +54,6 @@ func buildSingleLibrary(ctx context.Context, containerClient ContainerClient, st
 		return responseErr
 	}
 
-	slog.Info("Build succeeds", "id", libraryState.ID)
+	slog.Info("build succeeds", "id", libraryState.ID)
 	return nil
 }
