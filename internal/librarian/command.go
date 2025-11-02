@@ -366,7 +366,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // description to the repository.
 func commitAndPush(ctx context.Context, info *commitInfo) error {
 	if !info.push && !info.commit {
-slog.Info("push flag and commit flag are not specified, skipping committing")
+		slog.Info("push flag and commit flag are not specified, skipping committing")
 		return writePRBody(info)
 	}
 
