@@ -406,7 +406,7 @@ func TestCreateRelease(t *testing.T) {
 	if testToken == "" {
 		t.Skip("LIBRARIAN_TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
-	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	testRepoName := os.Getenv("LIBRARIAN_TEST_GITHUB_REPO")
 	if testRepoName == "" {
 		t.Skip("LIBRARIAN_TEST_GITHUB_REPO not set, skipping GitHub integration test")
 	}
