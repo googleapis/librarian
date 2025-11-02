@@ -57,7 +57,7 @@ const (
 	LibrarianStateFile = "state.yaml"
 	// LibrarianConfigFile is the name of the language-repository config file.
 	LibrarianConfigFile = "config.yaml"
-	// LibrarianGithubToken is the name of the env var used to store the github token.
+	// LibrarianGithubToken is the name of the env var used to store the GitHub token.
 	LibrarianGithubToken = "LIBRARIAN_GITHUB_TOKEN"
 )
 
@@ -68,7 +68,7 @@ var (
 )
 
 var (
-	// pullRequestRegexp is regular expression that describes a uri of a pull request.
+	// pullRequestRegexp is regular expression that describes an uri of a pull request.
 	pullRequestRegexp = regexp.MustCompile(`^https://github\.com/([a-zA-Z0-9-._]+)/([a-zA-Z0-9-._]+)/pull/([0-9]+)$`)
 )
 
@@ -78,7 +78,7 @@ var (
 type Config struct {
 	// API is the path to the API to be configured or generated,
 	// relative to the root of the googleapis repository. It is a directory
-	// name as far as (and including) the version (v1, v2, v1alpha etc). It
+	// name as far as (and including) the version (v1, v2, v1alpha etc.). It
 	// is expected to contain a service config YAML file.
 	// Example: "google/cloud/functions/v2"
 	//
