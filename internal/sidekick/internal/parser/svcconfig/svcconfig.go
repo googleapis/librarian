@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// serviceconfig contains helper functions to parse service config files.
+// Package svcconfig contains helper functions to parse service config files.
 package svcconfig
 
 import (
@@ -27,7 +27,7 @@ type ServiceNames struct {
 	ServiceName string
 }
 
-// ExtractServiceNames determines the package name and service implied by a
+// ExtractPackageName determines the package name and service implied by a
 // service config file.
 func ExtractPackageName(serviceConfig *serviceconfig.Service) *ServiceNames {
 	if serviceConfig == nil {
@@ -43,7 +43,7 @@ func ExtractPackageName(serviceConfig *serviceconfig.Service) *ServiceNames {
 	return nil
 }
 
-// SplitQualifiedServiceName splits a service name into the package name and the
+// splitQualifiedServiceName splits a service name into the package name and the
 // unqualified service name.
 func splitQualifiedServiceName(name string) ServiceNames {
 	li := strings.LastIndex(name, ".")
@@ -53,7 +53,7 @@ func splitQualifiedServiceName(name string) ServiceNames {
 	return ServiceNames{PackageName: name[:li], ServiceName: name[li+1:]}
 }
 
-// WellKnownmixin returns true if the qualified service name is one of the
+// wellKnownMixin returns true if the qualified service name is one of the
 // well-known mixins.
 func wellKnownMixin(qualifiedServiceName string) bool {
 	return strings.HasPrefix(qualifiedServiceName, "google.cloud.location.Location") ||
