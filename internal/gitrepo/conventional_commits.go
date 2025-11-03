@@ -148,7 +148,7 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 		}
 
 		for _, simpleCommit := range simpleCommits {
-			key := simpleCommit.Subject + simpleCommit.LibraryID
+			key := fmt.Sprintf("%s,%s", simpleCommit.Subject, simpleCommit.LibraryID)
 			if _, ok := seen[key]; ok {
 				continue
 			}
