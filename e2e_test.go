@@ -17,6 +17,7 @@
 package librarian
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -135,7 +136,8 @@ func TestRunGenerate(t *testing.T) {
 			cmd := exec.Command("go", cmdArgs...)
 			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
 			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
-			cmd.Stderr = os.Stderr
+			var stderr bytes.Buffer
+			cmd.Stderr = &stderr
 			cmd.Stdout = os.Stdout
 			err := cmd.Run()
 			if test.wantErr {
@@ -143,6 +145,9 @@ func TestRunGenerate(t *testing.T) {
 					t.Fatalf("%s should fail", test.name)
 				}
 
+				if g, w := stderr.String(), "level=ERROR"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", stderr.String(), w)
+				}
 				// the exact message is not populated here, but we can check it's
 				// indeed an error returned from docker container.
 				if g, w := err.Error(), "exit status 1"; !strings.Contains(g, w) {
