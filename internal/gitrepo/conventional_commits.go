@@ -141,14 +141,14 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 	var commits []*ConventionalCommit
 
 	for _, part := range extractCommitParts(message) {
-		c, err := parseSimpleCommit(part, commit, libraryID)
+		simpleCommits, err := parseSimpleCommit(part, commit, libraryID)
 		if err != nil {
 			slog.Warn("failed to parse commit part", "commit", part.message, "error", err)
 			continue
 		}
 
-		if c != nil {
-			commits = append(commits, c...)
+		for _, simpleCommit := range simpleCommits {
+			commits = appendCommitIfNew(commits, simpleCommit)
 		}
 	}
 
@@ -394,4 +394,13 @@ func processFooters(footers map[string]string) {
 			footers[key] = matches[2]
 		}
 	}
+}
+
+func appendCommitIfNew(existingCommits []*ConventionalCommit, newCommit *ConventionalCommit) []*ConventionalCommit {
+	for _, existingCommit := range existingCommits {
+		if existingCommit.Subject == newCommit.Subject && existingCommit.LibraryID == newCommit.LibraryID {
+			return existingCommits
+		}
+	}
+	return append(existingCommits, newCommit)
 }
