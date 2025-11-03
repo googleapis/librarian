@@ -1793,6 +1793,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 		verify        func(t *testing.T, repoDir string)
 		wantFiles     []string
 		skipFiles     []string
+		isClean       bool
 		wantErr       bool
 		wantErrMsg    string
 	}{
@@ -1971,7 +1972,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, test.outputDir)
 			}
-			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir)
+			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir, test.isClean)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("copyLibraryFiles() shoud fail")
