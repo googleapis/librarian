@@ -325,7 +325,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string,
 			srcFile := filepath.Join(srcPath, file)
 			dstFile := filepath.Join(dstPath, file)
 			if _, err := os.Stat(dstFile); isClean && !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("file existed in destionation: %s", dstFile)
+				return fmt.Errorf("file existed in destination: %s", dstFile)
 			}
 			if err := copyFile(dstFile, srcFile); err != nil {
 				return fmt.Errorf("failed to copy file %q for library %s: %w", srcFile, library.ID, err)
