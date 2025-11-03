@@ -307,7 +307,7 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 // If there's no files in the library's SourceRoots under the src directory, no copy will happen.
 // If a file is being copied to the library's SourceRoots in the dest folder but the folder does
 // not exist, the copy fails.
-func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string, isClean bool) error {
+func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string, failOnExistingFile bool) error {
 	library := state.LibraryByID(libraryID)
 	if library == nil {
 		return fmt.Errorf("library %q not found", libraryID)
@@ -324,7 +324,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string,
 			slog.Debug("copying file", "file", file)
 			srcFile := filepath.Join(srcPath, file)
 			dstFile := filepath.Join(dstPath, file)
-			if _, err := os.Stat(dstFile); isClean && !errors.Is(err, os.ErrNotExist) {
+			if _, err := os.Stat(dstFile); failOnExistingFile && !errors.Is(err, os.ErrNotExist) {
 				return fmt.Errorf("file existed in destination: %s", dstFile)
 			}
 			if err := copyFile(dstFile, srcFile); err != nil {

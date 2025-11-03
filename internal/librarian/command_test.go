@@ -1782,20 +1782,20 @@ func TestCopyLibraryFiles(t *testing.T) {
 		}
 	}
 	for _, test := range []struct {
-		name          string
-		repoDir       string
-		outputDir     string
-		libraryID     string
-		state         *config.LibrarianState
-		existingFiles []string
-		filesToCreate []string
-		setup         func(t *testing.T, outputDir string)
-		verify        func(t *testing.T, repoDir string)
-		wantFiles     []string
-		skipFiles     []string
-		isClean       bool
-		wantErr       bool
-		wantErrMsg    string
+		name               string
+		repoDir            string
+		outputDir          string
+		libraryID          string
+		state              *config.LibrarianState
+		existingFiles      []string
+		filesToCreate      []string
+		setup              func(t *testing.T, outputDir string)
+		verify             func(t *testing.T, repoDir string)
+		wantFiles          []string
+		skipFiles          []string
+		failOnExistingFile bool
+		wantErr            bool
+		wantErrMsg         string
 	}{
 		{
 			repoDir:   "/invalid-dst-path",
@@ -1984,9 +1984,9 @@ func TestCopyLibraryFiles(t *testing.T) {
 				"a/path/example.txt",
 				"another/path/example.txt",
 			},
-			isClean:    true,
-			wantErr:    true,
-			wantErrMsg: "file existed in destination",
+			failOnExistingFile: true,
+			wantErr:            true,
+			wantErrMsg:         "file existed in destination",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1999,7 +1999,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, test.outputDir)
 			}
-			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir, test.isClean)
+			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir, test.failOnExistingFile)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("copyLibraryFiles() shoud fail")
