@@ -216,7 +216,7 @@ func (r *LocalRepository) Commit(msg string) error {
 		return err
 	}
 
-	slog.Info("commited", "short_hash", hash.String()[0:7], "subject", strings.Split(msg, "\n")[0])
+	slog.Info("committed", "short_hash", hash.String()[0:7], "subject", strings.Split(msg, "\n")[0])
 	return nil
 }
 
