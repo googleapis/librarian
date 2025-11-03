@@ -46,13 +46,8 @@ type Param struct {
 	ResourceSpec         RefString         `yaml:"resource_spec,omitempty"`
 	Required             bool              `yaml:"required,omitempty"`
 	ResourceMethodParams map[string]string `yaml:"resource_method_params,omitempty"`
-	Spec                 []*FieldSpec      `yaml:"spec,omitempty"`
+	Spec                 []*Param          `yaml:"spec,omitempty"`
 	Choices              []*Choice         `yaml:"choices,omitempty"`
-}
-
-// FieldSpec is a specification for a field.
-type FieldSpec struct {
-	APIField string `yaml:"api_field,omitempty"`
 }
 
 // Choice is a choice for a parameter.
