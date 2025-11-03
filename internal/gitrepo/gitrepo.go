@@ -216,9 +216,7 @@ func (r *LocalRepository) Commit(msg string) error {
 		return err
 	}
 
-	// Log commit hash (brief) and subject line (first line of commit)
-	subject := strings.Split(msg, "\n")[0]
-	slog.Info(fmt.Sprintf("Committed %s: '%s'", hash.String()[0:7], subject))
+	slog.Info("commited", "short_hash", hash.String()[0:7], "subject", strings.Split(msg, "\n")[0])
 	return nil
 }
 
