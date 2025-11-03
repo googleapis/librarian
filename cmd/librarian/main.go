@@ -16,7 +16,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/googleapis/librarian/internal/librarian"
@@ -25,6 +25,7 @@ import (
 func main() {
 	ctx := context.Background()
 	if err := librarian.Run(ctx, os.Args[1:]...); err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 }
