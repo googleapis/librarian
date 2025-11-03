@@ -1961,6 +1961,33 @@ func TestCopyLibraryFiles(t *testing.T) {
 				"another/path/example.txt",
 			},
 		},
+		{
+			name:      "file_existed_in_dst",
+			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			outputDir: filepath.Join(t.TempDir(), "foo"),
+			libraryID: "example-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			},
+			existingFiles: []string{
+				"a/path/example.txt",
+			},
+			filesToCreate: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+			},
+			isClean:    true,
+			wantErr:    true,
+			wantErrMsg: "file existed in destination",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if len(test.existingFiles) > 0 {
