@@ -356,7 +356,7 @@ encourage it!
 ### Reviewing a pull request
 
 While we don’t have strict SLOs, we aim to review pull requests within **8
-business hours**.  Internal ONLY: If you need a PR review expidited please post it in 
+business hours**.  Internal ONLY: If you need a PR review expedited please post it in 
 [SDK Librarian Chat](https://mail.google.com/mail/u/0/#chat/space/AAQAYjxNRS8).
 
 When reviewing a pull request:
