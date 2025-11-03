@@ -2002,7 +2002,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir, test.failOnExistingFile)
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("copyLibraryFiles() shoud fail")
+					t.Fatal("copyLibraryFiles() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())

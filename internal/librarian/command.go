@@ -330,7 +330,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string,
 			slog.Debug("copying file", "file", file)
 			srcFile := filepath.Join(srcPath, file)
 			dstFile := filepath.Join(dstPath, file)
-			if _, err := os.Stat(dstFile); failOnExistingFile && !errors.Is(err, os.ErrNotExist) {
+			if _, err := os.Stat(dstFile); failOnExistingFile && err == nil {
 				return fmt.Errorf("file existed in destination: %s", dstFile)
 			}
 			if err := copyFile(dstFile, srcFile); err != nil {
