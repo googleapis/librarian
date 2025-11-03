@@ -601,6 +601,30 @@ END_COMMIT`,
 				},
 			},
 		},
+		{
+			name: "nested_commits_with_identical_message",
+			message: `
+BEGIN_NESTED_COMMIT
+fix(abc): update google.golang.org/api to 0.229.0
+END_NESTED_COMMIT
+BEGIN_NESTED_COMMIT
+fix(def): update google.golang.org/api to 0.229.0
+END_NESTED_COMMIT
+BEGIN_NESTED_COMMIT
+fix(cba): update google.golang.org/api to 0.229.0
+END_NESTED_COMMIT`,
+			want: []*ConventionalCommit{
+				{
+					Type:       "fix",
+					Subject:    "update google.golang.org/api to 0.229.0",
+					LibraryID:  "example-id",
+					IsNested:   true,
+					Footers:    map[string]string{},
+					CommitHash: sha.String(),
+					When:       now,
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			commit := &Commit{

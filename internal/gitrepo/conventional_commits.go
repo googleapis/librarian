@@ -139,15 +139,14 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 	message = extractBeginCommitMessage(message)
 
 	var commits []*ConventionalCommit
-
+	seen := make(map[string]bool)
 	for _, part := range extractCommitParts(message) {
 		simpleCommits, err := parseSimpleCommit(part, commit, libraryID)
 		if err != nil {
 			slog.Warn("failed to parse commit part", "commit", part.message, "error", err)
 			continue
 		}
-
-		seen := make(map[string]bool)
+		
 		for _, simpleCommit := range simpleCommits {
 			key := simpleCommit.Subject + simpleCommit.LibraryID
 			if _, ok := seen[key]; ok {
