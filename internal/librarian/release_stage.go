@@ -190,7 +190,7 @@ func (r *stageRunner) runStageCommand(ctx context.Context, outputDir string) err
 	for _, library := range librariesToRelease {
 		// Copy the library files back if a release is needed
 		if library.ReleaseTriggered {
-			if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
+			if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir, false); err != nil {
 				return err
 			}
 		}

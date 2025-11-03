@@ -375,7 +375,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 		r.state.Libraries[i] = libraryState
 	}
 
-	if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryState.ID, outputDir); err != nil {
+	if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryState.ID, outputDir, false); err != nil {
 		return "", err
 	}
 
