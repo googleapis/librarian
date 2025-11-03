@@ -146,7 +146,7 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 			slog.Warn("failed to parse commit part", "commit", part.message, "error", err)
 			continue
 		}
-		
+
 		for _, simpleCommit := range simpleCommits {
 			key := simpleCommit.Subject + simpleCommit.LibraryID
 			if _, ok := seen[key]; ok {
