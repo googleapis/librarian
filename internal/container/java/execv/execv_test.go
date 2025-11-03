@@ -15,7 +15,6 @@
 package execv
 
 import (
-	"context"
 	"errors"
 	"os/exec"
 	"strings"
@@ -56,7 +55,7 @@ func TestRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Run(context.Background(), tt.args, ".")
+			err := Run(t.Context(), tt.args, ".")
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("Run() error = %v, wantErr %v", err, tt.wantErr)
 			}

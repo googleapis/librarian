@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -1564,7 +1563,7 @@ func TestCommitAndPush(t *testing.T) {
 				prBodyBuilder:     test.prBodyBuilder,
 			}
 
-			err := commitAndPush(context.Background(), commitInfo)
+			err := commitAndPush(t.Context(), commitInfo)
 
 			if test.wantErr {
 				if err == nil {
@@ -1746,7 +1745,7 @@ func TestAddLabelsToPullRequest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			client := test.mockGithubClient
 			prMetadata := test.prMetadata
-			err := addLabelsToPullRequest(context.Background(), client, test.wantPullRequestLabels, &prMetadata)
+			err := addLabelsToPullRequest(t.Context(), client, test.wantPullRequestLabels, &prMetadata)
 
 			if test.wantErr {
 				if err == nil {

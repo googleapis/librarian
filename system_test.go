@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -79,7 +78,7 @@ func TestGetRawContentSystem(t *testing.T) {
 					}
 
 					client := github.NewClient(testToken, repo)
-					got, err := client.GetRawContent(context.Background(), test.path, "main")
+					got, err := client.GetRawContent(t.Context(), test.path, "main")
 
 					if test.wantErr {
 						if err == nil {

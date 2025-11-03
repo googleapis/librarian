@@ -274,7 +274,7 @@ java_gapic_library(
 			if err != nil {
 				t.Fatalf("failed to create generate config: %v", err)
 			}
-			if err := Generate(context.Background(), cfg); (err != nil) != tt.wantErr {
+			if err := Generate(t.Context(), cfg); (err != nil) != tt.wantErr {
 				t.Errorf("Generate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if protocRunCount != tt.wantProtocRunCount {
