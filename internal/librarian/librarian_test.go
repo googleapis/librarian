@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"math/rand"
 	"os"
@@ -40,7 +39,7 @@ import (
 
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 }
 

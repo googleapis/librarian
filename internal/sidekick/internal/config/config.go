@@ -43,7 +43,7 @@ type DocumentationOverride struct {
 	Replace string `toml:"replace"`
 }
 
-// PaginationOverrides describes overrides for pagination config of a method.
+// PaginationOverride describes overrides for pagination config of a method.
 type PaginationOverride struct {
 	// The method ID.
 	ID string `toml:"id"`

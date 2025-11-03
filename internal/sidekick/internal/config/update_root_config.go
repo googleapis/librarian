@@ -83,7 +83,7 @@ func UpdateRootConfig(rootConfig *Config, rootName string) error {
 	return os.WriteFile(configName, newContents, 0644)
 }
 
-// githubConfig returns the API endpoint the browser endpoint for GitHub.
+// githubConfig returns the GitHub API and download endpoints.
 // In tests, these are replaced with a fake.
 func githubConfig(rootConfig *Config) *githubEndpoints {
 	api, ok := rootConfig.Source["github-api"]

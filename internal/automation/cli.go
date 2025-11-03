@@ -30,13 +30,13 @@ func Run(args []string) error {
 	ctx := context.Background()
 	options, err := parseFlags(args)
 	if err != nil {
-		slog.Error("Error parsing command", slog.Any("err", err))
+		slog.Error("error parsing command", slog.Any("err", err))
 		return err
 	}
 
 	err = runCommandFn(ctx, options.Command, options.ProjectId, options.Push, options.Build, options.ForceRun)
 	if err != nil {
-		slog.Error("Error running command", slog.Any("err", err))
+		slog.Error("error running command", slog.Any("err", err))
 		return err
 	}
 	return nil

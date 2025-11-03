@@ -312,7 +312,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string,
 	if library == nil {
 		return fmt.Errorf("library %q not found", libraryID)
 	}
-	slog.Info("Copying library files", "id", library.ID, "destination", dest, "source", src)
+	slog.Info("copying library files", "id", library.ID, "destination", dest, "source", src)
 	for _, srcRoot := range library.SourceRoots {
 		dstPath := filepath.Join(dest, srcRoot)
 		srcPath := filepath.Join(src, srcRoot)
@@ -321,7 +321,7 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string,
 			return err
 		}
 		for _, file := range files {
-			slog.Debug("Copying file", "file", file)
+			slog.Debug("copying file", "file", file)
 			srcFile := filepath.Join(srcPath, file)
 			dstFile := filepath.Join(dstPath, file)
 			if _, err := os.Stat(dstFile); isClean && !errors.Is(err, os.ErrNotExist) {
@@ -369,7 +369,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // description to the repository.
 func commitAndPush(ctx context.Context, info *commitInfo) error {
 	if !info.push && !info.commit {
-		slog.Info("Push flag and Commit flag are not specified, skipping committing")
+		slog.Info("push flag and commit flag are not specified, skipping committing")
 		return writePRBody(info)
 	}
 
@@ -383,7 +383,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	if isClean {
-		slog.Info("No changes to commit, skipping commit and push.")
+		slog.Info("no changes to commit, skipping commit and push.")
 		return nil
 	}
 
@@ -398,7 +398,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	if !info.push {
-		slog.Info("Push flag is not specified, skipping pull request creation")
+		slog.Info("push flag is not specified, skipping pull request creation")
 		return writePRBody(info)
 	}
 
@@ -441,7 +441,7 @@ func writePRBody(info *commitInfo) error {
 
 	prBody, err := info.prBodyBuilder()
 	if err != nil {
-		slog.Warn("Unable to create PR body", "error", err)
+		slog.Warn("unable to create PR body", "error", err)
 		return err
 	}
 	// Note: we can't accurately predict whether a PR would have been created,
@@ -452,10 +452,10 @@ func writePRBody(info *commitInfo) error {
 	prBody = prBody + "\n"
 	err = os.WriteFile(fullPath, []byte(prBody), 0644)
 	if err != nil {
-		slog.Warn("Unable to save PR body", "error", err)
+		slog.Warn("unable to save PR body", "error", err)
 		return err
 	}
-	slog.Info("Wrote body of pull request that might have been created", "file", fullPath)
+	slog.Info("wrote body of pull request that might have been created", "file", fullPath)
 	return nil
 }
 
@@ -482,7 +482,7 @@ func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadO
 		slog.Info("librarian config is not setup, skip copying global allowlist")
 		return nil
 	}
-	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
+	slog.Info("copying global allowlist files", "destination", dst, "source", src)
 	for _, globalFile := range cfg.GlobalFilesAllowlist {
 		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
 			slog.Debug("skipping read-only file", "path", globalFile.Path)
@@ -491,7 +491,7 @@ func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadO
 
 		srcPath := filepath.Join(src, globalFile.Path)
 		if _, err := os.Lstat(srcPath); os.IsNotExist(err) {
-			slog.Info("Skip copying a non-existent global allowlist file", "source", srcPath)
+			slog.Info("skip copying a non-existent global allowlist file", "source", srcPath)
 			continue
 		}
 		dstPath := filepath.Join(dst, globalFile.Path)
@@ -564,11 +564,11 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 		// TODO: Consider not calling clean if it's a first time generation
 		if _, err := os.Lstat(sourceRootPath); err != nil {
 			if os.IsNotExist(err) {
-				slog.Warn("Unable to find source root. It may be an initial generation request", "source root", sourceRoot)
+				slog.Warn("unable to find source root. It may be an initial generation request", "source root", sourceRoot)
 				continue
 			}
 			// For any other error (permissions, I/O, etc.)
-			slog.Error("Error trying to clean source root", "source root", sourceRoot, "error", err)
+			slog.Error("error trying to clean source root", "source root", sourceRoot, "error", err)
 			return err
 		}
 		sourceRootPaths, err := findSubDirRelPaths(rootDir, sourceRootPath)
@@ -585,7 +585,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	}
 
 	if len(relPaths) == 0 {
-		slog.Info("There are no files to be cleaned in source roots", "source roots", sourceRoots)
+		slog.Info("there are no files to be cleaned in source roots", "source roots", sourceRoots)
 		return nil
 	}
 

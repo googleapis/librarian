@@ -188,10 +188,10 @@ func (c *Client) GetRawContent(ctx context.Context, path, ref string) ([]byte, e
 // which must have a GitHub HTTPS URL. We assume a base branch of "main".
 func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remoteBranch, baseBranch, title, body string, isDraft bool) (*PullRequestMetadata, error) {
 	if body == "" {
-		slog.Warn("Provided PR body is empty, setting default.")
+		slog.Warn("provided PR body is empty, setting default.")
 		body = "Regenerated all changed APIs. See individual commits for details."
 	}
-	slog.Info("Creating PR", "branch", remoteBranch, "base", baseBranch, "title", title)
+	slog.Info("creating PR", "branch", remoteBranch, "base", baseBranch, "title", title)
 	// The body may be excessively long, only display in debug mode.
 	slog.Debug("with PR body", "body", body)
 	newPR := &github.NewPullRequest{
@@ -207,14 +207,14 @@ func (c *Client) CreatePullRequest(ctx context.Context, repo *Repository, remote
 		return nil, err
 	}
 
-	slog.Info("PR created", "url", pr.GetHTMLURL())
+	slog.Info("pr created", "url", pr.GetHTMLURL())
 	pullRequestMetadata := &PullRequestMetadata{Repo: repo, Number: pr.GetNumber()}
 	return pullRequestMetadata, nil
 }
 
 // GetLabels fetches the labels for an issue.
 func (c *Client) GetLabels(ctx context.Context, number int) ([]string, error) {
-	slog.Info("Getting labels", "number", number)
+	slog.Info("getting labels", "number", number)
 	var allLabels []string
 	opts := &github.ListOptions{
 		PerPage: 100,
@@ -237,14 +237,14 @@ func (c *Client) GetLabels(ctx context.Context, number int) ([]string, error) {
 
 // ReplaceLabels replaces all labels for an issue.
 func (c *Client) ReplaceLabels(ctx context.Context, number int, labels []string) error {
-	slog.Info("Replacing labels", "number", number, "labels", labels)
+	slog.Info("replacing labels", "number", number, "labels", labels)
 	_, _, err := c.Issues.ReplaceLabelsForIssue(ctx, c.repo.Owner, c.repo.Name, number, labels)
 	return err
 }
 
 // AddLabelsToIssue adds labels to an existing issue in a GitHub repository.
 func (c *Client) AddLabelsToIssue(ctx context.Context, repo *Repository, number int, labels []string) error {
-	slog.Info("Labels added to issue", "number", number, "labels", labels)
+	slog.Info("labels added to issue", "number", number, "labels", labels)
 	_, _, err := c.Issues.AddLabelsToIssue(ctx, repo.Owner, repo.Name, number, labels)
 	return err
 }
@@ -351,7 +351,7 @@ func (c *Client) FindMergedPullRequestsWithLabel(ctx context.Context, owner, rep
 // CreateTag creates a lightweight tag in the repository at the given commit SHA.
 // This does NOT create a release, just the tag.
 func (c *Client) CreateTag(ctx context.Context, tagName, commitSHA string) error {
-	slog.Info("Creating tag", "tag", tagName, "commit", commitSHA)
+	slog.Info("creating tag", "tag", tagName, "commit", commitSHA)
 	ref := "refs/tags/" + tagName
 	tagRef := &github.Reference{
 		Ref:    github.Ptr(ref),
@@ -363,7 +363,7 @@ func (c *Client) CreateTag(ctx context.Context, tagName, commitSHA string) error
 
 // ClosePullRequest closes the pull request specified by pull request number.
 func (c *Client) ClosePullRequest(ctx context.Context, number int) error {
-	slog.Info("Closing pull request", slog.Int("number", number))
+	slog.Info("closing pull request", slog.Int("number", number))
 	state := "closed"
 	_, _, err := c.PullRequests.Edit(ctx, c.repo.Owner, c.repo.Name, number, &github.PullRequest{
 		State: &state,

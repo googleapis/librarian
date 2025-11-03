@@ -67,14 +67,14 @@ func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 		return fmt.Errorf("got an error trying to run `git --version`, the instructions on https://github.com/git-guides/install-git may solve this problem: %w", err)
 	}
 
-	slog.Info("Preparing cargo workspace to get new package")
+	slog.Info("preparing cargo workspace to get new package")
 	if err := external.Run("cargo", "new", "--vcs", "none", "--lib", cmdLine.Output); err != nil {
 		return err
 	}
 	if err := external.Run("taplo", "fmt", "Cargo.toml"); err != nil {
 		return err
 	}
-	slog.Info("Generating new library code and adding it to git")
+	slog.Info("generating new library code and adding it to git")
 	if err := generate(rootConfig, cmdLine); err != nil {
 		return err
 	}
@@ -88,20 +88,20 @@ func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 	if err != nil {
 		return err
 	}
-	slog.Info("Generated new client library", "package", packagez)
-	slog.Info("Running `cargo test` on new client library")
+	slog.Info("generated new client library", "package", packagez)
+	slog.Info("running `cargo test` on new client library")
 	if err := external.Run("cargo", "test", "--package", packagez); err != nil {
 		return err
 	}
-	slog.Info("Running `cargo doc` on new client library")
+	slog.Info("running `cargo doc` on new client library")
 	if err := external.Run("env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--package", packagez, "--no-deps"); err != nil {
 		return err
 	}
-	slog.Info("Running `cargo clippy` on new client library")
+	slog.Info("running `cargo clippy` on new client library")
 	if err := external.Run("cargo", "clippy", "--package", packagez, "--", "--deny", "warnings"); err != nil {
 		return err
 	}
-	slog.Info("Running `typos` on new client library")
+	slog.Info("running `typos` on new client library")
 	if err := external.Run("typos"); err != nil {
 		slog.Info("please manually add the typos to `.typos.toml` and fix the problem upstream")
 		return err

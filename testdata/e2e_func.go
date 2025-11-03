@@ -116,7 +116,7 @@ func doReleaseStage(args []string) error {
 	}
 
 	for i, library := range state.Libraries {
-		slog.Debug("Library has SourceRoots", "index", i, "id", library.ID, "source_roots", library.SourceRoots)
+		slog.Debug("library has SourceRoots", "index", i, "id", library.ID, "source_roots", library.SourceRoots)
 	}
 
 	// Update the version of the library.
@@ -124,8 +124,8 @@ func doReleaseStage(args []string) error {
 		if !library.ReleaseTriggered {
 			continue
 		}
-		slog.Info("Found library to update", "id", library.ID)
-		slog.Info("Version from request", "version", library.Version)
+		slog.Info("found library to update", "id", library.ID)
+		slog.Info("version from request", "version", library.Version)
 
 		// Create a changelog.
 		var changelog strings.Builder
@@ -141,7 +141,7 @@ func doReleaseStage(args []string) error {
 			if err := os.WriteFile(changelogPath, []byte(changelog.String()), 0644); err != nil {
 				return fmt.Errorf("failed to write changelog: %w", err)
 			}
-			slog.Info("Wrote changelog", "path", changelogPath)
+			slog.Info("wrote changelog", "path", changelogPath)
 		}
 
 		// After processing, clear the fields for the final state.yaml.
@@ -149,12 +149,12 @@ func doReleaseStage(args []string) error {
 		library.ReleaseTriggered = false
 	}
 
-	slog.Debug("State after update", "state", state)
+	slog.Debug("state after update", "state", state)
 	updatedStateBytes, err := yaml.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal updated state: %w", err)
 	}
-	slog.Debug("Marshalled updated state (YAML)", "yaml", string(updatedStateBytes))
+	slog.Debug("marshalled updated state (YAML)", "yaml", string(updatedStateBytes))
 
 	outputStateDir := filepath.Join(request.outputDir, ".librarian")
 	if err := os.MkdirAll(outputStateDir, 0755); err != nil {
@@ -166,7 +166,7 @@ func doReleaseStage(args []string) error {
 		return fmt.Errorf("failed to write updated state.yaml to output: %w", err)
 	}
 
-	slog.Info("Wrote updated state.yaml", "path", outputStatePath)
+	slog.Info("wrote updated state.yaml", "path", outputStatePath)
 
 	return writeReleaseStageResponseJSON(request)
 }
@@ -261,7 +261,7 @@ func validateReleaseStageRequestJSON(state *librarianState) error {
 			continue
 		}
 		foundTriggered = true
-		slog.Debug("Validating triggered library", "id", lib.ID)
+		slog.Debug("validating triggered library", "id", lib.ID)
 
 		if lib.Version == "" {
 			return fmt.Errorf("validation error: library %s missing 'version'", lib.ID)
@@ -297,7 +297,7 @@ func validateReleaseStageRequestJSON(state *librarianState) error {
 				commitScope := matches[1]
 				isAssociated := strings.Contains(lib.ID, commitScope)
 
-				slog.Info("Running validation check", "library_id", lib.ID, "commit_scope", commitScope, "is_correctly_associated", isAssociated)
+				slog.Info("running validation check", "library_id", lib.ID, "commit_scope", commitScope, "is_correctly_associated", isAssociated)
 
 				if !isAssociated {
 					// If the commit scope does not appear in the library ID, it's a mismatch.
@@ -308,7 +308,7 @@ func validateReleaseStageRequestJSON(state *librarianState) error {
 	}
 
 	if !foundTriggered {
-		slog.Warn("No library was marked with release_triggered: true in request")
+		slog.Warn("no library was marked with release_triggered: true in request")
 	}
 	slog.Debug("validateReleaseStageRequestJSON: Validation passed")
 	return nil

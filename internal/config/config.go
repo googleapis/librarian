@@ -277,7 +277,7 @@ func (c *Config) setupUser() error {
 
 func (c *Config) createWorkRoot() error {
 	if c.WorkRoot != "" {
-		slog.Info("Using specified working directory", "dir", c.WorkRoot)
+		slog.Info("using specified working directory", "dir", c.WorkRoot)
 		return nil
 	}
 	path, err := os.MkdirTemp(tempDir(), "librarian-*")
@@ -285,7 +285,7 @@ func (c *Config) createWorkRoot() error {
 		return err
 	}
 
-	slog.Info("Temporary working directory", "dir", path)
+	slog.Info("temporary working directory", "dir", path)
 	c.WorkRoot = path
 	return nil
 }

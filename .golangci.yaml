@@ -21,6 +21,7 @@ linters:
     - containedctx
     - contextcheck
     - fatcontext
+    - godoclint
     - godot
     - govet
     - ineffassign
