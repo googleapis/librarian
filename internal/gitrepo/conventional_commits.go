@@ -147,8 +147,14 @@ func ParseCommits(commit *Commit, libraryID string) ([]*ConventionalCommit, erro
 			continue
 		}
 
+		seen := make(map[string]bool)
 		for _, simpleCommit := range simpleCommits {
-			commits = appendCommitIfNew(commits, simpleCommit)
+			key := simpleCommit.Subject + simpleCommit.LibraryID
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = true
+			commits = append(commits, simpleCommit)
 		}
 	}
 
@@ -394,13 +400,4 @@ func processFooters(footers map[string]string) {
 			footers[key] = matches[2]
 		}
 	}
-}
-
-func appendCommitIfNew(existingCommits []*ConventionalCommit, newCommit *ConventionalCommit) []*ConventionalCommit {
-	for _, existingCommit := range existingCommits {
-		if existingCommit.Subject == newCommit.Subject && existingCommit.LibraryID == newCommit.LibraryID {
-			return existingCommits
-		}
-	}
-	return append(existingCommits, newCommit)
 }
