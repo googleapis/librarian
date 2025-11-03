@@ -52,7 +52,7 @@ func TestRun(t *testing.T) {
 			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool, forceRun bool) error {
 				return tt.runCommandErr
 			}
-			if err := Run(tt.args); (err != nil) != tt.wantErr {
+			if err := Run(context.Background(), tt.args); (err != nil) != tt.wantErr {
 				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
