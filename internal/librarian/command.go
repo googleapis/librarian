@@ -372,11 +372,11 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 
 	repo := info.languageRepo
 	if err := repo.AddAll(); err != nil {
-		return err
+		return fmt.Errorf("failed to add all files to git: %w", err)
 	}
 	isClean, err := repo.IsClean()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check if repo is clean: %w", err)
 	}
 
 	if isClean {
@@ -387,11 +387,11 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	datetimeNow := formatTimestamp(time.Now())
 	branch := fmt.Sprintf("librarian-%s", datetimeNow)
 	if err := repo.CreateBranchAndCheckout(branch); err != nil {
-		return err
+		return fmt.Errorf("failed to create branch and checkout: %w", err)
 	}
 
 	if err := repo.Commit(info.commitMessage); err != nil {
-		return err
+		return fmt.Errorf("failed to commit: %w", err)
 	}
 
 	if !info.push {
@@ -400,7 +400,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	if err := repo.Push(branch); err != nil {
-		return err
+		return fmt.Errorf("failed to push: %w", err)
 	}
 
 	gitHubRepo, err := GetGitHubRepositoryFromGitRepo(info.languageRepo)
