@@ -263,7 +263,7 @@ func (r *LocalRepository) ChangedFiles() ([]string, error) {
 
 // NewAndDeletedFiles returns a list of files that are new or deleted.
 func (r *LocalRepository) NewAndDeletedFiles() ([]string, error) {
-	slog.Debug("Getting new and deleted files")
+	slog.Debug("getting new and deleted files")
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return nil, err
@@ -543,7 +543,7 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 // CheckoutCommitAndCreateBranch creates a new git branch from a specific commit hash
 // and checks out the branch in the local git repository.
 func (r *LocalRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
-	slog.Debug("Creating branch from commit and checking out", "name", name, "commit", commitHash)
+	slog.Debug("creating branch from commit and checking out", "name", name, "commit", commitHash)
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -741,7 +741,7 @@ func (r *LocalRepository) ResetHard() error {
 // DeleteLocalBranches deletes a list of local branches.
 // It returns an error if any branch deletion fails, or nil if all succeed.
 func (r *LocalRepository) DeleteLocalBranches(names []string) error {
-	slog.Debug("Starting batch deletion of local branches", "count", len(names))
+	slog.Debug("starting batch deletion of local branches", "count", len(names))
 	headRef, headErr := r.repo.Head()
 	if headErr != nil && !errors.Is(headErr, plumbing.ErrReferenceNotFound) {
 		return fmt.Errorf("failed to get HEAD to protect against its deletion: %w", headErr)
