@@ -100,7 +100,6 @@ func TestReleaseStage(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			tmpDir := t.TempDir()
 			// Copy the testdata pom.xml to the temporary directory.
 			inputPath := filepath.Join("testdata", "pom.xml")
