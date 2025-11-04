@@ -670,7 +670,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			libraryToTest:       "lib1",
 			wantFindLatestCalls: 1,
 			wantGenerateCalls:   1,
-			wantCheckoutCalls:   2,
+			wantCheckoutCalls:   3,
 			wantErr:             true,
 			// The test setup does not have protos, so the test fails in the preparation step.
 			wantErrMsg: "failed in test preparing steps",

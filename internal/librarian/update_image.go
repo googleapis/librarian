@@ -139,12 +139,12 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	}
 	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
 
+	// Restore api source repo
+	if err := r.sourceRepo.Checkout(sourceHead); err != nil {
+		slog.Error(err.Error(), "repository", r.sourceRepo, "HEAD", sourceHead)
+	}
 	if r.test {
 		slog.Info("running tests")
-		sourceRepoHead, err := r.sourceRepo.HeadHash()
-		if err != nil {
-			return fmt.Errorf("failed to get source repo head: %w", err)
-		}
 		testRunner := &testGenerateRunner{
 			library:                r.libraryToTest,
 			repo:                   r.repo,
@@ -156,15 +156,11 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 			checkUnexpectedChanges: r.checkUnexpectedChanges,
 			branchesToDelete:       []string{},
 		}
-		return testRunner.runTests(ctx, sourceRepoHead)
+		return testRunner.runTests(ctx, sourceHead)
 	}
 
 	prBodyBuilder := func() (string, error) {
 		return formatUpdateImagePRBody(r.image, failedGenerations)
-	}
-	// Restore api source repo
-	if err := r.sourceRepo.Checkout(sourceHead); err != nil {
-		slog.Error(err.Error(), "repository", r.sourceRepo, "HEAD", sourceHead)
 	}
 	commitMessage := fmt.Sprintf("feat: update image to %s", r.image)
 	return commitAndPush(ctx, &commitInfo{
