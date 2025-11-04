@@ -26,8 +26,8 @@ var (
 )
 
 // UpdateVersions updates the versions of all pom.xml files in a given directory.
-func UpdateVersions(repoDir, outputDir, libraryID, version string) error {
-	pomFiles, err := findPomFiles(repoDir)
+func UpdateVersions(repoDir, sourcePath, outputDir, libraryID, version string) error {
+	pomFiles, err := findPomFiles(sourcePath)
 	if err != nil {
 		return fmt.Errorf("failed to find pom files: %w", err)
 	}
@@ -36,8 +36,11 @@ func UpdateVersions(repoDir, outputDir, libraryID, version string) error {
 		if err != nil {
 			return fmt.Errorf("failed to get relative path for %s: %w", pomFile, err)
 		}
-		outputPath := filepath.Join(outputDir, relPath)
-		if err := updateVersion(pomFile, outputPath, libraryID, version); err != nil {
+		outputPomFile := filepath.Join(outputDir, relPath)
+		if err := os.MkdirAll(filepath.Dir(outputPomFile), 0755); err != nil {
+			return fmt.Errorf("failed to create output directory for %s: %w", outputPomFile, err)
+		}
+		if err := updateVersion(pomFile, outputPomFile, libraryID, version); err != nil {
 			return fmt.Errorf("failed to update version in %s: %w", pomFile, err)
 		}
 	}
@@ -74,11 +77,17 @@ func updateVersion(inputPath, outputPath, libraryID, version string) error {
 	if err := os.WriteFile(outputPath, []byte(newContent), 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
+	fmt.Printf("Updated %s\n", outputPath)
 	return nil
 }
 
 func findPomFiles(path string) ([]string, error) {
 	var pomFiles []string
+	// Return empty if there's no matching directory.
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return []string{}, nil
+	}
+
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

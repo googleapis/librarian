@@ -18,6 +18,7 @@ package release
 import (
 	"context"
 	"log/slog"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/container/java/languagecontainer/release"
 	"github.com/googleapis/librarian/internal/container/java/message"
@@ -29,9 +30,15 @@ func Stage(ctx context.Context, cfg *release.Config) (*message.ReleaseStageRespo
 	slog.Info("release-stage: invoked", "config", cfg)
 	response := &message.ReleaseStageResponse{}
 	for _, lib := range cfg.Request.Libraries {
-		if err := pom.UpdateVersions(cfg.Context.RepoDir, cfg.Context.OutputDir, lib.ID, lib.Version); err != nil {
-			response.Error = err.Error()
-			return response, nil
+		for _, path := range lib.SourcePaths {
+			slog.Info("release-stage: processing library", "libraryID", lib.ID, "version", lib.Version, "sourcePath", path)
+			if err := pom.UpdateVersions(
+				cfg.Context.RepoDir,
+				filepath.Join(cfg.Context.RepoDir, path),
+				cfg.Context.OutputDir, lib.ID, lib.Version); err != nil {
+				response.Error = err.Error()
+				return response, nil
+			}
 		}
 	}
 	return response, nil

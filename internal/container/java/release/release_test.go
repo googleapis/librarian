@@ -29,22 +29,36 @@ func TestStage(t *testing.T) {
 	tests := []struct {
 		name        string
 		libraryID   string
+		SourcePaths []string
 		version     string
 		expected    string
-		expectError bool
 	}{
 		{
 			name:      "happy path",
 			libraryID: "google-cloud-foo",
-			version:   "2.0.0",
-			expected:  "<version>2.0.0</version><!-- {x-version-update:google-cloud-java:current} -->",
+			SourcePaths: []string{
+				"java-foo",
+			},
+			version:  "2.0.0",
+			expected: "<version>2.0.0</version><!-- {x-version-update:google-cloud-foo:current} -->",
+		},
+		{
+			name:      "Source Paths not matching the folder",
+			libraryID: "google-cloud-java",
+			SourcePaths: []string{
+				"java-nonexistent",
+			},
+			version: "2.0.0",
+			// Do not expect the files updated since the source path does not exist.
+			expected: "",
 		},
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			inputPath := filepath.Join("testdata", "java-foo")
+			// This testdata is the dummy repository root.
+			inputPath := filepath.Join("testdata")
 
 			tmpDir := t.TempDir()
 			outputDir := filepath.Join(tmpDir, "output")
@@ -59,8 +73,9 @@ func TestStage(t *testing.T) {
 				Request: &message.ReleaseStageRequest{
 					Libraries: []*message.Library{
 						{
-							ID:      test.libraryID,
-							Version: test.version,
+							ID:          test.libraryID,
+							Version:     test.version,
+							SourcePaths: test.SourcePaths,
 						},
 					},
 				},
@@ -68,27 +83,38 @@ func TestStage(t *testing.T) {
 
 			response, err := Stage(context.Background(), cfg)
 			if err != nil {
-				if !test.expectError {
-					t.Fatalf("Stage() got unexpected error: %v", err)
-				}
+				t.Fatalf("Stage() got unexpected error: %v", err)
 			}
 
-			if test.expectError {
-				if response.Error == "" {
-					t.Errorf("expected error, got success")
+			if response.Error != "" {
+				t.Errorf("expected success, got error: %s", response.Error)
+			}
+			if test.expected != "" {
+				// The file paths are relative to the repoDir.
+				for _, file := range []string{"java-foo/pom.xml", "java-foo/google-cloud-foo/pom.xml"} {
+					content, err := os.ReadFile(filepath.Join(outputDir, file))
+					if err != nil {
+						t.Fatalf("failed to read output file: %v", err)
+					}
+					hasExpectedVersion := strings.Contains(string(content), "<version>"+test.version+"</version>")
+					if !hasExpectedVersion {
+						t.Errorf("expected file to contain version %q, got %q", test.version, string(content))
+					}
+
+					hasAnnotation := strings.Contains(string(content), test.expected)
+					if !hasAnnotation {
+						t.Errorf("expected file to contain annotation %q and comment, got %q", test.expected, string(content))
+					}
 				}
 			} else {
-				if response.Error != "" {
-					t.Errorf("expected success, got error: %s", response.Error)
-				}
-				content, err := os.ReadFile(filepath.Join(outputDir, "pom.xml"))
+				// Expect no files in the output directory because this operation
+				// does not change any files in the repodir.
+				entries, err := os.ReadDir(outputDir)
 				if err != nil {
-					t.Fatalf("failed to read output file: %v", err)
+					t.Fatalf("failed to read output directory: %v", err)
 				}
-				hasExpectedVersion := strings.Contains(string(content), "<version>"+test.version+"</version>")
-				hasAnnotation := strings.Contains(string(content), "<!-- {x-version-update:google-cloud-foo:current} -->")
-				if !hasExpectedVersion || !hasAnnotation {
-					t.Errorf("expected file to contain version %q and comment, got %q", test.version, string(content))
+				if len(entries) != 0 {
+					t.Errorf("expected no files in output directory, got %d files", len(entries))
 				}
 			}
 		})
