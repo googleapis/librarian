@@ -73,7 +73,7 @@ If not specified, the image configured in the state.yaml is used.`)
 
 func addFlagLibrary(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Library, "library", "",
-		`The library ID to generate or release (e.g. google-cloud-secretmanager-v1).
+		`The library ID to generate or release (e.g. secretmanager).
 This corresponds to a releasable language unit.`)
 }
 
