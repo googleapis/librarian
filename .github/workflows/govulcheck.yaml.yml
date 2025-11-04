@@ -1,0 +1,66 @@
+name: 'Govulncheck Scan & Issue Creator'
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+
+jobs:
+  scan-and-report:
+    name: Run govulncheck and Create Issue
+    runs-on: ubuntu--24.04
+    permissions:
+      contents: read # To check out code
+      issues: write # To create issues
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Run govulncheck and count findings
+        id: govulncheck-scan
+        run: |
+          # Run with -json (which never fails) and save to a file
+          govulncheck -json ./... > results.json
+          # Count the number of findings using jq.
+          COUNT=$(jq -s 'length' results.json)
+          echo "Found $COUNT vulnerabilities."
+          # Set an output for the next steps to use
+          echo "vuln_count=$COUNT" >> $GITHUB_OUTPUT
+      - name: Upload scan results artifact
+        # Only upload the report if vulnerabilities were found
+        if: steps.govulncheck-scan.outputs.vuln_count > 0
+        uses: actions/upload-artifact@v4
+        with:
+          name: govulncheck-results-json
+          path: results.json
+          retention-days: 7
+
+      - name: Create GitHub Issue (if vulns found)
+        if: steps.govulncheck-scan.outputs.vuln_count > 0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ISSUE_TITLE="Security Vulnerabilities Detected in main branch"
+          # Check if an open issue with this exact title already exists
+          EXISTING_ISSUE=$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number -R $GH_REPO)
+          if [[ "$EXISTING_ISSUE" == "[]" ]]; then
+            echo "No existing issue found. Creating a new one."
+            # Create a helpful body for the issue
+            BODY="**Automated Vulnerability Report**
+
+  `govulncheck` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the `main` branch.
+  
+  Please review the attached \`govulncheck-results.json\` artifact from this workflow run for details.
+
+Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  "
+            # Create the issue
+            gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label "vulnerability,security,automated" -R $GH_REPO
+          else
+            echo "An open issue with this title already exists. Skipping creation."
+          fi
