@@ -854,3 +854,100 @@ func TestFormatUpdateImagePRBody(t *testing.T) {
 		})
 	}
 }
+
+func TestRunContainerGenerateTest(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name           string
+		mockRepo       *MockRepository
+		testRunner     *testGenerateRunner
+		wantErrMsg     string
+		wantResetCalls int
+	}{
+		{
+			name: "AddAll fails",
+			mockRepo: &MockRepository{
+				AddAllError: fmt.Errorf("add all failed"),
+			},
+			testRunner: &testGenerateRunner{},
+			wantErrMsg: "failed to stage changes",
+		},
+		{
+			name: "Commit fails with unexpected error",
+			mockRepo: &MockRepository{
+				CommitError: fmt.Errorf("unexpected commit error"),
+			},
+			testRunner: &testGenerateRunner{},
+			wantErrMsg: "failed to create temporary commit",
+		},
+		{
+			name: "ResetSoft fails after successful test",
+			mockRepo: &MockRepository{
+				CommitError:    nil, // Commit succeeds
+				ResetSoftError: fmt.Errorf("reset soft failed"),
+			},
+			testRunner: &testGenerateRunner{
+				// Mocking a successful test run.
+				containerClient: &mockContainerClient{noGenerateResponse: true},
+				repo:            &MockRepository{},
+				sourceRepo:      &MockRepository{},
+				librarianConfig: &config.LibrarianConfig{},
+				state:           &config.LibrarianState{},
+			},
+			wantErrMsg:     "failed to reset temporary commit",
+			wantResetCalls: 1,
+		},
+		{
+			name: "Success with commit",
+			mockRepo: &MockRepository{
+				CommitError: nil,
+			},
+			testRunner: &testGenerateRunner{
+				containerClient: &mockContainerClient{noGenerateResponse: true},
+				sourceRepo:      &MockRepository{},
+				librarianConfig: &config.LibrarianConfig{},
+				repo:            &MockRepository{},
+				state:           &config.LibrarianState{},
+			},
+			wantResetCalls: 1,
+		},
+		{
+			name: "Success with no changes to commit",
+			mockRepo: &MockRepository{
+				CommitError: gitrepo.ErrNoModificationsToCommit,
+			},
+			testRunner: &testGenerateRunner{
+				containerClient: &mockContainerClient{noGenerateResponse: true},
+				sourceRepo:      &MockRepository{},
+				librarianConfig: &config.LibrarianConfig{},
+				repo:            &MockRepository{},
+				state:           &config.LibrarianState{},
+			},
+			wantResetCalls: 0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			runner := &updateImageRunner{
+				repo: test.mockRepo,
+			}
+
+			err := runContainerGenerateTest(t.Context(), runner, "fake-head", test.testRunner)
+
+			if test.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("runContainerGenerateTest() expected an error, but got nil")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("runContainerGenerateTest() error = %q, want error containing %q", err.Error(), test.wantErrMsg)
+				}
+			} else if err != nil {
+				t.Fatalf("runContainerGenerateTest() returned unexpected error: %v", err)
+			}
+
+			if test.mockRepo.ResetSoftCalls != test.wantResetCalls {
+				t.Errorf("ResetSoft was called %d times, want %d", test.mockRepo.ResetSoftCalls, test.wantResetCalls)
+			}
+		})
+	}
+}

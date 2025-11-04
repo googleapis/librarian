@@ -17,6 +17,7 @@ package librarian
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -151,7 +152,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 		slog.Error(err.Error(), "repository", r.sourceRepo, "HEAD", sourceHead)
 	}
 	if r.test {
-		slog.Info("running tests")
+		slog.Info("running container tests")
 		testRunner := &testGenerateRunner{
 			library:                r.libraryToTest,
 			repo:                   r.repo,
@@ -163,9 +164,10 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 			checkUnexpectedChanges: r.checkUnexpectedChanges,
 			branchesToDelete:       []string{},
 		}
-		return testRunner.runTests(ctx, sourceHead)
+		if err := runContainerGenerateTest(ctx, r, sourceHead, testRunner); err != nil {
+			return fmt.Errorf("container generate test failed: %w", err)
+		}
 	}
-
 	prBodyBuilder := func() (string, error) {
 		return formatUpdateImagePRBody(r.image, failedGenerations)
 	}
@@ -213,6 +215,42 @@ func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, library
 		return err
 	}
 
+	return nil
+}
+
+// runContainerGenerateTest creates a temporary commit to ensure a clean
+// repo state for the test runner, runs the tests, and then soft-resets
+// the commit to leave the working directory in its original dirty state
+// for the final commit operation.
+func runContainerGenerateTest(ctx context.Context, r *updateImageRunner, sourceHead string, testRunner *testGenerateRunner) error {
+	slog.Debug("creating temporary commit for testing")
+	committed := true
+	if err := r.repo.AddAll(); err != nil {
+		return fmt.Errorf("failed to stage changes for temporary commit: %w", err)
+	}
+
+	// Commit the generated changes so the repo is clean for the test runner.
+	if err := r.repo.Commit("chore: temporary commit for update-image test"); err != nil {
+		if !errors.Is(err, gitrepo.ErrNoModificationsToCommit) {
+			return fmt.Errorf("failed to create temporary commit for test: %w", err)
+		}
+		slog.Debug("no changes to commit for test, proceeding without temporary commit")
+		committed = false
+	}
+
+	if err := testRunner.runTests(ctx, sourceHead); err != nil {
+		// If tests fail, leave the temporary commit in place for diagnostics and return the error.
+		return fmt.Errorf("failure in container generate test: %w", err)
+	}
+
+	// If tests pass and temporary commit was made, reset it to restore the dirty state for the final commit.
+	if !committed {
+		return nil
+	}
+	slog.Debug("tests passed, resetting temporary commit")
+	if err := r.repo.ResetSoft("HEAD~1"); err != nil {
+		return fmt.Errorf("failed to reset temporary commit after successful test: %w", err)
+	}
 	return nil
 }
 

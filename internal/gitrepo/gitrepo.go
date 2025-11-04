@@ -35,6 +35,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
+// ErrNoModificationsToCommit is returned when a commit is attempted on a clean worktree.
+var ErrNoModificationsToCommit = errors.New("no modifications to commit")
+
 // Repository defines the interface for git repository operations.
 type Repository interface {
 	AddAll() error
@@ -60,6 +63,7 @@ type Repository interface {
 	GetHashForPath(commitHash, path string) (string, error)
 	ResetHard() error
 	DeleteLocalBranches(names []string) error
+	ResetSoft(commit string) error
 }
 
 const RootPath = "."
@@ -212,7 +216,7 @@ func (r *LocalRepository) Commit(msg string) error {
 		return err
 	}
 	if status.IsClean() {
-		return fmt.Errorf("no modifications to commit")
+		return ErrNoModificationsToCommit
 	}
 	// The author of the commit will be read from git config.
 	hash, err := worktree.Commit(msg, &git.CommitOptions{})
@@ -758,4 +762,18 @@ func (r *LocalRepository) DeleteLocalBranches(names []string) error {
 		}
 	}
 	return nil
+}
+
+// ResetSoft resets the current branch head to a specific commit but leaves the
+// working tree and index untouched.
+func (r *LocalRepository) ResetSoft(commit string) error {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	hash, err := r.repo.ResolveRevision(plumbing.Revision(commit))
+	if err != nil {
+		return fmt.Errorf("failed to resolve revision for soft reset: %w", err)
+	}
+	return worktree.Reset(&git.ResetOptions{Commit: *hash, Mode: git.SoftReset})
 }

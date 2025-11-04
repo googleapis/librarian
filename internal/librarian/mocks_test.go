@@ -366,6 +366,8 @@ type MockRepository struct {
 	// If the value is "error", an error is returned instead. (This is useful when some
 	// calls must be successful, and others must fail.)
 	GetHashForPathValue map[string]string
+	ResetSoftCalls      int
+	ResetSoftError      error
 }
 
 func (m *MockRepository) HeadHash() (string, error) {
@@ -572,4 +574,9 @@ func (m *MockRepository) GetHashForPath(commitHash, path string) (string, error)
 
 	}
 	return "", fmt.Errorf("should not reach here: GetHashForPath called with unhandled input (commitHash: %q, path: %q)", commitHash, path)
+}
+
+func (m *MockRepository) ResetSoft(commit string) error {
+	m.ResetSoftCalls++
+	return m.ResetSoftError
 }

@@ -2058,3 +2058,75 @@ func TestDeleteLocalBranches(t *testing.T) {
 		})
 	}
 }
+
+func TestResetSoft(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		commitRef  string
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:      "successful reset",
+			commitRef: "HEAD~1",
+		},
+		{
+			name:       "invalid commit reference",
+			commitRef:  "invalid-ref",
+			wantErr:    true,
+			wantErrMsg: "failed to resolve revision",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{Dir: dir, repo: repo}
+
+			initialCommit := createAndCommit(t, repo, "file.txt", []byte("initial content"), "initial commit")
+			createAndCommit(t, repo, "file.txt", []byte("second content"), "second commit")
+
+			err := localRepo.ResetSoft(test.commitRef)
+
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("ResetSoft() expected an error, but got nil")
+				}
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("ResetSoft() error = %q, want error containing %q", err.Error(), test.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("ResetSoft() returned unexpected error: %v", err)
+			}
+
+			// Verify HEAD is now at the initial commit.
+			headAfterReset, err := repo.Head()
+			if err != nil {
+				t.Fatalf("repo.Head() after reset failed: %v", err)
+			}
+			if headAfterReset.Hash() != initialCommit.Hash {
+				t.Errorf("HEAD after reset is at %s, want %s", headAfterReset.Hash(), initialCommit.Hash)
+			}
+
+			// Verify the repo is no longer clean because the changes from the second commit are now staged.
+			isCleanAfterReset, err := localRepo.IsClean()
+			if err != nil {
+				t.Fatalf("IsClean() after reset failed: %v", err)
+			}
+			if isCleanAfterReset {
+				t.Error("repository should be dirty after soft reset")
+			}
+
+			// Verify the working tree file still has the content from the second commit.
+			content, err := os.ReadFile(filepath.Join(dir, "file.txt"))
+			if err != nil {
+				t.Fatalf("failed to read file after reset: %v", err)
+			}
+			if string(content) != "second content" {
+				t.Errorf("file content after reset is %q, want %q", string(content), "second content")
+			}
+		})
+	}
+}
