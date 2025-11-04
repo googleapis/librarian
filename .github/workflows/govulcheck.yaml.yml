@@ -41,15 +41,7 @@ jobs:
           if [[ "$EXISTING_ISSUE" == "[]" ]]; then
             echo "No existing issue found. Creating a new one."
             read -r -d '' BODY_RAW << EOM
-            **Automated Vulnerability Report**
-
-            `govulncheck` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the \`main\` branch.
-
-            Please review the attached \`govulncheck-results.json\` artifact from this workflow run for details.
-
-            Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-EOM
-            BODY=$(echo "$BODY_RAW" | sed -e 's/^[[:space:]]*//')
+            BODY="**Automated Vulnerability Report**\n\n\`govulncheck\` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the \`main\` branch.\n\n`cat results.json`"
             gh issue create --title "$ISSUE_TITLE" --body "$BODY" -R $GH_REPO
           else
             echo "An open issue with this title already exists. Skipping creation."
