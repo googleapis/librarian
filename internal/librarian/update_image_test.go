@@ -198,6 +198,8 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 		build                      bool
 		commit                     bool
 		push                       bool
+		test                       bool
+		libraryToTest              string
 		wantErr                    bool
 		wantErrMsg                 string
 		wantFindLatestCalls        int
@@ -637,7 +639,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantCommitMsg:              "feat: update image to gcr.io/test/image@sha256:abc123",
 		},
 		{
-			name: "partial updates with push",
+			name: "runs test",
 			state: &config.LibrarianState{
 				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*config.LibraryState{
@@ -649,6 +651,42 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 						},
 						LastGeneratedCommit: "abcd1234",
 					},
+				},
+			},
+			containerClient: &mockContainerClient{},
+			imagesClient: &mockImagesClient{
+				latestImage: "gcr.io/test/image@sha256:abc123",
+			},
+			ghClient: &mockGitHubClient{
+				createdPR: &github.PullRequestMetadata{
+					Number: 1234,
+					Repo: &github.Repository{
+						Owner: "googleapis",
+						Name:  "google-cloud-go",
+					},
+				},
+			},
+			test:                true,
+			libraryToTest:       "lib1",
+			wantFindLatestCalls: 1,
+			wantGenerateCalls:   1,
+			wantCheckoutCalls:   2,
+			wantErr:             true,
+			// The test setup does not have protos, so the test fails in the preparation step.
+			wantErrMsg: "failed in test preparing steps",
+		},
+		{
+			name: "partial updates with push",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{{
+					ID:   "lib1",
+					APIs: []*config.API{{Path: "some/api1"}},
+					SourceRoots: []string{
+						"src/a",
+					},
+					LastGeneratedCommit: "abcd1234",
+				},
 					{
 						ID:   "lib2",
 						APIs: []*config.API{{Path: "some/api2"}},
@@ -706,6 +744,8 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 				build:           test.build,
 				commit:          test.commit,
 				push:            test.push,
+				test:            test.test,
+				libraryToTest:   test.libraryToTest,
 				image:           test.image,
 				containerClient: test.containerClient,
 				imagesClient:    test.imagesClient,

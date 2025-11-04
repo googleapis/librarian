@@ -140,9 +140,23 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
 
 	if r.test {
-		// TODO(https://github.com/googleapis/librarian/issues/2624): add test code once #2623 is fixed
-		slog.Debug("placeholder for test code", "libraryToTest",
-			r.libraryToTest, "checkUnexpectedChanges", r.checkUnexpectedChanges)
+		slog.Info("running tests")
+		sourceRepoHead, err := r.sourceRepo.HeadHash()
+		if err != nil {
+			return fmt.Errorf("failed to get source repo head: %w", err)
+		}
+		testRunner := &testGenerateRunner{
+			library:                r.libraryToTest,
+			repo:                   r.repo,
+			sourceRepo:             r.sourceRepo,
+			state:                  r.state,
+			librarianConfig:        r.librarianConfig,
+			workRoot:               r.workRoot,
+			containerClient:        r.containerClient,
+			checkUnexpectedChanges: r.checkUnexpectedChanges,
+			branchesToDelete:       []string{},
+		}
+		return testRunner.runTests(ctx, sourceRepoHead)
 	}
 
 	prBodyBuilder := func() (string, error) {
