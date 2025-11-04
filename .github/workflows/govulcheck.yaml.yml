@@ -2,6 +2,7 @@ name: 'Govulncheck Scan & Issue Creator'
 on:
   schedule:
     - cron: '0 8 * * *'
+  pull_request:
 jobs:
   scan-and-report:
     name: Run govulncheck and Create Issue
