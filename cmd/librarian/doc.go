@@ -115,7 +115,7 @@ Flags:
 	  	Language specific image used to invoke code generation and releasing.
 	  	If not specified, the image configured in the state.yaml is used.
 	-library string
-	  	The library ID to generate or release (e.g. google-cloud-secretmanager-v1).
+	  	The library ID to generate or release (e.g. secretmanager).
 	  	This corresponds to a releasable language unit.
 	-output string
 	  	Working directory root. When this is not specified, a working directory
@@ -203,7 +203,7 @@ Flags:
 	  	Language specific image used to invoke code generation and releasing.
 	  	If not specified, the image configured in the state.yaml is used.
 	-library string
-	  	The library ID to generate or release (e.g. google-cloud-secretmanager-v1).
+	  	The library ID to generate or release (e.g. secretmanager).
 	  	This corresponds to a releasable language unit.
 	-library-version string
 	  	Overrides the automatic semantic version calculation and forces a specific
