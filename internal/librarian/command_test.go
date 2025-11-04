@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
@@ -2295,5 +2296,40 @@ func TestCopyGlobalAllowlist(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestWriteTiming_BadWorkRoot(t *testing.T) {
+	badWorkRoot := filepath.Join(t.TempDir(), "missing-directory")
+	timeByLibrary := map[string]time.Duration{
+		"a": time.Second,
+	}
+	if err := writeTiming(badWorkRoot, timeByLibrary); err == nil {
+		t.Fatal("writeTiming() expected to return error")
+	}
+}
+
+func TestWriteTiming(t *testing.T) {
+	workRoot := t.TempDir()
+	timeByLibrary := map[string]time.Duration{
+		"a": time.Second,
+		"b": 5 * time.Second,
+		"c": 3 * time.Second,
+	}
+	if err := writeTiming(workRoot, timeByLibrary); err != nil {
+		t.Fatal("writeTiming() failed", err)
+	}
+	want := `Processed 3 libraries in 9s; average=3s
+b: 5s
+c: 3s
+a: 1s
+`
+	bytes, err := os.ReadFile(filepath.Join(workRoot, timingFile))
+	if err != nil {
+		t.Fatal("unable to read timing log", err)
+	}
+	got := string(bytes)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("writeTiming() mismatch (-want +got):%s", diff)
 	}
 }

@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -39,6 +40,7 @@ import (
 const (
 	defaultAPISourceBranch  = "master"
 	prBodyFile              = "pr-body.txt"
+	timingFile              = "timing.txt"
 	failedGenerationComment = `One or more libraries have failed to generate, please review PR description for a list of failed libraries.
 For each failed library, open a ticket in that library’s repository and then you may resolve this comment and merge.
 `
@@ -755,4 +757,50 @@ func isURL(s string) bool {
 	}
 
 	return true
+}
+
+// writeTiming creates a file in the work root with diagnostic information
+// about the time taken to process each library. A summary line states
+// the number of individual measurements represented, as well as the total
+// and the average, then the time taken for each library is recorded
+// in descending order of time, to make it easier to figure out what to
+// focus on. All times are rounded to the nearest millisecond.
+func writeTiming(workRoot string, timeByLibrary map[string]time.Duration) error {
+	// Work out the total and average times, and create a slice of timing
+	// by library, sorted in descending order of duration.
+	var total time.Duration
+	for _, duration := range timeByLibrary {
+		total += duration
+	}
+	average := time.Duration(int64(total) / int64(len(timeByLibrary)))
+
+	type timing struct {
+		LibraryID string
+		Duration  time.Duration
+	}
+
+	var timingStructs []timing
+	for id, duration := range timeByLibrary {
+		timingStructs = append(timingStructs, timing{id, duration})
+	}
+
+	slices.SortFunc(timingStructs, func(a, b timing) int {
+		return -cmp.Compare(a.Duration, b.Duration)
+	})
+
+	// Create the timing log in memory: one summary line, then one line per library.
+	var lines []string
+	lines = append(lines, fmt.Sprintf("Processed %d libraries in %s; average=%s\n", len(timeByLibrary), total.Round(time.Millisecond), average.Round(time.Millisecond)))
+
+	for _, ts := range timingStructs {
+		lines = append(lines, fmt.Sprintf("%s: %s\n", ts.LibraryID, ts.Duration.Round(time.Millisecond)))
+	}
+
+	// Write it out to disk.
+	fullPath := filepath.Join(workRoot, timingFile)
+	if err := os.WriteFile(fullPath, []byte(strings.Join(lines, "")), 0644); err != nil {
+		return err
+	}
+	slog.Info("wrote timing statistics", "file", fullPath)
+	return nil
 }
