@@ -41,17 +41,17 @@ Each object in the `apis` list represents a single API and has the following fie
 ```yaml
 image: "gcr.io/my-special-project/language-generator:v1.2.5"
 libraries:
-  - id: "google-cloud-storage-v1"
+  - id: "secretmanager"
     version: "1.15.0"
     last_generated_commit: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
     apis:
-      - path: "google/storage/v1"
-        service_config: "storage.yaml"
+      - path: "google/cloud/secretmanager/v1"
+        service_config: "secretmanager_v1.yaml"
     source_roots:
-      - "src/google/cloud/storage"
-      - "test/google/cloud/storage"
+      - "src/google/cloud/secretmanager"
+      - "test/google/cloud/secretmanager"
     preserve_regex:
-      - "src/google/cloud/storage/generated-dir/HandWrittenFile.java"
+      - "src/google/cloud/secretmanager/generated-dir/HandWrittenFile.java"
     remove_regex:
-      - "src/google/cloud/storage/generated-dir"
+      - "src/google/cloud/secretmanager/generated-dir"
 ```

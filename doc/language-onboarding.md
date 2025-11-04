@@ -59,7 +59,7 @@ need to be executable by any user ID within the container.
 
 ### Guidelines on Language Container Runtimes
 
-You should be able to run the `generate` or `release-stage` commands for an API such as Google Cloud Functions in less than a
+You should be able to run the `generate` or `release-stage` commands for an API such as Google Cloud Secret Manager in less than a
 minute. We understand that some libraries may take longer to process, however, long runtimes can adversely affect your
 ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a
 generator update could trigger a run for all your libraries.
@@ -100,7 +100,7 @@ The container is expected to produce up to two artifacts:
 {
   "libraries": [
     {
-      "id": "google-cloud-secretmanager",
+      "id": "secretmanager",
       "apis": [
         {
           "path": "google/cloud/secretmanager/v1",
@@ -110,7 +110,7 @@ The container is expected to produce up to two artifacts:
       ],
     },
     {
-      "id": "google-cloud-pubsub-v1",
+      "id": "pubsub",
       "apis": [
         {
           "path": "google/cloud/pubsub/v1",
@@ -130,10 +130,10 @@ The container is expected to produce up to two artifacts:
 
 ```json
 {
-  "id": "google-cloud-secretmanager",
+  "id": "secretmanager",
   "apis": [
     {
-      "path": "google/cloud/secretmanager/v1",
+      "path": "google/cloud/secretmanager/v1"
     }
   ],
   "source_roots": [ "secretmanager" ],
@@ -168,7 +168,7 @@ The `generate` command is where the core work of code generation happens. The co
 
 ```json
 {
-  "id": "google-cloud-secretmanager",
+  "id": "secretmanager",
   "apis": [
     {
       "path": "google/cloud/secretmanager/v1",
@@ -217,7 +217,7 @@ The `build` command is responsible for building and testing the newly generated 
 
 ```json
 {
-  "id": "google-cloud-secretmanager",
+  "id": "secretmanager",
   "apis": [
     {
       "path": "google/cloud/secretmanager/v1",
@@ -276,7 +276,7 @@ global file edits. The libraries that are being released will be marked by the `
 {
   "libraries": [
     {
-      "id": "google-cloud-secretmanager-v1",
+      "id": "secretmanager",
       "version": "1.3.0",
       "changes": [
         {
