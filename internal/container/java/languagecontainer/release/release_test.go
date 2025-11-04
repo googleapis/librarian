@@ -24,8 +24,8 @@ import (
 	"github.com/googleapis/librarian/internal/container/java/message"
 )
 
-func TestReadReleaseInitRequest(t *testing.T) {
-	want := &message.ReleaseInitRequest{
+func TestReadReleaseStageRequest(t *testing.T) {
+	want := &message.ReleaseStageRequest{
 		Libraries: []*message.Library{
 			{
 				ID:      "google-cloud-secretmanager-v1",
@@ -62,11 +62,11 @@ func TestReadReleaseInitRequest(t *testing.T) {
 			},
 		},
 	}
-	bytes, err := os.ReadFile(filepath.Join("..", "testdata", "release-init-request.json"))
+	bytes, err := os.ReadFile(filepath.Join("..", "testdata", "release-stage-request.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := &message.ReleaseInitRequest{}
+	got := &message.ReleaseStageRequest{}
 	if err := json.Unmarshal(bytes, got); err != nil {
 		t.Fatal(err)
 	}

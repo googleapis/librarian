@@ -53,7 +53,7 @@ func TestFromProtobuf(t *testing.T) {
 			"not-for-publication":            "true",
 			"version":                        "0.1.0",
 			"skip-format":                    "true",
-			"package:google_cloud_gax":       "^1.2.3",
+			"package:google_cloud_rpc":       "^1.2.3",
 			"package:http":                   "^4.5.6",
 			"package:google_cloud_location":  "^7.8.9",
 			"package:google_cloud_protobuf":  "^0.1.2",
@@ -85,7 +85,7 @@ func TestGeneratedFiles(t *testing.T) {
 	annotate := newAnnotateModel(model)
 
 	options := maps.Clone(requiredConfig)
-	maps.Copy(options, map[string]string{"package:google_cloud_gax": "^1.2.3", "package:http": "^4.5.6"})
+	maps.Copy(options, map[string]string{"package:google_cloud_rpc": "^1.2.3", "package:http": "^4.5.6"})
 
 	annotate.annotateModel(options)
 	files := generatedFiles(model)

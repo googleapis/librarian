@@ -39,11 +39,11 @@ tests are **NOT** run automatically as they create pull requests and branches.
 Usage:
 
 ```bash
-TEST_GITHUB_TOKEN=<a personal access token> \
-  TEST_GITHUB_REPO=<URL of GitHub repo> \
+LIBRARIAN_TEST_GITHUB_TOKEN=<a personal access token> \
+  LIBRARIAN_TEST_GITHUB_REPO=<URL of GitHub repo> \
   go test ./...
 ```
 
-Note: `TEST_GITHUB_TOKEN` must have write access to `TEST_GITHUB_REPO`.
+Note: `LIBRARIAN_TEST_GITHUB_TOKEN` must have write access to `LIBRARIAN_TEST_GITHUB_REPO`.
 
 Note: These tests are skipped unless these environment variables are set.

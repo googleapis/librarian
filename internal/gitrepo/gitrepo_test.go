@@ -1716,3 +1716,345 @@ func TestCanUseSSH(t *testing.T) {
 		})
 	}
 }
+
+func TestNewAndDeletedFiles(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		setup     func(t *testing.T, dir string, w *git.Worktree)
+		wantFiles []string
+	}{
+		{
+			name:  "clean repository",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {},
+		},
+		{
+			name: "new untracked file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "untracked.txt")
+				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+			wantFiles: []string{"untracked.txt"},
+		},
+		{
+			name: "new staged file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "added.txt")
+				if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("added.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+			},
+			wantFiles: []string{"added.txt"},
+		},
+		{
+			name: "deleted file",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "deleted.txt")
+				if err := os.WriteFile(filePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("deleted.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				if _, err := w.Commit("commit deleted.txt", &git.CommitOptions{Author: &object.Signature{Name: "Test", Email: "test@example.com"}}); err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+				if err := os.Remove(filePath); err != nil {
+					t.Fatalf("failed to remove file: %v", err)
+				}
+			},
+			wantFiles: []string{"deleted.txt"},
+		},
+		{
+			name: "modified file should not be included",
+			setup: func(t *testing.T, dir string, w *git.Worktree) {
+				filePath := filepath.Join(dir, "modified.txt")
+				if err := os.WriteFile(filePath, []byte("initial"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+				if _, err := w.Add("modified.txt"); err != nil {
+					t.Fatalf("failed to add file: %v", err)
+				}
+				if _, err := w.Commit("commit modified.txt", &git.CommitOptions{Author: &object.Signature{Name: "Test", Email: "test@example.com"}}); err != nil {
+					t.Fatalf("failed to commit: %v", err)
+				}
+				if err := os.WriteFile(filePath, []byte("modified"), 0644); err != nil {
+					t.Fatalf("failed to write file: %v", err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			w, err := repo.Worktree()
+			if err != nil {
+				t.Fatalf("failed to get worktree: %v", err)
+			}
+
+			r := &LocalRepository{
+				Dir:  dir,
+				repo: repo,
+			}
+
+			test.setup(t, dir, w)
+			gotFiles, err := r.NewAndDeletedFiles()
+			if err != nil {
+				t.Fatalf("NewAndDeletedFiles() returned an error: %v", err)
+			}
+
+			slices.Sort(gotFiles)
+			if diff := cmp.Diff(test.wantFiles, gotFiles); diff != "" {
+				t.Errorf("NewAndDeletedFiles() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestResetHard(t *testing.T) {
+	t.Parallel()
+	repo, dir := initTestRepo(t)
+	localRepo := &LocalRepository{Dir: dir, repo: repo}
+
+	// Commit an initial file.
+	trackedFilePath := filepath.Join(dir, "tracked.txt")
+	initialContent := "initial content"
+	createAndCommit(t, repo, "tracked.txt", []byte(initialContent), "initial commit")
+
+	// 1. Modify the tracked file.
+	if err := os.WriteFile(trackedFilePath, []byte("modified content"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	// 2. Create a new untracked file.
+	untrackedFilePath := filepath.Join(dir, "untracked.txt")
+	if err := os.WriteFile(untrackedFilePath, []byte("untracked"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	// Call ResetHard.
+	if err := localRepo.ResetHard(); err != nil {
+		t.Fatalf("ResetHard() failed: %v", err)
+	}
+
+	// Check that the repo is clean.
+	isClean, err := localRepo.IsClean()
+	if err != nil {
+		t.Fatalf("IsClean() failed: %v", err)
+	}
+	if !isClean {
+		t.Error("ResetHard() should result in a clean repository")
+	}
+
+	// Check that the untracked file is gone.
+	if _, err := os.Stat(untrackedFilePath); !os.IsNotExist(err) {
+		t.Errorf("untracked file should have been deleted by ResetHard(), but it still exists")
+	}
+
+	// Check that the tracked file is restored to its original content.
+	content, err := os.ReadFile(trackedFilePath)
+	if err != nil {
+		t.Fatalf("failed to read tracked file after reset: %v", err)
+	}
+	if string(content) != initialContent {
+		t.Errorf("tracked file content mismatch after reset: got %q, want %q", string(content), initialContent)
+	}
+}
+
+func TestCheckoutCommitAndCreateBranch(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		branchName string
+		setup      func(t *testing.T, repo *git.Repository) (string, plumbing.Hash)
+		wantErr    bool
+	}{
+		{
+			name:       "success",
+			branchName: "new-branch",
+			setup: func(t *testing.T, repo *git.Repository) (string, plumbing.Hash) {
+				commit := createAndCommit(t, repo, "initial.txt", []byte("initial"), "initial commit")
+				return commit.Hash.String(), commit.Hash
+			},
+		},
+		{
+			name:       "invalid commit",
+			branchName: "new-branch",
+			setup: func(t *testing.T, repo *git.Repository) (string, plumbing.Hash) {
+				return "invalid-hash", plumbing.ZeroHash
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repo, dir := initTestRepo(t)
+			localRepo := &LocalRepository{Dir: dir, repo: repo}
+			commitHashStr, commitHash := test.setup(t, repo)
+
+			err := localRepo.CheckoutCommitAndCreateBranch(test.branchName, commitHashStr)
+
+			if (err != nil) != test.wantErr {
+				t.Fatalf("CheckoutCommitAndCreateBranch() error = %v, wantErr %v", err, test.wantErr)
+			}
+
+			if !test.wantErr {
+				head, err := repo.Head()
+				if err != nil {
+					t.Fatalf("repo.Head() failed: %v", err)
+				}
+
+				if head.Name().Short() != test.branchName {
+					t.Errorf("HEAD is at %q, want %q", head.Name().Short(), test.branchName)
+				}
+
+				if head.Hash() != commitHash {
+					t.Errorf("HEAD hash is %q, want %q", head.Hash(), commitHash)
+				}
+			}
+		})
+	}
+}
+
+func TestDeleteLocalBranches(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name         string
+		branchNames  []string
+		useEmptyRepo bool
+		setup        func(t *testing.T, repo *LocalRepository)
+		wantErr      bool
+		wantErrMsg   string
+	}{
+		{
+			name:        "delete single existing branch",
+			branchNames: []string{"test-branch"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("test-branch"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				// Checkout master so we are not on the branch to be deleted
+				w, err := repo.repo.Worktree()
+				if err != nil {
+					t.Fatalf("failed to get worktree: %v", err)
+				}
+				if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("master")}); err != nil {
+					t.Fatalf("failed to checkout master: %v", err)
+				}
+			},
+		},
+		{
+			name:        "delete multiple existing branches",
+			branchNames: []string{"branch1", "branch2"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("branch1"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				if err := repo.CreateBranchAndCheckout("branch2"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				// Checkout master so we are not on a branch to be deleted
+				w, err := repo.repo.Worktree()
+				if err != nil {
+					t.Fatalf("failed to get worktree: %v", err)
+				}
+				if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("master")}); err != nil {
+					t.Fatalf("failed to checkout master: %v", err)
+				}
+			},
+		},
+		{
+			name:        "delete non-existing branch",
+			branchNames: []string{"non-existing-branch"},
+			setup:       func(t *testing.T, repo *LocalRepository) {},
+			wantErr:     true,
+			wantErrMsg:  "failed to check existence of branch non-existing-branch",
+		},
+		{
+			name:        "delete current branch",
+			branchNames: []string{"current-branch"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("current-branch"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+			},
+			wantErr:    true,
+			wantErrMsg: "cannot delete branch current-branch: it is the currently checked out branch (HEAD)",
+		},
+		{
+			name:        "attempt to delete multiple branches including non-existing",
+			branchNames: []string{"branch1", "non-existing-branch"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("branch1"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				w, err := repo.repo.Worktree()
+				if err != nil {
+					t.Fatalf("failed to get worktree: %v", err)
+				}
+				if err := w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("master")}); err != nil {
+					t.Fatalf("failed to checkout master: %v", err)
+				}
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to check existence of branch non-existing-branch",
+		},
+		{
+			name:        "attempt to delete multiple branches including current branch",
+			branchNames: []string{"branch1", "current-branch"},
+			setup: func(t *testing.T, repo *LocalRepository) {
+				if err := repo.CreateBranchAndCheckout("branch1"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+				if err := repo.CreateBranchAndCheckout("current-branch"); err != nil {
+					t.Fatalf("CreateBranchAndCheckout() failed: %v", err)
+				}
+			},
+			wantErr:    true,
+			wantErrMsg: "cannot delete branch current-branch: it is the currently checked out branch (HEAD)",
+		},
+		{
+			name:         "empty repository",
+			branchNames:  []string{},
+			useEmptyRepo: true,
+			setup:        func(t *testing.T, repo *LocalRepository) {},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var localRepo *LocalRepository
+			if tt.useEmptyRepo {
+				gogitRepo, dir := initTestRepo(t)
+				localRepo = &LocalRepository{Dir: dir, repo: gogitRepo}
+			} else {
+				localRepo, _ = setupRepoForGetCommitsTest(t)
+			}
+			tt.setup(t, localRepo)
+
+			err := localRepo.DeleteLocalBranches(tt.branchNames)
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("DeleteLocalBranches() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantErr {
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("DeleteLocalBranches() error message = %q, want to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			for _, branchName := range tt.branchNames {
+				_, err := localRepo.repo.Branch(branchName)
+				if err == nil {
+					t.Errorf("branch %q should have been deleted", branchName)
+				}
+			}
+		})
+	}
+}

@@ -32,7 +32,7 @@ func main() {
 }
 
 func runCLI(args []string) int {
-	logLevel := parseLogLevel(os.Getenv("GOOGLE_SDK_JAVA_LOGGING_LEVEL"))
+	logLevel := parseLogLevel(os.Getenv("LIBRARIAN_GOOGLE_SDK_JAVA_LOGGING_LEVEL"))
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
 	})))
@@ -49,8 +49,8 @@ func runCLI(args []string) int {
 	}
 
 	container := languagecontainer.LanguageContainer{
-		Generate:    generate.Generate,
-		ReleaseInit: release.Init,
+		Generate:     generate.Generate,
+		ReleaseStage: release.Stage,
 	}
 	return languagecontainer.Run(args[1:], &container)
 }

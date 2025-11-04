@@ -95,7 +95,7 @@ type ContainerClient interface {
 	Build(ctx context.Context, request *docker.BuildRequest) error
 	Configure(ctx context.Context, request *docker.ConfigureRequest) (string, error)
 	Generate(ctx context.Context, request *docker.GenerateRequest) error
-	ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error
+	ReleaseStage(ctx context.Context, request *docker.ReleaseStageRequest) error
 }
 
 type commitInfo struct {
@@ -299,20 +299,26 @@ func cleanAndCopyLibrary(state *config.LibrarianState, repoDir, libraryID, outpu
 		return fmt.Errorf("failed to clean library, %s: %w", library.ID, err)
 	}
 
-	return copyLibraryFiles(state, repoDir, libraryID, outputDir)
+	return copyLibraryFiles(state, repoDir, libraryID, outputDir, true)
 }
 
 // copyLibraryFiles copies the files in state.SourceRoots relative to the src folder to the dest
-// folder. It overwrites any existing files.
+// folder.
+//
+// If `failOnExistingFile` is true, the function will check if a file already
+// exists at the destination. If it does, an error is returned immediately without copying.
+// If `failOnExistingFile` is false, it will overwrite any existing files.
+//
 // If there's no files in the library's SourceRoots under the src directory, no copy will happen.
+//
 // If a file is being copied to the library's SourceRoots in the dest folder but the folder does
 // not exist, the copy fails.
-func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string) error {
+func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string, failOnExistingFile bool) error {
 	library := state.LibraryByID(libraryID)
 	if library == nil {
 		return fmt.Errorf("library %q not found", libraryID)
 	}
-	slog.Info("Copying library files", "id", library.ID, "destination", dest, "source", src)
+	slog.Info("copying library files", "id", library.ID, "destination", dest, "source", src)
 	for _, srcRoot := range library.SourceRoots {
 		dstPath := filepath.Join(dest, srcRoot)
 		srcPath := filepath.Join(src, srcRoot)
@@ -321,9 +327,12 @@ func copyLibraryFiles(state *config.LibrarianState, dest, libraryID, src string)
 			return err
 		}
 		for _, file := range files {
-			slog.Debug("Copying file", "file", file)
+			slog.Debug("copying file", "file", file)
 			srcFile := filepath.Join(srcPath, file)
 			dstFile := filepath.Join(dstPath, file)
+			if _, err := os.Stat(dstFile); failOnExistingFile && err == nil {
+				return fmt.Errorf("file existed in destination: %s", dstFile)
+			}
 			if err := copyFile(dstFile, srcFile); err != nil {
 				return fmt.Errorf("failed to copy file %q for library %s: %w", srcFile, library.ID, err)
 			}
@@ -366,7 +375,7 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // description to the repository.
 func commitAndPush(ctx context.Context, info *commitInfo) error {
 	if !info.push && !info.commit {
-		slog.Info("Push flag and Commit flag are not specified, skipping committing")
+		slog.Info("push flag and commit flag are not specified, skipping committing")
 		return writePRBody(info)
 	}
 
@@ -380,7 +389,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	if isClean {
-		slog.Info("No changes to commit, skipping commit and push.")
+		slog.Info("no changes to commit, skipping commit and push.")
 		return nil
 	}
 
@@ -395,7 +404,7 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	}
 
 	if !info.push {
-		slog.Info("Push flag is not specified, skipping pull request creation")
+		slog.Info("push flag is not specified, skipping pull request creation")
 		return writePRBody(info)
 	}
 
@@ -438,7 +447,7 @@ func writePRBody(info *commitInfo) error {
 
 	prBody, err := info.prBodyBuilder()
 	if err != nil {
-		slog.Warn("Unable to create PR body", "error", err)
+		slog.Warn("unable to create PR body", "error", err)
 		return err
 	}
 	// Note: we can't accurately predict whether a PR would have been created,
@@ -449,10 +458,10 @@ func writePRBody(info *commitInfo) error {
 	prBody = prBody + "\n"
 	err = os.WriteFile(fullPath, []byte(prBody), 0644)
 	if err != nil {
-		slog.Warn("Unable to save PR body", "error", err)
+		slog.Warn("unable to save PR body", "error", err)
 		return err
 	}
-	slog.Info("Wrote body of pull request that might have been created", "file", fullPath)
+	slog.Info("wrote body of pull request that might have been created", "file", fullPath)
 	return nil
 }
 
@@ -479,7 +488,7 @@ func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadO
 		slog.Info("librarian config is not setup, skip copying global allowlist")
 		return nil
 	}
-	slog.Info("Copying global allowlist files", "destination", dst, "source", src)
+	slog.Info("copying global allowlist files", "destination", dst, "source", src)
 	for _, globalFile := range cfg.GlobalFilesAllowlist {
 		if globalFile.Permissions == config.PermissionReadOnly && !copyReadOnly {
 			slog.Debug("skipping read-only file", "path", globalFile.Path)
@@ -488,7 +497,7 @@ func copyGlobalAllowlist(cfg *config.LibrarianConfig, dst, src string, copyReadO
 
 		srcPath := filepath.Join(src, globalFile.Path)
 		if _, err := os.Lstat(srcPath); os.IsNotExist(err) {
-			slog.Info("Skip copying a non-existent global allowlist file", "source", srcPath)
+			slog.Info("skip copying a non-existent global allowlist file", "source", srcPath)
 			continue
 		}
 		dstPath := filepath.Join(dst, globalFile.Path)
@@ -561,11 +570,11 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 		// TODO: Consider not calling clean if it's a first time generation
 		if _, err := os.Lstat(sourceRootPath); err != nil {
 			if os.IsNotExist(err) {
-				slog.Warn("Unable to find source root. It may be an initial generation request", "source root", sourceRoot)
+				slog.Warn("unable to find source root. It may be an initial generation request", "source root", sourceRoot)
 				continue
 			}
 			// For any other error (permissions, I/O, etc.)
-			slog.Error("Error trying to clean source root", "source root", sourceRoot, "error", err)
+			slog.Error("error trying to clean source root", "source root", sourceRoot, "error", err)
 			return err
 		}
 		sourceRootPaths, err := findSubDirRelPaths(rootDir, sourceRootPath)
@@ -582,7 +591,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	}
 
 	if len(relPaths) == 0 {
-		slog.Info("There are no files to be cleaned in source roots", "source roots", sourceRoots)
+		slog.Info("there are no files to be cleaned in source roots", "source roots", sourceRoots)
 		return nil
 	}
 

@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"math/rand"
 	"os"
@@ -40,7 +39,7 @@ import (
 
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), []string{"version"}...); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
@@ -63,25 +62,25 @@ func TestVerboseFlag(t *testing.T) {
 			expectDebugLog: false,
 		},
 		{
-			name:              "release init with -v flag",
-			args:              []string{"release", "init", "-v"},
+			name:              "release stage with -v flag",
+			args:              []string{"release", "stage", "-v"},
 			expectDebugLog:    true,
-			expectDebugSubstr: "init command verbose logging",
+			expectDebugSubstr: "stage command verbose logging",
 		},
 		{
-			name:           "release init without -v flag",
-			args:           []string{"release", "init"},
+			name:           "release stage without -v flag",
+			args:           []string{"release", "stage"},
 			expectDebugLog: false,
 		},
 		{
-			name:              "release tag-and-release with -v flag",
-			args:              []string{"release", "tag-and-release", "-v"},
+			name:              "release tag with -v flag",
+			args:              []string{"release", "tag", "-v"},
 			expectDebugLog:    true,
-			expectDebugSubstr: "tag-and-release command verbose logging",
+			expectDebugSubstr: "tag command verbose logging",
 		},
 		{
-			name:           "release tag-and-release without -v flag",
-			args:           []string{"release", "tag-and-release"},
+			name:           "release tag without -v flag",
+			args:           []string{"release", "tag"},
 			expectDebugLog: false,
 		},
 	} {

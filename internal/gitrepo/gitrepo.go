@@ -50,12 +50,16 @@ type Repository interface {
 	GetCommitsForPathsSinceTag(paths []string, tagName string) ([]*Commit, error)
 	GetCommitsForPathsSinceCommit(paths []string, sinceCommit string) ([]*Commit, error)
 	CreateBranchAndCheckout(name string) error
+	CheckoutCommitAndCreateBranch(name, commitHash string) error
+	NewAndDeletedFiles() ([]string, error)
 	Push(branchName string) error
 	Restore(paths []string) error
 	CleanUntracked(paths []string) error
 	pushRefSpec(refSpec string) error
 	Checkout(commitHash string) error
 	GetHashForPath(commitHash, path string) (string, error)
+	ResetHard() error
+	DeleteLocalBranches(names []string) error
 }
 
 const RootPath = "."
@@ -123,7 +127,7 @@ func newRepositoryWithoutUser(opts *RepositoryOptions) (*LocalRepository, error)
 	if !opts.MaybeClone {
 		return open(opts.Dir)
 	}
-	slog.Info("Checking for repository", "dir", opts.Dir)
+	slog.Info("checking for repository", "dir", opts.Dir)
 	_, err := os.Stat(opts.Dir)
 	if err == nil {
 		return open(opts.Dir)
@@ -135,14 +139,14 @@ func newRepositoryWithoutUser(opts *RepositoryOptions) (*LocalRepository, error)
 		if opts.RemoteBranch == "" {
 			return nil, fmt.Errorf("gitrepo: remote branch is required when cloning")
 		}
-		slog.Info("Repository not found, executing clone")
+		slog.Info("repository not found, executing clone")
 		return clone(opts.Dir, opts.RemoteURL, opts.RemoteBranch, opts.CI, opts.Depth)
 	}
 	return nil, fmt.Errorf("failed to check for repository at %q: %w", opts.Dir, err)
 }
 
 func open(dir string) (*LocalRepository, error) {
-	slog.Info("Opening repository", "dir", dir)
+	slog.Info("opening repository", "dir", dir)
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
 		return nil, err
@@ -155,7 +159,7 @@ func open(dir string) (*LocalRepository, error) {
 }
 
 func clone(dir, url, branch, ci string, depth int) (*LocalRepository, error) {
-	slog.Info("Cloning repository", "url", url, "dir", dir)
+	slog.Info("cloning repository", "url", url, "dir", dir)
 	options := &git.CloneOptions{
 		URL:           url,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
@@ -197,7 +201,7 @@ func (r *LocalRepository) AddAll() error {
 // Commit creates a new commit with the provided message and author
 // information.
 func (r *LocalRepository) Commit(msg string) error {
-	slog.Info("Committing", "message", msg)
+	slog.Info("committing", "message", msg)
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -239,7 +243,7 @@ func (r *LocalRepository) IsClean() (bool, error) {
 // ChangedFiles returns a list of files that have been modified, added, or deleted
 // in the working tree, including both staged and unstaged changes.
 func (r *LocalRepository) ChangedFiles() ([]string, error) {
-	slog.Debug("Getting changed files")
+	slog.Debug("getting changed files")
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return nil, err
@@ -255,6 +259,30 @@ func (r *LocalRepository) ChangedFiles() ([]string, error) {
 		}
 	}
 	return changedFiles, nil
+}
+
+// NewAndDeletedFiles returns a list of files that are new or deleted.
+func (r *LocalRepository) NewAndDeletedFiles() ([]string, error) {
+	slog.Debug("getting new and deleted files")
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	status, err := worktree.Status()
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for file, fileStatus := range status {
+		switch {
+		case fileStatus.Worktree == git.Untracked,
+			fileStatus.Staging == git.Added,
+			fileStatus.Worktree == git.Deleted,
+			fileStatus.Staging == git.Deleted:
+			files = append(files, file)
+		}
+	}
+	return files, nil
 }
 
 // Remotes returns the remotes within the repository.
@@ -301,7 +329,7 @@ func (r *LocalRepository) GetCommit(commitHash string) (*Commit, error) {
 
 // GetLatestCommit returns the latest commit of the given path in the repository.
 func (r *LocalRepository) GetLatestCommit(path string) (*Commit, error) {
-	slog.Info("Retrieving the latest commit", "path", path)
+	slog.Info("retrieving the latest commit", "path", path)
 	opt := &git.LogOptions{
 		Order:    git.LogOrderCommitterTime,
 		FileName: &path,
@@ -450,7 +478,7 @@ func getHashForPath(commit *object.Commit, path string) (string, error) {
 
 // ChangedFilesInCommit returns the files changed in the given commit.
 func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, error) {
-	slog.Debug("Getting changed files in commit", "hash", commitHash)
+	slog.Debug("getting changed files in commit", "hash", commitHash)
 	commit, err := r.repo.CommitObject(plumbing.NewHash(commitHash))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit object for hash %s: %w", commitHash, err)
@@ -500,7 +528,7 @@ func (r *LocalRepository) ChangedFilesInCommit(commitHash string) ([]string, err
 // CreateBranchAndCheckout creates a new git branch and checks out the
 // branch in the local git repository.
 func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
-	slog.Info("Creating branch and checking out", "name", name)
+	slog.Info("creating branch and checking out", "name", name)
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -512,11 +540,26 @@ func (r *LocalRepository) CreateBranchAndCheckout(name string) error {
 	})
 }
 
+// CheckoutCommitAndCreateBranch creates a new git branch from a specific commit hash
+// and checks out the branch in the local git repository.
+func (r *LocalRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
+	slog.Debug("creating branch from commit and checking out", "name", name, "commit", commitHash)
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(&git.CheckoutOptions{
+		Hash:   plumbing.NewHash(commitHash),
+		Branch: plumbing.NewBranchReferenceName(name),
+		Create: true,
+	})
+}
+
 // Push pushes the local branch to the origin remote.
 func (r *LocalRepository) Push(branchName string) error {
 	// https://stackoverflow.com/a/75727620
 	refSpec := fmt.Sprintf("+refs/heads/%s:refs/heads/%s", branchName, branchName)
-	slog.Info("Pushing changes", "branch name", branchName, slog.Any("refspec", refSpec))
+	slog.Info("pushing changes", "branch name", branchName, slog.Any("refspec", refSpec))
 	return r.pushRefSpec(refSpec)
 }
 
@@ -527,7 +570,7 @@ func (r *LocalRepository) DeleteBranch(branchName string) error {
 }
 
 func (r *LocalRepository) pushRefSpec(refSpec string) error {
-	slog.Info("Pushing changes", "refSpec", refSpec)
+	slog.Info("pushing changes", "refSpec", refSpec)
 
 	// Check for the configured URI for the `origin` remote.
 	// If there are multiple URLs, the first one is selected.
@@ -558,7 +601,7 @@ func (r *LocalRepository) pushRefSpec(refSpec string) error {
 	}); err != nil {
 		return err
 	}
-	slog.Info("Successfully pushed changes", "refSpec", refSpec)
+	slog.Info("successfully pushed changes", "refSpec", refSpec)
 	return nil
 }
 
@@ -593,7 +636,7 @@ func canUseSSH(remoteURI string) bool {
 // remote repository. The useSSH determines if Basic Auth or SSH is used.
 func (r *LocalRepository) authCreds(useSSH bool) (transport.AuthMethod, error) {
 	if useSSH {
-		slog.Info("Authenticating with SSH")
+		slog.Info("authenticating with SSH")
 		// This is the generic `git` username when cloning via SSH. It is the value
 		// that exists before the URL. e.g. git@github.com:googleapis/librarian.git
 		auth, err := ssh.DefaultAuthBuilder("git")
@@ -602,7 +645,7 @@ func (r *LocalRepository) authCreds(useSSH bool) (transport.AuthMethod, error) {
 		}
 		return auth, nil
 	}
-	slog.Info("Authenticating with basic auth")
+	slog.Info("authenticating with basic auth")
 	return &httpAuth.BasicAuth{
 		// GitHub's authentication needs the username set to a non-empty value, but
 		// it does not need to match the token
@@ -619,7 +662,7 @@ func (r *LocalRepository) authCreds(useSSH bool) (transport.AuthMethod, error) {
 func (r *LocalRepository) Restore(paths []string) error {
 	args := []string{"restore"}
 	args = append(args, paths...)
-	slog.Info("Restoring uncommitted changes", "paths", strings.Join(paths, ","))
+	slog.Info("restoring uncommitted changes", "paths", strings.Join(paths, ","))
 	cmd := exec.Command("git", args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
@@ -629,7 +672,7 @@ func (r *LocalRepository) Restore(paths []string) error {
 
 // CleanUntracked removes untracked files within the given paths.
 func (r *LocalRepository) CleanUntracked(paths []string) error {
-	slog.Info("Cleaning untracked files", "paths", strings.Join(paths, ","))
+	slog.Info("cleaning untracked files", "paths", strings.Join(paths, ","))
 	worktree, err := r.repo.Worktree()
 	if err != nil {
 		return err
@@ -682,4 +725,39 @@ func (r *LocalRepository) GetHashForPath(commitHash, path string) (string, error
 		return "", err
 	}
 	return getHashForPath(commit, path)
+}
+
+// ResetHard resets the repository to HEAD, discarding all local changes.
+func (r *LocalRepository) ResetHard() error {
+	worktree, err := r.repo.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Reset(&git.ResetOptions{
+		Mode: git.HardReset,
+	})
+}
+
+// DeleteLocalBranches deletes a list of local branches.
+// It returns an error if any branch deletion fails, or nil if all succeed.
+func (r *LocalRepository) DeleteLocalBranches(names []string) error {
+	slog.Debug("starting batch deletion of local branches", "count", len(names))
+	headRef, headErr := r.repo.Head()
+	if headErr != nil && !errors.Is(headErr, plumbing.ErrReferenceNotFound) {
+		return fmt.Errorf("failed to get HEAD to protect against its deletion: %w", headErr)
+	}
+	for _, name := range names {
+		refName := plumbing.NewBranchReferenceName(name)
+		_, err := r.repo.Storer.Reference(refName)
+		if err != nil {
+			return fmt.Errorf("failed to check existence of branch %s: %w", name, err)
+		}
+		if headErr == nil && headRef.Name() == refName {
+			return fmt.Errorf("cannot delete branch %s: it is the currently checked out branch (HEAD)", name)
+		}
+		if err := r.repo.Storer.RemoveReference(refName); err != nil {
+			return fmt.Errorf("failed to delete branch %s: %w", name, err)
+		}
+	}
+	return nil
 }

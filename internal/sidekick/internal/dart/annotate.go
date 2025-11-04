@@ -157,19 +157,22 @@ type operationInfoAnnotation struct {
 }
 
 type fieldAnnotation struct {
-	Name     string
-	Type     string
-	DocLines []string
-	Required bool
-	Nullable bool
-	FromJson string
-	ToJson   string
+	Name                  string
+	Type                  string
+	DocLines              []string
+	Required              bool
+	Nullable              bool
+	FieldBehaviorRequired bool
+	DefaultValue          string
+	FromJson              string
+	ToJson                string
 }
 
 type enumAnnotation struct {
-	Name     string
-	DocLines []string
-	Model    *api.API
+	Name         string
+	DocLines     []string
+	DefaultValue string
+	Model        *api.API
 }
 
 type enumValueAnnotation struct {
@@ -201,8 +204,6 @@ type annotateModel struct {
 	packageMapping map[string]string
 	// The protobuf packages that need to be imported with prefixes.
 	packagePrefixes map[string]string
-	// A mapping from field IDs to fields for the fields we know to be required.
-	requiredFields map[string]*api.Field
 	// A mapping from a package name (e.g. "http") to its version constraint (e.g. "^1.3.0").
 	dependencyConstraints map[string]string
 }
@@ -214,7 +215,6 @@ func newAnnotateModel(model *api.API) *annotateModel {
 		imports:               map[string]bool{},
 		packageMapping:        map[string]string{},
 		packagePrefixes:       map[string]string{},
-		requiredFields:        map[string]*api.Field{},
 		dependencyConstraints: map[string]string{},
 	}
 }
@@ -230,6 +230,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		packageVersion             string
 		partFileReference          string
 		doNotPublish               bool
+		dependencies               = []string{}
 		devDependencies            = []string{}
 		repositoryURL              string
 		readMeAfterTitleText       string
@@ -269,6 +270,13 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			exports = strings.FieldsFunc(definition, func(c rune) bool { return c == ';' })
 			for i := range exports {
 				exports[i] = strings.TrimSpace(exports[i])
+			}
+		case key == "dependencies":
+			// dependencies = "http, googleapis_auth"
+			// A list of dependencies to add to pubspec.yaml. This can be used to add dependencies for hand-written code.
+			dependencies = strings.Split(definition, ",")
+			for i := range dependencies {
+				dependencies[i] = strings.TrimSpace(dependencies[i])
 			}
 		case key == "dev-dependencies":
 			devDependencies = strings.Split(definition, ",")
@@ -324,9 +332,6 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 
 	model := annotate.model
 
-	// Calculate required fields.
-	annotate.requiredFields = calculateRequiredFields(model)
-
 	// Traverse and annotate the enums defined in this API.
 	for _, e := range model.Enums {
 		annotate.annotateEnum(e)
@@ -347,9 +352,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	// Add a dev dependency on package:lints.
 	devDependencies = append(devDependencies, "lints")
 
-	// Add the import for the google_cloud_gax package.
+	// Add the import for ServiceClient and related functionality.
 	if len(model.Services) > 0 {
-		annotate.imports[gaxImport] = true
+		annotate.imports[serviceClientImport] = true
 	}
 
 	// `google.protobuf` defines `JsonEncodable`, which is needed by any package that defines a
@@ -371,7 +376,12 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	pkgName = packageName(model, packageNameOverride)
-	packageDependencies, err := calculateDependencies(annotate.imports, annotate.dependencyConstraints, pkgName)
+	importedPackages := calculatePubPackages(annotate.imports)
+	for _, d := range dependencies {
+		importedPackages[d] = true
+	}
+
+	packageDependencies, err := calculateDependencies(importedPackages, annotate.dependencyConstraints, pkgName)
 	if err != nil {
 		return err
 	}
@@ -410,54 +420,35 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	return nil
 }
 
-func calculateRequiredFields(model *api.API) map[string]*api.Field {
-	required := map[string]*api.Field{}
-
-	for _, s := range model.Services {
-		// Some methods are skipped.
-		methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
-			return shouldGenerateMethod(m)
-		})
-
-		for _, method := range methods {
-			for _, field := range language.PathParams(method, model.State) {
-				required[field.ID] = field
-			}
-
-			for _, field := range method.InputType.Fields {
-				if field.Name == method.PathInfo.BodyFieldPath {
-					required[field.ID] = field
-				}
-			}
-		}
-	}
-
-	return required
-}
-
-// calculateDependencies calculates package dependencies based on `package:` imports.
-func calculateDependencies(imports map[string]bool, constraints map[string]string, packageName string) ([]packageDependency, error) {
-	deps := []packageDependency{}
-
+// calculatePubPackages returns a set of package names (e.g. "http"), given a
+// set of imports (e.g. "package:http/http.dart as http").
+func calculatePubPackages(imports map[string]bool) map[string]bool {
+	packages := map[string]bool{}
 	for imp := range imports {
 		if name, hadPrefix := strings.CutPrefix(imp, "package:"); hadPrefix {
 			name = strings.Split(name, "/")[0]
-
-			if !slices.ContainsFunc(deps, func(dep packageDependency) bool {
-				return dep.Name == name
-			}) {
-				constraint := constraints[name]
-				if len(constraint) == 0 {
-					return nil, fmt.Errorf("unknown version constraint for package %q (did you forget to add it to .sidekick.toml?)", name)
-				}
-
-				if name != packageName {
-					deps = append(deps, packageDependency{Name: name, Constraint: constraint})
-				}
-			}
+			packages[name] = true
 		}
 	}
+	return packages
+}
 
+// calculateDependencies calculates package dependencies given a set of
+// package names (e.g. "http") and version constraints (e.g. {"http": "^1.2.3"}).
+//
+// Excludes packages that match the current package.
+func calculateDependencies(packages map[string]bool, constraints map[string]string, curPkgName string) ([]packageDependency, error) {
+	deps := []packageDependency{}
+
+	for name := range packages {
+		constraint := constraints[name]
+		if name != curPkgName {
+			if len(constraint) == 0 {
+				return nil, fmt.Errorf("unknown version constraint for package %q (did you forget to add it to .sidekick.toml?)", name)
+			}
+			deps = append(deps, packageDependency{Name: name, Constraint: constraint})
+		}
+	}
 	sort.SliceStable(deps, func(i, j int) bool {
 		return deps[i].Name < deps[j].Name
 	})
@@ -632,7 +623,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	queryParams := language.QueryParams(method, method.PathInfo.Bindings[0])
 	queryLines := []string{}
 	for _, field := range queryParams {
-		queryLines = buildQueryLines(queryLines, "request.", "", field, state)
+		queryLines = annotate.buildQueryLines(queryLines, "request.", "", field, state)
 	}
 
 	annotation := &methodAnnotation{
@@ -669,35 +660,149 @@ func (annotate *annotateModel) annotateOneOf(oneof *api.OneOf) {
 }
 
 func (annotate *annotateModel) annotateField(field *api.Field) {
-	_, required := annotate.requiredFields[field.ID]
+	// Here, we calculate the nullability / required status of a field. For this
+	// we use the proto field presence information.
+	//
+	// For edification of our readers:
+	//   - proto 3 fields default to implicit presence
+	//   - the 'optional' keyword changes a field to explicit presence
+	//   - types like lists (repeated) and maps are always implicit presence
+	//
+	// Explicit presence means that you can know whether the user set a value or
+	// not. Implicit presence means you can always retrieve a value; if one had
+	// not been set, you'll see the default value for that type.
+	//
+	// We translate explicit presence (a optional annotation) to using a nullable
+	// type for that field. We translate implicit presence (always returning some
+	// value) to a non-null type.
+	//
+	// Some short-hand:
+	//   - optional == explicit == nullable
+	//   - implicit == non-nullable
+	//   - lists and maps == implicit == non-nullable
+	//   - singular message == explicit == nullable
+	//
+	// See also https://protobuf.dev/programming-guides/field_presence/.
+
+	var implicitPresence bool
+
+	if field.Repeated || field.Map {
+		// Repeated fields and maps have implicit presence (non-nullable).
+		implicitPresence = true
+	} else if field.Typez == api.MESSAGE_TYPE {
+		// In proto3, singular message fields have explicit presence and are nullable.
+		implicitPresence = false
+	} else {
+		if field.IsOneOf {
+			// If this field is part of a oneof, it may or may not have a value; we
+			// translate that as nullable (explicit presence).
+			implicitPresence = false
+		} else if field.Optional {
+			// The optional keyword makes the field have explicit presence (nullable).
+			implicitPresence = false
+		} else {
+			// Proto3 does not track presence for basic types (implicit presence).
+			implicitPresence = true
+		}
+	}
+
+	// We interpret proto implicit presence as non-nullable for Dart.
+	required := implicitPresence
+
+	// We can't make 'bytes' required, as UInt8List in Dart can't be const.
+	if field.Typez == api.BYTES_TYPE {
+		required = false
+	}
+
+	// Calculate the default field value.
+	defaultValues := map[api.Typez]string{
+		api.BOOL_TYPE:     "false",
+		api.DOUBLE_TYPE:   "0",
+		api.FIXED32_TYPE:  "0",
+		api.FIXED64_TYPE:  "0",
+		api.FLOAT_TYPE:    "0",
+		api.INT32_TYPE:    "0",
+		api.INT64_TYPE:    "0",
+		api.SFIXED32_TYPE: "0",
+		api.SFIXED64_TYPE: "0",
+		api.SINT32_TYPE:   "0",
+		api.SINT64_TYPE:   "0",
+		api.STRING_TYPE:   "''",
+		api.UINT32_TYPE:   "0",
+		api.UINT64_TYPE:   "0",
+	}
+	defaultValue := ""
+	if required {
+		switch {
+		case field.Repeated:
+			defaultValue = "const []"
+		case field.Map:
+			defaultValue = "const {}"
+		case field.Typez == api.ENUM_TYPE:
+			// The default value for enums are the generated MyEnum.$default field,
+			// always set to the first value of that enum.
+			typeName := enumName(annotate.state.EnumByID[field.TypezID])
+			defaultValue = fmt.Sprintf("%s.$default", typeName)
+		default:
+			defaultValue = defaultValues[field.Typez]
+		}
+	}
+
 	state := annotate.state
 
 	field.Codec = &fieldAnnotation{
-		Name:     fieldName(field),
-		Type:     annotate.fieldType(field),
-		DocLines: formatDocComments(field.Documentation, state),
-		Required: required,
-		Nullable: !required,
-		FromJson: annotate.createFromJsonLine(field, state, required),
-		ToJson:   createToJsonLine(field, state, required),
+		Name:                  fieldName(field),
+		Type:                  annotate.fieldType(field),
+		DocLines:              formatDocComments(field.Documentation, state),
+		Required:              required,
+		Nullable:              !required,
+		FieldBehaviorRequired: slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED),
+		DefaultValue:          defaultValue,
+		FromJson:              annotate.createFromJsonLine(field, state, required),
+		ToJson:                createToJsonLine(field, state, required),
 	}
 }
 
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.APIState, required bool) string {
 	message := state.MessageByID[field.TypezID]
 
-	isList := field.Repeated
-	isMap := message != nil && message.IsMap
-
 	data := fmt.Sprintf("json['%s']", field.JSONName)
 
-	bang := "!"
-	if !required {
-		bang = ""
+	bang := ""
+	if required {
+		switch {
+		case field.Repeated:
+			bang = " ?? []"
+		case field.Map:
+			bang = " ?? {}"
+		case field.Typez == api.ENUM_TYPE:
+			// 'ExecutableCode_Language.$default'
+			typeName := enumName(annotate.state.EnumByID[field.TypezID])
+			bang = fmt.Sprintf(" ?? %s.$default", typeName)
+		default:
+			defaultValues := map[api.Typez]string{
+				api.BOOL_TYPE:     "false",
+				api.BYTES_TYPE:    "Uint8List()",
+				api.DOUBLE_TYPE:   "0",
+				api.FIXED32_TYPE:  "0",
+				api.FIXED64_TYPE:  "0",
+				api.FLOAT_TYPE:    "0",
+				api.INT32_TYPE:    "0",
+				api.INT64_TYPE:    "0",
+				api.SFIXED32_TYPE: "0",
+				api.SFIXED64_TYPE: "0",
+				api.SINT32_TYPE:   "0",
+				api.SINT64_TYPE:   "0",
+				api.STRING_TYPE:   "''",
+				api.UINT32_TYPE:   "0",
+				api.UINT64_TYPE:   "0",
+			}
+			bang = fmt.Sprintf(" ?? %s", defaultValues[field.Typez])
+		}
 	}
 
 	switch {
-	case isList:
+	case field.Repeated:
 		switch field.Typez {
 		case api.BYTES_TYPE:
 			return fmt.Sprintf("decodeListBytes(%s)%s", data, bang)
@@ -715,7 +820,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		default:
 			return fmt.Sprintf("decodeList(%s)%s", data, bang)
 		}
-	case isMap:
+	case field.Map:
 		valueField := message.Fields[1]
 
 		switch valueField.Typez {
@@ -741,6 +846,12 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		return fmt.Sprintf("decodeInt64(%s)%s", data, bang)
 	case field.Typez == api.FLOAT_TYPE || field.Typez == api.DOUBLE_TYPE:
 		return fmt.Sprintf("decodeDouble(%s)%s", data, bang)
+	case field.Typez == api.INT32_TYPE || field.Typez == api.FIXED32_TYPE ||
+		field.Typez == api.SFIXED32_TYPE || field.Typez == api.SINT32_TYPE ||
+		field.Typez == api.UINT32_TYPE ||
+		field.Typez == api.BOOL_TYPE ||
+		field.Typez == api.STRING_TYPE:
+		return fmt.Sprintf("%s%s", data, bang)
 	case field.Typez == api.BYTES_TYPE:
 		return fmt.Sprintf("decodeBytes(%s)%s", data, bang)
 	case field.Typez == api.ENUM_TYPE:
@@ -750,9 +861,9 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
 		typeName := annotate.resolveTypeName(state.MessageByID[field.TypezID], true)
 		if hasCustomEncoding {
-			return fmt.Sprintf("decodeCustom(%s, %s.fromJson)%s", data, typeName, bang)
+			return fmt.Sprintf("decodeCustom(%s, %s.fromJson)", data, typeName)
 		} else {
-			return fmt.Sprintf("decode(%s, %s.fromJson)%s", data, typeName, bang)
+			return fmt.Sprintf("decode(%s, %s.fromJson)", data, typeName)
 		}
 	}
 
@@ -821,23 +932,34 @@ func createToJsonLine(field *api.Field, state *api.APIState, required bool) stri
 //   - primitives, lists of primitives and enums are supported
 //   - repeated fields are passed as lists
 //   - messages need to be unrolled and fields passed individually
-func buildQueryLines(
+func (annotate *annotateModel) buildQueryLines(
 	result []string, refPrefix string, paramPrefix string,
 	field *api.Field, state *api.APIState,
 ) []string {
 	message := state.MessageByID[field.TypezID]
 	isMap := message != nil && message.IsMap
 
+	if field.Codec == nil {
+		annotate.annotateField(field)
+	}
+	codec := field.Codec.(*fieldAnnotation)
+
 	ref := fmt.Sprintf("%s%s", refPrefix, fieldName(field))
 	param := fmt.Sprintf("%s%s", paramPrefix, field.JSONName)
-	preable := fmt.Sprintf("if (%s != null) '%s'", ref, param)
+
+	var preable string
+	if codec.Nullable {
+		preable = fmt.Sprintf("if (%s != null) '%s'", ref, param)
+	} else {
+		preable = fmt.Sprintf("if (%s.isNotDefault) '%s'", ref, param)
+	}
 
 	switch {
 	case field.Repeated:
 		// Handle lists; these should be lists of strings or other primitives.
 		switch field.Typez {
 		case api.STRING_TYPE:
-			return append(result, fmt.Sprintf("%s: %s!", preable, ref))
+			return append(result, fmt.Sprintf("%s: %s", preable, ref))
 		case api.ENUM_TYPE:
 			return append(result, fmt.Sprintf("%s: %s!.map((e) => e.value)", preable, ref))
 		case api.BOOL_TYPE, api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
@@ -858,16 +980,25 @@ func buildQueryLines(
 		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))
 
 	case field.Typez == api.MESSAGE_TYPE:
+		deref := "."
+		if codec.Nullable {
+			deref = "!."
+		}
+
 		// Unroll the fields for messages.
 		for _, field := range message.Fields {
-			result = buildQueryLines(result, ref+"?.", param+".", field, state)
+			result = annotate.buildQueryLines(result, ref+deref, param+".", field, state)
 		}
 		return result
 
 	case field.Typez == api.STRING_TYPE:
-		return append(result, fmt.Sprintf("%s: %s!", preable, ref))
+		deref := ""
+		if codec.Nullable {
+			deref = "!"
+		}
+		return append(result, fmt.Sprintf("%s: %s%s", preable, ref, deref))
 	case field.Typez == api.ENUM_TYPE:
-		return append(result, fmt.Sprintf("%s: %s!.value", preable, ref))
+		return append(result, fmt.Sprintf("%s: %s.value", preable, ref))
 	case field.Typez == api.BOOL_TYPE ||
 		field.Typez == api.INT32_TYPE ||
 		field.Typez == api.UINT32_TYPE || field.Typez == api.SINT32_TYPE ||
@@ -889,10 +1020,17 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	for _, ev := range enum.Values {
 		annotate.annotateEnumValue(ev)
 	}
+
+	defaultValue := ""
+	if len(enum.Values) > 0 {
+		defaultValue = enumValueName(enum.Values[0])
+	}
+
 	enum.Codec = &enumAnnotation{
-		Name:     enumName(enum),
-		DocLines: formatDocComments(enum.Documentation, annotate.state),
-		Model:    annotate.model,
+		Name:         enumName(enum),
+		DocLines:     formatDocComments(enum.Documentation, annotate.state),
+		DefaultValue: defaultValue,
+		Model:        annotate.model,
 	}
 }
 

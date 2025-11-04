@@ -399,7 +399,7 @@ func scalarFieldType(f *api.Field) string {
 		out = "i64"
 
 	default:
-		slog.Error("Unexpected field type", "field", *f)
+		slog.Error("unexpected field type", "field", *f)
 		return ""
 	}
 	return out
@@ -497,7 +497,6 @@ func baseFieldType(f *api.Field, state *api.APIState, modulePath, sourceSpecific
 		}
 		return fullyQualifiedEnumName(e, modulePath, sourceSpecificationPackageName, packageMapping)
 	case api.GROUP_TYPE:
-		slog.Error("TODO(#39) - better handling of `oneof` fields")
 		return ""
 	default:
 		return scalarFieldType(f)

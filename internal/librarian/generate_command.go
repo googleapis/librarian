@@ -346,7 +346,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 		ExistingSourceRoots: r.getExistingSrc(r.library),
 		State:               r.state,
 	}
-	slog.Info("Performing configuration for library", "id", r.library)
+	slog.Info("performing configuration for library", "id", r.library)
 	if _, err := r.containerClient.Configure(ctx, configureRequest); err != nil {
 		return "", err
 	}
@@ -375,7 +375,7 @@ func (r *generateRunner) runConfigureCommand(ctx context.Context, outputDir stri
 		r.state.Libraries[i] = libraryState
 	}
 
-	if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryState.ID, outputDir); err != nil {
+	if err := copyLibraryFiles(r.state, r.repo.GetDir(), libraryState.ID, outputDir, false); err != nil {
 		return "", err
 	}
 

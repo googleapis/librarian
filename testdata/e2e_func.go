@@ -19,8 +19,8 @@ const (
 	configureResponse      = "configure-response.json"
 	generateRequest        = "generate-request.json"
 	generateResponse       = "generate-response.json"
-	releaseInitRequest     = "release-init-request.json"
-	releaseInitResponse    = "release-init-response.json"
+	releaseInitRequest     = "release-stage-request.json"
+	releaseInitResponse    = "release-stage-response.json"
 	id                     = "id"
 	inputDir               = "input"
 	librarian              = "librarian"
@@ -52,8 +52,8 @@ func main() {
 		if err := doGenerate(os.Args[2:]); err != nil {
 			log.Fatal(err)
 		}
-	case "release-init":
-		if err := doReleaseInit(os.Args[2:]); err != nil {
+	case "release-stage":
+		if err := doReleaseStage(os.Args[2:]); err != nil {
 			log.Fatal(err)
 		}
 	default:
@@ -99,24 +99,24 @@ func doGenerate(args []string) error {
 	return writeGenerateResponse(request)
 }
 
-func doReleaseInit(args []string) error {
-	slog.Debug("doReleaseInit received args", "args", args)
-	request, err := parseReleaseInitRequest(args)
+func doReleaseStage(args []string) error {
+	slog.Debug("doReleaseStage received args", "args", args)
+	request, err := parseReleaseStageRequest(args)
 	if err != nil {
 		return err
 	}
-	slog.Debug("doReleaseInit received request", "request", request)
+	slog.Debug("doReleaseStage received request", "request", request)
 	if err := validateLibrarianDir(request.librarianDir, releaseInitRequest); err != nil {
 		return err
 	}
 
-	state, err := readReleaseInitRequestJSON(filepath.Join(request.librarianDir, releaseInitRequest))
+	state, err := readReleaseStageRequestJSON(filepath.Join(request.librarianDir, releaseInitRequest))
 	if err != nil {
 		return err
 	}
 
 	for i, library := range state.Libraries {
-		slog.Debug("Library has SourceRoots", "index", i, "id", library.ID, "source_roots", library.SourceRoots)
+		slog.Debug("library has SourceRoots", "index", i, "id", library.ID, "source_roots", library.SourceRoots)
 	}
 
 	// Update the version of the library.
@@ -124,8 +124,8 @@ func doReleaseInit(args []string) error {
 		if !library.ReleaseTriggered {
 			continue
 		}
-		slog.Info("Found library to update", "id", library.ID)
-		slog.Info("Version from request", "version", library.Version)
+		slog.Info("found library to update", "id", library.ID)
+		slog.Info("version from request", "version", library.Version)
 
 		// Create a changelog.
 		var changelog strings.Builder
@@ -141,7 +141,7 @@ func doReleaseInit(args []string) error {
 			if err := os.WriteFile(changelogPath, []byte(changelog.String()), 0644); err != nil {
 				return fmt.Errorf("failed to write changelog: %w", err)
 			}
-			slog.Info("Wrote changelog", "path", changelogPath)
+			slog.Info("wrote changelog", "path", changelogPath)
 		}
 
 		// After processing, clear the fields for the final state.yaml.
@@ -149,12 +149,12 @@ func doReleaseInit(args []string) error {
 		library.ReleaseTriggered = false
 	}
 
-	slog.Debug("State after update", "state", state)
+	slog.Debug("state after update", "state", state)
 	updatedStateBytes, err := yaml.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal updated state: %w", err)
 	}
-	slog.Debug("Marshalled updated state (YAML)", "yaml", string(updatedStateBytes))
+	slog.Debug("marshalled updated state (YAML)", "yaml", string(updatedStateBytes))
 
 	outputStateDir := filepath.Join(request.outputDir, ".librarian")
 	if err := os.MkdirAll(outputStateDir, 0755); err != nil {
@@ -166,28 +166,28 @@ func doReleaseInit(args []string) error {
 		return fmt.Errorf("failed to write updated state.yaml to output: %w", err)
 	}
 
-	slog.Info("Wrote updated state.yaml", "path", outputStatePath)
+	slog.Info("wrote updated state.yaml", "path", outputStatePath)
 
-	return writeReleaseInitResponseJSON(request)
+	return writeReleaseStageResponseJSON(request)
 }
 
-// readReleaseInitRequestJSON reads the release init request file and creates a librarianState
+// readReleaseStageRequestJSON reads the release stage request file and creates a librarianState
 // object.
-func readReleaseInitRequestJSON(path string) (*librarianState, error) {
+func readReleaseStageRequestJSON(path string) (*librarianState, error) {
 	state := &librarianState{}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	slog.Debug("readReleaseInitRequest: File content", "content", string(data))
+	slog.Debug("readReleaseStageRequest: File content", "content", string(data))
 	if err := json.Unmarshal(data, &state); err != nil {
 		return nil, err
 	}
-	slog.Debug("readReleaseInitRequest: Unmarshalled state", "state", state)
+	slog.Debug("readReleaseStageRequest: Unmarshalled state", "state", state)
 
 	// Validate the unmarshalled JSON content.
-	if err := validateReleaseInitRequestJSON(state); err != nil {
-		slog.Error("readReleaseInitRequest: Validation failed", "error", err)
+	if err := validateReleaseStageRequestJSON(state); err != nil {
+		slog.Error("readReleaseStageRequest: Validation failed", "error", err)
 		return nil, err
 	}
 
@@ -200,7 +200,7 @@ type releaseInitOption struct {
 	outputDir    string
 }
 
-func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
+func parseReleaseStageRequest(args []string) (*releaseInitOption, error) {
 	option := &releaseInitOption{}
 	for _, arg := range args {
 		opt, _ := strings.CutPrefix(arg, "--")
@@ -219,7 +219,7 @@ func parseReleaseInitRequest(args []string) (*releaseInitOption, error) {
 	return option, nil
 }
 
-func writeReleaseInitResponseJSON(option *releaseInitOption) error {
+func writeReleaseStageResponseJSON(option *releaseInitOption) error {
 	jsonFilePath := filepath.Join(option.librarianDir, releaseInitResponse)
 	jsonFile, err := os.Create(jsonFilePath)
 	if err != nil {
@@ -234,22 +234,22 @@ func writeReleaseInitResponseJSON(option *releaseInitOption) error {
 	}
 	slog.Debug("about to write to file", "path", jsonFilePath, "data", string(data))
 	_, err = jsonFile.Write(data)
-	slog.Info("wrote release init response", "path", jsonFilePath)
+	slog.Info("wrote release stage response", "path", jsonFilePath)
 
 	return err
 }
 
-// validateReleaseInitRequestJSON validates the structure and content of the
-// data unmarshalled from the release-init-request.json file.
+// validateReleaseStageRequestJSON validates the structure and content of the
+// data unmarshalled from the release-stage-request.json file.
 // This file is generated by the librarian tool and consumed by this mock container.
 // It checks if the structure matches the expected contract and validates that
 // commits are correctly associated with their libraries.
-func validateReleaseInitRequestJSON(state *librarianState) error {
+func validateReleaseStageRequestJSON(state *librarianState) error {
 	if state.Image == "" {
-		return errors.New("validation error: missing 'image' in release-init-request.json")
+		return errors.New("validation error: missing 'image' in release-stage-request.json")
 	}
 	if len(state.Libraries) == 0 {
-		return errors.New("validation error: no libraries found in release-init-request.json")
+		return errors.New("validation error: no libraries found in release-stage-request.json")
 	}
 
 	foundTriggered := false
@@ -261,7 +261,7 @@ func validateReleaseInitRequestJSON(state *librarianState) error {
 			continue
 		}
 		foundTriggered = true
-		slog.Debug("Validating triggered library", "id", lib.ID)
+		slog.Debug("validating triggered library", "id", lib.ID)
 
 		if lib.Version == "" {
 			return fmt.Errorf("validation error: library %s missing 'version'", lib.ID)
@@ -297,7 +297,7 @@ func validateReleaseInitRequestJSON(state *librarianState) error {
 				commitScope := matches[1]
 				isAssociated := strings.Contains(lib.ID, commitScope)
 
-				slog.Info("Running validation check", "library_id", lib.ID, "commit_scope", commitScope, "is_correctly_associated", isAssociated)
+				slog.Info("running validation check", "library_id", lib.ID, "commit_scope", commitScope, "is_correctly_associated", isAssociated)
 
 				if !isAssociated {
 					// If the commit scope does not appear in the library ID, it's a mismatch.
@@ -308,9 +308,9 @@ func validateReleaseInitRequestJSON(state *librarianState) error {
 	}
 
 	if !foundTriggered {
-		slog.Warn("No library was marked with release_triggered: true in request")
+		slog.Warn("no library was marked with release_triggered: true in request")
 	}
-	slog.Debug("validateReleaseInitRequestJSON: Validation passed")
+	slog.Debug("validateReleaseStageRequestJSON: Validation passed")
 	return nil
 }
 

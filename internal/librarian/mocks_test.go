@@ -127,11 +127,11 @@ type mockContainerClient struct {
 	generateCalls  int
 	buildCalls     int
 	configureCalls int
-	initCalls      int
+	stageCalls     int
 	generateErr    error
 	buildErr       error
 	configureErr   error
-	initErr        error
+	stageErr       error
 	// Set this value if you want an error when
 	// generate a library with a specific id.
 	failGenerateForID string
@@ -293,10 +293,10 @@ func (m *mockContainerClient) Generate(ctx context.Context, request *docker.Gene
 	return m.generateErr
 }
 
-func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.ReleaseInitRequest) error {
-	m.initCalls++
+func (m *mockContainerClient) ReleaseStage(ctx context.Context, request *docker.ReleaseStageRequest) error {
+	m.stageCalls++
 	if m.noReleaseResponse {
-		return m.initErr
+		return m.stageErr
 	}
 	// Write a release-init-response.json unless we're configured not to.
 	if err := os.MkdirAll(filepath.Join(request.RepoDir, ".librarian"), 0755); err != nil {
@@ -311,10 +311,10 @@ func (m *mockContainerClient) ReleaseInit(ctx context.Context, request *docker.R
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.ReleaseInitResponse), b, 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(request.RepoDir, ".librarian", config.ReleaseStageResponse), b, 0755); err != nil {
 		return err
 	}
-	return m.initErr
+	return m.stageErr
 }
 
 type MockRepository struct {
@@ -327,6 +327,7 @@ type MockRepository struct {
 	RemotesValue                           []*gitrepo.Remote
 	RemotesError                           error
 	CommitCalls                            int
+	ResetHardCalls                         int
 	LastCommitMessage                      string
 	GetCommitError                         error
 	GetLatestCommitError                   error
@@ -345,7 +346,10 @@ type MockRepository struct {
 	ChangedFilesInCommitError              error
 	ChangedFilesValue                      []string
 	ChangedFilesError                      error
+	NewAndDeletedFilesValue                []string
+	NewAndDeletedFilesError                error
 	CreateBranchAndCheckoutError           error
+	CheckoutCommitAndCreateBranchError     error
 	PushCalls                              int
 	PushError                              error
 	RestoreError                           error
@@ -353,6 +357,9 @@ type MockRepository struct {
 	HeadHashError                          error
 	CheckoutCalls                          int
 	CheckoutError                          error
+	ResetHardError                         error
+	DeleteLocalBranchesCalls               int
+	DeleteLocalBranchesError               error
 	GetHashForPathError                    error
 	// GetHashForPathValue is a map where each key is of the form "commitHash:path",
 	// and the value is the hash to return. Every requested entry must be populated.
@@ -483,9 +490,23 @@ func (m *MockRepository) ChangedFiles() ([]string, error) {
 	return m.ChangedFilesValue, nil
 }
 
+func (m *MockRepository) NewAndDeletedFiles() ([]string, error) {
+	if m.NewAndDeletedFilesError != nil {
+		return nil, m.NewAndDeletedFilesError
+	}
+	return m.NewAndDeletedFilesValue, nil
+}
+
 func (m *MockRepository) CreateBranchAndCheckout(name string) error {
 	if m.CreateBranchAndCheckoutError != nil {
 		return m.CreateBranchAndCheckoutError
+	}
+	return nil
+}
+
+func (m *MockRepository) CheckoutCommitAndCreateBranch(name, commitHash string) error {
+	if m.CheckoutCommitAndCreateBranchError != nil {
+		return m.CheckoutCommitAndCreateBranchError
 	}
 	return nil
 }
@@ -512,6 +533,16 @@ func (m *MockRepository) Checkout(commitHash string) error {
 		return m.CheckoutError
 	}
 	return nil
+}
+
+func (m *MockRepository) ResetHard() error {
+	m.ResetHardCalls++
+	return m.ResetHardError
+}
+
+func (m *MockRepository) DeleteLocalBranches(names []string) error {
+	m.DeleteLocalBranchesCalls++
+	return m.DeleteLocalBranchesError
 }
 
 // mockImagesClient is a mock implementation of the ImageRegistryClient interface for testing.

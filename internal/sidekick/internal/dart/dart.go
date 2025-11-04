@@ -28,7 +28,7 @@ import (
 
 var typedDataImport = "dart:typed_data"
 var httpImport = "package:http/http.dart as http"
-var gaxImport = "package:google_cloud_gax/gax.dart"
+var serviceClientImport = "package:google_cloud_rpc/service_client.dart"
 var encodingImport = "package:google_cloud_protobuf/src/encoding.dart"
 var protobufImport = "package:google_cloud_protobuf/protobuf.dart"
 
@@ -110,6 +110,10 @@ var reservedNames = map[string]string{
 	"while":    "",
 	"with":     "",
 	"yield":    "",
+
+	// Names from dart:core to avoid.
+	"bool":   "",
+	"double": "",
 }
 
 func messageName(m *api.Message) string {
@@ -165,10 +169,13 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 			builder.WriteString("/")
 			builder.WriteString(*segment.Literal)
 		case segment.Variable != nil:
+			// Form '${request.foo!.bar!.baz}'.
 			builder.WriteString("/${request")
+			deref := "."
 			for _, f := range segment.Variable.FieldPath {
-				builder.WriteString(".")
+				builder.WriteString(deref)
 				builder.WriteString(strcase.ToLowerCamel(f))
+				deref = "!."
 			}
 			builder.WriteString("}")
 		}

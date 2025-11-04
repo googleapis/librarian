@@ -59,7 +59,7 @@ need to be executable by any user ID within the container.
 
 ### Guidelines on Language Container Runtimes
 
-You should be able to run the `generate` or `release-init` commands for an API such as Google Cloud Functions in less than a
+You should be able to run the `generate` or `release-stage` commands for an API such as Google Cloud Functions in less than a
 minute. We understand that some libraries may take longer to process, however, long runtimes can adversely affect your
 ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a
 generator update could trigger a run for all your libraries.
@@ -246,9 +246,9 @@ The `build` command is responsible for building and testing the newly generated 
 }
 ```
 
-### `release-init`
+### `release-stage`
 
-The `release-init` command is the core of the release workflow. After Librarian determines the new version and collates
+The `release-stage` command is the core of the release workflow. After Librarian determines the new version and collates
 the commits for a release, it invokes this container command to apply the necessary changes to the repository.
 
 The container command's primary responsibility is to update all required files with the new version and commit
@@ -260,13 +260,13 @@ global files that reference the libraries being released.
 
 | Context      | Type                | Description                                                                     |
 | :----------- | :------------------ | :------------------------------------------------------------------------------ |
-| `/librarian` | Mount (Read/Write)  | Contains `release-init-request.json`. Container writes back a `release-init-response.json`. |
+| `/librarian` | Mount (Read/Write)  | Contains `release-stage-request.json`. Container writes back a `release-stage-response.json`. |
 | `/repo`      | Mount (Read)        | Read-only contents of the language repo including any global files declared in the `config.yaml`. |
 | `/output`    | Mount (Write)       | Any files updated during the release phase should be moved to this directory, preserving their original paths. |
-| `command`    | Positional Argument | The value will always be `release-init`. |
+| `command`    | Positional Argument | The value will always be `release-stage`. |
 | flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo`, `--output` |
 
-**Example `release-init-request.json`:**
+**Example `release-stage-request.json`:**
 
 The request will have entries for all libraries configured in the state.yaml -- this information may be needed for any
 global file edits. The libraries that are being released will be marked by the `release_triggered` field being set to
@@ -312,7 +312,7 @@ global file edits. The libraries that are being released will be marked by the `
 }
 ```
 
-**Example `release-init-response.json`:**
+**Example `release-stage-response.json`:**
 
 ```json
 {
@@ -331,7 +331,9 @@ can be tracked and properly documented in client library release notes.
 The `update-image` command is used to update and pin the language specific container in `state.yaml` and re-generate all libraries.
 You can optionally specify an image using the `-image` flag.
 
-*Note: If the `-image` flag is not specified, the latest container image will be used.*
+*Note: If the `-image` flag is not specified, the latest container image will be used.
+This requires application default credentials which have access to the corresponding artifact registry.
+Use `gcloud auth application-default login` to configure ADC.*
 
 When the job completes, a PR will be opened by librarian with the changes related to the container update. You can edit the pull
 request title to set a global commit message which will be applied to all libraries.
@@ -368,7 +370,7 @@ go run ./cmd/librarian/ generate -repo=<your repository> -push
 
 ```
 export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
-go run ./cmd/librarian/ release init -repo=<your repository> -push
+go run ./cmd/librarian/ release stage -repo=<your repository> -push
 ```
 
 **Update Image Command:**

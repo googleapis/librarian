@@ -33,7 +33,7 @@ import (
 // the mock repository's BaseURL, allowing the test client to connect to a
 // local httptest.Server.
 var GetGitHubRepository = func(cfg *config.Config, languageRepo gitrepo.Repository) (*github.Repository, error) {
-	slog.Info("Using mock GitHub repository for e2e test")
+	slog.Info("using mock GitHub repository for e2e test")
 	baseURL := os.Getenv("LIBRARIAN_GITHUB_BASE_URL")
 	return &github.Repository{Owner: "test-owner", Name: "test-repo", BaseURL: baseURL}, nil
 }
@@ -42,7 +42,7 @@ var GetGitHubRepository = func(cfg *config.Config, languageRepo gitrepo.Reposito
 // It reads the LIBRARIAN_GITHUB_BASE_URL environment variable to configure
 // the mock repository's BaseURL.
 var GetGitHubRepositoryFromGitRepo = func(languageRepo gitrepo.Repository) (*github.Repository, error) {
-	slog.Info("Using mock GitHub repository for e2e test")
+	slog.Info("using mock GitHub repository for e2e test")
 	baseURL := os.Getenv("LIBRARIAN_GITHUB_BASE_URL")
 	return &github.Repository{Owner: "test-owner", Name: "test-repo", BaseURL: baseURL}, nil
 }

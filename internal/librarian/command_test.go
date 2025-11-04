@@ -1782,19 +1782,20 @@ func TestCopyLibraryFiles(t *testing.T) {
 		}
 	}
 	for _, test := range []struct {
-		name          string
-		repoDir       string
-		outputDir     string
-		libraryID     string
-		state         *config.LibrarianState
-		existingFiles []string
-		filesToCreate []string
-		setup         func(t *testing.T, outputDir string)
-		verify        func(t *testing.T, repoDir string)
-		wantFiles     []string
-		skipFiles     []string
-		wantErr       bool
-		wantErrMsg    string
+		name               string
+		repoDir            string
+		outputDir          string
+		libraryID          string
+		state              *config.LibrarianState
+		existingFiles      []string
+		filesToCreate      []string
+		setup              func(t *testing.T, outputDir string)
+		verify             func(t *testing.T, repoDir string)
+		wantFiles          []string
+		skipFiles          []string
+		failOnExistingFile bool
+		wantErr            bool
+		wantErrMsg         string
 	}{
 		{
 			repoDir:   "/invalid-dst-path",
@@ -1960,6 +1961,33 @@ func TestCopyLibraryFiles(t *testing.T) {
 				"another/path/example.txt",
 			},
 		},
+		{
+			name:      "file_existed_in_dst",
+			repoDir:   filepath.Join(t.TempDir(), "dst"),
+			outputDir: filepath.Join(t.TempDir(), "foo"),
+			libraryID: "example-library",
+			state: &config.LibrarianState{
+				Libraries: []*config.LibraryState{
+					{
+						ID: "example-library",
+						SourceRoots: []string{
+							"a/path",
+							"another/path",
+						},
+					},
+				},
+			},
+			existingFiles: []string{
+				"a/path/example.txt",
+			},
+			filesToCreate: []string{
+				"a/path/example.txt",
+				"another/path/example.txt",
+			},
+			failOnExistingFile: true,
+			wantErr:            true,
+			wantErrMsg:         "file existed in destination",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if len(test.existingFiles) > 0 {
@@ -1971,10 +1999,10 @@ func TestCopyLibraryFiles(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, test.outputDir)
 			}
-			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir)
+			err := copyLibraryFiles(test.state, test.repoDir, test.libraryID, test.outputDir, test.failOnExistingFile)
 			if test.wantErr {
 				if err == nil {
-					t.Fatal("copyLibraryFiles() shoud fail")
+					t.Fatal("copyLibraryFiles() should fail")
 				}
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("want error message: %s, got: %s", test.wantErrMsg, err.Error())

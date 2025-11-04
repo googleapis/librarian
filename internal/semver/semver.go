@@ -174,7 +174,7 @@ func MaxVersion(versionStrings ...string) string {
 	for _, versionString := range versionStrings {
 		v, err := Parse(versionString)
 		if err != nil {
-			slog.Warn("Invalid version string", "version", v)
+			slog.Warn("invalid version string", "version", v)
 			continue
 		}
 		versions = append(versions, v)

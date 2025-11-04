@@ -31,12 +31,12 @@ import (
 	"github.com/googleapis/librarian/internal/images"
 )
 
-var testToken = os.Getenv("TEST_GITHUB_TOKEN")
-var githubAction = os.Getenv("GITHUB_ACTION")
+var testToken = os.Getenv("LIBRARIAN_TEST_GITHUB_TOKEN")
+var githubAction = os.Getenv("LIBRARIAN_GITHUB_ACTION")
 
 func TestGetRawContentSystem(t *testing.T) {
 	if testToken == "" {
-		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+		t.Skip("LIBRARIAN_TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
 	repoName := "https://github.com/googleapis/librarian"
 
@@ -114,11 +114,11 @@ func TestPullRequestSystem(t *testing.T) {
 	// Fetch the pull request
 	// Close the pull request
 	if testToken == "" {
-		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+		t.Skip("LIBRARIAN_TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
-	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	testRepoName := os.Getenv("LIBRARIAN_TEST_GITHUB_REPO")
 	if testRepoName == "" {
-		t.Skip("TEST_GITHUB_REPO not set, skipping GitHub integration test")
+		t.Skip("LIBRARIAN_TEST_GITHUB_REPO not set, skipping GitHub integration test")
 	}
 
 	// Clone a repo
@@ -298,7 +298,7 @@ func TestPullRequestSystem(t *testing.T) {
 
 func TestFindMergedPullRequest(t *testing.T) {
 	if testToken == "" {
-		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+		t.Skip("LIBRARIAN_TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
 	repoName := "https://github.com/googleapis/librarian"
 	repo, err := github.ParseRemote(repoName)
@@ -364,11 +364,11 @@ func TestFindMergedPullRequest(t *testing.T) {
 
 func TestCreateTag(t *testing.T) {
 	if testToken == "" {
-		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+		t.Skip("LIBRARIAN_TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
-	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	testRepoName := os.Getenv("LIBRARIAN_TEST_GITHUB_REPO")
 	if testRepoName == "" {
-		t.Skip("TEST_GITHUB_REPO not set, skipping GitHub integration test")
+		t.Skip("LIBRARIAN_TEST_GITHUB_REPO not set, skipping GitHub integration test")
 	}
 	repo, err := github.ParseRemote(testRepoName)
 	if err != nil {
@@ -404,11 +404,11 @@ func TestCreateTag(t *testing.T) {
 
 func TestCreateRelease(t *testing.T) {
 	if testToken == "" {
-		t.Skip("TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
+		t.Skip("LIBRARIAN_TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
-	testRepoName := os.Getenv("TEST_GITHUB_REPO")
+	testRepoName := os.Getenv("LIBRARIAN_TEST_GITHUB_REPO")
 	if testRepoName == "" {
-		t.Skip("TEST_GITHUB_REPO not set, skipping GitHub integration test")
+		t.Skip("LIBRARIAN_TEST_GITHUB_REPO not set, skipping GitHub integration test")
 	}
 	repo, err := github.ParseRemote(testRepoName)
 	if err != nil {
@@ -447,6 +447,8 @@ func TestCreateRelease(t *testing.T) {
 }
 
 func TestFindLatestImage(t *testing.T) {
+	t.Skip("Temporarily skipping until we can run it reliably. See https://github.com/googleapis/librarian/issues/2720")
+
 	// If we are able to configure system tests on GitHub actions, then update this
 	// guard clause.
 	if githubAction != "" {

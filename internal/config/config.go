@@ -48,16 +48,16 @@ const (
 	// LibrarianDir is the default directory to store librarian state/config files,
 	// along with any additional configuration.
 	LibrarianDir = ".librarian"
-	// ReleaseInitRequest is a JSON file that describes which library to release.
-	ReleaseInitRequest = "release-init-request.json"
-	// ReleaseInitResponse is a JSON file that describes which library to change
+	// ReleaseStageRequest is a JSON file that describes which library to release.
+	ReleaseStageRequest = "release-stage-request.json"
+	// ReleaseStageResponse is a JSON file that describes which library to change
 	// after release.
-	ReleaseInitResponse = "release-init-response.json"
+	ReleaseStageResponse = "release-stage-response.json"
 	// LibrarianStateFile is the name of the pipeline state file.
 	LibrarianStateFile = "state.yaml"
 	// LibrarianConfigFile is the name of the language-repository config file.
 	LibrarianConfigFile = "config.yaml"
-	// LibrarianGithubToken is the name of the env var used to store the github token.
+	// LibrarianGithubToken is the name of the env var used to store the GitHub token.
 	LibrarianGithubToken = "LIBRARIAN_GITHUB_TOKEN"
 )
 
@@ -68,7 +68,7 @@ var (
 )
 
 var (
-	// pullRequestRegexp is regular expression that describes a uri of a pull request.
+	// pullRequestRegexp is regular expression that describes an uri of a pull request.
 	pullRequestRegexp = regexp.MustCompile(`^https://github\.com/([a-zA-Z0-9-._]+)/([a-zA-Z0-9-._]+)/pull/([0-9]+)$`)
 )
 
@@ -78,7 +78,7 @@ var (
 type Config struct {
 	// API is the path to the API to be configured or generated,
 	// relative to the root of the googleapis repository. It is a directory
-	// name as far as (and including) the version (v1, v2, v1alpha etc). It
+	// name as far as (and including) the version (v1, v2, v1alpha etc.). It
 	// is expected to contain a service config YAML file.
 	// Example: "google/cloud/functions/v2"
 	//
@@ -197,7 +197,7 @@ type Config struct {
 	// PullRequest to target and operate one in the context of a release.
 	//
 	// The pull request should be in the format `https://github.com/{owner}/{repo}/pull/{number}`.
-	// Setting this field for `tag-and-release` means librarian will only attempt
+	// Setting this field for `tag` means librarian will only attempt
 	// to process this exact pull request and not search for other pull requests
 	// that may be ready for tagging and releasing.
 	PullRequest string
@@ -287,7 +287,7 @@ func (c *Config) setupUser() error {
 
 func (c *Config) createWorkRoot() error {
 	if c.WorkRoot != "" {
-		slog.Info("Using specified working directory", "dir", c.WorkRoot)
+		slog.Info("using specified working directory", "dir", c.WorkRoot)
 		return nil
 	}
 	path, err := os.MkdirTemp(tempDir(), "librarian-*")
@@ -295,7 +295,7 @@ func (c *Config) createWorkRoot() error {
 		return err
 	}
 
-	slog.Info("Temporary working directory", "dir", path)
+	slog.Info("temporary working directory", "dir", path)
 	c.WorkRoot = path
 	return nil
 }

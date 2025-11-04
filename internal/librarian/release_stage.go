@@ -29,7 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
-type initRunner struct {
+type stageRunner struct {
 	branch          string
 	commit          bool
 	containerClient ContainerClient
@@ -45,12 +45,12 @@ type initRunner struct {
 	workRoot        string
 }
 
-func newInitRunner(cfg *config.Config) (*initRunner, error) {
+func newStageRunner(cfg *config.Config) (*stageRunner, error) {
 	runner, err := newCommandRunner(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create init runner: %w", err)
+		return nil, fmt.Errorf("failed to create stage runner: %w", err)
 	}
-	return &initRunner{
+	return &stageRunner{
 		branch:          cfg.Branch,
 		commit:          cfg.Commit,
 		containerClient: runner.containerClient,
@@ -67,20 +67,20 @@ func newInitRunner(cfg *config.Config) (*initRunner, error) {
 	}, nil
 }
 
-func (r *initRunner) run(ctx context.Context) error {
+func (r *stageRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output dir: %s", outputDir)
 	}
-	slog.Info("Initiating a release", "dir", outputDir)
-	if err := r.runInitCommand(ctx, outputDir); err != nil {
+	slog.Info("staging a release", "dir", outputDir)
+	if err := r.runStageCommand(ctx, outputDir); err != nil {
 		return err
 	}
 
 	// No need to update the librarian state if there are no libraries
 	// that need to be released
 	if !hasLibrariesToRelease(r.state.Libraries) {
-		slog.Info("No release created; skipping the commit/PR")
+		slog.Info("no release created; skipping the commit/PR")
 		return nil
 	}
 
@@ -101,7 +101,7 @@ func (r *initRunner) run(ctx context.Context) error {
 		commitMessage: "chore: create a release",
 		ghClient:      r.ghClient,
 		prType:        pullRequestRelease,
-		// Newly created PRs from the `release init` command should have a
+		// Newly created PRs from the `release stage` command should have a
 		// `release:pending` GitHub tab to be tracked for release.
 		pullRequestLabels: []string{"release:pending"},
 		push:              r.push,
@@ -129,7 +129,7 @@ func hasLibrariesToRelease(libraryStates []*config.LibraryState) bool {
 	return false
 }
 
-func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error {
+func (r *stageRunner) runStageCommand(ctx context.Context, outputDir string) error {
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
 	if r.library != "" {
@@ -161,11 +161,11 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 	}
 
 	if !foundReleasableLibrary {
-		slog.Info("No libraries need to be released")
+		slog.Info("no libraries need to be released")
 		return nil
 	}
 
-	initRequest := &docker.ReleaseInitRequest{
+	stageRequest := &docker.ReleaseStageRequest{
 		Branch:          r.branch,
 		Commit:          r.commit,
 		LibrarianConfig: r.librarianConfig,
@@ -177,20 +177,20 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 		State:           r.state,
 	}
 
-	if err := r.containerClient.ReleaseInit(ctx, initRequest); err != nil {
+	if err := r.containerClient.ReleaseStage(ctx, stageRequest); err != nil {
 		return err
 	}
 
 	// Read the response file.
 	if _, err := readLibraryState(
-		filepath.Join(initRequest.RepoDir, config.LibrarianDir, config.ReleaseInitResponse)); err != nil {
+		filepath.Join(stageRequest.RepoDir, config.LibrarianDir, config.ReleaseStageResponse)); err != nil {
 		return err
 	}
 
 	for _, library := range librariesToRelease {
 		// Copy the library files back if a release is needed
 		if library.ReleaseTriggered {
-			if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir); err != nil {
+			if err := copyLibraryFiles(r.state, r.repo.GetDir(), library.ID, outputDir, false); err != nil {
 				return err
 			}
 		}
@@ -201,7 +201,7 @@ func (r *initRunner) runInitCommand(ctx context.Context, outputDir string) error
 
 // processLibrary wrapper to process the library for release. Helps retrieve latest commits
 // since the last release and passing the changes to updateLibrary.
-func (r *initRunner) processLibrary(library *config.LibraryState) error {
+func (r *stageRunner) processLibrary(library *config.LibraryState) error {
 	var tagName string
 	if library.Version != "0.0.0" {
 		tagFormat := config.DetermineTagFormat(library.ID, library, r.librarianConfig)
@@ -243,13 +243,13 @@ func filterCommitsByLibraryID(commits []*gitrepo.ConventionalCommit, libraryID s
 // 2. Updates the library's previous version and the new current version.
 //
 // 3. Set the library's release trigger to true.
-func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitrepo.ConventionalCommit) error {
+func (r *stageRunner) updateLibrary(library *config.LibraryState, commits []*gitrepo.ConventionalCommit) error {
 	var nextVersion string
 	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
 	if r.libraryVersion != "" {
-		slog.Info("Library version override inputted", "currentVersion", library.Version, "inputVersion", r.libraryVersion)
+		slog.Info("library version override inputted", "currentVersion", library.Version, "inputVersion", r.libraryVersion)
 		nextVersion = semver.MaxVersion(library.Version, r.libraryVersion)
-		slog.Debug("Determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
+		slog.Debug("determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
 		// Currently, nextVersion is the max of current version or input version. If nextVersion is equal to the current version,
 		// then the input version is either equal or less than current version and cannot be used for release
 		if nextVersion == library.Version {
@@ -261,18 +261,18 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitr
 		if err != nil {
 			return err
 		}
-		slog.Debug("Determined the library's next version from commits", "library", library.ID, "nextVersion", nextVersion)
+		slog.Debug("determined the library's next version from commits", "library", library.ID, "nextVersion", nextVersion)
 		// Unable to find a releasable unit from the changes
 		if nextVersion == library.Version {
 			// No library was inputted for release. Skipping this library for release
 			if r.library == "" {
-				slog.Info("Library does not have any releasable units and will not be released.", "library", library.ID, "version", library.Version)
+				slog.Info("library does not have any releasable units and will not be released.", "library", library.ID, "version", library.Version)
 				return nil
 			}
 			// Library was inputted for release, but does not contain a releasable unit
 			return fmt.Errorf("library does not have a releasable unit and will not be released. Use the version flag to force a release for: %s", library.ID)
 		}
-		slog.Info("Updating library to the next version", "library", library.ID, "currentVersion", library.Version, "nextVersion", nextVersion)
+		slog.Info("updating library to the next version", "library", library.ID, "currentVersion", library.Version, "nextVersion", nextVersion)
 	}
 
 	// Update the previous version, we need this value when creating release note.
@@ -285,20 +285,20 @@ func (r *initRunner) updateLibrary(library *config.LibraryState, commits []*gitr
 
 // determineNextVersion determines the next valid SemVer version from the commits or from
 // the next_version override value in the config.yaml file.
-func (r *initRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+func (r *stageRunner) determineNextVersion(commits []*gitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
 	if err != nil {
 		return "", err
 	}
 
 	if r.librarianConfig == nil {
-		slog.Debug("No librarian config")
+		slog.Debug("no librarian config")
 		return nextVersionFromCommits, nil
 	}
 
 	// Look for next_version override from config.yaml
 	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
-	slog.Debug("Looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
+	slog.Debug("looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
 	if libraryConfig == nil || libraryConfig.NextVersion == "" {
 		return nextVersionFromCommits, nil
 	}

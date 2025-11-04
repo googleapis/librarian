@@ -97,7 +97,7 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 	if triggerName == "stage-release" {
 		_, week := dateTime.ISOWeek()
 		if week%2 == 0 && !forceRun {
-			slog.Info("Skipping stage-release on an even week.")
+			slog.Info("skipping stage-release on an even week.")
 			return nil
 		}
 	}
@@ -124,12 +124,12 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 			repositoryOwner := parts[len(parts)-2]
 			prs, err := ghClient.FindMergedPullRequestsWithPendingReleaseLabel(ctx, repositoryOwner, repository.Name)
 			if err != nil {
-				slog.Error("Error finding merged pull requests for publish-release", slog.Any("err", err), slog.String("repository", repository.Name))
+				slog.Error("error finding merged pull requests for publish-release", slog.Any("err", err), slog.String("repository", repository.Name))
 				errs = append(errs, err)
 				continue
 			}
 			if len(prs) == 0 {
-				slog.Info("No pull requests with label 'release:pending' found. Skipping 'publish-release' trigger.", slog.String("repository", repository.Name))
+				slog.Info("no pull requests with label 'release:pending' found. Skipping 'publish-release' trigger.", slog.String("repository", repository.Name))
 				continue
 			} else {
 				substitutions["_PR"] = fmt.Sprintf("%v", prs[0].GetHTMLURL())
@@ -140,7 +140,7 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 		}
 		err = runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions)
 		if err != nil {
-			slog.Error("Error triggering cloudbuild", slog.Any("err", err))
+			slog.Error("error triggering cloudbuild", slog.Any("err", err))
 			errs = append(errs, err)
 		}
 	}

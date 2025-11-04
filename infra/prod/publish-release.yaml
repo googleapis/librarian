@@ -14,7 +14,7 @@
 # This Cloud Build configuration is used by a Louhi flow for the Artifact
 # Registry (AR) Exit Gate process (go/cloud-sdk-ar-exit-gate-onboarding).
 #
-# This runs the `librarian release tag-and-release` command with a provided repository,
+# This runs the `librarian release tag` command with a provided repository,
 # secret name, and optional PR
 steps:
   - name: gcr.io/cloud-builders/git
@@ -31,7 +31,7 @@ steps:
     waitFor: ['clone-language-repo']
     args:
       - 'release'
-      - 'tag-and-release'
+      - 'tag'
       - '-repo'
       - '/workspace/$_REPOSITORY'
       - '-pr'

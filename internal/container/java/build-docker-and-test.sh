@@ -22,7 +22,7 @@ echo "Building Docker image..."
 docker build -t "${IMAGE_NAME}" "${SCRIPT_DIR}"
 
 echo "Running version check..."
-output=$(docker run --rm -e GOOGLE_SDK_JAVA_LOGGING_LEVEL=quiet "${IMAGE_NAME}" --version)
+output=$(docker run --rm -e LIBRARIAN_GOOGLE_SDK_JAVA_LOGGING_LEVEL=quiet "${IMAGE_NAME}" --version)
 
 if [[ ! "$output" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "Version format is incorrect. Got: $output"

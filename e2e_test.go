@@ -13,11 +13,11 @@
 // limitations under the License.
 
 //go:build e2e
-// +build e2e
 
 package librarian
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -136,7 +136,8 @@ func TestRunGenerate(t *testing.T) {
 			cmd := exec.Command("go", cmdArgs...)
 			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
 			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
-			cmd.Stderr = os.Stderr
+			var stderr bytes.Buffer
+			cmd.Stderr = &stderr
 			cmd.Stdout = os.Stdout
 			err := cmd.Run()
 			if test.wantErr {
@@ -144,6 +145,9 @@ func TestRunGenerate(t *testing.T) {
 					t.Fatalf("%s should fail", test.name)
 				}
 
+				if g, w := stderr.String(), "level=ERROR"; !strings.Contains(g, w) {
+					t.Errorf("got %q, wanted it to contain %q", stderr.String(), w)
+				}
 				// the exact message is not populated here, but we can check it's
 				// indeed an error returned from docker container.
 				if g, w := err.Error(), "exit status 1"; !strings.Contains(g, w) {
@@ -426,7 +430,7 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 	}
 }
 
-func TestReleaseInit(t *testing.T) {
+func TestReleaseStage(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name        string
@@ -441,7 +445,7 @@ func TestReleaseInit(t *testing.T) {
 	}{
 		{
 			name:        "release with multiple commits",
-			testDataDir: "testdata/e2e/release/init/multiple_commits",
+			testDataDir: "testdata/e2e/release/stage/multiple_commits",
 			libraryID:   "go-google-cloud-pubsub-v1",
 			changePath:  "google-cloud-pubsub/v1",
 			tagID:       "go-google-cloud-pubsub-v1",
@@ -450,7 +454,7 @@ func TestReleaseInit(t *testing.T) {
 		},
 		{
 			name:        "release with multiple commits with push",
-			testDataDir: "testdata/e2e/release/init/multiple_commits",
+			testDataDir: "testdata/e2e/release/stage/multiple_commits",
 			libraryID:   "go-google-cloud-pubsub-v1",
 			changePath:  "google-cloud-pubsub/v1",
 			tagID:       "go-google-cloud-pubsub-v1",
@@ -460,7 +464,7 @@ func TestReleaseInit(t *testing.T) {
 		},
 		{
 			name:        "release with multiple nested commits",
-			testDataDir: "testdata/e2e/release/init/multiple_nested_commits",
+			testDataDir: "testdata/e2e/release/stage/multiple_nested_commits",
 			libraryID:   "python-google-cloud-video-live-stream-v1",
 			changePath:  "packages/google-cloud-video-live-stream",
 			tagID:       "python-google-cloud-video-live-stream-v1",
@@ -469,7 +473,7 @@ func TestReleaseInit(t *testing.T) {
 		},
 		{
 			name:        "release with single commit",
-			testDataDir: "testdata/e2e/release/init/single_commit",
+			testDataDir: "testdata/e2e/release/stage/single_commit",
 			libraryID:   "dlp",
 			changePath:  "dlp",
 			tagID:       "dlp",
@@ -525,7 +529,7 @@ func TestReleaseInit(t *testing.T) {
 				"-tags", "e2etest",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
-				"init",
+				"stage",
 				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--library=%s", test.libraryID),
@@ -541,7 +545,7 @@ func TestReleaseInit(t *testing.T) {
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
 			if err := cmd.Run(); err != nil {
-				t.Fatalf("Failed to run release init: %v", err)
+				t.Fatalf("Failed to run release stage: %v", err)
 			}
 
 			// Verify the state.yaml file content
@@ -585,7 +589,7 @@ func TestReleaseInit(t *testing.T) {
 	}
 }
 
-func TestReleaseTagAndRelease(t *testing.T) {
+func TestReleaseTag(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		prBody   string
@@ -608,7 +612,7 @@ func TestReleaseTagAndRelease(t *testing.T) {
 ### Features
 - feat: new feature
 </details>`,
-			repoPath: "testdata/e2e/release/init/single_commit",
+			repoPath: "testdata/e2e/release/stage/single_commit",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -617,7 +621,7 @@ func TestReleaseTagAndRelease(t *testing.T) {
 			// Set up a mock GitHub API server using httptest.
 			// This server will intercept HTTP requests made by the librarian command
 			// and provide canned responses, avoiding any real calls to the GitHub API.
-			// The handlers below simulate the endpoints that 'release tag-and-release' interacts with.
+			// The handlers below simulate the endpoints that 'release tag' interacts with.
 			var server *httptest.Server
 			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				// Verify that the GitHub token is being sent correctly.
@@ -727,7 +731,7 @@ libraries:
 				"run",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
-				"tag-and-release",
+				"tag",
 				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--github-api-endpoint=%s/", server.URL),
 				"--pr=https://github.com/googleapis/librarian/pull/123",
@@ -742,7 +746,7 @@ libraries:
 			cmd.Stdout = os.Stdout
 			if err := cmd.Run(); err != nil {
 				if !test.wantErr {
-					t.Fatalf("Failed to run release tag-and-release: %v", err)
+					t.Fatalf("Failed to run release tag: %v", err)
 				}
 			}
 		})

@@ -36,10 +36,10 @@ import (
 )
 
 const (
-	pullRequestSegments  = 7
-	tagAndReleaseCmdName = "tag-and-release"
-	releasePendingLabel  = "release:pending"
-	releaseDoneLabel     = "release:done"
+	pullRequestSegments = 7
+	tagCmdName          = "tag"
+	releasePendingLabel = "release:pending"
+	releaseDoneLabel    = "release:done"
 )
 
 var (
@@ -56,7 +56,7 @@ var (
 `))
 )
 
-type tagAndReleaseRunner struct {
+type tagRunner struct {
 	ghClient    GitHubClient
 	pullRequest string
 }
@@ -77,7 +77,7 @@ type libraryReleaseBuilder struct {
 	version        string
 }
 
-func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
+func newTagRunner(cfg *config.Config) (*tagRunner, error) {
 	if cfg.GitHubToken == "" {
 		return nil, fmt.Errorf("`%s` must be set", config.LibrarianGithubToken)
 	}
@@ -95,7 +95,7 @@ func newTagAndReleaseRunner(cfg *config.Config) (*tagAndReleaseRunner, error) {
 		}
 		ghClient.BaseURL = endpoint
 	}
-	return &tagAndReleaseRunner{
+	return &tagRunner{
 		ghClient:    ghClient,
 		pullRequest: cfg.PullRequest,
 	}, nil
@@ -119,8 +119,8 @@ func parseRemote(repo string) (*github.Repository, error) {
 	return GetGitHubRepositoryFromGitRepo(githubRepo)
 }
 
-func (r *tagAndReleaseRunner) run(ctx context.Context) error {
-	slog.Info("running tag-and-release command")
+func (r *tagRunner) run(ctx context.Context) error {
+	slog.Info("running tag command")
 	prs, err := r.determinePullRequestsToProcess(ctx)
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func (r *tagAndReleaseRunner) run(ctx context.Context) error {
 	return nil
 }
 
-func (r *tagAndReleaseRunner) determinePullRequestsToProcess(ctx context.Context) ([]*github.PullRequest, error) {
+func (r *tagRunner) determinePullRequestsToProcess(ctx context.Context) ([]*github.PullRequest, error) {
 	slog.Info("determining pull requests to process")
 	if r.pullRequest != "" {
 		slog.Info("processing a single pull request", "pr", r.pullRequest)
@@ -176,7 +176,7 @@ func (r *tagAndReleaseRunner) determinePullRequestsToProcess(ctx context.Context
 	return prs, nil
 }
 
-func (r *tagAndReleaseRunner) processPullRequest(ctx context.Context, p *github.PullRequest) error {
+func (r *tagRunner) processPullRequest(ctx context.Context, p *github.PullRequest) error {
 	slog.Info("processing pull request", "pr", p.GetNumber())
 	releases := parsePullRequestBody(p.GetBody())
 	if len(releases) == 0 {
@@ -315,7 +315,7 @@ func parsePullRequestBody(body string) []libraryRelease {
 }
 
 // replacePendingLabel is a helper function that replaces the `release:pending` label with `release:done`.
-func (r *tagAndReleaseRunner) replacePendingLabel(ctx context.Context, p *github.PullRequest) error {
+func (r *tagRunner) replacePendingLabel(ctx context.Context, p *github.PullRequest) error {
 	var currentLabels []string
 	for _, label := range p.Labels {
 		currentLabels = append(currentLabels, label.GetName())
