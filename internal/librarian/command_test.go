@@ -2309,6 +2309,17 @@ func TestWriteTiming_BadWorkRoot(t *testing.T) {
 	}
 }
 
+func TestWriteTiming_EmptyMap(t *testing.T) {
+	workRoot := filepath.Join(t.TempDir())
+	timeByLibrary := map[string]time.Duration{}
+	if err := writeTiming(workRoot, timeByLibrary); err != nil {
+		t.Fatal("writeTiming() failed", err)
+	}
+	if _, err := os.Stat(filepath.Join(workRoot, timingFile)); !os.IsNotExist(err) {
+		t.Error("writeTiming() should not have created a file")
+	}
+}
+
 func TestWriteTiming(t *testing.T) {
 	workRoot := t.TempDir()
 	timeByLibrary := map[string]time.Duration{

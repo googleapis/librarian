@@ -766,6 +766,11 @@ func isURL(s string) bool {
 // in descending order of time, to make it easier to figure out what to
 // focus on. All times are rounded to the nearest millisecond.
 func writeTiming(workRoot string, timeByLibrary map[string]time.Duration) error {
+	if len(timeByLibrary) == 0 {
+		slog.Info("no libraries processed; skipping timing statistics")
+		return nil
+	}
+
 	// Work out the total and average times, and create a slice of timing
 	// by library, sorted in descending order of duration.
 	var total time.Duration
@@ -789,16 +794,16 @@ func writeTiming(workRoot string, timeByLibrary map[string]time.Duration) error 
 	})
 
 	// Create the timing log in memory: one summary line, then one line per library.
-	var lines []string
-	lines = append(lines, fmt.Sprintf("Processed %d libraries in %s; average=%s\n", len(timeByLibrary), total.Round(time.Millisecond), average.Round(time.Millisecond)))
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Processed %d libraries in %s; average=%s\n", len(timeByLibrary), total.Round(time.Millisecond), average.Round(time.Millisecond)))
 
 	for _, ts := range timingStructs {
-		lines = append(lines, fmt.Sprintf("%s: %s\n", ts.LibraryID, ts.Duration.Round(time.Millisecond)))
+		sb.WriteString(fmt.Sprintf("%s: %s\n", ts.LibraryID, ts.Duration.Round(time.Millisecond)))
 	}
 
 	// Write it out to disk.
 	fullPath := filepath.Join(workRoot, timingFile)
-	if err := os.WriteFile(fullPath, []byte(strings.Join(lines, "")), 0644); err != nil {
+	if err := os.WriteFile(fullPath, []byte(sb.String()), 0644); err != nil {
 		return err
 	}
 	slog.Info("wrote timing statistics", "file", fullPath)
