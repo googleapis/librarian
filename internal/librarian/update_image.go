@@ -130,7 +130,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 		} else {
 			successfulGenerations = append(successfulGenerations, libraryState)
 		}
-		timings[libraryState.ID] = time.Now().Sub(startTime)
+		timings[libraryState.ID] = time.Since(startTime)
 	}
 	if len(failedGenerations) > 0 {
 		slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
