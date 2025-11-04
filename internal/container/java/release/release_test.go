@@ -35,40 +35,26 @@ func TestStage(t *testing.T) {
 	}{
 		{
 			name:      "happy path",
-			libraryID: "google-cloud-java",
+			libraryID: "google-cloud-foo",
 			version:   "2.0.0",
-			expected:  "    <version>2.0.0</version><!-- {x-version-update:google-cloud-java:current} -->",
+			expected:  "<version>2.0.0</version><!-- {x-version-update:google-cloud-java:current} -->",
 		},
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			// Copy the testdata pom.xml to the temporary directory.
-			inputPath := filepath.Join("..", "languagecontainer", "release", "testdata", "pom.xml")
-			// The testdata directory does not exist for the new test file, so we need to create it.
-			if err := os.MkdirAll(filepath.Dir(inputPath), 0755); err != nil {
-				t.Fatalf("failed to create testdata directory: %v", err)
-			}
-			outputPath := filepath.Join(tmpDir, "pom.xml")
-			// This is a simple pom.xml that is sufficient for this test.
-			pomContent := `<?xml version="1.0" encoding="UTF-8"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.google.cloud</groupId>
-  <artifactId>google-cloud-java</artifactId>
-  <version>1.0.0</version><!-- {x-version-update:google-cloud-java:current} -->
-  <packaging>pom</packaging>
-</project>
-`
-			if err := os.WriteFile(outputPath, []byte(pomContent), 0644); err != nil {
-				t.Fatalf("failed to write output file: %v", err)
-			}
+			inputPath := filepath.Join("testdata", "java-foo")
 
+			tmpDir := t.TempDir()
+			outputDir := filepath.Join(tmpDir, "output")
+			if err := os.MkdirAll(outputDir, 0755); err != nil {
+				t.Fatalf("failed to create output directory: %v", err)
+			}
 			cfg := &release.Config{
 				Context: &release.Context{
-					RepoDir: tmpDir,
+					RepoDir:   inputPath,
+					OutputDir: outputDir,
 				},
 				Request: &message.ReleaseStageRequest{
 					Libraries: []*message.Library{
@@ -95,11 +81,13 @@ func TestStage(t *testing.T) {
 				if response.Error != "" {
 					t.Errorf("expected success, got error: %s", response.Error)
 				}
-				content, err := os.ReadFile(outputPath)
+				content, err := os.ReadFile(filepath.Join(outputDir, "pom.xml"))
 				if err != nil {
 					t.Fatalf("failed to read output file: %v", err)
 				}
-				if !strings.Contains(string(content), "<version>"+test.version+"</version>") || !strings.Contains(string(content), "<!-- {x-version-update:google-cloud-java:current} -->") {
+				hasExpectedVersion := strings.Contains(string(content), "<version>"+test.version+"</version>")
+				hasAnnotation := strings.Contains(string(content), "<!-- {x-version-update:google-cloud-foo:current} -->")
+				if !hasExpectedVersion || !hasAnnotation {
 					t.Errorf("expected file to contain version %q and comment, got %q", test.version, string(content))
 				}
 			}

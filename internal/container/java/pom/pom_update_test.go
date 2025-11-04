@@ -89,11 +89,12 @@ func TestUpdateVersion(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			pomPath := filepath.Join(tmpDir, "pom.xml")
+			outPath := filepath.Join(tmpDir, "out", "pom.xml")
 			if err := os.WriteFile(pomPath, []byte(test.initial), 0644); err != nil {
 				t.Fatalf("failed to write initial pom.xml: %v", err)
 			}
 
-			err := updateVersion(pomPath, test.libraryID, test.version)
+			err := updateVersion(pomPath, outPath, test.libraryID, test.version)
 
 			if test.expectError {
 				if err == nil {
@@ -103,7 +104,7 @@ func TestUpdateVersion(t *testing.T) {
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				content, readErr := os.ReadFile(pomPath)
+				content, readErr := os.ReadFile(outPath)
 				if readErr != nil {
 					t.Fatalf("failed to read pom.xml: %v", readErr)
 				}

@@ -29,7 +29,7 @@ func Stage(ctx context.Context, cfg *release.Config) (*message.ReleaseStageRespo
 	slog.Info("release-stage: invoked", "config", cfg)
 	response := &message.ReleaseStageResponse{}
 	for _, lib := range cfg.Request.Libraries {
-		if err := pom.UpdateVersions(cfg.Context.RepoDir, lib.ID, lib.Version); err != nil {
+		if err := pom.UpdateVersions(cfg.Context.RepoDir, cfg.Context.OutputDir, lib.ID, lib.Version); err != nil {
 			response.Error = err.Error()
 			return response, nil
 		}
