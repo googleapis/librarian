@@ -1,8 +1,21 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package release
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -92,11 +105,11 @@ func TestReleaseStage(t *testing.T) {
 			// Copy the testdata pom.xml to the temporary directory.
 			inputPath := filepath.Join("testdata", "pom.xml")
 			outputPath := filepath.Join(tmpDir, "pom.xml")
-			input, err := ioutil.ReadFile(inputPath)
+			input, err := os.ReadFile(inputPath)
 			if err != nil {
 				t.Fatalf("failed to read input file: %v", err)
 			}
-			if err := ioutil.WriteFile(outputPath, input, 0644); err != nil {
+			if err := os.WriteFile(outputPath, input, 0644); err != nil {
 				t.Fatalf("failed to write output file: %v", err)
 			}
 
@@ -112,20 +125,7 @@ func TestReleaseStage(t *testing.T) {
 
 			// Change the current working directory to the temporary directory.
 			// This is important because UpdateVersions walks the current directory.
-			originalDir, err := filepath.Abs(".")
-			if err != nil {
-				t.Fatalf("failed to get current directory: %v", err)
-			}
-			// The filepath.Walk function is not suitable for changing the current working directory.
-			// Instead, we should change the directory once to the temporary directory.
-			if err := os.Chdir(tmpDir); err != nil {
-				t.Fatalf("failed to change directory to %s: %v", tmpDir, err)
-			}
-			defer func() {
-				if err := os.Chdir(originalDir); err != nil {
-					t.Fatalf("failed to change back to original directory: %v", err)
-				}
-			}()
+			t.Chdir(tmpDir)
 
 			ReleaseStage(request, response)
 
@@ -137,7 +137,7 @@ func TestReleaseStage(t *testing.T) {
 				if response.Error != "" {
 					t.Errorf("expected success, got error: %s", response.Error)
 				}
-				content, err := ioutil.ReadFile(outputPath)
+				content, err := os.ReadFile(outputPath)
 				if err != nil {
 					t.Fatalf("failed to read output file: %v", err)
 				}
