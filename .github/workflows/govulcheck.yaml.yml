@@ -1,9 +1,7 @@
 name: 'Govulncheck Scan & Issue Creator'
-
 on:
   schedule:
     - cron: '0 8 * * *'
-
 jobs:
   scan-and-report:
     name: Run govulncheck and Create Issue
@@ -43,15 +41,15 @@ jobs:
             echo "No existing issue found. Creating a new one."
             # Use heredoc for multi-line string
             read -r -d '' BODY << EOM
-**Automated Vulnerability Report**
-  
-`govulncheck` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the `main` branch.
-  
-Please review the attached `govulncheck-results.json` artifact from this workflow run for details.
+            **Automated Vulnerability Report**
 
-Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-EOM
-  
+            `govulncheck` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the `main` branch.
+
+            Please review the attached `govulncheck-results.json` artifact from this workflow run for details.
+
+            Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            EOM
+
             gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label "vulnerability,security,automated" -R $GH_REPO
           else
             echo "An open issue with this title already exists. Skipping creation."
