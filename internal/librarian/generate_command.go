@@ -198,7 +198,10 @@ func (r *generateRunner) run(ctx context.Context) error {
 		prBodyBuilder:     prBodyBuilder,
 	}
 
-	return commitAndPush(ctx, commitInfo)
+	if err := commitAndPush(ctx, commitInfo); err != nil {
+		return fmt.Errorf("failed to commit and push changes: %w", err)
+	}
+	return nil
 }
 
 // generateSingleLibrary manages the generation of a single client library.

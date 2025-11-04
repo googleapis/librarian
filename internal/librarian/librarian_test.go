@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -92,7 +91,7 @@ func TestVerboseFlag(t *testing.T) {
 			// Reset logger to default for test isolation.
 			slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
 
-			_ = Run(context.Background(), test.args...)
+			_ = Run(t.Context(), test.args...)
 
 			// Restore stderr and read the output.
 			w.Close()
@@ -119,7 +118,7 @@ func TestVerboseFlag(t *testing.T) {
 }
 
 func TestGenerate_DefaultBehavior(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// 1. Set up a mock repository with a state file
 	repo := newTestGitRepo(t)

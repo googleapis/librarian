@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -26,7 +27,7 @@ import (
 )
 
 func main() {
-	if err := automation.Run(os.Args[1:]); err != nil {
+	if err := automation.Run(context.Background(), os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
 }

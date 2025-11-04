@@ -1020,7 +1020,7 @@ func TestReleaseStageRequestContent(t *testing.T) {
 		Output:          filepath.Join(tmpDir, "output"),
 		LibrarianConfig: &config.LibrarianConfig{},
 	}
-	if err := d.ReleaseStage(context.Background(), req); err != nil {
+	if err := d.ReleaseStage(t.Context(), req); err != nil {
 		t.Fatalf("d.ReleaseStage() failed: %v", err)
 	}
 }

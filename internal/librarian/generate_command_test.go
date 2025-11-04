@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -358,7 +357,7 @@ func TestRunConfigureCommand(t *testing.T) {
 				}
 			}
 
-			_, err := r.runConfigureCommand(context.Background(), outputDir)
+			_, err := r.runConfigureCommand(t.Context(), outputDir)
 
 			if test.wantErr {
 				if err == nil {
@@ -949,7 +948,7 @@ func TestGenerateScenarios(t *testing.T) {
 				}
 			}
 
-			err := r.run(context.Background())
+			err := r.run(t.Context())
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
@@ -1066,7 +1065,7 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 				}
 			}
 
-			status, err := r.generateSingleLibrary(context.Background(), r.library, r.workRoot)
+			status, err := r.generateSingleLibrary(t.Context(), r.library, r.workRoot)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)

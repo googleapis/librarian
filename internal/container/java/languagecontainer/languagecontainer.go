@@ -44,7 +44,7 @@ type LanguageContainer struct {
 // Run accepts an implementation of the LanguageContainer.
 // The args parameter contains the command-line arguments passed to the container,
 // without including the program name. Usually it's os.Args[1:].
-func Run(args []string, container *LanguageContainer) int {
+func Run(ctx context.Context, args []string, container *LanguageContainer) int {
 	// Logic to parse args and call the appropriate method on the container.
 	// For example, if args[1] is "generate":
 	//   request := ... // unmarshal the request from the expected location
@@ -61,7 +61,7 @@ func Run(args []string, container *LanguageContainer) int {
 			slog.Error("languagecontainer: generate command is not implemented")
 			return 1
 		}
-		return handleGenerate(flags, container)
+		return handleGenerate(ctx, flags, container)
 	case "configure":
 		slog.Warn("languagecontainer: configure command is missing")
 		return 1
@@ -70,7 +70,7 @@ func Run(args []string, container *LanguageContainer) int {
 			slog.Error("languagecontainer: generate command is missing")
 			return 1
 		}
-		return handleReleaseStage(flags, container)
+		return handleReleaseStage(ctx, flags, container)
 	case "build":
 		slog.Warn("languagecontainer: build command is not yet implemented")
 		return 1
@@ -80,7 +80,7 @@ func Run(args []string, container *LanguageContainer) int {
 	}
 }
 
-func handleGenerate(flags []string, container *LanguageContainer) int {
+func handleGenerate(ctx context.Context, flags []string, container *LanguageContainer) int {
 	genCtx := &generate.Context{}
 	generateFlags := flag.NewFlagSet("generate", flag.ContinueOnError)
 	generateFlags.StringVar(&genCtx.LibrarianDir, "librarian", "/librarian", "Path to the librarian-tool input directory. Contains generate-request.json.")
@@ -96,7 +96,7 @@ func handleGenerate(flags []string, container *LanguageContainer) int {
 		slog.Error("failed to create generate config", "error", err)
 		return 1
 	}
-	if err := container.Generate(context.Background(), cfg); err != nil {
+	if err := container.Generate(ctx, cfg); err != nil {
 		slog.Error("generate failed", "error", err)
 		return 1
 	}
@@ -104,7 +104,7 @@ func handleGenerate(flags []string, container *LanguageContainer) int {
 	return 0
 }
 
-func handleReleaseStage(flags []string, container *LanguageContainer) int {
+func handleReleaseStage(ctx context.Context, flags []string, container *LanguageContainer) int {
 	cfg := &release.Context{}
 	releaseInitFlags := flag.NewFlagSet("release-stage", flag.ContinueOnError)
 	releaseInitFlags.StringVar(&cfg.LibrarianDir, "librarian", "/librarian", "Path to the librarian-tool input directory. Contains release-stage-request.json.")
@@ -129,7 +129,7 @@ func handleReleaseStage(flags []string, container *LanguageContainer) int {
 		Context: cfg,
 		Request: request,
 	}
-	response, err := container.ReleaseStage(context.Background(), config)
+	response, err := container.ReleaseStage(ctx, config)
 	if err != nil {
 		slog.Error("release-stage failed", "error", err)
 		return 1

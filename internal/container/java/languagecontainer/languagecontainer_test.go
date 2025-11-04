@@ -100,7 +100,7 @@ func TestRun(t *testing.T) {
 					return &message.ReleaseStageResponse{}, nil
 				},
 			}
-			if gotCode := Run(tt.args, &container); gotCode != tt.wantCode {
+			if gotCode := Run(context.Background(), tt.args, &container); gotCode != tt.wantCode {
 				t.Errorf("Run() = %v, want %v", gotCode, tt.wantCode)
 			}
 		})
@@ -113,7 +113,7 @@ func TestRun_noArgs(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
-	Run([]string{}, &LanguageContainer{})
+	Run(context.Background(), []string{}, &LanguageContainer{})
 }
 
 func TestRun_ReleaseStageWritesResponse(t *testing.T) {
@@ -129,7 +129,7 @@ func TestRun_ReleaseStageWritesResponse(t *testing.T) {
 		},
 	}
 
-	if code := Run(args, &container); code != 0 {
+	if code := Run(context.Background(), args, &container); code != 0 {
 		t.Errorf("Run() = %v, want 0", code)
 	}
 
@@ -172,7 +172,7 @@ func TestRun_ReleaseStageReadsContextArgs(t *testing.T) {
 			return &message.ReleaseStageResponse{}, nil
 		},
 	}
-	if code := Run(args, &container); code != 0 {
+	if code := Run(context.Background(), args, &container); code != 0 {
 		t.Errorf("Run() = %v, want 0", code)
 	}
 	if got, want := gotConfig.Context.LibrarianDir, librarianDir; got != want {
@@ -216,7 +216,7 @@ func TestRun_GenerateReadsContextArgs(t *testing.T) {
 			return nil
 		},
 	}
-	if code := Run(args, &container); code != 0 {
+	if code := Run(context.Background(), args, &container); code != 0 {
 		t.Errorf("Run() = %v, want 0", code)
 	}
 	if got, want := gotConfig.Context.LibrarianDir, librarianDir; got != want {
@@ -260,7 +260,7 @@ func TestRun_unimplementedCommands(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotCode := Run(tt.args, tt.container); gotCode != 1 {
+			if gotCode := Run(context.Background(), tt.args, tt.container); gotCode != 1 {
 				t.Errorf("Run() = %v, want 1", gotCode)
 			}
 		})

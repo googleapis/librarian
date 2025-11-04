@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/gitrepo"
@@ -124,7 +125,9 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 		return err
 	}
 	outputDir := filepath.Join(r.workRoot, "output")
+	timings := map[string]time.Duration{}
 	for _, libraryState := range r.state.Libraries {
+		startTime := time.Now()
 		err := r.regenerateSingleLibrary(ctx, libraryState, outputDir)
 		if err != nil {
 			slog.Error(err.Error(), "library", libraryState.ID, "commit", libraryState.LastGeneratedCommit)
@@ -133,11 +136,15 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 		} else {
 			successfulGenerations = append(successfulGenerations, libraryState)
 		}
+		timings[libraryState.ID] = time.Since(startTime)
 	}
 	if len(failedGenerations) > 0 {
 		slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
 	}
 	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
+	if err := writeTiming(r.workRoot, timings); err != nil {
+		return err
+	}
 
 	// Restore api source repo
 	if err := r.sourceRepo.Checkout(sourceHead); err != nil {
