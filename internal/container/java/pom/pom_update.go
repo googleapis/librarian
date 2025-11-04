@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	versionRegex = regexp.MustCompile(`(<version>)([^<]+)(\s*<!-- \{x-version-update:([^:]+):current\} -->\s*</version>)`)
+	versionRegex = regexp.MustCompile(`(<version>)([^<]+)(</version>\s*<!-- \{x-version-update:([^:]+):current\} -->)`)
 )
 
 // UpdateVersions updates the versions of all pom.xml files in a given directory.

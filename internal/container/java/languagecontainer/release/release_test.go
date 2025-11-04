@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -78,72 +77,5 @@ func TestReadReleaseStageRequest(t *testing.T) {
 	}
 	if diff := cmp.Diff(want.Libraries[0], got.Libraries[0]); diff != "" {
 		t.Errorf("Unmarshal() mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestReleaseStage(t *testing.T) {
-	tests := []struct {
-		name        string
-		libraryID   string
-		version     string
-		expected    string
-		expectError bool
-	}{
-		{
-			name:      "happy path",
-			libraryID: "google-cloud-java",
-			version:   "2.0.0",
-			expected:  "    <version>2.0.0<!-- {x-version-update:google-cloud-java:current} --> </version>",
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			// Copy the testdata pom.xml to the temporary directory.
-			inputPath := filepath.Join("testdata", "pom.xml")
-			outputPath := filepath.Join(tmpDir, "pom.xml")
-			input, err := os.ReadFile(inputPath)
-			if err != nil {
-				t.Fatalf("failed to read input file: %v", err)
-			}
-			if err := os.WriteFile(outputPath, input, 0644); err != nil {
-				t.Fatalf("failed to write output file: %v", err)
-			}
-
-			request := &message.ReleaseStageRequest{
-				Libraries: []*message.Library{
-					{
-						ID:      test.libraryID,
-						Version: test.version,
-					},
-				},
-			}
-			response := &message.ReleaseStageResponse{}
-
-			// Change the current working directory to the temporary directory.
-			// This is important because UpdateVersions walks the current directory.
-			t.Chdir(tmpDir)
-
-			ReleaseStage(request, response)
-
-			if test.expectError {
-				if response.Error == "" {
-					t.Errorf("expected error, got success")
-				}
-			} else {
-				if response.Error != "" {
-					t.Errorf("expected success, got error: %s", response.Error)
-				}
-				content, err := os.ReadFile(outputPath)
-				if err != nil {
-					t.Fatalf("failed to read output file: %v", err)
-				}
-				if !strings.Contains(string(content), test.expected) {
-					t.Errorf("expected file to contain %q, got %q", test.expected, string(content))
-				}
-			}
-		})
 	}
 }

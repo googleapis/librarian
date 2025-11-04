@@ -21,11 +21,18 @@ import (
 
 	"github.com/googleapis/librarian/internal/container/java/languagecontainer/release"
 	"github.com/googleapis/librarian/internal/container/java/message"
+	"github.com/googleapis/librarian/internal/container/java/pom"
 )
 
 // Stage executes the release stage command.
 func Stage(ctx context.Context, cfg *release.Config) (*message.ReleaseStageResponse, error) {
 	slog.Info("release-stage: invoked", "config", cfg)
-	// TODO(suztomo): implement release-stage.
-	return &message.ReleaseStageResponse{}, nil
+	response := &message.ReleaseStageResponse{}
+	for _, lib := range cfg.Request.Libraries {
+		if err := pom.UpdateVersions(cfg.Context.RepoDir, lib.ID, lib.Version); err != nil {
+			response.Error = err.Error()
+			return response, nil
+		}
+	}
+	return response, nil
 }
