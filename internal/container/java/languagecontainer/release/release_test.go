@@ -70,12 +70,7 @@ func TestReadReleaseStageRequest(t *testing.T) {
 	if err := json.Unmarshal(bytes, got); err != nil {
 		t.Fatal(err)
 	}
-	// We can't compare the entire struct because the testdata file has more fields
-	// than the want struct. Instead, we'll just compare the fields we care about.
-	if len(got.Libraries) != 1 {
-		t.Fatalf("got %d libraries, want %d", len(got.Libraries), 1)
-	}
-	if diff := cmp.Diff(want.Libraries[0], got.Libraries[0]); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("Unmarshal() mismatch (-want +got):\n%s", diff)
 	}
 }

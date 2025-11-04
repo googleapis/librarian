@@ -15,9 +15,7 @@
 // Package release contains types for language container's release command.
 package release
 
-import (
-	"github.com/googleapis/librarian/internal/container/java/message"
-)
+import "github.com/googleapis/librarian/internal/container/java/message"
 
 // Context has the directory paths for the release-stage command.
 // https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#release-stage

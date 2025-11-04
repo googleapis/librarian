@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.google.cloud</groupId>
-  <artifactId>google-cloud-java</artifactId>
-  <version>1.0.0</version>
-  <packaging>pom</packaging>
-</project>
