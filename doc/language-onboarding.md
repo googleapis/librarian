@@ -100,16 +100,6 @@ The container is expected to produce up to two artifacts:
 {
   "libraries": [
     {
-      "id": "secretmanager",
-      "apis": [
-        {
-          "path": "google/cloud/secretmanager/v1",
-          "service_config": "secretmanager_v1.yaml",
-          "status": "new"
-        }
-      ],
-    },
-    {
       "id": "pubsub",
       "apis": [
         {
@@ -119,6 +109,16 @@ The container is expected to produce up to two artifacts:
         }
       ],
       "source_roots": [ "pubsub" ]
+    },
+    {
+      "id": "secretmanager",
+      "apis": [
+        {
+          "path": "google/cloud/secretmanager/v1",
+          "service_config": "secretmanager_v1.yaml",
+          "status": "new"
+        }
+      ]
     }
   ]
 }
