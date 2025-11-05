@@ -48,10 +48,10 @@ request.`)
 
 func addFlagCheckUnexpectedChanges(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.CheckUnexpectedChanges, "check-unexpected-changes", false,
-		`Defaults to false. Specify true to include additional steps to check that
-no files are added or deleted, and no extra file changes are introduced other than the
-ones affected by proto changes. Note: you may want to skip this check if you are
-testing a container image change that is expected to add or delete files.`)
+		`Defaults to false. When used with --test, this flag verifies that no
+unexpected files are added, deleted, or modified outside of the changes caused
+by proto updates. You may want to skip this check when testing a container image
+change that is expected to add or delete files.`)
 }
 
 func addFlagCommit(fs *flag.FlagSet, cfg *config.Config) {
@@ -94,7 +94,8 @@ This corresponds to a releasable language unit.`)
 
 func addFlagLibraryToTest(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.LibraryToTest, "library-to-test", "",
-		`The library ID to test (e.g. google-cloud-secretmanager-v1).`)
+		`When used with --test, this flag specifies the library ID to test
+(e.g. secretmanager). Will test on all configured libraries if omitted.`)
 }
 
 func addFlagLibraryVersion(fs *flag.FlagSet, cfg *config.Config) {
@@ -130,7 +131,10 @@ is configured as a language repository.`)
 
 func addFlagTest(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Test, "test", false,
-		`If true, Librarian will run a test after generation.`)
+		`If true, run container tests after generation but before committing and pushing.
+These tests verify the interaction between language containers and the Librarian CLI's
+'generate' command. If a test fails, temporary branches and files will be preserved for
+debugging. This flag can be used with 'library-to-test' and 'check-unexpected-changes'.`)
 }
 
 func addFlagWorkRoot(fs *flag.FlagSet, cfg *config.Config) {

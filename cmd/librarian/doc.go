@@ -308,10 +308,10 @@ Flags:
 	  	If true, Librarian will build each generated library by invoking the
 	  	language-specific container.
 	-check-unexpected-changes
-	  	Defaults to false. Specify true to include additional steps to check that
-	  	no files are added or deleted, and no extra file changes are introduced other than the
-	  	ones affected by proto changes. Note: you may want to skip this check if you are
-	  	testing a container image change that is expected to add or delete files.
+	  	Defaults to false. When used with --test, this flag verifies that no
+	  	unexpected files are added, deleted, or modified outside of the changes caused
+	  	by proto updates. You may want to skip this check when testing a container image
+	  	change that is expected to add or delete files.
 	-commit
 	  	If true, librarian will create a commit for the change but not create
 	  	a pull request. This flag is ignored if push is set to true.
@@ -323,7 +323,8 @@ Flags:
 	  	Language specific image used to invoke code generation and releasing.
 	  	If not specified, the image configured in the state.yaml is used.
 	-library-to-test string
-	  	The library ID to test (e.g. google-cloud-secretmanager-v1).
+	  	When used with --test, this flag specifies the library ID to test
+	  	(e.g. secretmanager). Will test on all configured libraries if omitted.
 	-output string
 	  	Working directory root. When this is not specified, a working directory
 	  	will be created in /tmp.
@@ -339,7 +340,10 @@ Flags:
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
 	-test
-	  	If true, Librarian will run a test after generation.
+	  	If true, run container tests after generation but before committing and pushing.
+	  	These tests verify the interaction between language containers and the Librarian CLI's
+	  	'generate' command. If a test fails, temporary branches and files will be preserved for
+	  	debugging. This flag can be used with 'library-to-test' and 'check-unexpected-changes'.
 	-v	enables verbose logging
 
 # version

@@ -181,7 +181,7 @@ type Config struct {
 	// api is specified all currently managed libraries will be regenerated.
 	Library string
 
-	// LibraryToTest is the library ID to test (e.g. google-cloud-secretmanager-v1 ).
+	// LibraryToTest is the library ID to test (e.g. secretmanager).
 	LibraryToTest string
 
 	// LibraryVersion is the library version to release.
