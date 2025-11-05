@@ -40,7 +40,7 @@ func TestStage(t *testing.T) {
 				"java-foo",
 			},
 			version:  "2.0.0",
-			expected: "<version>2.0.0</version><!-- {x-version-update:google-cloud-foo:current} -->",
+			expected: "<version>2.0.0-SNAPSHOT</version><!-- {x-version-update:google-cloud-foo:current} -->",
 		},
 		{
 			name:      "Source Paths not matching the folder",

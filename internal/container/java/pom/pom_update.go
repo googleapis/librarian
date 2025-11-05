@@ -26,6 +26,7 @@ var (
 )
 
 // UpdateVersions updates the versions of all pom.xml files in a given directory.
+// It appends the "-SNAPSHOT" suffix to the version given the version parameter.
 // If the direcory is not present, it creates it.
 func UpdateVersions(repoDir, sourcePath, outputDir, libraryID, version string) error {
 	pomFiles, err := findPomFiles(sourcePath)
@@ -49,6 +50,7 @@ func UpdateVersions(repoDir, sourcePath, outputDir, libraryID, version string) e
 }
 
 // updateVersion updates the version in a single pom.xml file.
+// It appends the "-SNAPSHOT" suffix to the the version parameter.
 // The directory for outputPath must already exist.
 func updateVersion(inputPath, outputPath, libraryID, version string) error {
 	content, err := os.ReadFile(inputPath)
@@ -63,7 +65,7 @@ func updateVersion(inputPath, outputPath, libraryID, version string) error {
 			// matches[2] is the old version
 			// matches[3] is " <!-- {x-version-update:libraryID:current} --> </version>"
 			// matches[4] is libraryID
-			return fmt.Sprintf("%s%s%s", matches[1], version, matches[3])
+			return fmt.Sprintf("%s%s-SNAPSHOT%s", matches[1], version, matches[3])
 		}
 		return s
 	})

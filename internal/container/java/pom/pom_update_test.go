@@ -32,55 +32,55 @@ func TestUpdateVersion(t *testing.T) {
 		{
 			name: "happy path",
 			initial: `<project>
-  <version>1.0.0</version><!-- {x-version-update:google-cloud-java:current} -->
+  <version>1.0.0-SNAPSHOT</version><!-- {x-version-update:google-cloud-java:current} -->
 </project>`,
 			libraryID: "google-cloud-java",
 			version:   "2.0.0",
 			expected: `<project>
-  <version>2.0.0</version><!-- {x-version-update:google-cloud-java:current} -->
+  <version>2.0.0-SNAPSHOT</version><!-- {x-version-update:google-cloud-java:current} -->
 </project>`,
 		},
 		{
 			name: "no match",
 			initial: `<project>
-  <version>1.0.0</version><!-- {x-version-update:google-cloud-java:current} -->
+  <version>1.0.0-SNAPSHOT</version><!-- {x-version-update:google-cloud-java:current} -->
 </project>`,
 			libraryID: "wrong-library-id",
 			version:   "2.0.0",
 			expected: `<project>
-  <version>1.0.0</version><!-- {x-version-update:google-cloud-java:current} -->
+  <version>1.0.0-SNAPSHOT</version><!-- {x-version-update:google-cloud-java:current} -->
 </project>`,
 		},
 		{
 			name: "multiple versions",
 			initial: `<project>
-  <version>1.0.0</version><!-- {x-version-update:google-cloud-java:current} -->
+  <version>1.0.0-SNAPSHOT</version><!-- {x-version-update:google-cloud-java:current} -->
   <dependency>
     <groupId>com.google.cloud</groupId>
     <artifactId>google-cloud-secretmanager</artifactId>
-    <version>1.2.3</version><!-- {x-version-update:google-cloud-secretmanager:current} -->
+    <version>1.2.3-SNAPSHOT</version><!-- {x-version-update:google-cloud-secretmanager:current} -->
   </dependency>
 </project>`,
 			libraryID: "google-cloud-secretmanager",
 			version:   "2.0.0",
 			expected: `<project>
-  <version>1.0.0</version><!-- {x-version-update:google-cloud-java:current} -->
+  <version>1.0.0-SNAPSHOT</version><!-- {x-version-update:google-cloud-java:current} -->
   <dependency>
     <groupId>com.google.cloud</groupId>
     <artifactId>google-cloud-secretmanager</artifactId>
-    <version>2.0.0</version><!-- {x-version-update:google-cloud-secretmanager:current} -->
+    <version>2.0.0-SNAPSHOT</version><!-- {x-version-update:google-cloud-secretmanager:current} -->
   </dependency>
 </project>`,
 		},
 		{
 			name: "no comment",
 			initial: `<project>
-  <version>1.0.0</version>
+  <version>1.0.0-SNAPSHOT</version>
 </project>`,
 			libraryID: "google-cloud-java",
 			version:   "2.0.0",
 			expected: `<project>
-  <version>1.0.0</version>
+  <version>1.0.0-SNAPSHOT</version>
 </project>`,
 		},
 	}
