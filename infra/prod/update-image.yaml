@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This runs the `librarian generate` command with a provided repository,
+# This runs the `librarian update-image` command with a provided repository,
 # secret name, and optional library ID
 steps:
   - name: gcr.io/cloud-builders/git
