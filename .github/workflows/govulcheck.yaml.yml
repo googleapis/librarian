@@ -3,6 +3,7 @@ on:
   schedule:
     # 8:00 every day.
     - cron: '0 8 * * *'
+  pull_request:
 jobs:
   scan-and-report:
     name: Run govulncheck and Create Issue
@@ -23,7 +24,7 @@ jobs:
         id: govulncheck-scan
         run: |
           # Run with -json (which never fails) and save to a file
-          govulncheck -json ./... > results.json
+          govulncheck -json ./... | jq 'select(.finding)' > results.json
           # Count the number of findings using jq.
           COUNT=$(jq -s 'length' results.json)
           echo "Found $COUNT vulnerabilities."
