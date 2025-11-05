@@ -26,8 +26,7 @@ import (
 var runCommandFn = RunCommand
 
 // Run parses the command line arguments and triggers the specified command.
-func Run(args []string) error {
-	ctx := context.Background()
+func Run(ctx context.Context, args []string) error {
 	options, err := parseFlags(args)
 	if err != nil {
 		slog.Error("error parsing command", slog.Any("err", err))

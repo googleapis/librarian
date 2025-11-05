@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -52,7 +53,7 @@ func runCLI(args []string) int {
 		Generate:     generate.Generate,
 		ReleaseStage: release.Stage,
 	}
-	return languagecontainer.Run(args[1:], &container)
+	return languagecontainer.Run(context.Background(), args[1:], &container)
 }
 
 func parseLogLevel(logLevelEnv string) slog.Level {

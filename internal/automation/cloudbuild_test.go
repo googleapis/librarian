@@ -78,7 +78,7 @@ func TestRunCloudBuildTrigger(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			client := &mockCloudBuildClient{
 				runError:      test.runError,
 				buildTriggers: make([]*cloudbuildpb.BuildTrigger, 0),
@@ -144,7 +144,7 @@ func TestFindTriggerIdByName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			client := &mockCloudBuildClient{
 				runError:      test.runError,
 				buildTriggers: test.buildTriggers,
@@ -209,7 +209,7 @@ func TestRunCloudBuildTriggerByName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			client := &mockCloudBuildClient{
 				runError:      test.runError,
 				buildTriggers: test.buildTriggers,

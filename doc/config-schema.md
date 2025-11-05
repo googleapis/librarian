@@ -54,7 +54,7 @@ global_files_allowlist:
     permissions: "write-only"
 # A list of library overrides
 libraries:
-  - id: "example-library"
+  - id: "secretmanager"
     next_version: "2.3.4"
     generate_blocked: false
     release_blocked: false

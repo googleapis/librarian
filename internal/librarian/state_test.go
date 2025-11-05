@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,7 +74,7 @@ libraries:
       - src/b
     apis:
       - path: a/b/v1
-        service_config: 
+        service_config:
 `,
 			source:  "/non-existed-path",
 			want:    nil,
@@ -478,7 +477,7 @@ func TestLoadRepoStateFromGitHub(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := loadRepoStateFromGitHub(context.Background(), test.ghClient, test.branch)
+			got, err := loadRepoStateFromGitHub(t.Context(), test.ghClient, test.branch)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("loadRepoStateFromGitHub() should fail")
