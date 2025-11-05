@@ -5,6 +5,8 @@ maintainers. See the
 [generated CLI documentation](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian)
 for a more comprehensive list of commands and flags.
 
+For configuring development environment, please see [onboarding](onboarding.md).
+
 For libraries onboarded to automation, please see [automation section below](#using-automated-releases).
 
 This guide uses the term Librarian (capital L, regular font) for the overall
@@ -14,39 +16,6 @@ Librarian system, and `librarian` (lower case L, code font) for the CLI.
 
 If anything in this guide is unclear, please see go/g3doc-cloud-sdk-librarian-support
 for appropriate ways of obtaining more support.
-
-## Prerequisites
-
-`librarian` requires:
-
-- Linux
-- Go (or a prebuilt binary)
-- sudoless Docker
-- git (if you wish to build it locally)
-- gcloud (to set up Docker access to conatiner images)
-- [gh](https://github.com/cli/cli) for GitHub access tokens
-
-While in theory `librarian` can be run in non-Linux environments that support
-Linux Docker containers, Google policies make this at least somewhat infeasible
-(while staying conformant), so `librarian` is not tested other than on Linux.
-
-See go/docker for instructions on how to install Docker, ensuring that you
-follow the sudoless part.
-
-> Note that installing Docker will cause gLinux to warn you that Docker is
-> unsupported and discouraged. Within Cloud, support for Docker is a core
-> expectation (e.g. for Cloud Run and Cloud Build). Using Docker is the most
-> practical way of abstracting away language details. We are confident that
-> there are enough Googlers who require Docker to work on gLinux that it won't
-> actually go away any time soon. We may investigate using podman instead if
-> necessary.
-
-Docker needs to be configured to use gcloud for authentication. The following
-command line needs to be run, just once:
-
-```sh
-gcloud auth configure-docker us-central1-docker.pkg.dev
-```
 
 ## Running `librarian`
 
