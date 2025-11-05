@@ -35,6 +35,7 @@ var triggerNameByCommandName = map[string]string{
 	"generate":        "generate",
 	"stage-release":   "stage-release",
 	"publish-release": "publish-release",
+	"update-image":    "update-image",
 }
 
 const region = "global"
