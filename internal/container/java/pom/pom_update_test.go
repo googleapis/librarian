@@ -94,6 +94,9 @@ func TestUpdateVersion(t *testing.T) {
 				t.Fatalf("failed to write initial pom.xml: %v", err)
 			}
 
+			if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+				t.Fatalf("failed to create output directory: %v", err)
+			}
 			err := updateVersion(pomPath, outPath, test.libraryID, test.version)
 
 			if test.expectError {

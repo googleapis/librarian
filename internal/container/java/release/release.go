@@ -37,7 +37,7 @@ func Stage(ctx context.Context, cfg *release.Config) (*message.ReleaseStageRespo
 				filepath.Join(cfg.Context.RepoDir, path),
 				cfg.Context.OutputDir, lib.ID, lib.Version); err != nil {
 				response.Error = err.Error()
-				return response, nil
+				return response, err
 			}
 		}
 	}

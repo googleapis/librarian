@@ -26,6 +26,7 @@ var (
 )
 
 // UpdateVersions updates the versions of all pom.xml files in a given directory.
+// If the direcory is not present, it creates it.
 func UpdateVersions(repoDir, sourcePath, outputDir, libraryID, version string) error {
 	pomFiles, err := findPomFiles(sourcePath)
 	if err != nil {
@@ -47,6 +48,8 @@ func UpdateVersions(repoDir, sourcePath, outputDir, libraryID, version string) e
 	return nil
 }
 
+// updateVersion updates the version in a single pom.xml file.
+// The directory for outputPath must already exist.
 func updateVersion(inputPath, outputPath, libraryID, version string) error {
 	content, err := os.ReadFile(inputPath)
 	if err != nil {
@@ -65,19 +68,9 @@ func updateVersion(inputPath, outputPath, libraryID, version string) error {
 		return s
 	})
 
-	if newContent == string(content) {
-		// if no changes, copy the file to the output directory to make sure
-		// it is not missing.
-		newContent = string(content)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return fmt.Errorf("failed to create directory for %s: %w", outputPath, err)
-	}
 	if err := os.WriteFile(outputPath, []byte(newContent), 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
-	fmt.Printf("Updated %s\n", outputPath)
 	return nil
 }
 

@@ -96,13 +96,9 @@ func TestStage(t *testing.T) {
 					if err != nil {
 						t.Fatalf("failed to read output file: %v", err)
 					}
-					hasExpectedVersion := strings.Contains(string(content), "<version>"+test.version+"</version>")
-					if !hasExpectedVersion {
-						t.Errorf("expected file to contain version %q, got %q", test.version, string(content))
-					}
 
-					hasAnnotation := strings.Contains(string(content), test.expected)
-					if !hasAnnotation {
+					hasExpectedVersionLineWithAnnotation := strings.Contains(string(content), test.expected)
+					if !hasExpectedVersionLineWithAnnotation {
 						t.Errorf("expected file to contain annotation %q and comment, got %q", test.expected, string(content))
 					}
 				}
