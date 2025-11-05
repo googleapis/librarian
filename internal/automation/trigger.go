@@ -136,7 +136,6 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 				substitutions["_PR"] = fmt.Sprintf("%v", prs[0].GetHTMLURL())
 			}
 		} else if command == "generate" || command == "update-image" {
-			// only pass _BUILD to generate trigger
 			substitutions["_BUILD"] = fmt.Sprintf("%v", build)
 		}
 		err = runCloudBuildTriggerByName(ctx, client, projectId, region, triggerName, substitutions)
