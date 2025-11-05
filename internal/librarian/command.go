@@ -630,7 +630,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 		slog.Debug("removing directory", "path", dir)
 		if err := os.Remove(dir); err != nil {
 			// It's possible the directory is not empty due to preserved files.
-			slog.Debug("failed to remove directory, it may not be empty", "dir", dir, "err", err)
+			slog.Debug("failed to remove directory, it may not be empty due to preserved files", "dir", dir, "err", err)
 		}
 	}
 
