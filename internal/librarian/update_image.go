@@ -101,8 +101,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	}
 
 	if r.image == r.state.Image {
-		slog.Info("no update to the image, aborting.")
-		return nil
+		slog.Info("no update to the image; assuming diagnostic run")
 	}
 
 	r.state.Image = r.image
