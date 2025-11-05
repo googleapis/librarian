@@ -23,6 +23,5 @@ steps:
       - '--push=$_PUSH'
       - '--build=$_BUILD'
 tags: ['generate-dispatcher']
-availableSecrets:
 options:
   logging: CLOUD_LOGGING_ONLY
