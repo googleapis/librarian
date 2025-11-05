@@ -568,11 +568,10 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	var relPaths []string
 	for _, sourceRoot := range sourceRoots {
 		sourceRootPath := filepath.Join(rootDir, sourceRoot)
-		// If a source root does not exist, log a warning and searching the other source roots.
-		// TODO: Consider not calling clean if it's a first time generation
 		if _, err := os.Lstat(sourceRootPath); err != nil {
 			if os.IsNotExist(err) {
-				slog.Warn("unable to find source root. It may be an initial generation request", "source root", sourceRoot)
+				// If a source root does not exist, continue searching other source roots.
+				slog.Debug("unable to find source root. It may be an initial generation request", "source root", sourceRoot)
 				continue
 			}
 			// For any other error (permissions, I/O, etc.)
@@ -581,9 +580,8 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 		}
 		sourceRootPaths, err := findSubDirRelPaths(rootDir, sourceRootPath)
 		if err != nil {
-			// Log a warning and continue processing other source roots. There may be other files
-			// that can be cleaned up.
-			slog.Warn("unable to search for files in a source root", "source root", sourceRoot, "error", err)
+			// Continue processing other source roots. There may be other files that can be cleaned up.
+			slog.Debug("unable to search for files in a source root", "source root", sourceRoot, "error", err)
 			continue
 		}
 		if len(sourceRootPaths) == 0 {
