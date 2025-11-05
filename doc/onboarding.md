@@ -8,7 +8,7 @@ project and begin contributing effectively.
 `librarian` requires:
 
 - Linux
-- [Go](https://go.dev/doc/install) (or a prebuilt binary)
+- [Go](https://go.dev/doc/install)
 - sudoless Docker
 - git (if you wish to build it locally)
 - gcloud (to set up Docker access to conatiner images)
