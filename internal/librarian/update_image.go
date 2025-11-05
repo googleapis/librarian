@@ -164,7 +164,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 			checkUnexpectedChanges: r.checkUnexpectedChanges,
 			branchesToDelete:       []string{},
 		}
-		if err := runContainerGenerateTest(ctx, r, sourceHead, testRunner); err != nil {
+		if err := runContainerGenerateTest(ctx, r.repo, sourceHead, testRunner); err != nil {
 			return fmt.Errorf("container generate test failed: %w", err)
 		}
 	}
@@ -222,15 +222,15 @@ func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, library
 // repo state for the test runner, runs the tests, and then soft-resets
 // the commit to leave the working directory in its original dirty state
 // for the final commit operation.
-func runContainerGenerateTest(ctx context.Context, r *updateImageRunner, sourceHead string, testRunner *testGenerateRunner) error {
+func runContainerGenerateTest(ctx context.Context, repo gitrepo.Repository, sourceHead string, testRunner *testGenerateRunner) error {
 	slog.Debug("creating temporary commit for testing")
 	committed := true
-	if err := r.repo.AddAll(); err != nil {
+	if err := repo.AddAll(); err != nil {
 		return fmt.Errorf("failed to stage changes for temporary commit: %w", err)
 	}
 
 	// Commit the generated changes so the repo is clean for the test runner.
-	if err := r.repo.Commit("chore: temporary commit for update-image test"); err != nil {
+	if err := repo.Commit("chore: temporary commit for update-image test"); err != nil {
 		if !errors.Is(err, gitrepo.ErrNoModificationsToCommit) {
 			return fmt.Errorf("failed to create temporary commit for test: %w", err)
 		}
@@ -246,7 +246,7 @@ func runContainerGenerateTest(ctx context.Context, r *updateImageRunner, sourceH
 	// If tests pass and temporary commit was made, reset it to restore the dirty state for the final commit.
 	if committed {
 		slog.Debug("tests passed, resetting temporary commit")
-		if err := r.repo.ResetSoft("HEAD~1"); err != nil {
+		if err := repo.ResetSoft("HEAD~1"); err != nil {
 			return fmt.Errorf("failed to reset temporary commit after successful test: %w", err)
 		}
 	}

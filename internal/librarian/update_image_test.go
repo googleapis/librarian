@@ -927,12 +927,7 @@ func TestRunContainerGenerateTest(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			runner := &updateImageRunner{
-				repo: test.mockRepo,
-			}
-
-			err := runContainerGenerateTest(t.Context(), runner, "fake-head", test.testRunner)
+			err := runContainerGenerateTest(t.Context(), test.mockRepo, "fake-head", test.testRunner)
 
 			if test.wantErrMsg != "" {
 				if err == nil {
