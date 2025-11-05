@@ -27,7 +27,7 @@ var (
 
 // UpdateVersions updates the versions of all pom.xml files in a given directory.
 // It appends the "-SNAPSHOT" suffix to the version given the version parameter.
-// If the direcory is not present, it creates it.
+// If the directory is not present, this function creates it.
 func UpdateVersions(repoDir, sourcePath, outputDir, libraryID, version string) error {
 	pomFiles, err := findPomFiles(sourcePath)
 	if err != nil {
