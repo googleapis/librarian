@@ -244,12 +244,11 @@ func runContainerGenerateTest(ctx context.Context, r *updateImageRunner, sourceH
 	}
 
 	// If tests pass and temporary commit was made, reset it to restore the dirty state for the final commit.
-	if !committed {
-		return nil
-	}
-	slog.Debug("tests passed, resetting temporary commit")
-	if err := r.repo.ResetSoft("HEAD~1"); err != nil {
-		return fmt.Errorf("failed to reset temporary commit after successful test: %w", err)
+	if committed {
+		slog.Debug("tests passed, resetting temporary commit")
+		if err := r.repo.ResetSoft("HEAD~1"); err != nil {
+			return fmt.Errorf("failed to reset temporary commit after successful test: %w", err)
+		}
 	}
 	return nil
 }
