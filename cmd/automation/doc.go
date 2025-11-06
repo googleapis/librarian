@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run -tags docgen doc_generate.go -cmd .
+//go:generate go run -tags docgen ../doc/doc_generate.go -cmd .
 
 /*
 Librarian manages Google API client libraries by automating onboarding,
