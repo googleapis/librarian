@@ -407,16 +407,15 @@ type oneOfAnnotation struct {
 	QualifiedName string
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
-	// This is always relative to `ScopeInExamples`.
 	RelativeName string
 	// The Rust `struct` that contains this oneof, fully qualified
 	StructQualifiedName string
-	// The scope to show in examples. For messages in external packages
+	// The fully qualified name for examples. For messages in external packages
 	// this is basically `QualifiedName`. For messages in the current package
 	// this includes `modelAnnotations.PackageName`.
-	ScopeInExamples string
-	FieldType       string
-	DocLines        []string
+	NameInExamples string
+	FieldType      string
+	DocLines       []string
 	// The best field to show in a oneof related samples.
 	// Non deprecated fields are preferred, then scalar, repeated, map fields
 	// in that order.
@@ -1143,9 +1142,10 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
-	scopeInExamples := scope
-	if strings.HasPrefix(scope, c.modulePath+"::") {
-		scopeInExamples = strings.Replace(scope, c.modulePath, fmt.Sprintf("%s::model", c.packageNamespace(model)), 1)
+
+	nameInExamples := qualifiedName
+	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
+		nameInExamples = strings.Replace(qualifiedName, c.modulePath, fmt.Sprintf("%s::model", c.packageNamespace(model)), 1)
 	}
 
 	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
@@ -1183,7 +1183,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		QualifiedName:       qualifiedName,
 		RelativeName:        relativeEnumName,
 		StructQualifiedName: structQualifiedName,
-		ScopeInExamples:     scopeInExamples,
+		NameInExamples:      nameInExamples,
 		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),
 		DocLines:            c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes()),
 		ExampleField:        bestField,

@@ -24,42 +24,42 @@ limitations under the License.
 {{#Codec.ExampleField}}
 {{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Group.Codec.ScopeInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}("example".to_string())));
+/// use {{Group.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.EnumName}}}::{{Codec.BranchName}}("example".to_string())));
 {{/IsString}}
 {{#IsBytes}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Group.Codec.ScopeInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(bytes::Bytes::from_static(b"example"))));
+/// use {{Group.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.EnumName}}}::{{Codec.BranchName}}(bytes::Bytes::from_static(b"example"))));
 {{/IsBytes}}
 {{#IsBool}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Group.Codec.ScopeInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(true)));
+/// use {{Group.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.EnumName}}}::{{Codec.BranchName}}(true)));
 {{/IsBool}}
 {{#IsLikeInt}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Group.Codec.ScopeInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(42)));
+/// use {{Group.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.EnumName}}}::{{Codec.BranchName}}(42)));
 {{/IsLikeInt}}
 {{#IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Group.Codec.ScopeInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}(42.0)));
+/// use {{Group.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.EnumName}}}::{{Codec.BranchName}}(42.0)));
 {{/IsLikeFloat}}
 {{#IsEnum}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Group.Codec.ScopeInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
 {{#EnumType.Codec.ValuesForExamples}}
-/// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{FieldCodec.BranchName}}({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}})));
+/// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some(
+///     {{{Group.Codec.NameInExamples}}}::{{FieldCodec.BranchName}}({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}})));
 {{/EnumType.Codec.ValuesForExamples}}
 {{/IsEnum}}
 {{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Group.Codec.ScopeInExamples}};
 /// use {{MessageType.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some({{{Group.Codec.RelativeName}}}::{{Codec.BranchName}}({{MessageType.Codec.Name}}::default().into())));
+/// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some(
+///     {{{Group.Codec.NameInExamples}}}::{{Codec.BranchName}}({{MessageType.Codec.Name}}::default().into())));
 {{/IsObject}}
 {{/Codec.ExampleField}}
 /// ```
