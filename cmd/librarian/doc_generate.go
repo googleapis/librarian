@@ -19,6 +19,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -41,7 +42,7 @@ const docTemplate = `// Copyright 2025 Google LLC
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run -tags docgen doc_generate.go
+//go:generate go run -tags docgen doc_generate.go -cmd .
 
 /*
 Librarian manages Google API client libraries by automating onboarding,
@@ -76,7 +77,13 @@ type CommandDoc struct {
 	Commands []CommandDoc
 }
 
+var cmdPath = flag.String("cmd", "", "Path to the command to generate docs for (e.g., ../../cmd/librarian)")
+
 func main() {
+	flag.Parse()
+	if *cmdPath == "" {
+		log.Fatal("must specify -cmd flag")
+	}
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
@@ -164,7 +171,7 @@ func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
 
 func getCommandHelpText(command string) (string, error) {
 	parts := strings.Fields(command)
-	args := []string{"run", "../../cmd/librarian/"}
+	args := []string{"run", *cmdPath}
 	args = append(args, parts...)
 	args = append(args, "--help")
 	cmd := exec.Command("go", args...)
