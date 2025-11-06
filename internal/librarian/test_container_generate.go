@@ -130,10 +130,24 @@ func (r *testGenerateRunner) cleanup() error {
 }
 
 // testSingleLibrary runs a generation test for a single library.
-// It prepares the source repository, runs generation, validates the output,
-// and cleans up the source repository by checking out the original commit.
-// It does not cleanup the source repository branch or worktree in code repository
-// created during test.
+// The test performs the following steps:
+//
+// 1.  **Prepares the source repository:**
+//     *   Checks out the `last_generated_commit` from the source repository.
+//     *   Injects unique GUIDs as comments into the first `message`/`enum` definition
+//         and the first `service` definition found in each proto file to simulate a change.
+//     *   Commits these temporary changes to a new branch.
+// 2.  **Runs the `generate` command** for the specified library.
+// 3.  **Validates the output:**
+//     *   Ensures that the generation command did not fail.
+//     *   Verifies that every injected GUID appears in the generated output,
+//         confirming that the simulated changes triggered a corresponding update.
+//     *   Optionally, checks for any unexpected file additions, deletions, or modifications.
+// 4.  **Cleans up the source repository** by checking out the original commit.
+//
+// Note: This function does not delete the temporary branch created in the source
+// repository or reset the worktree in the code repository; these cleanup actions
+// are handled by the caller.
 func (r *testGenerateRunner) testSingleLibrary(ctx context.Context, libraryID, sourceRepoHead, outputDir string) error {
 	defer func() {
 		slog.Debug("resetting source repo to original commit", "library", libraryID)
