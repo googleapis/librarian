@@ -49,7 +49,10 @@ func TestGoGenerateLibrarianDoc(t *testing.T) {
 			if err := cmd.Run(); err != nil {
 				t.Errorf("go generate produced a diff, please run `go generate ./...` and commit the changes")
 				cmd = exec.Command("git", "diff", "--", test.docFile)
-				out, _ := cmd.CombinedOutput()
+				out, err := cmd.CombinedOutput()
+				if err != nil {
+					t.Fatalf("git diff failed: %v", err)
+				}
 				t.Logf("diff:\n%s", out)
 			}
 		})
