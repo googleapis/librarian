@@ -121,6 +121,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	// For each library, run generation at the previous commit
 	var failedGenerations []*config.LibraryState
 	var successfulGenerations []*config.LibraryState
+	var skippedGenerationsCount int
 	sourceHead, err := r.sourceRepo.HeadHash()
 	if err != nil {
 		return err
@@ -128,6 +129,14 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	timings := map[string]time.Duration{}
 	for _, libraryState := range r.state.Libraries {
+		if r.librarianConfig != nil {
+			libConfig := r.librarianConfig.LibraryConfigFor(libraryState.ID)
+			if libConfig != nil && libConfig.GenerateBlocked {
+				slog.Info("skipping generation for library due to generate_blocked", "library", libraryState.ID)
+				skippedGenerationsCount++
+				continue
+			}
+		}
 		startTime := time.Now()
 		err := r.regenerateSingleLibrary(ctx, libraryState, outputDir)
 		if err != nil {
@@ -142,6 +151,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	if len(failedGenerations) > 0 {
 		slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
 	}
+	slog.Info("skipped generations", "num", skippedGenerationsCount)
 	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
 	if err := writeTiming(r.workRoot, timings); err != nil {
 		return err

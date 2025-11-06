@@ -194,6 +194,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 		containerClient            *mockContainerClient
 		ghClient                   *mockGitHubClient
 		state                      *config.LibrarianState
+		librarianConfig            *config.LibrarianConfig
 		image                      string
 		build                      bool
 		commit                     bool
@@ -724,6 +725,36 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantCreateIssueCalls:       1,
 			wantCommitMsg:              "feat: update image to gcr.io/test/image@sha256:abc123",
 		},
+		{
+			name: "skip generation for library",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:                  "blocked-lib",
+						APIs:                []*config.API{{Path: "some/api1"}},
+						SourceRoots:         []string{"src/a"},
+						LastGeneratedCommit: "abcd1234",
+					},
+				},
+			},
+
+			librarianConfig: &config.LibrarianConfig{
+				Libraries: []*config.LibraryConfig{
+					{
+						LibraryID:       "blocked-lib",
+						GenerateBlocked: true,
+					},
+				},
+			},
+			containerClient:     &mockContainerClient{},
+			imagesClient:        &mockImagesClient{},
+			ghClient:            &mockGitHubClient{},
+			wantFindLatestCalls: 1,
+			wantGenerateCalls:   0,
+			wantBuildCalls:      0,
+			wantCheckoutCalls:   1,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testRepo := newTestGitRepoWithState(t, test.state)
@@ -751,6 +782,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 				imagesClient:    test.imagesClient,
 				ghClient:        test.ghClient,
 				state:           test.state,
+				librarianConfig: test.librarianConfig,
 				workRoot:        t.TempDir(),
 				repo:            repo,
 				sourceRepo:      sourceRepo,
