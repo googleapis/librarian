@@ -31,6 +31,10 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1, 2, 3]);
 {{/IsLikeInt}}
+{{#IsLikeUInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1u32, 2u32, 3u32]);
+{{/IsLikeUInt}}
 {{#IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1.0, 2.0, 3.0]);

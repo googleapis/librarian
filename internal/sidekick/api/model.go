@@ -829,9 +829,23 @@ func (f *Field) IsBool() bool {
 // in the broad category of field type involved.
 func (f *Field) IsLikeInt() bool {
 	switch f.Typez {
-	case UINT32_TYPE, UINT64_TYPE, INT32_TYPE, INT64_TYPE, SINT32_TYPE, SINT64_TYPE:
+	case INT32_TYPE, INT64_TYPE, SINT32_TYPE, SINT64_TYPE:
 		return true
-	case FIXED32_TYPE, FIXED64_TYPE, SFIXED32_TYPE, SFIXED64_TYPE:
+	case SFIXED32_TYPE, SFIXED64_TYPE:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsLikeUInt returns true if the primitive type of a field is one of the
+// unsigned integer types.
+//
+// This is useful for mustache templates that differ only
+// in the broad category of field type involved.
+func (f *Field) IsLikeUInt() bool {
+	switch f.Typez {
+	case UINT32_TYPE, UINT64_TYPE, FIXED32_TYPE, FIXED64_TYPE:
 		return true
 	default:
 		return false

@@ -38,6 +38,11 @@ limitations under the License.
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(42));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<i32>);
 {{/IsLikeInt}}
+{{#IsLikeUInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(42u32));
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<u32>);
+{{/IsLikeUInt}}
 {{#IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(42.0));
