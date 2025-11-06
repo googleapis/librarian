@@ -20,13 +20,11 @@ limitations under the License.
 /// ```
 {{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}("example");
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some("example"));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<String>);
 {{/IsString}}
 {{#IsBytes}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(bytes::Bytes::from_static(b"example"));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(bytes::Bytes::from_static(b"example")));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<bytes::Bytes>);
 {{/IsBytes}}
@@ -43,7 +41,7 @@ limitations under the License.
 {{#IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(42.0));
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<i32>);
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<f32>);
 {{/IsLikeFloat}}
 {{#IsEnum}}
 /// # use {{Parent.Codec.NameInExamples}};
