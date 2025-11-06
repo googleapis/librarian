@@ -88,12 +88,17 @@ func (r *stageRunner) run(ctx context.Context) error {
 		return err
 	}
 
+	libraryVersionNotes, err := generateAPIVersionReleaseNotes(r.state, r.repo.GetDir())
+	if err != nil {
+		return fmt.Errorf("error parsing API versions for release notes: %w", err)
+	}
+
 	prBodyBuilder := func() (string, error) {
 		gitHubRepo, err := GetGitHubRepositoryFromGitRepo(r.repo)
 		if err != nil {
 			return "", fmt.Errorf("failed to get GitHub repository: %w", err)
 		}
-		return formatReleaseNotes(r.state, gitHubRepo)
+		return formatReleaseNotes(r.state, gitHubRepo, libraryVersionNotes)
 	}
 	commitInfo := &commitInfo{
 		branch:        r.branch,

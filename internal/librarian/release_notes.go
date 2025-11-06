@@ -73,6 +73,9 @@ Language Image: {{.ImageVersion}}
 <details><summary>{{.LibraryID}}: {{.NewVersion}}</summary>
 
 ## [{{.NewVersion}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{$prInfo.Date}})
+{{ if .APIVersionsSection }}
+{{ .APIVersionsSection }}
+{{- end -}}
 {{ range .CommitSections }}
 ### {{.Heading}}
 {{ range .Commits }}
@@ -167,11 +170,12 @@ type releasePRBody struct {
 }
 
 type releaseNoteSection struct {
-	LibraryID      string
-	PreviousTag    string
-	NewTag         string
-	NewVersion     string
-	CommitSections []*commitSection
+	LibraryID          string
+	PreviousTag        string
+	NewTag             string
+	NewVersion         string
+	CommitSections     []*commitSection
+	APIVersionsSection template.HTML
 }
 
 type commitSection struct {
@@ -180,7 +184,7 @@ type commitSection struct {
 }
 
 // formatReleaseNotes generates the body for a release pull request.
-func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository) (string, error) {
+func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository, libraryVersionNotes map[string]string) (string, error) {
 	librarianVersion := cli.Version()
 	// Separate commits to bulk changes (affects multiple libraries) or library-specific changes because they
 	// appear in different section in the release notes.
@@ -191,10 +195,14 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 		if !library.ReleaseTriggered {
 			continue
 		}
+		var versionNotes string
+		if len(libraryVersionNotes) > 0 {
+			versionNotes = libraryVersionNotes[library.ID]
+		}
 		// No need to check the existence of the key, library.ID, because a library without library-specific changes
 		// may appear in the release notes, i.e., in the bulk changes section.
 		commits := libraryChanges[library.ID]
-		section := formatLibraryReleaseNotes(library, commits)
+		section := formatLibraryReleaseNotes(library, commits, versionNotes)
 		releaseSections = append(releaseSections, section)
 	}
 	// Process bulk changes
@@ -226,7 +234,7 @@ func formatReleaseNotes(state *config.LibrarianState, ghRepo *github.Repository)
 
 // formatLibraryReleaseNotes generates release notes in Markdown format for a single library.
 // It returns the generated release notes and the new version string.
-func formatLibraryReleaseNotes(library *config.LibraryState, commits []*config.Commit) *releaseNoteSection {
+func formatLibraryReleaseNotes(library *config.LibraryState, commits []*config.Commit, versionNotes string) *releaseNoteSection {
 	// The version should already be updated to the next version.
 	newVersion := library.Version
 	tagFormat := config.DetermineTagFormat(library.ID, library, nil)
@@ -255,11 +263,12 @@ func formatLibraryReleaseNotes(library *config.LibraryState, commits []*config.C
 	}
 
 	section := &releaseNoteSection{
-		LibraryID:      library.ID,
-		NewVersion:     newVersion,
-		PreviousTag:    previousTag,
-		NewTag:         newTag,
-		CommitSections: sections,
+		LibraryID:          library.ID,
+		NewVersion:         newVersion,
+		PreviousTag:        previousTag,
+		NewTag:             newTag,
+		CommitSections:     sections,
+		APIVersionsSection: template.HTML(versionNotes),
 	}
 
 	return section

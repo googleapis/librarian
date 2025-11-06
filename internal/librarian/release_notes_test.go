@@ -42,12 +42,13 @@ func TestFormatReleaseNotes(t *testing.T) {
 	librarianVersion := cli.Version()
 
 	for _, test := range []struct {
-		name            string
-		state           *config.LibrarianState
-		ghRepo          *github.Repository
-		wantReleaseNote string
-		wantErr         bool
-		wantErrPhrase   string
+		name                string
+		state               *config.LibrarianState
+		ghRepo              *github.Repository
+		libraryVersionNotes map[string]string
+		wantReleaseNote     string
+		wantErr             bool
+		wantErrPhrase       string
 	}{
 		{
 			name: "single library release",
@@ -189,6 +190,156 @@ Language Image: go:1.21
 * new feature ([12345678](https://github.com/owner/repo/commit/12345678))
 
 * another new feature ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
+
+</details>`,
+				librarianVersion, today),
+		},
+		{
+			name: "single library with API Versions section",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the NewVersion in the release note.
+						Version:         "1.1.0",
+						PreviousVersion: "1.0.0",
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
+								LibraryIDs: "my-library",
+							},
+							{
+								Type:       "fix",
+								Subject:    "a bug fix",
+								CommitHash: hash2.String(),
+								LibraryIDs: "my-library",
+							},
+						},
+						ReleaseTriggered: true,
+					},
+				},
+			},
+			libraryVersionNotes: map[string]string{
+				"my-library": `### API Versions
+
+<details><summary>cloud.google.com/go/library/apiv1</summary>
+
+* BookService: 2025-04-04
+* LibraryService: 2025-09-14
+
+</details>
+`,
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+### API Versions
+
+<details><summary>cloud.google.com/go/library/apiv1</summary>
+
+* BookService: 2025-04-04
+* LibraryService: 2025-09-14
+
+</details>
+
+### Features
+
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
+
+### Bug Fixes
+
+* a bug fix ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
+
+</details>`,
+				librarianVersion, today),
+		},
+		{
+			name: "single library with API Versions multi-package section",
+			state: &config.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*config.LibraryState{
+					{
+						ID: "my-library",
+						// this is the NewVersion in the release note.
+						Version:         "1.1.0",
+						PreviousVersion: "1.0.0",
+						Changes: []*config.Commit{
+							{
+								Type:       "feat",
+								Subject:    "new feature",
+								CommitHash: hash1.String(),
+								LibraryIDs: "my-library",
+							},
+							{
+								Type:       "fix",
+								Subject:    "a bug fix",
+								CommitHash: hash2.String(),
+								LibraryIDs: "my-library",
+							},
+						},
+						ReleaseTriggered: true,
+					},
+				},
+			},
+			libraryVersionNotes: map[string]string{
+				"my-library": `### API Versions
+
+<details><summary>cloud.google.com/go/library/apiv1</summary>
+
+* BookService: 2025-04-04
+* LibraryService: 2025-09-14
+
+</details>
+
+
+<details><summary>cloud.google.com/go/anotherlibrary/apiv1</summary>
+
+* AnotherLibraryService: 2025-05-24
+
+</details>
+`,
+			},
+			ghRepo: &github.Repository{Owner: "owner", Name: "repo"},
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
+Language Image: go:1.21
+<details><summary>my-library: 1.1.0</summary>
+
+## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+
+### API Versions
+
+<details><summary>cloud.google.com/go/library/apiv1</summary>
+
+* BookService: 2025-04-04
+* LibraryService: 2025-09-14
+
+</details>
+
+
+<details><summary>cloud.google.com/go/anotherlibrary/apiv1</summary>
+
+* AnotherLibraryService: 2025-05-24
+
+</details>
+
+### Features
+
+* new feature ([12345678](https://github.com/owner/repo/commit/12345678))
+
+### Bug Fixes
+
+* a bug fix ([fedcba09](https://github.com/owner/repo/commit/fedcba09))
 
 </details>`,
 				librarianVersion, today),
@@ -805,7 +956,7 @@ Language Image: go:1.21
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := formatReleaseNotes(test.state, test.ghRepo)
+			got, err := formatReleaseNotes(test.state, test.ghRepo, test.libraryVersionNotes)
 			if test.wantErr {
 				if err == nil {
 					t.Fatalf("%s should return error", test.name)
