@@ -27,7 +27,7 @@ command line needs to be run, just once:
 gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
-## Step 2: Setup Environment to Run Librarian
+## Step 2: Set Up Your Editor
 Install the Go extension following the
 [instructions for your preferred editor](https://github.com/golang/tools/tree/master/gopls#editors)
 
