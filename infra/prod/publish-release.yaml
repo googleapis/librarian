@@ -31,7 +31,7 @@ steps:
     waitFor: ['clone-language-repo']
     args:
       - 'release'
-      - 'tag'
+      - 'tag-and-release'
       - '-repo'
       - '/workspace/$_REPOSITORY'
       - '-pr'
