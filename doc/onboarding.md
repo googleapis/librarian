@@ -9,17 +9,12 @@ project and begin contributing effectively.
 
 - Linux
 - [Go](https://go.dev/doc/install)
-- sudoless Docker
+- [sudoless Docker]((go/docker))
 - git (if you wish to build it locally)
-- gcloud (to set up Docker access to conatiner images)
+- [gcloud](https://g3doc.corp.google.com/company/teams/cloud-sdk/cli/index.md?cl=head#installing-and-using-the-cloud-sdk) (to set up Docker access to container images)
 - [gh](https://github.com/cli/cli) for GitHub access tokens
 
-While in theory `librarian` can be run in non-Linux environments that support
-Linux Docker containers, Google policies make this at least somewhat infeasible
-(while staying conformant), so `librarian` is not tested other than on Linux.
-
-See go/docker for instructions on how to install Docker, ensuring that you
-follow the sudoless part.
+While in theory `librarian` should be run from your local remote desktop.
 
 > Note that installing Docker will cause gLinux to warn you that Docker is
 > unsupported and discouraged. Within Cloud, support for Docker is a core
