@@ -218,3 +218,56 @@ func TestGetGlobalFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestIsGenerationBlocked(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		config    *LibrarianConfig
+		libraryID string
+		want      bool
+	}{
+		{
+			name:      "nil config",
+			config:    nil,
+			libraryID: "lib1",
+			want:      false,
+		},
+		{
+			name: "library not in config",
+			config: &LibrarianConfig{
+				Libraries: []*LibraryConfig{
+					{LibraryID: "lib2", GenerateBlocked: true},
+				},
+			},
+			libraryID: "lib1",
+			want:      false,
+		},
+		{
+			name: "library in config, generate_blocked is false",
+			config: &LibrarianConfig{
+				Libraries: []*LibraryConfig{
+					{LibraryID: "lib1", GenerateBlocked: false},
+				},
+			},
+			libraryID: "lib1",
+			want:      false,
+		},
+		{
+			name: "library in config, generate_blocked is true",
+			config: &LibrarianConfig{
+				Libraries: []*LibraryConfig{
+					{LibraryID: "lib1", GenerateBlocked: true},
+				},
+			},
+			libraryID: "lib1",
+			want:      true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.config.IsGenerationBlocked(test.libraryID)
+			if got != test.want {
+				t.Errorf("IsGenerationBlocked() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}

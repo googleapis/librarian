@@ -129,13 +129,10 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	outputDir := filepath.Join(r.workRoot, "output")
 	timings := map[string]time.Duration{}
 	for _, libraryState := range r.state.Libraries {
-		if r.librarianConfig != nil {
-			libConfig := r.librarianConfig.LibraryConfigFor(libraryState.ID)
-			if libConfig != nil && libConfig.GenerateBlocked {
-				slog.Info("skipping generation for library due to generate_blocked", "library", libraryState.ID)
-				skippedGenerationsCount++
-				continue
-			}
+		if r.librarianConfig.IsGenerationBlocked(libraryState.ID) {
+			slog.Info("skipping generation for library due to generate_blocked", "library", libraryState.ID)
+			skippedGenerationsCount++
+			continue
 		}
 		startTime := time.Now()
 		err := r.regenerateSingleLibrary(ctx, libraryState, outputDir)

@@ -426,12 +426,9 @@ func setAllAPIStatus(state *config.LibrarianState, status string) {
 func (r *generateRunner) shouldGenerate(library *config.LibraryState) (bool, error) {
 	// If the library has a manual configuration which indicates generation is blocked,
 	// the library is skipped.
-	if r.librarianConfig != nil {
-		libConfig := r.librarianConfig.LibraryConfigFor(library.ID)
-		if libConfig != nil && libConfig.GenerateBlocked {
-			slog.Info("library has generate_blocked, skipping", "id", library.ID)
-			return false, nil
-		}
+	if r.librarianConfig.IsGenerationBlocked(library.ID) {
+		slog.Info("library has generate_blocked, skipping", "id", library.ID)
+		return false, nil
 	}
 
 	// If the library has no APIs, it is skipped.
