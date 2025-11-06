@@ -481,6 +481,9 @@ type enumAnnotation struct {
 	// this is basically `QualifiedName`. For messages in the current package
 	// this includes `modelAnnotations.PackageName`.
 	NameInExamples string
+	// There's a missmatch between the sidekick model representation of wkt::NullValue
+	// and the representation in Rust. We us this for sample generation.
+	IsWktNullValue bool
 	// These are some of the enum values that can be used in examples,
 	// accompanied by an index to facilitate generating code that can
 	// distinctly reference each value. These attempt to avoid deprecated
@@ -1220,6 +1223,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 		QualifiedName:     qualifiedName,
 		RelativeName:      relativeName,
 		NameInExamples:    nameInExamples,
+		IsWktNullValue:    nameInExamples == "wkt::NullValue",
 		ValuesForExamples: forExamples,
 	}
 	e.Codec = annotations
