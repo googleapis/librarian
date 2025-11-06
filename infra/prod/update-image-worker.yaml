@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This runs the `librarian release stage` command with a provided repository,
-# secret name, and optional library ID
+# This triggers the `update-image` workflow for all repositories registered
+# to automate the `librarian update-image` command 
 steps:
   - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher
-    id: stage-release-dispatcher
+    id: update-image-dispatcher
     args:
       - '--project=$PROJECT_ID'
-      - '--command=stage-release'
+      - '--command=update-image'
       - '--push=$_PUSH'
-      - '--force-run=$_FORCE_RUN'
-tags: ['stage-release-dispatcher']
+      - '--build=$_BUILD'
+tags: ['update-image-dispatcher']
 options:
   logging: CLOUD_LOGGING_ONLY

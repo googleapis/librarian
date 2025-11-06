@@ -30,6 +30,7 @@ var availableCommands = map[string]bool{
 	"generate":        true,
 	"stage-release":   true,
 	"publish-release": true,
+	"update-image":    true,
 }
 
 // RepositoryConfig represents a single registered librarian GitHub repository.

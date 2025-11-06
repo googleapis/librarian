@@ -4,9 +4,9 @@ go 1.25.3
 
 require (
 	cloud.google.com/go/artifactregistry v1.17.2
-	cloud.google.com/go/cloudbuild v1.23.0
-	cloud.google.com/go/iam v1.5.2
-	cloud.google.com/go/longrunning v0.6.7
+	cloud.google.com/go/cloudbuild v1.23.1
+	cloud.google.com/go/iam v1.5.3
+	cloud.google.com/go/longrunning v0.7.0
 	github.com/cbroglie/mustache v1.4.0
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/google/go-cmp v0.7.0
@@ -19,10 +19,10 @@ require (
 	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
-	google.golang.org/genproto v0.0.0-20250908214217-97024824d090
-	google.golang.org/genproto/googleapis/api v0.0.0-20250908214217-97024824d090
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250908214217-97024824d090
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/genproto v0.0.0-20251103181224-f26f9409b101
+	google.golang.org/genproto/googleapis/api v0.0.0-20251029180050-ab9386a59fda
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda
+	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
 )
 
