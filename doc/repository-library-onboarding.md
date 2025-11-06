@@ -3,7 +3,7 @@
 This guide should be followed when onboarding new repositories/libraries.
 
 ## Repository Setup:
-1) [Create ticket](http://go/onboard-repository-to-librarian) per repoitory to onboard a new repository to Librarian automation. At a minimum, you should onboard to [tag-and-release](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian#hdr-release_tag_and_release) automation. 
+1) [Create a ticket](http://go/onboard-repository-to-librarian) to onboard a repository to Librarian automation (automation is per repository not library). At a minimum, you should onboard to [tag-and-release](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian#hdr-release_tag_and_release) automation. 
 2) Add `.librarian` directory to your repository with appropriate configuration files. See details [here](https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#configure-repository-to-work-with-librarian-cli)
 3) You should only start with 1 library to validate the flow (follow instructions below)
 4) If your repository contains multiple libraries, start ramping up slowly until all libraries are in your `state.yaml` file and have migrated to librarian.
