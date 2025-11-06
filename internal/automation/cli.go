@@ -22,9 +22,6 @@ import (
 	"log/slog"
 )
 
-// runCommandFn is a function type that matches RunCommand, for mocking in tests.
-var runCommandFn = RunCommand
-
 // Run parses the command line arguments and triggers the specified command.
 func Run(ctx context.Context, args []string) error {
 	options, err := parseFlags(args)
