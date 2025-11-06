@@ -14,7 +14,7 @@
 
 //go:build docgen
 
-package main
+package doc
 
 import (
 	"bytes"
