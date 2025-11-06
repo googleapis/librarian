@@ -35,7 +35,7 @@ func TestValidateGenerateTest(t *testing.T) {
 		newAndDeletedFiles     []string
 		libraryState           *config.LibraryState
 		setup                  func(dir string) error
-		protoFileToGUID        map[string]string
+		protoFileToGUIDs       map[string][]string
 		checkUnexpectedChanges bool
 		wantErrMsg             string
 	}{
@@ -45,7 +45,7 @@ func TestValidateGenerateTest(t *testing.T) {
 				"related.go":    "// some generated code\n// test-change-guid-123",
 				"unrelated.txt": "some other content",
 			},
-			protoFileToGUID:        map[string]string{"some.proto": "guid-123"},
+			protoFileToGUIDs:       map[string][]string{"some.proto": {"guid-123"}},
 			checkUnexpectedChanges: true,
 			wantErrMsg:             "found unrelated file changes: unrelated.txt",
 		},
@@ -55,7 +55,7 @@ func TestValidateGenerateTest(t *testing.T) {
 				"src/related.go": "// some generated code\n// test-change-guid-123",
 				"unrelated.txt":  "some other content",
 			},
-			protoFileToGUID:        map[string]string{"some.proto": "guid-123"},
+			protoFileToGUIDs:       map[string][]string{"some.proto": {"guid-123"}},
 			libraryState:           &config.LibraryState{SourceRoots: []string{"src"}},
 			checkUnexpectedChanges: true,
 			wantErrMsg:             "", // No error, because unrelated.txt is ignored.
@@ -65,7 +65,7 @@ func TestValidateGenerateTest(t *testing.T) {
 			filesToWrite: map[string]string{
 				"somefile.go": "some content",
 			},
-			protoFileToGUID:        map[string]string{"some.proto": "guid-not-found"},
+			protoFileToGUIDs:       map[string][]string{"some.proto": {"guid-not-found"}},
 			checkUnexpectedChanges: true,
 			wantErrMsg:             "produced no corresponding generated file changes",
 		},
@@ -74,7 +74,7 @@ func TestValidateGenerateTest(t *testing.T) {
 			filesToWrite: map[string]string{
 				"some.go": "// some generated code\n// test-change-guid-123",
 			},
-			protoFileToGUID:        map[string]string{"some.proto": "guid-123"},
+			protoFileToGUIDs:       map[string][]string{"some.proto": {"guid-123"}},
 			checkUnexpectedChanges: true,
 			wantErrMsg:             "",
 		},
@@ -84,7 +84,7 @@ func TestValidateGenerateTest(t *testing.T) {
 				"somefile.go": "some content",
 			},
 			newAndDeletedFiles:     []string{"somefile.go"},
-			protoFileToGUID:        map[string]string{},
+			protoFileToGUIDs:       map[string][]string{},
 			checkUnexpectedChanges: true,
 			wantErrMsg:             "expected no new or deleted files, but found",
 		},
@@ -95,7 +95,7 @@ func TestValidateGenerateTest(t *testing.T) {
 			},
 			changedFiles:           []string{"deleted.go"},
 			newAndDeletedFiles:     []string{"deleted.go"},
-			protoFileToGUID:        map[string]string{},
+			protoFileToGUIDs:       map[string][]string{},
 			checkUnexpectedChanges: false, // This is the key
 			wantErrMsg:             "",    // No error expected
 		},
@@ -109,7 +109,7 @@ func TestValidateGenerateTest(t *testing.T) {
 				// Make the file unreadable
 				return os.Chmod(filepath.Join(dir, "unreadable.go"), 0000)
 			},
-			protoFileToGUID:        map[string]string{},
+			protoFileToGUIDs:       map[string][]string{},
 			checkUnexpectedChanges: true,
 			wantErrMsg:             "failed to read changed file",
 		},
@@ -153,7 +153,7 @@ func TestValidateGenerateTest(t *testing.T) {
 				// Default to the root directory if not specified.
 				libraryState = &config.LibraryState{SourceRoots: []string{""}}
 			}
-			err := runner.validateGenerateTest(nil, test.protoFileToGUID, libraryState)
+			err := runner.validateGenerateTest(nil, test.protoFileToGUIDs, libraryState)
 
 			if test.wantErrMsg != "" {
 				if err == nil {
@@ -182,7 +182,7 @@ func TestPrepareForGenerateTest(t *testing.T) {
 		addAllErrStr   = "add all error"
 		commitErrStr   = "commit error"
 	)
-	defaultProtoContent := `
+	protoWithServiceAndMessage := `
 syntax = "proto3";
 package google.cloud.aiplatform.v1;
 import "google/api/annotations.proto";
@@ -197,29 +197,65 @@ service PredictionService {
 message PredictRequest {}
 message PredictResponse {}
 `
+	protoWithServiceOnly := `
+syntax = "proto3";
+package google.cloud.aiplatform.v1;
+service PredictionService {}
+`
+	protoWithMessageOnly := `
+syntax = "proto3";
+package google.cloud.aiplatform.v1;
+message PredictRequest {}
+`
 
 	for _, test := range []struct {
-		name                string
-		libraryState        *config.LibraryState
-		mockRepo            *MockRepository
-		protoContent        string
-		setup               func(repoDir string) error
-		wantErrMsg          string
-		wantCommitCalls     int
-		wantProtoFileToGUID bool
+		name            string
+		libraryState    *config.LibraryState
+		mockRepo        *MockRepository
+		protoContent    string
+		setup           func(repoDir string) error
+		wantErrMsg      string
+		wantCommitCalls int
+		wantGUIDCount   int
 	}{
 		{
-			name: "success",
+			name: "success with service and message",
 			libraryState: &config.LibraryState{
 				ID:                  libraryID,
 				LastGeneratedCommit: initialCommit,
 				APIs:                []*config.API{{Path: protoPath}},
 			},
-			mockRepo:            &MockRepository{},
-			protoContent:        defaultProtoContent,
-			wantErrMsg:          "",
-			wantCommitCalls:     1,
-			wantProtoFileToGUID: true,
+			mockRepo:        &MockRepository{},
+			protoContent:    protoWithServiceAndMessage,
+			wantErrMsg:      "",
+			wantCommitCalls: 1,
+			wantGUIDCount:   2,
+		},
+		{
+			name: "success with service only",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: initialCommit,
+				APIs:                []*config.API{{Path: protoPath}},
+			},
+			mockRepo:        &MockRepository{},
+			protoContent:    protoWithServiceOnly,
+			wantErrMsg:      "",
+			wantCommitCalls: 1,
+			wantGUIDCount:   1,
+		},
+		{
+			name: "success with message only",
+			libraryState: &config.LibraryState{
+				ID:                  libraryID,
+				LastGeneratedCommit: initialCommit,
+				APIs:                []*config.API{{Path: protoPath}},
+			},
+			mockRepo:        &MockRepository{},
+			protoContent:    protoWithMessageOnly,
+			wantErrMsg:      "",
+			wantCommitCalls: 1,
+			wantGUIDCount:   1,
 		},
 		{
 			name: "missing last generated commit",
@@ -228,11 +264,11 @@ message PredictResponse {}
 				LastGeneratedCommit: "", // Missing commit
 				APIs:                []*config.API{{Path: protoPath}},
 			},
-			mockRepo:            &MockRepository{},
-			protoContent:        defaultProtoContent,
-			wantErrMsg:          "last_generated_commit is not set",
-			wantCommitCalls:     0,
-			wantProtoFileToGUID: false,
+			mockRepo:        &MockRepository{},
+			protoContent:    protoWithServiceAndMessage,
+			wantErrMsg:      "last_generated_commit is not set",
+			wantCommitCalls: 0,
+			wantGUIDCount:   0,
 		},
 		{
 			name: "checkout commit error",
@@ -244,10 +280,10 @@ message PredictResponse {}
 			mockRepo: &MockRepository{
 				CheckoutCommitAndCreateBranchError: errors.New(checkoutErrStr),
 			},
-			protoContent:        defaultProtoContent,
-			wantErrMsg:          checkoutErrStr,
-			wantCommitCalls:     0,
-			wantProtoFileToGUID: false,
+			protoContent:    protoWithServiceAndMessage,
+			wantErrMsg:      checkoutErrStr,
+			wantCommitCalls: 0,
+			wantGUIDCount:   0,
 		},
 		{
 			name: "add all error",
@@ -259,10 +295,10 @@ message PredictResponse {}
 			mockRepo: &MockRepository{
 				AddAllError: errors.New(addAllErrStr),
 			},
-			protoContent:        defaultProtoContent,
-			wantErrMsg:          addAllErrStr,
-			wantCommitCalls:     0,
-			wantProtoFileToGUID: false,
+			protoContent:    protoWithServiceAndMessage,
+			wantErrMsg:      addAllErrStr,
+			wantCommitCalls: 0,
+			wantGUIDCount:   0,
 		},
 		{
 			name: "commit error",
@@ -274,10 +310,10 @@ message PredictResponse {}
 			mockRepo: &MockRepository{
 				CommitError: errors.New(commitErrStr),
 			},
-			protoContent:        defaultProtoContent,
-			wantErrMsg:          commitErrStr,
-			wantCommitCalls:     1, // Commit is still called
-			wantProtoFileToGUID: false,
+			protoContent:    protoWithServiceAndMessage,
+			wantErrMsg:      commitErrStr,
+			wantCommitCalls: 1, // Commit is still called
+			wantGUIDCount:   0,
 		},
 		{
 			name: "empty proto file",
@@ -286,11 +322,11 @@ message PredictResponse {}
 				LastGeneratedCommit: initialCommit,
 				APIs:                []*config.API{{Path: protoPath}},
 			},
-			mockRepo:            &MockRepository{},
-			protoContent:        "", // Empty content
-			wantErrMsg:          "configured to generate, but nothing to generate",
-			wantCommitCalls:     0,
-			wantProtoFileToGUID: false,
+			mockRepo:        &MockRepository{},
+			protoContent:    "", // Empty content
+			wantErrMsg:      "configured to generate, but nothing to generate",
+			wantCommitCalls: 0,
+			wantGUIDCount:   0,
 		},
 		{
 			name: "proto file with no insertion point",
@@ -306,9 +342,9 @@ package google.cloud.aiplatform.v1;
 import "google/api/annotations.proto";
 // no message, service or enum
 `,
-			wantErrMsg:          "configured to generate, but nothing to generate",
-			wantCommitCalls:     0,
-			wantProtoFileToGUID: false,
+			wantErrMsg:      "configured to generate, but nothing to generate",
+			wantCommitCalls: 0,
+			wantGUIDCount:   0,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -335,7 +371,7 @@ import "google/api/annotations.proto";
 			runner := &testGenerateRunner{
 				sourceRepo: test.mockRepo,
 			}
-			protoFileToGUID, err := runner.prepareForGenerateTest(test.libraryState, test.libraryState.ID)
+			protoFileToGUIDs, err := runner.prepareForGenerateTest(test.libraryState, test.libraryState.ID)
 
 			// Check for error
 			if test.wantErrMsg != "" {
@@ -350,13 +386,18 @@ import "google/api/annotations.proto";
 			}
 
 			// Check if a GUID was expected to be injected.
-			if test.wantProtoFileToGUID {
-				if len(protoFileToGUID) != 1 {
-					t.Fatalf("len(protoFileToGUID) = %d, want 1", len(protoFileToGUID))
+			if test.wantGUIDCount > 0 {
+				if len(protoFileToGUIDs) != 1 {
+					t.Fatalf("len(protoFileToGUIDs) = %d, want 1", len(protoFileToGUIDs))
+				}
+				// Check the number of GUIDs injected into the single proto file.
+				injectedGUIDs := protoFileToGUIDs[filepath.Join(protoPath, protoFilename)]
+				if len(injectedGUIDs) != test.wantGUIDCount {
+					t.Errorf("len(injectedGUIDs) = %d, want %d", len(injectedGUIDs), test.wantGUIDCount)
 				}
 			} else {
-				if len(protoFileToGUID) != 0 {
-					t.Fatalf("len(protoFileToGUID) = %d, want 0", len(protoFileToGUID))
+				if len(protoFileToGUIDs) != 0 {
+					t.Fatalf("len(protoFileToGUIDs) = %d, want 0", len(protoFileToGUIDs))
 				}
 			}
 
@@ -625,7 +666,8 @@ func TestCleanup(t *testing.T) {
 			wantDeleteLocalBranchesCalls: 1,
 			wantResetHardCalls:           0, // ResetHard should not be called
 			wantErrMsg:                   "failed to delete branch",
-		}, {
+		},
+		{
 			name:       "ResetHard returns error",
 			sourceRepo: &MockRepository{},
 			repo: &MockRepository{
