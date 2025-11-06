@@ -3,7 +3,7 @@
 Welcome! This guide is intended to help you get started with the Librarian
 project and begin contributing effectively.
 
-## Prerequisites
+## Step 1: Setup Environment to Run Librarian
 
 `librarian` requires:
 
@@ -27,7 +27,7 @@ command line needs to be run, just once:
 gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
-## Step 1: Setup Environment to Run Librarian
+## Step 2: Setup Environment to Run Librarian
 Install the Go extension following the
 [instructions for your preferred editor](https://github.com/golang/tools/tree/master/gopls#editors)
 
@@ -37,13 +37,13 @@ formatting) and
 [goimports](https://pkg.go.dev/golang.org/x/tools/cmd/goimports) (automatic
 import management).
 
-## Step 2: Understand How We Work
+## Step 3: Understand How We Work
 
 Read the
 [CONTRIBUTING.md](https://github.com/googleapis/librarian/blob/main/CONTRIBUTING.md)
 for information on how we work, how to submit code, and what to expect.
 
-## Step 3: Learn Go
+## Step 4: Learn Go
 
 If you are new to Go, complete these tutorials:
 
@@ -53,11 +53,46 @@ If you are new to Go, complete these tutorials:
 
 These will teach you the foundations for how to write, run, and test Go code.
 
-## Step 4: Understand How We Write Go
+## Step 5: Understand How We Write Go
 
 Read our guide on
 [How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md), for
 [project-specific guidance on writing idiomatic, consistent Go code.
+
+## Step 6: Running Librarian
+
+There are various options for running `librarian`. We recommend using `go run`
+(the first option) unless you're developing `librarian`. You may wish to use
+a bash alias for simplicity. For example, using the first option below you might
+use:
+
+```sh
+$ alias librarian='go run github.com/googleapis/librarian/cmd/librarian@latest'
+```
+
+In this guide, we just assume that `librarian` is either a binary in your path,
+or a suitable alias.
+
+### Using `go run`
+
+The latest released version of `librarian` can be run directly without cloning
+using:
+
+```sh
+$ go run github.com/googleapis/librarian/cmd/librarian@latest
+```
+
+### Using `go install`
+
+To install a binary locally, and then run it (assuming the `$GOBIN` directory
+is in your path):
+
+```sh
+$ go install github.com/googleapis/librarian/cmd/librarian@latest
+```
+
+Note that while this makes it easier to run `librarian`, you'll need to know
+to install a new version when it's released.
 
 ## Helpful Links
 
