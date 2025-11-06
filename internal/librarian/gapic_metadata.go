@@ -123,6 +123,9 @@ func extractAPIVersions(mds map[string]*gapic.GapicMetadata) []*libraryPackageAP
 			lpav.ServiceVersion[serviceName] = s.GetApiVersion()
 			lpav.VersionServices[s.GetApiVersion()] = append(lpav.VersionServices[s.GetApiVersion()], serviceName)
 		}
+		if len(lpav.VersionServices) == 0 {
+			continue
+		}
 		result = append(result, lpav)
 	}
 
