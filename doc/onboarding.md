@@ -18,11 +18,7 @@ While in theory `librarian` should be run from your local remote desktop.
 
 > Note that installing Docker will cause gLinux to warn you that Docker is
 > unsupported and discouraged. Within Cloud, support for Docker is a core
-> expectation (e.g. for Cloud Run and Cloud Build). Using Docker is the most
-> practical way of abstracting away language details. We are confident that
-> there are enough Googlers who require Docker to work on gLinux that it won't
-> actually go away any time soon. We may investigate using podman instead if
-> necessary.
+> expectation (e.g. for Cloud Run and Cloud Build).
 
 Docker needs to be configured to use gcloud for authentication. The following
 command line needs to be run, just once:
