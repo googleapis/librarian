@@ -268,12 +268,16 @@ func injectGUIDsIntoProto(absPath string) ([]string, error) {
 		return nil, nil
 	}
 
-	injections := make(map[int][]string)
+	commentsByLine := make(map[int][]string)
 	var injectedGUIDs []string
 	// find the first occurrence of message/enum, and the first occurrence of service separately
 	// because they usually correspond to separate generated files.
-	prepareGUIDInjection(lines, []string{"message ", "enum "}, injections, &injectedGUIDs)
-	prepareGUIDInjection(lines, []string{"service "}, injections, &injectedGUIDs)
+	if guid := prepareGUIDInjection(lines, []string{"message ", "enum "}, commentsByLine); guid != "" {
+		injectedGUIDs = append(injectedGUIDs, guid)
+	}
+	if guid := prepareGUIDInjection(lines, []string{"service "}, commentsByLine); guid != "" {
+		injectedGUIDs = append(injectedGUIDs, guid)
+	}
 
 	if len(injectedGUIDs) == 0 {
 		return nil, nil
@@ -281,7 +285,7 @@ func injectGUIDsIntoProto(absPath string) ([]string, error) {
 
 	var newLines []string
 	for i, line := range lines {
-		if comments, ok := injections[i]; ok {
+		if comments, ok := commentsByLine[i]; ok {
 			newLines = append(newLines, comments...)
 		}
 		newLines = append(newLines, line)
@@ -294,17 +298,18 @@ func injectGUIDsIntoProto(absPath string) ([]string, error) {
 	return injectedGUIDs, nil
 }
 
-// prepareGUIDInjection finds the first occurrence of any of the search terms and,
-// if found, injects a new GUID comment into the injections map and the GUID
-// itself into the injectedGUIDs slice.
-func prepareGUIDInjection(lines []string, searchTerms []string, injections map[int][]string, injectedGUIDs *[]string) {
+// prepareGUIDInjection finds the first occurrence of any of the provided search
+// terms and, if found, injects a new GUID comment into the commentsByLine map and
+// returns the generated GUID.
+func prepareGUIDInjection(lines []string, searchTerms []string, commentsByLine map[int][]string) string {
 	insertionLine := findProtoInsertionLine(lines, searchTerms)
 	if insertionLine != -1 {
 		guid := uuid.New().String()
 		comment := "// test-change-" + guid
-		injections[insertionLine] = append(injections[insertionLine], comment)
-		*injectedGUIDs = append(*injectedGUIDs, guid)
+		commentsByLine[insertionLine] = append(commentsByLine[insertionLine], comment)
+		return guid
 	}
+	return ""
 }
 
 // findProtoInsertionLine determines the best line number to inject a test comment
