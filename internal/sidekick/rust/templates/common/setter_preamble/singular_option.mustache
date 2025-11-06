@@ -49,12 +49,20 @@ limitations under the License.
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<f32>);
 {{/IsLikeFloat}}
 {{#IsEnum}}
+{{#Codec.IsWktNullValue}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use wkt::NullValue;
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(NullValue));
+/// let x_none = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<NullValue>);
+{{/Codec.IsWktNullValue}}
+{{^Codec.IsWktNullValue}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
 {{#EnumType.Codec.ValuesForExamples}}
 /// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_or_clear_{{FieldCodec.SetterName}}(Some({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}));
 {{/EnumType.Codec.ValuesForExamples}}
 /// let x_none = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{EnumType.Codec.Name}}>);
+{{/Codec.IsWktNullValue}}
 {{/IsEnum}}
 {{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
