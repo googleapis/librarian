@@ -17,64 +17,11 @@ for appropriate ways of obtaining more support.
 
 ## Configuring development environment
 
-See [Setup Environment to Run Librarian](onboarding.md).
+See [Setup Environment to Run Librarian](onboarding.md#step-1-setup-environment-to-run-librarian).
 
 ## Running `librarian`
 
-### Building locally
-
-Clone the source code, then run it:
-
-```sh
-$ git clone https://github.com/googleapis/librarian
-$ cd librarian
-$ go run ./cmd/librarian
-```
-
-## Obtaining a GitHub access token
-
-`librarian` commands which perform write operations on GitHub require
-a GitHub access token to be specified via the `LIBRARIAN_GITHUB_TOKEN`
-environment variable. While access tokens can be generated manually
-and then stored in environment variables in other ways, it's simplest
-to use the [`gh` tool](https://github.com/cli/cli).
-
-Once installed, use `gh auth login` to log into GitHub. After that,
-when running `librarian` you can use `gh auth token` to obtain an access
-token and set it in the environment variable just for that invocation:
-
-```sh
-$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) librarian ...
-```
-
-The examples below assume include this for convenience; if you have
-set the environment variable in a different way, just remove the
-`LIBRARIAN_GITHUB_TOKEN=$(gh auth token)` part from the command.
-
-## Repository and library options
-
-`librarian` can either operate on a local clone of the library repo,
-or it can clone the repo itself. Unless you have a particular need to use a
-local clone (e.g. to the impact of a local change) we recommend you let
-`librarian` clone the library repo itself, using the `-repo` flag - just specify
-the GitHub repository, e.g.
-`-repo=https://github.com/googleapis/google-cloud-go`. This avoids any
-risk of unwanted local changes accidentally becoming part of a generation/release
-PR.
-
-If you wish to use a local clone, you can specify the directory in the `-repo`
-flag, or just run `librarian` from the root directory of the clone and omit the
-`-repo` flag entirely.
-
-The commands in this guide are specifically for generating/releasing a single
-library, specified with the `library` flag. This is typically the name of the
-package or module, e.g. `bigtable` or `google-cloud-bigtable`. Consult the
-state file (`.librarian/state.yaml`) in the library repository to find the
-library IDs in use (and ideally record this in a team-specific playbook).
-
-The remainder of this guide uses
-`https://github.com/googleapis/google-cloud-go` as the repository and `bigtable`
-as the library ID, in order to provide concrete examples.
+See [Running Librarian](onboarding.md#step-6-running-librarian).
 
 ## Initiating a release
 
