@@ -109,23 +109,30 @@ func TestNewPublishRunner(t *testing.T) {
 func TestPublishRunnerRun(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name            string
-		command         string
-		push            bool
-		forceRun        bool
-		want            string
-		runError        error
-		wantErr         bool
-		buildTriggers   []*cloudbuildpb.BuildTrigger
-		ghPRs           []*github.PullRequest
-		ghError         error
-		wantTriggersRun []string
+		name               string
+		push               bool
+		forceRun           bool
+		repositoriesConfig *RepositoriesConfig
+		want               string
+		runError           error
+		wantErr            bool
+		buildTriggers      []*cloudbuildpb.BuildTrigger
+		ghPRs              []*github.PullRequest
+		ghError            error
+		wantTriggersRun    []string
 	}{
 		{
 			name:     "runs publish-release trigger",
-			command:  "publish-release",
 			push:     true,
 			forceRun: true,
+			repositoriesConfig: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						SupportedCommands: []string{"publish-release"},
+						Name:              "librarian",
+					},
+				},
+			},
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "publish-release",
@@ -136,20 +143,48 @@ func TestPublishRunnerRun(t *testing.T) {
 			wantTriggersRun: []string{"publish-release-trigger-id"},
 		},
 		{
-			name:            "skips publish-release with no PRs",
-			command:         "publish-release",
-			push:            true,
-			forceRun:        true,
+			name:     "skips publish-release with no PRs",
+			push:     true,
+			forceRun: true,
+			repositoriesConfig: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						SupportedCommands: []string{"publish-release"},
+						Name:              "librarian",
+					},
+				},
+			},
 			ghPRs:           []*github.PullRequest{},
 			wantTriggersRun: nil,
 		},
 		{
-			name:            "error finding PRs for publish-release",
-			command:         "publish-release",
-			push:            true,
-			forceRun:        true,
+			name:     "error finding PRs for publish-release",
+			push:     true,
+			forceRun: true,
+			repositoriesConfig: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						SupportedCommands: []string{"publish-release"},
+						Name:              "librarian",
+					},
+				},
+			},
 			wantErr:         true,
 			ghError:         fmt.Errorf("github error"),
+			wantTriggersRun: nil,
+		},
+		{
+			name:     "error finding repository",
+			push:     true,
+			forceRun: true,
+			repositoriesConfig: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						SupportedCommands: []string{"publish-release"},
+					},
+				},
+			},
+			wantErr:         true,
 			wantTriggersRun: nil,
 		},
 	} {
@@ -168,16 +203,9 @@ func TestPublishRunnerRun(t *testing.T) {
 				cloudBuildClient: cloudBuildClient,
 				ghClient:         ghClient,
 				forceRun:         test.forceRun,
-				repoConfig: &RepositoriesConfig{
-					Repositories: []*RepositoryConfig{
-						{
-							SupportedCommands: []string{"publish-release"},
-							Name:              "librarian",
-						},
-					},
-				},
-				projectID: "some-project",
-				push:      test.push,
+				repoConfig:       test.repositoriesConfig,
+				projectID:        "some-project",
+				push:             test.push,
 			}
 			err := runner.run(ctx)
 			if test.wantErr && err == nil {
