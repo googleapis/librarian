@@ -67,7 +67,7 @@ func TestNewPublishRunner(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+			// Do not run in parallel because tests are changing the global package-level variable clientFactory.
 			ctx := t.Context()
 			clientFactory = test.clientFactory
 			runner, err := newPublishRunner(ctx, test.cfg)
