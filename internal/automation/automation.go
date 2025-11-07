@@ -18,10 +18,10 @@ type automationRunner struct {
 	push     bool
 }
 
-func newAutomationRunner(cfg *config.AutomationConfig) *automationRunner {
+func newAutomationRunner(cfg *config.Config) *automationRunner {
 	return &automationRunner{
 		build:    cfg.Build,
-		command:  cfg.Command,
+		command:  cfg.CommandName,
 		forceRun: cfg.ForceRun,
 		project:  cfg.Project,
 		push:     cfg.Push,
