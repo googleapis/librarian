@@ -50,32 +50,6 @@ type libraryPackageAPIVersions struct {
 	VersionServices map[string][]string
 }
 
-func generateAPIVersionReleaseNotes(state *config.LibrarianState, repoDir string) (map[string]string, error) {
-	notes := make(map[string]string)
-
-	for _, library := range state.Libraries {
-		if !library.ReleaseTriggered {
-			continue
-		}
-		mds, err := readGapicMetadata(repoDir, library)
-		if err != nil {
-			return nil, fmt.Errorf("error reading gapic_metadata: %w", err)
-		}
-
-		v := extractAPIVersions(mds)
-		if len(v) == 0 {
-			continue
-		}
-		n, err := formatAPIVersionReleaseNotes(v)
-		if err != nil {
-			return nil, err
-		}
-		notes[library.ID] = n
-	}
-
-	return notes, nil
-}
-
 func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, error) {
 	if len(lpv) == 0 {
 		return "", nil

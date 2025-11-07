@@ -457,10 +457,6 @@ func TestStageRun(t *testing.T) {
 					},
 				}
 			},
-			files: map[string]string{
-				"dir1/file1.txt": "",
-				"dir1/file2.txt": "",
-			},
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -529,9 +525,6 @@ func TestStageRun(t *testing.T) {
 						},
 					},
 				}
-			},
-			files: map[string]string{
-				"dir1/file1.txt": "",
 			},
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -851,9 +844,6 @@ func TestStageRun(t *testing.T) {
 					librarianConfig: &config.LibrarianConfig{},
 				}
 			},
-			files: map[string]string{
-				"dir1/file1.txt": "",
-			},
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
@@ -924,9 +914,6 @@ func TestStageRun(t *testing.T) {
 					ghClient:        &mockGitHubClient{},
 					librarianConfig: &config.LibrarianConfig{},
 				}
-			},
-			files: map[string]string{
-				"dir1/file1.txt": "",
 			},
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
@@ -1033,9 +1020,6 @@ func TestStageRun(t *testing.T) {
 					},
 					librarianConfig: &config.LibrarianConfig{},
 				}
-			},
-			files: map[string]string{
-				"dir1/file1.txt": "",
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to commit and push",
