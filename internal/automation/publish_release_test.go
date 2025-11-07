@@ -52,31 +52,19 @@ func TestPublishRunnerRun(t *testing.T) {
 			wantTriggersRun: []string{"publish-release-trigger-id"},
 		},
 		{
-			name:     "skips publish-release with no PRs",
-			command:  "publish-release",
-			push:     true,
-			forceRun: true,
-			buildTriggers: []*cloudbuildpb.BuildTrigger{
-				{
-					Name: "publish-release",
-					Id:   "publish-release-trigger-id",
-				},
-			},
+			name:            "skips publish-release with no PRs",
+			command:         "publish-release",
+			push:            true,
+			forceRun:        true,
 			ghPRs:           []*github.PullRequest{},
 			wantTriggersRun: nil,
 		},
 		{
-			name:     "error finding PRs for publish-release",
-			command:  "publish-release",
-			push:     true,
-			forceRun: true,
-			wantErr:  true,
-			buildTriggers: []*cloudbuildpb.BuildTrigger{
-				{
-					Name: "publish-release",
-					Id:   "publish-release-trigger-id",
-				},
-			},
+			name:            "error finding PRs for publish-release",
+			command:         "publish-release",
+			push:            true,
+			forceRun:        true,
+			wantErr:         true,
 			ghError:         fmt.Errorf("github error"),
 			wantTriggersRun: nil,
 		},
@@ -93,7 +81,7 @@ func TestPublishRunnerRun(t *testing.T) {
 			}
 			runner := &publishRunner{
 				cloudBuildClient: &wrappedCloudBuildClient{
-					client: &client,
+					//client: &client,
 				},
 				ghClient: ghClient,
 				forceRun: test.forceRun,
