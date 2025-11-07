@@ -20,27 +20,27 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func addFlagBuild(fs *flag.FlagSet, cfg *config.AutomationConfig) {
+func addFlagBuild(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Build, "build", false,
 		"The _BUILD flag (true/false) to Librarian CLI's -build option")
 }
 
-func addFlagCommand(fs *flag.FlagSet, cfg *config.AutomationConfig) {
-	fs.StringVar(&cfg.Command, "command", "generate",
+func addFlagCommand(fs *flag.FlagSet, cfg *config.Config) {
+	fs.StringVar(&cfg.CommandName, "command", "generate",
 		"The librarian command to run")
 }
 
-func addFlagForceRun(fs *flag.FlagSet, cfg *config.AutomationConfig) {
+func addFlagForceRun(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.ForceRun, "force-run", false,
 		"The _FORCE_RUN flag (true/false) to Librarian CLI's -force-run option")
 }
 
-func addFlagProject(fs *flag.FlagSet, cfg *config.AutomationConfig) {
+func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Project, "project", "cloud-sdk-librarian-prod",
 		"GCP project ID")
 }
 
-func addFlagPush(fs *flag.FlagSet, cfg *config.AutomationConfig) {
+func addFlagPush(fs *flag.FlagSet, cfg *config.Config) {
 	fs.BoolVar(&cfg.Push, "push", true,
 		"The _PUSH flag (true/false) to Librarian CLI's -push option")
 }
