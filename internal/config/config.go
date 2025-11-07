@@ -133,6 +133,7 @@ type Config struct {
 	// This flag is ignored if Push is set to true.
 	Commit bool
 
+	// ForceRun determines whether to force the command to run.
 	ForceRun bool
 
 	// GenerateUnchanged determines whether to generate libraries where none of
@@ -196,6 +197,7 @@ type Config struct {
 	// Requires the --library flag to be specified.
 	LibraryVersion string
 
+	// Project is the ID of the Google Cloud project to use.
 	Project string
 
 	// PullRequest to target and operate one in the context of a release.
