@@ -281,6 +281,16 @@ func TestExtractAPIVersions(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name: "one service, no api_version",
+			in: map[string]*gapic.GapicMetadata{
+				"cloud.google.com/go/library/apiv1": {
+					LibraryPackage: "cloud.google.com/go/library/apiv1",
+					Services:       map[string]*gapic.GapicMetadata_ServiceForTransport{"Library": {}},
+				},
+			},
+			want: nil,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := extractAPIVersions(test.in)
