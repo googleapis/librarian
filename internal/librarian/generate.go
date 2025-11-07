@@ -48,6 +48,7 @@ func generateSingleLibrary(ctx context.Context, containerClient ContainerClient,
 		Output:    libraryOutputDir,
 		RepoDir:   repo.GetDir(),
 		State:     state,
+		Image:     state.Image,
 	}
 	slog.Info("performing generation for library", "id", libraryState.ID, "outputDir", libraryOutputDir)
 	if err := containerClient.Generate(ctx, generateRequest); err != nil {

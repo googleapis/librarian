@@ -157,6 +157,8 @@ type mockContainerClient struct {
 	// Set this value if you want the configure-response
 	// has library source roots and remove regex.
 	configureLibraryPaths []string
+	// The last generation request
+	generateRequest *docker.GenerateRequest
 }
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
@@ -241,6 +243,7 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
+	m.generateRequest = request
 
 	if m.noGenerateResponse {
 		return m.generateErr

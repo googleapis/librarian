@@ -210,6 +210,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 		wantCreateIssueCalls       int
 		wantCommitMsg              string
 		checkoutError              error
+		wantImage                  string
 	}{
 		{
 			name:  "specific image",
@@ -234,6 +235,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantGenerateCalls:   1,
 			wantBuildCalls:      0, // no -build flag
 			wantCheckoutCalls:   2,
+			wantImage:           "some-image",
 		},
 		{
 			name:  "no change image",
@@ -258,6 +260,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantGenerateCalls:   1,
 			wantBuildCalls:      0,
 			wantCheckoutCalls:   2,
+			wantImage:           "gcr.io/test/image:v1.2.3",
 		},
 		{
 			name: "finds latest image",
@@ -283,6 +286,7 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantGenerateCalls:   1,
 			wantBuildCalls:      0, // no -build flag
 			wantCheckoutCalls:   2,
+			wantImage:           "gcr.io/test/image@sha256:abc123",
 		},
 		{
 			name: "finds image error",
@@ -760,6 +764,11 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantGenerateCalls, test.containerClient.generateCalls); diff != "" {
 				t.Errorf("%s: run() generateCalls mismatch (-want +got):%s", test.name, diff)
+			}
+			if test.wantImage != "" {
+				if diff := cmp.Diff(test.wantImage, test.containerClient.generateRequest.Image); diff != "" {
+					t.Errorf("%s: run() image mismatch (-want +got):%s", test.name, diff)
+				}
 			}
 			if diff := cmp.Diff(test.wantBuildCalls, test.containerClient.buildCalls); diff != "" {
 				t.Errorf("%s: run() buildCalls mismatch (-want +got):%s", test.name, diff)

@@ -145,6 +145,38 @@ func TestDockerRun(t *testing.T) {
 			wantErrMsg: simulateDockerErrMsg,
 		},
 		{
+			name: "Generate runs in docker with image override",
+			docker: &Docker{
+				Image:     testImage,
+				HostMount: "hostDir:localDir",
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				generateRequest := &GenerateRequest{
+					State:     state,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+					Output:    "hostDir",
+					LibraryID: testLibraryID,
+					Image:     "custom-image:abcd123",
+				}
+
+				return d.Generate(ctx, generateRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", "localDir:/output",
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				"custom-image:abcd123",
+				string(CommandGenerate),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--source=/source",
+			},
+		},
+		{
 			name: "Generate runs in docker",
 			docker: &Docker{
 				Image:     testImage,
@@ -194,6 +226,32 @@ func TestDockerRun(t *testing.T) {
 				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
 				"-v", fmt.Sprintf("%s:/repo", repoDir),
 				testImage,
+				string(CommandBuild),
+				"--librarian=/librarian",
+				"--repo=/repo",
+			},
+		},
+		{
+			name: "Build runs in docker with image override",
+			docker: &Docker{
+				Image:     testImage,
+				HostMount: "hostDir:localDir",
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				buildRequest := &BuildRequest{
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   repoDir,
+					Image:     "custom-image:abcd123",
+				}
+
+				return d.Build(ctx, buildRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s:/repo", repoDir),
+				"custom-image:abcd123",
 				string(CommandBuild),
 				"--librarian=/librarian",
 				"--repo=/repo",
@@ -265,6 +323,46 @@ func TestDockerRun(t *testing.T) {
 				"-v", fmt.Sprintf("%s/a/b/go.mod:/repo/a/b/go.mod:ro", repoDir),
 				"-v", fmt.Sprintf("%s/go.mod:/repo/go.mod:ro", repoDir),
 				testImage,
+				string(CommandConfigure),
+				"--librarian=/librarian",
+				"--input=/input",
+				"--output=/output",
+				"--repo=/repo",
+				"--source=/source",
+			},
+		},
+		{
+			name: "Configure runs in docker with image override",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				configureRequest := &ConfigureRequest{
+					State:     state,
+					LibraryID: testLibraryID,
+					RepoDir:   repoDir,
+					ApiRoot:   testAPIRoot,
+					Output:    testOutput,
+					GlobalFiles: []string{
+						"a/b/go.mod",
+						"go.mod",
+					},
+					Image: "custom-image:abcd123",
+				}
+
+				_, err := d.Configure(ctx, configureRequest)
+
+				return err
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", repoDir),
+				"-v", fmt.Sprintf("%s/.librarian/generator-input:/input", repoDir),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"-v", fmt.Sprintf("%s:/source:ro", testAPIRoot),
+				"-v", fmt.Sprintf("%s/a/b/go.mod:/repo/a/b/go.mod:ro", repoDir),
+				"-v", fmt.Sprintf("%s/go.mod:/repo/go.mod:ro", repoDir),
+				"custom-image:abcd123",
 				string(CommandConfigure),
 				"--librarian=/librarian",
 				"--input=/input",
@@ -515,6 +613,41 @@ func TestDockerRun(t *testing.T) {
 				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-stage-all-libraries")),
 				"-v", fmt.Sprintf("%s:/output", testOutput),
 				testImage,
+				string(CommandReleaseStage),
+				"--librarian=/librarian",
+				"--repo=/repo",
+				"--output=/output",
+			},
+		},
+		{
+			name: "Release stage runs in docker with image override",
+			docker: &Docker{
+				Image: testImage,
+			},
+			runCommand: func(ctx context.Context, d *Docker) error {
+				partialRepoDir := filepath.Join(repoDir, "release-stage-all-libraries")
+				if err := os.MkdirAll(filepath.Join(repoDir, config.LibrarianDir), 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				releaseInitRequest := &ReleaseStageRequest{
+					State:           state,
+					Output:          testOutput,
+					LibrarianConfig: &config.LibrarianConfig{},
+					RepoDir:         partialRepoDir,
+					Image:           "custom-image:abcd123",
+				}
+
+				defer os.RemoveAll(partialRepoDir)
+
+				return d.ReleaseStage(ctx, releaseInitRequest)
+			},
+			want: []string{
+				"run", "--rm",
+				"-v", fmt.Sprintf("%s/.librarian:/librarian", filepath.Join(repoDir, "release-stage-all-libraries")),
+				"-v", fmt.Sprintf("%s:/repo:ro", filepath.Join(repoDir, "release-stage-all-libraries")),
+				"-v", fmt.Sprintf("%s:/output", testOutput),
+				"custom-image:abcd123",
 				string(CommandReleaseStage),
 				"--librarian=/librarian",
 				"--repo=/repo",
