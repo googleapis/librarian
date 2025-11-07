@@ -44,7 +44,6 @@ func TestRustProstConvert(t *testing.T) {
 	for _, config := range configs {
 		cmdLine := &CommandLine{
 			Command:             []string{},
-			ProjectRoot:         projectRoot,
 			SpecificationFormat: "protobuf",
 			SpecificationSource: config.Source,
 			Source: map[string]string{
