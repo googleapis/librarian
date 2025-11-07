@@ -22,9 +22,57 @@ import (
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v69/github"
+	"github.com/googleapis/librarian/internal/config"
 )
 
+func TestNewPublishRunner(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name: "create_a_runner",
+			cfg: &config.Config{
+				ForceRun: true,
+				Project:  "example-project",
+				Push:     true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := t.Context()
+			runner, err := newPublishRunner(ctx, test.cfg)
+			if test.wantErr {
+				if err == nil {
+					t.Errorf("newPublishRunner() want error but got nil")
+					return
+				}
+
+				return
+			}
+			if err != nil {
+				t.Errorf("newPublishRunner() got error: %v", err)
+				return
+			}
+
+			if runner.forceRun != test.cfg.ForceRun {
+				t.Errorf("newPublishRunner() forceRun is not set")
+			}
+			if runner.projectID != test.cfg.Project {
+				t.Errorf("newPublishRunner() projectID is not set")
+			}
+			if runner.push != test.cfg.Push {
+				t.Errorf("newPublishRunner() push is not set")
+			}
+		})
+	}
+}
+
 func TestPublishRunnerRun(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name            string
 		command         string
@@ -71,6 +119,7 @@ func TestPublishRunnerRun(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := t.Context()
 			cloudBuildClient := &mockCloudBuildClient{
 				runError:      test.runError,
