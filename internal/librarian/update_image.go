@@ -130,7 +130,7 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	timings := map[string]time.Duration{}
 	for _, libraryState := range r.state.Libraries {
 		if r.librarianConfig.IsGenerationBlocked(libraryState.ID) {
-			slog.Info("skipping generation for library due to generate_blocked", "library", libraryState.ID)
+			slog.Debug("skipping generation for library due to generate_blocked", "library", libraryState.ID)
 			skippedGenerationsCount++
 			continue
 		}
@@ -146,10 +146,10 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 		timings[libraryState.ID] = time.Since(startTime)
 	}
 	if len(failedGenerations) > 0 {
-		slog.Warn("failed generations", slog.Int("num", len(failedGenerations)))
+		slog.Warn("failed generations", "num", len(failedGenerations))
 	}
 	slog.Info("skipped generations", "num", skippedGenerationsCount)
-	slog.Info("successful generations", slog.Int("num", len(successfulGenerations)))
+	slog.Info("successful generations", "num", len(successfulGenerations))
 	if err := writeTiming(r.workRoot, timings); err != nil {
 		return err
 	}
