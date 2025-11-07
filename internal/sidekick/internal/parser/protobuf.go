@@ -243,6 +243,18 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			eFQN := fFQN + "." + e.GetName()
 			_ = processEnum(state, e, eFQN, f.GetPackage(), nil)
 		}
+
+		if f.Options != nil && proto.HasExtension(f.Options, annotations.E_ResourceDefinition) {
+			ext := proto.GetExtension(f.Options, annotations.E_ResourceDefinition)
+			if res, ok := ext.([]*annotations.ResourceDescriptor); ok {
+				for _, r := range res {
+					result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
+						Type:    r.GetType(),
+						Pattern: r.GetPattern(),
+					})
+				}
+			}
+		}
 	}
 
 	// Then we need to add the messages, enums and services to the list of

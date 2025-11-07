@@ -152,6 +152,8 @@ type API struct {
 	// State contains helpful information that can be used when generating
 	// clients.
 	State *APIState
+	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
+	ResourceDefinitions []*Resource
 }
 
 // HasMessages returns true if the API contains messages (most do).
