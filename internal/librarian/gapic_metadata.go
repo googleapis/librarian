@@ -19,9 +19,10 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
-	"maps"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	gapic "google.golang.org/genproto/googleapis/gapic/metadata"
@@ -29,7 +30,8 @@ import (
 )
 
 const (
-	gapicMetadataFile = "gapic_metadata.json"
+	gapicMetadataFile                   = "gapic_metadata.json"
+	serviceVersionOptimizationThreshold = 5
 )
 
 var (
@@ -37,17 +39,22 @@ var (
 {{- range .LibraryPackageAPIVersions }}
 
 <details><summary>{{.LibraryPackage}}</summary>
-{{ range $service, $version := .ServiceVersion }}
-* {{$service}}: {{$version}}{{ end }}
+{{ range .ServiceVersions }}
+* {{ .Service }}: {{ .Version }}{{ end }}
 
 </details>
 {{ end }}`))
 )
 
+type serviceVersion struct {
+	Service string
+	Version string
+}
+
 type libraryPackageAPIVersions struct {
 	LibraryPackage  string
-	ServiceVersion  map[string]string
-	VersionServices map[string][]string
+	ServiceVersions []serviceVersion
+	Versions        map[string]bool
 }
 
 func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, error) {
@@ -59,15 +66,15 @@ func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, err
 	// Only triggers if there are more than 5 service interfaces in the API.
 	// If there are fewer, there is still value in listing them individually.
 	for _, v := range lpv {
-		if len(v.VersionServices) > 1 {
+		// This optimization only applies if all services in a library package share the same version.
+		if len(v.Versions) != 1 {
 			continue
 		}
-		for sharedVersion := range maps.Keys(v.VersionServices) {
-			if len(v.VersionServices[sharedVersion]) < 5 {
-				break
-			}
-			v.ServiceVersion = map[string]string{
-				"All": sharedVersion,
+
+		// There is only one key in v.VersionServices, so this loop runs once.
+		for sharedVersion := range v.Versions {
+			if len(v.ServiceVersions) >= serviceVersionOptimizationThreshold {
+				v.ServiceVersions = []serviceVersion{{Service: "All", Version: sharedVersion}}
 			}
 		}
 	}
@@ -87,21 +94,28 @@ func extractAPIVersions(mds map[string]*gapic.GapicMetadata) []*libraryPackageAP
 	for _, md := range mds {
 		lpav := &libraryPackageAPIVersions{
 			LibraryPackage:  md.GetLibraryPackage(),
-			ServiceVersion:  make(map[string]string),
-			VersionServices: make(map[string][]string),
+			ServiceVersions: []serviceVersion{},
+			Versions:        make(map[string]bool),
 		}
 		for serviceName, s := range md.GetServices() {
 			if s.GetApiVersion() == "" {
 				continue
 			}
-			lpav.ServiceVersion[serviceName] = s.GetApiVersion()
-			lpav.VersionServices[s.GetApiVersion()] = append(lpav.VersionServices[s.GetApiVersion()], serviceName)
+			lpav.ServiceVersions = append(lpav.ServiceVersions, serviceVersion{Service: serviceName, Version: s.GetApiVersion()})
+			lpav.Versions[s.GetApiVersion()] = true
 		}
-		if len(lpav.VersionServices) == 0 {
+		if len(lpav.Versions) == 0 {
 			continue
 		}
+		slices.SortStableFunc(lpav.ServiceVersions, func(a, b serviceVersion) int {
+			return strings.Compare(a.Service, b.Service)
+		})
 		result = append(result, lpav)
 	}
+
+	slices.SortStableFunc(result, func(a, b *libraryPackageAPIVersions) int {
+		return strings.Compare(a.LibraryPackage, b.LibraryPackage)
+	})
 
 	return result
 }

@@ -154,11 +154,11 @@ func TestExtractAPIVersions(t *testing.T) {
 			want: []*libraryPackageAPIVersions{
 				{
 					LibraryPackage: "cloud.google.com/go/library/apiv1",
-					ServiceVersion: map[string]string{
-						"Library": "v1",
+					ServiceVersions: []serviceVersion{
+						{Service: "Library", Version: "v1"},
 					},
-					VersionServices: map[string][]string{
-						"v1": {"Library"},
+					Versions: map[string]bool{
+						"v1": true,
 					},
 				},
 			},
@@ -181,12 +181,12 @@ func TestExtractAPIVersions(t *testing.T) {
 			want: []*libraryPackageAPIVersions{
 				{
 					LibraryPackage: "cloud.google.com/go/library/apiv1",
-					ServiceVersion: map[string]string{
-						"Library":    "v1",
-						"Management": "v1",
+					ServiceVersions: []serviceVersion{
+						{Service: "Library", Version: "v1"},
+						{Service: "Management", Version: "v1"},
 					},
-					VersionServices: map[string][]string{
-						"v1": {"Library", "Management"},
+					Versions: map[string]bool{
+						"v1": true,
 					},
 				},
 			},
@@ -209,13 +209,13 @@ func TestExtractAPIVersions(t *testing.T) {
 			want: []*libraryPackageAPIVersions{
 				{
 					LibraryPackage: "cloud.google.com/go/library/apiv1",
-					ServiceVersion: map[string]string{
-						"ServiceA": "v1",
-						"ServiceB": "v1beta1",
+					ServiceVersions: []serviceVersion{
+						{Service: "ServiceA", Version: "v1"},
+						{Service: "ServiceB", Version: "v1beta1"},
 					},
-					VersionServices: map[string][]string{
-						"v1":      {"ServiceA"},
-						"v1beta1": {"ServiceB"},
+					Versions: map[string]bool{
+						"v1":      true,
+						"v1beta1": true,
 					},
 				},
 			},
@@ -243,20 +243,20 @@ func TestExtractAPIVersions(t *testing.T) {
 			want: []*libraryPackageAPIVersions{
 				{
 					LibraryPackage: "cloud.google.com/go/library/apiv1",
-					ServiceVersion: map[string]string{
-						"Library": "v1",
+					ServiceVersions: []serviceVersion{
+						{Service: "Library", Version: "v1"},
 					},
-					VersionServices: map[string][]string{
-						"v1": {"Library"},
+					Versions: map[string]bool{
+						"v1": true,
 					},
 				},
 				{
 					LibraryPackage: "cloud.google.com/go/library/apiv2",
-					ServiceVersion: map[string]string{
-						"AnotherLibraryService": "v2",
+					ServiceVersions: []serviceVersion{
+						{Service: "AnotherLibraryService", Version: "v2"},
 					},
-					VersionServices: map[string][]string{
-						"v2": {"AnotherLibraryService"},
+					Versions: map[string]bool{
+						"v2": true,
 					},
 				},
 			},
@@ -312,13 +312,13 @@ func TestFormatAPIVersionReleaseNotes(t *testing.T) {
 			in: []*libraryPackageAPIVersions{
 				{
 					LibraryPackage: "cloud.google.com/go/library/apiv1",
-					ServiceVersion: map[string]string{
-						"LibraryService": "2025-09-14",
-						"BookService":    "2025-04-04",
+					ServiceVersions: []serviceVersion{
+						{Service: "BookService", Version: "2025-04-04"},
+						{Service: "LibraryService", Version: "2025-09-14"},
 					},
-					VersionServices: map[string][]string{
-						"2025-09-14": {"LibraryService"},
-						"2025-04-04": {"BookService"},
+					Versions: map[string]bool{
+						"2025-09-14": true,
+						"2025-04-04": true,
 					},
 				},
 			},
@@ -337,22 +337,22 @@ func TestFormatAPIVersionReleaseNotes(t *testing.T) {
 			in: []*libraryPackageAPIVersions{
 				{
 					LibraryPackage: "cloud.google.com/go/library/apiv1",
-					ServiceVersion: map[string]string{
-						"LibraryService": "2025-09-14",
-						"BookService":    "2025-04-04",
+					ServiceVersions: []serviceVersion{
+						{Service: "BookService", Version: "2025-04-04"},
+						{Service: "LibraryService", Version: "2025-09-14"},
 					},
-					VersionServices: map[string][]string{
-						"2025-09-14": {"LibraryService"},
-						"2025-04-04": {"BookService"},
+					Versions: map[string]bool{
+						"2025-09-14": true,
+						"2025-04-04": true,
 					},
 				},
 				{
 					LibraryPackage: "cloud.google.com/go/anotherlibrary/apiv1",
-					ServiceVersion: map[string]string{
-						"AnotherLibraryService": "2025-05-24",
+					ServiceVersions: []serviceVersion{
+						{Service: "AnotherLibraryService", Version: "2025-05-24"},
 					},
-					VersionServices: map[string][]string{
-						"2025-05-24": {"AnotherLibraryService"},
+					Versions: map[string]bool{
+						"2025-05-24": true,
 					},
 				},
 			},
@@ -378,15 +378,15 @@ func TestFormatAPIVersionReleaseNotes(t *testing.T) {
 			in: []*libraryPackageAPIVersions{
 				{
 					LibraryPackage: "cloud.google.com/go/library/apiv1",
-					ServiceVersion: map[string]string{
-						"LibraryService":    "2025-09-14",
-						"BookService":       "2025-09-14",
-						"ShelfService":      "2025-09-14",
-						"BookMobileService": "2025-09-14",
-						"CounterService":    "2025-09-14",
+					ServiceVersions: []serviceVersion{
+						{Service: "BookService", Version: "2025-09-14"},
+						{Service: "BookMobileService", Version: "2025-09-14"},
+						{Service: "CounterService", Version: "2025-09-14"},
+						{Service: "LibraryService", Version: "2025-09-14"},
+						{Service: "ShelfService", Version: "2025-09-14"},
 					},
-					VersionServices: map[string][]string{
-						"2025-09-14": {"BookService", "BookMobileService", "CounterService", "LibraryService", "ShelfService"},
+					Versions: map[string]bool{
+						"2025-09-14": true,
 					},
 				},
 			},
