@@ -67,7 +67,9 @@ limitations under the License.
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
 /// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
 ///     ("key0", {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
 ///     ("key1", {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
@@ -128,7 +130,9 @@ limitations under the License.
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
 /// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
 ///     (true, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
 ///     (false, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
@@ -189,7 +193,9 @@ limitations under the License.
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
 /// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
 ///     (0, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
 ///     (1, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
@@ -250,7 +256,9 @@ limitations under the License.
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
 /// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
 ///     (0_u32, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
 ///     (1_u32, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),

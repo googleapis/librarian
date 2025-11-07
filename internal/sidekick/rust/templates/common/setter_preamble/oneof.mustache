@@ -70,7 +70,9 @@ limitations under the License.
 {{/IsEnum}}
 {{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
 /// use {{MessageType.Codec.NameInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some(
 ///     {{{Group.Codec.NameInExamples}}}::{{Codec.BranchName}}({{MessageType.Codec.Name}}::default().into())));
 {{/IsObject}}
