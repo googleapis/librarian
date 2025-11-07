@@ -15,8 +15,8 @@
 package sidekick
 
 import (
-	"github.com/googleapis/librarian/internal/sidekick/internal/config"
-	rustrelease "github.com/googleapis/librarian/internal/sidekick/internal/rust_release"
+	"github.com/googleapis/librarian/internal/sidekick/config"
+	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 )
 
 func init() {
