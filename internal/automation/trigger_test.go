@@ -15,7 +15,6 @@
 package automation
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -24,15 +23,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v69/github"
 )
-
-type mockGitHubClient struct {
-	prs []*github.PullRequest
-	err error
-}
-
-func (m *mockGitHubClient) FindMergedPullRequestsWithPendingReleaseLabel(ctx context.Context, owner, repo string) ([]*github.PullRequest, error) {
-	return m.prs, m.err
-}
 
 func TestRunCommandWithClient(t *testing.T) {
 	for _, test := range []struct {
