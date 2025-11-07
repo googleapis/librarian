@@ -1410,6 +1410,16 @@ func (c *codec) packageNamespace(model *api.API) string {
 	return strings.ReplaceAll(packageName, "-", "_")
 }
 
+func (c *codec) nameInExamplesFromQualifiedName(qualifiedName string, model *api.API) string {
+	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
+		if c.packageNamespace(model) == "google_cloud_wkt" {
+			return strings.Replace(qualifiedName, c.modulePath, "google_cloud_wkt", 1)
+		}
+		return strings.Replace(qualifiedName, c.modulePath, fmt.Sprintf("%s::model", c.packageNamespace(model)), 1)
+	}
+	return qualifiedName
+}
+
 // ServiceName returns the service name.
 func (c *codec) ServiceName(service *api.Service) string {
 	if override, ok := c.nameOverrides[service.ID]; ok {

@@ -747,10 +747,7 @@ func (c *codec) annotateService(s *api.Service) {
 func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
 	qualifiedName := fullyQualifiedMessageName(m, c.modulePath, model.PackageName, c.packageMapping)
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	nameInExamples := qualifiedName
-	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
-		nameInExamples = fmt.Sprintf("%s::model::%s", c.packageNamespace(model), relativeName)
-	}
+	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 	annotations := &messageAnnotation{
 		Name:              toPascal(m.Name),
 		ModuleName:        toSnake(m.Name),
@@ -999,11 +996,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
-
-	nameInExamples := qualifiedName
-	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
-		nameInExamples = strings.Replace(qualifiedName, c.modulePath, fmt.Sprintf("%s::model", c.packageNamespace(model)), 1)
-	}
+	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 
 	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
 		if f1.Deprecated == f2.Deprecated {
@@ -1166,10 +1159,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 
 	qualifiedName := fullyQualifiedEnumName(e, c.modulePath, model.PackageName, c.packageMapping)
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	nameInExamples := qualifiedName
-	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
-		nameInExamples = fmt.Sprintf("%s::model::%s", c.packageNamespace(model), relativeName)
-	}
+	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 
 	// For BigQuery (and so far only BigQuery), the enum values conflict when
 	// converted to the Rust style [1]. Basically, there are several enum values
