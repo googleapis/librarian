@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
@@ -215,46 +214,6 @@ func TestPublishRunnerRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantTriggersRun, cloudBuildClient.triggersRun); diff != "" {
 				t.Errorf("Run() triggersRun diff (-want, +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestShouldRun(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		dateTime time.Time
-		forceRun bool
-		want     bool
-	}{
-		{
-			name: "skip_in_even_week",
-			// Jan 8, 2025 is in week 2 (even)
-			dateTime: time.Date(2025, 1, 8, 0, 0, 0, 0, time.UTC),
-			want:     true,
-		},
-		{
-			name: "run_in_even_week",
-			// Jan 8, 2025 is in week 2 (even)
-			dateTime: time.Date(2025, 1, 8, 0, 0, 0, 0, time.UTC),
-			forceRun: true,
-		},
-		{
-			name: "run_in_odd_week",
-			// Jan 1, 2025 is in week 1 (odd)
-			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		},
-		{
-			name: "run_in_odd_week_force_run",
-			// Jan 1, 2025 is in week 1 (odd)
-			dateTime: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-			forceRun: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := shouldSkip(test.dateTime, test.forceRun)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("shouldSkip() diff (-want, +got):\n%s", diff)
 			}
 		})
 	}

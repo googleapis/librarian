@@ -21,7 +21,6 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"time"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"github.com/googleapis/librarian/internal/config"
@@ -70,11 +69,6 @@ func newPublishRunner(ctx context.Context, cfg *config.Config) (*publishRunner, 
 }
 
 func (r *publishRunner) run(ctx context.Context) error {
-	if shouldSkip(time.Now(), r.forceRun) {
-		slog.Info("skipping stage-release on an even week.")
-		return nil
-	}
-
 	errs := make([]error, 0)
 	repositories := r.repoConfig.RepositoriesForCommand(publishCmdName)
 	for _, repository := range repositories {
@@ -113,9 +107,4 @@ func (r *publishRunner) run(ctx context.Context) error {
 	}
 
 	return errors.Join(errs...)
-}
-
-func shouldSkip(dateTime time.Time, forceRun bool) bool {
-	_, week := dateTime.ISOWeek()
-	return week%2 == 0 && !forceRun
 }
