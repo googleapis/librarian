@@ -24,9 +24,9 @@ import (
 
 func newAutomationCommand() *cli.Command {
 	cmd := &cli.Command{
-		Short:     "",
-		UsageLine: "",
-		Long:      "",
+		Short:     "automate code generation and library release process",
+		UsageLine: "test",
+		Long:      "test",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			runner := newAutomationRunner(cmd.Config)
 			return runner.run(ctx)
