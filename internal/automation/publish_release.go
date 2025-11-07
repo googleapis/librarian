@@ -26,6 +26,7 @@ import (
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/github"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -41,8 +42,12 @@ type publishRunner struct {
 	push             bool
 }
 
+var clientFactory = func(ctx context.Context, opts ...option.ClientOption) (*cloudbuild.Client, error) {
+	return cloudbuild.NewClient(ctx, opts...)
+}
+
 func newPublishRunner(ctx context.Context, cfg *config.Config) (*publishRunner, error) {
-	client, err := cloudbuild.NewClient(ctx)
+	client, err := clientFactory(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error creating cloudbuild client: %w", err)
 	}

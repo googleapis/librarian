@@ -15,18 +15,25 @@
 package automation
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
 
+	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/config"
+	"google.golang.org/api/option"
 )
 
 func TestNewPublishRunner(t *testing.T) {
 	t.Parallel()
+	clientFactory = func(ctx context.Context, opts ...option.ClientOption) (*cloudbuild.Client, error) {
+		// Force WithoutAuthentication for these tests
+		return cloudbuild.NewClient(ctx, option.WithoutAuthentication())
+	}
 	for _, test := range []struct {
 		name    string
 		cfg     *config.Config
@@ -58,6 +65,12 @@ func TestNewPublishRunner(t *testing.T) {
 				return
 			}
 
+			if runner.cloudBuildClient == nil {
+				t.Errorf("newPublishRunner() cloudBuildClient is not set")
+			}
+			if runner.ghClient == nil {
+				t.Errorf("newPublishRunner() ghClient is not set")
+			}
 			if runner.forceRun != test.cfg.ForceRun {
 				t.Errorf("newPublishRunner() forceRun is not set")
 			}
