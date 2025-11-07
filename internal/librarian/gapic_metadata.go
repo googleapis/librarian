@@ -71,7 +71,7 @@ func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, err
 			continue
 		}
 
-		// There is only one key in v.VersionServices, so this loop runs once.
+		// There is only one key in v.Versions, so this loop runs once.
 		for sharedVersion := range v.Versions {
 			if len(v.ServiceVersions) >= serviceVersionOptimizationThreshold {
 				v.ServiceVersions = []serviceVersion{{Service: "All", Version: sharedVersion}}
