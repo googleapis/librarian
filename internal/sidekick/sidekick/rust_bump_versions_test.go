@@ -17,7 +17,7 @@ package sidekick
 import (
 	"testing"
 
-	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func TestRustBumpVersions(t *testing.T) {

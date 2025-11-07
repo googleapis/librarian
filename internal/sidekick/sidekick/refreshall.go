@@ -26,7 +26,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func init() {

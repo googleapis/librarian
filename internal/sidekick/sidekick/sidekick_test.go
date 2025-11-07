@@ -21,12 +21,6 @@ import (
 	"testing"
 )
 
-const (
-	// projectRoot is the root of the google-cloud-rust. The golden files for
-	// these tests depend on code in ../../auth and ../../src/gax.
-	projectRoot = "../.."
-)
-
 var (
 	testdataDir, _             = filepath.Abs("../testdata")
 	googleapisRoot             = fmt.Sprintf("%s/googleapis", testdataDir)

@@ -30,7 +30,6 @@ func TestRustProstFromProtobuf(t *testing.T) {
 
 	cmdLine := &CommandLine{
 		Command:             []string{},
-		ProjectRoot:         projectRoot,
 		SpecificationFormat: "protobuf",
 		SpecificationSource: specificationSource,
 		Source: map[string]string{

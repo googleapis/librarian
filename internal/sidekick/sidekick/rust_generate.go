@@ -21,8 +21,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/internal/external"
+	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/external"
 	toml "github.com/pelletier/go-toml/v2"
 )
 

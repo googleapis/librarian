@@ -20,7 +20,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // command is an implementation of a sidekick command, like 'sidekick generate'.

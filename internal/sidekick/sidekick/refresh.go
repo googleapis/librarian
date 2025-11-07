@@ -18,14 +18,14 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/googleapis/librarian/internal/sidekick/internal/api"
-	"github.com/googleapis/librarian/internal/sidekick/internal/codec_sample"
-	"github.com/googleapis/librarian/internal/sidekick/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/internal/dart"
-	"github.com/googleapis/librarian/internal/sidekick/internal/gcloud"
-	"github.com/googleapis/librarian/internal/sidekick/internal/parser"
-	"github.com/googleapis/librarian/internal/sidekick/internal/rust"
-	"github.com/googleapis/librarian/internal/sidekick/internal/rust_prost"
+	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/codec_sample"
+	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/dart"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sidekick/rust"
+	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 )
 
 func init() {

@@ -27,8 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/sidekick/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/internal/external"
+	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/external"
 )
 
 func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, error) {
