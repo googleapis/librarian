@@ -18,31 +18,53 @@ package automation
 
 import (
 	"context"
-
-	"github.com/googleapis/librarian/internal/cli"
+	"flag"
+	"log/slog"
 )
 
-func newAutomationCommand() *cli.Command {
-	cmd := &cli.Command{
-		Short:     "automate code generation and library release process",
-		UsageLine: "test",
-		Long:      "test",
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			runner := newAutomationRunner(cmd.Config)
-			return runner.run(ctx)
-		},
-	}
-	cmd.Init()
-	addFlagBuild(cmd.Flags, cmd.Config)
-	addFlagCommand(cmd.Flags, cmd.Config)
-	addFlagForceRun(cmd.Flags, cmd.Config)
-	addFlagProject(cmd.Flags, cmd.Config)
-	addFlagPush(cmd.Flags, cmd.Config)
-	return cmd
-}
+// runCommandFn is a function type that matches RunCommand, for mocking in tests.
+var runCommandFn = RunCommand
 
 // Run parses the command line arguments and triggers the specified command.
 func Run(ctx context.Context, args []string) error {
-	cmd := newAutomationCommand()
-	return cmd.Run(ctx, args)
+	options, err := parseFlags(args)
+	if err != nil {
+		slog.Error("error parsing command", slog.Any("err", err))
+		return err
+	}
+
+	err = runCommandFn(ctx, options.Command, options.ProjectId, options.Push, options.Build, options.ForceRun)
+	if err != nil {
+		slog.Error("error running command", slog.Any("err", err))
+		return err
+	}
+	return nil
+}
+
+type runOptions struct {
+	Command   string
+	ProjectId string
+	Push      bool
+	Build     bool
+	ForceRun  bool
+}
+
+func parseFlags(args []string) (*runOptions, error) {
+	flagSet := flag.NewFlagSet("dispatcher", flag.ContinueOnError)
+	projectId := flagSet.String("project", "cloud-sdk-librarian-prod", "GCP project ID")
+	command := flagSet.String("command", "generate", "The librarian command to run")
+	push := flagSet.Bool("push", true, "The _PUSH flag (true/false) to Librarian CLI's -push option")
+	build := flagSet.Bool("build", true, "The _BUILD flag (true/false) to Librarian CLI's -build option")
+	forceRun := flagSet.Bool("force-run", false, "The _FORCE_RUN flag (true/false) to Librarian CLI's -force-run option")
+	err := flagSet.Parse(args)
+	if err != nil {
+		return nil, err
+	}
+	return &runOptions{
+		ProjectId: *projectId,
+		Command:   *command,
+		Push:      *push,
+		Build:     *build,
+		ForceRun:  *forceRun,
+	}, nil
 }

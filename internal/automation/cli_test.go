@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestRun(t *testing.T) {
@@ -52,6 +54,100 @@ func TestRun(t *testing.T) {
 			}
 			if err := Run(context.Background(), tt.args); (err != nil) != tt.wantErr {
 				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestParseArgs(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		args    []string
+		want    *runOptions
+		wantErr bool
+	}{
+		{
+			name:    "parses defaults",
+			args:    []string{},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "generate",
+				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      true,
+				Build:     true,
+				ForceRun:  false,
+			},
+		},
+		{
+			name:    "sets project",
+			args:    []string{"--project=some-project-id"},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "generate",
+				ProjectId: "some-project-id",
+				Push:      true,
+				Build:     true,
+				ForceRun:  false,
+			},
+		},
+		{
+			name:    "sets command",
+			args:    []string{"--command=stage-release"},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "stage-release",
+				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      true,
+				Build:     true,
+				ForceRun:  false,
+			},
+		},
+		{
+			name:    "sets command",
+			args:    []string{"--command=stage-release", "--push=false"},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "stage-release",
+				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      false,
+				Build:     true,
+				ForceRun:  false,
+			},
+		},
+		{
+			name:    "sets build",
+			args:    []string{"--command=generate", "--build=false"},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "generate",
+				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      true,
+				Build:     false,
+				ForceRun:  false,
+			},
+		},
+		{
+			name:    "sets forceRun",
+			args:    []string{"--force-run=true"},
+			wantErr: false,
+			want: &runOptions{
+				Command:   "generate",
+				ProjectId: "cloud-sdk-librarian-prod",
+				Push:      true,
+				Build:     true,
+				ForceRun:  true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseFlags(test.args)
+			if test.wantErr && err == nil {
+				t.Fatal("expected error, but did not return one")
+			} else if !test.wantErr && err != nil {
+				t.Errorf("did not expect error, but received one: %s", err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
