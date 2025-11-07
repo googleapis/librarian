@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/googleapis/librarian/internal/sidekick"
+	"github.com/googleapis/librarian/internal/sidekick/sidekick"
 )
 
 func main() {
