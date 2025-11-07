@@ -148,8 +148,12 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 	if len(failedGenerations) > 0 {
 		slog.Warn("failed generations", "num", len(failedGenerations))
 	}
-	slog.Info("skipped generations", "num", skippedGenerationsCount)
-	slog.Info("successful generations", "num", len(successfulGenerations))
+	slog.Info(
+		"generation statistics",
+		"all", len(r.state.Libraries),
+		"successes", len(successfulGenerations),
+		"skipped", skippedGenerationsCount,
+		"failures", len(failedGenerations))
 	if err := writeTiming(r.workRoot, timings); err != nil {
 		return err
 	}
