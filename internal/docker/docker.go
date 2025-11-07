@@ -249,10 +249,7 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
 
-	image := c.Image
-	if request.Image != "" {
-		image = request.Image
-	}
+	image := c.resolveImage(request.Image)
 	return c.runDocker(ctx, image, CommandGenerate, mounts, commandArgs)
 }
 
@@ -283,10 +280,7 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		"--repo=/repo",
 	}
 
-	image := c.Image
-	if request.Image != "" {
-		image = request.Image
-	}
+	image := c.resolveImage(request.Image)
 	return c.runDocker(ctx, image, CommandBuild, mounts, commandArgs)
 }
 
@@ -332,10 +326,7 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		mounts = append(mounts, fmt.Sprintf("%s/%s:/repo/%s:ro", request.RepoDir, globalFile, globalFile))
 	}
 
-	image := c.Image
-	if request.Image != "" {
-		image = request.Image
-	}
+	image := c.resolveImage(request.Image)
 	if err := c.runDocker(ctx, image, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
@@ -371,10 +362,7 @@ func (c *Docker) ReleaseStage(ctx context.Context, request *ReleaseStageRequest)
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
-	image := c.Image
-	if request.Image != "" {
-		image = request.Image
-	}
+	image := c.resolveImage(request.Image)
 	if err := c.runDocker(ctx, image, CommandReleaseStage, mounts, commandArgs); err != nil {
 		return err
 	}
@@ -420,6 +408,13 @@ func maybeRelocateMounts(hostMount string, mounts []string) []string {
 		relocatedMounts = append(relocatedMounts, mount)
 	}
 	return relocatedMounts
+}
+
+func (c *Docker) resolveImage(requestedImage string) string {
+	if requestedImage != "" {
+		return requestedImage
+	}
+	return c.Image
 }
 
 func (c *Docker) runCommand(cmdName string, args ...string) error {
