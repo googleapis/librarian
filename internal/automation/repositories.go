@@ -58,7 +58,7 @@ func (c *RepositoryConfig) GitURL() (string, error) {
 	return c.FullName, nil
 }
 
-// Validate checks the the RepositoryConfig is valid.
+// Validate checks the RepositoryConfig is valid.
 func (c *RepositoryConfig) Validate() error {
 	if c.FullName == "" && c.Name == "" {
 		return fmt.Errorf("name or full name is required")
@@ -77,7 +77,7 @@ func (c *RepositoryConfig) Validate() error {
 	return nil
 }
 
-// Validate checks the the RepositoriesConfig is valid.
+// Validate checks the RepositoriesConfig is valid.
 func (c *RepositoriesConfig) Validate() error {
 	for i, r := range c.Repositories {
 		err := r.Validate()
