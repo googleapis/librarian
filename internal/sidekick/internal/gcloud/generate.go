@@ -18,11 +18,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/internal/api"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/internal/config/gcloudyaml"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 )
 
@@ -67,6 +70,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	for _, method := range methods {
 		verb := getVerb(method.Name)
 		cmd := newCommand(method, cfg, model)
+		cmdList := []*Command{cmd}
 
 		mainCmdPath := filepath.Join(resourceDir, fmt.Sprintf("%s.yaml", verb))
 		if err := os.WriteFile(mainCmdPath, []byte("_PARTIALS_: true\n"), 0644); err != nil {
@@ -77,7 +81,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		partialFileName := fmt.Sprintf("_%s_%s.yaml", verb, track)
 		partialCmdPath := filepath.Join(partialsDir, partialFileName)
 
-		b, err := yaml.Marshal(cmd)
+		b, err := yaml.Marshal(cmdList)
 		if err != nil {
 			return fmt.Errorf("failed to marshal partial command for %q: %w", method.Name, err)
 		}
@@ -187,14 +191,17 @@ func newParam(field *api.Field, apiField string, cfg *config.Config, model *api.
 		param.Type = getGcloudType(field.Typez)
 	}
 
+	//TODO(santi): generate better help text
 	if rule := findFieldHelpTextRule(field, cfg); rule != nil {
 		param.HelpText = rule.HelpText.Brief
+	} else {
+		param.HelpText = fmt.Sprintf("Value for the `%s` field.", ToKebabCase(field.Name))
 	}
 	return param
 }
 
 func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.API, cfg *config.Config) Param {
-	resource := getResourceForMethod(method)
+	resource := getResourceForMethod(method, model)
 	pattern := ""
 	if resource != nil && len(resource.Pattern) > 0 {
 		pattern = resource.Pattern[0]
@@ -204,8 +211,18 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 	shortServiceName := strings.Split(cfg.Gcloud.ServiceName, ".")[0]
 
 	resourceName := toSnakeCase(strings.TrimSuffix(field.Name, "_id"))
+	if field.Name == "name" {
+		resourceName = getSingularFromPattern(pattern)
+	}
+
+	//TODO(santi): generate better help text
+	helpText := fmt.Sprintf("The %s to create.", resourceName)
+	if !strings.HasPrefix(method.Name, "Create") {
+		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
+	}
+
 	return Param{
-		HelpText:          fmt.Sprintf("The %s to create.", resourceName),
+		HelpText:          helpText,
 		IsPositional:      true,
 		IsPrimaryResource: true,
 		Required:          true,
@@ -233,8 +250,7 @@ func newResourceReferenceSpec(field *api.Field, model *api.API, cfg *config.Conf
 				pluralName = getPluralFromPattern(pattern)
 			}
 
-			parts := strings.Split(pattern, "/")
-			name := strings.Trim(parts[len(parts)-1], "{}")
+			name := getSingularFromPattern(pattern)
 
 			shortServiceName := strings.Split(cfg.Gcloud.ServiceName, ".")[0]
 			baseCollectionPath := getCollectionPathFromPattern(pattern)
@@ -262,7 +278,6 @@ func newAttributesFromPattern(pattern string) []Attribute {
 			if i > 0 {
 				parameterName = parts[i-1] + "Id"
 			} else {
-				// Fallback for pattern starting with variable, though unlikely for resource patterns
 				parameterName = name + "sId"
 			}
 			attr := Attribute{
@@ -304,12 +319,41 @@ func getResourceName(method *api.Method) string {
 	return ""
 }
 
-func getResourceForMethod(method *api.Method) *api.Resource {
+func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
+	// Strategy 1: Find a field that is the resource message itself. (for Create/Update)
 	for _, f := range method.InputType.Fields {
 		if msg := f.MessageType; msg != nil && msg.Resource != nil {
 			return msg.Resource
 		}
 	}
+
+	// Strategy 2: Find a 'name' or 'parent' field with a resource_reference. (for Get/Delete/List)
+	var resourceType string
+	if method.InputType != nil {
+		for _, field := range method.InputType.Fields {
+			if (field.Name == "name" || field.Name == "parent") && field.ResourceReference != nil {
+				resourceType = field.ResourceReference.Type
+				if resourceType == "" {
+					resourceType = field.ResourceReference.ChildType
+				}
+				break
+			}
+		}
+	}
+
+	if resourceType != "" {
+		for _, msg := range model.Messages {
+			if msg.Resource != nil && msg.Resource.Type == resourceType {
+				return msg.Resource
+			}
+		}
+		for _, def := range model.ResourceDefinitions {
+			if def.Type == resourceType {
+				return def
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -349,7 +393,7 @@ func getGcloudType(t api.Typez) string {
 }
 
 func getPluralName(method *api.Method, model *api.API) string {
-	resource := getResourceForMethod(method)
+	resource := getResourceForMethod(method, model)
 	if resource != nil {
 		if resource.Plural != "" {
 			return resource.Plural
@@ -423,18 +467,14 @@ func findFieldHelpTextRule(field *api.Field, cfg *config.Config) *gcloudyaml.Hel
 }
 
 func isOutputOnly(field *api.Field) bool {
-	for _, b := range field.Behavior {
-		if b == api.FIELD_BEHAVIOR_OUTPUT_ONLY {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY)
 }
 
 func toLowerCamelCase(s string) string {
 	parts := strings.Split(s, "_")
 	for i := 1; i < len(parts); i++ {
-		parts[i] = strings.Title(parts[i])
+		caser := cases.Title(language.AmericanEnglish)
+		parts[i] = caser.String(parts[i])
 	}
 	return strings.Join(parts, "")
 }
@@ -442,7 +482,21 @@ func toLowerCamelCase(s string) string {
 func getPluralFromPattern(pattern string) string {
 	parts := strings.Split(pattern, "/")
 	if len(parts) >= 2 {
-		return parts[len(parts)-2]
+		// The plural is the literal segment before the final variable segment
+		if strings.HasPrefix(parts[len(parts)-1], "{") {
+			return parts[len(parts)-2]
+		}
+	}
+	return ""
+}
+
+func getSingularFromPattern(pattern string) string {
+	parts := strings.Split(pattern, "/")
+	if len(parts) > 0 {
+		last := parts[len(parts)-1]
+		if strings.HasPrefix(last, "{") && strings.HasSuffix(last, "}") {
+			return strings.Trim(last, "{}")
+		}
 	}
 	return ""
 }
@@ -458,3 +512,4 @@ func getCollectionPathFromPattern(pattern string) string {
 	}
 	return strings.Join(collectionParts, ".")
 }
+
