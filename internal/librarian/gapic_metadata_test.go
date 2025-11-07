@@ -411,7 +411,10 @@ func TestFormatAPIVersionReleaseNotes(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, _ := formatAPIVersionReleaseNotes(test.in)
+			got, err := formatAPIVersionReleaseNotes(test.in)
+			if err != nil {
+				t.Fatalf("formatAPIVersionReleaseNotes() failed: %v", err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
