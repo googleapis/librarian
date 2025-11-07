@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	testdataDir, _             = filepath.Abs("testdata")
+	testdataDir, _             = filepath.Abs("../testdata")
 	googleapisRoot             = fmt.Sprintf("%s/googleapis", testdataDir)
 	outputDir                  = fmt.Sprintf("%s/test-only", testdataDir)
 	secretManagerServiceConfig = "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"

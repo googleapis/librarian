@@ -255,9 +255,9 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			imagesClient:        &mockImagesClient{},
 			ghClient:            &mockGitHubClient{},
 			wantFindLatestCalls: 0,
-			wantGenerateCalls:   0,
+			wantGenerateCalls:   1,
 			wantBuildCalls:      0,
-			wantCheckoutCalls:   0,
+			wantCheckoutCalls:   2,
 		},
 		{
 			name: "finds latest image",
