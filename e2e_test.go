@@ -121,7 +121,7 @@ func TestRunGenerate(t *testing.T) {
 			defer server.Close()
 			cmdArgs := []string{
 				"run",
-				"-tags", "e2etest",
+				"-tags", "mock_github",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"generate",
 				fmt.Sprintf("--api=%s", test.api),
@@ -211,7 +211,7 @@ func TestCleanAndCopy(t *testing.T) {
 	cmd := exec.Command(
 		"go",
 		"run",
-		"-tags", "e2etest",
+		"-tags", "mock_github",
 		"github.com/googleapis/librarian/cmd/librarian",
 		"generate",
 		fmt.Sprintf("--api=%s", apiToGenerate),
@@ -526,7 +526,7 @@ func TestReleaseStage(t *testing.T) {
 
 			cmdArgs := []string{
 				"run",
-				"-tags", "e2etest",
+				"-tags", "mock_github",
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
 				"stage",
