@@ -173,12 +173,11 @@ func TestNewUpdateImageRunner(t *testing.T) {
 			if r.ghClient == nil {
 				t.Errorf("newUpdateImageRunner() ghClient is nil")
 			}
-			if r.containerClient == nil {
-				t.Errorf("newUpdateImageRunner() containerClient is nil")
-			}
+
 			if r.repo == nil {
 				t.Errorf("newUpdateImageRunner() repo is nil")
 			}
+
 			if r.sourceRepo == nil {
 				t.Errorf("newUpdateImageRunner() sourceRepo is nil")
 			}

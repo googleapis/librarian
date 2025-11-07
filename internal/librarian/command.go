@@ -183,11 +183,7 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 	}
 
 	ghClient := github.NewClient(cfg.GitHubToken, gitHubRepo)
-	container, err := docker.New(cfg.WorkRoot, image, &docker.DockerOptions{
-		UserUID:   cfg.UserUID,
-		UserGID:   cfg.UserGID,
-		HostMount: cfg.HostMount,
-	})
+	container, err := newDockerContainerClient(cfg, image)
 	if err != nil {
 		return nil, err
 	}
@@ -201,6 +197,14 @@ func newCommandRunner(cfg *config.Config) (*commandRunner, error) {
 		ghClient:        ghClient,
 		containerClient: container,
 	}, nil
+}
+
+func newDockerContainerClient(cfg *config.Config, image string) (ContainerClient, error) {
+	return docker.New(cfg.WorkRoot, image, &docker.DockerOptions{
+		UserUID:   cfg.UserUID,
+		UserGID:   cfg.UserGID,
+		HostMount: cfg.HostMount,
+	})
 }
 
 func cloneOrOpenRepo(workRoot, repo string, depth int, branch, ci string, gitPassword string) (*gitrepo.LocalRepository, error) {

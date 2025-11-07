@@ -40,6 +40,7 @@ type updateImageRunner struct {
 	imagesClient           ImageRegistryClient
 	ghClient               GitHubClient
 	hostMount              string
+	config                 *config.Config
 	librarianConfig        *config.LibrarianConfig
 	repo                   gitrepo.Repository
 	sourceRepo             gitrepo.Repository
@@ -66,9 +67,9 @@ func newUpdateImageRunner(cfg *config.Config) (*updateImageRunner, error) {
 	}
 	return &updateImageRunner{
 		branch:                 cfg.Branch,
-		containerClient:        runner.containerClient,
 		ghClient:               runner.ghClient,
 		hostMount:              cfg.HostMount,
+		config:                 cfg,
 		librarianConfig:        runner.librarianConfig,
 		repo:                   runner.repo,
 		sourceRepo:             runner.sourceRepo,
@@ -115,6 +116,16 @@ func (r *updateImageRunner) run(ctx context.Context) error {
 
 	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
 		return err
+	}
+
+	// The container client needs to know the docker image used at initialization time
+	// For testing, we allow injecting the container client ahead of time
+	if r.containerClient == nil {
+		containerClient, err := newDockerContainerClient(r.config, r.image)
+		if err != nil {
+			return err
+		}
+		r.containerClient = containerClient
 	}
 
 	// For each library, run generation at the previous commit
