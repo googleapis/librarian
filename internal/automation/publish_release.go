@@ -57,8 +57,7 @@ func newPublishRunner(ctx context.Context, cfg *config.Config) (*publishRunner, 
 	ghClient := github.NewClient(os.Getenv(config.LibrarianGithubToken), nil)
 	repoConfig, err := loadRepositoriesConfig()
 	if err != nil {
-		slog.Error("error loading repositories config", slog.Any("err", err))
-		return nil, err
+		return nil, fmt.Errorf("error loading repositories config: %w", err)
 	}
 	return &publishRunner{
 		cloudBuildClient: wrappedClient,

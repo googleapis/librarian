@@ -16,7 +16,9 @@ package automation
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,14 +32,12 @@ import (
 
 func TestNewPublishRunner(t *testing.T) {
 	t.Parallel()
-	clientFactory = func(ctx context.Context, opts ...option.ClientOption) (*cloudbuild.Client, error) {
-		// Force WithoutAuthentication for these tests
-		return cloudbuild.NewClient(ctx, option.WithoutAuthentication())
-	}
 	for _, test := range []struct {
-		name    string
-		cfg     *config.Config
-		wantErr bool
+		name          string
+		cfg           *config.Config
+		clientFactory func(ctx context.Context, opts ...option.ClientOption) (*cloudbuild.Client, error)
+		wantErr       bool
+		wantErrMsg    string
 	}{
 		{
 			name: "create_a_runner",
@@ -46,11 +46,30 @@ func TestNewPublishRunner(t *testing.T) {
 				Project:  "example-project",
 				Push:     true,
 			},
+			clientFactory: func(ctx context.Context, opts ...option.ClientOption) (*cloudbuild.Client, error) {
+				// Force WithoutAuthentication for these tests
+				return cloudbuild.NewClient(ctx, option.WithoutAuthentication())
+			},
+		},
+		{
+			name: "create_cloud_build_client_failed",
+			cfg: &config.Config{
+				ForceRun: true,
+				Project:  "example-project",
+				Push:     true,
+			},
+			clientFactory: func(ctx context.Context, opts ...option.ClientOption) (*cloudbuild.Client, error) {
+				// Force WithoutAuthentication for these tests
+				return nil, errors.New("simulated error")
+			},
+			wantErr:    true,
+			wantErrMsg: "error creating cloudbuild client",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := t.Context()
+			clientFactory = test.clientFactory
 			runner, err := newPublishRunner(ctx, test.cfg)
 			if test.wantErr {
 				if err == nil {
@@ -58,6 +77,9 @@ func TestNewPublishRunner(t *testing.T) {
 					return
 				}
 
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("want error message: %q, got %q", test.wantErrMsg, err.Error())
+				}
 				return
 			}
 			if err != nil {
