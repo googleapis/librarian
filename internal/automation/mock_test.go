@@ -20,6 +20,7 @@ func (m *mockGitHubClient) FindMergedPullRequestsWithPendingReleaseLabel(ctx con
 }
 
 type mockCloudBuildClient struct {
+	CloudBuildClient
 	runError      error
 	buildTriggers []*cloudbuildpb.BuildTrigger
 	triggersRun   []string

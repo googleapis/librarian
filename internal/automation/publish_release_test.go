@@ -71,7 +71,7 @@ func TestPublishRunnerRun(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := t.Context()
-			client := &mockCloudBuildClient{
+			cloudBuildClient := &mockCloudBuildClient{
 				runError:      test.runError,
 				buildTriggers: test.buildTriggers,
 			}
@@ -80,11 +80,9 @@ func TestPublishRunnerRun(t *testing.T) {
 				err: test.ghError,
 			}
 			runner := &publishRunner{
-				cloudBuildClient: &wrappedCloudBuildClient{
-					//client: &client,
-				},
-				ghClient: ghClient,
-				forceRun: test.forceRun,
+				cloudBuildClient: cloudBuildClient,
+				ghClient:         ghClient,
+				forceRun:         test.forceRun,
 				repoConfig: &RepositoriesConfig{
 					Repositories: []*RepositoryConfig{
 						{
@@ -102,7 +100,7 @@ func TestPublishRunnerRun(t *testing.T) {
 			} else if !test.wantErr && err != nil {
 				t.Errorf("did not expect error, but received one: %s", err)
 			}
-			if diff := cmp.Diff(test.wantTriggersRun, client.triggersRun); diff != "" {
+			if diff := cmp.Diff(test.wantTriggersRun, cloudBuildClient.triggersRun); diff != "" {
 				t.Errorf("Run() triggersRun diff (-want, +got):\n%s", diff)
 			}
 		})

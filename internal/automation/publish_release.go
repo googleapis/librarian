@@ -33,7 +33,7 @@ const (
 )
 
 type publishRunner struct {
-	cloudBuildClient *wrappedCloudBuildClient
+	cloudBuildClient CloudBuildClient
 	ghClient         GitHubClient
 	repoConfig       *RepositoriesConfig
 	forceRun         bool
