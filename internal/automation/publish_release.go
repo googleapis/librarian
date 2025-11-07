@@ -66,7 +66,7 @@ func newPublishRunner(ctx context.Context, cfg *config.Config) (*publishRunner, 
 }
 
 func (r *publishRunner) run(ctx context.Context) error {
-	if !shouldSkip(time.Now(), r.forceRun) {
+	if shouldSkip(time.Now(), r.forceRun) {
 		slog.Info("skipping stage-release on an even week.")
 		return nil
 	}
