@@ -450,6 +450,11 @@ type fieldAnnotations struct {
 	// If true, this is a `wkt::NullValue` field, and also requires super-extra
 	// custom deserialization.
 	IsWktNullValue bool
+	// Some fields may be the type of the message they are defined in.
+	// We need to know this in sample generation to avoid importing
+	// the parent type twice.
+	// This applies to single value, repeated and map fields.
+	FieldTypeIsParentType bool
 	// If this field is part of a oneof group, this will contain the other fields
 	// in the group.
 	OtherFieldsInGroup []*api.Field
@@ -1150,6 +1155,9 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if field.Group != nil {
 		ann.OtherFieldsInGroup = language.FilterSlice(field.Group.Fields, func(f *api.Field) bool { return field != f })
 	}
+	ann.FieldTypeIsParentType = (field.MessageType == message || // Single or repeated field whose type is the same as the containing type.
+		// Map field whose value type is the same as the conaining type.
+		(ann.ValueField != nil && ann.ValueField.MessageType == message))
 }
 
 func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {

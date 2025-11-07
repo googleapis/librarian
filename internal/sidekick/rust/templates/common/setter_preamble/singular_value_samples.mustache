@@ -53,6 +53,8 @@ limitations under the License.
 {{/IsEnum}}
 {{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
 /// use {{MessageType.Codec.NameInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}({{MessageType.Codec.Name}}::default()/* use setters */);
 {{/IsObject}}
