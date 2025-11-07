@@ -58,8 +58,7 @@ const (
 	// LibrarianConfigFile is the name of the language-repository config file.
 	LibrarianConfigFile = "config.yaml"
 	// LibrarianGithubToken is the name of the env var used to store the GitHub token.
-	LibrarianGithubToken                  = "LIBRARIAN_GITHUB_TOKEN"
-	LibrarianGoogleApplicationCredentials = "LIBRARIAN_GOOGLE_APPLICATION_CREDENTIALS"
+	LibrarianGithubToken = "LIBRARIAN_GITHUB_TOKEN"
 )
 
 // are variables so it can be replaced during testing.
