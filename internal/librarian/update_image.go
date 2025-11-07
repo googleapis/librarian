@@ -39,7 +39,6 @@ type updateImageRunner struct {
 	containerClient        ContainerClient
 	imagesClient           ImageRegistryClient
 	ghClient               GitHubClient
-	hostMount              string
 	librarianConfig        *config.LibrarianConfig
 	repo                   gitrepo.Repository
 	sourceRepo             gitrepo.Repository
@@ -68,7 +67,6 @@ func newUpdateImageRunner(cfg *config.Config) (*updateImageRunner, error) {
 		branch:                 cfg.Branch,
 		containerClient:        runner.containerClient,
 		ghClient:               runner.ghClient,
-		hostMount:              cfg.HostMount,
 		librarianConfig:        runner.librarianConfig,
 		repo:                   runner.repo,
 		sourceRepo:             runner.sourceRepo,
