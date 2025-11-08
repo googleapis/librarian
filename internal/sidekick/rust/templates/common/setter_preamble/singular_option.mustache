@@ -67,10 +67,10 @@ limitations under the License.
 {{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
 {{^Codec.FieldTypeIsParentType}}
-/// use {{MessageType.Codec.NameInExamples}};
+/// use {{MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
 {{/Codec.FieldTypeIsParentType}}
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some({{MessageType.Codec.Name}}::default()/* use setters */));
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{MessageType.Codec.Name}}>);
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some({{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use setters */));
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{MessageType.Codec.Name}}{{/Codec.AliasInExamples}}>);
 {{/IsObject}}
 /// ```
 {{/ModelCodec.GenerateSetterSamples}}

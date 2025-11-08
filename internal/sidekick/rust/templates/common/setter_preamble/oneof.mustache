@@ -71,10 +71,10 @@ limitations under the License.
 {{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
 {{^Codec.FieldTypeIsParentType}}
-/// use {{MessageType.Codec.NameInExamples}};
+/// use {{MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
 {{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some(
-///     {{{Group.Codec.NameInExamples}}}::{{Codec.BranchName}}({{MessageType.Codec.Name}}::default().into())));
+///     {{{Group.Codec.NameInExamples}}}::{{Codec.BranchName}}({{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default().into())));
 {{/IsObject}}
 {{/Codec.ExampleField}}
 /// ```
