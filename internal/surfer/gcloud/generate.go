@@ -31,28 +31,23 @@ func Generate(ctx context.Context, googleapis, gcloudconfig, output string) erro
 		return fmt.Errorf("failed to load gcloud config: %w", err)
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/2817): determine the
-	// specification source path
-	var source string
-
-	sidekickcfg := &config.Config{
+	model, err := parser.ParseProtobuf(&config.Config{
 		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-			SpecificationSource: source,
+			// TODO(https://github.com/googleapis/librarian/issues/2817):
+			// determine the specification source
+			SpecificationSource: "",
 		},
 		Source: map[string]string{
 			"googleapis-root": googleapis,
 		},
-	}
-	model, err := parser.ParseProtobuf(sidekickcfg)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create API model: %w", err)
 	}
 
 	// TODO(https://github.com/googleapis/librarian/issues/2817): implement
-	// gcloud command generation logic.
+	// gcloud command generation logic
 	_, _ = model, cfg
-
 	return nil
 }
 
