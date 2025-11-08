@@ -28,7 +28,7 @@ import (
 func Generate(ctx context.Context, googleapis, gcloudconfig, output string) error {
 	cfg, err := readGcloudConfig(gcloudconfig)
 	if err != nil {
-		return fmt.Errorf("failed to load gcloud config: %w", err)
+		return err
 	}
 
 	model, err := parser.ParseProtobuf(&config.Config{

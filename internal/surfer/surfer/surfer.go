@@ -17,7 +17,7 @@ package surfer
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/surfer/gcloud"
@@ -37,36 +37,29 @@ func Run(ctx context.Context, args []string) error {
 	return cmd.Run(ctx, args)
 }
 
-var errMissingConfigFlag = errors.New("--config is required")
-
 func newCmdGenerate() *cli.Command {
 	var (
 		googleapis string
-		config     string
 		out        string
 	)
 
 	cmdGenerate := &cli.Command{
 		Short:     "generate generates gcloud commands",
-		UsageLine: "surfer generate --config <path> --googleapis <path> [--out <path>]",
+		UsageLine: "surfer generate <path to gcloud.yaml> --googleapis <path> [--out <path>]",
 		Long: `generate generates gcloud commands
 
 generate generates gcloud command files from protobuf API specifications,
-service config yaml, and gcloud.yaml.
-
-Example:
-  surfer generate --config ./gcloud.yaml --googleapis ./googleapis --out ./output
-`,
+service config yaml, and gcloud.yaml.`,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			if config == "" {
-				return errMissingConfigFlag
+			args := cmd.Flags.Args()
+			if len(args) == 0 {
+				return fmt.Errorf("path to gcloud.yaml is required")
 			}
-
+			config := args[0]
 			return gcloud.Generate(ctx, googleapis, config, out)
 		},
 	}
 	cmdGenerate.Init()
-	cmdGenerate.Flags.StringVar(&config, "config", "", "path to gcloud.yaml configuration file (required)")
 	cmdGenerate.Flags.StringVar(&googleapis, "googleapis", "https://github.com/googleapis/googleapis", "URL or directory path to googleapis")
 	cmdGenerate.Flags.StringVar(&out, "out", ".", "output directory")
 	return cmdGenerate
