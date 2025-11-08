@@ -25,7 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
-	"github.com/googleapis/librarian/internal/surfer/gcloud"
 )
 
 func init() {
@@ -99,8 +98,6 @@ func refreshDir(rootConfig *config.Config, cmdLine *CommandLine, output string) 
 		return dart.Generate(model, output, config)
 	case "sample":
 		return codec_sample.Generate(model, output, config)
-	case "gcloud":
-		return gcloud.Generate(model, output, config)
 	default:
 		return fmt.Errorf("unknown language: %s", config.General.Language)
 	}
