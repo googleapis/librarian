@@ -50,7 +50,7 @@ func TestRun(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if err := Run(t.Context(), test.args); err != nil {
 				// TODO(https://github.com/googleapis/librarian/issues/2817):
-				// return once the generate functionality has been implemented
+				// remove once the generate functionality has been implemented
 				if strings.Contains(err.Error(), "failed to create API model") {
 					return
 				}
