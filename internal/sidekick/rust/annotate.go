@@ -455,6 +455,10 @@ type fieldAnnotations struct {
 	// the parent type twice.
 	// This applies to single value, repeated and map fields.
 	FieldTypeIsParentType bool
+	// In some cases, for instance, for OpenApi and Discovery synthetic requests,
+	// types in different namespaces have the same name. We need to import those
+	// with aliases.
+	AliasInExamples string
 	// If this field is part of a oneof group, this will contain the other fields
 	// in the group.
 	OtherFieldsInGroup []*api.Field
@@ -1158,6 +1162,13 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	ann.FieldTypeIsParentType = (field.MessageType == message || // Single or repeated field whose type is the same as the containing type.
 		// Map field whose value type is the same as the conaining type.
 		(ann.ValueField != nil && ann.ValueField.MessageType == message))
+	if !ann.FieldTypeIsParentType && // When the type of the field is the same as the containing type we don't import twice. No alias needed.
+		// Single or repeated field whose type unqualified name is the same as the containing message's.
+		((field.MessageType != nil && field.MessageType.Name == message.Name) ||
+			// Map field whose unqualified type unqualified name is the same as the containing message's.
+			(ann.ValueField != nil && ann.ValueField.MessageType != nil && ann.ValueField.MessageType.Name == message.Name)) {
+		ann.AliasInExamples = toPascal(field.Name)
+	}
 }
 
 func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
