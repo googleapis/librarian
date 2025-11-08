@@ -17,7 +17,7 @@ package surfer
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/surfer/gcloud"
@@ -25,11 +25,6 @@ import (
 
 // Run executes the surfer CLI with the given command line arguments.
 func Run(ctx context.Context, args []string) error {
-	cmd := newSurferCommand()
-	return cmd.Run(ctx, args)
-}
-
-func newSurferCommand() *cli.Command {
 	cmd := &cli.Command{
 		Short:     "surfer generates gcloud command YAML files",
 		UsageLine: "surfer generate [arguments]",
@@ -39,8 +34,10 @@ func newSurferCommand() *cli.Command {
 		},
 	}
 	cmd.Init()
-	return cmd
+	return cmd.Run(ctx, args)
 }
+
+var errMissingConfigFlag = errors.New("--config is required")
 
 func newCmdGenerate() *cli.Command {
 	var (
@@ -61,20 +58,16 @@ Example:
   surfer generate --config ./gcloud.yaml --googleapis ./googleapis --out ./output
 `,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			// Validate required flags
-			if googleapis == "" {
-				return fmt.Errorf("--googleapis is required")
-			}
 			if config == "" {
-				return fmt.Errorf("--config is required")
+				return errMissingConfigFlag
 			}
 
 			return gcloud.Generate(ctx, googleapis, config, out)
 		},
 	}
 	cmdGenerate.Init()
-	cmdGenerate.Flags.StringVar(&googleapis, "googleapis", "", "URL or directory path to googleapis (required)")
 	cmdGenerate.Flags.StringVar(&config, "config", "", "path to gcloud.yaml configuration file (required)")
+	cmdGenerate.Flags.StringVar(&googleapis, "googleapis", "https://github.com/googleapis/googleapis", "URL or directory path to googleapis")
 	cmdGenerate.Flags.StringVar(&out, "out", ".", "output directory")
 	return cmdGenerate
 }
