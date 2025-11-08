@@ -22,10 +22,10 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/codec_sample"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/dart"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
+	"github.com/googleapis/librarian/internal/surfer/gcloud"
 )
 
 func init() {

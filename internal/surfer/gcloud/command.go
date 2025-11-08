@@ -15,7 +15,7 @@
 // Package gcloud provides utilities for generating gcloud command configurations and related types.
 package gcloud
 
-import "github.com/googleapis/librarian/internal/sidekick/config/gcloudyaml"
+import "github.com/googleapis/librarian/internal/surfer/gcloudyaml"
 
 // Command is a single gcloud command.
 type Command struct {
