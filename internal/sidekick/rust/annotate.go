@@ -414,8 +414,11 @@ type oneOfAnnotation struct {
 	// this is basically `QualifiedName`. For messages in the current package
 	// this includes `modelAnnotations.PackageName`.
 	NameInExamples string
-	FieldType      string
-	DocLines       []string
+	// The unqualified oneof name may be the same as the unqualified name of the
+	// containing type. If that happens we need to alias one of them.
+	AliasInExamples string
+	FieldType       string
+	DocLines        []string
 	// The best field to show in a oneof related samples.
 	// Non deprecated fields are preferred, then scalar, repeated, map fields
 	// in that order.
@@ -1202,7 +1205,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		}
 	})
 
-	oneof.Codec = &oneOfAnnotation{
+	ann := &oneOfAnnotation{
 		FieldName:           toSnake(oneof.Name),
 		SetterName:          toSnakeNoMangling(oneof.Name),
 		EnumName:            enumName,
@@ -1214,6 +1217,16 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		DocLines:            c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes()),
 		ExampleField:        bestField,
 	}
+	// Note that this is different from OneOf name-overrides
+	// as those solve for fully qualified name clashes where a oneof
+	// and a child message have the same name.
+	// This is solving for unqualified name clashes that affect samples
+	// because we show usings for all types involved.
+	if ann.EnumName == message.Name {
+		ann.AliasInExamples = fmt.Sprintf("%sOneOf", ann.EnumName)
+	}
+
+	oneof.Codec = ann
 }
 
 func (c *codec) primitiveSerdeAs(field *api.Field) string {
