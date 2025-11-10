@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	librarianTemplate = `Librarian manages Google API client libraries by automating onboarding,
+	librarianDescription = `Librarian manages Google API client libraries by automating onboarding,
 regeneration, and release. It runs language-agnostic workflows while
 delegating language-specific tasks—such as code generation, building, and
 testing—to Docker images.
@@ -39,7 +39,7 @@ Usage:
 
 	librarian <command> [arguments]
 `
-	automationTemplate = `Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
+	automationDescription = `Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
 any repository listed in internal/automation/prod/repositories.yaml.
 
 Usage:
@@ -64,7 +64,7 @@ Usage:
 //go:generate go run -tags docgen ../doc_generate.go -cmd .
 
 /*
-%s
+{{.Description}}
 
 The commands are:
 {{range .Commands}}{{template "command" .}}{{end}}
@@ -132,13 +132,19 @@ func processFile(cmdPath *string) error {
 
 	var pkg string
 	if filepath.Base(pkgPath) == "automation" {
-		pkg = automationTemplate
+		pkg = automationDescription
 	} else {
-		pkg = librarianTemplate
+		pkg = librarianDescription
 	}
 
-	tmpl := template.Must(template.New("doc").Parse(fmt.Sprintf(docTemplate, pkg)))
-	if err := tmpl.Execute(docFile, struct{ Commands []CommandDoc }{Commands: commands}); err != nil {
+	tmpl := template.Must(template.New("doc").Parse(docTemplate))
+	if err := tmpl.Execute(docFile, struct {
+		Description string
+		Commands    []CommandDoc
+	}{
+		Description: pkg,
+		Commands:    commands,
+	}); err != nil {
 		return fmt.Errorf("could not execute template: %v", err)
 	}
 	return nil
