@@ -19,18 +19,30 @@ import (
 	"strings"
 )
 
-var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
-var matchAllCap   = regexp.MustCompile("([a-z0-9])([A-Z])")
+// Regular expressions used for case conversion.
+var (
+	matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+	matchAllCap   = regexp.MustCompile("([a-z0-9])([A-Z])")
+)
 
-// toSnakeCase converts a string to snake_case.
+// toSnakeCase converts a camelCase or PascalCase string to snake_case.
+// This is a common utility for converting API field names to a more
+// command-line friendly format.
+// For example, "apiFieldName" becomes "api_field_name".
 func toSnakeCase(str string) string {
+	// This first replacement handles cases like "APIFoo" -> "API_Foo".
 	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
+	// This second replacement handles cases like "FooBar" -> "Foo_Bar".
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
 }
 
-// ToKebabCase converts a string to kebab-case.
+// ToKebabCase converts a camelCase or PascalCase string to kebab-case.
+// This is the standard format for gcloud command-line flags.
+// For example, "apiFieldName" becomes "api-field-name".
 func ToKebabCase(str string) string {
+	// First, convert the string to snake_case.
 	snake := toSnakeCase(str)
+	// Then, replace all underscores with hyphens.
 	return strings.ReplaceAll(snake, "_", "-")
 }
