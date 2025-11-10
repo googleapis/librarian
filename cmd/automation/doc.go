@@ -37,8 +37,6 @@ Usage:
 
 Flags:
 
-	-force-run
-	  	The _FORCE_RUN flag (true/false) to Librarian CLI's -force-run option
 	-project string
 	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
 	-push
