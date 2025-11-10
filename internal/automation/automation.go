@@ -23,8 +23,8 @@ import (
 
 func newAutomationCommand() *cli.Command {
 	cmd := &cli.Command{
-		Short:     "",
-		UsageLine: "",
+		Short:     "automation manages",
+		UsageLine: "automation <command> [arguments]",
 		Long:      "",
 		Commands: []*cli.Command{
 			newCmdPublishRelease(),
@@ -37,8 +37,8 @@ func newAutomationCommand() *cli.Command {
 
 func newCmdPublishRelease() *cli.Command {
 	cmdPublishRelease := &cli.Command{
-		Short:     "",
-		UsageLine: "",
+		Short:     "publish-release",
+		UsageLine: "automation publish-release [flags]",
 		Long:      "",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			if _, err := cmd.Config.IsValid(); err != nil {
