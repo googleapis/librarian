@@ -95,13 +95,6 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 		return fmt.Errorf("unsupported command: %s", command)
 	}
 
-	if triggerName == "stage-release" {
-		_, week := dateTime.ISOWeek()
-		if week%2 == 0 && !forceRun {
-			slog.Info("skipping stage-release on an even week.")
-			return nil
-		}
-	}
 	errs := make([]error, 0)
 
 	repositories := config.RepositoriesForCommand(command)
