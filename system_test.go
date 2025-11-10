@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+
 package librarian
 
 import (
@@ -446,7 +448,7 @@ func TestCreateRelease(t *testing.T) {
 }
 
 func TestFindLatestImage(t *testing.T) {
-	t.Skip("Temporarily skipping until we can run it reliably. See https://github.com/googleapis/librarian/issues/2720")
+	t.Logf("Note: This test requires authentication with the Artifact Registry in project 'cloud-sdk-librarian-prod'.")
 
 	// If we are able to configure system tests on GitHub actions, then update this
 	// guard clause.

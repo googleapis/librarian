@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !e2etest
+//go:build !mock_github
 
 // This file contains the production implementations for functions that get
 // GitHub repository details.

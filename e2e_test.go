@@ -41,6 +41,8 @@ import (
 var nestedCommitRegex = regexp.MustCompile(`(?s)BEGIN_NESTED_COMMIT\n(.*?)\nEND_NESTED_COMMIT`)
 var conventionalCommitRegex = regexp.MustCompile(`^(feat|fix|docs|chore): (.+)$`)
 
+const mockGithubTag = "mock_github"
+
 func TestRunGenerate(t *testing.T) {
 	const (
 		initialRepoStateDir = "testdata/e2e/generate/repo_init"
@@ -121,7 +123,7 @@ func TestRunGenerate(t *testing.T) {
 			defer server.Close()
 			cmdArgs := []string{
 				"run",
-				"-tags", "e2etest",
+				"-tags", mockGithubTag,
 				"github.com/googleapis/librarian/cmd/librarian",
 				"generate",
 				fmt.Sprintf("--api=%s", test.api),
@@ -211,7 +213,7 @@ func TestCleanAndCopy(t *testing.T) {
 	cmd := exec.Command(
 		"go",
 		"run",
-		"-tags", "e2etest",
+		"-tags", mockGithubTag,
 		"github.com/googleapis/librarian/cmd/librarian",
 		"generate",
 		fmt.Sprintf("--api=%s", apiToGenerate),
@@ -526,7 +528,7 @@ func TestReleaseStage(t *testing.T) {
 
 			cmdArgs := []string{
 				"run",
-				"-tags", "e2etest",
+				"-tags", mockGithubTag,
 				"github.com/googleapis/librarian/cmd/librarian",
 				"release",
 				"stage",

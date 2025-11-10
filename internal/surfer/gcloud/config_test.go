@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloudyaml
+package gcloud
 
 import (
 	"bytes"
@@ -25,25 +25,24 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestGcloudConfig(t *testing.T) {
-	data, err := os.ReadFile("testdata/gcloud.yaml")
+func TestReadGcloudConfig(t *testing.T) {
+	cfg, err := readGcloudConfig("testdata/parallelstore/gcloud.yaml")
 	if err != nil {
-		t.Fatalf("failed to read temporary YAML file: %v", err)
-	}
-
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		t.Fatalf("failed to unmarshal YAML: %v", err)
+		t.Fatal(err)
 	}
 
 	var got bytes.Buffer
 	enc := yaml.NewEncoder(&got)
 	enc.SetIndent(2)
-	if err := enc.Encode(config); err != nil {
+	if err := enc.Encode(cfg); err != nil {
 		t.Fatalf("failed to marshal struct to YAML: %v", err)
 	}
 
 	var index int
+	data, err := os.ReadFile("testdata/parallelstore/gcloud.yaml")
+	if err != nil {
+		t.Fatalf("failed to read temporary YAML file: %v", err)
+	}
 	lines := strings.Split(string(data), "\n")
 	for i, line := range lines {
 		if strings.HasPrefix(line, "#") {
@@ -52,7 +51,7 @@ func TestGcloudConfig(t *testing.T) {
 			continue
 		}
 	}
-	want := fmt.Sprintf("service_name: %s\n%s", config.ServiceName, strings.Join(lines[index:], "\n"))
+	want := fmt.Sprintf("service_name: %s\n%s", cfg.ServiceName, strings.Join(lines[index:], "\n"))
 	if diff := cmp.Diff(want, got.String()); diff != "" {
 		t.Errorf("mismatch(-want, +got)\n%s", diff)
 	}

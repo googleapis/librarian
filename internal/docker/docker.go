@@ -79,6 +79,10 @@ type BuildRequest struct {
 	// State is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
+
+	// Image is the name of the docker image to use when running. If not
+	// specified, uses the default image configured for the client.
+	Image string
 }
 
 // ConfigureRequest contains all the information required for a language
@@ -106,6 +110,10 @@ type ConfigureRequest struct {
 	// State is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
+
+	// Image is the name of the docker image to use when running. If not
+	// specified, uses the default image configured for the client.
+	Image string
 }
 
 // GenerateRequest contains all the information required for a language
@@ -127,6 +135,10 @@ type GenerateRequest struct {
 	// State is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
+
+	// Image is the name of the docker image to use when running. If not
+	// specified, uses the default image configured for the client.
+	Image string
 }
 
 // ReleaseStageRequest contains all the information required for a language
@@ -164,6 +176,10 @@ type ReleaseStageRequest struct {
 	// State is a pointer to the [config.LibrarianState] struct, representing
 	// the overall state of the generation and release pipeline.
 	State *config.LibrarianState
+
+	// Image is the name of the docker image to use when running. If not
+	// specified, uses the default image configured for the client.
+	Image string
 }
 
 // DockerOptions contains optional configuration parameters for invoking
@@ -232,7 +248,9 @@ func (c *Docker) Generate(ctx context.Context, request *GenerateRequest) error {
 		fmt.Sprintf("%s:/output", request.Output),
 		fmt.Sprintf("%s:/source:ro", request.ApiRoot), // readonly volume
 	}
-	return c.runDocker(ctx, CommandGenerate, mounts, commandArgs)
+
+	image := c.resolveImage(request.Image)
+	return c.runDocker(ctx, image, CommandGenerate, mounts, commandArgs)
 }
 
 // Build builds the library with an ID of libraryID, as configured in
@@ -262,7 +280,8 @@ func (c *Docker) Build(ctx context.Context, request *BuildRequest) error {
 		"--repo=/repo",
 	}
 
-	return c.runDocker(ctx, CommandBuild, mounts, commandArgs)
+	image := c.resolveImage(request.Image)
+	return c.runDocker(ctx, image, CommandBuild, mounts, commandArgs)
 }
 
 // Configure configures an API within a repository, either adding it to an
@@ -307,7 +326,8 @@ func (c *Docker) Configure(ctx context.Context, request *ConfigureRequest) (stri
 		mounts = append(mounts, fmt.Sprintf("%s/%s:/repo/%s:ro", request.RepoDir, globalFile, globalFile))
 	}
 
-	if err := c.runDocker(ctx, CommandConfigure, mounts, commandArgs); err != nil {
+	image := c.resolveImage(request.Image)
+	if err := c.runDocker(ctx, image, CommandConfigure, mounts, commandArgs); err != nil {
 		return "", err
 	}
 
@@ -342,14 +362,15 @@ func (c *Docker) ReleaseStage(ctx context.Context, request *ReleaseStageRequest)
 		fmt.Sprintf("%s:/output", request.Output),
 	}
 
-	if err := c.runDocker(ctx, CommandReleaseStage, mounts, commandArgs); err != nil {
+	image := c.resolveImage(request.Image)
+	if err := c.runDocker(ctx, image, CommandReleaseStage, mounts, commandArgs); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Docker) runDocker(_ context.Context, command Command, mounts []string, commandArgs []string) (err error) {
+func (c *Docker) runDocker(_ context.Context, image string, command Command, mounts []string, commandArgs []string) (err error) {
 	mounts = maybeRelocateMounts(c.HostMount, mounts)
 	args := []string{
 		"run",
@@ -365,7 +386,7 @@ func (c *Docker) runDocker(_ context.Context, command Command, mounts []string, 
 		args = append(args, "--user", fmt.Sprintf("%s:%s", c.uid, c.gid))
 	}
 
-	args = append(args, c.Image)
+	args = append(args, image)
 	args = append(args, string(command))
 	args = append(args, commandArgs...)
 	return c.run(args...)
@@ -387,6 +408,13 @@ func maybeRelocateMounts(hostMount string, mounts []string) []string {
 		relocatedMounts = append(relocatedMounts, mount)
 	}
 	return relocatedMounts
+}
+
+func (c *Docker) resolveImage(requestedImage string) string {
+	if requestedImage != "" {
+		return requestedImage
+	}
+	return c.Image
 }
 
 func (c *Docker) runCommand(cmdName string, args ...string) error {

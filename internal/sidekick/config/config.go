@@ -22,7 +22,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/googleapis/librarian/internal/sidekick/config/gcloudyaml"
 	"github.com/googleapis/librarian/internal/sidekick/license"
 	toml "github.com/pelletier/go-toml/v2"
 )
@@ -61,10 +60,6 @@ type Config struct {
 	CommentOverrides    []DocumentationOverride `toml:"documentation-overrides,omitempty"`
 	PaginationOverrides []PaginationOverride    `toml:"pagination-overrides,omitempty"`
 	Release             *Release                `toml:"release,omitempty"`
-
-	// Gcloud is used to pass data into gcloud.Generate. It does not use the
-	// normal .sidekick.toml file, but instead reads a gcloud.yaml file.
-	Gcloud *gcloudyaml.Config
 }
 
 // GeneralConfig contains configuration parameters that affect Parsers and Codecs, including the

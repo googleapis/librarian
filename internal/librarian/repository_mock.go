@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build e2etest
+//go:build mock_github
 
 // This file contains mock implementations of repository getters for use in
-// end-to-end tests. It is compiled only when the 'e2e-test' build tag is specified.
+// end-to-end tests. It is compiled only when the 'mock_github' build tag is specified.
 
 package librarian
 

@@ -163,12 +163,10 @@ func (r *testGenerateRunner) testSingleLibrary(ctx context.Context, libraryID, s
 		return fmt.Errorf("library %q not found in state", libraryID)
 	}
 
-	if r.librarianConfig != nil {
-		libConfig := r.librarianConfig.LibraryConfigFor(libraryID)
-		if libConfig != nil && libConfig.GenerateBlocked {
-			return errGenerateBlocked
-		}
+	if r.librarianConfig.IsGenerationBlocked(libraryID) {
+		return errGenerateBlocked
 	}
+
 	protoFileToGUIDs, err := r.prepareForGenerateTest(libraryState, libraryID)
 	if err != nil {
 		return fmt.Errorf("failed in test preparing steps: %w", err)

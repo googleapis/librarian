@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+// Command surfer generates gcloud command YAML files.
+package main
 
 import (
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"context"
+	"log"
+	"os"
+
+	"github.com/googleapis/librarian/internal/surfer/surfer"
 )
 
-// Generate generates gcloud commands from the model.
-func Generate(model *api.API, outdir string, cfg *config.Config) error {
-	return nil
+func main() {
+	ctx := context.Background()
+	if err := surfer.Run(ctx, os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
 }

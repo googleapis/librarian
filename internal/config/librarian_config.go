@@ -79,6 +79,15 @@ func (g *LibrarianConfig) LibraryConfigFor(LibraryID string) *LibraryConfig {
 	return nil
 }
 
+// IsGenerationBlocked returns true if the library is configured to block generation.
+func (g *LibrarianConfig) IsGenerationBlocked(libraryID string) bool {
+	if g == nil {
+		return false
+	}
+	libConfig := g.LibraryConfigFor(libraryID)
+	return libConfig != nil && libConfig.GenerateBlocked
+}
+
 // GetGlobalFiles returns the global files defined in the librarian config.
 func (g *LibrarianConfig) GetGlobalFiles() []string {
 	var globalFiles []string
