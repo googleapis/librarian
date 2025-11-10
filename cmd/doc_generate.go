@@ -39,7 +39,8 @@ Usage:
 
 	librarian <command> [arguments]
 `
-	automationTemplate = `Automation manages Cloud Build resources to run Librarian CLI.
+	automationTemplate = `Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
+any repository listed in internal/automation/prod/repositories.yaml.
 
 Usage:
 
