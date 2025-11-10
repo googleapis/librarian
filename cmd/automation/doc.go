@@ -15,7 +15,8 @@
 //go:generate go run -tags docgen ../doc_generate.go -cmd .
 
 /*
-Automation manages Cloud Build resources to run Librarian CLI.
+Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
+any repository listed in internal/automation/prod/repositories.yaml.
 
 Usage:
 
