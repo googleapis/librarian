@@ -24,11 +24,29 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
 
-const docTemplate = `// Copyright 2025 Google LLC
+const (
+	librarianTemplate = `Librarian manages Google API client libraries by automating onboarding,
+regeneration, and release. It runs language-agnostic workflows while
+delegating language-specific tasks—such as code generation, building, and
+testing—to Docker images.
+
+Usage:
+
+	librarian <command> [arguments]
+`
+	automationTemplate = `Automation manages Cloud Build resources to run Librarian CLI.
+
+Usage:
+
+	automation <command> [arguments]
+`
+
+	docTemplate = `// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,14 +63,7 @@ const docTemplate = `// Copyright 2025 Google LLC
 //go:generate go run -tags docgen ../doc_generate.go -cmd .
 
 /*
-Librarian manages Google API client libraries by automating onboarding,
-regeneration, and release. It runs language-agnostic workflows while
-delegating language-specific tasks—such as code generation, building, and
-testing—to Docker images.
-
-Usage:
-
-	librarian <command> [arguments]
+%s
 
 The commands are:
 {{range .Commands}}{{template "command" .}}{{end}}
@@ -69,6 +80,7 @@ package main
 {{end}}
 {{end}}
 `
+)
 
 // CommandDoc holds the documentation for a single CLI command.
 type CommandDoc struct {
@@ -84,13 +96,13 @@ func main() {
 	if *cmdPath == "" {
 		log.Fatal("must specify -cmd flag")
 	}
-	if err := run(); err != nil {
+	if err := run(cmdPath); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run() error {
-	if err := processFile(); err != nil {
+func run(cmdPath *string) error {
+	if err := processFile(cmdPath); err != nil {
 		return err
 	}
 	cmd := exec.Command("goimports", "-w", "doc.go")
@@ -100,7 +112,7 @@ func run() error {
 	return nil
 }
 
-func processFile() error {
+func processFile(cmdPath *string) error {
 	commands, err := buildCommandDocs("")
 	if err != nil {
 		return err
@@ -112,7 +124,19 @@ func processFile() error {
 	}
 	defer docFile.Close()
 
-	tmpl := template.Must(template.New("doc").Parse(docTemplate))
+	pkgPath, err := filepath.Abs(*cmdPath)
+	if err != nil {
+		return fmt.Errorf("could not find path: %v", err)
+	}
+
+	var pkg string
+	if strings.HasSuffix(pkgPath, "automation") {
+		pkg = automationTemplate
+	} else {
+		pkg = librarianTemplate
+	}
+
+	tmpl := template.Must(template.New("doc").Parse(fmt.Sprintf(docTemplate, pkg)))
 	if err := tmpl.Execute(docFile, struct{ Commands []CommandDoc }{Commands: commands}); err != nil {
 		return fmt.Errorf("could not execute template: %v", err)
 	}
