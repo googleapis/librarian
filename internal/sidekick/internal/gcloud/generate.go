@@ -32,37 +32,56 @@ import (
 // Generate is the main entrypoint for the gcloud command generator. It orchestrates
 // the process of parsing the API model and generating the corresponding gcloud
 // command surface.
+//
+// For example, if the model contains the `parallelstore.googleapis.com` service,
+// this function will drive the creation of the `parallelstore/` command surface directory.
 func Generate(model *api.API, outdir string, cfg *config.Config) error {
-	// Ensure that the gcloud configuration is present.
+	// First, we check if the gcloud configuration is provided. Without it, we
+	// cannot proceed.
 	if cfg.Gcloud == nil {
 		return fmt.Errorf("gcloud config is missing")
 	}
-	// Extract the short service name (e.g., "parallelstore") from the full
-	// service name (e.g., "parallelstore.googleapis.com").
-	serviceNameParts := strings.Split(cfg.Gcloud.ServiceName, ".")
-	if len(serviceNameParts) == 0 {
-		return fmt.Errorf("invalid service name in gcloud.yaml: %s", cfg.Gcloud.ServiceName)
+
+	// We need the short service name (e.g., "parallelstore") to use as the root
+	// directory for the generated command surface. We derive this from the `name`
+	// of the first API definition in the `gcloud.yaml` file.
+	// Example: "Parallelstore" -> "parallelstore"
+	if len(cfg.Gcloud.APIs) == 0 {
+		return fmt.Errorf("no APIs defined in gcloud.yaml")
 	}
-	shortServiceName := serviceNameParts[0]
-	// Define the output directory for the generated command surface.
+	shortServiceName := strings.ToLower(cfg.Gcloud.APIs[0].Name)
+
+	// The final output will be placed in a directory structure like:
+	// `{outdir}/{shortServiceName}/surface/`
 	surfaceDir := filepath.Join(outdir, shortServiceName, "surface")
 
-	// Group all API methods by the resource they operate on. The resource is
-	// identified by its collection ID (e.g., "instances").
+	// gcloud commands are resource-centric commands (e.g., `gcloud parallelstore instances create`),
+	// so we first need to group all the API methods by the resource they operate on.
+	// We'll create a map where the key is the resource's collection ID (e.g., "instances")
+	// and the value is a list of methods that act on that resource.
 	methodsByResource := make(map[string][]*api.Method)
+
+	// We iterate through all services and their methods defined in the API model.
+	// TODO(santi): test with multiple services
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
-			// Determine the plural name of the resource, which serves as the collection ID.
+			// For each method, we determine the plural name of the resource it operates on.
+			// This plural name (e.g., "instances") will serve as our collection ID.
+			// Example: For the `CreateInstance` method, this will return "instances".
 			collectionID := getPluralName(method, model)
+
+			// If a collection ID is found, we add the method to our map.
 			if collectionID != "" {
-				// Add the method to the list of methods for this resource.
 				methodsByResource[collectionID] = append(methodsByResource[collectionID], method)
 			}
 		}
 	}
 
-	// Iterate over each resource and generate the corresponding command files.
+	// Now that we have grouped the methods by resource, we can generate the
+	// command files for each resource.
 	for collectionID, methods := range methodsByResource {
+		// The `generateResourceCommands` function will handle the creation of the
+		// directory structure and YAML files for this specific resource.
 		err := generateResourceCommands(collectionID, methods, surfaceDir, cfg, model)
 		if err != nil {
 			return err
@@ -73,43 +92,58 @@ func Generate(model *api.API, outdir string, cfg *config.Config) error {
 
 // generateResourceCommands creates the directory structure and YAML files for a
 // single resource's commands (e.g., create, delete, list).
+//
+// For a given collectionID like "instances", this function will create a directory
+// `instances/` and populate it with `create.yaml`, `delete.yaml`, etc.
 func generateResourceCommands(collectionID string, methods []*api.Method, baseDir string, cfg *config.Config, model *api.API) error {
-	// Create the main directory for the resource (e.g., "instances").
+	// The main directory for the resource is named after its collection ID.
+	// Example: `{baseDir}/instances`
 	resourceDir := filepath.Join(baseDir, collectionID)
-	// Create the "_partials" directory where the actual command definitions will live.
+
+	// Gcloud commands are defined in a `_partials` directory. This allows
+	// for sharing command definitions across different release tracks (GA, Beta, Alpha).
 	partialsDir := filepath.Join(resourceDir, "_partials")
 	if err := os.MkdirAll(partialsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create partials directory for %q: %w", collectionID, err)
 	}
 
-	// Iterate over each method associated with the resource and generate a command file.
+	// We iterate through each method associated with this resource.
 	for _, method := range methods {
-		// Determine the gcloud verb (e.g., "create", "describe") from the method name.
+		// We map the API method name to a standard gcloud command verb.
+		// Example: `CreateInstance` -> "create"
 		verb := getVerb(method.Name)
-		// Construct the complete command definition from the API method.
+
+		// We construct the complete command definition from the API method.
+		// This involves generating all the arguments, help text, and request details.
 		cmd := newCommand(method, cfg, model)
-		// wrap the command definition in a list (current gcloud convention).
+
+		// in gcloud convention, the final YAML file must contain a list of commands,
+		// even if there is only one.
 		cmdList := []*Command{cmd}
 
-		// Create the main command file (e.g., "create.yaml") which simply points
-		// to the partials directory.
+		// We create the main command file (e.g., `create.yaml`). This file doesn't
+		// contain the command definition itself, but rather a directive that tells
+		// gcloud to look in the `_partials` directory.
 		mainCmdPath := filepath.Join(resourceDir, fmt.Sprintf("%s.yaml", verb))
 		if err := os.WriteFile(mainCmdPath, []byte("_PARTIALS_: true\n"), 0644); err != nil {
 			return fmt.Errorf("failed to write main command file for %q: %w", method.Name, err)
 		}
 
-		// Define the name of the partial file, including the release track (e.g., "_create_ga.yaml").
+		// We define the name of the partial file, which includes the verb and the
+		// release track. For now, we are hardcoding to the "ga" track.
+		// Example: "_create_ga.yaml"
+		// TODO(santi): generate multiple tracks
 		track := "ga"
 		partialFileName := fmt.Sprintf("_%s_%s.yaml", verb, track)
 		partialCmdPath := filepath.Join(partialsDir, partialFileName)
 
-		// Marshal the command definition into YAML.
+		// We marshal the command definition struct into YAML format.
 		b, err := yaml.Marshal(cmdList)
 		if err != nil {
 			return fmt.Errorf("failed to marshal partial command for %q: %w", method.Name, err)
 		}
 
-		// Write the YAML to the partial file.
+		// Finally, we write the generated YAML to the partial file.
 		if err := os.WriteFile(partialCmdPath, b, 0644); err != nil {
 			return fmt.Errorf("failed to write partial command file for %q: %w", method.Name, err)
 		}
@@ -118,37 +152,45 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 }
 
 // newCommand constructs a single gcloud command definition from an API method.
+// This function assembles all the necessary pieces: help text, arguments,
+// request details, and async configuration.
 func newCommand(method *api.Method, cfg *config.Config, model *api.API) *Command {
-	// Find the help text and API definition for this method from the config.
+	// We look up the help text and API definition for this specific method in the
+	// `gcloud.yaml` configuration file.
 	rule := findHelpTextRule(method, cfg)
 	apiDef := findAPI(method, cfg)
-	// Initialize the command with default values.
+	//TODO: parse exaples from `gcloud.yaml`
+
+	// We initialize the command with some default values.
 	cmd := &Command{
 		AutoGenerated: true,
 		Hidden:        true,
 	}
-	// If a help text rule is found, apply it.
+
+	// If a help text rule was found in the config, we apply it to the command.
 	if rule != nil {
 		cmd.HelpText = HelpText{
 			Brief:       rule.HelpText.Brief,
 			Description: rule.HelpText.Description,
-			Examples:    "TODO: Add examples from " + rule.Selector,
+			Examples:    rule.HelpText.Examples[0], //TODO(santi): add all examples
 		}
 	}
-	// If an API definition is found, apply the release tracks.
+
+	// If an API definition was found, we apply the specified release tracks.
 	if apiDef != nil {
 		for _, track := range apiDef.ReleaseTracks {
 			cmd.ReleaseTracks = append(cmd.ReleaseTracks, string(track))
 		}
 	}
-	// Generate the arguments for the command.
+
+	// The core of the command generation happens here: we generate the arguments,
+	// request details, and async configuration.
 	cmd.Arguments = newArguments(method, cfg, model)
-	// Generate the request details for the command.
 	cmd.Request = newRequest(method, cfg, model)
-	// If the method is a long-running operation, generate the async details.
 	if method.OperationInfo != nil {
 		cmd.Async = newAsync(method, cfg)
 	}
+
 	return cmd
 }
 
@@ -160,77 +202,99 @@ func newArguments(method *api.Method, cfg *config.Config, model *api.API) Argume
 		return args
 	}
 
-	// Iterate over each field in the request message.
+	// We iterate over each field in the method's request message (e.g., `CreateInstanceRequest`).
 	for _, field := range method.InputType.Fields {
-		// The "parent" field is handled by the primary resource argument, so we skip it here.
+		// The "parent" field is a special case. Its information is captured by the
+		// primary resource argument, so we skip it here to avoid creating a redundant flag.
 		if field.Name == "parent" {
 			continue
 		}
 
-		// If the field represents the primary resource, generate a special
-		// positional resource argument for it.
+		// We check if the current field represents the primary resource of the command.
+		// For example, in a `CreateInstance` method, this would be the `instance_id` field.
 		if isPrimaryResource(field, method) {
+			// If it is the primary resource, we generate a special positional argument for it.
 			param := newPrimaryResourceParam(field, method, model, cfg)
 			args.Params = append(args.Params, param)
 			continue
 		}
 
-		// For all other fields, generate a standard flag argument. If the field
+		// For all other fields, we generate a standard flag argument. If the field
 		// is a nested message, its fields will be "flattened" into top-level flags.
+		// For example, a field `instance.description` becomes the `--description` flag.
 		addFlattenedParams(field, field.JSONName, &args, cfg, model)
 	}
 	return args
 }
 
 // addFlattenedParams recursively processes a field and its sub-fields to generate
-// a flat list of command-line flags.
+// a flat list of command-line flags. This is necessary for nested messages in
+// the request proto.
 func addFlattenedParams(field *api.Field, prefix string, args *Arguments, cfg *config.Config, model *api.API) {
-	// Skip fields that are output-only or are the resource's name (which is handled
-	// by the primary resource argument).
+	// We skip fields that are marked as `OUTPUT_ONLY` in the proto, as these are
+	// not meant to be provided by the user. We also skip the "name" field, as it's
+	// handled by the primary resource argument.
 	if isOutputOnly(field) || field.Name == "name" {
 		return
 	}
 
-	// If the field is a nested message (and not a map), recurse into its fields.
+	// If the field is a nested message (and not a map, which is handled differently),
+	// we need to recurse into its fields. This is the "flattening" process.
+	// For example, in the Parallelstore API, the `CreateInstanceRequest` message
+	// has a field named `instance` which is of type `Instance`. The `Instance`
+	// message itself has fields like `description` and `capacity_gib`.
+	// This block will recurse into the `Instance` message's fields.
 	if field.MessageType != nil && !field.Map {
 		for _, f := range field.MessageType.Fields {
-			// The prefix is updated to create a dot-separated path for the API field.
+			// The prefix is updated to create a dot-separated path for the `api_field`.
+			// Continuing the example: when processing the `capacity_gib` field inside the
+			// `Instance` message, the prefix will become "instance.capacityGib". This
+			// results in a `--capacity-gib` flag that maps to the correct nested field.
 			addFlattenedParams(f, fmt.Sprintf("%s.%s", prefix, f.JSONName), args, cfg, model)
 		}
 		return
 	}
 
-	// If the field is a scalar, map, or enum, generate a parameter for it.
+	// If the field is a scalar, map, or enum, we generate a parameter for it.
 	param := newParam(field, prefix, cfg, model)
 	args.Params = append(args.Params, param)
 }
 
-// newParam creates a single command-line argument from a proto field.
+// newParam creates a single command-line argument (a `Param` struct) from a proto field.
 func newParam(field *api.Field, apiField string, cfg *config.Config, model *api.API) Param {
+	// We initialize the Param with the basic information derived from the field.
 	param := Param{
-		ArgName:  ToKebabCase(field.Name),
+		// The command-line flag name is the kebab-case version of the field name.
+		// Example: `requestId` -> `request-id`
+		ArgName: ToKebabCase(field.Name),
+		// The `api_field` is the dot-separated path to the field in the request message.
 		APIField: apiField,
+		// We determine if the field is required based on the `(google.api.field_behavior)` annotation.
 		Required: field.DocumentAsRequired(),
+		// We check if the field is repeated in the proto.
 		Repeated: field.Repeated,
 	}
 
-	// If the field is a resource reference, generate a resource spec for it.
+	// Now we handle the different types of fields.
 	if field.ResourceReference != nil {
+		// If the field is a resource reference (e.g., a field for a network), we
+		// generate a `ResourceSpec` for it. This tells gcloud how to parse the
+		// resource name provided by the user.
 		param.ResourceSpec = newResourceReferenceSpec(field, model, cfg)
 		param.ResourceMethodParams = map[string]string{
 			apiField: "{__relative_name__}",
 		}
-		// If the field is a map, generate a spec for its key-value pairs.
 	} else if field.Map {
+		// If the field is a map, we generate a spec for its key-value pairs.
 		param.Repeated = true
 		param.Spec = []ArgSpec{
 			{APIField: "key"},
 			{APIField: "value"},
 		}
-		// If the field is an enum, generate choices for its possible values.
 	} else if field.EnumType != nil {
+		// If the field is an enum, we generate a list of choices for the flag.
 		for _, v := range field.EnumType.Values {
-			// Skip the default "UNSPECIFIED" value.
+			// We skip the default "UNSPECIFIED" value, as it's not a valid choice for the user.
 			if strings.HasSuffix(v.Name, "_UNSPECIFIED") {
 				continue
 			}
@@ -239,46 +303,52 @@ func newParam(field *api.Field, apiField string, cfg *config.Config, model *api.
 				EnumValue: v.Name,
 			})
 		}
-		// Otherwise, it's a scalar type.
 	} else {
+		// If it's a scalar type (string, int, bool, etc.), we map its proto type
+		// to the corresponding gcloud type.
 		param.Type = getGcloudType(field.Typez)
 	}
 
-	// Find the help text for this field from the config, or generate a default.
+	// We try to find help text for this field in the `gcloud.yaml` config.
+	// If none is found, we generate a default help text.
 	if rule := findFieldHelpTextRule(field, cfg); rule != nil {
 		param.HelpText = rule.HelpText.Brief
 	} else {
+		// TODO: improve default help text inference
 		param.HelpText = fmt.Sprintf("Value for the `%s` field.", ToKebabCase(field.Name))
 	}
 	return param
 }
 
 // newPrimaryResourceParam creates the main positional resource argument for a command.
+// This is the argument that represents the resource being acted upon (e.g., the instance name).
 func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.API, cfg *config.Config) Param {
-	// Get the resource definition for this method.
+	// We first need to get the full resource definition for the method.
 	resource := getResourceForMethod(method, model)
 	pattern := ""
 	if resource != nil && len(resource.Pattern) > 0 {
 		pattern = resource.Pattern[0]
 	}
 
-	// Construct the gcloud collection path from the resource pattern.
+	// We construct the gcloud collection path from the resource's pattern string.
+	// Example: `projects/{project}/locations/{location}/instances/{instance}` -> `projects.locations.instances`
 	collectionPath := getCollectionPathFromPattern(pattern)
 	shortServiceName := strings.Split(cfg.Gcloud.ServiceName, ".")[0]
 
-	// Determine the singular name of the resource.
+	// We determine the singular name of the resource.
+	// For `Create` methods, this comes from the `_id` field. For others, it's the `name` field.
 	resourceName := toSnakeCase(strings.TrimSuffix(field.Name, "_id"))
 	if field.Name == "name" {
 		resourceName = getSingularFromPattern(pattern)
 	}
 
-	// Generate appropriate help text based on the command verb.
+	// We generate a helpful help text based on whether the command is a `Create` command or not.
 	helpText := fmt.Sprintf("The %s to create.", resourceName)
 	if !strings.HasPrefix(method.Name, "Create") {
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
 	}
 
-	// Construct and return the Param struct.
+	// We assemble the final `Param` struct with all the necessary information for a primary resource.
 	return Param{
 		HelpText:          helpText,
 		IsPositional:      true,
@@ -296,31 +366,33 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 }
 
 // newResourceReferenceSpec creates a ResourceSpec for a field that references
-// another resource type.
+// another resource type (e.g., a `--network` flag).
 func newResourceReferenceSpec(field *api.Field, model *api.API, cfg *config.Config) *ResourceSpec {
-	// Find the definition of the referenced resource in the API model.
+	// We iterate through all the resource definitions in the API model to find the
+	// one that matches the type of our resource reference.
 	for _, def := range model.ResourceDefinitions {
 		if def.Type == field.ResourceReference.Type {
 			if len(def.Pattern) == 0 {
-				return nil // Cannot proceed without a pattern
+				return nil // We cannot proceed without a pattern.
 			}
 			pattern := def.Pattern[0]
 
-			// Determine the plural name, falling back to parsing the resource pattern if not explicit.
+			// We determine the plural name, using the explicit `plural` field if available,
+			// and falling back to parsing the pattern otherwise.
 			pluralName := def.Plural
 			if pluralName == "" {
 				pluralName = getPluralFromPattern(pattern)
 			}
 
-			// Determine the singular name from the pattern.
+			// We determine the singular name from the pattern.
 			name := getSingularFromPattern(pattern)
 
-			// Construct the full gcloud collection path.
+			// We construct the full gcloud collection path for the referenced resource.
 			shortServiceName := strings.Split(cfg.Gcloud.ServiceName, ".")[0]
 			baseCollectionPath := getCollectionPathFromPattern(pattern)
 			fullCollectionPath := fmt.Sprintf("%s.%s", shortServiceName, baseCollectionPath)
 
-			// Construct and return the ResourceSpec.
+			// We assemble and return the `ResourceSpec`.
 			return &ResourceSpec{
 				Name:                  name,
 				PluralName:            pluralName,
@@ -334,30 +406,37 @@ func newResourceReferenceSpec(field *api.Field, model *api.API, cfg *config.Conf
 }
 
 // newAttributesFromPattern parses a resource pattern string (e.g.,
-// "projects/{project}/locations/{location}") and extracts the attributes.
+// "projects/{project}/locations/{location}") and extracts the attributes
+// that make up the resource's name.
 func newAttributesFromPattern(pattern string) []Attribute {
 	var attributes []Attribute
 	parts := strings.Split(pattern, "/")
-	// Iterate over the segments of the pattern.
+
+	// We iterate over the segments of the pattern.
 	for i, part := range parts {
 		// A variable segment is enclosed in curly braces.
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			// The `attribute_name` is the name of the variable (e.g., "project").
 			name := strings.Trim(part, "{}")
 			var parameterName string
-			// The parameter name is derived from the preceding literal segment
-			// (e.g., "projects" -> "projectsId").
+
+			// The `parameter_name` is derived from the preceding literal segment
+			// (e.g., "projects" -> "projectsId"). This is a gcloud convention.
 			if i > 0 {
 				parameterName = parts[i-1] + "Id"
 			} else {
-				// Fallback for patterns that start with a variable (unlikely).
+				// This is a fallback for the unlikely case that a pattern starts with a variable.
 				parameterName = name + "sId"
 			}
+
 			attr := Attribute{
 				AttributeName: name,
 				ParameterName: parameterName,
 				Help:          fmt.Sprintf("The %s id of the {resource} resource.", name),
 			}
-			// If the attribute is a project, add the standard gcloud property fallback.
+
+			// If the attribute is a project, we add the standard gcloud property fallback,
+			// so users don't have to specify `--project` if it's already configured.
 			if name == "project" {
 				attr.Property = "core/project"
 			}
@@ -372,15 +451,16 @@ func isPrimaryResource(field *api.Field, method *api.Method) bool {
 	if method.InputType == nil {
 		return false
 	}
-	// For Create methods, the primary resource is identified by a field named
-	// "{resource}_id".
+	// For `Create` methods, the primary resource is identified by a field named
+	// in the format "{resource}_id" (e.g., "instance_id").
 	if strings.HasPrefix(method.Name, "Create") {
 		resourceName := getResourceName(method)
 		if resourceName != "" && field.Name == toSnakeCase(resourceName)+"_id" {
 			return true
 		}
 	}
-	// For other methods, the primary resource is identified by a field named "name".
+	// For `Get`, `Delete`, and `Update` methods, the primary resource is identified
+	// by a field named "name", which holds the full resource name.
 	if (strings.HasPrefix(method.Name, "Get") || strings.HasPrefix(method.Name, "Delete") || strings.HasPrefix(method.Name, "Update")) && field.Name == "name" {
 		return true
 	}
@@ -388,6 +468,7 @@ func isPrimaryResource(field *api.Field, method *api.Method) bool {
 }
 
 // getResourceName extracts the name of the resource from a method's input message.
+// For example, for `CreateInstanceRequest`, it would return "Instance".
 func getResourceName(method *api.Method) string {
 	for _, f := range method.InputType.Fields {
 		if msg := f.MessageType; msg != nil && msg.Resource != nil {
@@ -398,15 +479,18 @@ func getResourceName(method *api.Method) string {
 }
 
 // getResourceForMethod finds the `api.Resource` definition associated with a method.
+// This is a crucial function for linking a method to the resource it operates on.
 func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
-	// Strategy 1: Find a field that is the resource message itself (for Create/Update).
+	// Strategy 1: For `Create` and `Update` methods, the request message usually
+	// contains a field that is the resource message itself. We look for that first.
 	for _, f := range method.InputType.Fields {
 		if msg := f.MessageType; msg != nil && msg.Resource != nil {
 			return msg.Resource
 		}
 	}
 
-	// Strategy 2: Find a 'name' or 'parent' field with a resource_reference (for Get/Delete/List).
+	// Strategy 2: For `Get`, `Delete`, and `List` methods, the request message
+	// usually contains a "name" or "parent" field with a `resource_reference`.
 	var resourceType string
 	if method.InputType != nil {
 		for _, field := range method.InputType.Fields {
@@ -420,7 +504,8 @@ func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 		}
 	}
 
-	// If a resource type was found, look up its full definition in the API model.
+	// If we found a resource type, we now need to look up its full definition
+	// in the API model.
 	if resourceType != "" {
 		for _, msg := range model.Messages {
 			if msg.Resource != nil && msg.Resource.Type == resourceType {
@@ -476,16 +561,19 @@ func getGcloudType(t api.Typez) string {
 	}
 }
 
-// getPluralName determines the plural name of a resource, using the explicit
-// `plural` field if available, and falling back to parsing the resource pattern.
+// getPluralName determines the plural name of a resource. It follows a clear
+// hierarchy of truth: first, the explicit `plural` field in the resource
+// definition, and second, inference from the resource pattern.
 func getPluralName(method *api.Method, model *api.API) string {
 	resource := getResourceForMethod(method, model)
 	if resource != nil {
-		// Prefer the explicit plural name from the resource definition.
+		// The `plural` field in the `(google.api.resource)` annotation is the
+		// most authoritative source.
 		if resource.Plural != "" {
 			return resource.Plural
 		}
-		// Fall back to inferring it from the resource pattern.
+		// If the `plural` field is not present, we fall back to inferring the
+		// plural name from the resource's pattern string, as per AIP-122.
 		if len(resource.Pattern) > 0 {
 			return getPluralFromPattern(resource.Pattern[0])
 		}
@@ -507,6 +595,7 @@ func getVerb(methodName string) string {
 	case strings.HasPrefix(methodName, "Delete"):
 		return "delete"
 	default:
+		// For non-standard methods, we just use the snake_case version of the method name.
 		return toSnakeCase(methodName)
 	}
 }
@@ -516,7 +605,7 @@ func findAPI(method *api.Method, cfg *config.Config) *gcloudyaml.API {
 	if cfg.Gcloud == nil || cfg.Gcloud.APIs == nil {
 		return nil
 	}
-	// This implementation currently assumes a single API definition.
+	// This implementation currently assumes a single API definition in the config.
 	if len(cfg.Gcloud.APIs) > 0 {
 		return &cfg.Gcloud.APIs[0]
 	}
@@ -543,7 +632,6 @@ func findHelpTextRule(method *api.Method, cfg *config.Config) *gcloudyaml.HelpTe
 
 // findFieldHelpTextRule finds the help text rule from the config that applies to the current field.
 func findFieldHelpTextRule(field *api.Field, cfg *config.Config) *gcloudyaml.HelpTextRule {
-	//TODO(santi): fix helptext
 	if cfg.Gcloud == nil || cfg.Gcloud.APIs == nil {
 		return nil
 	}
@@ -560,7 +648,7 @@ func findFieldHelpTextRule(field *api.Field, cfg *config.Config) *gcloudyaml.Hel
 	return nil
 }
 
-// isOutputOnly checks if a field is marked as output-only.
+// isOutputOnly checks if a field is marked as output-only in the proto.
 func isOutputOnly(field *api.Field) bool {
 	return slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY)
 }
@@ -576,10 +664,11 @@ func toLowerCamelCase(s string) string {
 }
 
 // getPluralFromPattern infers the plural name of a resource from its pattern string.
+// Per AIP-122, the plural is the literal segment before the final variable segment.
+// Example: `.../instances/{instance}` -> "instances"
 func getPluralFromPattern(pattern string) string {
 	parts := strings.Split(pattern, "/")
 	if len(parts) >= 2 {
-		// The plural is the literal segment before the final variable segment.
 		if strings.HasPrefix(parts[len(parts)-1], "{") {
 			return parts[len(parts)-2]
 		}
@@ -588,11 +677,12 @@ func getPluralFromPattern(pattern string) string {
 }
 
 // getSingularFromPattern infers the singular name of a resource from its pattern string.
+// The singular is the name of the final variable segment.
+// Example: `.../instances/{instance}` -> "instance"
 func getSingularFromPattern(pattern string) string {
 	parts := strings.Split(pattern, "/")
 	if len(parts) > 0 {
 		last := parts[len(parts)-1]
-		// The singular is the name of the final variable segment.
 		if strings.HasPrefix(last, "{") && strings.HasSuffix(last, "}") {
 			return strings.Trim(last, "{}")
 		}
@@ -602,6 +692,8 @@ func getSingularFromPattern(pattern string) string {
 
 // getCollectionPathFromPattern constructs the base gcloud collection path from a
 // resource pattern string, according to AIP-122 conventions.
+// It joins the literal collection identifiers with dots.
+// Example: `projects/{project}/locations/{location}/instances/{instance}` -> `projects.locations.instances`
 func getCollectionPathFromPattern(pattern string) string {
 	parts := strings.Split(pattern, "/")
 	var collectionParts []string
@@ -613,4 +705,3 @@ func getCollectionPathFromPattern(pattern string) string {
 	}
 	return strings.Join(collectionParts, ".")
 }
-
