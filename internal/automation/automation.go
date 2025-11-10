@@ -24,7 +24,7 @@ func newAutomationCommand() *cli.Command {
 	cmd := &cli.Command{
 		Short:     "automation manages Cloud Build resources to run Librarian CLI.",
 		UsageLine: "automation <command> [arguments]",
-		Long:      "Automation manages Cloud Build resources to run Librarian CLI.",
+		Long:      automationLongHelp,
 		Commands: []*cli.Command{
 			newCmdGenerate(),
 			newCmdPublishRelease(),
@@ -41,7 +41,7 @@ func newCmdGenerate() *cli.Command {
 		UsageLine: "automation generate [flags]",
 		Long:      generateLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			runner := generateRunner(cmd.Config)
+			runner := newGenerateRunner(cmd.Config)
 			return runner.run(ctx)
 		},
 	}
