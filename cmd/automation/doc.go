@@ -26,7 +26,7 @@ The commands are:
 
 # generate
 
-# The generate command runs a Cloud Build job to generate a
+The generate command runs a Cloud Build job to generate Cloud Client Libraries.
 
 Usage:
 
