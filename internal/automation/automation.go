@@ -39,7 +39,7 @@ func newCmdGenerate() *cli.Command {
 	cmdGenerate := &cli.Command{
 		Short:     "generate",
 		UsageLine: "automation generate [flags]",
-		Long:      "",
+		Long:      generateLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			runner := generateRunner(cmd.Config)
 			return runner.run(ctx)
