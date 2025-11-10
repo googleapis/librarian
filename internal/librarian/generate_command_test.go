@@ -43,7 +43,6 @@ func TestNewGenerateRunner(t *testing.T) {
 				Branch:      "test-branch",
 				Repo:        newTestGitRepo(t).GetDir(),
 				WorkRoot:    t.TempDir(),
-				Image:       "gcr.io/test/test-image",
 				CommandName: generateCmdName,
 			},
 		},
@@ -59,18 +58,6 @@ func TestNewGenerateRunner(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "repository does not exist",
-		},
-		{
-			name: "missing image",
-			cfg: &config.Config{
-				API:         "some/api",
-				APISource:   t.TempDir(),
-				Branch:      "test-branch",
-				Repo:        "https://github.com/googleapis/librarian.git",
-				WorkRoot:    t.TempDir(),
-				CommandName: generateCmdName,
-			},
-			wantErr: true,
 		},
 		{
 			name: "valid config with github token",
