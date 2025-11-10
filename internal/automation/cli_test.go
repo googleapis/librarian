@@ -49,7 +49,7 @@ func TestRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool, forceRun bool) error {
+			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool) error {
 				return tt.runCommandErr
 			}
 			if err := Run(context.Background(), tt.args); (err != nil) != tt.wantErr {
@@ -75,7 +75,6 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     true,
-				ForceRun:  false,
 			},
 		},
 		{
@@ -87,7 +86,6 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "some-project-id",
 				Push:      true,
 				Build:     true,
-				ForceRun:  false,
 			},
 		},
 		{
@@ -99,7 +97,6 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     true,
-				ForceRun:  false,
 			},
 		},
 		{
@@ -111,7 +108,6 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      false,
 				Build:     true,
-				ForceRun:  false,
 			},
 		},
 		{
@@ -123,19 +119,6 @@ func TestParseArgs(t *testing.T) {
 				ProjectId: "cloud-sdk-librarian-prod",
 				Push:      true,
 				Build:     false,
-				ForceRun:  false,
-			},
-		},
-		{
-			name:    "sets forceRun",
-			args:    []string{"--force-run=true"},
-			wantErr: false,
-			want: &runOptions{
-				Command:   "generate",
-				ProjectId: "cloud-sdk-librarian-prod",
-				Push:      true,
-				Build:     true,
-				ForceRun:  true,
 			},
 		},
 	} {

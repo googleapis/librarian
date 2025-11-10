@@ -26,6 +26,7 @@ Usage:
 
 The commands are:
 
+
 # generate
 
 The generate command is the primary tool for all code generation
@@ -45,8 +46,7 @@ new library's configuration to the '.librarian/state.yaml' file, and then
 proceed with generation.
 
 Example:
-
-	librarian generate --library=secretmanager --api=google/cloud/secretmanager/v1
+  librarian generate --library=secretmanager --api=google/cloud/secretmanager/v1
 
 # Regenerating existing libraries
 
@@ -56,15 +56,14 @@ regenerate all libraries listed in '.librarian/state.yaml'. If '--library' or
 '--api' is specified the whole library will be regenerated.
 
 Examples:
+  # Regenerate a single library by its ID
+  librarian generate --library=secretmanager
 
-	# Regenerate a single library by its ID
-	librarian generate --library=secretmanager
+  # Regenerate a single library by its API path
+  librarian generate --api=google/cloud/secretmanager/v1
 
-	# Regenerate a single library by its API path
-	librarian generate --api=google/cloud/secretmanager/v1
-
-	# Regenerate all libraries in the repository
-	librarian generate
+  # Regenerate all libraries in the repository
+  librarian generate
 
 # Workflow and Options:
 
@@ -73,65 +72,69 @@ The generation process involves delegating to the language container's
 directories and copies the new files into place, according to the configuration
 in '.librarian/state.yaml'.
 
-  - If the '--build' flag is specified, the 'build' command is also executed in
-    the container to compile and validate the generated code.
-  - If the '--push' flag is provided, the changes are committed to a new branch,
-    and a pull request is created on GitHub. Otherwise, the changes are left in
-    your local working directory for inspection. When pushing to a remote branch,
-    you have the option of using HTTPS or SSH. Librarian will automatically determine
-    whether to use HTTPS or SSH based on the remote URI.
+- If the '--build' flag is specified, the 'build' command is also executed in
+  the container to compile and validate the generated code.
+- If the '--push' flag is provided, the changes are committed to a new branch,
+  and a pull request is created on GitHub. Otherwise, the changes are left in
+  your local working directory for inspection. When pushing to a remote branch,
+  you have the option of using HTTPS or SSH. Librarian will automatically determine
+  whether to use HTTPS or SSH based on the remote URI.
 
 Example with build and push:
-
-	LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build
+  LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build
 
 Usage:
 
-	librarian generate [flags]
+  librarian generate [flags]
 
 Flags:
 
-	-api string
-	  	Relative path to the API to be configured/generated (e.g., google/cloud/functions/v2).
-	  	Must be specified when generating a new library.
-	-api-source string
-	  	The location of an API specification repository.
-	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
-	-branch string
-	  	The branch to use with remote code repositories. This is used to specify
-	  	which branch to clone and which branch to use as the base for a pull
-	  	request. (default "main")
-	-build
-	  	If true, Librarian will build each generated library by invoking the
-	  	language-specific container.
-	-generate-unchanged
-	  	If true, librarian generates libraries even if none of their associated APIs
-	  	have changed. This does not override generation being blocked by configuration.
-	-host-mount string
-	  	For use when librarian is running in a container. A mapping of a
-	  	directory from the host to the container, in the format
-	  	<host-mount>:<local-mount>.
-	-image string
-	  	Language specific image used to invoke code generation and releasing.
-	  	If not specified, the image configured in the state.yaml is used.
-	-library string
-	  	The library ID to generate or release (e.g. secretmanager).
-	  	This corresponds to a releasable language unit.
-	-output string
-	  	Working directory root. When this is not specified, a working directory
-	  	will be created in /tmp.
-	-push
-	  	If true, Librarian will create a commit,
-	  	push and create a pull request for the changes.
-	  	A GitHub token with push access must be provided via the
-	  	LIBRARIAN_GITHUB_TOKEN environment variable.
-	-repo string
-	  	Code repository where the generated code will reside. Can be a remote
-	  	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
-	  	local file path like /path/to/repo. Both absolute and relative paths are
-	  	supported. If not specified, will try to detect if the current working directory
-	  	is configured as a language repository.
-	-v	enables verbose logging
+  -api string
+    	Relative path to the API to be configured/generated (e.g., google/cloud/functions/v2).
+    	Must be specified when generating a new library.
+  -api-source string
+    	The location of an API specification repository.
+    	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
+  -branch string
+    	The branch to use with remote code repositories. This is used to specify
+    	which branch to clone and which branch to use as the base for a pull
+    	request. (default "main")
+  -build
+    	If true, Librarian will build each generated library by invoking the
+    	language-specific container.
+  -generate-unchanged
+    	If true, librarian generates libraries even if none of their associated APIs
+    	have changed. This does not override generation being blocked by configuration.
+  -host-mount string
+    	For use when librarian is running in a container. A mapping of a
+    	directory from the host to the container, in the format
+    	<host-mount>:<local-mount>.
+  -image string
+    	Language specific image used to invoke code generation and releasing.
+    	If not specified, the image configured in the state.yaml is used.
+  -library string
+    	The library ID to generate or release (e.g. secretmanager).
+    	This corresponds to a releasable language unit.
+  -output string
+    	Working directory root. When this is not specified, a working directory
+    	will be created in /tmp.
+  -push
+    	If true, Librarian will create a commit, 
+    	push and create a pull request for the changes.
+    	A GitHub token with push access must be provided via the
+    	LIBRARIAN_GITHUB_TOKEN environment variable.
+  -repo string
+    	Code repository where the generated code will reside. Can be a remote
+    	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
+    	local file path like /path/to/repo. Both absolute and relative paths are
+    	supported. If not specified, will try to detect if the current working directory
+    	is configured as a language repository.
+  -v	enables verbose logging
+
+
+
+
+
 
 # release
 
@@ -139,12 +142,16 @@ Manages releases of libraries.
 
 Usage:
 
-	librarian release <command> [arguments]
+  librarian release <command> [arguments]
 
 Commands:
 
-	stage                      stages a release by creating a release pull request.
-	tag                        tags and creates a GitHub release for a merged pull request.
+  stage                      stages a release by creating a release pull request.
+  tag                        tags and creates a GitHub release for a merged pull request.
+
+
+
+
 
 # release stage
 
@@ -176,53 +183,57 @@ you have the option of using HTTPS or SSH. Librarian will automatically determin
 whether to use HTTPS or SSH based on the remote URI.
 
 Examples:
+  # Create a release PR for all libraries with pending changes.
+  librarian release stage --push
 
-	# Create a release PR for all libraries with pending changes.
-	librarian release stage --push
+  # Create a release PR for a single library.
+  librarian release stage --library=secretmanager --push
 
-	# Create a release PR for a single library.
-	librarian release stage --library=secretmanager --push
-
-	# Manually specify a version for a single library, overriding the calculation.
-	librarian release stage --library=secretmanager --library-version=2.0.0 --push
+  # Manually specify a version for a single library, overriding the calculation.
+  librarian release stage --library=secretmanager --library-version=2.0.0 --push
 
 Usage:
 
-	librarian release stage [flags]
+  librarian release stage [flags]
 
 Flags:
 
-	-branch string
-	  	The branch to use with remote code repositories. This is used to specify
-	  	which branch to clone and which branch to use as the base for a pull
-	  	request. (default "main")
-	-commit
-	  	If true, librarian will create a commit for the change but not create
-	  	a pull request. This flag is ignored if push is set to true.
-	-image string
-	  	Language specific image used to invoke code generation and releasing.
-	  	If not specified, the image configured in the state.yaml is used.
-	-library string
-	  	The library ID to generate or release (e.g. secretmanager).
-	  	This corresponds to a releasable language unit.
-	-library-version string
-	  	Overrides the automatic semantic version calculation and forces a specific
-	  	version for a library. Requires the --library flag to be specified.
-	-output string
-	  	Working directory root. When this is not specified, a working directory
-	  	will be created in /tmp.
-	-push
-	  	If true, Librarian will create a commit,
-	  	push and create a pull request for the changes.
-	  	A GitHub token with push access must be provided via the
-	  	LIBRARIAN_GITHUB_TOKEN environment variable.
-	-repo string
-	  	Code repository where the generated code will reside. Can be a remote
-	  	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
-	  	local file path like /path/to/repo. Both absolute and relative paths are
-	  	supported. If not specified, will try to detect if the current working directory
-	  	is configured as a language repository.
-	-v	enables verbose logging
+  -branch string
+    	The branch to use with remote code repositories. This is used to specify
+    	which branch to clone and which branch to use as the base for a pull
+    	request. (default "main")
+  -commit
+    	If true, librarian will create a commit for the change but not create
+    	a pull request. This flag is ignored if push is set to true.
+  -image string
+    	Language specific image used to invoke code generation and releasing.
+    	If not specified, the image configured in the state.yaml is used.
+  -library string
+    	The library ID to generate or release (e.g. secretmanager).
+    	This corresponds to a releasable language unit.
+  -library-version string
+    	Overrides the automatic semantic version calculation and forces a specific
+    	version for a library. Requires the --library flag to be specified.
+  -output string
+    	Working directory root. When this is not specified, a working directory
+    	will be created in /tmp.
+  -push
+    	If true, Librarian will create a commit, 
+    	push and create a pull request for the changes.
+    	A GitHub token with push access must be provided via the
+    	LIBRARIAN_GITHUB_TOKEN environment variable.
+  -repo string
+    	Code repository where the generated code will reside. Can be a remote
+    	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
+    	local file path like /path/to/repo. Both absolute and relative paths are
+    	supported. If not specified, will try to detect if the current working directory
+    	is configured as a language repository.
+  -v	enables verbose logging
+
+
+
+
+
 
 # release tag
 
@@ -232,45 +243,51 @@ process. It is designed to be run after a release pull request, created by
 
 This command's primary responsibilities are to:
 
-  - Create a Git tag for each library version included in the merged pull request.
-  - Create a corresponding GitHub Release for each tag, using the release notes
-    from the pull request body.
-  - Update the pull request's label from 'release:pending' to 'release:done' to
-    mark the process as complete.
+- Create a Git tag for each library version included in the merged pull request.
+- Create a corresponding GitHub Release for each tag, using the release notes
+  from the pull request body.
+- Update the pull request's label from 'release:pending' to 'release:done' to
+  mark the process as complete.
 
 You can target a specific merged pull request using the '--pr' flag. If no pull
 request is specified, the command will automatically search for and process all
 merged pull requests with the 'release:pending' label from the last 30 days.
 
 Examples:
+  # Tag and create a GitHub release for a specific merged PR.
+  librarian release tag --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
 
-	# Tag and create a GitHub release for a specific merged PR.
-	librarian release tag --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
-
-	# Find and process all pending merged release PRs in a repository.
-	librarian release tag --repo=https://github.com/googleapis/google-cloud-go
+  # Find and process all pending merged release PRs in a repository.
+  librarian release tag --repo=https://github.com/googleapis/google-cloud-go
 
 Usage:
 
-	librarian release tag [arguments]
+  librarian release tag [arguments]
 
 Flags:
 
-	-github-api-endpoint string
-	  	The GitHub API endpoint to use for all GitHub API operations.
-	  	This is intended for testing and should not be used in production.
-	-pr string
-	  	The URL of a pull request to operate on.
-	  	It should be in the format of https://github.com/{owner}/{repo}/pull/{number}.
-	  	If not specified, will search for all merged pull requests with the label
-	  	"release:pending" in the last 30 days.
-	-repo string
-	  	Code repository where the generated code will reside. Can be a remote
-	  	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
-	  	local file path like /path/to/repo. Both absolute and relative paths are
-	  	supported. If not specified, will try to detect if the current working directory
-	  	is configured as a language repository.
-	-v	enables verbose logging
+  -github-api-endpoint string
+    	The GitHub API endpoint to use for all GitHub API operations.
+    	This is intended for testing and should not be used in production.
+  -pr string
+    	The URL of a pull request to operate on.
+    	It should be in the format of https://github.com/{owner}/{repo}/pull/{number}.
+    	If not specified, will search for all merged pull requests with the label
+    	"release:pending" in the last 30 days.
+  -repo string
+    	Code repository where the generated code will reside. Can be a remote
+    	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
+    	local file path like /path/to/repo. Both absolute and relative paths are
+    	supported. If not specified, will try to detect if the current working directory
+    	is configured as a language repository.
+  -v	enables verbose logging
+
+
+
+
+
+
+
 
 # update-image
 
@@ -279,72 +296,76 @@ of the language container for a language repository.
 
 This command's primary responsibilities are to:
 
-  - Update the 'image' field in '.librarian/state.yaml'
-  - Regenerate each library with the new language container using googleapis'
-    proto definitions at the 'last_generated_commit'
-
+- Update the 'image' field in '.librarian/state.yaml'
+- Regenerate each library with the new language container using googleapis'
+  proto definitions at the 'last_generated_commit'
+  
 Examples:
+  # Create a PR that updates the language container to latest image.
+  librarian update-image --commit --push
 
-	# Create a PR that updates the language container to latest image.
-	librarian update-image --commit --push
-
-	# Create a PR that updates the language container to the specified image.
-	librarian update-image --commit --push --image=<some-image-with-sha>
+  # Create a PR that updates the language container to the specified image.
+  librarian update-image --commit --push --image=<some-image-with-sha>
 
 Usage:
 
-	librarian update-image [flags]
+  librarian update-image [flags]
 
 Flags:
 
-	-api-source string
-	  	The location of an API specification repository.
-	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
-	-branch string
-	  	The branch to use with remote code repositories. This is used to specify
-	  	which branch to clone and which branch to use as the base for a pull
-	  	request. (default "main")
-	-build
-	  	If true, Librarian will build each generated library by invoking the
-	  	language-specific container.
-	-check-unexpected-changes
-	  	Defaults to false. When used with --test, this flag verifies that no
-	  	unexpected files are added, deleted, or modified outside of the changes caused
-	  	by proto updates. You may want to skip this check when testing a container image
-	  	change that is expected to add or delete files.
-	-commit
-	  	If true, librarian will create a commit for the change but not create
-	  	a pull request. This flag is ignored if push is set to true.
-	-host-mount string
-	  	For use when librarian is running in a container. A mapping of a
-	  	directory from the host to the container, in the format
-	  	<host-mount>:<local-mount>.
-	-image string
-	  	Language specific image used to invoke code generation and releasing.
-	  	If not specified, the image configured in the state.yaml is used.
-	-library-to-test string
-	  	When used with --test, this flag specifies the library ID to test
-	  	(e.g. secretmanager). Will test on all configured libraries if omitted.
-	-output string
-	  	Working directory root. When this is not specified, a working directory
-	  	will be created in /tmp.
-	-push
-	  	If true, Librarian will create a commit,
-	  	push and create a pull request for the changes.
-	  	A GitHub token with push access must be provided via the
-	  	LIBRARIAN_GITHUB_TOKEN environment variable.
-	-repo string
-	  	Code repository where the generated code will reside. Can be a remote
-	  	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
-	  	local file path like /path/to/repo. Both absolute and relative paths are
-	  	supported. If not specified, will try to detect if the current working directory
-	  	is configured as a language repository.
-	-test
-	  	If true, run container tests after generation but before committing and pushing.
-	  	These tests verify the interaction between language containers and the Librarian CLI's
-	  	'generate' command. If a test fails, temporary branches and files will be preserved for
-	  	debugging. This flag can be used with 'library-to-test' and 'check-unexpected-changes'.
-	-v	enables verbose logging
+  -api-source string
+    	The location of an API specification repository.
+    	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
+  -branch string
+    	The branch to use with remote code repositories. This is used to specify
+    	which branch to clone and which branch to use as the base for a pull
+    	request. (default "main")
+  -build
+    	If true, Librarian will build each generated library by invoking the
+    	language-specific container.
+  -check-unexpected-changes
+    	Defaults to false. When used with --test, this flag verifies that no
+    	unexpected files are added, deleted, or modified outside of the changes caused
+    	by proto updates. You may want to skip this check when testing a container image
+    	change that is expected to add or delete files.
+  -commit
+    	If true, librarian will create a commit for the change but not create
+    	a pull request. This flag is ignored if push is set to true.
+  -host-mount string
+    	For use when librarian is running in a container. A mapping of a
+    	directory from the host to the container, in the format
+    	<host-mount>:<local-mount>.
+  -image string
+    	Language specific image used to invoke code generation and releasing.
+    	If not specified, the image configured in the state.yaml is used.
+  -library-to-test string
+    	When used with --test, this flag specifies the library ID to test
+    	(e.g. secretmanager). Will test on all configured libraries if omitted.
+  -output string
+    	Working directory root. When this is not specified, a working directory
+    	will be created in /tmp.
+  -push
+    	If true, Librarian will create a commit, 
+    	push and create a pull request for the changes.
+    	A GitHub token with push access must be provided via the
+    	LIBRARIAN_GITHUB_TOKEN environment variable.
+  -repo string
+    	Code repository where the generated code will reside. Can be a remote
+    	in the format of a remote URL such as https://github.com/{owner}/{repo} or a
+    	local file path like /path/to/repo. Both absolute and relative paths are
+    	supported. If not specified, will try to detect if the current working directory
+    	is configured as a language repository.
+  -test
+    	If true, run container tests after generation but before committing and pushing.
+    	These tests verify the interaction between language containers and the Librarian CLI's
+    	'generate' command. If a test fails, temporary branches and files will be preserved for
+    	debugging. This flag can be used with 'library-to-test' and 'check-unexpected-changes'.
+  -v	enables verbose logging
+
+
+
+
+
 
 # version
 
@@ -352,6 +373,12 @@ Version prints version information for the librarian binary.
 
 Usage:
 
-	librarian version
+  librarian version
+
+
+
+
 */
 package main
+
+

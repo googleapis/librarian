@@ -33,7 +33,7 @@ func Run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	err = runCommandFn(ctx, options.Command, options.ProjectId, options.Push, options.Build, options.ForceRun)
+	err = runCommandFn(ctx, options.Command, options.ProjectId, options.Push, options.Build)
 	if err != nil {
 		slog.Error("error running command", slog.Any("err", err))
 		return err
@@ -46,7 +46,6 @@ type runOptions struct {
 	ProjectId string
 	Push      bool
 	Build     bool
-	ForceRun  bool
 }
 
 func parseFlags(args []string) (*runOptions, error) {
@@ -55,7 +54,6 @@ func parseFlags(args []string) (*runOptions, error) {
 	command := flagSet.String("command", "generate", "The librarian command to run")
 	push := flagSet.Bool("push", true, "The _PUSH flag (true/false) to Librarian CLI's -push option")
 	build := flagSet.Bool("build", true, "The _BUILD flag (true/false) to Librarian CLI's -build option")
-	forceRun := flagSet.Bool("force-run", false, "The _FORCE_RUN flag (true/false) to Librarian CLI's -force-run option")
 	err := flagSet.Parse(args)
 	if err != nil {
 		return nil, err
@@ -65,6 +63,5 @@ func parseFlags(args []string) (*runOptions, error) {
 		Command:   *command,
 		Push:      *push,
 		Build:     *build,
-		ForceRun:  *forceRun,
 	}, nil
 }
