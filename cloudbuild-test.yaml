@@ -22,7 +22,6 @@
 #
 # Local test:
 #   gcloud --project=<my-project> builds submit . --config=cloudbuild-test.yaml
-
 steps:
   - id: 'build'
     name: 'gcr.io/cloud-builders/docker'
