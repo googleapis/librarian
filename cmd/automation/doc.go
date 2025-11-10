@@ -24,6 +24,23 @@ Usage:
 
 The commands are:
 
+# generate
+
+# The generate command runs a Cloud Build job to generate a
+
+Usage:
+
+	automation generate [flags]
+
+Flags:
+
+	-build
+	  	The _BUILD flag (true/false) to Librarian CLI's -build option
+	-project string
+	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
+	-push
+	  	The _PUSH flag (true/false) to Librarian CLI's -push option
+
 # publish-release
 
 The publish-release command runs a Cloud Build job to create a tag on a merged release pull
