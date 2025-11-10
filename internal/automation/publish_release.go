@@ -25,19 +25,17 @@ const (
 )
 
 type publishRunner struct {
-	forceRun  bool
 	projectID string
 	push      bool
 }
 
 func newPublishRunner(cfg *config.Config) *publishRunner {
 	return &publishRunner{
-		forceRun:  cfg.ForceRun,
 		projectID: cfg.Project,
 		push:      cfg.Push,
 	}
 }
 
 func (r *publishRunner) run(ctx context.Context) error {
-	return runCommandFn(ctx, publishCmdName, r.projectID, r.push, false, r.forceRun)
+	return runCommandFn(ctx, publishCmdName, r.projectID, r.push, false)
 }

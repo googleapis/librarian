@@ -20,10 +20,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func addFlagForceRun(fs *flag.FlagSet, cfg *config.Config) {
-	fs.BoolVar(&cfg.ForceRun, "force-run", false, "The _FORCE_RUN flag (true/false) to Librarian CLI's -force-run option")
-}
-
 func addFlagProject(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Project, "project", "cloud-sdk-librarian-prod", `Google Cloud Platform project ID`)
 }

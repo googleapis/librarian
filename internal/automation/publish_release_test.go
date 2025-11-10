@@ -31,18 +31,14 @@ func TestNewPublishRunner(t *testing.T) {
 		{
 			name: "create_a_runner",
 			cfg: &config.Config{
-				ForceRun: true,
-				Project:  "example-project",
-				Push:     true,
+				Project: "example-project",
+				Push:    true,
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			runner := newPublishRunner(test.cfg)
-			if runner.forceRun != test.cfg.ForceRun {
-				t.Errorf("newPublishRunner() forceRun is not set")
-			}
 			if runner.projectID != test.cfg.Project {
 				t.Errorf("newPublishRunner() projectID is not set")
 			}
@@ -70,7 +66,7 @@ func TestPublishRunnerRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool, forceRun bool) error {
+			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool) error {
 				return test.runCommandErr
 			}
 			runner := &publishRunner{}

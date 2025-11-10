@@ -133,9 +133,6 @@ type Config struct {
 	// This flag is ignored if Push is set to true.
 	Commit bool
 
-	// ForceRun determines whether to force the command to run.
-	ForceRun bool
-
 	// GenerateUnchanged determines whether to generate libraries where none of
 	// the associated APIs have changed since the commit at which they were last
 	// generated. Note that this does not override any configuration indicating
