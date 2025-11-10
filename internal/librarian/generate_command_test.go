@@ -60,6 +60,19 @@ func TestNewGenerateRunner(t *testing.T) {
 			wantErrMsg: "repository does not exist",
 		},
 		{
+			name: "no state file",
+			cfg: &config.Config{
+				API:         "some/api",
+				APISource:   newTestGitRepo(t).GetDir(),
+				Branch:      "test-branch",
+				Repo:        newTestGitRepoWithState(t, nil).GetDir(),
+				WorkRoot:    t.TempDir(),
+				CommandName: generateCmdName,
+			},
+			wantErr:    true,
+			wantErrMsg: ".librarian/state.yaml: no such file or directory",
+		},
+		{
 			name: "valid config with github token",
 			cfg: &config.Config{
 				API:         "some/api",

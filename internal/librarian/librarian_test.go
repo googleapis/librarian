@@ -256,6 +256,18 @@ func newTestGitRepoWithState(t *testing.T, state *config.LibrarianState) gitrepo
 	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("test"), 0644); err != nil {
 		t.Fatalf("os.WriteFile: %v", err)
 	}
+	// If state is nil, skip creating the .librarian directory
+	// and the state.yaml/config.yaml files and return with a initial commit
+	if state == nil {
+		runGit(t, dir, "add", ".")
+		runGit(t, dir, "commit", "-m", "initial commit")
+		runGit(t, dir, "remote", "add", "origin", remoteURL)
+		repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{Dir: dir})
+		if err != nil {
+			t.Fatalf("gitrepo.Open(%q) = %v", dir, err)
+		}
+		return repo
+	}
 	// Create a state.yaml and config.yaml file in .librarian dir.
 	librarianDir := filepath.Join(dir, config.LibrarianDir)
 	if err := os.MkdirAll(librarianDir, 0755); err != nil {
