@@ -46,17 +46,48 @@ var (
 {{ end }}`))
 )
 
+// serviceVersion represents a pairing of an API service interface e.g. Protobuf
+// service and API service interface version.
 type serviceVersion struct {
+	// Service is the name of the API service interface. This appears as the
+	// key in [gapic.GapicMetadata] Services map. For example, "LibraryService".
 	Service string
+
+	// Version is the API service interface version identifier. This is sourced
+	// from the [gapic.GapicMetadata_ServiceForTransport] ApiVersion property.
+	// For example, "2025-09-14".
 	Version string
 }
 
+// libraryPackageAPIVersions contains the API service interface version
+// information for a generated library package. For example, the DotNet library
+// package "Google.Example.Deltav.V1" has Services "SpaceService" and
+// "SpaceShipService" with ApiVersion values therein of "2025-09-14" and
+// "2025-04-04" respectively.
+//
+// There can be zero or more libraryPackageAPIVersions per
+// [config.LibraryState]. They constructed by [extractAPIVersions] following a
+// [readGapicMetadata] call.
 type libraryPackageAPIVersions struct {
-	LibraryPackage  string
+	// LibraryPackage is the language-specific, generated library package name
+	// as identified by the [gapic.GapicMetadata] LibraryPackage property. For
+	// example, a DotNet library package could be "Google.Example.Deltav.V1".
+	LibraryPackage string
+
+	// ServiceVersions is the pairing of API service interface name to API
+	// version identifier found in the [gapic.GapicMetadata] Services mapping.
 	ServiceVersions []serviceVersion
-	Versions        map[string]bool
+
+	// Versions is the set of unique API version identifiers that appear in the
+	// [gapic.GapicMetadata] Services mapping.
+	Versions map[string]bool
 }
 
+// formatAPIVersionReleaseNotes accepts the library's per-package API version
+// information, and produces a change log/release note ready markdown
+// "API Versions" section. It does leverage HTML for some formatting, so its
+// output should be coerced to a [html/template.HTML] before being used in
+// another [html/template.Template] as input data.
 func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, error) {
 	if len(lpv) == 0 {
 		return "", nil
@@ -66,17 +97,14 @@ func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, err
 	// Only triggers if there are more than 5 service interfaces in the API.
 	// If there are fewer, there is still value in listing them individually.
 	for _, v := range lpv {
-		// This optimization only applies if all services in a library package share the same version.
 		if len(v.Versions) != 1 {
 			continue
 		}
-
-		// There is only one key in v.Versions, so this loop runs once.
-		for sharedVersion := range v.Versions {
-			if len(v.ServiceVersions) >= serviceVersionOptimizationThreshold {
-				v.ServiceVersions = []serviceVersion{{Service: "All", Version: sharedVersion}}
-			}
+		if len(v.ServiceVersions) < serviceVersionOptimizationThreshold {
+			continue
 		}
+
+		v.ServiceVersions = []serviceVersion{{Service: "All", Version: v.ServiceVersions[0].Version}}
 	}
 
 	var out bytes.Buffer
@@ -89,20 +117,24 @@ func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, err
 	return out.String(), nil
 }
 
-func extractAPIVersions(mds map[string]*gapic.GapicMetadata) []*libraryPackageAPIVersions {
+// extractAPIVersions constructs a set of per-library package entities from the
+// given [gapic.GapicMetadata] documents loaded from [readGapicMetadata]. If the
+// document contains an API version identifier associated with a Services entry
+// therein, it will get a [libraryPackageAPIVersions] item.
+func extractAPIVersions(metadataDocuments map[string]*gapic.GapicMetadata) []*libraryPackageAPIVersions {
 	var result []*libraryPackageAPIVersions
-	for _, md := range mds {
+	for _, md := range metadataDocuments {
 		lpav := &libraryPackageAPIVersions{
 			LibraryPackage:  md.GetLibraryPackage(),
 			ServiceVersions: []serviceVersion{},
 			Versions:        make(map[string]bool),
 		}
-		for serviceName, s := range md.GetServices() {
-			if s.GetApiVersion() == "" {
+		for serviceName, service := range md.GetServices() {
+			if service.GetApiVersion() == "" {
 				continue
 			}
-			lpav.ServiceVersions = append(lpav.ServiceVersions, serviceVersion{Service: serviceName, Version: s.GetApiVersion()})
-			lpav.Versions[s.GetApiVersion()] = true
+			lpav.ServiceVersions = append(lpav.ServiceVersions, serviceVersion{Service: serviceName, Version: service.GetApiVersion()})
+			lpav.Versions[service.GetApiVersion()] = true
 		}
 		if len(lpav.Versions) == 0 {
 			continue
@@ -120,6 +152,12 @@ func extractAPIVersions(mds map[string]*gapic.GapicMetadata) []*libraryPackageAP
 	return result
 }
 
+// readGapicMetadata traverses the [config.LibraryState] SourceRoots under the
+// provided directory, parses any "gapic_metadata.json" file it finds, and
+// stores it in a map keyed by the [gapic.GapicMetadata] LibraryPackage.
+// There should be at most one "gapic_metadta.json" file per generated library
+// package under SourceRoots, typically one per APIs entry, each with a unique
+// library package name.
 func readGapicMetadata(dir string, library *config.LibraryState) (map[string]*gapic.GapicMetadata, error) {
 	mds := make(map[string]*gapic.GapicMetadata)
 	for _, root := range library.SourceRoots {
