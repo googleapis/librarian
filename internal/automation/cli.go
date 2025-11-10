@@ -27,6 +27,11 @@ var runCommandFn = RunCommand
 
 // Run parses the command line arguments and triggers the specified command.
 func Run(ctx context.Context, args []string) error {
+	if args[0] == publishCmdName {
+		cmd := newAutomationCommand()
+		return cmd.Run(ctx, args)
+	}
+
 	options, err := parseFlags(args)
 	if err != nil {
 		slog.Error("error parsing command", slog.Any("err", err))
