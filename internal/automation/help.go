@@ -17,7 +17,7 @@ package automation
 const (
 	automationLongHelp = `Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
 any repository listed in internal/automation/prod/repositories.yaml.`
-	generateLongHelp = `The generate command runs a Cloud Build job to generate a`
+	generateLongHelp = `The generate command runs a Cloud Build job to generate Cloud Client Libraries.`
 	publishLongHelp  = `The publish-release command runs a Cloud Build job to create a tag on a merged release pull
 request.`
 )
