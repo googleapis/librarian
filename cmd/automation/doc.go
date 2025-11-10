@@ -15,14 +15,11 @@
 //go:generate go run -tags docgen ../doc_generate.go -cmd .
 
 /*
-Librarian manages Google API client libraries by automating onboarding,
-regeneration, and release. It runs language-agnostic workflows while
-delegating language-specific tasks—such as code generation, building, and
-testing—to Docker images.
+Automation manages Cloud Build resources to run Librarian CLI.
 
 Usage:
 
-	librarian <command> [arguments]
+	automation <command> [arguments]
 
 The commands are:
 
