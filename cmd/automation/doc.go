@@ -25,5 +25,23 @@ Usage:
 	librarian <command> [arguments]
 
 The commands are:
+
+# publish-release
+
+The publish-release command runs a Cloud Build job to create a tag on a merged release pull
+request.
+
+Usage:
+
+	automation publish-release [flags]
+
+Flags:
+
+	-force-run
+	  	The _FORCE_RUN flag (true/false) to Librarian CLI's -force-run option
+	-project string
+	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
+	-push
+	  	The _PUSH flag (true/false) to Librarian CLI's -push option
 */
 package main
