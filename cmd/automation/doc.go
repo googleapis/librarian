@@ -39,7 +39,5 @@ Flags:
 
 	-project string
 	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
-	-push
-	  	The _PUSH flag (true/false) to Librarian CLI's -push option
 */
 package main
