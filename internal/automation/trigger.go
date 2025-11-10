@@ -22,7 +22,6 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"time"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
@@ -66,7 +65,7 @@ func (c *wrappedCloudBuildClient) ListBuildTriggers(ctx context.Context, req *cl
 }
 
 // RunCommand triggers a command for each registered repository that supports it.
-func RunCommand(ctx context.Context, command string, projectId string, push bool, build bool, forceRun bool) error {
+func RunCommand(ctx context.Context, command string, projectId string, push bool, build bool) error {
 	c, err := cloudbuild.NewClient(ctx)
 	if err != nil {
 		return fmt.Errorf("error creating cloudbuild client: %w", err)
@@ -76,32 +75,25 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 		client: c,
 	}
 	ghClient := github.NewClient(os.Getenv(config.LibrarianGithubToken), nil)
-	return runCommandWithClient(ctx, wrappedClient, ghClient, command, projectId, push, build, forceRun, time.Now())
+	return runCommandWithClient(ctx, wrappedClient, ghClient, command, projectId, push, build)
 }
 
-func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, forceRun bool, dateTime time.Time) error {
+func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool) error {
 	config, err := loadRepositoriesConfig()
 	if err != nil {
 		slog.Error("error loading repositories config", slog.Any("err", err))
 		return err
 	}
-	return runCommandWithConfig(ctx, client, ghClient, command, projectId, push, build, forceRun, config, dateTime)
+	return runCommandWithConfig(ctx, client, ghClient, command, projectId, push, build, config)
 }
 
-func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, forceRun bool, config *RepositoriesConfig, dateTime time.Time) error {
+func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool, config *RepositoriesConfig) error {
 	// validate command is allowed
 	triggerName := triggerNameByCommandName[command]
 	if triggerName == "" {
 		return fmt.Errorf("unsupported command: %s", command)
 	}
 
-	if triggerName == "stage-release" {
-		_, week := dateTime.ISOWeek()
-		if week%2 == 0 && !forceRun {
-			slog.Info("skipping stage-release on an even week.")
-			return nil
-		}
-	}
 	errs := make([]error, 0)
 
 	repositories := config.RepositoriesForCommand(command)
