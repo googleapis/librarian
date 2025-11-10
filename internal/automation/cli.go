@@ -27,7 +27,7 @@ var runCommandFn = RunCommand
 
 // Run parses the command line arguments and triggers the specified command.
 func Run(ctx context.Context, args []string) error {
-	if len(args) == 0 || args[0] == generateCmdName || args[0] == publishCmdName {
+	if len(args) == 0 || args[0] == "version" || args[0] == generateCmdName || args[0] == publishCmdName {
 		cmd := newAutomationCommand()
 		return cmd.Run(ctx, args)
 	}

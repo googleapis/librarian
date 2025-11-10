@@ -14,11 +14,11 @@
 
 package automation
 
-const (
-	automationLongHelp = `Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
-any repository listed in internal/automation/prod/repositories.yaml.`
-	generateLongHelp = `The generate command runs a Cloud Build job to generate Cloud Client Libraries.`
-	publishLongHelp  = `The publish-release command runs a Cloud Build job to create a tag on a merged release pull
-request.`
-	versionLongHelp = "Version prints version information for the automation binary."
-)
+import "testing"
+
+func TestAutomationCmdRun(t *testing.T) {
+	cmd := newAutomationCommand()
+	if err := cmd.Run(t.Context(), []string{"version"}...); err != nil {
+		t.Fatal(err)
+	}
+}
