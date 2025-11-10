@@ -47,7 +47,6 @@ func newCmdPublishRelease() *cli.Command {
 
 	cmdPublishRelease.Init()
 	addFlagProject(cmdPublishRelease.Flags, cmdPublishRelease.Config)
-	addFlagPush(cmdPublishRelease.Flags, cmdPublishRelease.Config)
 
 	return cmdPublishRelease
 }

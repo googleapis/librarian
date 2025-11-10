@@ -32,7 +32,6 @@ func TestNewPublishRunner(t *testing.T) {
 			name: "create_a_runner",
 			cfg: &config.Config{
 				Project: "example-project",
-				Push:    true,
 			},
 		},
 	} {
@@ -41,9 +40,6 @@ func TestNewPublishRunner(t *testing.T) {
 			runner := newPublishRunner(test.cfg)
 			if runner.projectID != test.cfg.Project {
 				t.Errorf("newPublishRunner() projectID is not set")
-			}
-			if runner.push != test.cfg.Push {
-				t.Errorf("newPublishRunner() push is not set")
 			}
 		})
 	}

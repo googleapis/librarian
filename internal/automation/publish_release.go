@@ -32,7 +32,6 @@ type publishRunner struct {
 func newPublishRunner(cfg *config.Config) *publishRunner {
 	return &publishRunner{
 		projectID: cfg.Project,
-		push:      cfg.Push,
 	}
 }
 
