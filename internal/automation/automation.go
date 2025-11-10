@@ -16,16 +16,15 @@ package automation
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/googleapis/librarian/internal/cli"
 )
 
 func newAutomationCommand() *cli.Command {
 	cmd := &cli.Command{
-		Short:     "automation manages",
+		Short:     "automation manages Cloud Build resources to run Librarian CLI.",
 		UsageLine: "automation <command> [arguments]",
-		Long:      "",
+		Long:      "Automation manages Cloud Build resources to run Librarian CLI.",
 		Commands: []*cli.Command{
 			newCmdPublishRelease(),
 		},
@@ -39,11 +38,8 @@ func newCmdPublishRelease() *cli.Command {
 	cmdPublishRelease := &cli.Command{
 		Short:     "publish-release",
 		UsageLine: "automation publish-release [flags]",
-		Long:      "",
+		Long:      publishLongHelp,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			if _, err := cmd.Config.IsValid(); err != nil {
-				return fmt.Errorf("failed to validate config: %s", err)
-			}
 			runner := newPublishRunner(cmd.Config)
 			return runner.run(ctx)
 		},
