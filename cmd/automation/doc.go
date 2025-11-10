@@ -25,8 +25,5 @@ Usage:
 	librarian <command> [arguments]
 
 The commands are:
-
 */
 package main
-
-
