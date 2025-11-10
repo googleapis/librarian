@@ -15,6 +15,8 @@
 package automation
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -46,6 +48,34 @@ func TestNewPublishRunner(t *testing.T) {
 			}
 			if runner.push != test.cfg.Push {
 				t.Errorf("newPublishRunner() push is not set")
+			}
+		})
+	}
+}
+
+func TestPublishRunnerRun(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		args          []string
+		runCommandErr error
+		wantErr       bool
+	}{
+		{
+			name:          "error from RunCommand",
+			runCommandErr: errors.New("run command failed"),
+			wantErr:       true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool, forceRun bool) error {
+				return test.runCommandErr
+			}
+			runner := &publishRunner{}
+			if err := runner.run(t.Context()); (err != nil) != test.wantErr {
+				t.Errorf("run() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

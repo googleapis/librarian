@@ -39,5 +39,5 @@ func newPublishRunner(cfg *config.Config) *publishRunner {
 }
 
 func (r *publishRunner) run(ctx context.Context) error {
-	return RunCommand(ctx, publishCmdName, r.projectID, r.push, false, r.forceRun)
+	return runCommandFn(ctx, publishCmdName, r.projectID, r.push, false, r.forceRun)
 }
