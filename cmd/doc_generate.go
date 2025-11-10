@@ -131,7 +131,7 @@ func processFile(cmdPath *string) error {
 	}
 
 	var pkg string
-	if strings.HasSuffix(pkgPath, "automation") {
+	if filepath.Base(pkgPath) == "automation" {
 		pkg = automationTemplate
 	} else {
 		pkg = librarianTemplate
