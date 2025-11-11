@@ -985,6 +985,12 @@ func (annotate *annotateModel) buildQueryLines(
 			deref = "!."
 		}
 
+		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
+		if hasCustomEncoding {
+			// Example: 'fieldMask': fieldMask!.toJson()
+			return append(result, fmt.Sprintf("%s: %s%stoJson()", preable, ref, deref))
+		}
+
 		// Unroll the fields for messages.
 		for _, field := range message.Fields {
 			result = annotate.buildQueryLines(result, ref+deref, param+".", field, state)

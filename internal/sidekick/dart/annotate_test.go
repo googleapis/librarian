@@ -622,6 +622,19 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 		Typez:    api.MESSAGE_TYPE,
 		TypezID:  updateRequest.ID,
 	}
+	fieldMaskField := &api.Field{
+		Name:     "field_mask",
+		JSONName: "fieldMask",
+		Typez:    api.MESSAGE_TYPE,
+		TypezID:  ".google.protobuf.FieldMask",
+	}
+
+	durationField := &api.Field{
+		Name:     "duration",
+		JSONName: "duration",
+		Typez:    api.MESSAGE_TYPE,
+		TypezID:  ".google.protobuf.Duration",
+	}
 
 	// messages
 	got := annotate.buildQueryLines([]string{}, "result.", "", messageField1, model.State)
@@ -646,7 +659,24 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	got = annotate.buildQueryLines([]string{}, "result.", "", messageField3, model.State)
 	want = []string{
 		"if (result.message3!.secret!.name.isNotDefault) 'message3.secret.name': result.message3!.secret!.name",
-		"if (result.message3!.fieldMask!.paths.isNotDefault) 'message3.fieldMask.paths': result.message3!.fieldMask!.paths",
+		"if (result.message3!.fieldMask != null) 'message3.fieldMask': result.message3!.fieldMask!.toJson()",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	}
+
+	// custom encoded messages
+	got = annotate.buildQueryLines([]string{}, "result.", "", fieldMaskField, model.State)
+	want = []string{
+		"if (result.fieldMask != null) 'fieldMask': result.fieldMask!.toJson()",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	}
+
+	got = annotate.buildQueryLines([]string{}, "result.", "", durationField, model.State)
+	want = []string{
+		"if (result.duration != null) 'duration': result.duration!.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
