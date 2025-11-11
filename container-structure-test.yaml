@@ -19,6 +19,9 @@ commandTests:
   - name: "docker"
     command: ["docker", "version"]
     expectedOutput: ["Docker Engine", "Version:"]
+    envVars:
+      - key: "DOCKER_API_VERSION"
+        value: "1.41"
   - name: "gcloud"
     command: ["gcloud", "--version"]
     expectedOutput: ["Google Cloud SDK"]
