@@ -16,6 +16,8 @@ commandTests:
   - name: "librarian version"
     command: ["/app/librarian", "version"]
     expectedOutput: ["\\d+\\.\\d+\\.\\d+"]
+    # temporarily disabled, tracked in
+    # https://github.com/googleapis/librarian/issues/2860
     #  - name: "docker"
     #    command: ["docker", "version"]
     #    expectedOutput: ["Docker Engine", "Version:"]
