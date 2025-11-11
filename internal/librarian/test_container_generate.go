@@ -67,7 +67,10 @@ func (r *testGenerateRunner) run(ctx context.Context) error {
 // listing the failed libraries, preserving the generated files. If all tests
 // pass or are skipped, it cleans up the work directory.
 func (r *testGenerateRunner) runTests(ctx context.Context, sourceRepoHead string) error {
-	outputDir := filepath.Join(r.workRoot, "output")
+	outputDir := filepath.Join(r.workRoot, "test-output")
+	if err := os.Mkdir(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)
+	}
 	if r.library != "" {
 		err := r.testSingleLibrary(ctx, r.library, sourceRepoHead, outputDir)
 		if errors.Is(err, errGenerateBlocked) {
