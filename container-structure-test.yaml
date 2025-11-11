@@ -16,9 +16,9 @@ commandTests:
   - name: "librarian version"
     command: ["/app/librarian", "version"]
     expectedOutput: ["\\d+\\.\\d+\\.\\d+"]
-#  - name: "docker"
-#    command: ["docker", "version"]
-#    expectedOutput: ["Docker Engine", "Version:"]
+    #  - name: "docker"
+    #    command: ["docker", "version"]
+    #    expectedOutput: ["Docker Engine", "Version:"]
   - name: "gcloud"
     command: ["gcloud", "--version"]
     expectedOutput: ["Google Cloud SDK"]
