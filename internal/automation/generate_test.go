@@ -54,7 +54,6 @@ func TestNewGenerateRunner(t *testing.T) {
 }
 
 func TestGenerateRunnerRun(t *testing.T) {
-	t.Parallel()
 	tests := []struct {
 		name          string
 		args          []string
