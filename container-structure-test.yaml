@@ -20,6 +20,8 @@ commandTests:
     command: ["docker", "version"]
     expectedOutput: ["Docker Engine", "Version:"]
     envVars:
+      # Pin the Docker API version to match the one supported by the
+      # Docker server in the Cloud Build environment.
       - key: "DOCKER_API_VERSION"
         value: "1.41"
   - name: "gcloud"
