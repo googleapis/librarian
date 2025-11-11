@@ -910,7 +910,9 @@ func TestRunContainerGenerateTest(t *testing.T) {
 			mockRepo: &MockRepository{
 				AddAllError: fmt.Errorf("add all failed"),
 			},
-			testRunner: &testGenerateRunner{},
+			testRunner: &testGenerateRunner{
+				workRoot: t.TempDir(),
+			},
 			wantErrMsg: "failed to stage changes",
 		},
 		{
@@ -918,7 +920,9 @@ func TestRunContainerGenerateTest(t *testing.T) {
 			mockRepo: &MockRepository{
 				CommitError: fmt.Errorf("unexpected commit error"),
 			},
-			testRunner: &testGenerateRunner{},
+			testRunner: &testGenerateRunner{
+				workRoot: t.TempDir(),
+			},
 			wantErrMsg: "failed to create temporary commit",
 		},
 		{
@@ -934,6 +938,7 @@ func TestRunContainerGenerateTest(t *testing.T) {
 				sourceRepo:      &MockRepository{},
 				librarianConfig: &config.LibrarianConfig{},
 				state:           &config.LibrarianState{},
+				workRoot:        t.TempDir(),
 			},
 			wantErrMsg:     "failed to reset temporary commit",
 			wantResetCalls: 1,
@@ -949,6 +954,7 @@ func TestRunContainerGenerateTest(t *testing.T) {
 				librarianConfig: &config.LibrarianConfig{},
 				repo:            &MockRepository{},
 				state:           &config.LibrarianState{},
+				workRoot:        t.TempDir(),
 			},
 			wantResetCalls: 1,
 		},
@@ -963,6 +969,7 @@ func TestRunContainerGenerateTest(t *testing.T) {
 				librarianConfig: &config.LibrarianConfig{},
 				repo:            &MockRepository{},
 				state:           &config.LibrarianState{},
+				workRoot:        t.TempDir(),
 			},
 			wantResetCalls: 0,
 		},
