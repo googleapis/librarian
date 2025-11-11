@@ -48,7 +48,13 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err == nil && resp.StatusCode != http.StatusServiceUnavailable {
 			return resp, nil
 		}
-		slog.Warn("retrying due to error", "err", err)
+		if err != nil {
+			slog.Warn("retrying due to error", "err", err)
+		}
+		if resp != nil {
+			slog.Warn("retrying due to status code", "status_code", resp.StatusCode)
+		}
+
 		time.Sleep(retryDelay)
 	}
 	return resp, err
