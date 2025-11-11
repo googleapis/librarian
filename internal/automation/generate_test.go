@@ -69,7 +69,6 @@ func TestGenerateRunnerRun(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool) error {
 				return test.runCommandErr
 			}
