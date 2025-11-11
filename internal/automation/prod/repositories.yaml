@@ -1,10 +1,28 @@
 repositories:
-  - name: "google-cloud-python"
-    full-name: https://github.com/googleapis/google-cloud-python
-    github-token-secret-name: "google-cloud-python-github-token"
+  - name: "gapic-generator-go"
+    full-name: https://github.com/googleapis/gapic-generator-go
+    github-token-secret-name: "gapic-generator-go-github-token"
     supported-commands:
-      - generate
-      - stage-release
+      - publish-release
+  - name: "gax-go"
+    full-name: https://github.com/googleapis/gax-go
+    github-token-secret-name: "gax-go-github-token"
+    supported-commands:
+      - publish-release
+  - name: "google-auth-library-python"
+    full-name: https://github.com/googleapis/google-auth-library-python
+    github-token-secret-name: "google-auth-library-python-github-token"
+    supported-commands:
+      - publish-release
+  - name: "google-auth-library-python-httplib2"
+    full-name: https://github.com/googleapis/google-auth-library-python-httplib2
+    github-token-secret-name: "google-auth-library-python-httplib2-github-token"
+    supported-commands:
+      - publish-release
+  - name: "google-auth-library-python-oauthlib"
+    full-name: https://github.com/googleapis/google-auth-library-python-oauthlib
+    github-token-secret-name: "google-auth-library-python-oauthlib-github-token"
+    supported-commands:
       - publish-release
   - name: "google-cloud-go"
     full-name: https://github.com/googleapis/google-cloud-go
@@ -13,19 +31,26 @@ repositories:
       - generate
       - stage-release
       - publish-release
+  - name: "google-cloud-python"
+    full-name: https://github.com/googleapis/google-cloud-python
+    github-token-secret-name: "google-cloud-python-github-token"
+    supported-commands:
+      - generate
+      - stage-release
+      - publish-release
+  - name: "google-resumable-media-python"
+    full-name: https://github.com/googleapis/google-resumable-media-python
+    github-token-secret-name: "google-resumable-media-python-github-token"
+    supported-commands:
+      - publish-release
   - name: "librarian"
     full-name: https://github.com/googleapis/librarian
     github-token-secret-name: "librarian-github-token"
     supported-commands:
       - stage-release
       - publish-release
-  - name: "gax-go"
-    full-name: https://github.com/googleapis/gax-go
-    github-token-secret-name: "gax-go-github-token"
-    supported-commands:
-      - publish-release
-  - name: "gapic-generator-go"
-    full-name: https://github.com/googleapis/gapic-generator-go
-    github-token-secret-name: "gapic-generator-go-github-token"
+  - name: "python-db-dtypes-pandas"
+    full-name: https://github.com/googleapis/python-db-dtypes-pandas
+    github-token-secret-name: "python-db-dtypes-pandas-github-token"
     supported-commands:
       - publish-release

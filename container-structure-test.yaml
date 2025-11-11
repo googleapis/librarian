@@ -16,11 +16,14 @@ commandTests:
   - name: "librarian version"
     command: ["/app/librarian", "version"]
     expectedOutput: ["\\d+\\.\\d+\\.\\d+"]
-    # temporarily disabled, tracked in
-    # https://github.com/googleapis/librarian/issues/2860
-    #  - name: "docker"
-    #    command: ["docker", "version"]
-    #    expectedOutput: ["Docker Engine", "Version:"]
+  - name: "docker"
+    command: ["docker", "version"]
+    expectedOutput: ["Docker Engine", "Version:"]
+    envVars:
+      # Pin the Docker API version to match the one supported by the
+      # Docker server in the Cloud Build environment.
+      - key: "DOCKER_API_VERSION"
+        value: "1.41"
   - name: "gcloud"
     command: ["gcloud", "--version"]
     expectedOutput: ["Google Cloud SDK"]
