@@ -22,6 +22,22 @@ import (
 )
 
 func newAutomationCommand() *cli.Command {
+	cmd := &cli.Command{
+		Short:     "automation manages Cloud Build resources to run Librarian CLI.",
+		UsageLine: "automation <command> [arguments]",
+		Long:      automationLongHelp,
+		Commands: []*cli.Command{
+			newCmdGenerate(),
+			newCmdPublishRelease(),
+			newCmdVersion(),
+		},
+	}
+
+	cmd.Init()
+	return cmd
+}
+
+func newCmdVersion() *cli.Command {
 	cmdVersion := &cli.Command{
 		Short:     "version prints the version information",
 		UsageLine: "automation version",
@@ -32,20 +48,7 @@ func newAutomationCommand() *cli.Command {
 		},
 	}
 	cmdVersion.Init()
-
-	cmd := &cli.Command{
-		Short:     "automation manages Cloud Build resources to run Librarian CLI.",
-		UsageLine: "automation <command> [arguments]",
-		Long:      automationLongHelp,
-		Commands: []*cli.Command{
-			newCmdGenerate(),
-			newCmdPublishRelease(),
-			cmdVersion,
-		},
-	}
-
-	cmd.Init()
-	return cmd
+	return cmdVersion
 }
 
 func newCmdGenerate() *cli.Command {
