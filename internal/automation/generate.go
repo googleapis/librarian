@@ -39,5 +39,5 @@ func newGenerateRunner(cfg *config.Config) *generateRunner {
 }
 
 func (r *generateRunner) run(ctx context.Context) error {
-	return runCommandFn(ctx, generateCmdName, r.projectID, false, r.build)
+	return runCommandFn(ctx, generateCmdName, r.projectID, r.push, r.build)
 }
