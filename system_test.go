@@ -44,61 +44,61 @@ func TestGetRawContentSystem(t *testing.T) {
 	repoName := "https://github.com/googleapis/librarian"
 
 	for _, test := range []struct {
-		name  string
-		token string
+		name          string
+		token         string
+		path          string
+		wantErr       bool
+		wantErrSubstr string
 	}{
 		{
-			name:  "with credentials",
-			token: testToken,
+			name:    "with credentials, existing file",
+			token:   testToken,
+			path:    ".librarian/state.yaml",
+			wantErr: false,
 		},
 		{
-			name:  "without credentials",
-			token: "",
+			name:          "with credentials, missing file",
+			token:         testToken,
+			path:          "not-a-real-file.txt",
+			wantErr:       true,
+			wantErrSubstr: "no file named",
+		},
+		{
+			name:    "without credentials, existing file",
+			token:   "",
+			path:    ".librarian/state.yaml",
+			wantErr: false,
+		},
+		{
+			name:          "without credentials, missing file",
+			token:         "",
+			path:          "not-a-real-file.txt",
+			wantErr:       true,
+			wantErrSubstr: "no file named",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			for _, test := range []struct {
-				name          string
-				path          string
-				wantErr       bool
-				wantErrSubstr string
-			}{
-				{
-					name:    "existing file",
-					path:    ".librarian/state.yaml",
-					wantErr: false,
-				},
-				{
-					name:          "missing file",
-					path:          "not-a-real-file.txt",
-					wantErr:       true,
-					wantErrSubstr: "no file named",
-				},
-			} {
-				t.Run(test.name, func(t *testing.T) {
-					repo, err := github.ParseRemote(repoName)
-					if err != nil {
-						t.Fatalf("unexpected error in ParseRemote() %s", err)
-					}
+			repo, err := github.ParseRemote(repoName)
+			if err != nil {
+				t.Fatalf("unexpected error in ParseRemote() %s", err)
+			}
 
-					client := github.NewClient(testToken, repo)
-					got, err := client.GetRawContent(t.Context(), test.path, "main")
+			client := github.NewClient(test.token, repo)
+			got, err := client.GetRawContent(t.Context(), test.path, "main")
 
-					if test.wantErr {
-						if err == nil {
-							t.Fatalf("GetRawContent() err = nil, want error containing %q", test.wantErrSubstr)
-						} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
-							t.Errorf("GetRawContent() err = %v, want error containing %q", err, test.wantErrSubstr)
-						}
-						return
-					}
-					if err != nil {
-						t.Errorf("GetRawContent() err = %v, want nil", err)
-					}
-					if len(got) <= 0 {
-						t.Fatalf("GetRawContent() expected to fetch contents for %s from %s", test.path, repoName)
-					}
-				})
+			if test.wantErr {
+				if err == nil {
+					t.Fatalf("GetRawContent() err = nil, want error containing %q", test.wantErrSubstr)
+				} else if !strings.Contains(err.Error(), test.wantErrSubstr) {
+					t.Errorf("GetRawContent() err = %v, want error containing %q", err, test.wantErrSubstr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("GetRawContent() err = %v, want nil", err)
+			}
+			if len(got) <= 0 {
+				t.Fatalf("GetRawContent() expected to fetch contents for %s from %s", test.path, repoName)
 			}
 		})
 	}
