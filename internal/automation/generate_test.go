@@ -54,26 +54,63 @@ func TestNewGenerateRunner(t *testing.T) {
 }
 
 func TestGenerateRunnerRun(t *testing.T) {
+	t.Parallel()
+	originalRunCommandFn := runCommandFn
+	defer func() { runCommandFn = originalRunCommandFn }()
+
 	tests := []struct {
 		name          string
-		args          []string
+		runner        *generateRunner
 		runCommandErr error
 		wantErr       bool
+		wantCmd       string
+		wantProjectID string
+		wantPush      bool
+		wantBuild     bool
 	}{
 		{
+			name: "success",
+			runner: &generateRunner{
+				build:     true,
+				projectID: "test-project",
+				push:      true,
+			},
+			wantCmd:       generateCmdName,
+			wantProjectID: "test-project",
+			wantPush:      true,
+			wantBuild:     true,
+		},
+		{
 			name:          "error from RunCommand",
+			runner:        &generateRunner{},
 			runCommandErr: errors.New("run command failed"),
 			wantErr:       true,
+			wantCmd:       generateCmdName,
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool) error {
-				return test.runCommandErr
+				if command != tt.wantCmd {
+					t.Errorf("runCommandFn() command = %v, want %v", command, tt.wantCmd)
+				}
+				// Only check other args on success case to avoid nil pointer with empty runner
+				if tt.runCommandErr == nil {
+					if projectId != tt.wantProjectID {
+						t.Errorf("runCommandFn() projectId = %v, want %v", projectId, tt.wantProjectID)
+					}
+					if push != tt.wantPush {
+						t.Errorf("runCommandFn() push = %v, want %v", push, tt.wantPush)
+					}
+					if build != tt.wantBuild {
+						t.Errorf("runCommandFn() build = %v, want %v", build, tt.wantBuild)
+					}
+				}
+				return tt.runCommandErr
 			}
-			runner := &generateRunner{}
-			if err := runner.run(t.Context()); (err != nil) != test.wantErr {
-				t.Errorf("run() error = %v, wantErr %v", err, test.wantErr)
+
+			if err := tt.runner.run(t.Context()); (err != nil) != tt.wantErr {
+				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
