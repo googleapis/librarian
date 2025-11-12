@@ -47,7 +47,7 @@ steps:
     dir: tmp
     args:
       - 'release'
-      - 'init'
+      - 'stage'
       - '-repo'
       - '/workspace/$_REPOSITORY'
       - '-branch=$_BRANCH'
