@@ -32,8 +32,10 @@ import (
 	"github.com/googleapis/librarian/internal/images"
 )
 
-var testToken = os.Getenv("LIBRARIAN_TEST_GITHUB_TOKEN")
-var githubAction = os.Getenv("LIBRARIAN_GITHUB_ACTION")
+var (
+	testToken    = os.Getenv("LIBRARIAN_TEST_GITHUB_TOKEN")
+	githubAction = os.Getenv("LIBRARIAN_GITHUB_ACTION")
+)
 
 func TestGetRawContentSystem(t *testing.T) {
 	if testToken == "" {

@@ -38,8 +38,10 @@ import (
 )
 
 // regexps for parsing commit messages
-var nestedCommitRegex = regexp.MustCompile(`(?s)BEGIN_NESTED_COMMIT\n(.*?)\nEND_NESTED_COMMIT`)
-var conventionalCommitRegex = regexp.MustCompile(`^(feat|fix|docs|chore): (.+)$`)
+var (
+	nestedCommitRegex       = regexp.MustCompile(`(?s)BEGIN_NESTED_COMMIT\n(.*?)\nEND_NESTED_COMMIT`)
+	conventionalCommitRegex = regexp.MustCompile(`^(feat|fix|docs|chore): (.+)$`)
+)
 
 const mockGithubTag = "mock_github"
 
