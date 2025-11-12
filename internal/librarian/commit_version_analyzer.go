@@ -31,7 +31,7 @@ func getConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 	commits, err := repo.GetCommitsForPathsSinceTag(library.SourceRoots, tag)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get commits for library %s with source roots %s at tag %s: %w", library.ID, library.SourceRoots, tag, err)
+		return nil, fmt.Errorf("failed to get commits for library %q with source roots %q at tag %q: %w", library.ID, library.SourceRoots, tag, err)
 	}
 
 	// checks that if the files in the commit are in the sources root. The release
@@ -42,7 +42,7 @@ func getConventionalCommitsSinceLastRelease(repo gitrepo.Repository, library *co
 
 	conventionalCommits, err := convertToConventionalCommits(repo, library, commits, shouldIncludeFiles)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert commits to conventional commits for library %s: %w", library.ID, err)
+		return nil, fmt.Errorf("failed to convert commits to conventional commits for library %q: %w", library.ID, err)
 	}
 	return conventionalCommits, nil
 }
