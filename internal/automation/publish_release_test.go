@@ -75,23 +75,23 @@ func TestPublishRunnerRun(t *testing.T) {
 			wantCmd:       publishCmdName,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool) error {
-				if command != tt.wantCmd {
-					t.Errorf("runCommandFn() command = %v, want %v", command, tt.wantCmd)
+				if command != test.wantCmd {
+					t.Errorf("runCommandFn() command = %v, want %v", command, test.wantCmd)
 				}
 				// Only check other args on success case to avoid nil pointer with empty runner
-				if tt.runCommandErr == nil {
-					if projectId != tt.wantProjectID {
-						t.Errorf("runCommandFn() projectId = %v, want %v", projectId, tt.wantProjectID)
+				if test.runCommandErr == nil {
+					if projectId != test.wantProjectID {
+						t.Errorf("runCommandFn() projectId = %v, want %v", projectId, test.wantProjectID)
 					}
 				}
-				return tt.runCommandErr
+				return test.runCommandErr
 			}
 
-			if err := tt.runner.run(t.Context()); (err != nil) != tt.wantErr {
-				t.Errorf("run() error = %v, wantErr %v", err, tt.wantErr)
+			if err := test.runner.run(t.Context()); (err != nil) != test.wantErr {
+				t.Errorf("run() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
