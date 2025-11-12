@@ -53,24 +53,24 @@ func TestRun(t *testing.T) {
 			wantInStderr: "test error",
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := Run(t.Context(), tt.args, ".")
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("Run() error = %v, wantErr %v", err, tt.wantErr)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := Run(t.Context(), test.args, ".")
+			if (err != nil) != test.wantErr {
+				t.Fatalf("Run() error = %v, wantErr %v", err, test.wantErr)
 			}
 
-			if !tt.wantErr {
+			if !test.wantErr {
 				return
 			}
 
 			var exitErr *exec.ExitError
 			if errors.As(err, &exitErr) {
-				if tt.wantExit != 0 && exitErr.ExitCode() != tt.wantExit {
-					t.Errorf("Run() exit code = %d, want %d", exitErr.ExitCode(), tt.wantExit)
+				if test.wantExit != 0 && exitErr.ExitCode() != test.wantExit {
+					t.Errorf("Run() exit code = %d, want %d", exitErr.ExitCode(), test.wantExit)
 				}
-				if tt.wantInStderr != "" && !strings.Contains(string(exitErr.Stderr), tt.wantInStderr) {
-					t.Errorf("Run() stderr = %q, want contains %q", string(exitErr.Stderr), tt.wantInStderr)
+				if test.wantInStderr != "" && !strings.Contains(string(exitErr.Stderr), test.wantInStderr) {
+					t.Errorf("Run() stderr = %q, want contains %q", string(exitErr.Stderr), test.wantInStderr)
 				}
 			}
 		})

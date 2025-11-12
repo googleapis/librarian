@@ -243,22 +243,22 @@ java_gapic_library(
 			wantProtocRunCount: 1,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			e := newTestEnv(t)
 			defer e.cleanup(t)
-			tt.setup(e, t)
+			test.setup(e, t)
 			var protocRunCount int
 			execvRun = func(ctx context.Context, args []string, dir string) error {
 				want := "protoc"
 				if args[0] != want {
 					t.Errorf("protocRun called with %s; want %s", args[0], want)
 				}
-				if tt.protocErr == nil && tt.name != "unzip fails" {
+				if test.protocErr == nil && test.name != "unzip fails" {
 					setupFakeProtocOutput(t, e, []string{"v1"})
 				}
 				protocRunCount++
-				return tt.protocErr
+				return test.protocErr
 			}
 			genCtx := &generate.Context{
 				LibrarianDir: e.librarianDir,
@@ -267,18 +267,18 @@ java_gapic_library(
 				SourceDir:    e.sourceDir,
 			}
 			cfg, err := generate.NewConfig(genCtx)
-			if err != nil && tt.wantErr {
+			if err != nil && test.wantErr {
 				// If we expect an error, and NewConfig fails, that's ok.
 				return
 			}
 			if err != nil {
 				t.Fatalf("failed to create generate config: %v", err)
 			}
-			if err := Generate(t.Context(), cfg); (err != nil) != tt.wantErr {
-				t.Errorf("Generate() error = %v, wantErr %v", err, tt.wantErr)
+			if err := Generate(t.Context(), cfg); (err != nil) != test.wantErr {
+				t.Errorf("Generate() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if protocRunCount != tt.wantProtocRunCount {
-				t.Errorf("protocRun called = %v; want %v", protocRunCount, tt.wantProtocRunCount)
+			if protocRunCount != test.wantProtocRunCount {
+				t.Errorf("protocRun called = %v; want %v", protocRunCount, test.wantProtocRunCount)
 			}
 		})
 	}
@@ -354,12 +354,12 @@ func TestRestructureOutput(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			e := newTestEnv(t)
 			defer e.cleanup(t)
 
-			for path, content := range tt.sourceFiles {
+			for path, content := range test.sourceFiles {
 				fullPath := filepath.Join(e.outputDir, path)
 				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 					t.Fatalf("failed to create source directory for %s: %v", path, err)
@@ -369,13 +369,13 @@ func TestRestructureOutput(t *testing.T) {
 				}
 			}
 
-			for _, version := range tt.versions {
-				if err := restructureOutput(e.outputDir, tt.libraryName, version); (err != nil) != tt.wantErr {
-					t.Errorf("restructureOutput() for version %s error = %v, wantErr %v", version, err, tt.wantErr)
+			for _, version := range test.versions {
+				if err := restructureOutput(e.outputDir, test.libraryName, version); (err != nil) != test.wantErr {
+					t.Errorf("restructureOutput() for version %s error = %v, wantErr %v", version, err, test.wantErr)
 				}
 			}
 
-			for _, path := range tt.expectedFiles {
+			for _, path := range test.expectedFiles {
 				fullPath := filepath.Join(e.outputDir, path)
 				if _, err := os.Stat(fullPath); err != nil {
 					t.Errorf("expected file not found at %s: %v", fullPath, err)
@@ -624,10 +624,10 @@ func TestExtractVersion(t *testing.T) {
 			want: "",
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := extractVersion(tt.path); got != tt.want {
-				t.Errorf("extractVersion() = %v, want %v", got, tt.want)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := extractVersion(test.path); got != test.want {
+				t.Errorf("extractVersion() = %v, want %v", got, test.want)
 			}
 		})
 	}

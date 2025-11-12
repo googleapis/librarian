@@ -169,10 +169,10 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.cfg.Validate(); (err != nil) != tt.wantErr {
-				t.Errorf("Config.Validate() error = %v, wantErr %v", err, tt.wantErr)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := test.cfg.Validate(); (err != nil) != test.wantErr {
+				t.Errorf("Config.Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

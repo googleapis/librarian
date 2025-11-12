@@ -126,19 +126,19 @@ func TestBuild(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			outputConfig := &OutputConfig{
 				GAPICDir: "/output/gapic",
 				GRPCDir:  "/output/grpc",
 				ProtoDir: "/output/proto",
 			}
-			got, err := Build(filepath.Join(sourceDir, tt.apiPath), &tt.config, sourceDir, outputConfig)
+			got, err := Build(filepath.Join(sourceDir, test.apiPath), &test.config, sourceDir, outputConfig)
 			if err != nil {
 				t.Fatalf("Build() failed: %v", err)
 			}
 
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("Build() mismatch (-want +got):\n%s", diff)
 			}
 		})

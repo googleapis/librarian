@@ -43,7 +43,7 @@ func TestGetRawContentSystem(t *testing.T) {
 	}
 	repoName := "https://github.com/googleapis/librarian"
 
-	for _, credential := range []struct {
+	for _, test := range []struct {
 		name  string
 		token string
 	}{
@@ -56,7 +56,7 @@ func TestGetRawContentSystem(t *testing.T) {
 			token: "",
 		},
 	} {
-		t.Run(credential.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			for _, test := range []struct {
 				name          string
 				path          string

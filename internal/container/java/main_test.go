@@ -36,10 +36,10 @@ func TestRunCLI(t *testing.T) {
 			wantCode: 1,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if gotCode := runCLI(tt.args); gotCode != tt.wantCode {
-				t.Errorf("runCLI() = %v, want %v", gotCode, tt.wantCode)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if gotCode := runCLI(test.args); gotCode != test.wantCode {
+				t.Errorf("runCLI() = %v, want %v", gotCode, test.wantCode)
 			}
 		})
 	}
@@ -56,10 +56,10 @@ func TestParseLogLevel(t *testing.T) {
 		{"quiet", "quiet", slog.LevelError + 1},
 		{"invalid", "foo", slog.LevelInfo},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := parseLogLevel(tt.level); got != tt.want {
-				t.Errorf("parseLogLevel() = %v, want %v", got, tt.want)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := parseLogLevel(test.level); got != test.want {
+				t.Errorf("parseLogLevel() = %v, want %v", got, test.want)
 			}
 		})
 	}

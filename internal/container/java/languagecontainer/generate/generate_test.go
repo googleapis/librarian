@@ -103,9 +103,9 @@ func TestNewConfig_validate(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if _, err := NewConfig(tt.context); err == nil {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := NewConfig(test.context); err == nil {
 				t.Error("NewConfig() error = nil, want not nil")
 			}
 		})

@@ -176,15 +176,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for _, test := range tests {
 		annotate := newAnnotateModel(model)
 		options := maps.Clone(requiredConfig)
-		maps.Copy(options, tt.options)
+		maps.Copy(options, test.options)
 		err := annotate.annotateModel(maps.Clone(options))
 		if err != nil {
 			t.Fatal(err)
 		}
-		tt.verify(t, annotate)
+		test.verify(t, annotate)
 	}
 }
 
@@ -210,14 +210,14 @@ func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
 		"issue-tracker-url",
 	}
 
-	for _, tt := range tests {
+	for _, test := range tests {
 		annotate := newAnnotateModel(model)
 		options := maps.Clone(requiredConfig)
-		delete(options, tt)
+		delete(options, test)
 
 		err := annotate.annotateModel(options)
 		if err == nil {
-			t.Fatalf("expected error when missing %q", tt)
+			t.Fatalf("expected error when missing %q", test)
 		}
 	}
 }
