@@ -131,6 +131,9 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	  	Note: When using a local repository (either by providing a path or by defaulting
+	  	to the current directory) with the -push flag, Librarian creates a pull request
+	  	against the main branch.
 	-v	enables verbose logging
 
 # release
@@ -222,6 +225,9 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	  	Note: When using a local repository (either by providing a path or by defaulting
+	  	to the current directory) with the -push flag, Librarian creates a pull request
+	  	against the main branch.
 	-v	enables verbose logging
 
 # release tag
@@ -270,6 +276,9 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	  	Note: When using a local repository (either by providing a path or by defaulting
+	  	to the current directory) with the -push flag, Librarian creates a pull request
+	  	against the main branch.
 	-v	enables verbose logging
 
 # update-image
@@ -339,6 +348,9 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	  	Note: When using a local repository (either by providing a path or by defaulting
+	  	to the current directory) with the -push flag, Librarian creates a pull request
+	  	against the main branch.
 	-test
 	  	If true, run container tests after generation but before committing and pushing.
 	  	These tests verify the interaction between language containers and the Librarian CLI's

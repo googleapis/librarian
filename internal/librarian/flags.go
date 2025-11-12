@@ -126,7 +126,10 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 in the format of a remote URL such as https://github.com/{owner}/{repo} or a
 local file path like /path/to/repo. Both absolute and relative paths are
 supported. If not specified, will try to detect if the current working directory
-is configured as a language repository.`)
+is configured as a language repository.
+Note: When using a local repository (either by providing a path or by defaulting
+to the current directory) with the -push flag, Librarian creates a pull request
+against the main branch.`)
 }
 
 func addFlagTest(fs *flag.FlagSet, cfg *config.Config) {
