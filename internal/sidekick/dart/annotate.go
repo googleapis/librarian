@@ -998,7 +998,11 @@ func (annotate *annotateModel) buildQueryLines(
 		}
 		return append(result, fmt.Sprintf("%s: %s%s", preable, ref, deref))
 	case field.Typez == api.ENUM_TYPE:
-		return append(result, fmt.Sprintf("%s: %s.value", preable, ref))
+		deref := "."
+		if codec.Nullable {
+			deref = "!."
+		}
+		return append(result, fmt.Sprintf("%s: %s%svalue", preable, ref, deref))
 	case field.Typez == api.BOOL_TYPE ||
 		field.Typez == api.INT32_TYPE ||
 		field.Typez == api.UINT32_TYPE || field.Typez == api.SINT32_TYPE ||

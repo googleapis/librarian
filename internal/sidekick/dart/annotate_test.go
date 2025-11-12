@@ -573,19 +573,34 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
 
-	enumField := &api.Field{
-		Name:     "enumName",
-		JSONName: "enumName",
-		Typez:    api.ENUM_TYPE,
-		TypezID:  enum.ID,
-	}
-
-	got := annotate.buildQueryLines([]string{}, "result.", "", enumField, model.State)
-	want := []string{
-		"if (result.enumName.isNotDefault) 'enumName': result.enumName.value",
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	for _, test := range []struct {
+		enumField *api.Field
+		want      []string
+	}{
+		{
+			&api.Field{
+				Name:     "enumName",
+				JSONName: "jsonEnumName",
+				Typez:    api.ENUM_TYPE,
+				TypezID:  enum.ID},
+			[]string{"if (result.enumName.isNotDefault) 'jsonEnumName': result.enumName.value"},
+		},
+		{
+			&api.Field{
+				Name:     "optionalEnum",
+				JSONName: "optionalJsonEnum",
+				Typez:    api.ENUM_TYPE,
+				TypezID:  enum.ID,
+				Optional: true},
+			[]string{"if (result.optionalEnum != null) 'optionalJsonEnum': result.optionalEnum!.value"},
+		},
+	} {
+		t.Run(test.enumField.Name, func(t *testing.T) {
+			got := annotate.buildQueryLines([]string{}, "result.", "", test.enumField, model.State)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch in TestBuildQueryLinesEnums (-want, +got)\n:%s", diff)
+			}
+		})
 	}
 }
 
