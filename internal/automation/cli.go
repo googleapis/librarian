@@ -19,7 +19,6 @@ package automation
 import (
 	"context"
 	"flag"
-	"log/slog"
 )
 
 // runCommandFn is a function type that matches RunCommand, for mocking in tests.
