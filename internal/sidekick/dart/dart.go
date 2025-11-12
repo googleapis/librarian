@@ -26,7 +26,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-var (
+const (
 	typedDataImport     = "dart:typed_data"
 	httpImport          = "package:http/http.dart as http"
 	serviceClientImport = "package:google_cloud_rpc/service_client.dart"
@@ -59,7 +59,7 @@ var usesCustomEncoding = map[string]string{
 	".google.protobuf.Value":       "",
 }
 
-var (
+const (
 	// nestedMessageChar is used to concatenate a message and a child message.
 	nestedMessageChar = "_"
 

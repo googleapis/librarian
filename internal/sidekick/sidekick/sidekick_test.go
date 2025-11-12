@@ -21,12 +21,15 @@ import (
 	"testing"
 )
 
-var (
-	testdataDir, _             = filepath.Abs("../testdata")
-	googleapisRoot             = fmt.Sprintf("%s/googleapis", testdataDir)
-	outputDir                  = fmt.Sprintf("%s/test-only", testdataDir)
+const (
 	secretManagerServiceConfig = "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"
-	specificationSource        = fmt.Sprintf("%s/openapi/secretmanager_openapi_v1.json", testdataDir)
+)
+
+var (
+	testdataDir, _      = filepath.Abs("../testdata")
+	googleapisRoot      = fmt.Sprintf("%s/googleapis", testdataDir)
+	outputDir           = fmt.Sprintf("%s/test-only", testdataDir)
+	specificationSource = fmt.Sprintf("%s/openapi/secretmanager_openapi_v1.json", testdataDir)
 )
 
 func requireCommand(t *testing.T, command string) {
