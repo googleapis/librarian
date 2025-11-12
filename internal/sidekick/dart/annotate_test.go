@@ -636,6 +636,13 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 		TypezID:  ".google.protobuf.Duration",
 	}
 
+	timestampField := &api.Field{
+		Name:     "time",
+		JSONName: "time",
+		Typez:    api.MESSAGE_TYPE,
+		TypezID:  ".google.protobuf.Timestamp",
+	}
+
 	// messages
 	got := annotate.buildQueryLines([]string{}, "result.", "", messageField1, model.State)
 	want := []string{
@@ -677,6 +684,14 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	got = annotate.buildQueryLines([]string{}, "result.", "", durationField, model.State)
 	want = []string{
 		"if (result.duration != null) 'duration': result.duration!.toJson()",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	}
+
+	got = annotate.buildQueryLines([]string{}, "result.", "", timestampField, model.State)
+	want = []string{
+		"if (result.time != null) 'time': result.time!.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
