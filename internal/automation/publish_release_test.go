@@ -46,9 +46,6 @@ func TestNewPublishRunner(t *testing.T) {
 }
 
 func TestPublishRunnerRun(t *testing.T) {
-	originalRunCommandFn := runCommandFn
-	defer func() { runCommandFn = originalRunCommandFn }()
-
 	tests := []struct {
 		name          string
 		runner        *publishRunner
