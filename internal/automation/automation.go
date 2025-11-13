@@ -24,6 +24,7 @@ func newAutomationCommand() *cli.Command {
 	commands := []*cli.Command{
 		newCmdGenerate(),
 		newCmdPublishRelease(),
+		newCmdStageRelease(),
 	}
 
 	return cli.NewCommandSet(
@@ -67,4 +68,21 @@ func newCmdPublishRelease() *cli.Command {
 	addFlagProject(cmdPublishRelease.Flags, cmdPublishRelease.Config)
 
 	return cmdPublishRelease
+}
+
+func newCmdStageRelease() *cli.Command {
+	cmdStageRelease := &cli.Command{
+		Short:     "stage-release",
+		UsageLine: "automation stage-release [flags]",
+		Long:      stageLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			runner := newStageRunner(cmd.Config)
+			return runner.run(ctx)
+		},
+	}
+
+	cmdStageRelease.Init()
+	addFlagProject(cmdStageRelease.Flags, cmdStageRelease.Config)
+
+	return cmdStageRelease
 }
