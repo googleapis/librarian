@@ -53,6 +53,8 @@ type Command struct {
 	Config *config.Config
 }
 
+// NewCommandSet creates and initializes a root *Command object. It automatically appends a "version" subcommand to
+// the list.
 func NewCommandSet(commands []*Command, short, usageLine, long string) *Command {
 	pkg := strings.Split(short, " ")[0]
 	cmd := &Command{
