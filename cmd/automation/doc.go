@@ -26,7 +26,8 @@ The commands are:
 
 # generate
 
-The generate command runs a Cloud Build job to generate Cloud Client Libraries.
+The generate command triggers a Cloud Build job that runs librarian generate command for every
+repository onboarded to Librarian generate automation.
 
 Usage:
 
@@ -43,8 +44,8 @@ Flags:
 
 # publish-release
 
-The publish-release command runs a Cloud Build job to create a tag on a merged release pull
-request.
+The publish-release command triggers a Cloud Build job that runs librarian release tag command
+for every repository onboarded to Librarian publish-release automation.
 
 Usage:
 
@@ -57,7 +58,8 @@ Flags:
 
 # stage-release
 
-The stage-release command runs a Cloud Build job to create a release pull request.
+The stage-release command triggers a Cloud Build job that runs librarian release stage command for
+every repository onboarded to Librarian stage-release automation.
 
 Usage:
 
