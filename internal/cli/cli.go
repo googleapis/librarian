@@ -53,6 +53,34 @@ type Command struct {
 	Config *config.Config
 }
 
+func NewCommandSet(commands []*Command, short, usageLine, long string) *Command {
+	pkg := strings.Split(short, " ")[0]
+	cmd := &Command{
+		Short:     short,
+		UsageLine: usageLine,
+		Long:      long,
+	}
+	commands = append(commands, newCmdVersion(pkg))
+	cmd.Commands = append(cmd.Commands, commands...)
+
+	cmd.Init()
+	return cmd
+}
+
+func newCmdVersion(pkg string) *Command {
+	cmdVersion := &Command{
+		Short:     "version prints the version information",
+		UsageLine: fmt.Sprintf("%s version", pkg),
+		Long:      fmt.Sprintf("Version prints version information for the %s binary.", pkg),
+		Action: func(ctx context.Context, cmd *Command) error {
+			fmt.Println(Version())
+			return nil
+		},
+	}
+	cmdVersion.Init()
+	return cmdVersion
+}
+
 // Run executes the command with the provided arguments.
 func (c *Command) Run(ctx context.Context, args []string) error {
 	cmd, remaining, err := lookupCommand(c, args)

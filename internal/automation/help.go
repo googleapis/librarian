@@ -20,5 +20,4 @@ any repository listed in internal/automation/prod/repositories.yaml.`
 	generateLongHelp = `The generate command runs a Cloud Build job to generate Cloud Client Libraries.`
 	publishLongHelp  = `The publish-release command runs a Cloud Build job to create a tag on a merged release pull
 request.`
-	versionLongHelp = "Version prints version information for the automation binary."
 )

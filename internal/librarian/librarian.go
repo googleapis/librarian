@@ -41,41 +41,17 @@ func setupLogger(verbose bool) {
 }
 
 func newLibrarianCommand() *cli.Command {
-	cmdVersion := &cli.Command{
-		Short:     "version prints the version information",
-		UsageLine: "librarian version",
-		Long:      versionLongHelp,
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			fmt.Println(cli.Version())
-			return nil
-		},
+	commands := []*cli.Command{
+		newCmdGenerate(),
+		newCmdRelease(),
+		newCmdUpdateImage(),
 	}
-	cmdVersion.Init()
 
-	cmdRelease := &cli.Command{
-		Short:     "release manages releases of libraries.",
-		UsageLine: "librarian release <command> [arguments]",
-		Long:      releaseLongHelp,
-		Commands: []*cli.Command{
-			newCmdStage(),
-			newCmdTag(),
-		},
-	}
-	cmdRelease.Init()
-
-	cmd := &cli.Command{
-		Short:     "librarian manages client libraries for Google APIs",
-		UsageLine: "librarian <command> [arguments]",
-		Long:      librarianLongHelp,
-		Commands: []*cli.Command{
-			newCmdGenerate(),
-			cmdRelease,
-			newCmdUpdateImage(),
-			cmdVersion,
-		},
-	}
-	cmd.Init()
-	return cmd
+	return cli.NewCommandSet(
+		commands,
+		"librarian manages client libraries for Google APIs",
+		"librarian <command> [arguments]",
+		librarianLongHelp)
 }
 
 func newCmdGenerate() *cli.Command {
@@ -114,6 +90,20 @@ func newCmdGenerate() *cli.Command {
 	addFlagPush(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagVerbose(cmdGenerate.Flags, &verbose)
 	return cmdGenerate
+}
+
+func newCmdRelease() *cli.Command {
+	cmdRelease := &cli.Command{
+		Short:     "release manages releases of libraries.",
+		UsageLine: "librarian release <command> [arguments]",
+		Long:      releaseLongHelp,
+		Commands: []*cli.Command{
+			newCmdStage(),
+			newCmdTag(),
+		},
+	}
+	cmdRelease.Init()
+	return cmdRelease
 }
 
 func newCmdTag() *cli.Command {

@@ -16,39 +16,21 @@ package automation
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/googleapis/librarian/internal/cli"
 )
 
 func newAutomationCommand() *cli.Command {
-	cmd := &cli.Command{
-		Short:     "automation manages Cloud Build resources to run Librarian CLI.",
-		UsageLine: "automation <command> [arguments]",
-		Long:      automationLongHelp,
-		Commands: []*cli.Command{
-			newCmdGenerate(),
-			newCmdPublishRelease(),
-			newCmdVersion(),
-		},
+	commands := []*cli.Command{
+		newCmdGenerate(),
+		newCmdPublishRelease(),
 	}
 
-	cmd.Init()
-	return cmd
-}
-
-func newCmdVersion() *cli.Command {
-	cmdVersion := &cli.Command{
-		Short:     "version prints the version information",
-		UsageLine: "automation version",
-		Long:      versionLongHelp,
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			fmt.Println(cli.Version())
-			return nil
-		},
-	}
-	cmdVersion.Init()
-	return cmdVersion
+	return cli.NewCommandSet(
+		commands,
+		"automation manages Cloud Build resources to run Librarian CLI.",
+		"automation <command> [arguments]",
+		automationLongHelp)
 }
 
 func newCmdGenerate() *cli.Command {

@@ -17,8 +17,6 @@ package librarian
 const (
 	librarianLongHelp = "Librarian manages client libraries for Google APIs."
 
-	versionLongHelp = "Version prints version information for the librarian binary."
-
 	releaseLongHelp = "Manages releases of libraries."
 
 	generateLongHelp = `The generate command is the primary tool for all code generation
