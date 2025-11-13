@@ -55,6 +55,19 @@ Flags:
 	-project string
 	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
 
+# stage-release
+
+The stage-release command runs a Cloud Build job to create a release pull request.
+
+Usage:
+
+	automation stage-release [flags]
+
+Flags:
+
+	-project string
+	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
+
 # version
 
 Version prints version information for the automation binary.
