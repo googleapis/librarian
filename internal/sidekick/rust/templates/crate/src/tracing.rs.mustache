@@ -51,7 +51,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
 impl<T> super::stub::{{Codec.Name}} for {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
-      {{#Codec.DetailedTracingAttributes}}
+    {{#Codec.DetailedTracingAttributes}}
     #[cfg(google_cloud_unstable_tracing)]
     async fn {{Codec.Name}}(
         &self,
@@ -87,8 +87,8 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     ) -> Result<gax::response::Response<{{Codec.ReturnType}}>> {
         self.inner.{{Codec.Name}}(req, options).await
     }
-      {{/Codec.DetailedTracingAttributes }}
-      {{^Codec.DetailedTracingAttributes }}
+    {{/Codec.DetailedTracingAttributes }}
+    {{^Codec.DetailedTracingAttributes }}
     #[tracing::instrument(ret)]
     async fn {{Codec.Name}}(
         &self,
@@ -98,7 +98,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         self.inner.{{Codec.Name}}(req, options).await
     }
 
-      {{/Codec.DetailedTracingAttributes }}
+    {{/Codec.DetailedTracingAttributes }}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
 
