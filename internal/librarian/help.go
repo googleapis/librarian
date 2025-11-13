@@ -29,10 +29,6 @@ Librarian is environment aware and will check if the current directory is the
 root of a librarian repository. If you are not executing in such a directory the
 '--repo' flag must be provided.
 
-Note: When using a local repository, this command creates a new branch from the currently
-checked-out branch and commits changes there. If the -push flag is also specified,
-a pull request is created against the main branch.
-
 # Onboarding a new library
 
 To configure and generate a new library for the first time, you must specify the
@@ -105,10 +101,6 @@ used to create a local commit without creating a pull request; this flag is
 ignored if '--push' is also specified. When pushing to a remote branch,
 you have the option of using HTTPS or SSH. Librarian will automatically determine
 whether to use HTTPS or SSH based on the remote URI.
-
-Note: When using a local repository, this command creates a new branch from the currently
-checked-out branch and commits changes there. If the -push flag is also specified,
-a pull request is created against the main branch.
 
 Examples:
   # Create a release PR for all libraries with pending changes.
