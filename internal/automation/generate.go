@@ -39,5 +39,6 @@ func newGenerateRunner(cfg *config.Config) *generateRunner {
 }
 
 func (r *generateRunner) run(ctx context.Context) error {
+	// TODO(https://github.com/googleapis/librarian/issues/2890): refactor this function after all commands are migrated.
 	return runCommandFn(ctx, generateCmdName, r.projectID, r.push, r.build)
 }
