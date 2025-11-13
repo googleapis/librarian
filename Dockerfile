@@ -53,7 +53,10 @@ RUN echo \
 
 # Install Docker and pin version
 RUN apt update && \
-    apt-get -y install docker-ce=5:28.5.2-1~debian.13~trixie && \
+    apt-get -y install \
+    docker-ce=5:28.5.2-1~debian.13~trixie \
+    docker-ce-cli=5:28.5.2-1~debian.13~trixie \
+    docker-ce-rootless-extras=5:28.5.2-1~debian.13~trixie && \
     rm -rf /var/lib/apt/lists/*
 
 # Add the Google Cloud SDK distribution URI as a package source
