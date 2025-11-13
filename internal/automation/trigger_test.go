@@ -205,15 +205,16 @@ func TestRunCommandWithConfig(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name            string
-		command         string
-		config          *RepositoriesConfig
-		want            string
-		runError        error
-		wantErr         bool
-		ghPRs           []*github.PullRequest
-		ghError         error
-		wantTriggersRun []string
+		name              string
+		command           string
+		config            *RepositoriesConfig
+		want              string
+		runError          error
+		wantErr           bool
+		ghPRs             []*github.PullRequest
+		ghError           error
+		wantTriggersRun   []string
+		wantSubstitutions map[string]string
 	}{
 		{
 			name:    "runs generate trigger with name",
@@ -223,11 +224,19 @@ func TestRunCommandWithConfig(t *testing.T) {
 					{
 						Name:              "google-cloud-python",
 						SupportedCommands: []string{"generate"},
+						SecretName:        "foo",
 					},
 				},
 			},
 			wantErr:         false,
 			wantTriggersRun: []string{"generate-trigger-id"},
+			wantSubstitutions: map[string]string{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "foo",
+				"_PUSH":                     "true",
+				"_BUILD":                    "true",
+			},
 		},
 		{
 			name:    "runs generate trigger with full name",
@@ -270,6 +279,30 @@ func TestRunCommandWithConfig(t *testing.T) {
 			wantErr:         false,
 			wantTriggersRun: []string{"stage-release-trigger-id"},
 		},
+		{
+			name:    "runs generate trigger on branch",
+			command: "generate",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"generate"},
+						Branch:            "preview",
+						SecretName:        "foo",
+					},
+				},
+			},
+			wantErr:         false,
+			wantTriggersRun: []string{"generate-trigger-id"},
+			wantSubstitutions: map[string]string{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "foo",
+				"_PUSH":                     "true",
+				"_BRANCH":                   "preview",
+				"_BUILD":                    "true",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := t.Context()
@@ -289,6 +322,9 @@ func TestRunCommandWithConfig(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantTriggersRun, client.triggersRun); diff != "" {
 				t.Errorf("runCommandWithConfig() triggersRun diff (-want, +got):\n%s", diff)
+			}
+			if checkSubs, diff := test.wantSubstitutions != nil, cmp.Diff(test.wantSubstitutions, client.substitutions); checkSubs && diff != "" {
+				t.Errorf("runCommandWithConfig() substitutions diff (-want, +got):\n%s", diff)
 			}
 		})
 	}

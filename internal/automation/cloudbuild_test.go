@@ -30,6 +30,8 @@ type mockCloudBuildClient struct {
 	runError      error
 	buildTriggers []*cloudbuildpb.BuildTrigger
 	triggersRun   []string
+	// Only really useful for testing triggers with a single repository.
+	substitutions map[string]string
 }
 
 func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbuildpb.RunBuildTriggerRequest, opts ...gax.CallOption) error {
@@ -43,6 +45,7 @@ func (c *mockCloudBuildClient) RunBuildTrigger(ctx context.Context, req *cloudbu
 		}
 	}
 	c.triggersRun = append(c.triggersRun, req.TriggerId)
+	c.substitutions = req.GetSource().GetSubstitutions()
 	return nil
 }
 
