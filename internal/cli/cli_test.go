@@ -373,7 +373,7 @@ func TestRun(t *testing.T) {
 
 func TestNewCommandSet(t *testing.T) {
 	cmd := NewCommandSet(nil, "short", "usage", "long usageLine")
-	if len(cmd.Commands) == 0 {
-		t.Errorf("a command set should at least contain version command")
+	if len(cmd.Commands) != 1 || cmd.Commands[0].Name() != "version" {
+		t.Errorf("NewCommandSet(nil) did not produce a single 'version' command")
 	}
 }

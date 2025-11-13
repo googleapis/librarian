@@ -63,8 +63,8 @@ func NewCommandSet(commands []*Command, short, usageLine, long string) *Command 
 	}
 	verifyCommandDocs(cmd)
 	pkg := strings.Split(cmd.Short, " ")[0]
-	commands = append(commands, newCmdVersion(pkg))
-	cmd.Commands = append(cmd.Commands, commands...)
+	cmd.Commands = append(make([]*Command, 0, len(commands)+1), commands...)
+	cmd.Commands = append(cmd.Commands, newCmdVersion(pkg))
 
 	cmd.Init()
 	return cmd
