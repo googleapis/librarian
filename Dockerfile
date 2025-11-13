@@ -50,10 +50,11 @@ RUN echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
       tee /etc/apt/sources.list.d/docker.list > /dev/null
-RUN apt update
 
-# Install Docker
-RUN apt-get -y install docker-ce
+# Install Docker and pin version
+RUN apt update && \
+    apt-get -y install docker-ce=5:28.5.2-1~debian.13~trixie && \
+    rm -rf /var/lib/apt/lists/*
 
 # Add the Google Cloud SDK distribution URI as a package source
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
