@@ -56,12 +56,13 @@ type Command struct {
 // NewCommandSet creates and initializes a root *Command object. It automatically appends a "version" subcommand to
 // the list.
 func NewCommandSet(commands []*Command, short, usageLine, long string) *Command {
-	pkg := strings.Split(short, " ")[0]
 	cmd := &Command{
 		Short:     short,
 		UsageLine: usageLine,
 		Long:      long,
 	}
+	verifyCommandDocs(cmd)
+	pkg := strings.Split(cmd.Short, " ")[0]
 	commands = append(commands, newCmdVersion(pkg))
 	cmd.Commands = append(cmd.Commands, commands...)
 
@@ -117,10 +118,7 @@ func (c *Command) Name() string {
 }
 
 func (c *Command) usage(w io.Writer) {
-	if c.Short == "" || c.UsageLine == "" || c.Long == "" {
-		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
-	}
-
+	verifyCommandDocs(c)
 	fmt.Fprintf(w, "%s\n\n", c.Long)
 	fmt.Fprintf(w, "Usage:\n\n  %s", c.UsageLine)
 	if len(c.Commands) > 0 {
@@ -157,6 +155,12 @@ func hasFlags(fs *flag.FlagSet) bool {
 		visited = true
 	})
 	return visited
+}
+
+func verifyCommandDocs(c *Command) {
+	if c.Short == "" || c.UsageLine == "" || c.Long == "" {
+		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
+	}
 }
 
 // lookupCommand looks up the command specified by the given arguments.

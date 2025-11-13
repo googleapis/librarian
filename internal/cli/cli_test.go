@@ -370,3 +370,10 @@ func TestRun(t *testing.T) {
 		})
 	}
 }
+
+func TestNewCommandSet(t *testing.T) {
+	cmd := NewCommandSet(nil, "short", "usage", "long usageLine")
+	if len(cmd.Commands) == 0 {
+		t.Errorf("a command set should at least contain version command")
+	}
+}
