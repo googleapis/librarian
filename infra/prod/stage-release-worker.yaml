@@ -21,7 +21,6 @@ steps:
       - '--project=$PROJECT_ID'
       - '--command=stage-release'
       - '--push=$_PUSH'
-      - '--force-run=$_FORCE_RUN'
 tags: ['stage-release-dispatcher']
 options:
   logging: CLOUD_LOGGING_ONLY
