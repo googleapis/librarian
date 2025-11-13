@@ -26,14 +26,16 @@ const (
 
 type stageRunner struct {
 	projectID string
+	push      bool
 }
 
 func newStageRunner(cfg *config.Config) *stageRunner {
 	return &stageRunner{
 		projectID: cfg.Project,
+		push:      cfg.Push,
 	}
 }
 
 func (r *stageRunner) run(ctx context.Context) error {
-	return runCommandFn(ctx, stageCmdName, r.projectID, false, false)
+	return runCommandFn(ctx, stageCmdName, r.projectID, r.push, false)
 }

@@ -54,15 +54,16 @@ func TestStageRunnerRun(t *testing.T) {
 		wantCmd       string
 		wantProjectID string
 		wantPush      bool
-		wantBuild     bool
 	}{
 		{
 			name: "success",
 			runner: &stageRunner{
 				projectID: "test-project",
+				push:      true,
 			},
 			wantCmd:       stageCmdName,
 			wantProjectID: "test-project",
+			wantPush:      true,
 		},
 		{
 			name:          "error from RunCommand",
@@ -82,6 +83,9 @@ func TestStageRunnerRun(t *testing.T) {
 				if test.runCommandErr == nil {
 					if projectId != test.wantProjectID {
 						t.Errorf("runCommandFn() projectId = %v, want %v", projectId, test.wantProjectID)
+					}
+					if push != test.wantPush {
+						t.Errorf("runCommandFn() push = %v, want %v", push, test.wantPush)
 					}
 				}
 				return test.runCommandErr

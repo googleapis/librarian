@@ -83,6 +83,7 @@ func newCmdStageRelease() *cli.Command {
 
 	cmdStageRelease.Init()
 	addFlagProject(cmdStageRelease.Flags, cmdStageRelease.Config)
+	addFlagPush(cmdStageRelease.Flags, cmdStageRelease.Config)
 
 	return cmdStageRelease
 }
