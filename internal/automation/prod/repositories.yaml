@@ -13,12 +13,6 @@ repositories:
       - generate
       - stage-release
       - publish-release
-  - name: "librarian"
-    full-name: https://github.com/googleapis/librarian
-    github-token-secret-name: "librarian-github-token"
-    supported-commands:
-      - stage-release
-      - publish-release
   - name: "gax-go"
     full-name: https://github.com/googleapis/gax-go
     github-token-secret-name: "gax-go-github-token"
