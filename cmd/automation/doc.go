@@ -54,5 +54,13 @@ Flags:
 
 	-project string
 	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
+
+# version
+
+Version prints version information for the automation binary.
+
+Usage:
+
+	automation version
 */
 package main
