@@ -52,8 +52,8 @@ RUN echo \
       tee /etc/apt/sources.list.d/docker.list > /dev/null
 RUN apt update
 
-# Install Docker
-RUN apt-get -y install docker-ce
+# Install Docker and pin version
+RUN apt-get -y install docker-ce=5:28.5.2-1~debian.13~trixie
 
 # Add the Google Cloud SDK distribution URI as a package source
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
