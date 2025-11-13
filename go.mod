@@ -77,4 +77,4 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-retract v1.0.0 // We are reverting from a major release as code is not yet stable.
+retract v1.0.0 // Retracted because the 1.0.0 release was published prematurely.
