@@ -47,13 +47,13 @@ func TestRun(t *testing.T) {
 			wantErr:       true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			runCommandFn = func(ctx context.Context, command string, projectId string, push bool, build bool) error {
-				return tt.runCommandErr
+				return test.runCommandErr
 			}
-			if err := Run(context.Background(), tt.args); (err != nil) != tt.wantErr {
-				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
+			if err := Run(context.Background(), test.args); (err != nil) != test.wantErr {
+				t.Errorf("Run() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

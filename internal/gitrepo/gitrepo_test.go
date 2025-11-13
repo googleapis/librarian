@@ -1924,7 +1924,7 @@ func TestCheckoutCommitAndCreateBranch(t *testing.T) {
 func TestDeleteLocalBranches(t *testing.T) {
 	t.Parallel()
 
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name         string
 		branchNames  []string
 		useEmptyRepo bool
@@ -2026,30 +2026,30 @@ func TestDeleteLocalBranches(t *testing.T) {
 			setup:        func(t *testing.T, repo *LocalRepository) {},
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			var localRepo *LocalRepository
-			if tt.useEmptyRepo {
+			if test.useEmptyRepo {
 				gogitRepo, dir := initTestRepo(t)
 				localRepo = &LocalRepository{Dir: dir, repo: gogitRepo}
 			} else {
 				localRepo, _ = setupRepoForGetCommitsTest(t)
 			}
-			tt.setup(t, localRepo)
+			test.setup(t, localRepo)
 
-			err := localRepo.DeleteLocalBranches(tt.branchNames)
+			err := localRepo.DeleteLocalBranches(test.branchNames)
 
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("DeleteLocalBranches() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("DeleteLocalBranches() error = %v, wantErr %v", err, test.wantErr)
 			}
 
-			if tt.wantErr {
-				if !strings.Contains(err.Error(), tt.wantErrMsg) {
-					t.Errorf("DeleteLocalBranches() error message = %q, want to contain %q", err.Error(), tt.wantErrMsg)
+			if test.wantErr {
+				if !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("DeleteLocalBranches() error message = %q, want to contain %q", err.Error(), test.wantErrMsg)
 				}
 				return
 			}
 
-			for _, branchName := range tt.branchNames {
+			for _, branchName := range test.branchNames {
 				_, err := localRepo.repo.Branch(branchName)
 				if err == nil {
 					t.Errorf("branch %q should have been deleted", branchName)

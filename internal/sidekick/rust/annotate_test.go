@@ -1553,10 +1553,10 @@ func TestPathTemplateGeneration(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.binding.PathTemplate(); got != tt.want {
-				t.Errorf("PathTemplate() = %v, want %v", got, tt.want)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := test.binding.PathTemplate(); got != test.want {
+				t.Errorf("PathTemplate() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -1692,16 +1692,16 @@ func TestAnnotateModelWithDetailedTracing(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-			codec, err := newCodec("protobuf", tt.options)
+			codec, err := newCodec("protobuf", test.options)
 			if err != nil {
 				t.Fatal(err)
 			}
 			got := annotateModel(model, codec)
-			if got.DetailedTracingAttributes != tt.want {
-				t.Errorf("annotateModel() DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, tt.want)
+			if got.DetailedTracingAttributes != test.want {
+				t.Errorf("annotateModel() DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, test.want)
 			}
 		})
 	}

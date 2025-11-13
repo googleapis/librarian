@@ -176,15 +176,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for _, test := range tests {
 		annotate := newAnnotateModel(model)
 		options := maps.Clone(requiredConfig)
-		maps.Copy(options, tt.options)
+		maps.Copy(options, test.options)
 		err := annotate.annotateModel(maps.Clone(options))
 		if err != nil {
 			t.Fatal(err)
 		}
-		tt.verify(t, annotate)
+		test.verify(t, annotate)
 	}
 }
 
@@ -210,14 +210,14 @@ func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
 		"issue-tracker-url",
 	}
 
-	for _, tt := range tests {
+	for _, test := range tests {
 		annotate := newAnnotateModel(model)
 		options := maps.Clone(requiredConfig)
-		delete(options, tt)
+		delete(options, test)
 
 		err := annotate.annotateModel(options)
 		if err == nil {
-			t.Fatalf("expected error when missing %q", tt)
+			t.Fatalf("expected error when missing %q", test)
 		}
 	}
 }
@@ -573,19 +573,34 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
 
-	enumField := &api.Field{
-		Name:     "enumName",
-		JSONName: "enumName",
-		Typez:    api.ENUM_TYPE,
-		TypezID:  enum.ID,
-	}
-
-	got := annotate.buildQueryLines([]string{}, "result.", "", enumField, model.State)
-	want := []string{
-		"if (result.enumName.isNotDefault) 'enumName': result.enumName.value",
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	for _, test := range []struct {
+		enumField *api.Field
+		want      []string
+	}{
+		{
+			&api.Field{
+				Name:     "enumName",
+				JSONName: "jsonEnumName",
+				Typez:    api.ENUM_TYPE,
+				TypezID:  enum.ID},
+			[]string{"if (result.enumName.isNotDefault) 'jsonEnumName': result.enumName.value"},
+		},
+		{
+			&api.Field{
+				Name:     "optionalEnum",
+				JSONName: "optionalJsonEnum",
+				Typez:    api.ENUM_TYPE,
+				TypezID:  enum.ID,
+				Optional: true},
+			[]string{"if (result.optionalEnum != null) 'optionalJsonEnum': result.optionalEnum!.value"},
+		},
+	} {
+		t.Run(test.enumField.Name, func(t *testing.T) {
+			got := annotate.buildQueryLines([]string{}, "result.", "", test.enumField, model.State)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch in TestBuildQueryLinesEnums (-want, +got)\n:%s", diff)
+			}
+		})
 	}
 }
 
@@ -622,6 +637,26 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 		Typez:    api.MESSAGE_TYPE,
 		TypezID:  updateRequest.ID,
 	}
+	fieldMaskField := &api.Field{
+		Name:     "field_mask",
+		JSONName: "fieldMask",
+		Typez:    api.MESSAGE_TYPE,
+		TypezID:  ".google.protobuf.FieldMask",
+	}
+
+	durationField := &api.Field{
+		Name:     "duration",
+		JSONName: "duration",
+		Typez:    api.MESSAGE_TYPE,
+		TypezID:  ".google.protobuf.Duration",
+	}
+
+	timestampField := &api.Field{
+		Name:     "time",
+		JSONName: "time",
+		Typez:    api.MESSAGE_TYPE,
+		TypezID:  ".google.protobuf.Timestamp",
+	}
 
 	// messages
 	got := annotate.buildQueryLines([]string{}, "result.", "", messageField1, model.State)
@@ -646,7 +681,32 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	got = annotate.buildQueryLines([]string{}, "result.", "", messageField3, model.State)
 	want = []string{
 		"if (result.message3!.secret!.name.isNotDefault) 'message3.secret.name': result.message3!.secret!.name",
-		"if (result.message3!.fieldMask!.paths.isNotDefault) 'message3.fieldMask.paths': result.message3!.fieldMask!.paths",
+		"if (result.message3!.fieldMask != null) 'message3.fieldMask': result.message3!.fieldMask!.toJson()",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	}
+
+	// custom encoded messages
+	got = annotate.buildQueryLines([]string{}, "result.", "", fieldMaskField, model.State)
+	want = []string{
+		"if (result.fieldMask != null) 'fieldMask': result.fieldMask!.toJson()",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	}
+
+	got = annotate.buildQueryLines([]string{}, "result.", "", durationField, model.State)
+	want = []string{
+		"if (result.duration != null) 'duration': result.duration!.toJson()",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+	}
+
+	got = annotate.buildQueryLines([]string{}, "result.", "", timestampField, model.State)
+	want = []string{
+		"if (result.time != null) 'time': result.time!.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)

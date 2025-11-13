@@ -147,7 +147,7 @@ func TestFindDependenciesNestedMessage(t *testing.T) {
 	child := ".test.Grandparent.Parent.Child"
 
 	// Verify that parent messages are included.
-	for _, c := range []struct {
+	for _, test := range []struct {
 		Ids  []string
 		Want []string
 	}{
@@ -164,11 +164,11 @@ func TestFindDependenciesNestedMessage(t *testing.T) {
 			Want: []string{grandparent},
 		},
 	} {
-		got, err := FindDependencies(model, c.Ids)
+		got, err := FindDependencies(model, test.Ids)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if diff := cmp.Diff(c.Want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
+		if diff := cmp.Diff(test.Want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
 			t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
 		}
 

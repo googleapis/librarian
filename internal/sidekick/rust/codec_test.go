@@ -1756,7 +1756,9 @@ http://www.unicode.org/cldr/charts/30/supplemental/territory_information.html
 http://www.unicode.org/reports/tr35/#Unicode_locale_identifier.
 https://cloud.google.com/apis/design/design_patterns#integer_types
 https://cloud.google.com/apis/design/design_patterns#integer_types.
-Hyperlink: <a href="https://hyperlink.com">Content</a>`
+Hyperlink: <a href="https://hyperlink.com">Content</a>
+URL at end of line: https://example10.com
+Truncated link: [text](https://example11.com`
 	want := []string{
 		"/// blah blah <https://cloud.google.com> foo bar",
 		"/// [link](https://example1.com)",
@@ -1773,6 +1775,8 @@ Hyperlink: <a href="https://hyperlink.com">Content</a>`
 		"/// <https://cloud.google.com/apis/design/design_patterns#integer_types>",
 		"/// <https://cloud.google.com/apis/design/design_patterns#integer_types>.",
 		"/// Hyperlink: <a href=\"https://hyperlink.com\">Content</a>",
+		"/// URL at end of line: <https://example10.com>",
+		"/// Truncated link: [text](https://example11.com",
 	}
 
 	wkt := &packagez{

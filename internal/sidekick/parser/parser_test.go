@@ -23,11 +23,14 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
+const (
+	discoSourceFileRelative   = "disco/compute.v1.json"
+	secretManagerYamlRelative = "google/cloud/secretmanager/v1/secretmanager_v1.yaml"
+)
+
 var (
 	testdataDir, _            = filepath.Abs("../testdata")
-	discoSourceFileRelative   = "disco/compute.v1.json"
 	discoSourceFile           = path.Join(testdataDir, discoSourceFileRelative)
-	secretManagerYamlRelative = "google/cloud/secretmanager/v1/secretmanager_v1.yaml"
 	secretManagerYamlFullPath = path.Join(testdataDir, "googleapis", secretManagerYamlRelative)
 	openAPIFile               = path.Join(testdataDir, "openapi", "secretmanager_openapi_v1.json")
 	protobufFile              = path.Join("testdata", "scalar.proto")

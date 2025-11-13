@@ -84,24 +84,24 @@ func TestRun(t *testing.T) {
 			wantErr:  true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			container := LanguageContainer{
 				Generate: func(ctx context.Context, c *generate.Config) error {
-					if tt.wantErr {
+					if test.wantErr {
 						return os.ErrNotExist
 					}
 					return nil
 				},
 				ReleaseStage: func(ctx context.Context, c *release.Config) (*message.ReleaseStageResponse, error) {
-					if tt.wantErr {
+					if test.wantErr {
 						return nil, os.ErrNotExist
 					}
 					return &message.ReleaseStageResponse{}, nil
 				},
 			}
-			if gotCode := Run(context.Background(), tt.args, &container); gotCode != tt.wantCode {
-				t.Errorf("Run() = %v, want %v", gotCode, tt.wantCode)
+			if gotCode := Run(context.Background(), test.args, &container); gotCode != test.wantCode {
+				t.Errorf("Run() = %v, want %v", gotCode, test.wantCode)
 			}
 		})
 	}
@@ -258,9 +258,9 @@ func TestRun_unimplementedCommands(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if gotCode := Run(context.Background(), tt.args, tt.container); gotCode != 1 {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if gotCode := Run(context.Background(), test.args, test.container); gotCode != 1 {
 				t.Errorf("Run() = %v, want 1", gotCode)
 			}
 		})

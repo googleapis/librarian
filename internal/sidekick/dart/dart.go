@@ -26,11 +26,13 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-var typedDataImport = "dart:typed_data"
-var httpImport = "package:http/http.dart as http"
-var serviceClientImport = "package:google_cloud_rpc/service_client.dart"
-var encodingImport = "package:google_cloud_protobuf/src/encoding.dart"
-var protobufImport = "package:google_cloud_protobuf/protobuf.dart"
+const (
+	typedDataImport     = "dart:typed_data"
+	httpImport          = "package:http/http.dart as http"
+	serviceClientImport = "package:google_cloud_rpc/service_client.dart"
+	encodingImport      = "package:google_cloud_protobuf/src/encoding.dart"
+	protobufImport      = "package:google_cloud_protobuf/protobuf.dart"
+)
 
 var needsCtorValidation = map[string]string{
 	".google.protobuf.Duration":  "",
@@ -57,14 +59,16 @@ var usesCustomEncoding = map[string]string{
 	".google.protobuf.Value":       "",
 }
 
-// nestedMessageChar is used to concatenate a message and a child message.
-var nestedMessageChar = "_"
+const (
+	// nestedMessageChar is used to concatenate a message and a child message.
+	nestedMessageChar = "_"
 
-// nestedEnumChar is used to concatenate a message and a child enum.
-var nestedEnumChar = "_"
+	// nestedEnumChar is used to concatenate a message and a child enum.
+	nestedEnumChar = "_"
 
-// deconflictChar is appended to a name to avoid conflicting with a Dart identifier.
-var deconflictChar = "$"
+	// deconflictChar is appended to a name to avoid conflicting with a Dart identifier.
+	deconflictChar = "$"
+)
 
 // reservedNames is a blocklist of Dart reserved words.
 //

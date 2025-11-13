@@ -5,5 +5,5 @@
 # The owners for all files in the repo.
 * @googleapis/cloud-sdk-librarian-team
 
-/cmd/sidekick/ @googleapis/cloud-sdk-sidekick-team
-/internal/sidekick/ @googleapis/cloud-sdk-sidekick-team
+/cmd/sidekick/ @googleapis/cloud-sdk-sidekick-team @googleapis/cloud-sdk-librarian-team
+/internal/sidekick/ @googleapis/cloud-sdk-sidekick-team @googleapis/cloud-sdk-librarian-team
