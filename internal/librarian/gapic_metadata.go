@@ -49,7 +49,7 @@ var (
 	// Common places that may contain a gapic_metadata.json file as test data
 	// that should be ignored when preparing a release e.g. for client
 	// generators.
-	testdataRegex = regexp.MustCompile(`(?i)/(baselines|goldens|java-showcase|output|prototests|test|tests)/`)
+	testdataRegex = regexp.MustCompile(`(?i)/(baselines|goldens|java-showcase|output|prototests|test|tests|testdata)/`)
 )
 
 // serviceVersion represents a pairing of an API service interface e.g. Protobuf
