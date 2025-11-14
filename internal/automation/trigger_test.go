@@ -214,7 +214,7 @@ func TestRunCommandWithConfig(t *testing.T) {
 		ghPRs             []*github.PullRequest
 		ghError           error
 		wantTriggersRun   []string
-		wantSubstitutions map[string]string
+		wantSubstitutions []map[string]string
 	}{
 		{
 			name:    "runs generate trigger with name",
@@ -230,13 +230,13 @@ func TestRunCommandWithConfig(t *testing.T) {
 			},
 			wantErr:         false,
 			wantTriggersRun: []string{"generate-trigger-id"},
-			wantSubstitutions: map[string]string{
+			wantSubstitutions: []map[string]string{{
 				"_REPOSITORY":               "google-cloud-python",
 				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
 				"_GITHUB_TOKEN_SECRET_NAME": "foo",
 				"_PUSH":                     "true",
 				"_BUILD":                    "true",
-			},
+			}},
 		},
 		{
 			name:    "runs generate trigger with full name",
@@ -294,14 +294,14 @@ func TestRunCommandWithConfig(t *testing.T) {
 			},
 			wantErr:         false,
 			wantTriggersRun: []string{"generate-trigger-id"},
-			wantSubstitutions: map[string]string{
+			wantSubstitutions: []map[string]string{{
 				"_REPOSITORY":               "google-cloud-python",
 				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
 				"_GITHUB_TOKEN_SECRET_NAME": "foo",
 				"_PUSH":                     "true",
 				"_BRANCH":                   "preview",
 				"_BUILD":                    "true",
-			},
+			}},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
