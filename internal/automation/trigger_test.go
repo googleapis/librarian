@@ -200,20 +200,29 @@ func TestRunCommandWithConfig(t *testing.T) {
 			Id:   "stage-release-trigger-id",
 		},
 		{
+			Name: "publish-release",
+			Id:   "publish-release-trigger-id",
+		},
+		{
+			Name: "update-image",
+			Id:   "update-image-trigger-id",
+		},
+		{
 			Name: "prepare-release",
 			Id:   "prepare-release-trigger-id",
 		},
 	}
 	for _, test := range []struct {
-		name            string
-		command         string
-		config          *RepositoriesConfig
-		want            string
-		runError        error
-		wantErr         bool
-		ghPRs           []*github.PullRequest
-		ghError         error
-		wantTriggersRun []string
+		name              string
+		command           string
+		config            *RepositoriesConfig
+		want              string
+		runError          error
+		wantErr           bool
+		ghPRs             []*github.PullRequest
+		ghError           error
+		wantTriggersRun   []string
+		wantSubstitutions []map[string]string
 	}{
 		{
 			name:    "runs generate trigger with name",
@@ -223,11 +232,19 @@ func TestRunCommandWithConfig(t *testing.T) {
 					{
 						Name:              "google-cloud-python",
 						SupportedCommands: []string{"generate"},
+						SecretName:        "foo",
 					},
 				},
 			},
 			wantErr:         false,
 			wantTriggersRun: []string{"generate-trigger-id"},
+			wantSubstitutions: []map[string]string{{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "foo",
+				"_PUSH":                     "true",
+				"_BUILD":                    "true",
+			}},
 		},
 		{
 			name:    "runs generate trigger with full name",
@@ -235,13 +252,22 @@ func TestRunCommandWithConfig(t *testing.T) {
 			config: &RepositoriesConfig{
 				Repositories: []*RepositoryConfig{
 					{
-						Name:              "https://github.com/googleapis/google-cloud-python",
+						Name:              "google-cloud-python",
+						FullName:          "https://github.com/googleapis/google-cloud-python",
 						SupportedCommands: []string{"generate"},
+						SecretName:        "bar",
 					},
 				},
 			},
 			wantErr:         false,
 			wantTriggersRun: []string{"generate-trigger-id"},
+			wantSubstitutions: []map[string]string{{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "bar",
+				"_PUSH":                     "true",
+				"_BUILD":                    "true",
+			}},
 		},
 		{
 			name:    "runs generate trigger without name",
@@ -264,11 +290,87 @@ func TestRunCommandWithConfig(t *testing.T) {
 					{
 						Name:              "google-cloud-python",
 						SupportedCommands: []string{"stage-release"},
+						SecretName:        "baz",
 					},
 				},
 			},
 			wantErr:         false,
 			wantTriggersRun: []string{"stage-release-trigger-id"},
+			wantSubstitutions: []map[string]string{{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "baz",
+				"_PUSH":                     "true",
+			}},
+		},
+		{
+			name:    "runs publish-release trigger",
+			command: "publish-release",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"publish-release"},
+						SecretName:        "qux",
+					},
+				},
+			},
+			ghPRs:           []*github.PullRequest{{HTMLURL: github.Ptr("https://github.com/googleapis/google-cloud-python/pull/42")}},
+			wantErr:         false,
+			wantTriggersRun: []string{"publish-release-trigger-id"},
+			wantSubstitutions: []map[string]string{{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "qux",
+				"_PUSH":                     "true",
+				"_PR":                       "https://github.com/googleapis/google-cloud-python/pull/42",
+			}},
+		},
+		{
+			name:    "runs update-image trigger",
+			command: "update-image",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"update-image"},
+						SecretName:        "quux",
+					},
+				},
+			},
+			wantErr:         false,
+			wantTriggersRun: []string{"update-image-trigger-id"},
+			wantSubstitutions: []map[string]string{{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "quux",
+				"_PUSH":                     "true",
+				"_BUILD":                    "true",
+			}},
+		},
+		{
+			name:    "runs generate trigger on branch",
+			command: "generate",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"generate"},
+						Branch:            "preview",
+						SecretName:        "foo",
+					},
+				},
+			},
+			wantErr:         false,
+			wantTriggersRun: []string{"generate-trigger-id"},
+			wantSubstitutions: []map[string]string{{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "foo",
+				"_PUSH":                     "true",
+				"_BRANCH":                   "preview",
+				"_BUILD":                    "true",
+			}},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -289,6 +391,9 @@ func TestRunCommandWithConfig(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantTriggersRun, client.triggersRun); diff != "" {
 				t.Errorf("runCommandWithConfig() triggersRun diff (-want, +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantSubstitutions, client.substitutions); diff != "" {
+				t.Errorf("runCommandWithConfig() substitutions diff (-want, +got):\n%s", diff)
 			}
 		})
 	}

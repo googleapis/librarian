@@ -39,6 +39,14 @@ type RepositoryConfig struct {
 	FullName          string   `yaml:"full-name"`
 	SecretName        string   `yaml:"github-token-secret-name"`
 	SupportedCommands []string `yaml:"supported-commands"`
+
+	// Branch configures the repository branch to checkout in Cloud Build prior
+	// to command execution. Furthermore, it dictates the value set on the
+	// [github.com/googleapis/librarian/internal/config.Config] Branch property
+	// via the --branch flag.
+	//
+	// This property is optional. Downstream usage defaults to "main".
+	Branch string `yaml:"branch"`
 }
 
 // RepositoriesConfig represents all the registered librarian GitHub repositories.

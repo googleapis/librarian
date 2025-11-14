@@ -112,6 +112,10 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 			"_GITHUB_TOKEN_SECRET_NAME": repository.SecretName,
 			"_PUSH":                     fmt.Sprintf("%v", push),
 		}
+		if repository.Branch != "" {
+			substitutions["_BRANCH"] = repository.Branch
+		}
+
 		if command == "publish-release" {
 			parts := strings.Split(gitUrl, "/")
 			repositoryOwner := parts[len(parts)-2]

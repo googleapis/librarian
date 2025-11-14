@@ -171,6 +171,27 @@ func TestParseRepositoriesConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "valid state with branch",
+			content: `repositories:
+  - name: google-cloud-python
+    branch: preview
+    github-token-secret-name: google-cloud-python-github-token
+    supported-commands:
+      - generate
+      - stage-release
+`,
+			want: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						Branch:            "preview",
+						SecretName:        "google-cloud-python-github-token",
+						SupportedCommands: []string{"generate", "stage-release"},
+					},
+				},
+			},
+		},
+		{
 			name: "invalid yaml",
 			content: `repositories:
   - name: google-cloud-python
