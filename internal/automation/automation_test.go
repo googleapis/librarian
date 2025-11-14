@@ -16,9 +16,8 @@ package automation
 
 import "testing"
 
-func TestAutomationCmdRun(t *testing.T) {
-	cmd := newAutomationCommand()
-	if err := cmd.Run(t.Context(), []string{"version"}); err != nil {
+func TestRun(t *testing.T) {
+	if err := Run(t.Context(), []string{"version"}); err != nil {
 		t.Fatal(err)
 	}
 }
