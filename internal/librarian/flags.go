@@ -41,9 +41,9 @@ language-specific container.`)
 
 func addFlagBranch(fs *flag.FlagSet, cfg *config.Config) {
 	fs.StringVar(&cfg.Branch, "branch", "main",
-		`The branch to use with remote code repositories. This is used to specify
-which branch to clone and which branch to use as the base for a pull
-request.`)
+		`The branch to use with remote code repositories. It is ignored if
+you are using a local repository. This is used to specify which branch to clone
+and which branch to use as the base for a pull request.`)
 }
 
 func addFlagCheckUnexpectedChanges(fs *flag.FlagSet, cfg *config.Config) {
@@ -126,7 +126,11 @@ func addFlagRepo(fs *flag.FlagSet, cfg *config.Config) {
 in the format of a remote URL such as https://github.com/{owner}/{repo} or a
 local file path like /path/to/repo. Both absolute and relative paths are
 supported. If not specified, will try to detect if the current working directory
-is configured as a language repository.`)
+is configured as a language repository.
+Note: When using a local repository (either by providing a path or by defaulting
+to the current directory), Librarian creates a new branch from the currently checked-out
+branch and commits changes. If the --push flag is also specified, a pull request is
+created against the main branch. The --branch flag is ignored for local repositories.`)
 }
 
 func addFlagTest(fs *flag.FlagSet, cfg *config.Config) {

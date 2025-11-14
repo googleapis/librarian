@@ -21,18 +21,17 @@ import (
 )
 
 func newAutomationCommand() *cli.Command {
-	cmd := &cli.Command{
-		Short:     "automation manages Cloud Build resources to run Librarian CLI.",
-		UsageLine: "automation <command> [arguments]",
-		Long:      automationLongHelp,
-		Commands: []*cli.Command{
-			newCmdGenerate(),
-			newCmdPublishRelease(),
-		},
+	commands := []*cli.Command{
+		newCmdGenerate(),
+		newCmdPublishRelease(),
+		newCmdStageRelease(),
 	}
 
-	cmd.Init()
-	return cmd
+	return cli.NewCommandSet(
+		commands,
+		"automation manages Cloud Build resources to run Librarian CLI.",
+		"automation <command> [arguments]",
+		automationLongHelp)
 }
 
 func newCmdGenerate() *cli.Command {
@@ -69,4 +68,22 @@ func newCmdPublishRelease() *cli.Command {
 	addFlagProject(cmdPublishRelease.Flags, cmdPublishRelease.Config)
 
 	return cmdPublishRelease
+}
+
+func newCmdStageRelease() *cli.Command {
+	cmdStageRelease := &cli.Command{
+		Short:     "stage-release",
+		UsageLine: "automation stage-release [flags]",
+		Long:      stageLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			runner := newStageRunner(cmd.Config)
+			return runner.run(ctx)
+		},
+	}
+
+	cmdStageRelease.Init()
+	addFlagProject(cmdStageRelease.Flags, cmdStageRelease.Config)
+	addFlagPush(cmdStageRelease.Flags, cmdStageRelease.Config)
+
+	return cmdStageRelease
 }

@@ -98,9 +98,9 @@ Flags:
 	  	The location of an API specification repository.
 	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
 	-branch string
-	  	The branch to use with remote code repositories. This is used to specify
-	  	which branch to clone and which branch to use as the base for a pull
-	  	request. (default "main")
+	  	The branch to use with remote code repositories. It is ignored if
+	  	you are using a local repository. This is used to specify which branch to clone
+	  	and which branch to use as the base for a pull request. (default "main")
 	-build
 	  	If true, Librarian will build each generated library by invoking the
 	  	language-specific container.
@@ -131,6 +131,10 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	  	Note: When using a local repository (either by providing a path or by defaulting
+	  	to the current directory), Librarian creates a new branch from the currently checked-out
+	  	branch and commits changes. If the --push flag is also specified, a pull request is
+	  	created against the main branch. The --branch flag is ignored for local repositories.
 	-v	enables verbose logging
 
 # release
@@ -193,9 +197,9 @@ Usage:
 Flags:
 
 	-branch string
-	  	The branch to use with remote code repositories. This is used to specify
-	  	which branch to clone and which branch to use as the base for a pull
-	  	request. (default "main")
+	  	The branch to use with remote code repositories. It is ignored if
+	  	you are using a local repository. This is used to specify which branch to clone
+	  	and which branch to use as the base for a pull request. (default "main")
 	-commit
 	  	If true, librarian will create a commit for the change but not create
 	  	a pull request. This flag is ignored if push is set to true.
@@ -222,6 +226,10 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	  	Note: When using a local repository (either by providing a path or by defaulting
+	  	to the current directory), Librarian creates a new branch from the currently checked-out
+	  	branch and commits changes. If the --push flag is also specified, a pull request is
+	  	created against the main branch. The --branch flag is ignored for local repositories.
 	-v	enables verbose logging
 
 # release tag
@@ -270,6 +278,10 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	  	Note: When using a local repository (either by providing a path or by defaulting
+	  	to the current directory), Librarian creates a new branch from the currently checked-out
+	  	branch and commits changes. If the --push flag is also specified, a pull request is
+	  	created against the main branch. The --branch flag is ignored for local repositories.
 	-v	enables verbose logging
 
 # update-image
@@ -301,9 +313,9 @@ Flags:
 	  	The location of an API specification repository.
 	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
 	-branch string
-	  	The branch to use with remote code repositories. This is used to specify
-	  	which branch to clone and which branch to use as the base for a pull
-	  	request. (default "main")
+	  	The branch to use with remote code repositories. It is ignored if
+	  	you are using a local repository. This is used to specify which branch to clone
+	  	and which branch to use as the base for a pull request. (default "main")
 	-build
 	  	If true, Librarian will build each generated library by invoking the
 	  	language-specific container.
@@ -339,6 +351,10 @@ Flags:
 	  	local file path like /path/to/repo. Both absolute and relative paths are
 	  	supported. If not specified, will try to detect if the current working directory
 	  	is configured as a language repository.
+	  	Note: When using a local repository (either by providing a path or by defaulting
+	  	to the current directory), Librarian creates a new branch from the currently checked-out
+	  	branch and commits changes. If the --push flag is also specified, a pull request is
+	  	created against the main branch. The --branch flag is ignored for local repositories.
 	-test
 	  	If true, run container tests after generation but before committing and pushing.
 	  	These tests verify the interaction between language containers and the Librarian CLI's

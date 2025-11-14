@@ -26,7 +26,8 @@ The commands are:
 
 # generate
 
-The generate command runs a Cloud Build job to generate Cloud Client Libraries.
+The generate command triggers a Cloud Build job that runs librarian generate command for every
+repository onboarded to Librarian generate automation.
 
 Usage:
 
@@ -43,8 +44,8 @@ Flags:
 
 # publish-release
 
-The publish-release command runs a Cloud Build job to create a tag on a merged release pull
-request.
+The publish-release command triggers a Cloud Build job that runs librarian release tag command
+for every repository onboarded to Librarian publish-release automation.
 
 Usage:
 
@@ -54,5 +55,29 @@ Flags:
 
 	-project string
 	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
+
+# stage-release
+
+The stage-release command triggers a Cloud Build job that runs librarian release stage command for
+every repository onboarded to Librarian stage-release automation.
+
+Usage:
+
+	automation stage-release [flags]
+
+Flags:
+
+	-project string
+	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
+	-push
+	  	The _PUSH flag (true/false) to Librarian CLI's -push option
+
+# version
+
+Version prints version information for the automation binary.
+
+Usage:
+
+	automation version
 */
 package main

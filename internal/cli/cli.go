@@ -53,6 +53,37 @@ type Command struct {
 	Config *config.Config
 }
 
+// NewCommandSet creates and initializes a root *Command object. It automatically appends a "version" subcommand to
+// the list.
+func NewCommandSet(commands []*Command, short, usageLine, long string) *Command {
+	cmd := &Command{
+		Short:     short,
+		UsageLine: usageLine,
+		Long:      long,
+	}
+	verifyCommandDocs(cmd)
+	pkg := strings.Split(cmd.Short, " ")[0]
+	cmd.Commands = append(make([]*Command, 0, len(commands)+1), commands...)
+	cmd.Commands = append(cmd.Commands, newCmdVersion(pkg))
+
+	cmd.Init()
+	return cmd
+}
+
+func newCmdVersion(pkg string) *Command {
+	cmdVersion := &Command{
+		Short:     "version prints the version information",
+		UsageLine: fmt.Sprintf("%s version", pkg),
+		Long:      fmt.Sprintf("Version prints version information for the %s binary.", pkg),
+		Action: func(ctx context.Context, cmd *Command) error {
+			fmt.Println(Version())
+			return nil
+		},
+	}
+	cmdVersion.Init()
+	return cmdVersion
+}
+
 // Run executes the command with the provided arguments.
 func (c *Command) Run(ctx context.Context, args []string) error {
 	cmd, remaining, err := lookupCommand(c, args)
@@ -87,10 +118,7 @@ func (c *Command) Name() string {
 }
 
 func (c *Command) usage(w io.Writer) {
-	if c.Short == "" || c.UsageLine == "" || c.Long == "" {
-		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
-	}
-
+	verifyCommandDocs(c)
 	fmt.Fprintf(w, "%s\n\n", c.Long)
 	fmt.Fprintf(w, "Usage:\n\n  %s", c.UsageLine)
 	if len(c.Commands) > 0 {
@@ -127,6 +155,12 @@ func hasFlags(fs *flag.FlagSet) bool {
 		visited = true
 	})
 	return visited
+}
+
+func verifyCommandDocs(c *Command) {
+	if c.Short == "" || c.UsageLine == "" || c.Long == "" {
+		panic(fmt.Sprintf("command %q is missing documentation", c.Name()))
+	}
 }
 
 // lookupCommand looks up the command specified by the given arguments.
