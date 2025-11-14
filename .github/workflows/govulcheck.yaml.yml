@@ -37,24 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           ISSUE_TITLE: "govulncheck: security vulnerabilities detected in main branch"
-          ISSUE_BODY: |
-            **Automated Vulnerability Report**
-
-            `govulncheck` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the `main` branch.
-
-            Please review the full scan results in the workflow run for details:
-            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            
-            Link to tutorial: https://go.dev/doc/tutorial/govulncheck 
-            
-            **Action Items:**
-            - [ ] Install govulncheck with `go install golang.org/x/vuln/cmd/govulncheck@latest`
-            - [ ] Run `govulncheck ./...`
-            - [ ] Read the stack trace
-            - [ ] Run `go get -u [dependency]` for vulnerabilities to address them
-            - [ ] Run `go mod tidy` to clean up go.mod and go.sum files after updating dependencies
-            - [ ] Raise PR to fix and close this issue
-           
+          ISSUE_BODY: "**Automated Vulnerability Report**\n\n`govulncheck` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the `main` branch.\n\nPlease review the full scan results in the workflow run for details:\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nLink to tutorial: https://go.dev/doc/tutorial/govulncheck \n\n**Action Items:**\n- [ ] Install govulncheck with `go install golang.org/x/vuln/cmd/govulncheck@latest`\n- [ ] Run `govulncheck ./...`\n- [ ] Read the stack trace\n- [ ] Run `go get -u [dependency]` for vulnerabilities to address them\n- [ ] Run `go mod tidy` to clean up go.mod and go.sum files after updating dependencies\n- [ ] Raise PR to fix and close this issue\n"
         run: |
           # Check if an open issue with this exact title already exists
           EXISTING_ISSUE=$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number -R $GH_REPO)
