@@ -23,4 +23,6 @@ repository onboarded to Librarian generate automation.`
 for every repository onboarded to Librarian publish-release automation.`
 	stageLongHelp = `The stage-release command triggers a Cloud Build job that runs librarian release stage command for
 every repository onboarded to Librarian stage-release automation.`
+	updateImageLongHelp = `The update-image command triggers a Cloud Build job that runs librarian update-image command for
+every repository onboarded to Librarian update-image automation.`
 )

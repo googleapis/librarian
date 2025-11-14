@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package automation implements the command-line interface and core logic
+// for Librarian's automated workflows.
 package automation
 
 import (
@@ -20,11 +22,20 @@ import (
 	"github.com/googleapis/librarian/internal/cli"
 )
 
+var runCommandFn = RunCommand
+
+// Run executes the Librarian CLI with the given command line arguments.
+func Run(ctx context.Context, arg []string) error {
+	cmd := newAutomationCommand()
+	return cmd.Run(ctx, arg)
+}
+
 func newAutomationCommand() *cli.Command {
 	commands := []*cli.Command{
 		newCmdGenerate(),
 		newCmdPublishRelease(),
 		newCmdStageRelease(),
+		newCmdUpdateImage(),
 	}
 
 	return cli.NewCommandSet(
@@ -86,4 +97,22 @@ func newCmdStageRelease() *cli.Command {
 	addFlagPush(cmdStageRelease.Flags, cmdStageRelease.Config)
 
 	return cmdStageRelease
+}
+
+func newCmdUpdateImage() *cli.Command {
+	cmdUpdateImage := &cli.Command{
+		Short:     "update-image",
+		UsageLine: "automation update-image [flags]",
+		Long:      updateImageLongHelp,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			runner := newUpdateImageRunner(cmd.Config)
+			return runner.run(ctx)
+		},
+	}
+
+	cmdUpdateImage.Init()
+	addFlagProject(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagPush(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+
+	return cmdUpdateImage
 }
