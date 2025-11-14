@@ -124,7 +124,12 @@ should provide enough context for any team member to understand the problem or
 request without needing to contact you directly for clarification.
 
 Default to assigning the issue to someone if there’s a
-clear owner. Otherwise, leave it for triage.
+clear owner. Otherwise, leave it for triage.  Triage will happen daily Monday through Friday.
+
+If an issue is critical and needs immediate attention please use the label "critical".  If the issue is high priority please use the label "needs fix soon".  
+
+In the case your ticket has been triaged and you don't agree with labels, please reach out to
+cloud-sdk-librarian-admin@google.com
 
 ## Leaving a TODO
 
