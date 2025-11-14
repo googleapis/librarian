@@ -53,6 +53,19 @@ func TestReadGapicMetadata(t *testing.T) {
 		t.Fatalf("protojson.Marshal() failed: %v", err)
 	}
 
+	libTestMetadata := &gapic.GapicMetadata{
+		LibraryPackage: "cloud.google.com/go/library/apiv2test",
+		Services: map[string]*gapic.GapicMetadata_ServiceForTransport{
+			"AnotherLibraryService": {
+				ApiVersion: "v2test",
+			},
+		},
+	}
+	libTestJSON, err := protojson.Marshal(libTestMetadata)
+	if err != nil {
+		t.Fatalf("protojson.Marshal() failed: %v", err)
+	}
+
 	for _, test := range []struct {
 		name    string
 		files   map[string][]byte
@@ -76,6 +89,21 @@ func TestReadGapicMetadata(t *testing.T) {
 			files: map[string][]byte{
 				"src/v1/gapic_metadata.json": libv1JSON,
 				"src/v2/gapic_metadata.json": libv2JSON,
+			},
+			library: &config.LibraryState{
+				SourceRoots: []string{"src"},
+			},
+			want: map[string]*gapic.GapicMetadata{
+				"cloud.google.com/go/library/apiv1": libv1Metadata,
+				"cloud.google.com/go/library/apiv2": libv2Metadata,
+			},
+		},
+		{
+			name: "multiple metadata files, ignore testdata",
+			files: map[string][]byte{
+				"src/v1/gapic_metadata.json":   libv1JSON,
+				"src/v2/gapic_metadata.json":   libv2JSON,
+				"tests/v2/gapic_metadata.json": libTestJSON,
 			},
 			library: &config.LibraryState{
 				SourceRoots: []string{"src"},

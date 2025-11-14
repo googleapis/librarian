@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -44,6 +45,11 @@ var (
 
 </details>
 {{ end }}`))
+
+	// Common places that may contain a gapic_metadata.json file as test data
+	// that should be ignored when preparing a release e.g. for client
+	// generators.
+	testdataRegex = regexp.MustCompile(`(?i)/(baselines|goldens|java-showcase|output|prototests|test|tests)/`)
 )
 
 // serviceVersion represents a pairing of an API service interface e.g. Protobuf
@@ -169,17 +175,20 @@ func readGapicMetadata(dir string, library *config.LibraryState) (map[string]*ga
 			if d.IsDir() {
 				return nil
 			}
-			if filepath.Base(path) == gapicMetadataFile {
-				content, err := os.ReadFile(path)
-				if err != nil {
-					return fmt.Errorf("failed to read %s: %w", path, err)
-				}
-				var metadata gapic.GapicMetadata
-				if err := protojson.Unmarshal(content, &metadata); err != nil {
-					return fmt.Errorf("failed to unmarshal %s: %w", path, err)
-				}
-				mds[metadata.LibraryPackage] = &metadata
+			if testdataRegex.MatchString(path) || filepath.Base(path) != gapicMetadataFile {
+				return nil
 			}
+
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("failed to read %s: %w", path, err)
+			}
+			var metadata gapic.GapicMetadata
+			if err := protojson.Unmarshal(content, &metadata); err != nil {
+				return fmt.Errorf("failed to unmarshal %s: %w", path, err)
+			}
+			mds[metadata.LibraryPackage] = &metadata
+
 			return nil
 		})
 		if err != nil {
