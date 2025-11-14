@@ -226,15 +226,15 @@ func TestGolangCILint(t *testing.T) {
 
 func TestGoImports(t *testing.T) {
 	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@v0.38.0", "-d", ".")
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
 
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("goimports failed to run: %v\nStdout:\n%s\nStderr:\n%s", err, stdout.String(), stderr.String())
+		t.Fatalf("goimports failed to run: %v\nOutput:\n%s", err, out.String())
 	}
-	if stdout.Len() > 0 {
-		t.Errorf("goimports found unformatted files:\n%s", stdout.String())
+	if out.Len() > 0 {
+		t.Errorf("goimports found unformatted files:\n%s", out.String())
 	}
 }
 
