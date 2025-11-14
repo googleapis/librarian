@@ -124,8 +124,7 @@ should provide enough context for any team member to understand the problem or
 request without needing to contact you directly for clarification.
 
 Default to assigning the issue to someone if there’s a
-clear owner. Otherwise, leave it for triage.  Triage will happen daily Monday
- through Friday.
+clear owner. Otherwise, leave it for triage. Issues are triaged daily, Monday through Friday.
 
 If an issue is critical and needs immediate attention please use the label "critical".  
 If the issue is high priority please use the label "needs fix soon".  
