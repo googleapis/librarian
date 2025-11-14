@@ -35,14 +35,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          ISSUE_TITLE: "govulncheck: security vulnerabilities detected in main branch"
+          ISSUE_BODY: |
+            **Automated Vulnerability Report**
+
+            `govulncheck` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the `main` branch.
+
+            Please review the full scan results in the workflow run for details:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            Link to tutorial: https://go.dev/doc/tutorial/govulncheck 
+            
+            **Action Items:**
+            - [ ] Install govulncheck with `go install golang.org/x/vuln/cmd/govulncheck@latest`
+            - [ ] Run `govulncheck ./...`
+            - [ ] Read the stack trace
+            - [ ] Run `go get -u [dependency]` for vulnerabilities to address them
+            - [ ] Run `go mod tidy` to clean up go.mod and go.sum files after updating dependencies
+            - [ ] Raise PR to fix and close this issue
+           
         run: |
-          ISSUE_TITLE="Security Vulnerabilities Detected in main branch"
           # Check if an open issue with this exact title already exists
           EXISTING_ISSUE=$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number -R $GH_REPO)
           if [[ "$EXISTING_ISSUE" == "[]" ]]; then
             echo "No existing issue found. Creating a new one."
-            BODY="**Automated Vulnerability Report**\n\n\`govulncheck\` found **${{ steps.govulncheck-scan.outputs.vuln_count }}** vulnerabilities on the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
-            gh issue create --title "$ISSUE_TITLE" --body "$BODY" -R $GH_REPO
+            gh issue create --title "$ISSUE_TITLE" --body "$ISSUE_BODY" -R $GH_REPO
           else
             echo "An open issue with this title already exists. Skipping creation."
           fi
