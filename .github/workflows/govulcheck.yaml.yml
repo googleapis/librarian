@@ -1,5 +1,6 @@
 name: 'Govulncheck Scan & Issue Creator'
 on:
+  workflow_dispatch:
   schedule:
     # 8:00 every day.
     - cron: '0 8 * * *'
