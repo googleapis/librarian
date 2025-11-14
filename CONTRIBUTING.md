@@ -128,8 +128,7 @@ clear owner. Otherwise, leave it for triage. Issues are triaged daily, Monday th
 
 If an issue is critical and needs immediate attention, please use the label `critical`. If the issue is high priority, please use the label `needs fix soon`.
 
-In the case your ticket has been triaged and you don't agree with labels, please reach 
-out to cloud-sdk-librarian-admin@google.com
+If you disagree with the labels applied during triage, please reach out to cloud-sdk-librarian-admin@google.com.
 
 ## Leaving a TODO
 
