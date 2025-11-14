@@ -28,3 +28,6 @@ and set the default commit message to **Pull request title and description**.
 1) Add your library to your [libraries object](https://github.com/googleapis/librarian/blob/main/doc/state-schema.md#libraries-object) in your [state.yaml](https://github.com/googleapis/librarian/blob/main/doc/state-schema.md#stateyaml-schema) file.
 2) Run [librarian generate command](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian#hdr-generate).  The output should be 0 diff, check with your language lead/generator owner if this is not the case.
 3) Be aware of the `generate_blocked` and `release_blocked` fields in the [config.yaml file](https://github.com/googleapis/librarian/blob/main/doc/config-schema.md#libraries-object). If these are not set and automation is enabled for the repository ([check here](https://github.com/googleapis/librarian/blob/main/internal/automation/prod/repositories.yaml)), then generate and release PRs will be created and merged automatically. If these actions are blocked, or your repository is not set up for automation, you will have to perform these actions manually. See this [guide](https://github.com/googleapis/librarian/blob/main/doc/library-maintainer-guide.md) for details.
+
+## Support
+If you need support on any issues please reach out to cloud-sdk-librarian-admin@google.com.
