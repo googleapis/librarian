@@ -72,6 +72,22 @@ Flags:
 	-push
 	  	The _PUSH flag (true/false) to Librarian CLI's -push option
 
+# update-image
+
+The update-image command triggers a Cloud Build job that runs librarian update-image command for
+every repository onboarded to Librarian update-image automation.
+
+Usage:
+
+	automation update-image [flags]
+
+Flags:
+
+	-project string
+	  	Google Cloud Platform project ID (default "cloud-sdk-librarian-prod")
+	-push
+	  	The _PUSH flag (true/false) to Librarian CLI's -push option
+
 # version
 
 Version prints version information for the automation binary.
