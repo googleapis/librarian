@@ -323,8 +323,10 @@ func TestRunCommandWithConfig(t *testing.T) {
 			if diff := cmp.Diff(test.wantTriggersRun, client.triggersRun); diff != "" {
 				t.Errorf("runCommandWithConfig() triggersRun diff (-want, +got):\n%s", diff)
 			}
-			if checkSubs, diff := test.wantSubstitutions != nil, cmp.Diff(test.wantSubstitutions, client.substitutions); checkSubs && diff != "" {
-				t.Errorf("runCommandWithConfig() substitutions diff (-want, +got):\n%s", diff)
+			if test.wantSubstitutions != nil {
+				if diff := cmp.Diff(test.wantSubstitutions, client.substitutions); diff != "" {
+					t.Errorf("runCommandWithConfig() substitutions diff (-want, +got):\n%s", diff)
+				}
 			}
 		})
 	}
