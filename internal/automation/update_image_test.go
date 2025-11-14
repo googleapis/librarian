@@ -19,6 +19,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -27,6 +28,7 @@ func TestNewUpdateImageRunner(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		cfg  *config.Config
+		want *updateImageRunner
 	}{
 		{
 			name: "create_a_runner",
@@ -35,19 +37,18 @@ func TestNewUpdateImageRunner(t *testing.T) {
 				Project: "example-project",
 				Push:    true,
 			},
+			want: &updateImageRunner{
+				build:     true,
+				projectID: "example-project",
+				push:      true,
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			runner := newUpdateImageRunner(test.cfg)
-			if runner.build != test.cfg.Build {
-				t.Errorf("newUpdateImageRunner() build is not set")
-			}
-			if runner.projectID != test.cfg.Project {
-				t.Errorf("newUpdateImageRunner() projectID is not set")
-			}
-			if runner.push != test.cfg.Push {
-				t.Errorf("newUpdateImageRunner() push is not set")
+			got := newUpdateImageRunner(test.cfg)
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(updateImageRunner{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
