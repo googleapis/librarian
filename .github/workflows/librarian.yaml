@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: Librarian
-on: [push, pull_request, merge_group]
+on:
+  push:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+  merge_group:
 permissions:
   contents: read
   issues: write
@@ -51,7 +59,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Create an issue for push event
-        if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && (steps.run-tests.outcome == 'failure' || steps.check-yaml.outcome == 'failure')"
+        if: "github.event.pull_request.merged == true && github.ref == 'refs/heads/main' && (steps.run-tests.outcome == 'failure' || steps.check-yaml.outcome == 'failure')"
         run: |
           ISSUE_TITLE="Tests failed at HEAD"
           BODY="Tests failed at HEAD of the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
