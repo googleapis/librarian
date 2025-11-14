@@ -61,7 +61,7 @@ jobs:
       - name: Create an issue for push event
         if: "github.event.pull_request.merged == true && github.ref == 'refs/heads/main' && (steps.run-tests.outcome == 'failure' || steps.check-yaml.outcome == 'failure')"
         run: |
-          ISSUE_TITLE="Tests failed at HEAD"
+          ISSUE_TITLE="all: tests failed at HEAD"
           BODY="Tests failed at HEAD of the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
           gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label "critical" -R $GH_REPO
         env:
