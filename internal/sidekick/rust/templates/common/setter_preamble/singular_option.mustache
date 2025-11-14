@@ -17,7 +17,7 @@ limitations under the License.
 {{#ModelCodec.GenerateSetterSamples}}
 ///
 /// # Example
-/// ```
+/// ```ignore,no_run
 {{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some("example"));
