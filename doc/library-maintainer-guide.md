@@ -186,3 +186,5 @@ case a ticket will be opened up in the repository and needs to be addressed by
 Maintainers.  This can potentially block generation/release until issue has been 
 resolved.
 
+## Support
+If you need support please reach out to cloud-sdk-librarian-oncall@google.com.
