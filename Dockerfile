@@ -52,6 +52,10 @@ RUN echo \
       tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # Install Docker and pin version
+# Cloud Build is running Docker engine version 20.10.24, which max supported API version is 1.41
+# https://docs.cloud.google.com/build/docs/overview#docker
+# Starting docker 29.0.0 supports API version v1.44+ 
+# https://docs.docker.com/engine/release-notes/29/#2900
 RUN apt update && \
     apt-get -y install \
     docker-ce=5:28.5.2-1~debian.13~trixie \
