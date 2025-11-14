@@ -187,4 +187,4 @@ Maintainers.  This can potentially block generation/release until issue has been
 resolved.
 
 ## Support
-If you need support on any issues please reach out to cloud-sdk-librarian-admin@google.com.
+If you need support please reach out to cloud-sdk-librarian-oncall@google.com.
