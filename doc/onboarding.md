@@ -9,7 +9,7 @@ project and begin contributing effectively.
 
 - Linux
 - [Go](https://go.dev/doc/install)
-- [sudoless Docker]((go/docker))
+- [sudoless Docker](http://go/installdocker)
 - git (if you wish to build it locally)
 - [gcloud](https://g3doc.corp.google.com/company/teams/cloud-sdk/cli/index.md?cl=head#installing-and-using-the-cloud-sdk) (to set up Docker access to container images)
 - [gh](https://github.com/cli/cli) for GitHub access tokens
