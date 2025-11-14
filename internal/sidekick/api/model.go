@@ -747,6 +747,8 @@ type Field struct {
 	// - For OpenAPI, it is an optional field
 	// - For OpenAPI, it has format == "uuid"
 	AutoPopulated bool
+	// IsResourceReference is true if the field is annotated with google.api.resource_reference.
+	IsResourceReference bool
 	// FieldBehavior indicates how the field behaves in requests and responses.
 	//
 	// For example, that a field is required in requests, or given as output

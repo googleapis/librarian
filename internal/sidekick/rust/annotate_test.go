@@ -1963,3 +1963,329 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 		})
 	}
 }
+
+func TestFindResourceNameFields(t *testing.T) {
+	// Helper to create a field
+	makeField := func(name string, isRef bool, msgType *api.Message) *api.Field {
+		f := &api.Field{Name: name, ID: ".test.Request." + name, IsResourceReference: isRef}
+		if msgType != nil {
+			f.Typez = api.MESSAGE_TYPE
+			f.TypezID = msgType.ID
+			f.MessageType = msgType
+		} else {
+			f.Typez = api.STRING_TYPE
+		}
+		return f
+	}
+
+	// Common Messages
+	nestedMsg := &api.Message{Name: "Nested", ID: ".test.Nested", Fields: []*api.Field{
+		makeField("nested_name", true, nil),
+		makeField("another_nested", true, nil),
+	}}
+	nestedCamelMsg := &api.Message{Name: "NestedCamel", ID: ".test.NestedCamel", Fields: []*api.Field{
+		makeField("nestedName", true, nil),
+		makeField("anotherNested", true, nil),
+	}}
+	api.CrossReference(api.NewTestAPI([]*api.Message{nestedMsg, nestedCamelMsg}, nil, nil))
+
+	// Helper to create a method
+	makeMethod := func(req *api.Message) *api.Method {
+		resp := &api.Message{Name: "Response", ID: ".test.Response"}
+		m := &api.Method{
+			Name:         "TestMethod",
+			ID:           ".test.Service.TestMethod",
+			InputType:    req,
+			InputTypeID:  req.ID,
+			OutputType:   resp,
+			OutputTypeID: resp.ID,
+			PathInfo:     &api.PathInfo{},
+		}
+		service := &api.Service{
+			Name:    "Service",
+			ID:      ".test.Service",
+			Package: "test",
+			Methods: []*api.Method{m},
+		}
+		m.Service = service
+
+		messages := []*api.Message{req, resp, nestedMsg, nestedCamelMsg}
+		// Collect nested messages from request fields
+		for _, f := range req.Fields {
+			if f.MessageType != nil {
+				messages = append(messages, f.MessageType)
+				// Also check for nested fields in the nested message (one level deep for now)
+				for _, nf := range f.MessageType.Fields {
+					if nf.MessageType != nil {
+						messages = append(messages, nf.MessageType)
+					}
+				}
+			}
+		}
+
+		model := api.NewTestAPI(messages, []*api.Enum{}, []*api.Service{service})
+		service.Model = model
+		api.CrossReference(model)
+		m.Model = model
+		return m
+	}
+
+	// Helper to create PathInfo Codec for tie-breaking
+	addPathInfoCodec := func(m *api.Method, uniqueParamNames ...string) {
+		if m.PathInfo == nil {
+			return
+		}
+		var uniqueParams []*bindingSubstitution
+		for _, name := range uniqueParamNames {
+			uniqueParams = append(uniqueParams, &bindingSubstitution{FieldName: name})
+		}
+		m.PathInfo.Codec = &pathInfoAnnotation{UniqueParameters: uniqueParams}
+	}
+
+	tests := []struct {
+		name          string
+		method        *api.Method
+		setup         func(*api.Method) // To add PathInfo Codec
+		wantPaths     [][]string
+		wantAccessors []string
+	}{
+		{
+			name:          "No annotated fields",
+			method:        makeMethod(&api.Message{ID: ".test.NoAnnotated", Fields: []*api.Field{makeField("field", false, nil)}}),
+			wantPaths:     nil,
+			wantAccessors: nil,
+		},
+		{
+			name:          "One top-level",
+			method:        makeMethod(&api.Message{ID: ".test.OneTop", Fields: []*api.Field{makeField("name", true, nil)}}),
+			wantPaths:     [][]string{{"name"}},
+			wantAccessors: []string{"Some(&req.name)"},
+		},
+		{
+			name:          "One nested",
+			method:        makeMethod(&api.Message{ID: ".test.OneNested", Fields: []*api.Field{makeField("nested_field", false, nestedMsg)}}),
+			wantPaths:     [][]string{{"nested_field", "nested_name"}, {"nested_field", "another_nested"}},
+			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+		},
+		{
+			name:   "Multiple top-level, name1 in path",
+			method: makeMethod(&api.Message{ID: ".test.MultiTop1", Fields: []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
+			setup: func(m *api.Method) {
+				addPathInfoCodec(m, "name1")
+			},
+			wantPaths:     [][]string{{"name1"}, {"name2"}},
+			wantAccessors: []string{"Some(&req.name1)", "Some(&req.name2)"},
+		},
+		{
+			name:   "Multiple top-level, name2 in path",
+			method: makeMethod(&api.Message{ID: ".test.MultiTop2", Fields: []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
+			setup: func(m *api.Method) {
+				addPathInfoCodec(m, "name2")
+			},
+			wantPaths:     [][]string{{"name2"}, {"name1"}},
+			wantAccessors: []string{"Some(&req.name2)", "Some(&req.name1)"},
+		},
+		{
+			name:          "Multiple top-level, none in path",
+			method:        makeMethod(&api.Message{ID: ".test.MultiTopNone", Fields: []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
+			setup:         func(m *api.Method) { addPathInfoCodec(m) },
+			wantPaths:     [][]string{{"name1"}, {"name2"}}, // Proto order
+			wantAccessors: []string{"Some(&req.name1)", "Some(&req.name2)"},
+		},
+		{
+			name:   "Multiple top-level, both in path",
+			method: makeMethod(&api.Message{ID: ".test.MultiTopBoth", Fields: []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
+			setup: func(m *api.Method) {
+				addPathInfoCodec(m, "name1", "name2")
+			},
+			wantPaths:     [][]string{{"name1"}, {"name2"}}, // Proto order
+			wantAccessors: []string{"Some(&req.name1)", "Some(&req.name2)"},
+		},
+		{
+			name:   "Mixed, top-level in path",
+			method: makeMethod(&api.Message{ID: ".test.MixedTopPath", Fields: []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
+			setup: func(m *api.Method) {
+				addPathInfoCodec(m, "top_name")
+			},
+			wantPaths:     [][]string{{"top_name"}, {"nested_field", "nested_name"}, {"nested_field", "another_nested"}},
+			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+		},
+		{
+			name:   "Mixed, nested in path",
+			method: makeMethod(&api.Message{ID: ".test.MixedNestedPath", Fields: []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
+			setup: func(m *api.Method) {
+				addPathInfoCodec(m, "nested_field.nested_name")
+			},
+			wantPaths:     [][]string{{"top_name"}, {"nested_field", "nested_name"}, {"nested_field", "another_nested"}}, // Top-level still preferred
+			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+		},
+		{
+			name:          "Mixed, none in path",
+			method:        makeMethod(&api.Message{ID: ".test.MixedNonePath", Fields: []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
+			setup:         func(m *api.Method) { addPathInfoCodec(m) },
+			wantPaths:     [][]string{{"top_name"}, {"nested_field", "nested_name"}, {"nested_field", "another_nested"}}, // Top-level preferred
+			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+		},
+		{
+			name: "Multiple nested, one in path",
+			method: makeMethod(&api.Message{ID: ".test.MultiNestedPath", Fields: []*api.Field{
+				makeField("nested_field", false, nestedMsg),
+			}}),
+			setup: func(m *api.Method) {
+				addPathInfoCodec(m, "nested_field.another_nested")
+			},
+			wantPaths:     [][]string{{"nested_field", "another_nested"}, {"nested_field", "nested_name"}},
+			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| Some(&s.another_nested))", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))"},
+		},
+		{
+			name: "Multiple nested, camelCase, one in path",
+			method: makeMethod(&api.Message{ID: ".test.MultiNestedPathCamel", Fields: []*api.Field{
+				makeField("nestedField", false, nestedCamelMsg),
+			}}),
+			setup: func(m *api.Method) {
+				// The map key in httpParams comes from UniqueParameters.
+				// In the real code, this is constructed by joining snake_cased names with dots.
+				// So we simulate that here.
+				addPathInfoCodec(m, "nested_field.another_nested")
+			},
+			wantPaths:     [][]string{{"nestedField", "anotherNested"}, {"nestedField", "nestedName"}},
+			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| Some(&s.another_nested))", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))"},
+		},
+		{
+			name: "Multiple nested, none in path",
+			method: makeMethod(&api.Message{ID: ".test.MultiNestedNonePath", Fields: []*api.Field{
+				makeField("nested_field", false, nestedMsg),
+			}}),
+			setup:         func(m *api.Method) { addPathInfoCodec(m) },
+			wantPaths:     [][]string{{"nested_field", "nested_name"}, {"nested_field", "another_nested"}}, // Proto order
+			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+		},
+		{
+			name: "Non-string field ignored",
+			method: makeMethod(&api.Message{ID: ".test.NonString", Fields: []*api.Field{
+				{Name: "int_ref", ID: ".test.NonString.int_ref", IsResourceReference: true, Typez: api.INT64_TYPE},
+				{Name: "valid_ref", ID: ".test.NonString.valid_ref", IsResourceReference: true, Typez: api.STRING_TYPE},
+			}}),
+			wantPaths:     [][]string{{"valid_ref"}},
+			wantAccessors: []string{"Some(&req.valid_ref)"},
+		},
+		{
+			name: "Repeated and Map fields ignored",
+			method: makeMethod(&api.Message{ID: ".test.RepeatedMap", Fields: []*api.Field{
+				{Name: "repeated_ref", ID: ".test.RepeatedMap.repeated_ref", IsResourceReference: true, Repeated: true, Typez: api.STRING_TYPE},
+				{Name: "map_ref", ID: ".test.RepeatedMap.map_ref", IsResourceReference: true, Map: true, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID, MessageType: nestedMsg},
+				{Name: "valid_ref", ID: ".test.RepeatedMap.valid_ref", IsResourceReference: true, Typez: api.STRING_TYPE},
+			}}),
+			wantPaths:     [][]string{{"valid_ref"}},
+			wantAccessors: []string{"Some(&req.valid_ref)"},
+		},
+		{
+			name: "Nested in repeated parent ignored",
+			method: makeMethod(&api.Message{ID: ".test.NestedRepeated", Fields: []*api.Field{
+				{Name: "repeated_parent", ID: ".test.NestedRepeated.repeated_parent", Repeated: true, MessageType: nestedMsg, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID},
+				{Name: "valid_ref", ID: ".test.NestedRepeated.valid_ref", IsResourceReference: true, Typez: api.STRING_TYPE},
+			}}),
+			wantPaths:     [][]string{{"valid_ref"}},
+			wantAccessors: []string{"Some(&req.valid_ref)"},
+		},
+		{
+			name: "Optional field",
+			method: makeMethod(&api.Message{ID: ".test.Optional", Fields: []*api.Field{
+				func() *api.Field {
+					f := makeField("opt", true, nil)
+					f.Optional = true
+					return f
+				}(),
+			}}),
+			wantPaths:     [][]string{{"opt"}},
+			wantAccessors: []string{"req.opt.as_ref()"},
+		},
+		{
+			name: "OneOf field",
+			method: makeMethod(&api.Message{ID: ".test.OneOf", Fields: []*api.Field{
+				func() *api.Field {
+					f := makeField("one", true, nil)
+					f.IsOneOf = true
+					return f
+				}(),
+			}}),
+			wantPaths:     [][]string{{"one"}},
+			wantAccessors: []string{"req.one()"},
+		},
+		{
+			name: "Nested Optional field",
+			method: makeMethod(&api.Message{ID: ".test.NestedOptional", Fields: []*api.Field{
+				makeField("nested_field", false, &api.Message{Name: "NestedOpt", ID: ".test.NestedOpt", Fields: []*api.Field{
+					func() *api.Field {
+						f := makeField("opt_child", true, nil)
+						f.Optional = true
+						return f
+					}(),
+				}}),
+			}}),
+			wantPaths:     [][]string{{"nested_field", "opt_child"}},
+			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| s.opt_child.as_ref())"},
+		},
+		{
+			name: "Nested OneOf field",
+			method: makeMethod(&api.Message{ID: ".test.NestedOneOf", Fields: []*api.Field{
+				makeField("nested_field", false, &api.Message{Name: "NestedOneOfMsg", ID: ".test.NestedOneOfMsg", Fields: []*api.Field{
+					func() *api.Field {
+						f := makeField("one_child", true, nil)
+						f.IsOneOf = true
+						return f
+					}(),
+				}}),
+			}}),
+			wantPaths:     [][]string{{"nested_field", "one_child"}},
+			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| s.one_child())"},
+		},
+		{
+			name:          "Nil InputType",
+			method:        &api.Method{Name: "NilInput", ID: ".test.NilInput", InputType: nil},
+			wantPaths:     nil,
+			wantAccessors: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			codec, err := newCodec("protobuf", map[string]string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tt.setup != nil {
+				tt.setup(tt.method)
+			}
+			if tt.method.Model != nil {
+				annotateModel(tt.method.Model, codec)
+			}
+
+			got := codec.findResourceNameFields(tt.method)
+
+			if len(tt.wantPaths) == 0 {
+				if len(got) != 0 {
+					t.Errorf("findResourceNameFields() = %v, want nil", got)
+				}
+				return
+			}
+
+			if len(got) != len(tt.wantPaths) {
+				t.Errorf("findResourceNameFields() length mismatch: got %d, want %d", len(got), len(tt.wantPaths))
+				return
+			}
+
+			for i, wantPath := range tt.wantPaths {
+				if diff := cmp.Diff(wantPath, got[i].FieldPath); diff != "" {
+					t.Errorf("findResourceNameFields() FieldPath[%d] mismatch (-want +got):\n%s", i, diff)
+				}
+				if tt.wantAccessors != nil {
+					if diff := cmp.Diff(tt.wantAccessors[i], got[i].Accessor); diff != "" {
+						t.Errorf("findResourceNameFields() Accessor[%d] mismatch (-want +got):\n%s", i, diff)
+					}
+				}
+			}
+		})
+	}
+}
