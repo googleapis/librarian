@@ -111,6 +111,7 @@ func newCmdUpdateImage() *cli.Command {
 	}
 
 	cmdUpdateImage.Init()
+	addFlagBuild(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagProject(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagPush(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 
