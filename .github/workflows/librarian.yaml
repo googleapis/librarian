@@ -12,9 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: Librarian
-on: [push, pull_request, merge_group]
+on:
+  push:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+  merge_group:
 permissions:
   contents: read
+  issues: write
 jobs:
   test:
     runs-on: ubuntu-24.04
@@ -35,16 +44,29 @@ jobs:
           go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2
           go install golang.org/x/tools/cmd/goimports@latest
       - name: Run tests
+        id: run-tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+        continue-on-error: true
       - name: Check YAML formatting
+        id: check-yaml
         run: |
           yamlfmt .
+        continue-on-error: true
       - name: Detect formatting changes
         run: git diff --exit-code
       - name: Upload coverage report
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Create an issue for push event
+        if: "github.event.pull_request.merged == true && github.ref == 'refs/heads/main' && (steps.run-tests.outcome == 'failure' || steps.check-yaml.outcome == 'failure')"
+        run: |
+          ISSUE_TITLE="all: tests failed at HEAD"
+          BODY="Tests failed at HEAD of the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
+          gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label "critical" -R $GH_REPO
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
   e2e-test:
     runs-on: ubuntu-24.04
     steps:
