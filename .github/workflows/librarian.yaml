@@ -12,12 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: Librarian
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-  merge_group:
+on: [push, pull_request, merge_group]
 permissions:
   contents: read
   issues: write
