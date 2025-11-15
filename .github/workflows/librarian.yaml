@@ -60,7 +60,7 @@ jobs:
         run: |
           ISSUE_TITLE="all: tests failed at HEAD"
           BODY="Tests failed at HEAD of the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
-          gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label "critical" -R $GH_REPO
+          gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" -R $GH_REPO
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
