@@ -18,7 +18,7 @@ import "testing"
 
 func TestAutomationCmdRun(t *testing.T) {
 	cmd := newAutomationCommand()
-	if err := cmd.Run(t.Context(), []string{"version"}); err != nil {
+	if err := cmd.Run(t.Context(), []string{"version1"}); err != nil {
 		t.Fatal(err)
 	}
 }

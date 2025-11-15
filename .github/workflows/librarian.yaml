@@ -55,7 +55,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-      - name: Create an issue for push event
+      - name: Create an issue for push event to main
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && (steps.run-tests.outcome == 'failure' || steps.check-yaml.outcome == 'failure') }}
         run: |
           ISSUE_TITLE="all: tests failed at HEAD"
@@ -64,6 +64,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+      - name: Return test result
+        if: ${{ steps.run-tests.outcome == 'failure' || steps.check-yaml.outcome == 'failure' }}
+        run: |
+          echo "Tests failed"
+          exit 1
   e2e-test:
     runs-on: ubuntu-24.04
     steps:
