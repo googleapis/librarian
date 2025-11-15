@@ -36,10 +36,8 @@ jobs:
           go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2
           go install golang.org/x/tools/cmd/goimports@latest
       - name: Run tests
-        id: run-tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Check YAML formatting
-        id: check-yaml
         run: |
           yamlfmt .
       - name: Detect formatting changes
@@ -79,7 +77,7 @@ jobs:
     needs: [test, e2e-test]
     steps:
       - name: Create an issue for push event to main
-        if: ${{ failure() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ (needs.test.result == 'failure' || needs.e2e-test.result == 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
           ISSUE_TITLE="all: tests failed at HEAD"
           BODY="Tests failed at HEAD of the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
