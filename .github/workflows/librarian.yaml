@@ -36,10 +36,8 @@ jobs:
           go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2
           go install golang.org/x/tools/cmd/goimports@latest
       - name: Run tests
-        id: run-tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Check YAML formatting
-        id: check-yaml
         run: |
           yamlfmt .
       - name: Detect formatting changes
