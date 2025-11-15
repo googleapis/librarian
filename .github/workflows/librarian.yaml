@@ -32,13 +32,9 @@ jobs:
           cd /usr/local
           sudo unzip -x /tmp/protoc.zip
           protoc --version
-          go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2
           go install golang.org/x/tools/cmd/goimports@latest
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
-      - name: Check YAML formatting
-        run: |
-          yamlfmt .
       - name: Detect formatting changes
         run: git diff --exit-code
       - name: Upload coverage report

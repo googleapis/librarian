@@ -242,6 +242,20 @@ func TestGoModTidy(t *testing.T) {
 	rungo(t, "mod", "tidy", "-diff")
 }
 
+func TestYAMLFormat(t *testing.T) {
+	cmd := exec.Command("go", "run", "github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2", "-lint", ".")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("yamlfmt failed to run: %v\nStdout:\n%s\nStderr:\n%s", err, stdout.String(), stderr.String())
+	}
+	if stdout.Len() > 0 {
+		t.Errorf("yamlfmt found unformatted files:\n%s", stdout.String())
+	}
+}
+
 func rungo(t *testing.T, args ...string) {
 	t.Helper()
 
