@@ -13,18 +13,6 @@
 # limitations under the License.
 schemaVersion: 1.0.0
 commandTests:
-  - name: "automation version"
-    command: ["/app/automation", "version"]
-    expectedOutput: ["\\d+\\.\\d+\\.\\d+"]
-  - name: "automation generate"
-    command: ["/app/automation", "generate", "--help"]
-    expectedError: ["automation generate [flags]"]
-  - name: "automation publish-release"
-    command: ["/app/automation", "publish-release", "--help"]
-    expectedError: ["automation publish-release [flags]"]
-  - name: "automation stage-release"
-    command: ["/app/automation", "stage-release", "--help"]
-    expectedError: ["automation stage-release [flags]"]
   - name: "librarian version"
     command: ["/app/librarian", "version"]
     expectedOutput: ["\\d+\\.\\d+\\.\\d+"]

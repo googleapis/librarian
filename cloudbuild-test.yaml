@@ -31,8 +31,6 @@ steps:
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/librarian'
       - '.'
-    env:
-      - "DOCKER_BUILDKIT=1"
   - id: structure-test
     name: gcr.io/gcp-runtimes/structure_test
     waitFor: ['build']
