@@ -14,7 +14,7 @@
 
 //go:build e2e
 
-package librarian
+package integration_test
 
 import (
 	"bytes"

@@ -20,7 +20,7 @@ Setup:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build \
-  -f ./testdata/e2e-test.Dockerfile \
+  -f ./internal/integration/testdata/e2e-test.Dockerfile \
   -t test-image:latest \
   .
 ```
@@ -28,7 +28,7 @@ DOCKER_BUILDKIT=1 docker build \
 Usage:
 
 ```bash
-go test -tags e2e
+go test -tags e2e ./internal/integration/...
 ```
 
 ## Integration Tests
@@ -41,7 +41,7 @@ Usage:
 ```bash
 LIBRARIAN_TEST_GITHUB_TOKEN=<a personal access token> \
   LIBRARIAN_TEST_GITHUB_REPO=<URL of GitHub repo> \
-  go test ./...
+  go test -tags integration ./...
 ```
 
 Note: `LIBRARIAN_TEST_GITHUB_TOKEN` must have write access to `LIBRARIAN_TEST_GITHUB_REPO`.
