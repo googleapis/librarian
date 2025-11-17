@@ -20,7 +20,7 @@ Setup:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build \
-  -f ./internal/testdata/e2e-test.Dockerfile \
+  -f ./internal/integration/testdata/e2e-test.Dockerfile \
   -t test-image:latest \
   .
 ```
@@ -28,7 +28,7 @@ DOCKER_BUILDKIT=1 docker build \
 Usage:
 
 ```bash
-go test -tags e2e
+go test -tags e2e ./internal/integration/...
 ```
 
 ## Integration Tests
