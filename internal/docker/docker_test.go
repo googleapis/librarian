@@ -1135,7 +1135,7 @@ func TestReleaseStageRequestContent(t *testing.T) {
 			t.Fatalf("ReadFile failed: %v", err)
 		}
 
-		wantFile := filepath.Join("testdata", "docker", "release-stage-request", "release-stage-request.json")
+		wantFile := filepath.Join("testdata", "release-stage-request", "release-stage-request.json")
 		wantBytes, err := os.ReadFile(wantFile)
 		if err != nil {
 			t.Fatalf("ReadFile for want file failed: %v", err)
