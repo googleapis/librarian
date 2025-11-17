@@ -924,7 +924,7 @@ func TestWriteLibraryState(t *testing.T) {
 				t.Fatalf("Failed to read generated file: %v", err)
 			}
 
-			wantBytes, readErr := os.ReadFile(filepath.Join("../..", "testdata", "test-write-library-state", test.wantFile))
+			wantBytes, readErr := os.ReadFile(filepath.Join("testdata", "test-write-library-state", test.wantFile))
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
@@ -1035,7 +1035,7 @@ func TestWriteLibrarianState(t *testing.T) {
 				t.Fatalf("Failed to read generated file: %v", err)
 			}
 
-			wantBytes, readErr := os.ReadFile(filepath.Join("../..", "testdata", "test-write-librarian-state", test.wantFile))
+			wantBytes, readErr := os.ReadFile(filepath.Join("testdata", "test-write-librarian-state", test.wantFile))
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
@@ -1135,7 +1135,7 @@ func TestReleaseStageRequestContent(t *testing.T) {
 			t.Fatalf("ReadFile failed: %v", err)
 		}
 
-		wantFile := filepath.Join("..", "..", "testdata", "docker", "release-stage-request", "release-stage-request.json")
+		wantFile := filepath.Join("testdata", "docker", "release-stage-request", "release-stage-request.json")
 		wantBytes, err := os.ReadFile(wantFile)
 		if err != nil {
 			t.Fatalf("ReadFile for want file failed: %v", err)
