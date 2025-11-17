@@ -73,5 +73,5 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
 # Install the gcloud CLI
 RUN apt-get update && apt-get install -y google-cloud-sdk
 
-COPY --from=build /src/librarian .
+COPY --from=build /src .
 ENTRYPOINT ["/app/librarian"]
