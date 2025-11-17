@@ -408,7 +408,7 @@ When you see a red x next to a commit on main, file an issue on your GitHub
 issue tracker, and label it `critical 🚨`.
 
 Create a PR to temporarily skip the test, and verify that you have a green
-checkmark next to the commit on your main branch.  The issue can now by
+checkmark next to the commit on your main branch.  The issue can now be
 downgraded to `needs fix soon ❗`.
 
 ### Running Tests Locally
