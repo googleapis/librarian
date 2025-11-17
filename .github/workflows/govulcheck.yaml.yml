@@ -25,8 +25,8 @@ jobs:
         run: |
           # Run with -json (which never fails) and save to a file
           govulncheck -json ./... | jq 'select(.finding)' > results.json
-          # Count the number of findings using jq.
-          COUNT=$(jq -s 'length' results.json)
+          # Count the number of unique vulnerabilities using jq
+          COUNT=$(jq -s '[.[] | .finding.osv] | unique | length' results.json)
           echo "Found $COUNT vulnerabilities."
           # Set an output for the next steps to use
           echo "vuln_count=$COUNT" >> $GITHUB_OUTPUT
