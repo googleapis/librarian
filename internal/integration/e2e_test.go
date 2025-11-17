@@ -47,8 +47,8 @@ const mockGithubTag = "mock_github"
 
 func TestRunGenerate(t *testing.T) {
 	const (
-		initialRepoStateDir = "testdata/e2e/generate/repo_init"
-		localAPISource      = "testdata/e2e/generate/api_root"
+		initialRepoStateDir = "../testdata/e2e/generate/repo_init"
+		localAPISource      = "../testdata/e2e/generate/api_root"
 	)
 	t.Parallel()
 	for _, test := range []struct {
@@ -170,7 +170,7 @@ func TestRunGenerate(t *testing.T) {
 
 func TestCleanAndCopy(t *testing.T) {
 	const (
-		localAPISource = "testdata/e2e/generate/api_root"
+		localAPISource = "../testdata/e2e/generate/api_root"
 		apiToGenerate  = "google/cloud/pubsub/v1"
 	)
 	// create a temp directory for writing files, so we don't have to create testdata files.
@@ -253,8 +253,8 @@ func TestCleanAndCopy(t *testing.T) {
 
 func TestRunConfigure(t *testing.T) {
 	const (
-		localRepoDir        = "testdata/e2e/configure/repo"
-		initialRepoStateDir = "testdata/e2e/configure/repo_init"
+		localRepoDir        = "../testdata/e2e/configure/repo"
+		initialRepoStateDir = "../testdata/e2e/configure/repo_init"
 	)
 	t.Parallel()
 	for _, test := range []struct {
@@ -269,15 +269,15 @@ func TestRunConfigure(t *testing.T) {
 			name:         "runs successfully",
 			api:          "google/cloud/new-library-path/v2",
 			library:      "new-library",
-			apiSource:    "testdata/e2e/configure/api_root",
-			updatedState: "testdata/e2e/configure/updated-state.yaml",
+			apiSource:    "../testdata/e2e/configure/api_root",
+			updatedState: "../testdata/e2e/configure/updated-state.yaml",
 		},
 		{
 			name:         "failed due to simulated error in configure command",
 			api:          "google/cloud/another-library/v3",
 			library:      "simulate-command-error-id",
-			apiSource:    "testdata/e2e/configure/api_root",
-			updatedState: "testdata/e2e/configure/updated-state.yaml",
+			apiSource:    "../testdata/e2e/configure/api_root",
+			updatedState: "../testdata/e2e/configure/updated-state.yaml",
 			wantErr:      true,
 		},
 	} {
@@ -354,7 +354,7 @@ func TestRunConfigure(t *testing.T) {
 }
 
 func TestRunGenerate_MultipleLibraries(t *testing.T) {
-	const localAPISource = "testdata/e2e/generate/api_root"
+	const localAPISource = "../testdata/e2e/generate/api_root"
 
 	for _, test := range []struct {
 		name                string
@@ -365,19 +365,19 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 	}{
 		{
 			name:                "Multiple libraries generated successfully",
-			initialRepoStateDir: "testdata/e2e/generate/multi_repo_init",
+			initialRepoStateDir: "../testdata/e2e/generate/multi_repo_init",
 			expectedFiles:       []string{"pubsub/example.txt", "future/example.txt"},
 			unexpectedFiles:     []string{},
 		},
 		{
 			name:                "One library fails to generate",
-			initialRepoStateDir: "testdata/e2e/generate/multi_repo_one_fails_init",
+			initialRepoStateDir: "../testdata/e2e/generate/multi_repo_one_fails_init",
 			expectedFiles:       []string{"pubsub/example.txt"},
 			unexpectedFiles:     []string{"future/example.txt"},
 		},
 		{
 			name:                "All libraries fail to generate",
-			initialRepoStateDir: "testdata/e2e/generate/multi_repo_all_fail_init",
+			initialRepoStateDir: "../testdata/e2e/generate/multi_repo_all_fail_init",
 			expectError:         true,
 			expectedFiles:       []string{},
 			unexpectedFiles:     []string{"future/example.txt", "another-future/example.txt"},
@@ -449,7 +449,7 @@ func TestReleaseStage(t *testing.T) {
 	}{
 		{
 			name:        "release with multiple commits",
-			testDataDir: "testdata/e2e/release/stage/multiple_commits",
+			testDataDir: "../testdata/e2e/release/stage/multiple_commits",
 			libraryID:   "go-google-cloud-pubsub-v1",
 			changePath:  "google-cloud-pubsub/v1",
 			tagID:       "go-google-cloud-pubsub-v1",
@@ -458,7 +458,7 @@ func TestReleaseStage(t *testing.T) {
 		},
 		{
 			name:        "release with multiple commits with push",
-			testDataDir: "testdata/e2e/release/stage/multiple_commits",
+			testDataDir: "../testdata/e2e/release/stage/multiple_commits",
 			libraryID:   "go-google-cloud-pubsub-v1",
 			changePath:  "google-cloud-pubsub/v1",
 			tagID:       "go-google-cloud-pubsub-v1",
@@ -468,7 +468,7 @@ func TestReleaseStage(t *testing.T) {
 		},
 		{
 			name:        "release with multiple nested commits",
-			testDataDir: "testdata/e2e/release/stage/multiple_nested_commits",
+			testDataDir: "../testdata/e2e/release/stage/multiple_nested_commits",
 			libraryID:   "python-google-cloud-video-live-stream-v1",
 			changePath:  "packages/google-cloud-video-live-stream",
 			tagID:       "python-google-cloud-video-live-stream-v1",
@@ -477,7 +477,7 @@ func TestReleaseStage(t *testing.T) {
 		},
 		{
 			name:        "release with single commit",
-			testDataDir: "testdata/e2e/release/stage/single_commit",
+			testDataDir: "../testdata/e2e/release/stage/single_commit",
 			libraryID:   "dlp",
 			changePath:  "dlp",
 			tagID:       "dlp",
@@ -616,7 +616,7 @@ func TestReleaseTag(t *testing.T) {
 ### Features
 - feat: new feature
 </details>`,
-			repoPath: "testdata/e2e/release/stage/single_commit",
+			repoPath: "../testdata/e2e/release/stage/single_commit",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
