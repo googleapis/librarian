@@ -400,7 +400,7 @@ red build on the
 [main branch](https://github.com/googleapis/librarian/commits/main) is a
 critical issue that must be fixed immediately.
 
-If tests become flaky or the is not consistently green, the team's top priority
+If tests become flaky or the main branch is not consistently green, the team's top priority
 should shift to restoring stability. All feature development should be
 deprioritized until green builds can be guaranteed.
 
