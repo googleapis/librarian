@@ -41,7 +41,7 @@ Usage:
 ```bash
 LIBRARIAN_TEST_GITHUB_TOKEN=<a personal access token> \
   LIBRARIAN_TEST_GITHUB_REPO=<URL of GitHub repo> \
-  go test ./...
+  go test -tags integration ./...
 ```
 
 Note: `LIBRARIAN_TEST_GITHUB_TOKEN` must have write access to `LIBRARIAN_TEST_GITHUB_REPO`.
