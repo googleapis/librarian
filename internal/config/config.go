@@ -82,7 +82,7 @@ type Config struct {
 	// is expected to contain a service config YAML file.
 	// Example: "google/cloud/functions/v2"
 	//
-	// API is used by generate and configure commands.
+	// API is used by generate, configure, release init, and update-image commands.
 	//
 	// API Path is specified with the -api flag.
 	API string
@@ -91,8 +91,7 @@ type Config struct {
 	// When this is not specified, the googleapis repository is cloned
 	// automatically.
 	//
-	// APISource is used by generate, update-apis and configure
-	// commands.
+	// APISource is used by the generate and configure commands.
 	//
 	// APISource is specified with the -api-source flag.
 	APISource string
@@ -148,8 +147,9 @@ type Config struct {
 	// GitHubToken is the access token to use for all operations involving
 	// GitHub.
 	//
-	// GitHubToken is used by to configure, update-apis and update-image-tag commands,
-	// when Push is true.
+	// GitHubToken is used by configure, generate, release init, and update-image
+	// commands when Push is true, as well as release tag-and-release whenever
+	// it is run.
 	//
 	// GitHubToken is not specified by a flag, as flags are logged and the
 	// access token is sensitive information. Instead, it is fetched from the
@@ -207,7 +207,7 @@ type Config struct {
 
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
-	// configure and update-apis.
+	// configure, generate, release init, update-image.
 	// These commands all create pull requests if they
 	//
 	// By default (when Push isn't explicitly specified), commits are created in
@@ -228,7 +228,7 @@ type Config struct {
 	// Librarian-created changes with other changes.
 	//
 	// Repo is used by all commands which operate on a language repository:
-	// configure, generate, update-apis.
+	// configure, generate, release init, release tag-and-release, update-image.
 	//
 	// When a local directory is specified for the generate command, the repo is checked to
 	// determine whether the specified API path is configured as a library. See the generate
