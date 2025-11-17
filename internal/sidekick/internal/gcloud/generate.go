@@ -222,6 +222,7 @@ func newArguments(method *api.Method, cfg *config.Config, model *api.API) Argume
 		// For all other fields, we generate a standard flag argument. If the field
 		// is a nested message, its fields will be "flattened" into top-level flags.
 		// For example, a field `instance.description` becomes the `--description` flag.
+		//TODOL should not use field.JSONNAMe
 		addFlattenedParams(field, field.JSONName, &args, cfg, model)
 	}
 	return args
@@ -368,6 +369,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 // newResourceReferenceSpec creates a ResourceSpec for a field that references
 // another resource type (e.g., a `--network` flag).
 func newResourceReferenceSpec(field *api.Field, model *api.API, cfg *config.Config) *ResourceSpec {
+	// TODO: test multitype resources here (iam has multitype resources)
 	// We iterate through all the resource definitions in the API model to find the
 	// one that matches the type of our resource reference.
 	for _, def := range model.ResourceDefinitions {
