@@ -6,9 +6,7 @@
 * @googleapis/cloud-sdk-librarian-reviewers
 
 # Locations for all sidekick code.
-/cmd/sidekick/ @googleapis/cloud-sdk-sidekick-team @googleapis/cloud-sdk-librarian-reviewers
-/internal/sidekick/ @googleapis/cloud-sdk-sidekick-team @googleapis/cloud-sdk-librarian-reviewers
+/*/sidekick/ @googleapis/cloud-sdk-sidekick-team @googleapis/cloud-sdk-librarian-reviewers
 
 # Locations for all surfer code.
-/cmd/surfer/ @googleapis/cloud-sdk-surfer-team @googleapis/cloud-sdk-librarian-reviewers
-/internal/surfer/ @googleapis/cloud-sdk-surfer-team @googleapis/cloud-sdk-librarian-reviewers
+/*/surfer/ @googleapis/cloud-sdk-surfer-team @googleapis/cloud-sdk-librarian-reviewers
