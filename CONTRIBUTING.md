@@ -378,19 +378,40 @@ When reviewing a pull request:
   [user-review-requested:@me](https://github.com/googleapis/librarian/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A%40me)
   search view is helpful for tracking PRs awaiting your review.
 
+
+### Addressing Urgent Issues
+
+We categorize issues into two primary levels of urgency:
+
+- [critical 🚨](https://github.com/googleapis/librarian/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22%3Arotating_light%3A%20critical%22):
+  requires immediate fix, even outside business hours
+- [needs fix soon ❗](https://github.com/googleapis/librarian/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22%3Aexclamation%3A%20needs%20fix%20soon%22):
+  high priority issue, can be fixed during business hours
+
+When an issue is labeled `critical 🚨`, the priority is to stablize the system
+enough to downgrade the severity to `needs fix soon ❗`.
+
 ### Maintaining a Healthy Main Branch
 
 All pull requests require passing CI checks to be merged.
 
 The main branch must always be stable, and tests should never fail at HEAD. A
-red build on main is a critical issue that must be fixed immediately. If tests
-become flaky or the
-[main branch](https://github.com/googleapis/librarian/commits/main) is not
-consistently green, the team's top priority should shift to restoring
-stability.
+red build on the
+[main branch](https://github.com/googleapis/librarian/commits/main) is a
+critical issue that must be fixed immediately.
 
-All other development should be deprioritized until green builds can
-be guaranteed.
+If tests become flaky or the is not consistently green, the team's top priority
+should shift to restoring stability. All feature development should be
+deprioritized until green builds can be guaranteed.
+
+When you see a red x next to a commit on main, file an issue on your GitHub
+issue tracker, and label it `critical 🚨`.
+
+Create a PR to temporarily skip the test, and verify that you have a green
+checkmark next to the commit on your main branch.  The issue can now by
+downgraded to `needs fix soon ❗`.
+
+### Running Tests Locally
 
 Running `go test ./...` on a fresh clone of this repository should always pass,
 without requiring anything besides `go` installed. Tests that depend on other
