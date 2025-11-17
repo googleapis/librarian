@@ -82,7 +82,7 @@ type Config struct {
 	// is expected to contain a service config YAML file.
 	// Example: "google/cloud/functions/v2"
 	//
-	// API is used by generate, configure, release init, and update-image commands.
+	// API is used by generate and configure commands.
 	//
 	// API Path is specified with the -api flag.
 	API string
