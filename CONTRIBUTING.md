@@ -388,7 +388,7 @@ We categorize issues into two primary levels of urgency:
 - [needs fix soon ❗](https://github.com/googleapis/librarian/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22%3Aexclamation%3A%20needs%20fix%20soon%22):
   high priority issue, can be fixed during business hours
 
-When an issue is labeled `critical 🚨`, the priority is to stablize the system
+When an issue is labeled `critical 🚨`, the priority is to stabilize the system
 enough to downgrade the severity to `needs fix soon ❗`.
 
 ### Maintaining a Healthy Main Branch
