@@ -119,24 +119,24 @@ func TestFindServiceConfigIn(t *testing.T) {
 	}{
 		{
 			name: "find a service config",
-			path: filepath.Join("..", "..", "testdata", "find_a_service_config"),
+			path: filepath.Join("testdata", "find_a_service_config"),
 			want: "service_config.yaml",
 		},
 		{
 			name:    "non-existent source path",
-			path:    filepath.Join("..", "..", "testdata", "non-existent-path"),
+			path:    filepath.Join("testdata", "non-existent-path"),
 			want:    "",
 			wantErr: true,
 		},
 		{
 			name:    "no service config in a source path",
-			path:    filepath.Join("..", "..", "testdata", "no_service_config"),
+			path:    filepath.Join("testdata", "no_service_config"),
 			want:    "",
 			wantErr: false,
 		},
 		{
 			name:    "invalid yaml",
-			path:    filepath.Join("..", "..", "testdata", "invalid_yaml"),
+			path:    filepath.Join("testdata", "invalid_yaml"),
 			want:    "",
 			wantErr: true,
 		},
@@ -388,7 +388,7 @@ func TestReadLibraryState(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			path := filepath.Join("../../testdata/test-read-library-state", test.filename)
+			path := filepath.Join("testdata/test-read-library-state", test.filename)
 			// The response file is removed by the readLibraryState() function,
 			// so we create a copy and read from it.
 			dstFilePath := filepath.Join(t.TempDir(), "copied-state", test.filename)
