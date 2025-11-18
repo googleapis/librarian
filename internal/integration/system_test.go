@@ -14,7 +14,7 @@
 
 //go:build integration
 
-package librarian
+package integration_test
 
 import (
 	"fmt"
