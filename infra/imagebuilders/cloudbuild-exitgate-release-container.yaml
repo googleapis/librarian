@@ -25,7 +25,7 @@ steps:
     args:
       - 'build'
       - '-f'
-      - 'infra/imagebuilders/container/Dockerfile''
+      - 'infra/imagebuilders/container/Dockerfile'
       - '-t'
       - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-release-container'
       - '.'
