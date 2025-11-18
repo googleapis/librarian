@@ -40,16 +40,17 @@ steps:
       - 'user.email'
       - 'cloud-sdk-librarian-robot@google.com'
   - name: gcr.io/cloud-builders/git
-    id: clone-googleapis
+    id: clone-api-source
     waitFor: ['-']
     args:
       - 'clone'
       - '--single-branch'
-      - '--branch=master'
-      - https://github.com/googleapis/googleapis
+      - '--branch=$_API_SOURCE_BRANCH'
+      - $_API_SOURCE_REPOSITORY
+      - apis
   - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian@sha256:8ae52838e466022dd701cab8c3f002cb727b3e0e5688864b3d0d68f645541035'
     id: generate
-    waitFor: ['configure-language-repo-email', 'clone-googleapis']
+    waitFor: ['configure-language-repo-email', 'clone-api-source']
     dir: tmp
     args:
       - 'generate'
@@ -59,7 +60,7 @@ steps:
       - '-library'
       - $_LIBRARY_ID
       - '-api-source'
-      - '/workspace/googleapis'
+      - '/workspace/apis'
       - '-output'
       - /workspace/tmp
       - '-push=$_PUSH'

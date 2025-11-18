@@ -244,6 +244,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 				"_GITHUB_TOKEN_SECRET_NAME": "foo",
 				"_PUSH":                     "true",
 				"_BUILD":                    "true",
+				"_API_SOURCE_REPOSITORY":    "https://github.com/googleapis/googleapis",
+				"_API_SOURCE_BRANCH":        "master",
 			}},
 		},
 		{
@@ -267,6 +269,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 				"_GITHUB_TOKEN_SECRET_NAME": "bar",
 				"_PUSH":                     "true",
 				"_BUILD":                    "true",
+				"_API_SOURCE_REPOSITORY":    "https://github.com/googleapis/googleapis",
+				"_API_SOURCE_BRANCH":        "master",
 			}},
 		},
 		{
@@ -281,6 +285,21 @@ func TestRunCommandWithConfig(t *testing.T) {
 			},
 			wantErr:         true,
 			wantTriggersRun: nil,
+		},
+		{
+			name:    "errors on generate trigger without API source name",
+			command: "generate",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"generate"},
+						SecretName:        "foo",
+						APISourceRepo:     &APISourceRepo{},
+					},
+				},
+			},
+			wantErr: true,
 		},
 		{
 			name:    "runs stage-release trigger",
@@ -301,6 +320,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
 				"_GITHUB_TOKEN_SECRET_NAME": "baz",
 				"_PUSH":                     "true",
+				"_API_SOURCE_REPOSITORY":    "https://github.com/googleapis/googleapis",
+				"_API_SOURCE_BRANCH":        "master",
 			}},
 		},
 		{
@@ -324,6 +345,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 				"_GITHUB_TOKEN_SECRET_NAME": "qux",
 				"_PUSH":                     "true",
 				"_PR":                       "https://github.com/googleapis/google-cloud-python/pull/42",
+				"_API_SOURCE_REPOSITORY":    "https://github.com/googleapis/googleapis",
+				"_API_SOURCE_BRANCH":        "master",
 			}},
 		},
 		{
@@ -346,6 +369,8 @@ func TestRunCommandWithConfig(t *testing.T) {
 				"_GITHUB_TOKEN_SECRET_NAME": "quux",
 				"_PUSH":                     "true",
 				"_BUILD":                    "true",
+				"_API_SOURCE_REPOSITORY":    "https://github.com/googleapis/googleapis",
+				"_API_SOURCE_BRANCH":        "master",
 			}},
 		},
 		{
@@ -370,6 +395,65 @@ func TestRunCommandWithConfig(t *testing.T) {
 				"_PUSH":                     "true",
 				"_BRANCH":                   "preview",
 				"_BUILD":                    "true",
+				"_API_SOURCE_REPOSITORY":    "https://github.com/googleapis/googleapis",
+				"_API_SOURCE_BRANCH":        "master",
+			}},
+		},
+		{
+			name:    "runs generate trigger on specific API source and branch",
+			command: "generate",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"generate"},
+						Branch:            "preview",
+						SecretName:        "foo",
+						APISourceRepo: &APISourceRepo{
+							Name:   "googleapis",
+							Branch: "preview",
+						},
+					},
+				},
+			},
+			wantErr:         false,
+			wantTriggersRun: []string{"generate-trigger-id"},
+			wantSubstitutions: []map[string]string{{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "foo",
+				"_PUSH":                     "true",
+				"_BRANCH":                   "preview",
+				"_BUILD":                    "true",
+				"_API_SOURCE_REPOSITORY":    "https://github.com/googleapis/googleapis",
+				"_API_SOURCE_BRANCH":        "preview",
+			}},
+		},
+		{
+			name:    "runs generate trigger on specific API source default branch",
+			command: "generate",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-python",
+						SupportedCommands: []string{"generate"},
+						SecretName:        "foo",
+						APISourceRepo: &APISourceRepo{
+							Name: "googleapis",
+						},
+					},
+				},
+			},
+			wantErr:         false,
+			wantTriggersRun: []string{"generate-trigger-id"},
+			wantSubstitutions: []map[string]string{{
+				"_REPOSITORY":               "google-cloud-python",
+				"_FULL_REPOSITORY":          "https://github.com/googleapis/google-cloud-python",
+				"_GITHUB_TOKEN_SECRET_NAME": "foo",
+				"_PUSH":                     "true",
+				"_BUILD":                    "true",
+				"_API_SOURCE_REPOSITORY":    "https://github.com/googleapis/googleapis",
+				"_API_SOURCE_BRANCH":        "master",
 			}},
 		},
 	} {

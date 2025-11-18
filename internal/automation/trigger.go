@@ -37,6 +37,11 @@ var triggerNameByCommandName = map[string]string{
 	"update-image":    "update-image",
 }
 
+var defaultAPISource = &APISourceRepo{
+	Name:   "googleapis",
+	Branch: "master",
+}
+
 const region = "global"
 
 // GitHubClient handles communication with the GitHub API.
@@ -106,11 +111,27 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 			return err
 		}
 
+		if repository.APISourceRepo == nil {
+			repository.APISourceRepo = defaultAPISource
+		} else if repository.APISourceRepo.Branch == "" {
+			// Default to a well known branch if a specific API source repo is
+			// configured, but not with a specific branch.
+			repository.APISourceRepo.Branch = defaultAPISource.Branch
+		}
+
+		apiSourceGitUrl, err := repository.APISourceRepo.GitURL()
+		if err != nil {
+			slog.Error("repository API source has no configured git url", slog.Any("repository", repository))
+			return err
+		}
+
 		substitutions := map[string]string{
 			"_REPOSITORY":               repository.Name,
 			"_FULL_REPOSITORY":          gitUrl,
 			"_GITHUB_TOKEN_SECRET_NAME": repository.SecretName,
 			"_PUSH":                     fmt.Sprintf("%v", push),
+			"_API_SOURCE_REPOSITORY":    apiSourceGitUrl,
+			"_API_SOURCE_BRANCH":        repository.APISourceRepo.Branch,
 		}
 		if repository.Branch != "" {
 			substitutions["_BRANCH"] = repository.Branch

@@ -114,6 +114,20 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "API source missing both name and full name",
+			config: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name:              "google-cloud-foo",
+						SecretName:        "google-cloud-foo-github-token",
+						SupportedCommands: []string{"generate", "stage-release", "publish-release"},
+						APISourceRepo:     &APISourceRepo{},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := test.config.Validate(); (err != nil) != test.wantErr {
@@ -192,6 +206,34 @@ func TestParseRepositoriesConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "valid state with explicit API source",
+			content: `repositories:
+  - name: google-cloud-python
+    api-source:
+      name: googleapis
+      full-name: https://github.com/googleapis/googleapis
+      branch: preview
+    github-token-secret-name: google-cloud-python-github-token
+    supported-commands:
+      - generate
+      - stage-release
+`,
+			want: &RepositoriesConfig{
+				Repositories: []*RepositoryConfig{
+					{
+						Name: "google-cloud-python",
+						APISourceRepo: &APISourceRepo{
+							Name:     "googleapis",
+							FullName: "https://github.com/googleapis/googleapis",
+							Branch:   "preview",
+						},
+						SecretName:        "google-cloud-python-github-token",
+						SupportedCommands: []string{"generate", "stage-release"},
+					},
+				},
+			},
+		},
+		{
 			name: "invalid yaml",
 			content: `repositories:
   - name: google-cloud-python
@@ -211,6 +253,19 @@ func TestParseRepositoriesConfig(t *testing.T) {
 		# missing supported-commands
 `,
 			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "validation error on API source",
+			content: `repositories:
+  - name: google-cloud-python
+    api-source:
+      branch: preview
+    github-token-secret-name: google-cloud-python-github-token
+    supported-commands:
+      - generate
+      - stage-release
+`,
 			wantErr: true,
 		},
 	} {
@@ -323,6 +378,58 @@ func TestRepositoryGitUrl(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := test.repository.GitURL()
 			if err != nil && test.wantError {
+				t.Errorf("expected to return error")
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("parseRepositoriesConfig() mismatch (-want +got): %s", diff)
+			}
+		})
+	}
+}
+
+func TestAPISourceGitUrl(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		apiSource *APISourceRepo
+		want      string
+		wantError bool
+	}{
+		{
+			name: "sets default organization",
+			apiSource: &APISourceRepo{
+				Name: "google-cloud-python",
+			},
+			want: "https://github.com/googleapis/google-cloud-python",
+		},
+		{
+			name: "reads full name",
+			apiSource: &APISourceRepo{
+				FullName: "https://github.com/some-org/google-cloud-python",
+			},
+			want: "https://github.com/some-org/google-cloud-python",
+		},
+		{
+			name: "prefers full name",
+			apiSource: &APISourceRepo{
+				Name:     "google-cloud-python",
+				FullName: "https://github.com/some-org/google-cloud-python",
+			},
+			want: "https://github.com/some-org/google-cloud-python",
+		},
+		{
+			name:      "missing name",
+			apiSource: &APISourceRepo{},
+			wantError: true,
+		},
+		{
+			name:      "nil no op",
+			apiSource: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := test.apiSource.GitURL()
+			if err == nil && test.wantError {
 				t.Errorf("expected to return error")
 				return
 			}

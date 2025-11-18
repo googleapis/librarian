@@ -15,6 +15,7 @@
 package automation
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -33,6 +34,35 @@ var availableCommands = map[string]bool{
 	"update-image":    true,
 }
 
+type APISourceRepo struct {
+	Name     string `yaml:"name"`
+	FullName string `yaml:"full-name"`
+	Branch   string `yaml:"branch"`
+}
+
+func (a *APISourceRepo) GitURL() (string, error) {
+	if a == nil {
+		return "", nil
+	}
+	if a.FullName == "" {
+		if a.Name == "" {
+			return "", errors.New("name or full name is required")
+		}
+		return fmt.Sprintf("https://github.com/googleapis/%s", a.Name), nil
+	}
+	return a.FullName, nil
+}
+
+func (a *APISourceRepo) Validate() error {
+	if a == nil {
+		return nil
+	}
+	if a.FullName == "" && a.Name == "" {
+		return errors.New("name or full name is required")
+	}
+	return nil
+}
+
 // RepositoryConfig represents a single registered librarian GitHub repository.
 type RepositoryConfig struct {
 	Name              string   `yaml:"name"`
@@ -43,10 +73,16 @@ type RepositoryConfig struct {
 	// Branch configures the repository branch to checkout in Cloud Build prior
 	// to command execution. Furthermore, it dictates the value set on the
 	// [github.com/googleapis/librarian/internal/config.Config] Branch property
-	// via the --branch flag.
+	// via the -branch flag.
 	//
 	// This property is optional. Downstream usage defaults to "main".
 	Branch string `yaml:"branch"`
+
+	// APISourceRepo specifies the API source repository to clone for use in commands
+	// that consume API specifications, for example "generate".
+	//
+	// Defaults to github.com/googlepais/googleapis @ master branch downstream.
+	APISourceRepo *APISourceRepo `yaml:"api-source"`
 }
 
 // RepositoriesConfig represents all the registered librarian GitHub repositories.
@@ -81,6 +117,9 @@ func (c *RepositoryConfig) Validate() error {
 		if !availableCommands[command] {
 			return fmt.Errorf("unsupported command: %s", command)
 		}
+	}
+	if err := c.APISourceRepo.Validate(); err != nil {
+		return fmt.Errorf("Invalida API source: %w", err)
 	}
 	return nil
 }
