@@ -38,7 +38,7 @@ steps:
       - '-i'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/librarian'
       - '--config'
-      - '/workspace/infra/cloudbuilds/container-structure-test.yaml'
+      - '/workspace/infra/imagebuilders/container-structure-test.yaml'
       - '-v'
   - id: 'build-dispatcher'
     name: 'gcr.io/cloud-builders/docker'

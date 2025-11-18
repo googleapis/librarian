@@ -35,7 +35,7 @@ steps:
       - '-i'
       - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
       - '--config'
-      - '/workspace/infra/cloudbuilds/container-structure-test.yaml'
+      - '/workspace/infra/imagebuilders/container-structure-test.yaml'
       - '-v'
 images:
   - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
