@@ -88,7 +88,7 @@ type RepositoryConfig struct {
 	// APISourceRepo specifies the API source repository to clone for use in commands
 	// that consume API specifications, for example "generate".
 	//
-	// Defaults to github.com/googlepais/googleapis @ master branch downstream.
+	// Defaults to github.com/googleapis/googleapis @ master branch downstream.
 	APISourceRepo *APISourceRepo `yaml:"api-source"`
 }
 
