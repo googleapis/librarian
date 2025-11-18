@@ -157,6 +157,8 @@ type API struct {
 	// State contains helpful information that can be used when generating
 	// clients.
 	State *APIState
+	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
+	ResourceDefinitions []*Resource
 }
 
 // HasMessages returns true if the API contains messages (most do).
@@ -644,6 +646,8 @@ type Message struct {
 	Pagination *PaginationInfo
 	// Language specific annotations.
 	Codec any
+	// Resource contains the data from the `google.api.resource` annotation.
+	Resource *Resource
 }
 
 // HasFields returns true if the message has fields.
@@ -763,6 +767,9 @@ type Field struct {
 	EnumType *Enum
 	// A placeholder to put language specific annotations.
 	Codec any
+	// ResourceReference contains the data from the `google.api.resource_reference`
+	// annotation.
+	ResourceReference *ResourceReference
 }
 
 // FieldParent returns the Parent field with an alternative name.
@@ -888,3 +895,31 @@ type OneOf struct {
 	// Codec is a placeholder to put language specific annotations.
 	Codec any
 }
+
+// Resource contains the data from the `google.api.resource` annotation.
+type Resource struct {
+	// Type is the resource type.
+	Type string
+	// Pattern is the resource name pattern.
+	Pattern []string
+	// Plural is the plural form of the resource name.
+	Plural string
+	// Singular is the singular form of the resource name.
+	Singular string
+}
+
+// ResourceReference contains the data from the `google.api.resource_reference`
+// annotation.
+type ResourceReference struct {
+	// Type is the resource type that the field references.
+	Type string
+	// ChildType is the resource type of a child of the resource that the field
+	// references.
+	ChildType string
+}
+
+// MethodFullName returns the fully qualified name of the method.
+func (m *Method) MethodFullName() string {
+	return m.Service.Package + "." + m.Service.Name + "." + m.Name
+}
+
