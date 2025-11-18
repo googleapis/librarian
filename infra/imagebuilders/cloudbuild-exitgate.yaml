@@ -19,36 +19,23 @@
 # 'images-dev' repository, which serves as the entry point for the AR Exit Gate.
 # After passing the gate's security checks, the image is promoted and
 # published to the 'images-prod' repository.
-#
-# Local test:
-#   gcloud --project=<my-project> builds submit . --config=cloudbuild-test.yaml
 steps:
-  - id: 'build'
-    name: 'gcr.io/cloud-builders/docker'
+  - name: 'gcr.io/cloud-builders/docker'
     waitFor: ['-']
     args:
       - 'build'
       - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/librarian'
-      - '.'
-  - id: structure-test
-    name: gcr.io/gcp-runtimes/structure_test
-    waitFor: ['build']
-    args:
-      - '-i'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/librarian'
-      - '--config'
-      - '/workspace/container-structure-test.yaml'
-      - '-v'
-  - id: 'build-dispatcher'
-    name: 'gcr.io/cloud-builders/docker'
-    waitFor: ['-']
-    args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/librarian-dispatcher'
+      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
       - '.'
       - '-f'
-      - 'infra/dispatcher/Dockerfile'
-options:
-  logging: CLOUD_LOGGING_ONLY
+      - 'infra/imagebuilders/cli/Dockerfile'
+  - id: structure-test
+    name: gcr.io/gcp-runtimes/structure_test
+    args:
+      - '-i'
+      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+      - '--config'
+      - '/workspace/infra/cloudbuilds/container-structure-test.yaml'
+      - '-v'
+images:
+  - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'

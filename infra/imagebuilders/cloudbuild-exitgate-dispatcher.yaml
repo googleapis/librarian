@@ -20,7 +20,15 @@
 # After passing the gate's security checks, the image is promoted and
 # published to the 'images-prod' repository.
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-dev/librarian', '.']
+  - id: build-dispatcher
+    name: 'gcr.io/cloud-builders/docker'
+    waitFor: ['-']
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-dispatcher'
+      - '.'
+      - '-f'
+      - 'infra/imagebuilders/dispatcher/Dockerfile'
 images:
-  - 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-dev/librarian'
+  - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian-dispatcher'
