@@ -426,7 +426,7 @@ for information on how to configure your development environment.
 
 ### Handling Dependency Updates
 
-We have a policy that we only perform dependency updates for security 
-vulnerabilities, bug fixes and feature support.  Security vulnerabilties will be 
-provided by Dependabot.  Bug fixes/feature work will be based on issues filed in 
-this repository.
+We only update dependencies for security vulnerabilities, bug fixes, or to add
+feature support. Security vulnerabilities are identified using Dependabot.
+Dependency updates for bug fixes or new features must be associated with an
+issue in this repository.
