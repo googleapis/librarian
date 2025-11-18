@@ -195,7 +195,7 @@ func TestParseGlobalConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			path := filepath.Join("../../testdata/test-parse-global-config", test.filename)
+			path := filepath.Join("testdata/test-parse-global-config", test.filename)
 			got, err := parseLibrarianConfig(path)
 			if test.wantErr {
 				if err == nil {
@@ -244,7 +244,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 					},
 				},
 			},
-			path: filepath.Join("..", "..", "testdata", "populate_service_config"),
+			path: filepath.Join("testdata", "populate_service_config"),
 			want: &config.LibrarianState{
 				Libraries: []*config.LibraryState{
 					{
