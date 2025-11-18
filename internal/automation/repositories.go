@@ -34,12 +34,17 @@ var availableCommands = map[string]bool{
 	"update-image":    true,
 }
 
+// APISourceRepo represents configuration for an API source repository to clone.
 type APISourceRepo struct {
 	Name     string `yaml:"name"`
 	FullName string `yaml:"full-name"`
 	Branch   string `yaml:"branch"`
 }
 
+// GitURL assembles a Git URL to use in cloning. If only [APISourceRepo.Name] is
+// set, the resulting URL is based on the googleapis GitHub organization. If
+// [APISourceRepo.FullName] is set, that is used instead. If neither are set, it
+// returns an error.
 func (a *APISourceRepo) GitURL() (string, error) {
 	if a == nil {
 		return "", nil
@@ -53,6 +58,8 @@ func (a *APISourceRepo) GitURL() (string, error) {
 	return a.FullName, nil
 }
 
+// Validate ensures that, if initialized, the [APISourceRepo] has either a
+// Name or FullName property set, returning an error if neither are.
 func (a *APISourceRepo) Validate() error {
 	if a == nil {
 		return nil
@@ -119,7 +126,7 @@ func (c *RepositoryConfig) Validate() error {
 		}
 	}
 	if err := c.APISourceRepo.Validate(); err != nil {
-		return fmt.Errorf("Invalida API source: %w", err)
+		return fmt.Errorf("invalid API source: %w", err)
 	}
 	return nil
 }

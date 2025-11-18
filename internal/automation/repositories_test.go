@@ -430,7 +430,11 @@ func TestAPISourceGitUrl(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := test.apiSource.GitURL()
 			if err == nil && test.wantError {
-				t.Errorf("expected to return error")
+				t.Error("expected to return error, but did not")
+				return
+			}
+			if err != nil && !test.wantError {
+				t.Errorf("unexpected error: %s", err)
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
