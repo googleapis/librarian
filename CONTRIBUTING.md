@@ -423,3 +423,10 @@ tools or services (e.g., docker, protoc, etc.) should be skipped when those
 tools are not available in the development environment. See
 [doc/onboarding.md](https://github.com/googleapis/librarian/blob/main/doc/onboarding.md)
 for information on how to configure your development environment.
+
+### Handling Dependency Updates
+
+We have a policy that we only perform dependency updates for security 
+vulnerabilities, bug fixes and feature support.  Security vulnerabilties will be 
+provided by Dependabot.  Bug fixes/feature work will be based on issues filed in 
+this repository.
