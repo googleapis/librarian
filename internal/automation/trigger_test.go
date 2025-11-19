@@ -83,6 +83,7 @@ func TestRunCommandWithClient(t *testing.T) {
 			name:    "invalid command",
 			command: "invalid-command",
 			push:    true,
+			wantErr: true,
 			buildTriggers: []*cloudbuildpb.BuildTrigger{
 				{
 					Name: "generate",
