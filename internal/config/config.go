@@ -91,7 +91,7 @@ type Config struct {
 	// When this is not specified, the googleapis repository is cloned
 	// automatically.
 	//
-	// APISource is used by generate, configure, and update-image commands.
+	// APISource is used by generate and update-image commands.
 	//
 	// APISource is specified with the -api-source flag.
 	APISource string
