@@ -220,7 +220,7 @@ func TestResolveMessageName_ImportsMessages(t *testing.T) {
 	}
 }
 
-func TestResolveMessageName_ImportsEnum(t *testing.T) {
+func TestFieldType_EnumImports(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{
 		{
 			ID:      ".google.type.DayOfWeek",
