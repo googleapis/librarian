@@ -206,7 +206,7 @@ type Config struct {
 
 	// Push determines whether to push changes to GitHub. It is used in
 	// all commands that create commits in a language repository:
-	// configure, generate, release init, update-image.
+	// generate, release init, update-image.
 	// These commands all create pull requests if they
 	//
 	// By default (when Push isn't explicitly specified), commits are created in
