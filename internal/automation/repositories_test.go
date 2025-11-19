@@ -142,7 +142,8 @@ func TestParseRepositoriesConfig(t *testing.T) {
 	}{
 		{
 			name: "valid state",
-			content: `repositories:
+			content: `librarian-image-sha: example-sha
+repositories:
   - name: google-cloud-python
     github-token-secret-name: google-cloud-python-github-token
     supported-commands:
@@ -150,6 +151,7 @@ func TestParseRepositoriesConfig(t *testing.T) {
       - stage-release
 `,
 			want: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						Name:              "google-cloud-python",
@@ -161,7 +163,8 @@ func TestParseRepositoriesConfig(t *testing.T) {
 		},
 		{
 			name: "valid state with full name",
-			content: `repositories:
+			content: `librarian-image-sha: example-sha
+repositories:
   - name: google-cloud-python
     full-name: https://github.com/some-org/google-cloud-python
     github-token-secret-name: google-cloud-python-github-token
@@ -170,6 +173,7 @@ func TestParseRepositoriesConfig(t *testing.T) {
       - stage-release
 `,
 			want: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						Name:              "google-cloud-python",
@@ -182,7 +186,8 @@ func TestParseRepositoriesConfig(t *testing.T) {
 		},
 		{
 			name: "valid state with branch",
-			content: `repositories:
+			content: `librarian-image-sha: example-sha
+repositories:
   - name: google-cloud-python
     branch: preview
     github-token-secret-name: google-cloud-python-github-token
@@ -191,6 +196,7 @@ func TestParseRepositoriesConfig(t *testing.T) {
       - stage-release
 `,
 			want: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						Name:              "google-cloud-python",
