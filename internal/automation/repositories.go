@@ -15,6 +15,7 @@
 package automation
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -25,6 +26,8 @@ import (
 
 //go:embed prod/repositories.yaml
 var prodRepositoriesYaml []byte
+
+var errImageSHANotFound = errors.New("image SHA not found")
 
 var availableCommands = map[string]bool{
 	"generate":        true,
@@ -51,6 +54,7 @@ type RepositoryConfig struct {
 
 // RepositoriesConfig represents all the registered librarian GitHub repositories.
 type RepositoriesConfig struct {
+	imageSHA     string              `yaml:"librarian-image-sha"`
 	Repositories []*RepositoryConfig `yaml:"repositories"`
 }
 
@@ -87,6 +91,9 @@ func (c *RepositoryConfig) Validate() error {
 
 // Validate checks the RepositoriesConfig is valid.
 func (c *RepositoriesConfig) Validate() error {
+	if c.imageSHA == "" {
+		return errImageSHANotFound
+	}
 	for i, r := range c.Repositories {
 		err := r.Validate()
 		if err != nil {
