@@ -15,12 +15,11 @@
 package config
 
 import (
-	"crypto/sha256"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/fetch"
 )
 
 const (
@@ -59,14 +58,14 @@ func UpdateRootConfig(rootConfig *Config, rootName string) error {
 
 	query := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.Api, repo.Org, repo.Repo, branch)
 	fmt.Printf("getting latest SHA from %q\n", query)
-	latestSha, err := getLatestSha(query)
+	latestSha, err := fetch.GetLatestSha(query)
 	if err != nil {
 		return err
 	}
 
 	newLink := newTarballLink(endpoints, repo, latestSha)
 	fmt.Printf("computing SHA256 for %q\n", newLink)
-	newSha256, err := getSha256(newLink)
+	newSha256, err := fetch.GetSha256(newLink)
 	if err != nil {
 		return err
 	}
@@ -173,44 +172,4 @@ func updateRootConfigContents(rootName string, contents []byte, endpoints *githu
 		return nil, fmt.Errorf("too many changes to Root or Sha256 for %s", rootName)
 	}
 	return []byte(newContents), nil
-}
-
-func getSha256(query string) (string, error) {
-	response, err := http.Get(query)
-	if err != nil {
-		return "", err
-	}
-	if response.StatusCode >= 300 {
-		return "", fmt.Errorf("http error in download %s", response.Status)
-	}
-	defer response.Body.Close()
-
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, response.Body); err != nil {
-		return "", err
-	}
-	got := fmt.Sprintf("%x", hasher.Sum(nil))
-	return got, nil
-}
-
-func getLatestSha(query string) (string, error) {
-	client := &http.Client{}
-	request, err := http.NewRequest(http.MethodGet, query, nil)
-	if err != nil {
-		return "", err
-	}
-	request.Header.Set("Accept", "application/vnd.github.VERSION.sha")
-	response, err := client.Do(request)
-	if err != nil {
-		return "", err
-	}
-	if response.StatusCode >= 300 {
-		return "", fmt.Errorf("http error in download %s", response.Status)
-	}
-	defer response.Body.Close()
-	contents, err := io.ReadAll(response.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(contents), nil
 }
