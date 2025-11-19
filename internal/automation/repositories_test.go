@@ -209,7 +209,8 @@ repositories:
 		},
 		{
 			name: "invalid yaml",
-			content: `repositories:
+			content: `librarian-image-sha: example-sha
+repositories:
   - name: google-cloud-python
       github-token-secret-name: google-cloud-python-github-token # bad indent
     supported-commands:
@@ -221,7 +222,8 @@ repositories:
 		},
 		{
 			name: "validation error",
-			content: `repositories:
+			content: `librarian-image-sha: example-sha
+repositories:
   - name: google-cloud-python
     github-token-secret-name: google-cloud-python-github-token
 		# missing supported-commands
