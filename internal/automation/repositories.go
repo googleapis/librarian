@@ -54,7 +54,7 @@ type RepositoryConfig struct {
 
 // RepositoriesConfig represents all the registered librarian GitHub repositories.
 type RepositoriesConfig struct {
-	imageSHA     string              `yaml:"librarian-image-sha"`
+	ImageSHA     string              `yaml:"librarian-image-sha"`
 	Repositories []*RepositoryConfig `yaml:"repositories"`
 }
 
@@ -91,7 +91,7 @@ func (c *RepositoryConfig) Validate() error {
 
 // Validate checks the RepositoriesConfig is valid.
 func (c *RepositoriesConfig) Validate() error {
-	if c.imageSHA == "" {
+	if c.ImageSHA == "" {
 		return errImageSHANotFound
 	}
 	for i, r := range c.Repositories {

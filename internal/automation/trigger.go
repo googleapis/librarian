@@ -81,8 +81,7 @@ func RunCommand(ctx context.Context, command string, projectId string, push bool
 func runCommandWithClient(ctx context.Context, client CloudBuildClient, ghClient GitHubClient, command string, projectId string, push bool, build bool) error {
 	repositoriesConfig, err := loadRepositoriesConfig()
 	if err != nil {
-		slog.Error("error loading repositories config", slog.Any("err", err))
-		return err
+		return fmt.Errorf("error loading repositories config: %w", err)
 	}
 	return runCommandWithConfig(ctx, client, ghClient, command, projectId, push, build, repositoriesConfig)
 }
@@ -107,7 +106,7 @@ func runCommandWithConfig(ctx context.Context, client CloudBuildClient, ghClient
 		}
 
 		substitutions := map[string]string{
-			"_IMAGE_SHA":                config.imageSHA,
+			"_IMAGE_SHA":                config.ImageSHA,
 			"_REPOSITORY":               repository.Name,
 			"_FULL_REPOSITORY":          gitUrl,
 			"_GITHUB_TOKEN_SECRET_NAME": repository.SecretName,
