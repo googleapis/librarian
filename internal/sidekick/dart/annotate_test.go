@@ -757,6 +757,21 @@ func TestCreateFromJsonLine(t *testing.T) {
 			},
 		},
 	}
+	mapStringToBytes := &api.Message{
+		Name:  "$StringToBytes",
+		ID:    "..$StringToBytes",
+		IsMap: true,
+		Fields: []*api.Field{
+			{
+				Name:  "key",
+				Typez: api.STRING_TYPE,
+			},
+			{
+				Name:  "value",
+				Typez: api.BYTES_TYPE,
+			},
+		},
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -841,6 +856,16 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
 			"decode(json['message'], foo.Foo.fromJson)",
 		},
+		{
+			// Custom encoding.
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Duration"},
+			"decodeCustom(json['message'], Duration.fromJson)",
+		},
+		{
+			// Map of bytes.
+			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToBytes.ID},
+			"decodeMapBytes(json['message']) ?? {}",
+		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
 			message := &api.Message{
@@ -849,7 +874,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage}, []*api.Enum{enumState, foreignEnumState}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage, mapStringToBytes}, []*api.Enum{enumState, foreignEnumState}, []*api.Service{})
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{
 				"prefix:google.cloud.foo": "foo",
