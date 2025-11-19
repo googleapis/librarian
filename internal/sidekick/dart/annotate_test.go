@@ -565,14 +565,27 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 	r := sample.Replication()
 	a := sample.Automatic()
 	enum := sample.EnumState()
+	foreignEnumState := &api.Enum{
+		Name:    "ForeignEnum",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.ForeignEnum",
+		Values: []*api.EnumValue{
+			{
+				Name:   "Enabled",
+				Number: 1,
+			},
+		},
+	}
+
 	model := api.NewTestAPI(
 		[]*api.Message{r, a, sample.CustomerManagedEncryption()},
-		[]*api.Enum{enum},
+		[]*api.Enum{enum, foreignEnumState},
 		[]*api.Service{})
 	model.PackageName = "test"
 	annotate := newAnnotateModel(model)
-	annotate.annotateModel(map[string]string{})
-
+	annotate.annotateModel(map[string]string{
+		"prefix:google.cloud.foo": "foo",
+	})
 	for _, test := range []struct {
 		enumField *api.Field
 		want      []string
@@ -593,6 +606,15 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 				TypezID:  enum.ID,
 				Optional: true},
 			[]string{"if (result.optionalEnum != null) 'optionalJsonEnum': result.optionalEnum!.value"},
+		},
+		{
+			&api.Field{
+				Name:     "enumName",
+				JSONName: "jsonEnumName",
+				Typez:    api.ENUM_TYPE,
+				TypezID:  foreignEnumState.ID,
+				Optional: false},
+			[]string{"if (result.enumName.isNotDefault) 'jsonEnumName': result.enumName.value"},
 		},
 	} {
 		t.Run(test.enumField.Name, func(t *testing.T) {
@@ -715,6 +737,26 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 
 func TestCreateFromJsonLine(t *testing.T) {
 	secret := sample.Secret()
+	enumState := sample.EnumState()
+
+	foreignMessage := &api.Message{
+		Name:    "Foo",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.Foo",
+		Enums:   []*api.Enum{},
+		Fields:  []*api.Field{},
+	}
+	foreignEnumState := &api.Enum{
+		Name:    "ForeignEnum",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.ForeignEnum",
+		Values: []*api.EnumValue{
+			{
+				Name:   "Enabled",
+				Number: 1,
+			},
+		},
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -780,10 +822,24 @@ func TestCreateFromJsonLine(t *testing.T) {
 			"decodeListBytes(json['bytesList'])",
 		},
 
+		// enums
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: enumState.ID},
+			"decodeEnum(json['message'], State.fromJson) ?? State.$default",
+		},
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: foreignEnumState.ID},
+			"decodeEnum(json['message'], foo.ForeignEnum.fromJson) ?? foo.ForeignEnum.$default",
+		},
+
 		// messages
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
 			"decode(json['message'], Secret.fromJson)",
+		},
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
+			"decode(json['message'], foo.Foo.fromJson)",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
@@ -793,9 +849,11 @@ func TestCreateFromJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret}, []*api.Enum{}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage}, []*api.Enum{enumState, foreignEnumState}, []*api.Service{})
 			annotate := newAnnotateModel(model)
-			annotate.annotateModel(map[string]string{})
+			annotate.annotateModel(map[string]string{
+				"prefix:google.cloud.foo": "foo",
+			})
 			codec := test.field.Codec.(*fieldAnnotation)
 
 			got := annotate.createFromJsonLine(test.field, model.State, codec.Required)
@@ -809,6 +867,25 @@ func TestCreateFromJsonLine(t *testing.T) {
 func TestCreateToJsonLine(t *testing.T) {
 	secret := sample.Secret()
 	enum := sample.EnumState()
+
+	foreignMessage := &api.Message{
+		Name:    "Foo",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.Foo",
+		Enums:   []*api.Enum{},
+		Fields:  []*api.Field{},
+	}
+	foreignEnumState := &api.Enum{
+		Name:    "ForeignEnum",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.ForeignEnum",
+		Values: []*api.EnumValue{
+			{
+				Name:   "Enabled",
+				Number: 1,
+			},
+		},
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -874,9 +951,23 @@ func TestCreateToJsonLine(t *testing.T) {
 			"encodeListBytes(bytesList)",
 		},
 
+		// enums
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: enum.ID},
+			"message.toJson()",
+		},
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: foreignEnumState.ID},
+			"message.toJson()",
+		},
+
 		// messages
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
+			"message!.toJson()",
+		},
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
 			"message!.toJson()",
 		},
 	} {
@@ -887,9 +978,11 @@ func TestCreateToJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret}, []*api.Enum{enum}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage}, []*api.Enum{enum, foreignEnumState}, []*api.Service{})
 			annotate := newAnnotateModel(model)
-			annotate.annotateModel(map[string]string{})
+			annotate.annotateModel(map[string]string{
+				"prefix:google.cloud.foo": "foo",
+			})
 			codec := test.field.Codec.(*fieldAnnotation)
 
 			got := createToJsonLine(test.field, model.State, codec.Required)

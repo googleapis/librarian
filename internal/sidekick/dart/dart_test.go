@@ -141,7 +141,7 @@ func TestEnumValues(t *testing.T) {
 	}
 }
 
-func TestResolveTypeName(t *testing.T) {
+func TestResolveMessageName(t *testing.T) {
 	message := sample.CreateRequest()
 	model := api.NewTestAPI([]*api.Message{
 		message, {
@@ -169,14 +169,14 @@ func TestResolveTypeName(t *testing.T) {
 		{".google.protobuf.Timestamp", "Timestamp"},
 		{".google.protobuf.Duration", "Duration"},
 	} {
-		got := annotate.resolveTypeName(state.MessageByID[test.typeId], true)
+		got := annotate.resolveMessageName(state.MessageByID[test.typeId], true)
 		if got != test.want {
 			t.Errorf("unexpected type name, got: %s want: %s", got, test.want)
 		}
 	}
 }
 
-func TestResolveTypeName_ImportsMessages(t *testing.T) {
+func TestResolveMessageName_ImportsMessages(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{
 		{
 			ID:      ".google.protobuf.Any",
@@ -213,14 +213,14 @@ func TestResolveTypeName_ImportsMessages(t *testing.T) {
 		{".google.type.Expr", "package:google_cloud_type/type.dart"},
 	} {
 		annotate.imports = map[string]bool{}
-		annotate.resolveTypeName(state.MessageByID[test.typeId], true)
+		annotate.resolveMessageName(state.MessageByID[test.typeId], true)
 		if _, ok := annotate.imports[test.want]; !ok {
 			t.Errorf("import not added, got: %v want: %s", annotate.imports, test.want)
 		}
 	}
 }
 
-func TestResolveTypeName_ImportsEnum(t *testing.T) {
+func TestResolveMessageName_ImportsEnum(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{
 		{
 			ID:      ".google.type.DayOfWeek",
@@ -252,7 +252,7 @@ func TestResolveTypeName_ImportsEnum(t *testing.T) {
 	}
 }
 
-func TestResolveTypeNameImportPrefixes(t *testing.T) {
+func TestResolveMessageNameImportPrefixes(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{
 		{
 			ID:      ".google.protobuf.Timestamp",
@@ -290,7 +290,7 @@ func TestResolveTypeNameImportPrefixes(t *testing.T) {
 		{".google.type.DayOfWeek", "type.DayOfWeek"},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			got := annotate.resolveTypeName(state.MessageByID[test.typeId], true)
+			got := annotate.resolveMessageName(state.MessageByID[test.typeId], true)
 			if got != test.want {
 				t.Errorf("unexpected type name, got: %s want: %s", got, test.want)
 			}

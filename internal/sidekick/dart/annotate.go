@@ -630,8 +630,8 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		Parent:              method,
 		Name:                strcase.ToLowerCamel(method.Name),
 		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
-		RequestType:         annotate.resolveTypeName(state.MessageByID[method.InputTypeID], true),
-		ResponseType:        annotate.resolveTypeName(state.MessageByID[method.OutputTypeID], true),
+		RequestType:         annotate.resolveMessageName(state.MessageByID[method.InputTypeID], true),
+		ResponseType:        annotate.resolveMessageName(state.MessageByID[method.OutputTypeID], true),
 		DocLines:            formatDocComments(method.Documentation, state),
 		ReturnsValue:        !method.ReturnsEmpty,
 		BodyMessageName:     bodyMessageName,
@@ -647,8 +647,8 @@ func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.Operatio
 	metadata := annotate.state.MessageByID[operationInfo.MetadataTypeID]
 
 	operationInfo.Codec = &operationInfoAnnotation{
-		ResponseType: annotate.resolveTypeName(response, false),
-		MetadataType: annotate.resolveTypeName(metadata, false),
+		ResponseType: annotate.resolveMessageName(response, false),
+		MetadataType: annotate.resolveMessageName(metadata, false),
 	}
 }
 
@@ -741,7 +741,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		case field.Typez == api.ENUM_TYPE:
 			// The default value for enums are the generated MyEnum.$default field,
 			// always set to the first value of that enum.
-			typeName := enumName(annotate.state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
 			defaultValue = defaultValues[field.Typez]
@@ -777,7 +777,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 			bang = " ?? {}"
 		case field.Typez == api.ENUM_TYPE:
 			// 'ExecutableCode_Language.$default'
-			typeName := enumName(annotate.state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
 			bang = fmt.Sprintf(" ?? %s.$default", typeName)
 		default:
 			defaultValues := map[api.Typez]string{
@@ -807,11 +807,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		case api.BYTES_TYPE:
 			return fmt.Sprintf("decodeListBytes(%s)%s", data, bang)
 		case api.ENUM_TYPE:
-			typeName := enumName(state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(state.EnumByID[field.TypezID])
 			return fmt.Sprintf("decodeListEnum(%s, %s.fromJson)%s", data, typeName, bang)
 		case api.MESSAGE_TYPE:
 			_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
-			typeName := annotate.resolveTypeName(state.MessageByID[field.TypezID], true)
+			typeName := annotate.resolveMessageName(state.MessageByID[field.TypezID], true)
 			if hasCustomEncoding {
 				return fmt.Sprintf("decodeListMessageCustom(%s, %s.fromJson)%s", data, typeName, bang)
 			} else {
@@ -827,11 +827,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		case api.BYTES_TYPE:
 			return fmt.Sprintf("decodeMapBytes(%s)%s", data, bang)
 		case api.ENUM_TYPE:
-			typeName := enumName(state.EnumByID[valueField.TypezID])
+			typeName := annotate.resolveEnumName(state.EnumByID[valueField.TypezID])
 			return fmt.Sprintf("decodeMapEnum(%s, %s.fromJson)%s", data, typeName, bang)
 		case api.MESSAGE_TYPE:
 			_, hasCustomEncoding := usesCustomEncoding[valueField.TypezID]
-			typeName := annotate.resolveTypeName(state.MessageByID[valueField.TypezID], true)
+			typeName := annotate.resolveMessageName(state.MessageByID[valueField.TypezID], true)
 			if hasCustomEncoding {
 				return fmt.Sprintf("decodeMapMessageCustom(%s, %s.fromJson)%s", data, typeName, bang)
 			} else {
@@ -855,11 +855,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	case field.Typez == api.BYTES_TYPE:
 		return fmt.Sprintf("decodeBytes(%s)%s", data, bang)
 	case field.Typez == api.ENUM_TYPE:
-		typeName := enumName(state.EnumByID[field.TypezID])
+		typeName := annotate.resolveEnumName(state.EnumByID[field.TypezID])
 		return fmt.Sprintf("decodeEnum(%s, %s.fromJson)%s", data, typeName, bang)
 	case field.Typez == api.MESSAGE_TYPE:
 		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
-		typeName := annotate.resolveTypeName(state.MessageByID[field.TypezID], true)
+		typeName := annotate.resolveMessageName(state.MessageByID[field.TypezID], true)
 		if hasCustomEncoding {
 			return fmt.Sprintf("decodeCustom(%s, %s.fromJson)", data, typeName)
 		} else {
@@ -1080,7 +1080,7 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 			val := annotate.fieldType(message.Fields[1])
 			out = "Map<" + key + ", " + val + ">"
 		} else {
-			out = annotate.resolveTypeName(message, true)
+			out = annotate.resolveMessageName(message, true)
 		}
 	case api.ENUM_TYPE:
 		e, ok := annotate.state.EnumByID[f.TypezID]
@@ -1088,12 +1088,7 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 			slog.Error("unable to lookup type", "id", f.TypezID)
 			return ""
 		}
-		annotate.updateUsedPackages(e.Package)
-		out = enumName(e)
-		importPrefix, needsImportPrefix := annotate.packagePrefixes[e.Package]
-		if needsImportPrefix {
-			out = importPrefix + "." + out
-		}
+		out = annotate.resolveEnumName(e)
 	default:
 		slog.Error("unhandled fieldType", "type", f.Typez, "id", f.TypezID)
 	}
@@ -1105,7 +1100,18 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 	return out
 }
 
-func (annotate *annotateModel) resolveTypeName(message *api.Message, returnVoidForEmpty bool) string {
+func (annotate *annotateModel) resolveEnumName(enum *api.Enum) string {
+	annotate.updateUsedPackages(enum.Package)
+
+	ref := enumName(enum)
+	importPrefix, needsImportPrefix := annotate.packagePrefixes[enum.Package]
+	if needsImportPrefix {
+		ref = importPrefix + "." + ref
+	}
+	return ref
+}
+
+func (annotate *annotateModel) resolveMessageName(message *api.Message, returnVoidForEmpty bool) string {
 	if message == nil {
 		slog.Error("unable to lookup type")
 		return ""
