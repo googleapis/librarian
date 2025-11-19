@@ -227,7 +227,7 @@ type Config struct {
 	// Librarian-created changes with other changes.
 	//
 	// Repo is used by all commands which operate on a language repository:
-	// configure, generate, release init, update-image.
+	// generate, release init, update-image.
 	//
 	// When a local directory is specified for the generate command, the repo is checked to
 	// determine whether the specified API path is configured as a library. See the generate
