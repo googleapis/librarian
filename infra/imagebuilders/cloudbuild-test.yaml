@@ -31,6 +31,8 @@ steps:
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/librarian'
       - '.'
+      - '-f'
+      - 'infra/imagebuilders/cli/Dockerfile'
   - id: structure-test
     name: gcr.io/gcp-runtimes/structure_test
     waitFor: ['build']
