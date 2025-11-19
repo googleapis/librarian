@@ -21,6 +21,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --chmod=755 infra/imagebuilders/container/run.sh /app/run.sh
+COPY infra/imagebuilders/container/run.sh /app/run.sh
 
 ENTRYPOINT [ "/app/run.sh" ]
