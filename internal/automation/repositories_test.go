@@ -29,6 +29,7 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 		{
 			name: "valid state",
 			config: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						Name:              "google-cloud-foo",
@@ -37,11 +38,11 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "valid full name",
 			config: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						FullName:          "https://github.com/googleapis/google-cloud-foo",
@@ -50,11 +51,11 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "missing name",
 			config: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						SecretName:        "google-cloud-foo-github-token",
@@ -67,6 +68,7 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 		{
 			name: "missing secret name",
 			config: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						Name:              "google-cloud-foo",
@@ -79,6 +81,7 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 		{
 			name: "missing commands",
 			config: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						Name:       "google-cloud-foo",
@@ -91,6 +94,7 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 		{
 			name: "empty commands",
 			config: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						Name:              "google-cloud-foo",
@@ -104,6 +108,7 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 		{
 			name: "invalid command",
 			config: &RepositoriesConfig{
+				ImageSHA: "example-sha",
 				Repositories: []*RepositoryConfig{
 					{
 						Name:              "google-cloud-foo",
@@ -112,6 +117,11 @@ func TestRepositoriesConfig_Validate(t *testing.T) {
 					},
 				},
 			},
+			wantErr: true,
+		},
+		{
+			name:    "empty image sha",
+			config:  &RepositoriesConfig{},
 			wantErr: true,
 		},
 	} {
