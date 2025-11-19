@@ -311,23 +311,19 @@ func TestRepositoryGitUrl(t *testing.T) {
 			want: "https://github.com/some-org/google-cloud-python",
 		},
 		{
-			name: "missing name",
-			repository: &RepositoryConfig{
-				Name:     "google-cloud-python",
-				FullName: "https://github.com/some-org/google-cloud-python",
-			},
-			want:      "https://github.com/some-org/google-cloud-python",
-			wantError: true,
+			name:       "missing name",
+			repository: &RepositoryConfig{},
+			wantError:  true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := test.repository.GitURL()
-			if err != nil && test.wantError {
-				t.Errorf("expected to return error")
+			if (err != nil) != test.wantError {
+				t.Errorf("repository.GitURL() expected to return error")
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("parseRepositoriesConfig() mismatch (-want +got): %s", diff)
+				t.Errorf("repository.GitURL() mismatch (-want +got): %s", diff)
 			}
 		})
 	}
