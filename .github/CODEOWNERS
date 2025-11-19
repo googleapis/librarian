@@ -3,10 +3,10 @@
 # is the same as .gitignore.
 
 # The owners for all files in the repo.
-* @googleapis/cloud-sdk-librarian-reviewers
+* @googleapis/cloud-sdk-librarian-team
 
 # Locations for all sidekick code.
-/*/sidekick/ @googleapis/cloud-sdk-sidekick-team @googleapis/cloud-sdk-librarian-reviewers
+/*/sidekick/ @googleapis/cloud-sdk-sidekick-team
 
 # Locations for all surfer code.
-/*/surfer/ @googleapis/cloud-sdk-surfer-team @googleapis/cloud-sdk-librarian-reviewers
+/*/surfer/ @googleapis/cloud-sdk-surfer-team
