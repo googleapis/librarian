@@ -1,4 +1,4 @@
-librarian-image-sha: sha256:8ae52838e466022dd701cab8c3f002cb727b3e0e5688864b3d0d68f645541035
+librarian-image-sha: sha256:a1efd1029a66c1200e23d88d9eeb12b740aa7e47038bfdd9119c3ce46d46d918
 repositories:
   - name: "gapic-generator-go"
     full-name: https://github.com/googleapis/gapic-generator-go

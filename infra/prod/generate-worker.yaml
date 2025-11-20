@@ -15,7 +15,7 @@
 # This runs the `librarian generate` command with a provided repository,
 # secret name, and optional library ID
 steps:
-  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher
+  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher:0.7.0
     id: generate-dispatcher
     args:
       - '--project=$PROJECT_ID'
