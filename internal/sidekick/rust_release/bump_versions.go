@@ -19,8 +19,8 @@ import (
 	"log/slog"
 	"slices"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 )
 
 // BumpVersions finds all the crates that need a version bump and performs the
@@ -54,7 +54,7 @@ func BumpVersions(config *config.Release) error {
 	}
 	for _, name := range crates {
 		slog.Info("runnning cargo semver-checks", "crate", name)
-		if err := external.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
+		if err := command.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
 			return err
 		}
 	}
