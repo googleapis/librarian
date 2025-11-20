@@ -35,23 +35,25 @@ func toSidekickConfig(library *config.Library, googleapisDir, serviceConfig stri
 		Codec: buildCodec(library),
 	}
 
-	if library.Rust != nil && len(library.Rust.DocumentationOverrides) > 0 {
-		sidekickCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
-		for i, override := range library.Rust.DocumentationOverrides {
-			sidekickCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
-				ID:      override.ID,
-				Match:   override.Match,
-				Replace: override.Replace,
+	if library.Rust != nil {
+		if len(library.Rust.DocumentationOverrides) > 0 {
+			sidekickCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
+			for i, override := range library.Rust.DocumentationOverrides {
+				sidekickCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+					ID:      override.ID,
+					Match:   override.Match,
+					Replace: override.Replace,
+				}
 			}
 		}
-	}
 
-	if library.Rust != nil && len(library.Rust.PaginationOverrides) > 0 {
-		sidekickCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
-		for i, override := range library.Rust.PaginationOverrides {
-			sidekickCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
-				ID:        override.ID,
-				ItemField: override.ItemField,
+		if len(library.Rust.PaginationOverrides) > 0 {
+			sidekickCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+			for i, override := range library.Rust.PaginationOverrides {
+				sidekickCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+					ID:        override.ID,
+					ItemField: override.ItemField,
+				}
 			}
 		}
 	}
@@ -118,12 +120,12 @@ func buildCodec(library *config.Library) map[string]string {
 	}
 
 	for _, dep := range rust.PackageDependencies {
-		codec["package:"+dep.Name] = formatPackageDependency(&dep)
+		codec["package:"+dep.Name] = formatPackageDependency(dep)
 	}
 	return codec
 }
 
-func formatPackageDependency(dep *config.RustPackageDependency) string {
+func formatPackageDependency(dep config.RustPackageDependency) string {
 	var parts []string
 	if dep.Package != "" {
 		parts = append(parts, "package="+dep.Package)

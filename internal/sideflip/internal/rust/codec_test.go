@@ -24,12 +24,11 @@ import (
 
 func TestToSidekickConfig(t *testing.T) {
 	for _, test := range []struct {
-		name            string
-		library         *config.Library
-		googleapisDir   string
-		serviceConfig   string
-		want            *sidekickconfig.Config
-		wantCodecSubset map[string]string
+		name          string
+		library       *config.Library
+		googleapisDir string
+		serviceConfig string
+		want          *sidekickconfig.Config
 	}{
 		{
 			name: "minimal config",
@@ -49,9 +48,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": "/tmp/googleapis",
 				},
-			},
-			wantCodecSubset: map[string]string{
-				"package-name-override": "google-cloud-storage",
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-storage",
+				},
 			},
 		},
 		{
@@ -64,10 +63,21 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 			googleapisDir: "/tmp/googleapis",
 			serviceConfig: "google/cloud/storage/v1/storage_v1.yaml",
-			wantCodecSubset: map[string]string{
-				"version":               "0.1.0",
-				"release-level":         "preview",
-				"package-name-override": "google-cloud-storage",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
+					SpecificationSource: "google/cloud/storage/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+				},
+				Codec: map[string]string{
+					"version":               "0.1.0",
+					"release-level":         "preview",
+					"package-name-override": "google-cloud-storage",
+				},
 			},
 		},
 		{
@@ -79,9 +89,20 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 			googleapisDir: "/tmp/googleapis",
 			serviceConfig: "google/cloud/storage/v1/storage_v1.yaml",
-			wantCodecSubset: map[string]string{
-				"copyright-year":        "2024",
-				"package-name-override": "google-cloud-storage",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
+					SpecificationSource: "google/cloud/storage/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+				},
+				Codec: map[string]string{
+					"copyright-year":        "2024",
+					"package-name-override": "google-cloud-storage",
+				},
 			},
 		},
 		{
@@ -106,20 +127,31 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 			googleapisDir: "/tmp/googleapis",
 			serviceConfig: "google/cloud/storage/v1/storage_v1.yaml",
-			wantCodecSubset: map[string]string{
-				"module-path":                 "gcs",
-				"per-service-features":        "true",
-				"include-grpc-only-methods":   "true",
-				"detailed-tracing-attributes": "true",
-				"has-veneer":                  "true",
-				"routing-required":            "true",
-				"generate-setter-samples":     "true",
-				"disabled-rustdoc-warnings":   "broken_intra_doc_links",
-				"disabled-clippy-warnings":    "too_many_arguments",
-				"default-features":            "default-feature",
-				"extra-modules":               "extra-module",
-				"template-override":           "custom-template",
-				"package-name-override":       "google-cloud-storage",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
+					SpecificationSource: "google/cloud/storage/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+				},
+				Codec: map[string]string{
+					"module-path":                 "gcs",
+					"per-service-features":        "true",
+					"include-grpc-only-methods":   "true",
+					"detailed-tracing-attributes": "true",
+					"has-veneer":                  "true",
+					"routing-required":            "true",
+					"generate-setter-samples":     "true",
+					"disabled-rustdoc-warnings":   "broken_intra_doc_links",
+					"disabled-clippy-warnings":    "too_many_arguments",
+					"default-features":            "default-feature",
+					"extra-modules":               "extra-module",
+					"template-override":           "custom-template",
+					"package-name-override":       "google-cloud-storage",
+				},
 			},
 		},
 		{
@@ -134,9 +166,20 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 			googleapisDir: "/tmp/googleapis",
 			serviceConfig: "google/cloud/storage/v1/storage_v1.yaml",
-			wantCodecSubset: map[string]string{
-				"not-for-publication":   "true",
-				"package-name-override": "google-cloud-storage",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
+					SpecificationSource: "google/cloud/storage/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+				},
+				Codec: map[string]string{
+					"not-for-publication":   "true",
+					"package-name-override": "google-cloud-storage",
+				},
 			},
 		},
 		{
@@ -159,9 +202,20 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 			googleapisDir: "/tmp/googleapis",
 			serviceConfig: "google/cloud/storage/v1/storage_v1.yaml",
-			wantCodecSubset: map[string]string{
-				"package:tokio":         "package=tokio,source=1.0,force-used=true,used-if=feature = \"async\",feature=async",
-				"package-name-override": "google-cloud-storage",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
+					SpecificationSource: "google/cloud/storage/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+				},
+				Codec: map[string]string{
+					"package:tokio":         "package=tokio,source=1.0,force-used=true,used-if=feature = \"async\",feature=async",
+					"package-name-override": "google-cloud-storage",
+				},
 			},
 		},
 		{
@@ -191,6 +245,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": "/tmp/googleapis",
 				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-storage",
+				},
 				CommentOverrides: []sidekickconfig.DocumentationOverride{
 					{
 						ID:      ".google.cloud.storage.v1.Bucket.name",
@@ -198,9 +255,6 @@ func TestToSidekickConfig(t *testing.T) {
 						Replace: "the name of the bucket",
 					},
 				},
-			},
-			wantCodecSubset: map[string]string{
-				"package-name-override": "google-cloud-storage",
 			},
 		},
 		{
@@ -229,6 +283,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": "/tmp/googleapis",
 				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-storage",
+				},
 				PaginationOverrides: []sidekickconfig.PaginationOverride{
 					{
 						ID:        ".google.cloud.storage.v1.Storage.ListBuckets",
@@ -236,36 +293,12 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			wantCodecSubset: map[string]string{
-				"package-name-override": "google-cloud-storage",
-			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := toSidekickConfig(test.library, test.googleapisDir, test.serviceConfig)
-			if test.want != nil {
-				if diff := cmp.Diff(test.want.General, got.General); diff != "" {
-					t.Errorf("General mismatch (-want +got):\n%s", diff)
-				}
-				if diff := cmp.Diff(test.want.Source, got.Source); diff != "" {
-					t.Errorf("Source mismatch (-want +got):\n%s", diff)
-				}
-				if diff := cmp.Diff(test.want.CommentOverrides, got.CommentOverrides); diff != "" {
-					t.Errorf("CommentOverrides mismatch (-want +got):\n%s", diff)
-				}
-				if diff := cmp.Diff(test.want.PaginationOverrides, got.PaginationOverrides); diff != "" {
-					t.Errorf("PaginationOverrides mismatch (-want +got):\n%s", diff)
-				}
-			}
-
-			if test.wantCodecSubset != nil {
-				for key, wantValue := range test.wantCodecSubset {
-					if gotValue, ok := got.Codec[key]; !ok {
-						t.Errorf("Codec missing key %q", key)
-					} else if gotValue != wantValue {
-						t.Errorf("Codec[%q] = %q, want %q", key, gotValue, wantValue)
-					}
-				}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -274,12 +307,12 @@ func TestToSidekickConfig(t *testing.T) {
 func TestFormatPackageDependency(t *testing.T) {
 	for _, test := range []struct {
 		name string
-		dep  *config.RustPackageDependency
+		dep  config.RustPackageDependency
 		want string
 	}{
 		{
 			name: "minimal dependency",
-			dep: &config.RustPackageDependency{
+			dep: config.RustPackageDependency{
 				Name:    "tokio",
 				Package: "tokio",
 			},
@@ -287,7 +320,7 @@ func TestFormatPackageDependency(t *testing.T) {
 		},
 		{
 			name: "with source",
-			dep: &config.RustPackageDependency{
+			dep: config.RustPackageDependency{
 				Name:    "tokio",
 				Package: "tokio",
 				Source:  "1.0",
@@ -296,7 +329,7 @@ func TestFormatPackageDependency(t *testing.T) {
 		},
 		{
 			name: "with force used",
-			dep: &config.RustPackageDependency{
+			dep: config.RustPackageDependency{
 				Name:      "tokio",
 				Package:   "tokio",
 				ForceUsed: true,
@@ -305,7 +338,7 @@ func TestFormatPackageDependency(t *testing.T) {
 		},
 		{
 			name: "with used if",
-			dep: &config.RustPackageDependency{
+			dep: config.RustPackageDependency{
 				Name:    "tokio",
 				Package: "tokio",
 				UsedIf:  "feature = \"async\"",
@@ -314,7 +347,7 @@ func TestFormatPackageDependency(t *testing.T) {
 		},
 		{
 			name: "with feature",
-			dep: &config.RustPackageDependency{
+			dep: config.RustPackageDependency{
 				Name:    "tokio",
 				Package: "tokio",
 				Feature: "async",
@@ -323,7 +356,7 @@ func TestFormatPackageDependency(t *testing.T) {
 		},
 		{
 			name: "all fields",
-			dep: &config.RustPackageDependency{
+			dep: config.RustPackageDependency{
 				Name:      "tokio",
 				Package:   "tokio",
 				Source:    "1.0",
