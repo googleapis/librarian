@@ -15,36 +15,19 @@
 package config
 
 import (
-	"crypto/sha256"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/fetch"
 )
 
 const (
-	defaultGitHubApi = "https://api.github.com"
+	defaultGitHubAPI = "https://api.github.com"
 	defaultGitHubDn  = "https://github.com"
 	branch           = "master"
 	defaultRoot      = "googleapis"
 )
-
-// githubEndpoints defines the endpoints used to access GitHub.
-type githubEndpoints struct {
-	// Api defines the endpoint used to make API calls.
-	Api string
-	// Download defines the endpoint to download tarballs.
-	Download string
-}
-
-// githubRepo represents a GitHub repository name.
-type githubRepo struct {
-	// Org defines the GitHub organization (or user), that owns the repository.
-	Org string
-	// Repo is the name of the repository, such as `googleapis` or `google-cloud-rust`.
-	Repo string
-}
 
 // UpdateRootConfig updates the root configuration file with the latest SHA from GitHub.
 func UpdateRootConfig(rootConfig *Config, rootName string) error {
@@ -57,16 +40,16 @@ func UpdateRootConfig(rootConfig *Config, rootName string) error {
 		return err
 	}
 
-	query := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.Api, repo.Org, repo.Repo, branch)
+	query := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, branch)
 	fmt.Printf("getting latest SHA from %q\n", query)
-	latestSha, err := getLatestSha(query)
+	latestSha, err := fetch.LatestSha(query)
 	if err != nil {
 		return err
 	}
 
-	newLink := newTarballLink(endpoints, repo, latestSha)
+	newLink := fetch.TarballLink(endpoints.Download, repo, latestSha)
 	fmt.Printf("computing SHA256 for %q\n", newLink)
-	newSha256, err := getSha256(newLink)
+	newSha256, err := fetch.Sha256(newLink)
 	if err != nil {
 		return err
 	}
@@ -85,17 +68,17 @@ func UpdateRootConfig(rootConfig *Config, rootName string) error {
 
 // githubConfig returns the GitHub API and download endpoints.
 // In tests, these are replaced with a fake.
-func githubConfig(rootConfig *Config) *githubEndpoints {
+func githubConfig(rootConfig *Config) *fetch.Endpoints {
 	api, ok := rootConfig.Source["github-api"]
 	if !ok {
-		api = defaultGitHubApi
+		api = defaultGitHubAPI
 	}
 	download, ok := rootConfig.Source["github"]
 	if !ok {
 		download = defaultGitHubDn
 	}
-	return &githubEndpoints{
-		Api:      api,
+	return &fetch.Endpoints{
+		API:      api,
 		Download: download,
 	}
 }
@@ -103,31 +86,17 @@ func githubConfig(rootConfig *Config) *githubEndpoints {
 // githubRepoFromRoot extracts the gitHub account and repository (such as
 // `googleapis/googleapis`, or `googleapis/google-cloud-rust`) from the tarball
 // link.
-func githubRepoFromTarballLink(rootConfig *Config, rootName string) (*githubRepo, error) {
+func githubRepoFromTarballLink(rootConfig *Config, rootName string) (*fetch.Repo, error) {
 	config := githubConfig(rootConfig)
 	root, ok := rootConfig.Source[fmt.Sprintf("%s-root", rootName)]
 	if !ok {
 		return nil, fmt.Errorf("missing %s root configuration", rootName)
 	}
-	urlPath := strings.TrimPrefix(root, config.Download)
-	urlPath = strings.TrimPrefix(urlPath, "/")
-	components := strings.Split(urlPath, "/")
-	if len(components) < 2 {
-		return nil, fmt.Errorf("url path for %s root configuration is missing components", rootName)
-	}
-	repo := &githubRepo{
-		Org:  components[0],
-		Repo: components[1],
-	}
-	return repo, nil
+	return fetch.RepoFromTarballLink(config.Download, root)
 }
 
-func newTarballLink(endpoints *githubEndpoints, repo *githubRepo, latestSha string) string {
-	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", endpoints.Download, repo.Org, repo.Repo, latestSha)
-}
-
-func updateRootConfigContents(rootName string, contents []byte, endpoints *githubEndpoints, repo *githubRepo, latestSha, newSha256 string) ([]byte, error) {
-	newLink := newTarballLink(endpoints, repo, latestSha)
+func updateRootConfigContents(rootName string, contents []byte, endpoints *fetch.Endpoints, repo *fetch.Repo, latestSha, newSha256 string) ([]byte, error) {
+	newLink := fetch.TarballLink(endpoints.Download, repo, latestSha)
 
 	var output strings.Builder
 	updatedRoot := 0
@@ -173,44 +142,4 @@ func updateRootConfigContents(rootName string, contents []byte, endpoints *githu
 		return nil, fmt.Errorf("too many changes to Root or Sha256 for %s", rootName)
 	}
 	return []byte(newContents), nil
-}
-
-func getSha256(query string) (string, error) {
-	response, err := http.Get(query)
-	if err != nil {
-		return "", err
-	}
-	if response.StatusCode >= 300 {
-		return "", fmt.Errorf("http error in download %s", response.Status)
-	}
-	defer response.Body.Close()
-
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, response.Body); err != nil {
-		return "", err
-	}
-	got := fmt.Sprintf("%x", hasher.Sum(nil))
-	return got, nil
-}
-
-func getLatestSha(query string) (string, error) {
-	client := &http.Client{}
-	request, err := http.NewRequest(http.MethodGet, query, nil)
-	if err != nil {
-		return "", err
-	}
-	request.Header.Set("Accept", "application/vnd.github.VERSION.sha")
-	response, err := client.Do(request)
-	if err != nil {
-		return "", err
-	}
-	if response.StatusCode >= 300 {
-		return "", fmt.Errorf("http error in download %s", response.Status)
-	}
-	defer response.Body.Close()
-	contents, err := io.ReadAll(response.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(contents), nil
 }
