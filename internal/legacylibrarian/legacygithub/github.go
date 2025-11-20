@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package github provides operations on GitHub repos, abstracting away go-github
+// Package legacygithub provides operations on GitHub repos, abstracting away go-github
 // (at least somewhat) to only the operations Librarian needs.
 package legacygithub
 

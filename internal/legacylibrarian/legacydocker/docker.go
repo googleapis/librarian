@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package docker provides the interface for running language-specific
+// Package legacydocker provides the interface for running language-specific
 // Docker containers which conform to the Librarian container contract.
 // TODO(https://github.com/googleapis/librarian/issues/330): link to
 // the documentation when it's written.

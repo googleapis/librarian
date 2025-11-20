@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package librarian provides the core implementation for the Librarian CLI tool.
+// Package legacylibrarian provides the core implementation for the Librarian CLI tool.
 package legacylibrarian
 
 import (

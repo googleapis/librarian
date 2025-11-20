@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cli defines a lightweight framework for building CLI commands.
+// Package legacycli defines a lightweight framework for building CLI commands.
 // It's designed to be generic and self-contained, with no embedded business logic
 // or dependencies on the surrounding application's configuration or behavior.
 package legacycli

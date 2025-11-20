@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package automation implements the command-line interface and core logic
+// Package legacyautomation implements the command-line interface and core logic
 // for Librarian's automated workflows.
 package legacyautomation
 

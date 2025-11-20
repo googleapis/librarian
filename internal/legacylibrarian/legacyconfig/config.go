@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config defines configuration used by the CLI.
+// Package legacyconfig defines configuration used by the CLI.
 package legacyconfig
 
 import (
