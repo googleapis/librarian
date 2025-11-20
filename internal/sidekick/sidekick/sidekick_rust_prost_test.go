@@ -18,11 +18,13 @@ import (
 	"os"
 	"path"
 	"testing"
+
+	cmdtest "github.com/googleapis/librarian/internal/command"
 )
 
 func TestRustProstFromProtobuf(t *testing.T) {
-	requireCargo(t)
-	requireProtoc(t)
+	cmdtest.RequireCommand(t, "cargo")
+	cmdtest.RequireCommand(t, "protoc")
 	outDir := t.TempDir()
 	svcConfig := path.Join(testdataDir, "googleapis/google/type/type.yaml")
 	specificationSource := path.Join(testdataDir, "googleapis/google/type")

@@ -17,10 +17,12 @@ package sidekick
 import (
 	"path"
 	"testing"
+
+	cmdtest "github.com/googleapis/librarian/internal/command"
 )
 
 func TestRustProstConvert(t *testing.T) {
-	requireProtoc(t)
+	cmdtest.RequireCommand(t, "protoc")
 	outDir := t.TempDir()
 
 	type TestConfig struct {
