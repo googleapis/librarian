@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sideflip/config"
+	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
