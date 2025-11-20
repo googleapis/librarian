@@ -22,7 +22,7 @@ echo "Creating test environment in ./test_env..."
 
 # 1. Create the directory structure in the current directory.
 if [ ! -d "test_env" ]; then
-  mkdir -p test_env
+  mkdir -p test_env/bin
 else
   echo "test_env directory already exists"
   exit 1
@@ -45,7 +45,7 @@ echo "Creating test.sh script..."
 cat > ./test_env/test.sh << 'EOL'
 #!/bin/bash
 # This script builds and runs the surfer gcloud generator.
-# It is intended to be run from within the 'test_env' directory.
+# It is intended to be run from the root of the 'librarian' repository.
 
 set -e
 
@@ -54,8 +54,8 @@ echo "Building surfer-dev binary..."
 go build -o ./test_env/bin/surfer-dev ./cmd/surfer/main.go
 
 echo "Running the gcloud command generator..."
-# Run the newly built binary.
-(cd test_env && ./bin/surfer-dev generate ./test_env/gcloud.yaml --googleapis . --out .)
+# Run the newly built binary from within the test_env directory.
+(cd test_env && ./bin/surfer-dev generate gcloud.yaml --googleapis . --out .)
 
 echo "✅ Generation complete."
 echo "Generated files are in the 'parallelstore' directory."
