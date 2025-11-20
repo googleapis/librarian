@@ -20,7 +20,7 @@ Setup:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build \
-  -f ./internal/integration/testdata/e2e-test.Dockerfile \
+  -f ./internal/legacylibrarian/legacyintegration/testdata/e2e-test.Dockerfile \
   -t test-image:latest \
   .
 ```

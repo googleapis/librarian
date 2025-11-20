@@ -22,7 +22,7 @@ COPY go.sum .
 
 RUN go mod download
 
-COPY ./internal/integration/testdata/e2e_func.go .
+COPY ./internal/legacylibrarian/legacyintegration/testdata/e2e_func.go .
 
 RUN go build -o e2e_func .
 
