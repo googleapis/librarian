@@ -817,7 +817,7 @@ func TestWriteLibraryState(t *testing.T) {
 						APIs: []*legacyconfig.API{
 							{
 								Path:          "google/cloud/compute/v1",
-								ServiceConfig: "example_service_legacyconfig.yaml",
+								ServiceConfig: "example_service_config.yaml",
 								Status:        "new",
 							},
 						},
@@ -837,7 +837,7 @@ func TestWriteLibraryState(t *testing.T) {
 						APIs: []*legacyconfig.API{
 							{
 								Path:          "google/storage/v1",
-								ServiceConfig: "storage_service_legacyconfig.yaml",
+								ServiceConfig: "storage_service_config.yaml",
 								Status:        "existing",
 							},
 						},
@@ -859,7 +859,7 @@ func TestWriteLibraryState(t *testing.T) {
 						APIs: []*legacyconfig.API{
 							{
 								Path:          "google/cloud/compute/v1",
-								ServiceConfig: "example_service_legacyconfig.yaml",
+								ServiceConfig: "example_service_config.yaml",
 							},
 						},
 						SourceRoots: []string{
@@ -959,7 +959,7 @@ func TestWriteLibrarianState(t *testing.T) {
 						APIs: []*legacyconfig.API{
 							{
 								Path:          "google/cloud/compute/v1",
-								ServiceConfig: "example_service_legacyconfig.yaml",
+								ServiceConfig: "example_service_config.yaml",
 								Status:        "existing",
 							},
 						},
@@ -979,7 +979,7 @@ func TestWriteLibrarianState(t *testing.T) {
 						APIs: []*legacyconfig.API{
 							{
 								Path:          "google/storage/v1",
-								ServiceConfig: "storage_service_legacyconfig.yaml",
+								ServiceConfig: "storage_service_config.yaml",
 								Status:        "existing",
 							},
 						},

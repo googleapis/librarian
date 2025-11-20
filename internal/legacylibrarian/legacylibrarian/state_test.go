@@ -120,7 +120,7 @@ func TestFindServiceConfigIn(t *testing.T) {
 		{
 			name: "find a service config",
 			path: filepath.Join("testdata", "find_a_service_config"),
-			want: "service_legacyconfig.yaml",
+			want: "service_config.yaml",
 		},
 		{
 			name:    "non-existent source path",
@@ -167,7 +167,7 @@ func TestParseGlobalConfig(t *testing.T) {
 	}{
 		{
 			name:     "valid global config",
-			filename: "successful-parsing-legacyconfig.yaml",
+			filename: "successful-parsing-config.yaml",
 			want: &legacyconfig.LibrarianConfig{
 				GlobalFilesAllowlist: []*legacyconfig.GlobalFile{
 					{
@@ -189,7 +189,7 @@ func TestParseGlobalConfig(t *testing.T) {
 		},
 		{
 			name:       "invalid global config",
-			filename:   "invalid-global-legacyconfig.yaml",
+			filename:   "invalid-global-config.yaml",
 			wantErr:    true,
 			wantErrMsg: "invalid global config",
 		},
@@ -238,7 +238,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 							},
 							{
 								Path:          "another/example/api",
-								ServiceConfig: "another_legacyconfig.yaml",
+								ServiceConfig: "another_config.yaml",
 							},
 						},
 					},
@@ -252,11 +252,11 @@ func TestPopulateServiceConfig(t *testing.T) {
 						APIs: []*legacyconfig.API{
 							{
 								Path:          "example/api",
-								ServiceConfig: "example_api_legacyconfig.yaml",
+								ServiceConfig: "example_api_config.yaml",
 							},
 							{
 								Path:          "another/example/api",
-								ServiceConfig: "another_legacyconfig.yaml",
+								ServiceConfig: "another_config.yaml",
 							},
 						},
 					},
@@ -292,7 +292,7 @@ func TestPopulateServiceConfig(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(test.want, test.state); diff != "" {
-				t.Errorf("fetchRemoteLibrarianState() mismatch (-want +got): %s", diff)
+				t.Errorf("mismatch (-want +got): %s", diff)
 			}
 		})
 	}
@@ -363,7 +363,7 @@ func TestReadLibraryState(t *testing.T) {
 				APIs: []*legacyconfig.API{
 					{
 						Path:          "google/cloud/compute/v1",
-						ServiceConfig: "example_service_legacyconfig.yaml",
+						ServiceConfig: "example_service_config.yaml",
 					},
 				},
 				SourceRoots:   []string{"src/example/path"},
