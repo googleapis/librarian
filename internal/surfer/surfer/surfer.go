@@ -19,48 +19,48 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/surfer/gcloud"
+	"github.com/urfave/cli/v3"
 )
 
 // Run executes the surfer CLI with the given command line arguments.
 func Run(ctx context.Context, args []string) error {
 	cmd := &cli.Command{
-		Short:     "surfer generates gcloud command YAML files",
-		UsageLine: "surfer generate [arguments]",
-		Long:      "surfer generates gcloud command YAML files",
+		Name:  "surfer",
+		Usage: "surfer generates gcloud command YAML files",
 		Commands: []*cli.Command{
 			newCmdGenerate(),
 		},
 	}
-	cmd.Init()
 	return cmd.Run(ctx, args)
 }
 
 func newCmdGenerate() *cli.Command {
-	var (
-		googleapis string
-		out        string
-	)
-
-	cmdGenerate := &cli.Command{
-		Short:     "generate generates gcloud commands",
-		UsageLine: "surfer generate <path to gcloud.yaml> --googleapis <path> [--out <path>]",
-		Long: `generate generates gcloud commands
-
-generate generates gcloud command files from protobuf API specifications,
+	return &cli.Command{
+		Name:  "generate",
+		Usage: "generate generates gcloud commands",
+		Description: `generate generates gcloud command files from protobuf API specifications,
 service config yaml, and gcloud.yaml.`,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "googleapis",
+				Value: "https://github.com/googleapis/googleapis",
+				Usage: "URL or directory path to googleapis",
+			},
+			&cli.StringFlag{
+				Name:  "out",
+				Value: ".",
+				Usage: "output directory",
+			},
+		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			args := cmd.Flags.Args()
-			if len(args) == 0 {
+			if cmd.Args().Len() == 0 {
 				return fmt.Errorf("path to gcloud.yaml is required")
 			}
-			config := args[0]
+			config := cmd.Args().First()
+			googleapis := cmd.String("googleapis")
+			out := cmd.String("out")
 			return gcloud.Generate(ctx, googleapis, config, out)
 		},
 	}
-	cmdGenerate.Init()
-	cmdGenerate.Flags.StringVar(&googleapis, "googleapis", "https://github.com/googleapis/googleapis", "URL or directory path to googleapis")
-	cmdGenerate.Flags.StringVar(&out, "out", ".", "output directory")
-	return cmdGenerate
 }

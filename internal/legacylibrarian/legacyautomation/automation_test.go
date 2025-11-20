@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package legacyautomation
 
-import (
-	"context"
-	"log"
-	"os"
+import "testing"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyautomation"
-)
-
-func main() {
-	if err := legacyautomation.Run(context.Background(), os.Args[1:]); err != nil {
-		log.Fatal(err)
+func TestAutomationCmdRun(t *testing.T) {
+	cmd := newAutomationCommand()
+	if err := cmd.Run(t.Context(), []string{"version"}); err != nil {
+		t.Fatal(err)
 	}
 }

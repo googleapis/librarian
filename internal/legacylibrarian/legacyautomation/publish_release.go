@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,18 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package legacyautomation
 
 import (
 	"context"
-	"log"
-	"os"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyautomation"
+	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 )
 
-func main() {
-	if err := legacyautomation.Run(context.Background(), os.Args[1:]); err != nil {
-		log.Fatal(err)
+const (
+	publishCmdName = "publish-release"
+)
+
+type publishRunner struct {
+	projectID string
+}
+
+func newPublishRunner(cfg *legacyconfig.Config) *publishRunner {
+	return &publishRunner{
+		projectID: cfg.Project,
 	}
+}
+
+func (r *publishRunner) run(ctx context.Context) error {
+	return runCommandFn(ctx, publishCmdName, r.projectID, false, false)
 }
