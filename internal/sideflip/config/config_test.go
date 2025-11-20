@@ -23,7 +23,7 @@ import (
 )
 
 func TestReadWrite(t *testing.T) {
-	cfg, err := Read("testdata/librarian.yaml")
+	cfg, err := Read("testdata/rust/librarian.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +34,7 @@ func TestReadWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantCfg, err := Read("testdata/librarian.yaml")
+	wantCfg, err := Read("testdata/rust/librarian.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
