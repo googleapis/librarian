@@ -19,6 +19,8 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/config"
@@ -228,6 +230,37 @@ func requireCommand(t *testing.T, command string) {
 	t.Helper()
 	if _, err := exec.LookPath(command); err != nil {
 		t.Skipf("skipping test because %s is not installed", command)
+	}
+	if command == "git" {
+		requireGitVersion(t)
+	}
+}
+
+func requireGitVersion(t *testing.T) {
+	t.Helper()
+	out, err := exec.Command("git", "--version").Output()
+	if err != nil {
+		t.Skipf("cannot determine git version: %v", err)
+	}
+	v := strings.TrimSpace(string(out))
+	f := strings.Fields(v)
+	if len(f) < 3 {
+		t.Skipf("unexpected git version format: %s", v)
+	}
+	parts := strings.Split(f[2], ".")
+	if len(parts) < 2 {
+		t.Skipf("unexpected git version format: %s", f[2])
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		t.Skipf("cannot parse git major version: %s", parts[0])
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		t.Skipf("cannot parse git minor version: %s", parts[1])
+	}
+	if major < 2 || major == 2 && minor < 28 {
+		t.Skipf("git 2.28 or later required; have %s", f[2])
 	}
 }
 
