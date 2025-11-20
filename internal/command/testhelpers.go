@@ -20,8 +20,9 @@ import (
 )
 
 // RequireCommand skips the test if the specified command is not found in PATH.
-// Use this to skip tests that depend on external tools like protoc, cargo, or taplo,
-// so that `go test ./...` will always pass on a fresh clone of the repo.
+// Use this to skip tests that depend on external tools like protoc, cargo, or
+// taplo, so that `go test ./...` will always pass on a fresh clone of the
+// repo.
 func RequireCommand(t *testing.T, command string) {
 	t.Helper()
 	if _, err := exec.LookPath(command); err != nil {
