@@ -51,11 +51,11 @@ set -e
 
 echo "Building surfer-dev binary..."
 # Build the binary from the main cmd directory and place it in a local bin directory.
-go build -o test_env/bin/surfer-dev ./cmd/surfer/main.go
+go build -o ./test_env/bin/surfer-dev ./cmd/surfer/main.go
 
 echo "Running the gcloud command generator..."
 # Run the newly built binary.
-(cd test_env && ./bin/surfer-dev generate gcloud.yaml --googleapis=. --out=.)
+(cd test_env && ./bin/surfer-dev generate ./test_env/gcloud.yaml --googleapis . --out .)
 
 echo "✅ Generation complete."
 echo "Generated files are in the 'parallelstore' directory."

@@ -18,6 +18,7 @@ package surfer
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/googleapis/librarian/internal/cli"
 	"github.com/googleapis/librarian/internal/surfer/gcloud"
@@ -25,6 +26,7 @@ import (
 
 // Run executes the surfer CLI with the given command line arguments.
 func Run(ctx context.Context, args []string) error {
+	log.Println("Executing surfer.Run with args:", args)
 	cmd := &cli.Command{
 		Short:     "surfer generates gcloud command YAML files",
 		UsageLine: "surfer generate [arguments]",
@@ -52,6 +54,7 @@ generate generates gcloud command files from protobuf API specifications,
 service config yaml, and gcloud.yaml.`,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			args := cmd.Flags.Args()
+			log.Printf("generate action called with args: %v, googleapis: %s, out: %s", args, googleapis, out)
 			if len(args) == 0 {
 				return fmt.Errorf("path to gcloud.yaml is required")
 			}
@@ -60,7 +63,8 @@ service config yaml, and gcloud.yaml.`,
 		},
 	}
 	cmdGenerate.Init()
-	cmdGenerate.Flags.StringVar(&googleapis, "googleapis", "https://github.com/googleapis/googleapis", "URL or directory path to googleapis")
+	// TODO: the flags aren't currently parsing the right value (they always get set to the default value)
+	cmdGenerate.Flags.StringVar(&googleapis, "googleapis", ".", "URL or directory path to googleapis")
 	cmdGenerate.Flags.StringVar(&out, "out", ".", "output directory")
 	return cmdGenerate
 }
