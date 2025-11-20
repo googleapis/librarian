@@ -21,8 +21,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 	"github.com/iancoleman/strcase"
 )
 
@@ -257,7 +257,7 @@ func shouldGenerateMethod(m *api.Method) bool {
 }
 
 func formatDirectory(dir string) error {
-	if err := external.Run("dart", "format", dir); err != nil {
+	if err := command.Run("dart", "format", dir); err != nil {
 		return fmt.Errorf("got an error trying to run `dart format`; perhaps try https://dart.dev/get-dart (%w)", err)
 	}
 	return nil

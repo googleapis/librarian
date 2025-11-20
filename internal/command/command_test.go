@@ -12,32 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package external
+package command
 
 import (
-	"os/exec"
+	"strings"
 	"testing"
 )
 
-func TestSuccess(t *testing.T) {
-	// "go" must be installed, otherwise: how are you running the unit tests?
-	cmd := exec.Command("go", "help")
-	if err := Exec(cmd); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestError(t *testing.T) {
-	// Seems unlikely that `go` will gain this subcommand. I will buy you a cold
-	// beverage if I am wrong.
-	cmd := exec.Command("go", "invalid-subcommand-bad-bad-bad")
-	if err := Exec(cmd); err == nil {
-		t.Errorf("expected an error using go invalid-subcommand-bad-bad-bad")
-	}
-}
-
 func TestRun(t *testing.T) {
-	if err := Run("go", "help"); err != nil {
+	if err := Run("go", "version"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRunError(t *testing.T) {
+	err := Run("go", "invalid-subcommand-bad-bad-bad")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "invalid-subcommand-bad-bad-bad") {
+		t.Errorf("error should mention the invalid subcommand, got: %v", err)
 	}
 }

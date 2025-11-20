@@ -21,8 +21,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 )
 
 const (
@@ -56,7 +56,7 @@ func TestBumpVersionsSuccess(t *testing.T) {
 	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+	if err := command.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
 	if err := BumpVersions(config); err != nil {
@@ -85,7 +85,7 @@ func TestBumpVersionsNoCargoTools(t *testing.T) {
 	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+	if err := command.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
 	if err := BumpVersions(config); err != nil {
@@ -114,7 +114,7 @@ func TestBumpVersionsNoSemverChecks(t *testing.T) {
 	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+	if err := command.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
 	if err := BumpVersions(config); err != nil {
@@ -165,7 +165,7 @@ func TestBumpVersionsManifestError(t *testing.T) {
 	if err := os.WriteFile(name, []byte("invalid-toml-file = {"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: broke storage manifest file", "."); err != nil {
+	if err := command.Run("git", "commit", "-m", "feat: broke storage manifest file", "."); err != nil {
 		t.Fatal(err)
 	}
 	if err := BumpVersions(config); err == nil {
@@ -177,12 +177,12 @@ func setupForVersionBump(t *testing.T, wantTag string) {
 	remoteDir := t.TempDir()
 	continueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
-	if err := external.Run("git", "tag", wantTag); err != nil {
+	if err := command.Run("git", "tag", wantTag); err != nil {
 		t.Fatal(err)
 	}
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
-	if err := external.Run("git", "clone", remoteDir, "."); err != nil {
+	if err := command.Run("git", "clone", remoteDir, "."); err != nil {
 		t.Fatal(err)
 	}
 	configNewGitRepository(t)
@@ -192,14 +192,14 @@ func setupForPublish(t *testing.T, wantTag string) string {
 	remoteDir := t.TempDir()
 	continueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
-	if err := external.Run("git", "tag", wantTag); err != nil {
+	if err := command.Run("git", "tag", wantTag); err != nil {
 		t.Fatal(err)
 	}
 	name := path.Join("src", "storage", "src", "lib.rs")
 	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+	if err := command.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
 	return remoteDir
@@ -208,7 +208,7 @@ func setupForPublish(t *testing.T, wantTag string) string {
 func cloneRepository(t *testing.T, remoteDir string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
-	if err := external.Run("git", "clone", remoteDir, "."); err != nil {
+	if err := command.Run("git", "clone", remoteDir, "."); err != nil {
 		t.Fatal(err)
 	}
 	configNewGitRepository(t)
@@ -218,7 +218,7 @@ func continueInNewGitRepository(t *testing.T, tmpDir string) {
 	t.Helper()
 	requireCommand(t, "git")
 	t.Chdir(tmpDir)
-	if err := external.Run("git", "init", "-b", "main"); err != nil {
+	if err := command.Run("git", "init", "-b", "main"); err != nil {
 		t.Fatal(err)
 	}
 	configNewGitRepository(t)
@@ -232,10 +232,10 @@ func requireCommand(t *testing.T, command string) {
 }
 
 func configNewGitRepository(t *testing.T) {
-	if err := external.Run("git", "config", "user.email", "test@test-only.com"); err != nil {
+	if err := command.Run("git", "config", "user.email", "test@test-only.com"); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "config", "user.name", "Test Account"); err != nil {
+	if err := command.Run("git", "config", "user.name", "Test Account"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -250,10 +250,10 @@ func initRepositoryContents(t *testing.T) {
 	addCrate(t, path.Join("src", "gax-internal"), "google-cloud-gax-internal")
 	addCrate(t, path.Join("src", "gax-internal", "echo-server"), "echo-server")
 	addGeneratedCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
-	if err := external.Run("git", "add", "."); err != nil {
+	if err := command.Run("git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "initial version"); err != nil {
+	if err := command.Run("git", "commit", "-m", "initial version"); err != nil {
 		t.Fatal(err)
 	}
 }

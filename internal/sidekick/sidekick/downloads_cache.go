@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 )
 
 func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, error) {
@@ -76,7 +75,11 @@ func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, err
 func extractTarball(source, destination string) error {
 	cmd := exec.Command("tar", "-zxf", source)
 	cmd.Dir = destination
-	return external.Exec(cmd)
+	fmt.Fprintf(os.Stderr, "Running: %s\n", cmd.String())
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
+	}
+	return nil
 }
 
 func extractedName(rootConfig *config.Config, googleapisRoot, configPrefix string) string {

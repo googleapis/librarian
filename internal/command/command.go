@@ -12,25 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package external provides helper functions to work with external commands.
-package external
+// Package command provides helpers to execute external commands with logging.
+package command
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 )
-
-// Exec executes a command and captures any error output.
-func Exec(cmd *exec.Cmd) error {
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
-	}
-	return nil
-}
 
 // Run executes a program (with arguments) and captures any error output.
 func Run(command string, arg ...string) error {
 	cmd := exec.Command(command, arg...)
-	cmd.Dir = "."
-	return Exec(cmd)
+	fmt.Fprintf(os.Stderr, "Running: %s\n", cmd.String())
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
+	}
+	return nil
 }
