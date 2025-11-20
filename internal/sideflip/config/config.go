@@ -52,6 +52,9 @@ type Config struct {
 // Sources contains references to external source repositories.
 // Each entry maps a source name to its configuration.
 type Sources struct {
+	// Discovery is the discovery-artifact-manager repository configuration.
+	Discovery *Source `yaml:"discovery,omitempty"`
+
 	// Googleapis is the googleapis repository configuration.
 	Googleapis *Source `yaml:"googleapis,omitempty"`
 }
