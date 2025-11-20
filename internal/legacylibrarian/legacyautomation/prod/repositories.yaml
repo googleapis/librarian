@@ -49,11 +49,6 @@ repositories:
     github-token-secret-name: "google-resumable-media-python-github-token"
     supported-commands:
       - publish-release
-  - name: "python-aiplatform"
-    full-name: https://github.com/googleapis/python-aiplatform
-    github-token-secret-name: "python-aiplatform-github-token"
-    supported-commands:
-      - publish-release
   - name: "python-api-core"
     full-name: https://github.com/googleapis/python-api-core
     github-token-secret-name: "python-api-core-github-token"
