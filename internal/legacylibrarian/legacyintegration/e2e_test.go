@@ -32,8 +32,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/go-github/v69/github"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygithub"
 	"gopkg.in/yaml.v3"
 )
 
@@ -138,7 +138,7 @@ func TestRunGenerate(t *testing.T) {
 			}
 
 			cmd := exec.Command("go", cmdArgs...)
-			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
+			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=fake-token", legacyconfig.LibrarianGithubToken))
 			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
 			var stderr bytes.Buffer
 			cmd.Stderr = &stderr
@@ -331,16 +331,16 @@ func TestRunConfigure(t *testing.T) {
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
-			var gotState *config.LibrarianState
+			var gotState *legacyconfig.LibrarianState
 			if err := yaml.Unmarshal(gotBytes, &gotState); err != nil {
 				t.Fatalf("Failed to unmarshal configure response file: %v", err)
 			}
-			var wantState *config.LibrarianState
+			var wantState *legacyconfig.LibrarianState
 			if err := yaml.Unmarshal(wantBytes, &wantState); err != nil {
 				t.Fatalf("Failed to unmarshal expected state: %v", err)
 			}
 
-			if diff := cmp.Diff(wantState, gotState, cmpopts.IgnoreFields(config.LibraryState{}, "LastGeneratedCommit")); diff != "" {
+			if diff := cmp.Diff(wantState, gotState, cmpopts.IgnoreFields(legacyconfig.LibraryState{}, "LastGeneratedCommit")); diff != "" {
 				t.Fatalf("Generated yaml mismatch (-want +got):\n%s", diff)
 			}
 			for _, lib := range gotState.Libraries {
@@ -544,7 +544,7 @@ func TestReleaseStage(t *testing.T) {
 
 			cmd := exec.Command("go", cmdArgs...)
 			cmd.Env = os.Environ()
-			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=fake-token", legacyconfig.LibrarianGithubToken))
 			cmd.Env = append(cmd.Env, "LIBRARIAN_GITHUB_BASE_URL="+server.URL)
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
@@ -563,17 +563,17 @@ func TestReleaseStage(t *testing.T) {
 			if readErr != nil {
 				t.Fatalf("Failed to read expected state for comparison: %v", readErr)
 			}
-			var gotState *config.LibrarianState
+			var gotState *legacyconfig.LibrarianState
 			if err := yaml.Unmarshal(gotBytes, &gotState); err != nil {
 				t.Fatalf("Failed to unmarshal configure response file: %v", err)
 			}
-			var wantState *config.LibrarianState
+			var wantState *legacyconfig.LibrarianState
 			if err := yaml.Unmarshal(wantBytes, &wantState); err != nil {
 				t.Fatalf("Failed to unmarshal expected state: %v", err)
 			}
 
 			// Use cmpopts.IgnoreFields to ignore the dynamic commit hash.
-			if diff := cmp.Diff(wantState, gotState, cmpopts.IgnoreFields(config.LibraryState{}, "LastGeneratedCommit")); diff != "" {
+			if diff := cmp.Diff(wantState, gotState, cmpopts.IgnoreFields(legacyconfig.LibraryState{}, "LastGeneratedCommit")); diff != "" {
 				t.Fatalf("Generated yaml mismatch (-want +got): %s", diff)
 			}
 
@@ -745,7 +745,7 @@ libraries:
 			}
 
 			cmd := exec.Command("go", cmdArgs...)
-			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=fake-token", config.LibrarianGithubToken))
+			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=fake-token", legacyconfig.LibrarianGithubToken))
 			cmd.Stderr = os.Stderr
 			cmd.Stdout = os.Stdout
 			if err := cmd.Run(); err != nil {
@@ -853,13 +853,13 @@ func createCommit(t *testing.T, dir, filePath string, commitMsg string) error {
 
 // setupStateFile creates a .librarian/state.yaml file in the given repo directory with the provided lastGeneratedCommit.
 func setupStateFile(t *testing.T, repoInitDir, lastGeneratedCommit string) {
-	state := &config.LibrarianState{
+	state := &legacyconfig.LibrarianState{
 		Image: "test-image:latest",
-		Libraries: []*config.LibraryState{
+		Libraries: []*legacyconfig.LibraryState{
 			{
 				ID:      "go-google-cloud-pubsub-v1",
 				Version: "v1.0.0",
-				APIs: []*config.API{
+				APIs: []*legacyconfig.API{
 					{
 						Path: "google/cloud/pubsub/v1",
 					},

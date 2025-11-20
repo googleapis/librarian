@@ -28,7 +28,7 @@ DOCKER_BUILDKIT=1 docker build \
 Usage:
 
 ```bash
-go test -tags e2e ./internal/integration/...
+go test -tags e2e ./internal/legacylibrarian/legacyintegration/...
 ```
 
 ## Integration Tests
