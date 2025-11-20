@@ -21,7 +21,7 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, googleapisDir, serviceConfig string) (*sidekickconfig.Config, error) {
+func toSidekickConfig(library *config.Library, googleapisDir, serviceConfig string) *sidekickconfig.Config {
 	sidekickCfg := &sidekickconfig.Config{
 		General: sidekickconfig.GeneralConfig{
 			Language:            "rust",
@@ -55,7 +55,7 @@ func toSidekickConfig(library *config.Library, googleapisDir, serviceConfig stri
 			}
 		}
 	}
-	return sidekickCfg, nil
+	return sidekickCfg
 }
 
 func buildCodec(library *config.Library) map[string]string {
