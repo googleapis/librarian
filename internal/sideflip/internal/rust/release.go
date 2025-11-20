@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package rust provides Rust specific functionality for sideflip.
 package rust
 
 import (
@@ -47,6 +48,7 @@ func BumpVersions(ctx context.Context, cfg *config.Config, configPath string) er
 		if d.IsDir() || d.Name() != "Cargo.toml" {
 			return nil
 		}
+
 		contents, err := os.ReadFile(path)
 		if err != nil {
 			return err
@@ -59,15 +61,14 @@ func BumpVersions(ctx context.Context, cfg *config.Config, configPath string) er
 		if manifest.Package == nil {
 			return nil
 		}
+
 		newVersion, err := rustrelease.BumpPackageVersion(manifest.Package.Version)
 		if err != nil {
 			return err
 		}
-
 		if err := rustrelease.UpdateCargoVersion(path, newVersion); err != nil {
 			return err
 		}
-
 		cfg.Versions[manifest.Package.Name] = newVersion
 		return nil
 	})
