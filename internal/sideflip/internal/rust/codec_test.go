@@ -242,11 +242,7 @@ func TestToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := toSidekickConfig(test.library, test.googleapisDir, test.serviceConfig)
-			if err != nil {
-				t.Fatal(err)
-			}
-
+			got := toSidekickConfig(test.library, test.googleapisDir, test.serviceConfig)
 			if test.want != nil {
 				if diff := cmp.Diff(test.want.General, got.General); diff != "" {
 					t.Errorf("General mismatch (-want +got):\n%s", diff)
