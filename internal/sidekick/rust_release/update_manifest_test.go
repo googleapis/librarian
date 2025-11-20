@@ -243,7 +243,7 @@ func TestBumpPackageVersion(t *testing.T) {
 		{"0.1.2", "0.2.0"},
 		{"0.1.2-alpha", "0.2.0-alpha"},
 	} {
-		got, err := bumpPackageVersion(test.Input)
+		got, err := BumpPackageVersion(test.Input)
 		if err != nil {
 			t.Fatal(err)
 		}
