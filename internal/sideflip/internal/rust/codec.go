@@ -55,29 +55,23 @@ func toSidekickConfig(library *config.Library, googleapisDir, serviceConfig stri
 			}
 		}
 	}
-
 	return sidekickCfg, nil
 }
 
 func buildCodec(library *config.Library) map[string]string {
 	codec := make(map[string]string)
-
 	if library.Version != "" {
 		codec["version"] = library.Version
 	}
-
 	if library.ReleaseLevel != "" {
 		codec["release-level"] = library.ReleaseLevel
 	}
-
 	if library.Name != "" {
 		codec["package-name-override"] = library.Name
 	}
-
 	if library.CopyrightYear != "" {
 		codec["copyright-year"] = library.CopyrightYear
 	}
-
 	if library.Rust == nil {
 		return codec
 	}
@@ -126,13 +120,11 @@ func buildCodec(library *config.Library) map[string]string {
 	for _, dep := range rust.PackageDependencies {
 		codec["package:"+dep.Name] = formatPackageDependency(&dep)
 	}
-
 	return codec
 }
 
 func formatPackageDependency(dep *config.RustPackageDependency) string {
 	var parts []string
-
 	if dep.Package != "" {
 		parts = append(parts, "package="+dep.Package)
 	}
@@ -148,6 +140,5 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	if dep.Feature != "" {
 		parts = append(parts, "feature="+dep.Feature)
 	}
-
 	return strings.Join(parts, ",")
 }
