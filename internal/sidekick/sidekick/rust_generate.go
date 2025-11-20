@@ -65,36 +65,7 @@ func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 	if err := generate(rootConfig, cmdLine); err != nil {
 		return err
 	}
-	if err := PostGenerate(cmdLine.Output); err != nil {
-		return err
-	}
-	packagez, err := getPackageName(cmdLine.Output)
-	if err != nil {
-		return err
-	}
-	slog.Info("generated new client library", "package", packagez)
-	slog.Info("running `cargo test` on new client library")
-	if err := external.Run("cargo", "test", "--package", packagez); err != nil {
-		return err
-	}
-	slog.Info("running `cargo doc` on new client library")
-	if err := external.Run("env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--package", packagez, "--no-deps"); err != nil {
-		return err
-	}
-	slog.Info("running `cargo clippy` on new client library")
-	if err := external.Run("cargo", "clippy", "--package", packagez, "--", "--deny", "warnings"); err != nil {
-		return err
-	}
-	slog.Info("running `typos` on new client library")
-	if err := external.Run("typos"); err != nil {
-		slog.Info("please manually add the typos to `.typos.toml` and fix the problem upstream")
-		return err
-	}
-	if err := external.Run("git", "add", "Cargo.lock", "Cargo.toml"); err != nil {
-		return err
-	}
-
-	return nil
+	return PostGenerate(cmdLine.Output)
 }
 
 func getPackageName(output string) (string, error) {
@@ -147,7 +118,29 @@ func PostGenerate(outdir string) error {
 	if err := external.Run("git", "add", outdir); err != nil {
 		return err
 	}
-	return nil
+	packagez, err := getPackageName(outdir)
+	if err != nil {
+		return err
+	}
+	slog.Info("generated new client library", "package", packagez)
+	slog.Info("running `cargo test` on new client library")
+	if err := external.Run("cargo", "test", "--package", packagez); err != nil {
+		return err
+	}
+	slog.Info("running `cargo doc` on new client library")
+	if err := external.Run("env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--package", packagez, "--no-deps"); err != nil {
+		return err
+	}
+	slog.Info("running `cargo clippy` on new client library")
+	if err := external.Run("cargo", "clippy", "--package", packagez, "--", "--deny", "warnings"); err != nil {
+		return err
+	}
+	slog.Info("running `typos` on new client library")
+	if err := external.Run("typos"); err != nil {
+		slog.Info("please manually add the typos to `.typos.toml` and fix the problem upstream")
+		return err
+	}
+	return external.Run("git", "add", "Cargo.lock", "Cargo.toml")
 }
 
 // CargoConfig is the configuration for a cargo package.
