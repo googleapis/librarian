@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sideflip provides functionality for onboarding, generating and
+// Package librarian provides functionality for onboarding, generating and
 // releasing Google Cloud client libraries.
-package sideflip
+package librarian
 
 import (
 	"context"

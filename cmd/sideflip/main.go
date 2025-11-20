@@ -20,13 +20,13 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/googleapis/librarian/internal/sideflip/sideflip"
+	"github.com/googleapis/librarian/internal/librarian"
 )
 
 func main() {
 	ctx := context.Background()
-	if err := sideflip.Run(ctx, os.Args[1:]...); err != nil {
-		slog.Error("sideflip command failed", "err", err)
+	if err := librarian.Run(ctx, os.Args[1:]...); err != nil {
+		slog.Error("librarian command failed", "err", err)
 		os.Exit(1)
 	}
 }
