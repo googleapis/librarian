@@ -61,7 +61,8 @@ Read our guide on
 
 ## Step 6: Running Librarian
 
-Currently running librarian from main is unstable, please use the v0.7.0 tag when running locally.
+Currently running librarian from main is unstable, please use the v0.7.0 tag when running 
+locally.
 
 ### Using `go run`
 
@@ -75,7 +76,7 @@ To install a binary locally, and then run it (assuming the `$GOBIN` directory
 is in your path):
 
 ```sh
-$ go install github.com/googleapis/librarian/cmd/librarian@0.7.0
+$ go install github.com/googleapis/librarian/cmd/librarian@v0.7.0
 ```
 
 
