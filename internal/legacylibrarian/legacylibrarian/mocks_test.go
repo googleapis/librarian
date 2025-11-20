@@ -66,7 +66,7 @@ func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) 
 		return yaml.Marshal(m.librarianState)
 	}
 
-	if path == ".librarian/legacyconfig.yaml" && m.librarianConfig != nil {
+	if path == ".librarian/config.yaml" && m.librarianConfig != nil {
 		return yaml.Marshal(m.librarianConfig)
 	}
 	return m.rawContent, m.rawErr
