@@ -61,25 +61,12 @@ Read our guide on
 
 ## Step 6: Running Librarian
 
-There are various options for running `librarian`. We recommend using `go run`
-(the first option) unless you're developing `librarian`. You may wish to use
-a bash alias for simplicity. For example, using the first option below you might
-use:
-
-```sh
-$ alias librarian='go run github.com/googleapis/librarian/cmd/librarian@latest'
-```
-
-In this guide, we just assume that `librarian` is either a binary in your path,
-or a suitable alias.
+Currently running librarian from main is unstable, please use the v0.7.0 tag when running locally.
 
 ### Using `go run`
 
-The latest released version of `librarian` can be run directly without cloning
-using:
-
 ```sh
-$ go run github.com/googleapis/librarian/cmd/librarian@latest
+$ go run github.com/googleapis/librarian/cmd/librarian@v0.7.0
 ```
 
 ### Using `go install`
@@ -88,21 +75,9 @@ To install a binary locally, and then run it (assuming the `$GOBIN` directory
 is in your path):
 
 ```sh
-$ go install github.com/googleapis/librarian/cmd/librarian@latest
+$ go install github.com/googleapis/librarian/cmd/librarian@0.7.0
 ```
 
-Note that while this makes it easier to run `librarian`, you'll need to know
-to install a new version when it's released.
-
-### Building locally
-
-Clone the source code, then run it:
-
-```sh
-$ git clone https://github.com/googleapis/librarian
-$ cd librarian
-$ go run ./cmd/librarian
-```
 
 ### Obtaining a GitHub access token
 
