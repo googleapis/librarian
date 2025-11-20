@@ -50,7 +50,7 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	idx := bytes.Index(contents, []byte("version                = \"1.1.0\"\n"))
+	idx := bytes.Index(contents, []byte("version = '1.1.0'"))
 	if idx == -1 {
 		t.Errorf("expected version = 1.1.0 in new file, got=%s", contents)
 	}
@@ -71,7 +71,7 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	idx = bytes.Index(contents, []byte("version                = \"1.1.0\"\n"))
+	idx = bytes.Index(contents, []byte("version = '1.1.0'"))
 	if idx == -1 {
 		t.Errorf("expected version = 1.1.0 in new file, got=%s", contents)
 	}
@@ -243,7 +243,7 @@ func TestBumpPackageVersion(t *testing.T) {
 		{"0.1.2", "0.2.0"},
 		{"0.1.2-alpha", "0.2.0-alpha"},
 	} {
-		got, err := bumpPackageVersion(test.Input)
+		got, err := BumpPackageVersion(test.Input)
 		if err != nil {
 			t.Fatal(err)
 		}
