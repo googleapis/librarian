@@ -457,8 +457,8 @@ func calculateDependencies(packages map[string]bool, constraints map[string]stri
 // calculateImports generates Dart import statements given a set of imports.
 //
 // For example:
-// {"dart:io": true, "package:http/http.dart as http": true} to
-// ["import 'dart:io';", "", "import 'package:http/http.dart' as http;"]
+// `{"dart:io": true, "package:http/http.dart as http": true}` to
+// `{"import 'dart:io';", "", "import 'package:http/http.dart' as http;"}`.
 func calculateImports(imports map[string]bool, curPkgName string, curFileName string) []string {
 	var dartImports []string
 	var packageImports []string
