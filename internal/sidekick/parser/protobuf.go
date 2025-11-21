@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"maps"
 	"os"
@@ -36,25 +35,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
-
-// TODO(santi): scrutinize this function
-func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.Field) {
-	if f.Options == nil {
-		return
-	}
-	if !proto.HasExtension(f.Options, annotations.E_ResourceReference) {
-		return
-	}
-	ext := proto.GetExtension(f.Options, annotations.E_ResourceReference)
-	ref, ok := ext.(*annotations.ResourceReference)
-	if !ok {
-		return
-	}
-	field.ResourceReference = &api.ResourceReference{
-		Type:      ref.Type,
-		ChildType: ref.ChildType,
-	}
-}
 
 // ParseProtobuf reads Protobuf specifications and converts them into
 // the `api.API` model.
@@ -122,7 +102,6 @@ func newCodeGeneratorRequest(source string, options map[string]string) (_ *plugi
 }
 
 func protoc(tempFile string, files []string, options map[string]string) ([]byte, error) {
-	log.Printf("protoc options: %+v", options)
 	args := []string{
 		"--include_imports",
 		"--include_source_info",
@@ -243,19 +222,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			eFQN := fFQN + "." + e.GetName()
 			_ = processEnum(state, e, eFQN, f.GetPackage(), nil)
 		}
-
-		// TODO(santi): scrutinize this logic
-		if f.Options != nil && proto.HasExtension(f.Options, annotations.E_ResourceDefinition) {
-			ext := proto.GetExtension(f.Options, annotations.E_ResourceDefinition)
-			if res, ok := ext.([]*annotations.ResourceDescriptor); ok {
-				for _, r := range res {
-					result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
-						Type:    r.GetType(),
-						Pattern: r.GetPattern(),
-					})
-				}
-			}
-		}
+		processResourceDefinitions(f, result)
 	}
 	// ========================================
 
@@ -511,22 +478,11 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 	}
 	state.MessageByID[mFQN] = message
 
-	//TODO(santi): scrutinize this logic
 	if opts := m.GetOptions(); opts != nil {
 		if opts.GetMapEntry() {
 			message.IsMap = true
 		}
-		if proto.HasExtension(opts, annotations.E_Resource) {
-			ext := proto.GetExtension(opts, annotations.E_Resource)
-			if res, ok := ext.(*annotations.ResourceDescriptor); ok {
-				message.Resource = &api.Resource{
-					Type:     res.GetType(),
-					Pattern:  res.GetPattern(),
-					Plural:   res.GetPlural(),
-					Singular: res.GetSingular(),
-				}
-			}
-		}
+		processResourceAnnotation(opts, message)
 	}
 	// =================================
 	if len(m.GetNestedType()) > 0 {
@@ -560,7 +516,7 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 			AutoPopulated: protobufIsAutoPopulated(mf),
 			Behavior:      protobufFieldBehavior(mf),
 		}
-		processResourceReference(mf, field) // TODO(santi): scrutinize this logic
+		processResourceReference(mf, field)
 		normalizeTypes(state, mf, field)
 		message.Fields = append(message.Fields, field)
 		if field.IsOneOf {
@@ -583,6 +539,74 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 	}
 
 	return message
+}
+
+func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message) {
+	if !proto.HasExtension(opts, annotations.E_Resource) {
+		return
+	}
+	ext := proto.GetExtension(opts, annotations.E_Resource)
+	res, ok := ext.(*annotations.ResourceDescriptor)
+	if !ok {
+		return
+	}
+	message.Resource = &api.Resource{
+		Type:     res.GetType(),
+		Pattern:  res.GetPattern(),
+		Plural:   res.GetPlural(),
+		Singular: res.GetSingular(),
+		Self:     message,
+	}
+}
+
+func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api.API) {
+	if f.Options == nil || !proto.HasExtension(f.Options, annotations.E_ResourceDefinition) {
+		return
+	}
+
+	ext := proto.GetExtension(f.Options, annotations.E_ResourceDefinition)
+	res, ok := ext.([]*annotations.ResourceDescriptor)
+	if !ok {
+		return
+	}
+
+	for _, r := range res {
+		result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
+			Type:     r.GetType(),
+			Pattern:  r.GetPattern(),
+			Plural:   r.GetPlural(),
+			Singular: r.GetSingular(),
+		})
+	}
+}
+
+// TODO(santi): This function needs to be made more robust. For methods that operate on
+// collections (e.g., a `List` method), the `(google.api.resource_reference)`
+// annotation often uses the `type` field to refer to the *parent* resource
+// (e.g., `cloudresourcemanager.googleapis.com/Project`). The actual resource
+// that the method returns is specified in the `child_type` field.
+//
+// The current implementation correctly captures both fields, but the logic in
+// the gcloud generator that *uses* this information does not yet handle this
+// distinction correctly. Future work should involve creating a more robust
+// model that correctly determines the primary resource for a method, using
+// `child_type` when it is present for collection-based methods.
+func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.Field) {
+	if f.Options == nil {
+		return
+	}
+	if !proto.HasExtension(f.Options, annotations.E_ResourceReference) {
+		return
+	}
+	ext := proto.GetExtension(f.Options, annotations.E_ResourceReference)
+	ref, ok := ext.(*annotations.ResourceReference)
+	if !ok {
+		return
+	}
+	field.ResourceReference = &api.ResourceReference{
+		Type:      ref.Type,
+		ChildType: ref.ChildType,
+	}
 }
 
 func processEnum(state *api.APIState, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message) *api.Enum {

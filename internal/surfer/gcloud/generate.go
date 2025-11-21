@@ -17,7 +17,6 @@ package gcloud
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"slices"
@@ -33,9 +32,6 @@ import (
 
 // Generate generates gcloud commands for a service.
 func Generate(ctx context.Context, googleapis, gcloudconfig, output string) error {
-	wd, _ := os.Getwd()
-	log.Printf("current working directory: %s", wd)
-	log.Printf("gcloud.Generate called with googleapis: %s, gcloudconfig: %s, output: %s", googleapis, gcloudconfig, output)
 	cfg, err := readGcloudConfig(gcloudconfig)
 	if err != nil {
 		return err
@@ -80,8 +76,6 @@ func Generate(ctx context.Context, googleapis, gcloudconfig, output string) erro
 
 		}
 
-		log.Printf("****** LIBRARIAN PARSED MODEL ******\nName: %s\nPackageName: %s\nServices: %d\nMessages: %d\nEnums: %d\n", model.Name, model.PackageName, len(model.Services), len(model.Messages), len(model.Enums))
-
 		return model, nil
 
 	}
@@ -112,33 +106,25 @@ func Generate(ctx context.Context, googleapis, gcloudconfig, output string) erro
 	// We'll create a map where the key is the resource's collection ID (e.g., "instances")
 	// and the value is a list of methods that act on that resource.
 	methodsByResource := make(map[string][]*api.Method)
-	log.Printf("methodsByResource initialized: %+v", methodsByResource)
 
 	// We iterate through all services and their methods defined in the API model.
+	// TODO(santi): we might want to move the mapping function to protobuf.go
 	for _, service := range model.Services {
-		log.Printf("Processing service: %s", service.Name)
 		for _, method := range service.Methods {
-			log.Printf("  Processing method: %s", method.Name)
 			// For each method, we determine the plural name of the resource it operates on.
 			// This plural name (e.g., "instances") will serve as our collection ID.
 			// Example: For the `CreateInstance` method, this will return "instances".
 			collectionID := getPluralName(method, model)
-			log.Printf("    Determined collectionID for method %s: %s", method.Name, collectionID)
 
 			// If a collection ID is found, we add the method to our map.
 			if collectionID != "" {
-				log.Printf("    Adding method %s to collectionID %s", method.Name, collectionID)
 				methodsByResource[collectionID] = append(methodsByResource[collectionID], method)
 			}
 		}
 	}
-	log.Printf("Finished processing all services and methods. Final methodsByResource: %+v", methodsByResource)
 	// Now that we have grouped the methods by resource, we can generate the
 	// command files for each resource.
-	log.Printf("Iterating through methodsByResource")
 	for collectionID, methods := range methodsByResource {
-		log.Printf("collectionID: %s, methods: %s", collectionID, methods)
-
 		// The `generateResourceCommands` function will handle the creation of the
 		// directory structure and YAML files for this specific resource.
 		err := generateResourceCommands(collectionID, methods, surfaceDir, cfg, model)
@@ -232,7 +218,7 @@ func newCommand(method *api.Method, cfg *Config, model *api.API) *Command {
 	// `gcloud.yaml` configuration file.
 	rule := findHelpTextRule(method, cfg)
 	apiDef := findAPI(method, cfg)
-	//TODO: parse exaples from `gcloud.yaml`
+	//TODO(santi): parse exaples from `gcloud.yaml`
 
 	// We initialize the command with some default values.
 	cmd := &Command{
@@ -553,19 +539,17 @@ func getResourceName(method *api.Method) string {
 
 // getResourceForMethod finds the `api.Resource` definition associated with a method.
 // This is a crucial function for linking a method to the resource it operates on.
+// TODO: reconsider this function. We might want to move all the resource processing somewhere else
 func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
-	log.Printf("****** LIBRARIAN GET RESOURCE FOR METHOD ******\n%+v\n", method)
 	// Strategy 1: For `Create` and `Update` methods, the request message usually
 	// contains a field that is the resource message itself. We look for that first.
 	if method.InputType != nil {
 		for _, f := range method.InputType.Fields {
 			if msg := f.MessageType; msg != nil && msg.Resource != nil {
-				log.Printf("  Strategy 1: Found resource %s from input type field %s", msg.Resource.Type, f.Name)
 				return msg.Resource
 			}
 		}
 	} else {
-		log.Printf("  Strategy 1: Method input type is nil for method: %s", method.Name)
 	}
 
 	// Strategy 2: For `Get`, `Delete`, and `List` methods, the request message
@@ -578,7 +562,6 @@ func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 				if resourceType == "" {
 					resourceType = field.ResourceReference.ChildType
 				}
-				log.Printf("  Strategy 2: Found resource reference type %s from field %s", resourceType, field.Name)
 				break
 			}
 		}
@@ -589,19 +572,16 @@ func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 	if resourceType != "" {
 		for _, msg := range model.Messages {
 			if msg.Resource != nil && msg.Resource.Type == resourceType {
-				log.Printf("  Strategy 2: Found resource %s in model messages", msg.Resource.Type)
 				return msg.Resource
 			}
 		}
 		for _, def := range model.ResourceDefinitions {
 			if def.Type == resourceType {
-				log.Printf("  Strategy 2: Found resource definition %s in model resource definitions", def.Type)
 				return def
 			}
 		}
 	}
 
-	log.Printf("getResourceForMethod: No resource found for method %s", method.Name)
 	return nil
 }
 
@@ -647,24 +627,21 @@ func getGcloudType(t api.Typez) string {
 // getPluralName determines the plural name of a resource. It follows a clear
 // hierarchy of truth: first, the explicit `plural` field in the resource
 // definition, and second, inference from the resource pattern.
+// TODO(santi): we should get the resource the function operates on
 func getPluralName(method *api.Method, model *api.API) string {
 	resource := getResourceForMethod(method, model)
-	log.Printf("getPluralName: resource for method %s: %+v", method.Name, resource)
 	if resource != nil {
 		// The `plural` field in the `(google.api.resource)` annotation is the
 		// most authoritative source.
 		if resource.Plural != "" {
-			log.Printf("getPluralName: using explicit plural from resource: %s", resource.Plural)
 			return resource.Plural
 		}
 		// If the `plural` field is not present, we fall back to inferring the
 		// plural name from the resource's pattern string, as per AIP-122.
 		if len(resource.Pattern) > 0 {
-			log.Printf("getPluralName: inferring plural from pattern: %s", resource.Pattern[0])
 			return getPluralFromPattern(resource.Pattern[0])
 		}
 	}
-	log.Printf("getPluralName: no plural name found for method %s", method.Name)
 	return ""
 }
 
@@ -709,7 +686,7 @@ func findHelpTextRule(method *api.Method, cfg *Config) *HelpTextRule {
 			continue
 		}
 		for _, rule := range api.HelpText.MethodRules {
-			if rule.Selector == method.MethodFullName() {
+			if rule.Selector == method.FullName() {
 				return rule
 			}
 		}

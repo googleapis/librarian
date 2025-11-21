@@ -906,6 +906,9 @@ type Resource struct {
 	Plural string
 	// Singular is the singular form of the resource name.
 	Singular string
+
+	Self *Message
+	//TODO: add another filed that references the api.Message
 }
 
 // ResourceReference contains the data from the `google.api.resource_reference`
@@ -918,8 +921,9 @@ type ResourceReference struct {
 	ChildType string
 }
 
-// MethodFullName returns the fully qualified name of the method.
-func (m *Method) MethodFullName() string {
+// FullName returns the fully qualified name of the method.
+func (m *Method) FullName() string {
+
+	// TODO(santi): If service.package is empty we should return null to handle discovery based parsing
 	return m.Service.Package + "." + m.Service.Name + "." + m.Name
 }
-
