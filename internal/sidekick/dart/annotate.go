@@ -354,21 +354,11 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		annotate.imports[serviceClientImport] = true
 	}
 
-	// `google.protobuf` defines `JsonEncodable`, which is needed by any package that defines a
-	// `message` or `enum`, i.e., almost all of them.
-	if model.PackageName == "google.protobuf" {
-		annotate.imports["src/encoding.dart"] = true
-	} else {
-		annotate.imports[encodingImport] = true
-
-		protobufPrefix = annotate.packagePrefixes["google.protobuf"]
-		if protobufPrefix == "" {
-			annotate.imports[protobufImport] = true
-		} else {
-			annotate.imports[protobufImport+" as "+protobufPrefix] = true
-			protobufPrefix += "."
-		}
-	}
+	// `encoding.dart` defines primitive JSON encoding/decode methods, which are needed by any API that defines
+	// an `enum`` or `message`.
+	annotate.imports[protobufImport] = true
+	// `protobuf.dart` defines `JsonEncodable`, which is needed by any API that defines an `enum`` or `message`.
+	annotate.imports[encodingImport] = true
 
 	if len(model.Services) > 0 && len(apiKeyEnvironmentVariables) == 0 {
 		return errors.New("all packages that define a service must define 'api-keys-environment-variables'")
@@ -389,13 +379,16 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return err
 	}
 
+	mainFileName := strcase.ToSnake(model.Name)
+	mainFileNameWithExtension := mainFileName + ".dart"
+
 	slices.Sort(devDependencies)
 
 	ann := &modelAnnotations{
 		Parent:         model,
 		PackageName:    pkgName,
 		PackageVersion: packageVersion,
-		MainFileName:   strcase.ToSnake(model.Name),
+		MainFileName:   mainFileName,
 		CopyrightYear:  generationYear,
 		BoilerPlate: append(license.LicenseHeaderBulk(),
 			"",
@@ -407,7 +400,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			return ""
 		}(),
 		DocLines:                   formatDocComments(model.Description, model.State),
-		Imports:                    calculateImports(annotate.imports),
+		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,
 		DevDependencies:            devDependencies,
@@ -461,7 +454,7 @@ func calculateDependencies(packages map[string]bool, constraints map[string]stri
 	return deps, nil
 }
 
-func calculateImports(imports map[string]bool) []string {
+func calculateImports(imports map[string]bool, curPkgName string, curFileName string) []string {
 	var dartImports []string
 	for imp := range imports {
 		dartImports = append(dartImports, imp)
@@ -470,14 +463,42 @@ func calculateImports(imports map[string]bool) []string {
 
 	previousImportType := ""
 	var results []string
+	var localResults []string // Imports from the current package.
 
 	for _, imp := range dartImports {
 		// Emit a blank line when changing between 'dart:' and 'package:' imports.
-		importType := strings.Split(imp, ":")[0]
+		colonSplit := strings.SplitN(imp, ":", 2)
+		importType := colonSplit[0]
+
+		// Use `packageName`, `packagePath`, and `packagePathMaybeWithPrefix` to adjust imports from
+		// the current package into relative imports and to exclude imports of the current file completely.
+		packageName := ""
+		packagePath := ""
+		packagePathMaybeWithPrefix := ""
+		if strings.Contains(colonSplit[1], "/") {
+			// s[1] looks like "http/http.dart" or "http/http.dart as http".
+			slashSplit := strings.SplitN(colonSplit[1], "/", 2)
+			packageName, packagePathMaybeWithPrefix = slashSplit[0], slashSplit[1]
+			packagePath = strings.Split(packagePathMaybeWithPrefix, " ")[0] // Remove possible `as` part of import.
+		}
+
+		if importType == "package" && packageName == curPkgName && packagePath == curFileName {
+			// Don't import the current file.
+			continue
+		}
+
 		if previousImportType != "" && previousImportType != importType {
 			results = append(results, "")
 		}
 		previousImportType = importType
+
+		isLocal := false
+		if importType == "package" && packageName == curPkgName {
+			// When importing from the current package, using a relative path (the generated code is
+			// always at the top level of the "lib" directory.)
+			imp = packagePathMaybeWithPrefix
+			isLocal = true
+		}
 
 		// Wrap the first part of the import (or the whole import) in single quotes.
 		index := strings.IndexAny(imp, " ")
@@ -487,10 +508,21 @@ func calculateImports(imports map[string]bool) []string {
 			imp = "'" + imp + "'"
 		}
 
-		results = append(results, fmt.Sprintf("import %s;", imp))
+		if isLocal {
+			localResults = append(localResults, fmt.Sprintf("import %s;", imp))
+		} else {
+			results = append(results, fmt.Sprintf("import %s;", imp))
+		}
 	}
 
-	return results
+	if results != nil {
+		if localResults != nil {
+			return slices.Concat(results, []string{""}, localResults)
+		} else {
+			return results
+		}
+	}
+	return localResults
 }
 
 func (annotate *annotateModel) annotateService(s *api.Service) {

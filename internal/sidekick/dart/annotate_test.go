@@ -368,35 +368,107 @@ func TestCalculateDependencies(t *testing.T) {
 
 func TestCalculateImports(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		imports []string
-		want    []string
+		name        string
+		imports     []string
+		packageName string
+		fileName    string
+		want        []string
 	}{
-		{name: "dart import", imports: []string{typedDataImport}, want: []string{
-			"import 'dart:typed_data';",
-		}},
-		{name: "package import", imports: []string{httpImport}, want: []string{
-			"import 'package:http/http.dart' as http;",
-		}},
-		{name: "dart and package imports", imports: []string{typedDataImport, httpImport}, want: []string{
-			"import 'dart:typed_data';",
-			"",
-			"import 'package:http/http.dart' as http;",
-		}},
-		{name: "package imports", imports: []string{
-			httpImport,
-			"package:google_cloud_foo/foo.dart",
-		}, want: []string{
-			"import 'package:google_cloud_foo/foo.dart';",
-			"import 'package:http/http.dart' as http;",
-		}},
+		{
+			name:        "dart: import",
+			imports:     []string{"dart:typed_data"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'dart:typed_data';"},
+		},
+		{
+			name:        "dart: import with prefix",
+			imports:     []string{"dart:typed_data as td"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'dart:typed_data' as td;"},
+		},
+		{
+			name:        "package: import",
+			imports:     []string{"package:http/http.dart"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'package:http/http.dart';"},
+		},
+		{
+			name:        "package: import with prefix",
+			imports:     []string{"package:http/http.dart as http"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'package:http/http.dart' as http;"},
+		},
+		{
+			name:        "dart: and package: imports",
+			imports:     []string{"dart:typed_data", "package:http/http.dart"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want: []string{
+				"import 'dart:typed_data';",
+				"",
+				"import 'package:http/http.dart';",
+			},
+		},
+		{
+			name:        "same file import",
+			imports:     []string{"package:google_cloud_bar/bar.dart"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        nil,
+		},
+		{
+			name:        "same file import with prefix",
+			imports:     []string{"package:google_cloud_bar/bar.dart as bar"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        nil,
+		},
+		{
+			name:        "same package import",
+			imports:     []string{"package:google_cloud_bar/baz.dart"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'baz.dart';"},
+		},
+		{
+			name:        "same package import with prefix",
+			imports:     []string{"package:google_cloud_bar/baz.dart as baz"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'baz.dart' as baz;"},
+		},
+		{
+			name: "many imports", imports: []string{
+				"package:google_cloud_foo/foo.dart",
+				"package:google_cloud_bar/bar.dart as bar",
+				"package:google_cloud_bar/src/foo.dart as foo",
+				"package:google_cloud_bar/baz.dart",
+				"dart:core",
+				"dart:io as io",
+			},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want: []string{
+				"import 'dart:core';",
+				"import 'dart:io' as io;",
+				"",
+				"import 'package:google_cloud_foo/foo.dart';",
+				"",
+				"import 'baz.dart';",
+				"import 'src/foo.dart' as foo;",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			deps := map[string]bool{}
 			for _, imp := range test.imports {
 				deps[imp] = true
 			}
-			got := calculateImports(deps)
+			got := calculateImports(deps, test.packageName, test.fileName)
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in calculateImports (-want, +got)\n:%s", diff)
