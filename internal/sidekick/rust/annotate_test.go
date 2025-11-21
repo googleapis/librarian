@@ -2315,10 +2315,10 @@ func TestSortResourceNameCandidates(t *testing.T) {
 	sortResourceNameCandidates(candidates, isInPath)
 
 	wantOrder := []string{
-		"top_in_path",        // Top-level, In-Path
-		"top",    // Top-level, Not-In-Path
-		"nested_in_path",     // Nested, In-Path
-		"nested", // Nested, Not-In-Path
+		"top_in_path",    // Top-level, In-Path
+		"top",            // Top-level, Not-In-Path
+		"nested_in_path", // Nested, In-Path
+		"nested",         // Nested, Not-In-Path
 	}
 
 	if len(candidates) != len(wantOrder) {
