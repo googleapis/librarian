@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM marketplace.gcr.io/google/ubuntu2404 AS builder
+# This stage builds the librariangen binary using the MOSS-compliant base image.
+FROM marketplace.gcr.io/google/debian12:latest AS builder
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \

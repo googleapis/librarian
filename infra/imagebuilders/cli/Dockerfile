@@ -12,7 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25.3 AS build
+# This stage builds the librariangen binary using the MOSS-compliant base image.
+FROM marketplace.gcr.io/google/debian12:latest AS builder
+
+# Set environment variables for tool versions for easy updates.
+ENV GO_VERSION=1.25.3
+
+# Install build dependencies.
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    ca-certificates \
+    curl \
+    wget && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install the specific Go version required for compatibility.
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz -O go.tar.gz && \
+    tar -C /usr/local -xzf go.tar.gz && \
+    rm go.tar.gz
+ENV PATH=/usr/local/go/bin:$PATH
+RUN go version
 
 WORKDIR /src
 
@@ -27,7 +47,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
 # while in Docker. Note that for this to work, *this*
 # docker image should be run with
 #  -v /var/run/docker.sock:/var/run/docker.sock
-FROM golang:1.25.3
+FROM marketplace.gcr.io/google/debian12:latest
 WORKDIR /app
 
 # From https://docs.docker.com/engine/install/debian/
@@ -58,9 +78,9 @@ RUN echo \
 # https://docs.docker.com/engine/release-notes/29/#2900
 RUN apt update && \
     apt-get -y install \
-    docker-ce=5:28.5.2-1~debian.13~trixie \
-    docker-ce-cli=5:28.5.2-1~debian.13~trixie \
-    docker-ce-rootless-extras=5:28.5.2-1~debian.13~trixie && \
+    docker-ce=5:27.1.1-1~debian.12~bookworm \
+    docker-ce-cli=5:27.1.1-1~debian.12~bookworm \
+    docker-ce-rootless-extras=5:27.1.1-1~debian.12~bookworm && \
     rm -rf /var/lib/apt/lists/*
 
 # Add the Google Cloud SDK distribution URI as a package source
@@ -72,5 +92,5 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
 # Install the gcloud CLI
 RUN apt-get update && apt-get install -y google-cloud-sdk
 
-COPY --from=build /src/librarian .
+COPY --from=builder /src/librarian .
 ENTRYPOINT ["/app/librarian"]
