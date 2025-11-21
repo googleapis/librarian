@@ -701,18 +701,34 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	}
 }
 
-// makeFieldAccessor generates the Rust accessor code for a field.
+// makeChainAccessor generates the Rust accessor code for a chain of fields.
 // It handles optional fields and oneofs correctly.
-// parentAccessor is the accessor for the parent message (e.g. "req" or "s").
-func makeFieldAccessor(field *api.Field, parentAccessor string) string {
-	fieldName := toSnake(field.Name)
-	if field.IsOneOf {
-		return fmt.Sprintf("%s.%s()", parentAccessor, fieldName)
+// parentAccessor is the accessor for the parent message (e.g. "req").
+func makeChainAccessor(fields []*api.Field, parentAccessor string) string {
+	accessor := parentAccessor
+	for i, field := range fields {
+		fieldName := toSnake(field.Name)
+		if i == 0 {
+			// First field in the chain
+			if field.IsOneOf {
+				accessor = fmt.Sprintf("%s.%s()", accessor, fieldName)
+			} else if field.Optional {
+				accessor = fmt.Sprintf("%s.%s.as_ref()", accessor, fieldName)
+			} else {
+				accessor = fmt.Sprintf("Some(&%s.%s)", accessor, fieldName)
+			}
+		} else {
+			// Subsequent fields (nested)
+			if field.IsOneOf {
+				accessor = fmt.Sprintf("%s.and_then(|s| s.%s())", accessor, fieldName)
+			} else if field.Optional {
+				accessor = fmt.Sprintf("%s.and_then(|s| s.%s.as_ref())", accessor, fieldName)
+			} else {
+				accessor = fmt.Sprintf("%s.and_then(|s| Some(&s.%s))", accessor, fieldName)
+			}
+		}
 	}
-	if field.Optional {
-		return fmt.Sprintf("%s.%s.as_ref()", parentAccessor, fieldName)
-	}
-	return fmt.Sprintf("Some(&%s.%s)", parentAccessor, fieldName)
+	return accessor
 }
 
 // findResourceNameCandidates identifies all fields annotated with google.api.resource_reference.
@@ -727,7 +743,7 @@ func (c *codec) findResourceNameCandidates(m *api.Method) []*resourceNameCandida
 				FieldPath: []string{field.Name},
 				Field:     field,
 				IsNested:  false,
-				Accessor:  makeFieldAccessor(field, "req"),
+				Accessor:  makeChainAccessor([]*api.Field{field}, "req"),
 			})
 		}
 	}
@@ -741,17 +757,11 @@ func (c *codec) findResourceNameCandidates(m *api.Method) []*resourceNameCandida
 			if !nestedField.IsResourceReference || nestedField.Repeated || nestedField.Map || nestedField.Typez != api.STRING_TYPE {
 				continue
 			}
-			parentAccessor := makeFieldAccessor(field, "req")
-			nestedAccessor := makeFieldAccessor(nestedField, "s")
-
-			// Combine accessors: parent.and_then(|s| nested)
-			fullAccessor := fmt.Sprintf("%s.and_then(|s| %s)", parentAccessor, nestedAccessor)
-
 			candidates = append(candidates, &resourceNameCandidateField{
 				FieldPath: []string{field.Name, nestedField.Name},
 				Field:     nestedField,
 				IsNested:  true,
-				Accessor:  fullAccessor,
+				Accessor:  makeChainAccessor([]*api.Field{field, nestedField}, "req"),
 			})
 		}
 	}
@@ -792,10 +802,16 @@ func (c *codec) findResourceNameFields(m *api.Method) []*resourceNameCandidateFi
 		return httpParams[fieldName]
 	}
 
-	// Sort candidates by priority:
-	// 1. Top-level fields (IsNested == false)
-	// 2. Fields in HTTP path (isInPath == true)
-	// 3. Proto definition order (stable sort)
+	sortResourceNameCandidates(candidates, isInPath)
+
+	return candidates
+}
+
+// sortResourceNameCandidates sorts candidates by priority:
+// 1. Top-level fields (IsNested == false)
+// 2. Fields in HTTP path (isInPath == true)
+// 3. Proto definition order (stable sort)
+func sortResourceNameCandidates(candidates []*resourceNameCandidateField, isInPath func(*resourceNameCandidateField) bool) {
 	sort.SliceStable(candidates, func(i, j int) bool {
 		// 1. Top-level before Nested
 		if candidates[i].IsNested != candidates[j].IsNested {
@@ -810,8 +826,6 @@ func (c *codec) findResourceNameFields(m *api.Method) []*resourceNameCandidateFi
 		// 3. Stable sort preserves proto order
 		return i < j
 	})
-
-	return candidates
 }
 
 // packageToModuleName maps "google.foo.v1" to "google::foo::v1".

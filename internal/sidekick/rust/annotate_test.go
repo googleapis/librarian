@@ -16,6 +16,7 @@ package rust
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -2287,5 +2288,46 @@ func TestFindResourceNameFields(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestSortResourceNameCandidates(t *testing.T) {
+	// Helper to create a candidate
+	makeCandidate := func(name string, isNested bool) *resourceNameCandidateField {
+		return &resourceNameCandidateField{
+			FieldPath: []string{name},
+			IsNested:  isNested,
+		}
+	}
+
+	candidates := []*resourceNameCandidateField{
+		makeCandidate("nested", true),
+		makeCandidate("top", false),
+		makeCandidate("nested_in_path", true),
+		makeCandidate("top_in_path", false),
+	}
+
+	// Mock isInPath function
+	isInPath := func(c *resourceNameCandidateField) bool {
+		return strings.Contains(c.FieldPath[0], "in_path")
+	}
+
+	sortResourceNameCandidates(candidates, isInPath)
+
+	wantOrder := []string{
+		"top_in_path",        // Top-level, In-Path
+		"top",    // Top-level, Not-In-Path
+		"nested_in_path",     // Nested, In-Path
+		"nested", // Nested, Not-In-Path
+	}
+
+	if len(candidates) != len(wantOrder) {
+		t.Fatalf("got %d candidates, want %d", len(candidates), len(wantOrder))
+	}
+
+	for i, want := range wantOrder {
+		if candidates[i].FieldPath[0] != want {
+			t.Errorf("candidate[%d] = %s, want %s", i, candidates[i].FieldPath[0], want)
+		}
 	}
 }
