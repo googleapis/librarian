@@ -808,22 +808,22 @@ func (c *codec) findResourceNameFields(m *api.Method) []*resourceNameCandidateFi
 }
 
 // sortResourceNameCandidates sorts candidates by priority:
-// 1. Top-level fields (IsNested == false)
-// 2. Fields in HTTP path (isInPath == true)
-// 3. Proto definition order (stable sort)
+// 1. Top-level fields (IsNested == false).
+// 2. Fields in HTTP path (isInPath == true).
+// 3. Proto definition order (stable sort).
 func sortResourceNameCandidates(candidates []*resourceNameCandidateField, isInPath func(*resourceNameCandidateField) bool) {
 	sort.SliceStable(candidates, func(i, j int) bool {
-		// 1. Top-level before Nested
+		// 1. Top-level before Nested.
 		if candidates[i].IsNested != candidates[j].IsNested {
 			return !candidates[i].IsNested // false (top) < true (nested)
 		}
-		// 2. In-Path before Not-In-Path
+		// 2. In-Path before Not-In-Path.
 		inPathI := isInPath(candidates[i])
 		inPathJ := isInPath(candidates[j])
 		if inPathI != inPathJ {
 			return inPathI // true (in path) < false (not in path) -> we want true first
 		}
-		// 3. Stable sort preserves proto order
+		// 3. Stable sort preserves proto order.
 		return i < j
 	})
 }

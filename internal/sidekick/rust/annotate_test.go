@@ -2292,7 +2292,7 @@ func TestFindResourceNameFields(t *testing.T) {
 }
 
 func TestSortResourceNameCandidates(t *testing.T) {
-	// Helper to create a candidate
+	// Helper to create a candidate.
 	makeCandidate := func(name string, isNested bool) *resourceNameCandidateField {
 		return &resourceNameCandidateField{
 			FieldPath: []string{name},
@@ -2307,7 +2307,7 @@ func TestSortResourceNameCandidates(t *testing.T) {
 		makeCandidate("top_in_path", false),
 	}
 
-	// Mock isInPath function
+	// Mock isInPath function.
 	isInPath := func(c *resourceNameCandidateField) bool {
 		return strings.Contains(c.FieldPath[0], "in_path")
 	}
