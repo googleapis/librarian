@@ -949,9 +949,9 @@ func (annotate *annotateModel) buildQueryLines(
 
 	var preable string
 	if codec.Nullable {
-		preable = fmt.Sprintf("if (%s != null) '%s'", ref, param)
+		preable = fmt.Sprintf("if (%s case final $1?) '%s'", ref, param)
 	} else {
-		preable = fmt.Sprintf("if (%s.isNotDefault) '%s'", ref, param)
+		preable = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
 	}
 
 	switch {
@@ -959,16 +959,16 @@ func (annotate *annotateModel) buildQueryLines(
 		// Handle lists; these should be lists of strings or other primitives.
 		switch field.Typez {
 		case api.STRING_TYPE:
-			return append(result, fmt.Sprintf("%s: %s", preable, ref))
+			return append(result, fmt.Sprintf("%s: $1", preable))
 		case api.ENUM_TYPE:
-			return append(result, fmt.Sprintf("%s: %s!.map((e) => e.value)", preable, ref))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => e.value)", preable))
 		case api.BOOL_TYPE, api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
 			api.FIXED32_TYPE, api.SFIXED32_TYPE, api.INT64_TYPE,
 			api.UINT64_TYPE, api.SINT64_TYPE, api.FIXED64_TYPE, api.SFIXED64_TYPE,
 			api.FLOAT_TYPE, api.DOUBLE_TYPE:
-			return append(result, fmt.Sprintf("%s: %s!.map((e) => '$e')", preable, ref))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => '$e')", preable))
 		case api.BYTES_TYPE:
-			return append(result, fmt.Sprintf("%s: %s!.map((e) => encodeBytes(e)!)", preable, ref))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => encodeBytes(e)!)", preable))
 		default:
 			slog.Error("unhandled list query param", "type", field.Typez)
 			return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
@@ -988,7 +988,7 @@ func (annotate *annotateModel) buildQueryLines(
 		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
 		if hasCustomEncoding {
 			// Example: 'fieldMask': fieldMask!.toJson()
-			return append(result, fmt.Sprintf("%s: %s%stoJson()", preable, ref, deref))
+			return append(result, fmt.Sprintf("%s: $1.toJson()", preable))
 		}
 
 		// Unroll the fields for messages.
@@ -998,17 +998,9 @@ func (annotate *annotateModel) buildQueryLines(
 		return result
 
 	case field.Typez == api.STRING_TYPE:
-		deref := ""
-		if codec.Nullable {
-			deref = "!"
-		}
-		return append(result, fmt.Sprintf("%s: %s%s", preable, ref, deref))
+		return append(result, fmt.Sprintf("%s: $1", preable))
 	case field.Typez == api.ENUM_TYPE:
-		deref := "."
-		if codec.Nullable {
-			deref = "!."
-		}
-		return append(result, fmt.Sprintf("%s: %s%svalue", preable, ref, deref))
+		return append(result, fmt.Sprintf("%s: $1.value", preable))
 	case field.Typez == api.BOOL_TYPE ||
 		field.Typez == api.INT32_TYPE ||
 		field.Typez == api.UINT32_TYPE || field.Typez == api.SINT32_TYPE ||
@@ -1017,9 +1009,9 @@ func (annotate *annotateModel) buildQueryLines(
 		field.Typez == api.UINT64_TYPE || field.Typez == api.SINT64_TYPE ||
 		field.Typez == api.FIXED64_TYPE || field.Typez == api.SFIXED64_TYPE ||
 		field.Typez == api.FLOAT_TYPE || field.Typez == api.DOUBLE_TYPE:
-		return append(result, fmt.Sprintf("%s: '${%s}'", preable, ref))
+		return append(result, fmt.Sprintf("%s: '${$1}'", preable))
 	case field.Typez == api.BYTES_TYPE:
-		return append(result, fmt.Sprintf("%s: encodeBytes(%s)!", preable, ref))
+		return append(result, fmt.Sprintf("%s: encodeBytes($1)!", preable))
 	default:
 		slog.Error("unhandled query param", "type", field.Typez)
 		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))
