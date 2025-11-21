@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # This stage builds the librariangen binary using the MOSS-compliant base image.
-FROM marketplace.gcr.io/google/debian12:latest AS builder
+FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS builder
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \

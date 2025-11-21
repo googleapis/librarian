@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # This stage builds the librariangen binary using the MOSS-compliant base image.
-FROM marketplace.gcr.io/google/debian12:latest AS builder
+FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS builder
 
 # Set environment variables for tool versions for easy updates.
 ENV GO_VERSION=1.25.3
@@ -48,7 +48,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
 # while in Docker. Note that for this to work, *this*
 # docker image should be run with
 #  -v /var/run/docker.sock:/var/run/docker.sock
-FROM marketplace.gcr.io/google/debian12:latest
+FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf
 WORKDIR /app
 
 # From https://docs.docker.com/engine/install/debian/
