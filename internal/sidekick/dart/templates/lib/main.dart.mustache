@@ -25,6 +25,16 @@ limitations under the License.
 {{/Codec.DocLines}}
 library;
 
+// ignore_for_file: argument_type_not_assignable
+// ignore_for_file: implementation_imports
+// ignore_for_file: lines_longer_than_80_chars
+{{! Nested messages have the parent/child separated by an underscore. }}
+// ignore_for_file: camel_case_types
+// ignore_for_file: unintended_html_in_doc_comment
+// ignore_for_file: comment_references
+{{! `fromJson` may not use its arguments if the message is empty. }}
+// ignore_for_file: avoid_unused_constructor_parameters
+
 {{#Codec.Imports}}
 {{{.}}}
 {{/Codec.Imports}}

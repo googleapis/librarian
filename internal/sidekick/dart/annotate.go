@@ -349,22 +349,25 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	// Remove our package self-reference.
 	delete(annotate.imports, model.PackageName)
 
-	// Add a dev dependency on package:lints.
-	devDependencies = append(devDependencies, "lints")
-
 	// Add the import for ServiceClient and related functionality.
 	if len(model.Services) > 0 {
 		annotate.imports[serviceClientImport] = true
 	}
 
 	// `google.protobuf` defines `JsonEncodable`, which is needed by any package that defines a
-	// `message` or `enum`, i.e., all of them.
-	protobufPrefix = annotate.packagePrefixes["google.protobuf"]
-	if protobufPrefix == "" {
-		annotate.imports[protobufImport] = true
+	// `message` or `enum`, i.e., almost all of them.
+	if model.PackageName == "google.protobuf" {
+		annotate.imports["src/encoding.dart"] = true
 	} else {
-		annotate.imports[protobufImport+" as "+protobufPrefix] = true
-		protobufPrefix += "."
+		annotate.imports[encodingImport] = true
+
+		protobufPrefix = annotate.packagePrefixes["google.protobuf"]
+		if protobufPrefix == "" {
+			annotate.imports[protobufImport] = true
+		} else {
+			annotate.imports[protobufImport+" as "+protobufPrefix] = true
+			protobufPrefix += "."
+		}
 	}
 
 	if len(model.Services) > 0 && len(apiKeyEnvironmentVariables) == 0 {
@@ -385,6 +388,8 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	if err != nil {
 		return err
 	}
+
+	slices.Sort(devDependencies)
 
 	ann := &modelAnnotations{
 		Parent:         model,
@@ -512,10 +517,6 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 }
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
-	// Add the import for the common JSON helpers.
-
-	annotate.imports[encodingImport] = true
-
 	for _, f := range m.Fields {
 		annotate.annotateField(f)
 	}

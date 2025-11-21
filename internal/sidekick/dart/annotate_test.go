@@ -77,7 +77,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			map[string]string{"dev-dependencies": "test,mockito"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
-				if diff := cmp.Diff([]string{"test", "mockito", "lints"}, codec.DevDependencies); diff != "" {
+				if diff := cmp.Diff([]string{"mockito", "test"}, codec.DevDependencies); diff != "" {
 					t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
 				}
 			},
