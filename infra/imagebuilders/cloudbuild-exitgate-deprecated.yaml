@@ -21,6 +21,6 @@
 # published to the 'images-prod' repository.
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-dev/librarian', '.', '-f', 'infra/imagebuilders/dispatcher/Dockerfile']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-dev/librarian', '.', '-f', 'infra/imagebuilders/cli/Dockerfile']
 images:
   - 'us-central1-docker.pkg.dev/cloud-sdk-production-pipeline/images-dev/librarian'
