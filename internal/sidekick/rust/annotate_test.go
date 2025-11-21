@@ -16,6 +16,7 @@ package rust
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -2066,7 +2067,7 @@ func TestFindResourceNameFields(t *testing.T) {
 			name:          "One nested",
 			method:        makeMethod(&api.Message{ID: ".test.OneNested", Fields: []*api.Field{makeField("nested_field", false, nestedMsg)}}),
 			wantPaths:     [][]string{{"nested_field", "nested_name"}, {"nested_field", "another_nested"}},
-			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+			wantAccessors: []string{"Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
 			name:   "Multiple top-level, name1 in path",
@@ -2109,7 +2110,7 @@ func TestFindResourceNameFields(t *testing.T) {
 				addPathInfoCodec(m, "top_name")
 			},
 			wantPaths:     [][]string{{"top_name"}, {"nested_field", "nested_name"}, {"nested_field", "another_nested"}},
-			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
 			name:   "Mixed, nested in path",
@@ -2118,14 +2119,14 @@ func TestFindResourceNameFields(t *testing.T) {
 				addPathInfoCodec(m, "nested_field.nested_name")
 			},
 			wantPaths:     [][]string{{"top_name"}, {"nested_field", "nested_name"}, {"nested_field", "another_nested"}}, // Top-level still preferred
-			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
 			name:          "Mixed, none in path",
 			method:        makeMethod(&api.Message{ID: ".test.MixedNonePath", Fields: []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
 			setup:         func(m *api.Method) { addPathInfoCodec(m) },
 			wantPaths:     [][]string{{"top_name"}, {"nested_field", "nested_name"}, {"nested_field", "another_nested"}}, // Top-level preferred
-			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
 			name: "Multiple nested, one in path",
@@ -2136,7 +2137,7 @@ func TestFindResourceNameFields(t *testing.T) {
 				addPathInfoCodec(m, "nested_field.another_nested")
 			},
 			wantPaths:     [][]string{{"nested_field", "another_nested"}, {"nested_field", "nested_name"}},
-			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| Some(&s.another_nested))", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))"},
+			wantAccessors: []string{"Some(&req.nested_field).map(|s| &s.another_nested)", "Some(&req.nested_field).map(|s| &s.nested_name)"},
 		},
 		{
 			name: "Multiple nested, camelCase, one in path",
@@ -2150,7 +2151,7 @@ func TestFindResourceNameFields(t *testing.T) {
 				addPathInfoCodec(m, "nested_field.another_nested")
 			},
 			wantPaths:     [][]string{{"nestedField", "anotherNested"}, {"nestedField", "nestedName"}},
-			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| Some(&s.another_nested))", "Some(&req.nested_field).and_then(|s| Some(&s.nested_name))"},
+			wantAccessors: []string{"Some(&req.nested_field).map(|s| &s.another_nested)", "Some(&req.nested_field).map(|s| &s.nested_name)"},
 		},
 		{
 			name: "Multiple nested, none in path",
@@ -2159,7 +2160,7 @@ func TestFindResourceNameFields(t *testing.T) {
 			}}),
 			setup:         func(m *api.Method) { addPathInfoCodec(m) },
 			wantPaths:     [][]string{{"nested_field", "nested_name"}, {"nested_field", "another_nested"}}, // Proto order
-			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| Some(&s.nested_name))", "Some(&req.nested_field).and_then(|s| Some(&s.another_nested))"},
+			wantAccessors: []string{"Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
 			name: "Non-string field ignored",
@@ -2312,7 +2313,7 @@ func TestSortResourceNameCandidates(t *testing.T) {
 		return strings.Contains(c.FieldPath[0], "in_path")
 	}
 
-	sortResourceNameCandidates(candidates, isInPath)
+	slices.SortStableFunc(candidates, compareResourceNameCandidates(isInPath))
 
 	wantOrder := []string{
 		"top_in_path",    // Top-level, In-Path
@@ -2329,5 +2330,75 @@ func TestSortResourceNameCandidates(t *testing.T) {
 		if candidates[i].FieldPath[0] != want {
 			t.Errorf("candidate[%d] = %s, want %s", i, candidates[i].FieldPath[0], want)
 		}
+	}
+}
+
+func TestCompareResourceNameCandidates(t *testing.T) {
+	// Helper to create a candidate.
+	makeCandidate := func(name string, isNested bool) *resourceNameCandidateField {
+		return &resourceNameCandidateField{
+			FieldPath: []string{name},
+			IsNested:  isNested,
+		}
+	}
+
+	// Mock isInPath function.
+	isInPath := func(c *resourceNameCandidateField) bool {
+		return strings.Contains(c.FieldPath[0], "in_path")
+	}
+
+	compare := compareResourceNameCandidates(isInPath)
+
+	tests := []struct {
+		name string
+		a    *resourceNameCandidateField
+		b    *resourceNameCandidateField
+		want int
+	}{
+		{
+			name: "Top-level < Nested",
+			a:    makeCandidate("top", false),
+			b:    makeCandidate("nested", true),
+			want: -1,
+		},
+		{
+			name: "Nested > Top-level",
+			a:    makeCandidate("nested", true),
+			b:    makeCandidate("top", false),
+			want: 1,
+		},
+		{
+			name: "In-Path < Not-In-Path (both Top-level)",
+			a:    makeCandidate("top_in_path", false),
+			b:    makeCandidate("top", false),
+			want: -1,
+		},
+		{
+			name: "Not-In-Path > In-Path (both Top-level)",
+			a:    makeCandidate("top", false),
+			b:    makeCandidate("top_in_path", false),
+			want: 1,
+		},
+		{
+			name: "In-Path < Not-In-Path (both Nested)",
+			a:    makeCandidate("nested_in_path", true),
+			b:    makeCandidate("nested", true),
+			want: -1,
+		},
+		{
+			name: "Equal priority (Stable)",
+			a:    makeCandidate("top_a", false),
+			b:    makeCandidate("top_b", false),
+			want: 0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := compare(tc.a, tc.b)
+			if got != tc.want {
+				t.Errorf("compare(%v, %v) = %d, want %d", tc.a, tc.b, got, tc.want)
+			}
+		})
 	}
 }

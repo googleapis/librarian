@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -724,7 +723,7 @@ func makeChainAccessor(fields []*api.Field, parentAccessor string) string {
 			} else if field.Optional {
 				accessor = fmt.Sprintf("%s.and_then(|s| s.%s.as_ref())", accessor, fieldName)
 			} else {
-				accessor = fmt.Sprintf("%s.and_then(|s| Some(&s.%s))", accessor, fieldName)
+				accessor = fmt.Sprintf("%s.map(|s| &s.%s)", accessor, fieldName)
 			}
 		}
 	}
@@ -802,7 +801,7 @@ func (c *codec) findResourceNameFields(m *api.Method) []*resourceNameCandidateFi
 		return httpParams[fieldName]
 	}
 
-	sortResourceNameCandidates(candidates, isInPath)
+	slices.SortStableFunc(candidates, compareResourceNameCandidates(isInPath))
 
 	return candidates
 }
@@ -811,21 +810,27 @@ func (c *codec) findResourceNameFields(m *api.Method) []*resourceNameCandidateFi
 // 1. Top-level fields (IsNested == false).
 // 2. Fields in HTTP path (isInPath == true).
 // 3. Proto definition order (stable sort).
-func sortResourceNameCandidates(candidates []*resourceNameCandidateField, isInPath func(*resourceNameCandidateField) bool) {
-	sort.SliceStable(candidates, func(i, j int) bool {
+func compareResourceNameCandidates(isInPath func(*resourceNameCandidateField) bool) func(a, b *resourceNameCandidateField) int {
+	return func(a, b *resourceNameCandidateField) int {
 		// 1. Top-level before Nested.
-		if candidates[i].IsNested != candidates[j].IsNested {
-			return !candidates[i].IsNested // false (top) < true (nested)
+		if a.IsNested != b.IsNested {
+			if !a.IsNested {
+				return -1 // a is top (false), b is nested (true) -> a < b
+			}
+			return 1
 		}
 		// 2. In-Path before Not-In-Path.
-		inPathI := isInPath(candidates[i])
-		inPathJ := isInPath(candidates[j])
-		if inPathI != inPathJ {
-			return inPathI // true (in path) < false (not in path) -> we want true first
+		inPathA := isInPath(a)
+		inPathB := isInPath(b)
+		if inPathA != inPathB {
+			if inPathA {
+				return -1 // a is in-path (true), b is not (false) -> a < b
+			}
+			return 1
 		}
 		// 3. Stable sort preserves proto order.
-		return i < j
-	})
+		return 0
+	}
 }
 
 // packageToModuleName maps "google.foo.v1" to "google::foo::v1".

@@ -167,7 +167,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         let options = {
             let resource_name = Option::<&String>::None
                 {{#Codec.ResourceNameFields}}
-                .or_else(|| {{{Accessor}}})
+                .or({{{Accessor}}})
                 {{/Codec.ResourceNameFields}};
             if let Some(rn) = resource_name {
                 let full_resource_name = format!("//{{DefaultHost}}/{}", rn);
