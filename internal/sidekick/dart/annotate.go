@@ -354,10 +354,10 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		annotate.imports[serviceClientImport] = true
 	}
 
-	// `encoding.dart` defines primitive JSON encoding/decode methods, which are needed by any API that defines
-	// an `enum`` or `message`.
+	// `protobuf.dart` defines `JsonEncodable`, which is needed by any API that defines an `enum` or `message`.
 	annotate.imports[protobufImport] = true
-	// `protobuf.dart` defines `JsonEncodable`, which is needed by any API that defines an `enum`` or `message`.
+	// `encoding.dart` defines primitive JSON encoding/decode methods, which are needed by any API that defines
+	// an `enum` or `message`.
 	annotate.imports[encodingImport] = true
 
 	if len(model.Services) > 0 && len(apiKeyEnvironmentVariables) == 0 {
