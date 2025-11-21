@@ -454,75 +454,79 @@ func calculateDependencies(packages map[string]bool, constraints map[string]stri
 	return deps, nil
 }
 
+// calculateImports generates Dart import statements given a set of imports.
+//
+// For example:
+// {"dart:io": true, "package:http/http.dart as http": true} to
+// ["import 'dart:io';", "", "import 'package:http/http.dart' as http;"]
 func calculateImports(imports map[string]bool, curPkgName string, curFileName string) []string {
 	var dartImports []string
+	var packageImports []string
+	var localImports []string
+
+	sortedImports := make([]string, 0, len(imports))
 	for imp := range imports {
-		dartImports = append(dartImports, imp)
+		sortedImports = append(sortedImports, imp)
 	}
-	sort.Strings(dartImports)
+	sort.Strings(sortedImports)
 
-	previousImportType := ""
-	var results []string
-	var localResults []string // Imports from the current package.
-
-	for _, imp := range dartImports {
-		// Emit a blank line when changing between 'dart:' and 'package:' imports.
-		colonSplit := strings.SplitN(imp, ":", 2)
-		importType := colonSplit[0]
-
-		// Use `packageName`, `packagePath`, and `packagePathMaybeWithPrefix` to adjust imports from
-		// the current package into relative imports and to exclude imports of the current file completely.
-		packageName := ""
-		packagePath := ""
-		packagePathMaybeWithPrefix := ""
-		if strings.Contains(colonSplit[1], "/") {
-			// s[1] looks like "http/http.dart" or "http/http.dart as http".
-			slashSplit := strings.SplitN(colonSplit[1], "/", 2)
-			packageName, packagePathMaybeWithPrefix = slashSplit[0], slashSplit[1]
-			packagePath = strings.Split(packagePathMaybeWithPrefix, " ")[0] // Remove possible `as` part of import.
-		}
-
-		if importType == "package" && packageName == curPkgName && packagePath == curFileName {
-			// Don't import the current file.
+	for _, imp := range sortedImports {
+		parts := strings.SplitN(imp, ":", 2)
+		if len(parts) != 2 {
 			continue
 		}
+		scheme := parts[0]
+		body := parts[1]
 
-		if previousImportType != "" && previousImportType != importType {
-			results = append(results, "")
-		}
-		previousImportType = importType
+		if scheme == "dart" {
+			dartImports = append(dartImports, formatImport(imp))
+			continue
+		} else if scheme == "package" {
+			if strings.HasPrefix(body, curPkgName+"/") {
+				pathAndAlias := strings.TrimPrefix(body, curPkgName+"/")
 
-		isLocal := false
-		if importType == "package" && packageName == curPkgName {
-			// When importing from the current package, using a relative path (the generated code is
-			// always at the top level of the "lib" directory.)
-			imp = packagePathMaybeWithPrefix
-			isLocal = true
-		}
+				pathOnly := strings.Split(pathAndAlias, " ")[0]
+				if pathOnly == curFileName {
+					continue
+				}
 
-		// Wrap the first part of the import (or the whole import) in single quotes.
-		index := strings.IndexAny(imp, " ")
-		if index != -1 {
-			imp = "'" + imp[0:index] + "'" + imp[index:]
+				localImports = append(localImports, formatImport(pathAndAlias))
+			} else {
+				packageImports = append(packageImports, formatImport(imp))
+			}
 		} else {
-			imp = "'" + imp + "'"
-		}
-
-		if isLocal {
-			localResults = append(localResults, fmt.Sprintf("import %s;", imp))
-		} else {
-			results = append(results, fmt.Sprintf("import %s;", imp))
+			panic("unknown import scheme: " + imp)
 		}
 	}
 
-	if results != nil {
-		if localResults != nil {
-			return slices.Concat(results, []string{""}, localResults)
-		} else {
-			return results
-		}
+	var result []string
+	if len(dartImports) > 0 {
+		result = append(result, dartImports...)
 	}
-	return localResults
+
+	if len(packageImports) > 0 {
+		if len(result) > 0 {
+			result = append(result, "")
+		}
+		result = append(result, packageImports...)
+	}
+
+	if len(localImports) > 0 {
+		if len(result) > 0 {
+			result = append(result, "")
+		}
+		result = append(result, localImports...)
+	}
+
+	return result
+}
+
+func formatImport(imp string) string {
+	index := strings.IndexAny(imp, " ")
+	if index != -1 {
+		return fmt.Sprintf("import '%s'%s;", imp[0:index], imp[index:])
+	}
+	return fmt.Sprintf("import '%s';", imp)
 }
 
 func (annotate *annotateModel) annotateService(s *api.Service) {
