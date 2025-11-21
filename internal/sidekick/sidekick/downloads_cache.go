@@ -21,14 +21,13 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
+	cmd "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 )
 
 func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, error) {
@@ -74,9 +73,7 @@ func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, err
 }
 
 func extractTarball(source, destination string) error {
-	cmd := exec.Command("tar", "-zxf", source)
-	cmd.Dir = destination
-	return external.Exec(cmd)
+	return cmd.Run("tar", "-zxf", source, "-C", destination)
 }
 
 func extractedName(rootConfig *config.Config, googleapisRoot, configPrefix string) string {

@@ -21,8 +21,8 @@ import (
 	"path"
 	"strings"
 
+	cmd "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 	toml "github.com/pelletier/go-toml/v2"
 )
 
@@ -54,63 +54,18 @@ func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 		cmdLine.Output = path.Join("src/generated", strings.TrimPrefix(cmdLine.SpecificationSource, "google/"))
 	}
 
-	if err := external.Run("cargo", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
-	}
-	if err := external.Run("taplo", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `taplo --version`, please install using `cargo install taplo-cli`: %w", err)
-	}
-	if err := external.Run("typos", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `typos --version`, please install using `cargo install typos-cli`: %w", err)
-	}
-	if err := external.Run("git", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `git --version`, the instructions on https://github.com/git-guides/install-git may solve this problem: %w", err)
-	}
-
-	slog.Info("preparing cargo workspace to get new package")
-	if err := external.Run("cargo", "new", "--vcs", "none", "--lib", cmdLine.Output); err != nil {
+	if err := VerifyRustTools(); err != nil {
 		return err
 	}
-	if err := external.Run("taplo", "fmt", "Cargo.toml"); err != nil {
+
+	if err := PrepareCargoWorkspace(cmdLine.Output); err != nil {
 		return err
 	}
 	slog.Info("generating new library code and adding it to git")
 	if err := generate(rootConfig, cmdLine); err != nil {
 		return err
 	}
-	if err := external.Run("cargo", "fmt"); err != nil {
-		return err
-	}
-	if err := external.Run("git", "add", cmdLine.Output); err != nil {
-		return err
-	}
-	packagez, err := getPackageName(cmdLine.Output)
-	if err != nil {
-		return err
-	}
-	slog.Info("generated new client library", "package", packagez)
-	slog.Info("running `cargo test` on new client library")
-	if err := external.Run("cargo", "test", "--package", packagez); err != nil {
-		return err
-	}
-	slog.Info("running `cargo doc` on new client library")
-	if err := external.Run("env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--package", packagez, "--no-deps"); err != nil {
-		return err
-	}
-	slog.Info("running `cargo clippy` on new client library")
-	if err := external.Run("cargo", "clippy", "--package", packagez, "--", "--deny", "warnings"); err != nil {
-		return err
-	}
-	slog.Info("running `typos` on new client library")
-	if err := external.Run("typos"); err != nil {
-		slog.Info("please manually add the typos to `.typos.toml` and fix the problem upstream")
-		return err
-	}
-	if err := external.Run("git", "add", "Cargo.lock", "Cargo.toml"); err != nil {
-		return err
-	}
-
-	return nil
+	return PostGenerate(cmdLine.Output)
 }
 
 func getPackageName(output string) (string, error) {
@@ -124,6 +79,68 @@ func getPackageName(output string) (string, error) {
 	}
 	// Ignore errors reading the top-level file.
 	return cargo.Package.Name, nil
+}
+
+// VerifyRustTools verifies that all required Rust tools are installed.
+func VerifyRustTools() error {
+	if err := cmd.Run("cargo", "--version"); err != nil {
+		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
+	}
+	if err := cmd.Run("taplo", "--version"); err != nil {
+		return fmt.Errorf("got an error trying to run `taplo --version`, please install using `cargo install taplo-cli`: %w", err)
+	}
+	if err := cmd.Run("typos", "--version"); err != nil {
+		return fmt.Errorf("got an error trying to run `typos --version`, please install using `cargo install typos-cli`: %w", err)
+	}
+	if err := cmd.Run("git", "--version"); err != nil {
+		return fmt.Errorf("got an error trying to run `git --version`, the instructions on https://github.com/git-guides/install-git may solve this problem: %w", err)
+	}
+	return nil
+}
+
+// PrepareCargoWorkspace creates a new cargo package in the specified output directory.
+func PrepareCargoWorkspace(outputDir string) error {
+	slog.Info("preparing cargo workspace to get new package")
+	if err := cmd.Run("cargo", "new", "--vcs", "none", "--lib", outputDir); err != nil {
+		return err
+	}
+	if err := cmd.Run("taplo", "fmt", "Cargo.toml"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// PostGenerate runs post-generation tasks on the specified output directory.
+func PostGenerate(outdir string) error {
+	if err := cmd.Run("cargo", "fmt"); err != nil {
+		return err
+	}
+	if err := cmd.Run("git", "add", outdir); err != nil {
+		return err
+	}
+	packagez, err := getPackageName(outdir)
+	if err != nil {
+		return err
+	}
+	slog.Info("generated new client library", "package", packagez)
+	slog.Info("running `cargo test` on new client library")
+	if err := cmd.Run("cargo", "test", "--package", packagez); err != nil {
+		return err
+	}
+	slog.Info("running `cargo doc` on new client library")
+	if err := cmd.Run("env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--package", packagez, "--no-deps"); err != nil {
+		return err
+	}
+	slog.Info("running `cargo clippy` on new client library")
+	if err := cmd.Run("cargo", "clippy", "--package", packagez, "--", "--deny", "warnings"); err != nil {
+		return err
+	}
+	slog.Info("running `typos` on new client library")
+	if err := cmd.Run("typos"); err != nil {
+		slog.Info("please manually add the typos to `.typos.toml` and fix the problem upstream")
+		return err
+	}
+	return cmd.Run("git", "add", "Cargo.lock", "Cargo.toml")
 }
 
 // CargoConfig is the configuration for a cargo package.

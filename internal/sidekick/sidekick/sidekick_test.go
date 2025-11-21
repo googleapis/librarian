@@ -16,9 +16,7 @@ package sidekick
 
 import (
 	"fmt"
-	"os/exec"
 	"path/filepath"
-	"testing"
 )
 
 const (
@@ -31,18 +29,3 @@ var (
 	outputDir           = fmt.Sprintf("%s/test-only", testdataDir)
 	specificationSource = fmt.Sprintf("%s/openapi/secretmanager_openapi_v1.json", testdataDir)
 )
-
-func requireCommand(t *testing.T, command string) {
-	t.Helper()
-	if _, err := exec.LookPath(command); err != nil {
-		t.Skipf("skipping test because %s is not installed", command)
-	}
-}
-
-func requireProtoc(t *testing.T) {
-	requireCommand(t, "protoc")
-}
-
-func requireCargo(t *testing.T) {
-	requireCommand(t, "cargo")
-}

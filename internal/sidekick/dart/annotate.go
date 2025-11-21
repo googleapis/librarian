@@ -349,23 +349,16 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	// Remove our package self-reference.
 	delete(annotate.imports, model.PackageName)
 
-	// Add a dev dependency on package:lints.
-	devDependencies = append(devDependencies, "lints")
-
 	// Add the import for ServiceClient and related functionality.
 	if len(model.Services) > 0 {
 		annotate.imports[serviceClientImport] = true
 	}
 
-	// `google.protobuf` defines `JsonEncodable`, which is needed by any package that defines a
-	// `message` or `enum`, i.e., all of them.
-	protobufPrefix = annotate.packagePrefixes["google.protobuf"]
-	if protobufPrefix == "" {
-		annotate.imports[protobufImport] = true
-	} else {
-		annotate.imports[protobufImport+" as "+protobufPrefix] = true
-		protobufPrefix += "."
-	}
+	// `protobuf.dart` defines `JsonEncodable`, which is needed by any API that defines an `enum` or `message`.
+	annotate.imports[protobufImport] = true
+	// `encoding.dart` defines primitive JSON encoding/decode methods, which are needed by any API that defines
+	// an `enum` or `message`.
+	annotate.imports[encodingImport] = true
 
 	if len(model.Services) > 0 && len(apiKeyEnvironmentVariables) == 0 {
 		return errors.New("all packages that define a service must define 'api-keys-environment-variables'")
@@ -386,11 +379,16 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		return err
 	}
 
+	mainFileName := strcase.ToSnake(model.Name)
+	mainFileNameWithExtension := mainFileName + ".dart"
+
+	slices.Sort(devDependencies)
+
 	ann := &modelAnnotations{
 		Parent:         model,
 		PackageName:    pkgName,
 		PackageVersion: packageVersion,
-		MainFileName:   strcase.ToSnake(model.Name),
+		MainFileName:   mainFileName,
 		CopyrightYear:  generationYear,
 		BoilerPlate: append(license.LicenseHeaderBulk(),
 			"",
@@ -402,7 +400,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			return ""
 		}(),
 		DocLines:                   formatDocComments(model.Description, model.State),
-		Imports:                    calculateImports(annotate.imports),
+		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,
 		DevDependencies:            devDependencies,
@@ -456,36 +454,79 @@ func calculateDependencies(packages map[string]bool, constraints map[string]stri
 	return deps, nil
 }
 
-func calculateImports(imports map[string]bool) []string {
+// calculateImports generates Dart import statements given a set of imports.
+//
+// For example:
+// `{"dart:io": true, "package:http/http.dart as http": true}` to
+// `{"import 'dart:io';", "", "import 'package:http/http.dart' as http;"}`.
+func calculateImports(imports map[string]bool, curPkgName string, curFileName string) []string {
 	var dartImports []string
+	var packageImports []string
+	var localImports []string
+
+	sortedImports := make([]string, 0, len(imports))
 	for imp := range imports {
-		dartImports = append(dartImports, imp)
+		sortedImports = append(sortedImports, imp)
 	}
-	sort.Strings(dartImports)
+	sort.Strings(sortedImports)
 
-	previousImportType := ""
-	var results []string
-
-	for _, imp := range dartImports {
-		// Emit a blank line when changing between 'dart:' and 'package:' imports.
-		importType := strings.Split(imp, ":")[0]
-		if previousImportType != "" && previousImportType != importType {
-			results = append(results, "")
+	for _, imp := range sortedImports {
+		parts := strings.SplitN(imp, ":", 2)
+		if len(parts) != 2 {
+			continue
 		}
-		previousImportType = importType
+		scheme := parts[0]
+		body := parts[1]
 
-		// Wrap the first part of the import (or the whole import) in single quotes.
-		index := strings.IndexAny(imp, " ")
-		if index != -1 {
-			imp = "'" + imp[0:index] + "'" + imp[index:]
+		if scheme == "dart" {
+			dartImports = append(dartImports, formatImport(imp))
+			continue
+		} else if scheme == "package" {
+			if strings.HasPrefix(body, curPkgName+"/") {
+				pathAndAlias := strings.TrimPrefix(body, curPkgName+"/")
+
+				pathOnly := strings.Split(pathAndAlias, " ")[0]
+				if pathOnly == curFileName {
+					continue
+				}
+
+				localImports = append(localImports, formatImport(pathAndAlias))
+			} else {
+				packageImports = append(packageImports, formatImport(imp))
+			}
 		} else {
-			imp = "'" + imp + "'"
+			panic("unknown import scheme: " + imp)
 		}
-
-		results = append(results, fmt.Sprintf("import %s;", imp))
 	}
 
-	return results
+	var result []string
+	if len(dartImports) > 0 {
+		result = append(result, dartImports...)
+	}
+
+	if len(packageImports) > 0 {
+		if len(result) > 0 {
+			result = append(result, "")
+		}
+		result = append(result, packageImports...)
+	}
+
+	if len(localImports) > 0 {
+		if len(result) > 0 {
+			result = append(result, "")
+		}
+		result = append(result, localImports...)
+	}
+
+	return result
+}
+
+func formatImport(imp string) string {
+	index := strings.IndexAny(imp, " ")
+	if index != -1 {
+		return fmt.Sprintf("import '%s'%s;", imp[0:index], imp[index:])
+	}
+	return fmt.Sprintf("import '%s';", imp)
 }
 
 func (annotate *annotateModel) annotateService(s *api.Service) {
@@ -512,10 +553,6 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 }
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
-	// Add the import for the common JSON helpers.
-
-	annotate.imports[encodingImport] = true
-
 	for _, f := range m.Fields {
 		annotate.annotateField(f)
 	}
@@ -630,8 +667,8 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		Parent:              method,
 		Name:                strcase.ToLowerCamel(method.Name),
 		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
-		RequestType:         annotate.resolveTypeName(state.MessageByID[method.InputTypeID], true),
-		ResponseType:        annotate.resolveTypeName(state.MessageByID[method.OutputTypeID], true),
+		RequestType:         annotate.resolveMessageName(state.MessageByID[method.InputTypeID], true),
+		ResponseType:        annotate.resolveMessageName(state.MessageByID[method.OutputTypeID], true),
 		DocLines:            formatDocComments(method.Documentation, state),
 		ReturnsValue:        !method.ReturnsEmpty,
 		BodyMessageName:     bodyMessageName,
@@ -647,8 +684,8 @@ func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.Operatio
 	metadata := annotate.state.MessageByID[operationInfo.MetadataTypeID]
 
 	operationInfo.Codec = &operationInfoAnnotation{
-		ResponseType: annotate.resolveTypeName(response, false),
-		MetadataType: annotate.resolveTypeName(metadata, false),
+		ResponseType: annotate.resolveMessageName(response, false),
+		MetadataType: annotate.resolveMessageName(metadata, false),
 	}
 }
 
@@ -741,7 +778,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		case field.Typez == api.ENUM_TYPE:
 			// The default value for enums are the generated MyEnum.$default field,
 			// always set to the first value of that enum.
-			typeName := enumName(annotate.state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
 			defaultValue = defaultValues[field.Typez]
@@ -777,7 +814,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 			bang = " ?? {}"
 		case field.Typez == api.ENUM_TYPE:
 			// 'ExecutableCode_Language.$default'
-			typeName := enumName(annotate.state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
 			bang = fmt.Sprintf(" ?? %s.$default", typeName)
 		default:
 			defaultValues := map[api.Typez]string{
@@ -807,11 +844,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		case api.BYTES_TYPE:
 			return fmt.Sprintf("decodeListBytes(%s)%s", data, bang)
 		case api.ENUM_TYPE:
-			typeName := enumName(state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(state.EnumByID[field.TypezID])
 			return fmt.Sprintf("decodeListEnum(%s, %s.fromJson)%s", data, typeName, bang)
 		case api.MESSAGE_TYPE:
 			_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
-			typeName := annotate.resolveTypeName(state.MessageByID[field.TypezID], true)
+			typeName := annotate.resolveMessageName(state.MessageByID[field.TypezID], true)
 			if hasCustomEncoding {
 				return fmt.Sprintf("decodeListMessageCustom(%s, %s.fromJson)%s", data, typeName, bang)
 			} else {
@@ -827,11 +864,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		case api.BYTES_TYPE:
 			return fmt.Sprintf("decodeMapBytes(%s)%s", data, bang)
 		case api.ENUM_TYPE:
-			typeName := enumName(state.EnumByID[valueField.TypezID])
+			typeName := annotate.resolveEnumName(state.EnumByID[valueField.TypezID])
 			return fmt.Sprintf("decodeMapEnum(%s, %s.fromJson)%s", data, typeName, bang)
 		case api.MESSAGE_TYPE:
 			_, hasCustomEncoding := usesCustomEncoding[valueField.TypezID]
-			typeName := annotate.resolveTypeName(state.MessageByID[valueField.TypezID], true)
+			typeName := annotate.resolveMessageName(state.MessageByID[valueField.TypezID], true)
 			if hasCustomEncoding {
 				return fmt.Sprintf("decodeMapMessageCustom(%s, %s.fromJson)%s", data, typeName, bang)
 			} else {
@@ -855,11 +892,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	case field.Typez == api.BYTES_TYPE:
 		return fmt.Sprintf("decodeBytes(%s)%s", data, bang)
 	case field.Typez == api.ENUM_TYPE:
-		typeName := enumName(state.EnumByID[field.TypezID])
+		typeName := annotate.resolveEnumName(state.EnumByID[field.TypezID])
 		return fmt.Sprintf("decodeEnum(%s, %s.fromJson)%s", data, typeName, bang)
 	case field.Typez == api.MESSAGE_TYPE:
 		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
-		typeName := annotate.resolveTypeName(state.MessageByID[field.TypezID], true)
+		typeName := annotate.resolveMessageName(state.MessageByID[field.TypezID], true)
 		if hasCustomEncoding {
 			return fmt.Sprintf("decodeCustom(%s, %s.fromJson)", data, typeName)
 		} else {
@@ -949,9 +986,9 @@ func (annotate *annotateModel) buildQueryLines(
 
 	var preable string
 	if codec.Nullable {
-		preable = fmt.Sprintf("if (%s != null) '%s'", ref, param)
+		preable = fmt.Sprintf("if (%s case final $1?) '%s'", ref, param)
 	} else {
-		preable = fmt.Sprintf("if (%s.isNotDefault) '%s'", ref, param)
+		preable = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
 	}
 
 	switch {
@@ -959,16 +996,16 @@ func (annotate *annotateModel) buildQueryLines(
 		// Handle lists; these should be lists of strings or other primitives.
 		switch field.Typez {
 		case api.STRING_TYPE:
-			return append(result, fmt.Sprintf("%s: %s", preable, ref))
+			return append(result, fmt.Sprintf("%s: $1", preable))
 		case api.ENUM_TYPE:
-			return append(result, fmt.Sprintf("%s: %s!.map((e) => e.value)", preable, ref))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => e.value)", preable))
 		case api.BOOL_TYPE, api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
 			api.FIXED32_TYPE, api.SFIXED32_TYPE, api.INT64_TYPE,
 			api.UINT64_TYPE, api.SINT64_TYPE, api.FIXED64_TYPE, api.SFIXED64_TYPE,
 			api.FLOAT_TYPE, api.DOUBLE_TYPE:
-			return append(result, fmt.Sprintf("%s: %s!.map((e) => '$e')", preable, ref))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => '$e')", preable))
 		case api.BYTES_TYPE:
-			return append(result, fmt.Sprintf("%s: %s!.map((e) => encodeBytes(e)!)", preable, ref))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => encodeBytes(e)!)", preable))
 		default:
 			slog.Error("unhandled list query param", "type", field.Typez)
 			return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
@@ -988,7 +1025,7 @@ func (annotate *annotateModel) buildQueryLines(
 		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
 		if hasCustomEncoding {
 			// Example: 'fieldMask': fieldMask!.toJson()
-			return append(result, fmt.Sprintf("%s: %s%stoJson()", preable, ref, deref))
+			return append(result, fmt.Sprintf("%s: $1.toJson()", preable))
 		}
 
 		// Unroll the fields for messages.
@@ -998,17 +1035,9 @@ func (annotate *annotateModel) buildQueryLines(
 		return result
 
 	case field.Typez == api.STRING_TYPE:
-		deref := ""
-		if codec.Nullable {
-			deref = "!"
-		}
-		return append(result, fmt.Sprintf("%s: %s%s", preable, ref, deref))
+		return append(result, fmt.Sprintf("%s: $1", preable))
 	case field.Typez == api.ENUM_TYPE:
-		deref := "."
-		if codec.Nullable {
-			deref = "!."
-		}
-		return append(result, fmt.Sprintf("%s: %s%svalue", preable, ref, deref))
+		return append(result, fmt.Sprintf("%s: $1.value", preable))
 	case field.Typez == api.BOOL_TYPE ||
 		field.Typez == api.INT32_TYPE ||
 		field.Typez == api.UINT32_TYPE || field.Typez == api.SINT32_TYPE ||
@@ -1017,9 +1046,9 @@ func (annotate *annotateModel) buildQueryLines(
 		field.Typez == api.UINT64_TYPE || field.Typez == api.SINT64_TYPE ||
 		field.Typez == api.FIXED64_TYPE || field.Typez == api.SFIXED64_TYPE ||
 		field.Typez == api.FLOAT_TYPE || field.Typez == api.DOUBLE_TYPE:
-		return append(result, fmt.Sprintf("%s: '${%s}'", preable, ref))
+		return append(result, fmt.Sprintf("%s: '${$1}'", preable))
 	case field.Typez == api.BYTES_TYPE:
-		return append(result, fmt.Sprintf("%s: encodeBytes(%s)!", preable, ref))
+		return append(result, fmt.Sprintf("%s: encodeBytes($1)!", preable))
 	default:
 		slog.Error("unhandled query param", "type", field.Typez)
 		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))
@@ -1080,7 +1109,7 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 			val := annotate.fieldType(message.Fields[1])
 			out = "Map<" + key + ", " + val + ">"
 		} else {
-			out = annotate.resolveTypeName(message, true)
+			out = annotate.resolveMessageName(message, true)
 		}
 	case api.ENUM_TYPE:
 		e, ok := annotate.state.EnumByID[f.TypezID]
@@ -1088,12 +1117,7 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 			slog.Error("unable to lookup type", "id", f.TypezID)
 			return ""
 		}
-		annotate.updateUsedPackages(e.Package)
-		out = enumName(e)
-		importPrefix, needsImportPrefix := annotate.packagePrefixes[e.Package]
-		if needsImportPrefix {
-			out = importPrefix + "." + out
-		}
+		out = annotate.resolveEnumName(e)
 	default:
 		slog.Error("unhandled fieldType", "type", f.Typez, "id", f.TypezID)
 	}
@@ -1105,7 +1129,18 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 	return out
 }
 
-func (annotate *annotateModel) resolveTypeName(message *api.Message, returnVoidForEmpty bool) string {
+func (annotate *annotateModel) resolveEnumName(enum *api.Enum) string {
+	annotate.updateUsedPackages(enum.Package)
+
+	ref := enumName(enum)
+	importPrefix, needsImportPrefix := annotate.packagePrefixes[enum.Package]
+	if needsImportPrefix {
+		ref = importPrefix + "." + ref
+	}
+	return ref
+}
+
+func (annotate *annotateModel) resolveMessageName(message *api.Message, returnVoidForEmpty bool) string {
 	if message == nil {
 		slog.Error("unable to lookup type")
 		return ""

@@ -20,8 +20,8 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 )
 
 func TestPublishSuccess(t *testing.T) {
@@ -67,10 +67,10 @@ func TestPublishWithNewCrate(t *testing.T) {
 	}
 	remoteDir := setupForPublish(t, "release-with-new-crate")
 	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := external.Run("git", "add", path.Join("src", "pubsub")); err != nil {
+	if err := command.Run("git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+	if err := command.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
 		t.Fatal(err)
 	}
 	cloneRepository(t, remoteDir)
@@ -129,10 +129,10 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	remoteDir := setupForPublish(t, "release-with-local-changes-error")
 	cloneRepository(t, remoteDir)
 	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := external.Run("git", "add", path.Join("src", "pubsub")); err != nil {
+	if err := command.Run("git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+	if err := command.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
 		t.Fatal(err)
 	}
 	if err := Publish(config, true, false); err == nil {
@@ -195,7 +195,7 @@ func TestPublishBadManifest(t *testing.T) {
 	if err := os.WriteFile(name, []byte("bad-toml = {\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := external.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+	if err := command.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
 	cloneRepository(t, remoteDir)

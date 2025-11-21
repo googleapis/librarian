@@ -17,10 +17,12 @@ package sidekick
 import (
 	"testing"
 
+	cmdtest "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func TestRustBumpVersions(t *testing.T) {
+	cmdtest.RequireCommand(t, "taplo")
 	config := &config.Config{
 		Release: &config.Release{
 			Preinstalled: map[string]string{

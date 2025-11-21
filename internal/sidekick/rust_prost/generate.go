@@ -21,9 +21,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
@@ -35,10 +35,10 @@ func Generate(model *api.API, outdir string, cfg *config.Config) error {
 	if cfg.General.SpecificationFormat != "protobuf" {
 		return fmt.Errorf("the `rust+prost` generator only supports `protobuf` as a specification source, outdir=%s", outdir)
 	}
-	if err := external.Run("cargo", "--version"); err != nil {
+	if err := command.Run("cargo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
-	if err := external.Run("protoc", "--version"); err != nil {
+	if err := command.Run("protoc", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `protoc --version`, the instructions on https://grpc.io/docs/protoc-installation/ may solve this problem: %w", err)
 	}
 
@@ -81,5 +81,9 @@ func buildRS(rootName, tmpDir, outDir string) error {
 	cmd.Dir = tmpDir
 	cmd.Env = append(os.Environ(), fmt.Sprintf("SOURCE_ROOT=%s", absRoot))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("DEST=%s", absOutDir))
-	return external.Exec(cmd)
+	fmt.Fprintf(os.Stderr, "Running: %s\n", cmd.String())
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
+	}
+	return nil
 }

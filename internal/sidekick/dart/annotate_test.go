@@ -77,7 +77,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			map[string]string{"dev-dependencies": "test,mockito"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
-				if diff := cmp.Diff([]string{"test", "mockito", "lints"}, codec.DevDependencies); diff != "" {
+				if diff := cmp.Diff([]string{"mockito", "test"}, codec.DevDependencies); diff != "" {
 					t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
 				}
 			},
@@ -368,35 +368,107 @@ func TestCalculateDependencies(t *testing.T) {
 
 func TestCalculateImports(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		imports []string
-		want    []string
+		name        string
+		imports     []string
+		packageName string
+		fileName    string
+		want        []string
 	}{
-		{name: "dart import", imports: []string{typedDataImport}, want: []string{
-			"import 'dart:typed_data';",
-		}},
-		{name: "package import", imports: []string{httpImport}, want: []string{
-			"import 'package:http/http.dart' as http;",
-		}},
-		{name: "dart and package imports", imports: []string{typedDataImport, httpImport}, want: []string{
-			"import 'dart:typed_data';",
-			"",
-			"import 'package:http/http.dart' as http;",
-		}},
-		{name: "package imports", imports: []string{
-			httpImport,
-			"package:google_cloud_foo/foo.dart",
-		}, want: []string{
-			"import 'package:google_cloud_foo/foo.dart';",
-			"import 'package:http/http.dart' as http;",
-		}},
+		{
+			name:        "dart: import",
+			imports:     []string{"dart:typed_data"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'dart:typed_data';"},
+		},
+		{
+			name:        "dart: import with prefix",
+			imports:     []string{"dart:typed_data as td"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'dart:typed_data' as td;"},
+		},
+		{
+			name:        "package: import",
+			imports:     []string{"package:http/http.dart"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'package:http/http.dart';"},
+		},
+		{
+			name:        "package: import with prefix",
+			imports:     []string{"package:http/http.dart as http"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'package:http/http.dart' as http;"},
+		},
+		{
+			name:        "dart: and package: imports",
+			imports:     []string{"dart:typed_data", "package:http/http.dart"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want: []string{
+				"import 'dart:typed_data';",
+				"",
+				"import 'package:http/http.dart';",
+			},
+		},
+		{
+			name:        "same file import",
+			imports:     []string{"package:google_cloud_bar/bar.dart"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        nil,
+		},
+		{
+			name:        "same file import with prefix",
+			imports:     []string{"package:google_cloud_bar/bar.dart as bar"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        nil,
+		},
+		{
+			name:        "same package import",
+			imports:     []string{"package:google_cloud_bar/baz.dart"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'baz.dart';"},
+		},
+		{
+			name:        "same package import with prefix",
+			imports:     []string{"package:google_cloud_bar/baz.dart as baz"},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want:        []string{"import 'baz.dart' as baz;"},
+		},
+		{
+			name: "many imports", imports: []string{
+				"package:google_cloud_foo/foo.dart",
+				"package:google_cloud_bar/bar.dart as bar",
+				"package:google_cloud_bar/src/foo.dart as foo",
+				"package:google_cloud_bar/baz.dart",
+				"dart:core",
+				"dart:io as io",
+			},
+			packageName: "google_cloud_bar",
+			fileName:    "bar.dart",
+			want: []string{
+				"import 'dart:core';",
+				"import 'dart:io' as io;",
+				"",
+				"import 'package:google_cloud_foo/foo.dart';",
+				"",
+				"import 'baz.dart';",
+				"import 'src/foo.dart' as foo;",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			deps := map[string]bool{}
 			for _, imp := range test.imports {
 				deps[imp] = true
 			}
-			got := calculateImports(deps)
+			got := calculateImports(deps, test.packageName, test.fileName)
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in calculateImports (-want, +got)\n:%s", diff)
@@ -446,100 +518,100 @@ func TestBuildQueryLines(t *testing.T) {
 		// primitives
 		{
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
-			[]string{"if (result.bool$.isNotDefault) 'bool': '${result.bool$}'"},
+			[]string{"if (result.bool$ case final $1 when $1.isNotDefault) 'bool': '${$1}'"},
 		}, {
 			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
-			[]string{"if (result.int32.isNotDefault) 'int32': '${result.int32}'"},
+			[]string{"if (result.int32 case final $1 when $1.isNotDefault) 'int32': '${$1}'"},
 		}, {
 			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
-			[]string{"if (result.fixed32.isNotDefault) 'fixed32': '${result.fixed32}'"},
+			[]string{"if (result.fixed32 case final $1 when $1.isNotDefault) 'fixed32': '${$1}'"},
 		}, {
 			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE},
-			[]string{"if (result.sfixed32.isNotDefault) 'sfixed32': '${result.sfixed32}'"},
+			[]string{"if (result.sfixed32 case final $1 when $1.isNotDefault) 'sfixed32': '${$1}'"},
 		}, {
 			&api.Field{Name: "int64", JSONName: "int64", Typez: api.INT64_TYPE},
-			[]string{"if (result.int64.isNotDefault) 'int64': '${result.int64}'"},
+			[]string{"if (result.int64 case final $1 when $1.isNotDefault) 'int64': '${$1}'"},
 		}, {
 			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.FIXED64_TYPE},
-			[]string{"if (result.fixed64.isNotDefault) 'fixed64': '${result.fixed64}'"},
+			[]string{"if (result.fixed64 case final $1 when $1.isNotDefault) 'fixed64': '${$1}'"},
 		}, {
 			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE},
-			[]string{"if (result.sfixed64.isNotDefault) 'sfixed64': '${result.sfixed64}'"},
+			[]string{"if (result.sfixed64 case final $1 when $1.isNotDefault) 'sfixed64': '${$1}'"},
 		}, {
 			&api.Field{Name: "double", JSONName: "double", Typez: api.DOUBLE_TYPE},
-			[]string{"if (result.double$.isNotDefault) 'double': '${result.double$}'"},
+			[]string{"if (result.double$ case final $1 when $1.isNotDefault) 'double': '${$1}'"},
 		}, {
 			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
-			[]string{"if (result.string.isNotDefault) 'string': result.string"},
+			[]string{"if (result.string case final $1 when $1.isNotDefault) 'string': $1"},
 		},
 
 		// optional primitives
 		{
 			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
-			[]string{"if (result.boolOpt != null) 'bool': '${result.boolOpt}'"},
+			[]string{"if (result.boolOpt case final $1?) 'bool': '${$1}'"},
 		}, {
 			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
-			[]string{"if (result.int32Opt != null) 'int32': '${result.int32Opt}'"},
+			[]string{"if (result.int32Opt case final $1?) 'int32': '${$1}'"},
 		}, {
 			&api.Field{Name: "fixed32_opt", JSONName: "fixed32", Typez: api.FIXED32_TYPE, Optional: true},
-			[]string{"if (result.fixed32Opt != null) 'fixed32': '${result.fixed32Opt}'"},
+			[]string{"if (result.fixed32Opt case final $1?) 'fixed32': '${$1}'"},
 		}, {
 			&api.Field{Name: "sfixed32_opt", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE, Optional: true},
-			[]string{"if (result.sfixed32Opt != null) 'sfixed32': '${result.sfixed32Opt}'"},
+			[]string{"if (result.sfixed32Opt case final $1?) 'sfixed32': '${$1}'"},
 		}, {
 			&api.Field{Name: "int64_opt", JSONName: "int64", Typez: api.INT64_TYPE, Optional: true},
-			[]string{"if (result.int64Opt != null) 'int64': '${result.int64Opt}'"},
+			[]string{"if (result.int64Opt case final $1?) 'int64': '${$1}'"},
 		}, {
 			&api.Field{Name: "fixed64_opt", JSONName: "fixed64", Typez: api.FIXED64_TYPE, Optional: true},
-			[]string{"if (result.fixed64Opt != null) 'fixed64': '${result.fixed64Opt}'"},
+			[]string{"if (result.fixed64Opt case final $1?) 'fixed64': '${$1}'"},
 		}, {
 			&api.Field{Name: "sfixed64_opt", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE, Optional: true},
-			[]string{"if (result.sfixed64Opt != null) 'sfixed64': '${result.sfixed64Opt}'"},
+			[]string{"if (result.sfixed64Opt case final $1?) 'sfixed64': '${$1}'"},
 		}, {
 			&api.Field{Name: "double_opt", JSONName: "double", Typez: api.DOUBLE_TYPE, Optional: true},
-			[]string{"if (result.doubleOpt != null) 'double': '${result.doubleOpt}'"},
+			[]string{"if (result.doubleOpt case final $1?) 'double': '${$1}'"},
 		}, {
 			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
-			[]string{"if (result.stringOpt != null) 'string': result.stringOpt!"},
+			[]string{"if (result.stringOpt case final $1?) 'string': $1"},
 		},
 
 		// one ofs
 		{
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE, IsOneOf: true},
-			[]string{"if (result.bool$ != null) 'bool': '${result.bool$}'"},
+			[]string{"if (result.bool$ case final $1?) 'bool': '${$1}'"},
 		},
 
 		// repeated primitives
 		{
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
-			[]string{"if (result.boolList.isNotDefault) 'boolList': result.boolList!.map((e) => '$e')"},
+			[]string{"if (result.boolList case final $1 when $1.isNotDefault) 'boolList': $1.map((e) => '$e')"},
 		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
-			[]string{"if (result.int32List.isNotDefault) 'int32List': result.int32List!.map((e) => '$e')"},
+			[]string{"if (result.int32List case final $1 when $1.isNotDefault) 'int32List': $1.map((e) => '$e')"},
 		}, {
 			&api.Field{Name: "int64List", JSONName: "int64List", Typez: api.INT64_TYPE, Repeated: true},
-			[]string{"if (result.int64List.isNotDefault) 'int64List': result.int64List!.map((e) => '$e')"},
+			[]string{"if (result.int64List case final $1 when $1.isNotDefault) 'int64List': $1.map((e) => '$e')"},
 		}, {
 			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.DOUBLE_TYPE, Repeated: true},
-			[]string{"if (result.doubleList.isNotDefault) 'doubleList': result.doubleList!.map((e) => '$e')"},
+			[]string{"if (result.doubleList case final $1 when $1.isNotDefault) 'doubleList': $1.map((e) => '$e')"},
 		}, {
 			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
-			[]string{"if (result.stringList.isNotDefault) 'stringList': result.stringList"},
+			[]string{"if (result.stringList case final $1 when $1.isNotDefault) 'stringList': $1"},
 		},
 
 		// repeated primitives w/ optional
 		{
 			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
-			[]string{"if (result.int32ListOpt.isNotDefault) 'int32List': result.int32ListOpt!.map((e) => '$e')"},
+			[]string{"if (result.int32ListOpt case final $1 when $1.isNotDefault) 'int32List': $1.map((e) => '$e')"},
 		},
 
 		// bytes, repeated bytes
 		{
 			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
-			[]string{"if (result.bytes != null) 'bytes': encodeBytes(result.bytes)!"},
+			[]string{"if (result.bytes case final $1?) 'bytes': encodeBytes($1)!"},
 		}, {
 			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
-			[]string{"if (result.bytesList != null) 'bytesList': result.bytesList!.map((e) => encodeBytes(e)!)"},
+			[]string{"if (result.bytesList case final $1?) 'bytesList': $1.map((e) => encodeBytes(e)!)"},
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
@@ -565,14 +637,27 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 	r := sample.Replication()
 	a := sample.Automatic()
 	enum := sample.EnumState()
+	foreignEnumState := &api.Enum{
+		Name:    "ForeignEnum",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.ForeignEnum",
+		Values: []*api.EnumValue{
+			{
+				Name:   "Enabled",
+				Number: 1,
+			},
+		},
+	}
+
 	model := api.NewTestAPI(
 		[]*api.Message{r, a, sample.CustomerManagedEncryption()},
-		[]*api.Enum{enum},
+		[]*api.Enum{enum, foreignEnumState},
 		[]*api.Service{})
 	model.PackageName = "test"
 	annotate := newAnnotateModel(model)
-	annotate.annotateModel(map[string]string{})
-
+	annotate.annotateModel(map[string]string{
+		"prefix:google.cloud.foo": "foo",
+	})
 	for _, test := range []struct {
 		enumField *api.Field
 		want      []string
@@ -583,7 +668,7 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 				JSONName: "jsonEnumName",
 				Typez:    api.ENUM_TYPE,
 				TypezID:  enum.ID},
-			[]string{"if (result.enumName.isNotDefault) 'jsonEnumName': result.enumName.value"},
+			[]string{"if (result.enumName case final $1 when $1.isNotDefault) 'jsonEnumName': $1.value"},
 		},
 		{
 			&api.Field{
@@ -592,7 +677,16 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 				Typez:    api.ENUM_TYPE,
 				TypezID:  enum.ID,
 				Optional: true},
-			[]string{"if (result.optionalEnum != null) 'optionalJsonEnum': result.optionalEnum!.value"},
+			[]string{"if (result.optionalEnum case final $1?) 'optionalJsonEnum': $1.value"},
+		},
+		{
+			&api.Field{
+				Name:     "enumName",
+				JSONName: "jsonEnumName",
+				Typez:    api.ENUM_TYPE,
+				TypezID:  foreignEnumState.ID,
+				Optional: false},
+			[]string{"if (result.enumName case final $1 when $1.isNotDefault) 'jsonEnumName': $1.value"},
 		},
 	} {
 		t.Run(test.enumField.Name, func(t *testing.T) {
@@ -661,8 +755,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	// messages
 	got := annotate.buildQueryLines([]string{}, "result.", "", messageField1, model.State)
 	want := []string{
-		"if (result.message1!.name.isNotDefault) 'message1.name': result.message1!.name",
-		"if (result.message1!.state.isNotDefault) 'message1.state': result.message1!.state.value",
+		"if (result.message1!.name case final $1 when $1.isNotDefault) 'message1.name': $1",
+		"if (result.message1!.state case final $1 when $1.isNotDefault) 'message1.state': $1.value",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -670,8 +764,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 
 	got = annotate.buildQueryLines([]string{}, "result.", "", messageField2, model.State)
 	want = []string{
-		"if (result.message2!.data != null) 'message2.data': encodeBytes(result.message2!.data)!",
-		"if (result.message2!.dataCrc32C != null) 'message2.dataCrc32c': '${result.message2!.dataCrc32C}'",
+		"if (result.message2!.data case final $1?) 'message2.data': encodeBytes($1)!",
+		"if (result.message2!.dataCrc32C case final $1?) 'message2.dataCrc32c': '${$1}'",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -680,8 +774,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	// nested messages
 	got = annotate.buildQueryLines([]string{}, "result.", "", messageField3, model.State)
 	want = []string{
-		"if (result.message3!.secret!.name.isNotDefault) 'message3.secret.name': result.message3!.secret!.name",
-		"if (result.message3!.fieldMask != null) 'message3.fieldMask': result.message3!.fieldMask!.toJson()",
+		"if (result.message3!.secret!.name case final $1 when $1.isNotDefault) 'message3.secret.name': $1",
+		"if (result.message3!.fieldMask case final $1?) 'message3.fieldMask': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -690,7 +784,7 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	// custom encoded messages
 	got = annotate.buildQueryLines([]string{}, "result.", "", fieldMaskField, model.State)
 	want = []string{
-		"if (result.fieldMask != null) 'fieldMask': result.fieldMask!.toJson()",
+		"if (result.fieldMask case final $1?) 'fieldMask': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -698,7 +792,7 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 
 	got = annotate.buildQueryLines([]string{}, "result.", "", durationField, model.State)
 	want = []string{
-		"if (result.duration != null) 'duration': result.duration!.toJson()",
+		"if (result.duration case final $1?) 'duration': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -706,7 +800,7 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 
 	got = annotate.buildQueryLines([]string{}, "result.", "", timestampField, model.State)
 	want = []string{
-		"if (result.time != null) 'time': result.time!.toJson()",
+		"if (result.time case final $1?) 'time': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -715,6 +809,41 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 
 func TestCreateFromJsonLine(t *testing.T) {
 	secret := sample.Secret()
+	enumState := sample.EnumState()
+
+	foreignMessage := &api.Message{
+		Name:    "Foo",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.Foo",
+		Enums:   []*api.Enum{},
+		Fields:  []*api.Field{},
+	}
+	foreignEnumState := &api.Enum{
+		Name:    "ForeignEnum",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.ForeignEnum",
+		Values: []*api.EnumValue{
+			{
+				Name:   "Enabled",
+				Number: 1,
+			},
+		},
+	}
+	mapStringToBytes := &api.Message{
+		Name:  "$StringToBytes",
+		ID:    "..$StringToBytes",
+		IsMap: true,
+		Fields: []*api.Field{
+			{
+				Name:  "key",
+				Typez: api.STRING_TYPE,
+			},
+			{
+				Name:  "value",
+				Typez: api.BYTES_TYPE,
+			},
+		},
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -780,10 +909,34 @@ func TestCreateFromJsonLine(t *testing.T) {
 			"decodeListBytes(json['bytesList'])",
 		},
 
+		// enums
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: enumState.ID},
+			"decodeEnum(json['message'], State.fromJson) ?? State.$default",
+		},
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: foreignEnumState.ID},
+			"decodeEnum(json['message'], foo.ForeignEnum.fromJson) ?? foo.ForeignEnum.$default",
+		},
+
 		// messages
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
 			"decode(json['message'], Secret.fromJson)",
+		},
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
+			"decode(json['message'], foo.Foo.fromJson)",
+		},
+		{
+			// Custom encoding.
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Duration"},
+			"decodeCustom(json['message'], Duration.fromJson)",
+		},
+		{
+			// Map of bytes.
+			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToBytes.ID},
+			"decodeMapBytes(json['message']) ?? {}",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
@@ -793,9 +946,11 @@ func TestCreateFromJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret}, []*api.Enum{}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage, mapStringToBytes}, []*api.Enum{enumState, foreignEnumState}, []*api.Service{})
 			annotate := newAnnotateModel(model)
-			annotate.annotateModel(map[string]string{})
+			annotate.annotateModel(map[string]string{
+				"prefix:google.cloud.foo": "foo",
+			})
 			codec := test.field.Codec.(*fieldAnnotation)
 
 			got := annotate.createFromJsonLine(test.field, model.State, codec.Required)
@@ -809,6 +964,25 @@ func TestCreateFromJsonLine(t *testing.T) {
 func TestCreateToJsonLine(t *testing.T) {
 	secret := sample.Secret()
 	enum := sample.EnumState()
+
+	foreignMessage := &api.Message{
+		Name:    "Foo",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.Foo",
+		Enums:   []*api.Enum{},
+		Fields:  []*api.Field{},
+	}
+	foreignEnumState := &api.Enum{
+		Name:    "ForeignEnum",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.ForeignEnum",
+		Values: []*api.EnumValue{
+			{
+				Name:   "Enabled",
+				Number: 1,
+			},
+		},
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -874,9 +1048,23 @@ func TestCreateToJsonLine(t *testing.T) {
 			"encodeListBytes(bytesList)",
 		},
 
+		// enums
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: enum.ID},
+			"message.toJson()",
+		},
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: foreignEnumState.ID},
+			"message.toJson()",
+		},
+
 		// messages
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
+			"message!.toJson()",
+		},
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
 			"message!.toJson()",
 		},
 	} {
@@ -887,9 +1075,11 @@ func TestCreateToJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret}, []*api.Enum{enum}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage}, []*api.Enum{enum, foreignEnumState}, []*api.Service{})
 			annotate := newAnnotateModel(model)
-			annotate.annotateModel(map[string]string{})
+			annotate.annotateModel(map[string]string{
+				"prefix:google.cloud.foo": "foo",
+			})
 			codec := test.field.Codec.(*fieldAnnotation)
 
 			got := createToJsonLine(test.field, model.State, codec.Required)

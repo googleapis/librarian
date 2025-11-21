@@ -19,13 +19,13 @@ import (
 	"log/slog"
 	"maps"
 	"os"
-	"os/exec"
+	stdexec "os/exec"
 	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/external"
 )
 
 // Publish finds all the crates that should be published, (optionally) runs
@@ -56,7 +56,7 @@ func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 		}
 	}
 	slog.Info("computing publication plan with: cargo workspaces plan")
-	cmd := exec.Command(cargoExe(config), "workspaces", "plan", "--skip-published")
+	cmd := stdexec.Command(cargoExe(config), "workspaces", "plan", "--skip-published")
 	if config.RootsPem != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}
@@ -85,7 +85,7 @@ func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 				continue
 			}
 			slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)
-			if err := external.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
+			if err := command.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
 				return err
 			}
 		}
@@ -95,7 +95,7 @@ func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 	if dryRun {
 		args = append(args, "--dry-run")
 	}
-	cmd = exec.Command(cargoExe(config), args...)
+	cmd = stdexec.Command(cargoExe(config), args...)
 	if config.RootsPem != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}

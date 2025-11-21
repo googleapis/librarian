@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/fetch"
 	toml "github.com/pelletier/go-toml/v2"
 )
 
@@ -267,8 +268,8 @@ func TestUpdateRootConfigErrors(t *testing.T) {
 
 func TestGithubConfig(t *testing.T) {
 	got := githubConfig(&Config{})
-	want := &githubEndpoints{
-		Api:      defaultGitHubApi,
+	want := &fetch.Endpoints{
+		API:      defaultGitHubAPI,
 		Download: defaultGitHubDn,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -281,8 +282,8 @@ func TestGithubConfig(t *testing.T) {
 			"github":     testGitHubDn,
 		},
 	})
-	want = &githubEndpoints{
-		Api:      testGitHubApi,
+	want = &fetch.Endpoints{
+		API:      testGitHubApi,
 		Download: testGitHubDn,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -302,12 +303,12 @@ func TestGithubRepoFromTarballLink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &githubRepo{
+	want := &fetch.Repo{
 		Org:  "org-name",
 		Repo: "repo-name",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -425,11 +426,11 @@ test-sha256            = 'new-sha256-4'
 			Want:      output4,
 		},
 	} {
-		endpoints := &githubEndpoints{
-			Api:      defaultGitHubApi,
+		endpoints := &fetch.Endpoints{
+			API:      defaultGitHubAPI,
 			Download: defaultGitHubDn,
 		}
-		repo := &githubRepo{
+		repo := &fetch.Repo{
 			Org:  "org-name",
 			Repo: "repo-name",
 		}
@@ -483,11 +484,11 @@ test-sha256            = 'old-sha256'
 `
 	)
 	for idx, test := range []string{badRoot, badSha256, badExtractedName, tooManyRoots, tooManySha256, tooManyExtractedNames} {
-		endpoints := &githubEndpoints{
-			Api:      defaultGitHubApi,
+		endpoints := &fetch.Endpoints{
+			API:      defaultGitHubAPI,
 			Download: defaultGitHubDn,
 		}
-		repo := &githubRepo{
+		repo := &fetch.Repo{
 			Org:  "org-name",
 			Repo: "repo-name",
 		}
