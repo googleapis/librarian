@@ -1,0 +1,151 @@
+librarian-image-sha: sha256:8ae52838e466022dd701cab8c3f002cb727b3e0e5688864b3d0d68f645541035
+repositories:
+  - name: "gapic-generator-go"
+    full-name: https://github.com/googleapis/gapic-generator-go
+    github-token-secret-name: "gapic-generator-go-github-token"
+    supported-commands:
+      - publish-release
+  - name: "gapic-generator-python"
+    full-name: https://github.com/googleapis/gapic-generator-python
+    github-token-secret-name: "gapic-generator-python-github-token"
+    supported-commands:
+      - publish-release
+  - name: "gax-go"
+    full-name: https://github.com/googleapis/gax-go
+    github-token-secret-name: "gax-go-github-token"
+    supported-commands:
+      - publish-release
+  - name: "google-auth-library-python"
+    full-name: https://github.com/googleapis/google-auth-library-python
+    github-token-secret-name: "google-auth-library-python-github-token"
+    supported-commands:
+      - publish-release
+  - name: "google-auth-library-python-httplib2"
+    full-name: https://github.com/googleapis/google-auth-library-python-httplib2
+    github-token-secret-name: "google-auth-library-python-httplib2-github-token"
+    supported-commands:
+      - publish-release
+  - name: "google-auth-library-python-oauthlib"
+    full-name: https://github.com/googleapis/google-auth-library-python-oauthlib
+    github-token-secret-name: "google-auth-library-python-oauthlib-github-token"
+    supported-commands:
+      - publish-release
+  - name: "google-cloud-go"
+    full-name: https://github.com/googleapis/google-cloud-go
+    github-token-secret-name: "google-cloud-go-github-token"
+    supported-commands:
+      - generate
+      - stage-release
+      - publish-release
+  - name: "google-cloud-python"
+    full-name: https://github.com/googleapis/google-cloud-python
+    github-token-secret-name: "google-cloud-python-github-token"
+    supported-commands:
+      - generate
+      - stage-release
+      - publish-release
+  - name: "google-resumable-media-python"
+    full-name: https://github.com/googleapis/google-resumable-media-python
+    github-token-secret-name: "google-resumable-media-python-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-aiplatform"
+    full-name: https://github.com/googleapis/python-aiplatform
+    github-token-secret-name: "python-aiplatform-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-api-core"
+    full-name: https://github.com/googleapis/python-api-core
+    github-token-secret-name: "python-api-core-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-bigquery"
+    full-name: https://github.com/googleapis/python-bigquery
+    github-token-secret-name: "python-bigquery-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-bigquery-dataframes"
+    full-name: https://github.com/googleapis/python-bigquery-dataframes
+    github-token-secret-name: "python-bigquery-dataframes-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-bigquery-magics"
+    full-name: https://github.com/googleapis/python-bigquery-magics
+    github-token-secret-name: "python-bigquery-magics-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-bigquery-pandas"
+    full-name: https://github.com/googleapis/python-bigquery-pandas
+    github-token-secret-name: "python-bigquery-pandas-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-bigquery-sqlalchemy"
+    full-name: https://github.com/googleapis/python-bigquery-sqlalchemy
+    github-token-secret-name: "python-bigquery-sqlalchemy-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-cloud-core"
+    full-name: https://github.com/googleapis/python-cloud-core
+    github-token-secret-name: "python-cloud-core-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-datastore"
+    full-name: https://github.com/googleapis/python-datastore
+    github-token-secret-name: "python-datastore-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-db-dtypes-pandas"
+    full-name: https://github.com/googleapis/python-db-dtypes-pandas
+    github-token-secret-name: "python-db-dtypes-pandas-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-dns"
+    full-name: https://github.com/googleapis/python-dns
+    github-token-secret-name: "python-dns-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-error-reporting"
+    full-name: https://github.com/googleapis/python-error-reporting
+    github-token-secret-name: "python-error-reporting-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-firestore"
+    full-name: https://github.com/googleapis/python-firestore
+    github-token-secret-name: "python-firestore-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-ndb"
+    full-name: https://github.com/googleapis/python-ndb
+    github-token-secret-name: "python-ndb-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-pubsub"
+    full-name: https://github.com/googleapis/python-pubsub
+    github-token-secret-name: "python-pubsub-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-runtimeconfig"
+    full-name: https://github.com/googleapis/python-runtimeconfig
+    github-token-secret-name: "python-runtimeconfig-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-spanner-django"
+    full-name: https://github.com/googleapis/python-spanner-django
+    github-token-secret-name: "python-spanner-django-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-spanner-sqlalchemy"
+    full-name: https://github.com/googleapis/python-spanner-sqlalchemy
+    github-token-secret-name: "python-spanner-sqlalchemy-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-test-utils"
+    full-name: https://github.com/googleapis/python-test-utils
+    github-token-secret-name: "python-test-utils-github-token"
+    supported-commands:
+      - publish-release
+  - name: "sphinx-docfx-yaml"
+    full-name: https://github.com/googleapis/sphinx-docfx-yaml
+    github-token-secret-name: "sphinx-docfx-yaml-github-token"
+    supported-commands:
+      - publish-release

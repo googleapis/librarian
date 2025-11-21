@@ -1,26 +1,29 @@
 module github.com/googleapis/librarian
 
-go 1.25.0
+go 1.25.3
 
 require (
-	cloud.google.com/go/cloudbuild v1.23.0
-	cloud.google.com/go/iam v1.5.2
-	cloud.google.com/go/longrunning v0.6.7
+	cloud.google.com/go/artifactregistry v1.17.2
+	cloud.google.com/go/cloudbuild v1.23.1
+	cloud.google.com/go/iam v1.5.3
+	cloud.google.com/go/longrunning v0.7.0
 	github.com/cbroglie/mustache v1.4.0
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v69 v69.2.0
+	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/pb33f/libopenapi v0.25.9
 	github.com/pelletier/go-toml/v2 v2.2.4
+	github.com/urfave/cli/v3 v3.6.1
 	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
-	google.golang.org/genproto v0.0.0-20250908214217-97024824d090
-	google.golang.org/genproto/googleapis/api v0.0.0-20250908214217-97024824d090
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250908214217-97024824d090
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/genproto v0.0.0-20251103181224-f26f9409b101
+	google.golang.org/genproto/googleapis/api v0.0.0-20251029180050-ab9386a59fda
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda
+	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -63,14 +66,19 @@ require (
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
-	golang.org/x/crypto v0.42.0 // indirect
-	golang.org/x/net v0.44.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.31.0 // indirect
-	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.13.0 // indirect
 	google.golang.org/api v0.249.0 // indirect
 	google.golang.org/grpc v1.75.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+)
+
+retract (
+	v1.0.1 // Version bump to roll out retractions only.
+	v1.0.0 // Retracted because the 1.0.0 release was published prematurely.
 )

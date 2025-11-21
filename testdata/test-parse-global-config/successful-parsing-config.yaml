@@ -1,5 +1,0 @@
-global_files_allowlist:
-  - path: a/path
-    permissions: read-only
-  - path: another/path
-    permissions: read-write

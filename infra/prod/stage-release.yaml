@@ -14,7 +14,7 @@
 # This Cloud Build configuration is used by a Louhi flow for the Artifact
 # Registry (AR) Exit Gate process (go/cloud-sdk-ar-exit-gate-onboarding).
 #
-# This runs the `librarian release init` command with a provided repository,
+# This runs the `librarian release stage` command with a provided repository,
 # secret name, and optional library ID
 steps:
   - name: gcr.io/cloud-builders/git
@@ -41,13 +41,13 @@ steps:
       - 'config'
       - 'user.email'
       - 'cloud-sdk-librarian-robot@google.com'
-  - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian'
+  - name: 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian@$_IMAGE_SHA'
     id: stage-release
     waitFor: ['configure-language-repo-email']
     dir: tmp
     args:
       - 'release'
-      - 'init'
+      - 'stage'
       - '-repo'
       - '/workspace/$_REPOSITORY'
       - '-branch=$_BRANCH'
@@ -64,3 +64,4 @@ availableSecrets:
       env: 'LIBRARIAN_GITHUB_TOKEN'
 options:
   logging: CLOUD_LOGGING_ONLY
+timeout: 2h

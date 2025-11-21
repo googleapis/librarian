@@ -18,7 +18,7 @@ Before diving into the specifics, it's important to understand the key component
 * **`config.yaml`:** A configuration file that allows for repository-level customization of Librarian's behavior, such
   as specifying which files the container can access.
 
-## Configuration Files
+## Configure repository to work with Librarian CLI
 
 Librarian relies on two key configuration files to manage its operations: `state.yaml` and `config.yaml`. These files
 must be present in the `.librarian` directory at the root of the language repository.
@@ -39,7 +39,7 @@ Repository maintainers are expected to maintain this file. Librarian will not mo
 
 For a detailed breakdown of all the fields in the `config.yaml` file, please refer to [config-schema.md].
 
-## Container Contracts
+## Implement a Language Container
 
 Librarian orchestrates its workflows by making a series of invocations to a language-specific container. Each invocation
 corresponds to a specific command and is designed to perform a distinct task. For the container to function correctly,
@@ -53,6 +53,18 @@ be surfaced to the CLI.
 Additionally, Librarian specifies a user and group ID when executing the language-specific container. This means that
 the container **MUST** be able to run as an arbitrary user (the caller of Librarian's user). Any commands used will
 need to be executable by any user ID within the container.
+
+* Create a docker file for your container [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/Dockerfile)
+* Create a cloudbuild file [example](https://github.com/googleapis/google-cloud-go/blob/main/internal/librariangen/cloudbuild-exitgate.yaml) that uploads your image to us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev
+
+### Guidelines on Language Container Runtimes
+
+You should be able to run the `generate` or `release-stage` commands for an API such as Google Cloud Secret Manager in less than a
+minute. We understand that some libraries may take longer to process, however, long runtimes can adversely affect your
+ability to roll out emergency changes. While the CLI typically calls the container only for libraries with changes, a
+generator update could trigger a run for all your libraries.
+
+### Implement Container Contracts
 
 The following sections detail the contracts for each container command.
 
@@ -88,17 +100,7 @@ The container is expected to produce up to two artifacts:
 {
   "libraries": [
     {
-      "id": "google-cloud-secretmanager",
-      "apis": [
-        {
-          "path": "google/cloud/secretmanager/v1",
-          "service_config": "secretmanager_v1.yaml",
-          "status": "new"
-        }
-      ],
-    },
-    {
-      "id": "google-cloud-pubsub-v1",
+      "id": "pubsub",
       "apis": [
         {
           "path": "google/cloud/pubsub/v1",
@@ -107,6 +109,16 @@ The container is expected to produce up to two artifacts:
         }
       ],
       "source_roots": [ "pubsub" ]
+    },
+    {
+      "id": "secretmanager",
+      "apis": [
+        {
+          "path": "google/cloud/secretmanager/v1",
+          "service_config": "secretmanager_v1.yaml",
+          "status": "new"
+        }
+      ]
     }
   ]
 }
@@ -118,10 +130,10 @@ The container is expected to produce up to two artifacts:
 
 ```json
 {
-  "id": "google-cloud-secretmanager",
+  "id": "secretmanager",
   "apis": [
     {
-      "path": "google/cloud/secretmanager/v1",
+      "path": "google/cloud/secretmanager/v1"
     }
   ],
   "source_roots": [ "secretmanager" ],
@@ -156,7 +168,7 @@ The `generate` command is where the core work of code generation happens. The co
 
 ```json
 {
-  "id": "google-cloud-secretmanager",
+  "id": "secretmanager",
   "apis": [
     {
       "path": "google/cloud/secretmanager/v1",
@@ -205,7 +217,7 @@ The `build` command is responsible for building and testing the newly generated 
 
 ```json
 {
-  "id": "google-cloud-secretmanager",
+  "id": "secretmanager",
   "apis": [
     {
       "path": "google/cloud/secretmanager/v1",
@@ -234,9 +246,9 @@ The `build` command is responsible for building and testing the newly generated 
 }
 ```
 
-### `release-init`
+### `release-stage`
 
-The `release-init` command is the core of the release workflow. After Librarian determines the new version and collates
+The `release-stage` command is the core of the release workflow. After Librarian determines the new version and collates
 the commits for a release, it invokes this container command to apply the necessary changes to the repository.
 
 The container command's primary responsibility is to update all required files with the new version and commit
@@ -248,13 +260,13 @@ global files that reference the libraries being released.
 
 | Context      | Type                | Description                                                                     |
 | :----------- | :------------------ | :------------------------------------------------------------------------------ |
-| `/librarian` | Mount (Read/Write)  | Contains `release-init-request.json`. Container writes back a `release-init-response.json`. |
+| `/librarian` | Mount (Read/Write)  | Contains `release-stage-request.json`. Container writes back a `release-stage-response.json`. |
 | `/repo`      | Mount (Read)        | Read-only contents of the language repo including any global files declared in the `config.yaml`. |
 | `/output`    | Mount (Write)       | Any files updated during the release phase should be moved to this directory, preserving their original paths. |
-| `command`    | Positional Argument | The value will always be `release-init`. |
+| `command`    | Positional Argument | The value will always be `release-stage`. |
 | flags.       | Flags               | Flags indicating the locations of the mounts: `--librarian`, `--repo`, `--output` |
 
-**Example `release-init-request.json`:**
+**Example `release-stage-request.json`:**
 
 The request will have entries for all libraries configured in the state.yaml -- this information may be needed for any
 global file edits. The libraries that are being released will be marked by the `release_triggered` field being set to
@@ -264,7 +276,7 @@ global file edits. The libraries that are being released will be marked by the `
 {
   "libraries": [
     {
-      "id": "google-cloud-secretmanager-v1",
+      "id": "secretmanager",
       "version": "1.3.0",
       "changes": [
         {
@@ -300,7 +312,7 @@ global file edits. The libraries that are being released will be marked by the `
 }
 ```
 
-**Example `release-init-response.json`:**
+**Example `release-stage-response.json`:**
 
 ```json
 {
@@ -311,8 +323,59 @@ global file edits. The libraries that are being released will be marked by the `
 [config-schema.md]:config-schema.md
 [state-schema.md]: state-schema.md
 
-## Language repository settings
+## Pin the Language Container version in `state.yaml`
 
-To correctly parse the commit message of a merge commit, only allow squash merging
-and set the default commit message to **Pull request title and description**.
-![Pull request settings](assets/setting-pull-requests.webp)
+You should pin the container version so that changes that appear as a result of updates to the language specific container
+can be tracked and properly documented in client library release notes.
+
+The `update-image` command is used to update and pin the language specific container in `state.yaml` and re-generate all libraries.
+You can optionally specify an image using the `-image` flag.
+
+*Note: If the `-image` flag is not specified, the latest container image will be used.
+This requires application default credentials which have access to the corresponding artifact registry.
+Use `gcloud auth application-default login` to configure ADC.*
+
+When the job completes, a PR will be opened by librarian with the changes related to the container update. You can edit the pull
+request title to set a global commit message which will be applied to all libraries.
+
+*Note: If the container SHA in `state.yaml` was updated without using `update-image`, there could be unrelated diffs.*
+
+As a quick check to verify that changes are solely due to the language-specific container, execute the `update-image` command
+for the current SHA to ensure a clean state before updating to a newer version of a language specific container.
+
+librarian update-image -image=us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/<language>-librarian-generator@sha256:<current SHA> -push
+
+Merge the PR which includes changes for the current container SHA prior to updating to a new container SHA. Moving forward, always use `update-image`
+to update the language specific SHA in `state.yaml` to ensure that all changes are correctly tracked and documented.
+
+## Validate Commands are working
+
+For each command you should be able to run the CLI on your remote desktop and have it create the expected PR.
+
+**Configure Command:**
+
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ generate -repo=<your repository> -library=<name of library that exists in googleapis but not your repository> -push
+```
+
+**Generate Command:**
+
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ generate -repo=<your repository> -push
+```
+
+**Release Command:**
+
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ release stage -repo=<your repository> -push
+```
+
+**Update Image Command:**
+
+```
+export LIBRARIAN_GITHUB_TOKEN=$(gh auth token)
+go run ./cmd/librarian/ update-image -repo=<your repository> -push
+```

@@ -1,0 +1,41 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# This Cloud Build configuration is used by a Louhi flow for the Artifact
+# Registry (AR) Exit Gate process (go/cloud-sdk-ar-exit-gate-onboarding).
+#
+# This build step creates the librarian container image and publishes it to the
+# 'images-dev' repository, which serves as the entry point for the AR Exit Gate.
+# After passing the gate's security checks, the image is promoted and
+# published to the 'images-prod' repository.
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    waitFor: ['-']
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+      - '.'
+      - '-f'
+      - 'infra/imagebuilders/cli/Dockerfile'
+  - id: structure-test
+    name: gcr.io/gcp-runtimes/structure_test
+    args:
+      - '-i'
+      - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'
+      - '--config'
+      - '/workspace/infra/imagebuilders/container-structure-test.yaml'
+      - '-v'
+images:
+  - 'us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/librarian'

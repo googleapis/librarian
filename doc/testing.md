@@ -20,7 +20,7 @@ Setup:
 
 ```bash
 DOCKER_BUILDKIT=1 docker build \
-  -f ./testdata/e2e-test.Dockerfile \
+  -f ./internal/legacylibrarian/legacyintegration/testdata/e2e-test.Dockerfile \
   -t test-image:latest \
   .
 ```
@@ -28,7 +28,7 @@ DOCKER_BUILDKIT=1 docker build \
 Usage:
 
 ```bash
-go test -tags e2e
+go test -tags e2e ./internal/legacylibrarian/legacyintegration/...
 ```
 
 ## Integration Tests
@@ -39,11 +39,11 @@ tests are **NOT** run automatically as they create pull requests and branches.
 Usage:
 
 ```bash
-TEST_GITHUB_TOKEN=<a personal access token> \
-  TEST_GITHUB_REPO=<URL of GitHub repo> \
-  go test ./...
+LIBRARIAN_TEST_GITHUB_TOKEN=<a personal access token> \
+  LIBRARIAN_TEST_GITHUB_REPO=<URL of GitHub repo> \
+  go test -tags integration ./...
 ```
 
-Note: `TEST_GITHUB_TOKEN` must have write access to `TEST_GITHUB_REPO`.
+Note: `LIBRARIAN_TEST_GITHUB_TOKEN` must have write access to `LIBRARIAN_TEST_GITHUB_REPO`.
 
 Note: These tests are skipped unless these environment variables are set.

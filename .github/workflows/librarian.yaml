@@ -15,12 +15,13 @@ name: Librarian
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
+  issues: write
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
       - name: Display Go version
@@ -32,24 +33,18 @@ jobs:
           cd /usr/local
           sudo unzip -x /tmp/protoc.zip
           protoc --version
-          go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2
           go install golang.org/x/tools/cmd/goimports@latest
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
-      - name: Check YAML formatting
-        run: |
-          yamlfmt .
-      - name: Detect formatting changes
-        run: git diff --exit-code
       - name: Upload coverage report
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
   e2e-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
       - name: Install tools
@@ -65,9 +60,24 @@ jobs:
       - name: Build the test image
         run: |
           DOCKER_BUILDKIT=1 docker build \
-            -f ./testdata/e2e-test.Dockerfile \
+            -f ./internal/legacylibrarian/legacyintegration/testdata/e2e-test.Dockerfile \
             -t test-image:latest \
             .
       - name: Run end-to-end test
         run: |
           go test -tags e2e ./...
+  create-issue-on-failure:
+    runs-on: ubuntu-24.04
+    needs: [test, e2e-test]
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Create an issue for push event to main
+        run: |
+          ISSUE_TITLE="all: tests failed at HEAD"
+          BODY="Tests failed at HEAD of the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
+          ISSUE_LINK=$(gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" -R $GH_REPO)
+          ISSUE_NUM=${ISSUE_LINK##*/}
+          gh issue comment $ISSUE_NUM --body "@googleapis/cloud-sdk-librarian-team A critical issue has been created, please respond immediately."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}

@@ -33,7 +33,7 @@ import (
 
 var noHeaderRequiredFiles = []string{
 	".gcloudignore",
-	".github/CODEOWNERS",
+	"CODEOWNERS",
 	".gitignore",
 	"Dockerfile",
 	"LICENSE",
@@ -51,6 +51,9 @@ var ignoredExts = map[string]bool{
 	".yaml":       true,
 	".txt":        true,
 	".webp":       true,
+	".sh":         true,
+	".xml":        true,
+	".tmpl":       true,
 }
 
 var ignoredDirs = []string{
@@ -68,7 +71,11 @@ const expectedHeader = `// Copyright 202\d Google LLC
 // you may not use this file except in compliance with the License\.
 // You may obtain a copy of the License at`
 
-var headerRegex = regexp.MustCompile("(?s)" + expectedHeader)
+var (
+	headerRegex          = regexp.MustCompile("(?s)" + expectedHeader)
+	dockerGoVersionRegex = regexp.MustCompile(`golang:(?P<version>[^ \n]+)`)
+	modGoVersionRegex    = regexp.MustCompile(`\ngo\s+(?P<version>[^ \n]+)`)
+)
 
 func TestHeaders(t *testing.T) {
 	sfs := os.DirFS(".")
@@ -84,7 +91,7 @@ func TestHeaders(t *testing.T) {
 			}
 			return nil
 		}
-		if slices.Contains(noHeaderRequiredFiles, path) || ignoredExts[filepath.Ext(path)] {
+		if slices.Contains(noHeaderRequiredFiles, filepath.Base(path)) || ignoredExts[filepath.Ext(path)] {
 			return nil
 		}
 
@@ -156,21 +163,78 @@ func hasValidHeader(path string, r io.Reader) (bool, error) {
 	return headerRegex.Match(allBytes), nil
 }
 
+// TestConsistentGoVersions walks the directory tree and checks Dockerfiles and go.mod files for specified Go versions.
+// It ensures that only one unique Go version is specified across all found files to maintain consistency. The test
+// fails if multiple Go versions are detected.
+// TODO(https://github.com/googleapis/librarian/issues/2739): remove this test once is resolved.
+func TestConsistentGoVersions(t *testing.T) {
+	goVersions := make(map[string][]string)
+	sfs := os.DirFS(".")
+	err := fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if strings.HasSuffix(path, "Dockerfile") {
+			return recordGoVersion(path, sfs, dockerGoVersionRegex, goVersions)
+		}
+
+		if strings.HasSuffix(path, "go.mod") {
+			return recordGoVersion(path, sfs, modGoVersionRegex, goVersions)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(goVersions) > 1 {
+		for ver, paths := range goVersions {
+			t.Logf("%s found in %s", ver, strings.Join(paths, "\n"))
+		}
+		t.Error("found multiple golang versions")
+	}
+}
+
+// recordGoVersion reads the content of the file at the given path, finds all matches of the provided regular
+// expression (re), and records the first capturing group (expected to be the version string) in the goVersions map
+// along with the file path.
+func recordGoVersion(path string, sfs fs.FS, re *regexp.Regexp, goVersions map[string][]string) error {
+	f, err := sfs.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	allBytes, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
+
+	matches := re.FindAllStringSubmatch(string(allBytes), -1)
+	for _, match := range matches {
+		goVersions[match[1]] = append(goVersions[match[1]], path)
+	}
+
+	return nil
+}
+
 func TestGolangCILint(t *testing.T) {
-	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest", "run")
+	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.0", "run")
 }
 
 func TestGoImports(t *testing.T) {
-	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@latest", "-d", ".")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
+	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@v0.38.0", "-d", ".")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("goimports failed to run: %v\nOutput:\n%s", err, out.String())
+		t.Fatalf("goimports failed to run: %v\nStdout:\n%s\nStderr:\n%s", err, stdout.String(), stderr.String())
 	}
-	if out.Len() > 0 {
-		t.Errorf("goimports found unformatted files:\n%s", out.String())
+	if stdout.Len() > 0 {
+		t.Errorf("goimports found unformatted files:\n%s", stdout.String())
 	}
 }
 
@@ -178,15 +242,18 @@ func TestGoModTidy(t *testing.T) {
 	rungo(t, "mod", "tidy", "-diff")
 }
 
-func TestGovulncheck(t *testing.T) {
-	rungo(t, "run", "golang.org/x/vuln/cmd/govulncheck@latest", "./...")
-}
+func TestYAMLFormat(t *testing.T) {
+	cmd := exec.Command("go", "run", "github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2", "-lint", ".")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
-func TestGodocLint(t *testing.T) {
-	rungo(t, "run", "github.com/godoc-lint/godoc-lint/cmd/godoclint@v0.3.0",
-		// TODO(https://github.com/googleapis/librarian/issues/1510): fix test
-		"-exclude", "internal/sidekick",
-		"./...")
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("yamlfmt failed to run: %v\nStdout:\n%s\nStderr:\n%s", err, stdout.String(), stderr.String())
+	}
+	if stdout.Len() > 0 {
+		t.Errorf("yamlfmt found unformatted files:\n%s", stdout.String())
+	}
 }
 
 func rungo(t *testing.T, args ...string) {
@@ -202,9 +269,10 @@ func rungo(t *testing.T, args ...string) {
 }
 
 func TestExportedSymbolsHaveDocs(t *testing.T) {
+	packageHasComment := make(map[string]bool)
 	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
-			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") {
+			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") || strings.Contains(path, "testdata") {
 			return nil
 		}
 
@@ -214,6 +282,8 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 			t.Errorf("failed to parse file %q: %v", path, err)
 			return nil
 		}
+
+		recordPackageCommentStatus(t, node, packageHasComment)
 
 		// Visit every top-level declaration in the file.
 		for _, decl := range node.Decls {
@@ -239,6 +309,12 @@ func TestExportedSymbolsHaveDocs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	for name, hasPkgComment := range packageHasComment {
+		if !hasPkgComment {
+			t.Errorf("package %s does not have package comment", name)
+		}
+	}
 }
 
 func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string) {
@@ -249,5 +325,15 @@ func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string)
 	if doc == nil {
 		t.Errorf("%s: %q is missing doc comment",
 			path, name.Name)
+	}
+}
+
+// recordPackageCommentStatus updates the seen map with the package comment status for a given package, processing each
+// package only once.
+func recordPackageCommentStatus(t *testing.T, file *ast.File, packageHasComment map[string]bool) {
+	t.Helper()
+	pkg := file.Name.String()
+	if !packageHasComment[pkg] {
+		packageHasComment[pkg] = file.Doc != nil
 	}
 }

@@ -37,7 +37,7 @@ Each object in the `libraries` list represents a single library and has the foll
 ```yaml
 # .librarian/config.yaml
 
-# A list of files that will be provided to the 'configure' and 'release-init'
+# A list of files that will be provided to the 'configure' and 'release-stage'
 # container invocations.
 global_files_allowlist:
   # Allow the container to read and write the root go.work file during the
@@ -54,7 +54,7 @@ global_files_allowlist:
     permissions: "write-only"
 # A list of library overrides
 libraries:
-  - id: "example-library"
+  - id: "secretmanager"
     next_version: "2.3.4"
     generate_blocked: false
     release_blocked: false

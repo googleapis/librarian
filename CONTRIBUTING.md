@@ -34,7 +34,8 @@ can manually re-trigger it by:
 1. Clicking "View details" on the failed workflow to bring you to the "Actions" page.
 2. Clicking "Re-run failed jobs".
 
-For more information, see [Re-running failed jobs in a workflow](https://docs.github.com/en/actions/how-tos/managing-workflow-runs-and-deployments/managing-workflow-runs/re-running-workflows-and-jobs#re-running-failed-jobs-in-a-workflow).
+For more information, see
+[Re-running failed jobs in a workflow](https://docs.github.com/en/actions/how-tos/managing-workflow-runs-and-deployments/managing-workflow-runs/re-running-workflows-and-jobs#re-running-failed-jobs-in-a-workflow).
 
 ## Community Guidelines
 
@@ -107,8 +108,14 @@ accepted.
 
 All issues should have a path prefix to indicate the relevant domain. For
 issues related to the librarian codebase, use the package name as a prefix (for
-example, `librarian:` or `cli:`). For issues related to code outside this
+example, `librarian:` or `cli:`).
+
+For issues related to code outside this
 repository, use the repository name (for example, `google-cloud-python`).
+This repository also contains language-specific container-related code under
+[internal/container](https://github.com/googleapis/librarian/tree/main/internal/container).
+For these issues, use the lowercase language name as a prefix for brevity (for
+example, `java:`).
 
 Aside from proper nouns, issue titles should use lowercase.
 
@@ -117,7 +124,11 @@ should provide enough context for any team member to understand the problem or
 request without needing to contact you directly for clarification.
 
 Default to assigning the issue to someone if there’s a
-clear owner. Otherwise, leave it for triage.
+clear owner. Otherwise, leave it for triage. Issues are triaged daily, Monday through Friday.
+
+If an issue is critical and needs immediate attention, please use the label `critical`. If the issue is high priority, please use the label `needs fix soon`.
+
+If you disagree with the labels applied during triage, please reach out to cloud-sdk-librarian-oncall@google.com.
 
 ## Leaving a TODO
 
@@ -294,7 +305,7 @@ standard process is to [revert it through the GitHub interface](https://docs.git
 To revert a pull request:
 1.  Navigate to the merged pull request on GitHub.
 2.  Click the **Revert** button. This action automatically creates a new branch and a pull request containing the revert commit.
-3.  Edit the pull request title and description to comply with the [commit message guidelines](#commit-messages). 
+3.  Edit the pull request title and description to comply with the [commit message guidelines](#commit-messages).
 4.  The newly created revert pull request should be reviewed and merged following the same process as any other pull request.
 
 Using the GitHub "Revert" button is the preferred method over manually creating a revert commit using `git revert`.
@@ -370,3 +381,52 @@ When reviewing a pull request:
 - The
   [user-review-requested:@me](https://github.com/googleapis/librarian/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A%40me)
   search view is helpful for tracking PRs awaiting your review.
+
+
+### Addressing Urgent Issues
+
+We categorize issues into two primary levels of urgency:
+
+- [critical 🚨](https://github.com/googleapis/librarian/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22%3Arotating_light%3A%20critical%22):
+  requires immediate fix, even outside business hours
+- [needs fix soon ❗](https://github.com/googleapis/librarian/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22%3Aexclamation%3A%20needs%20fix%20soon%22):
+  high priority issue, can be fixed during business hours
+
+When an issue is labeled `critical 🚨`, the priority is to stabilize the system
+enough to downgrade the severity to `needs fix soon ❗`.
+
+### Maintaining a Healthy Main Branch
+
+All pull requests require passing CI checks to be merged.
+
+The main branch must always be stable, and tests should never fail at HEAD. A
+red build on the
+[main branch](https://github.com/googleapis/librarian/commits/main) is a
+critical issue that must be fixed immediately.
+
+If tests become flaky or the main branch is not consistently green, the team's top priority
+should shift to restoring stability. All feature development should be
+deprioritized until green builds can be guaranteed.
+
+When you see a red x next to a commit on main, file an issue on your GitHub
+issue tracker, and label it `critical 🚨`.
+
+Create a PR to temporarily skip the test, and verify that you have a green
+checkmark next to the commit on your main branch.  The issue can now be
+downgraded to `needs fix soon ❗`.
+
+### Running Tests Locally
+
+Running `go test ./...` on a fresh clone of this repository should always pass,
+without requiring anything besides `go` installed. Tests that depend on other
+tools or services (e.g., docker, protoc, etc.) should be skipped when those
+tools are not available in the development environment. See
+[doc/onboarding.md](https://github.com/googleapis/librarian/blob/main/doc/onboarding.md)
+for information on how to configure your development environment.
+
+### Handling Dependency Updates
+
+We only update dependencies for security vulnerabilities, bug fixes, or to add
+feature support. Security vulnerabilities are identified using Dependabot and 
+govulncheck. Dependency updates for bug fixes or new features must be associated 
+with an issue in this repository.
