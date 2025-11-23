@@ -126,7 +126,7 @@ func TestRunGenerate(t *testing.T) {
 			cmdArgs := []string{
 				"run",
 				"-tags", mockGithubTag,
-				"github.com/googleapis/librarian/cmd/librarian",
+				"github.com/googleapis/librarian/cmd/legacylibrarian",
 				"generate",
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
@@ -216,7 +216,7 @@ func TestCleanAndCopy(t *testing.T) {
 		"go",
 		"run",
 		"-tags", mockGithubTag,
-		"github.com/googleapis/librarian/cmd/librarian",
+		"github.com/googleapis/librarian/cmd/legacylibrarian",
 		"generate",
 		fmt.Sprintf("--api=%s", apiToGenerate),
 		fmt.Sprintf("--output=%s", workRoot),
@@ -295,7 +295,7 @@ func TestRunConfigure(t *testing.T) {
 			cmd := exec.Command(
 				"go",
 				"run",
-				"github.com/googleapis/librarian/cmd/librarian",
+				"github.com/googleapis/librarian/cmd/legacylibrarian",
 				"generate",
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
@@ -398,7 +398,7 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 			cmd := exec.Command(
 				"go",
 				"run",
-				"github.com/googleapis/librarian/cmd/librarian",
+				"github.com/googleapis/librarian/cmd/legacylibrarian",
 				"generate",
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
@@ -531,7 +531,7 @@ func TestReleaseStage(t *testing.T) {
 			cmdArgs := []string{
 				"run",
 				"-tags", mockGithubTag,
-				"github.com/googleapis/librarian/cmd/librarian",
+				"github.com/googleapis/librarian/cmd/legacylibrarian",
 				"release",
 				"stage",
 				fmt.Sprintf("--repo=%s", repo),
@@ -733,7 +733,7 @@ libraries:
 			}
 			cmdArgs := []string{
 				"run",
-				"github.com/googleapis/librarian/cmd/librarian",
+				"github.com/googleapis/librarian/cmd/legacylibrarian",
 				"release",
 				"tag",
 				fmt.Sprintf("--repo=%s", repo),
