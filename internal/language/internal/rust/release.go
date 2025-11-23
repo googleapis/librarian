@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package rust provides Rust specific functionality for sideflip.
+// Package rust provides Rust specific functionality for librarian.
 package rust
 
 import (
