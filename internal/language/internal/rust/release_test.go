@@ -27,6 +27,7 @@ import (
 
 func TestBumpVersions(t *testing.T) {
 	cmdtest.RequireCommand(t, "cargo")
+	cmdtest.RequireCommand(t, "taplo")
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
