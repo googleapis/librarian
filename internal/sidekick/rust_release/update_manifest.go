@@ -73,10 +73,10 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	return []string{info.Package.Name}, nil
 }
 
-// UpdateCargoVersion updates the version in a Cargo.toml file.
-// It uses a line-based approach to preserve comments and formatting, which is
-// important because some Cargo.toml files are hand-crafted and contain comments
-// that must be preserved.
+// UpdateCargoVersion updates the version in a Cargo.toml file. It uses a
+// line-based approach to preserve comments and formatting, which is important
+// because some Cargo.toml files are hand-crafted and contain comments that
+// must be preserved.
 func UpdateCargoVersion(path, newVersion string) error {
 	contents, err := os.ReadFile(path)
 	if err != nil {
