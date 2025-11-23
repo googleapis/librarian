@@ -40,7 +40,6 @@ version = "1.0.0"
 func TestBumpVersionsSuccess(t *testing.T) {
 	requireCommand(t, "/bin/echo")
 	requireCommand(t, "git")
-	requireCommand(t, "taplo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -70,7 +69,6 @@ func TestBumpVersionsSuccess(t *testing.T) {
 func TestBumpVersionsNoCargoTools(t *testing.T) {
 	requireCommand(t, "git")
 	requireCommand(t, "/bin/echo")
-	requireCommand(t, "taplo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -100,7 +98,6 @@ func TestBumpVersionsNoCargoTools(t *testing.T) {
 func TestBumpVersionsNoSemverChecks(t *testing.T) {
 	requireCommand(t, "/bin/echo")
 	requireCommand(t, "git")
-	requireCommand(t, "taplo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
