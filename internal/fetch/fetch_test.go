@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -201,14 +202,11 @@ func TestTarballLink(t *testing.T) {
 
 func TestDownloadTarballTgzExists(t *testing.T) {
 	testDir := t.TempDir()
-
 	tarball := makeTestContents(t)
-
 	target := path.Join(testDir, "existing-file")
 	if err := os.WriteFile(target, tarball.Contents, 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	if err := DownloadTarball(target, "https://unused/placeholder.tar.gz", tarball.Sha256); err != nil {
 		t.Fatal(err)
 	}
@@ -216,9 +214,7 @@ func TestDownloadTarballTgzExists(t *testing.T) {
 
 func TestDownloadTarballNeedsDownload(t *testing.T) {
 	testDir := t.TempDir()
-
 	tarball := makeTestContents(t)
-
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/placeholder.tar.gz" {
 			t.Errorf("Expected to request '/placeholder.tar.gz', got: %s", r.URL.Path)
@@ -238,6 +234,27 @@ func TestDownloadTarballNeedsDownload(t *testing.T) {
 	}
 	if diff := cmp.Diff(tarball.Contents, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestDownloadTarballChecksumMismatch(t *testing.T) {
+	testDir := t.TempDir()
+	tarball := makeTestContents(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(tarball.Contents)
+	}))
+	defer server.Close()
+
+	target := path.Join(testDir, "target-file")
+	wrongSha := "0000000000000000000000000000000000000000000000000000000000000000"
+
+	err := DownloadTarball(target, server.URL+"/test.tar.gz", wrongSha)
+	if !errors.Is(err, errChecksumMismatch) {
+		t.Fatalf("expected errChecksumMismatch, got: %v", err)
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Errorf("target file should not exist after checksum failure: %v", err)
 	}
 }
 
