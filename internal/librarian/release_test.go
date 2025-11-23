@@ -67,9 +67,7 @@ func TestReleaseCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			if err := t.Chdir(tempDir); err != nil {
-				t.Fatal(err)
-			}
+			t.Chdir(tempDir)
 
 			configPath := filepath.Join(tempDir, librarianConfigPath)
 			configContent := fmt.Sprintf(`language: testhelper
