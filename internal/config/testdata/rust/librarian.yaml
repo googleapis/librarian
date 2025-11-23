@@ -15,7 +15,8 @@ version: v1
 language: rust
 sources:
   googleapis:
-    commit: a17b84add8318f780fcc8a027815d5fee644b9f7
+    commit: 9fcfbea0aa5b50fa22e190faceb073d74504172b
+    sha256: 81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98
 default:
   output: src/generated/
   generate:

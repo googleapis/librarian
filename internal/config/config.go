@@ -63,6 +63,9 @@ type Sources struct {
 type Source struct {
 	// Commit is the git commit hash or tag to use.
 	Commit string `yaml:"commit"`
+
+	// SHA256 is the expected SHA256 hash of the tarball for this commit.
+	SHA256 string `yaml:"sha256"`
 }
 
 // Default contains default generation settings.
