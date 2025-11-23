@@ -15,8 +15,15 @@
 package fetch
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"crypto/sha256"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -190,4 +197,142 @@ func TestTarballLink(t *testing.T) {
 			t.Errorf("TarballLink() = %q, want %q", got, test.want)
 		}
 	}
+}
+
+func TestDownloadTarballTgzExists(t *testing.T) {
+	testDir := t.TempDir()
+
+	tarball := makeTestContents(t)
+
+	target := path.Join(testDir, "existing-file")
+	if err := os.WriteFile(target, tarball.Contents, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := DownloadTarball(target, "https://unused/placeholder.tar.gz", tarball.Sha256); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDownloadTarballNeedsDownload(t *testing.T) {
+	testDir := t.TempDir()
+
+	tarball := makeTestContents(t)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/placeholder.tar.gz" {
+			t.Errorf("Expected to request '/placeholder.tar.gz', got: %s", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(tarball.Contents)
+	}))
+	defer server.Close()
+
+	expected := path.Join(testDir, "new-file")
+	if err := DownloadTarball(expected, server.URL+"/placeholder.tar.gz", tarball.Sha256); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(expected)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(tarball.Contents, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+type contents struct {
+	Sha256   string
+	Contents []byte
+}
+
+func makeTestContents(t *testing.T) *contents {
+	t.Helper()
+
+	hasher := sha256.New()
+	var data []byte
+	for i := range 10 {
+		line := []byte(fmt.Sprintf("%08d the quick brown fox jumps over the lazy dog\n", i))
+		data = append(data, line...)
+		hasher.Write(line)
+	}
+
+	return &contents{
+		Sha256:   fmt.Sprintf("%x", hasher.Sum(nil)),
+		Contents: data,
+	}
+}
+
+func TestExtractTarball(t *testing.T) {
+	tarballData := createTestTarball(t, "repo-abc123", map[string]string{
+		"README.md":     "# Test Repo",
+		"src/main.go":   "package main",
+		"docs/guide.md": "# Guide",
+	})
+
+	tarballPath := path.Join(t.TempDir(), "test.tar.gz")
+	if err := os.WriteFile(tarballPath, tarballData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	destDir := t.TempDir()
+	if err := ExtractTarball(tarballPath, destDir); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{"README", "README.md", "# Test Repo"},
+		{"main.go", "src/main.go", "package main"},
+		{"guide", "docs/guide.md", "# Guide"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := os.ReadFile(path.Join(destDir, test.path))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+
+	// Verify that the top-level directory itself was not created.
+	if _, err := os.Stat(path.Join(destDir, "repo-abc123")); err == nil {
+		t.Error("top-level directory should not be created")
+	}
+}
+
+func createTestTarball(t *testing.T, topLevelDir string, files map[string]string) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+
+	for filePath, content := range files {
+		fullPath := topLevelDir + "/" + filePath
+		hdr := &tar.Header{
+			Name: fullPath,
+			Mode: 0644,
+			Size: int64(len(content)),
+		}
+		if err := tw.WriteHeader(hdr); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write([]byte(content)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
 }

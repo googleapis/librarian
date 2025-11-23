@@ -38,8 +38,8 @@ version = "1.0.0"
 )
 
 func TestBumpVersionsSuccess(t *testing.T) {
-	requireCommand(t, "git")
 	requireCommand(t, "/bin/echo")
+	requireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -96,8 +96,8 @@ func TestBumpVersionsNoCargoTools(t *testing.T) {
 }
 
 func TestBumpVersionsNoSemverChecks(t *testing.T) {
-	requireCommand(t, "git")
 	requireCommand(t, "/bin/echo")
+	requireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",

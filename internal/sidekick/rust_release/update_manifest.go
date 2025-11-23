@@ -60,19 +60,11 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if !info.Package.Publish {
 		return nil, nil
 	}
-	newVersion, err := bumpPackageVersion(info.Package.Version)
+	newVersion, err := BumpPackageVersion(info.Package.Version)
 	if err != nil {
 		return nil, err
 	}
-	lines := strings.Split(string(contents), "\n")
-	idx := slices.IndexFunc(lines, func(a string) bool { return strings.HasPrefix(a, "version ") })
-	if idx == -1 {
-		return nil, fmt.Errorf("expected a line starting with `version ` in %v", lines)
-	}
-	// The number of spaces may seem weird. They match the number of spaces in
-	// the mustache template.
-	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion)
-	if err := os.WriteFile(manifest, []byte(strings.Join(lines, "\n")), 0644); err != nil {
+	if err := UpdateCargoVersion(manifest, newVersion); err != nil {
 		return nil, err
 	}
 	if err := updateSidekickConfig(manifest, newVersion); err != nil {
@@ -81,7 +73,29 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	return []string{info.Package.Name}, nil
 }
 
-func bumpPackageVersion(version string) (string, error) {
+// UpdateCargoVersion updates the version in a Cargo.toml file. It uses a
+// line-based approach to preserve comments and formatting, which is important
+// because some Cargo.toml files are hand-crafted and contain comments that
+// must be preserved.
+func UpdateCargoVersion(path, newVersion string) error {
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(string(contents), "\n")
+	idx := slices.IndexFunc(lines, func(a string) bool { return strings.HasPrefix(a, "version ") })
+	if idx == -1 {
+		return fmt.Errorf("expected a line starting with `version ` in %v", lines)
+	}
+	// The number of spaces may seem weird. They match the number of spaces in
+	// the mustache template.
+	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion)
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
+}
+
+// BumpPackageVersion increments the minor version and resets the patch version.
+func BumpPackageVersion(version string) (string, error) {
 	components := strings.SplitN(version, ".", 3)
 	if len(components) != 3 {
 		return version, nil

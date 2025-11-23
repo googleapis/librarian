@@ -16,11 +16,16 @@
 package fetch
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Endpoints defines the endpoints used to access GitHub.
@@ -106,4 +111,136 @@ func LatestSha(query string) (string, error) {
 // repository and commit SHA.
 func TarballLink(githubDownload string, repo *Repo, sha string) string {
 	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Repo, sha)
+}
+
+// DownloadTarball downloads a tarball from the given source URL to the target path,
+// verifying its SHA256 checksum matches expectedSha256. It retries up to 3 times
+// with exponential backoff on failure.
+func DownloadTarball(target, source, expectedSha256 string) error {
+	if fileExists(target) {
+		return nil
+	}
+	var err error
+	backoff := 10 * time.Second
+	for i := range 3 {
+		if i != 0 {
+			time.Sleep(backoff)
+			backoff = 2 * backoff
+		}
+		if err = downloadAttempt(target, source, expectedSha256); err == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("download failed after 3 attempts, last error=%w", err)
+}
+
+func downloadAttempt(target, source, expectedSha256 string) (err error) {
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		return err
+	}
+	tempFile, err := os.CreateTemp(filepath.Dir(target), "temp-")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cerr := tempFile.Close()
+		if err == nil {
+			err = cerr
+		}
+		if err != nil {
+			os.Remove(tempFile.Name())
+		}
+	}()
+
+	hasher := sha256.New()
+	writer := io.MultiWriter(tempFile, hasher)
+
+	client := http.Client{Timeout: 60 * time.Second}
+	response, err := client.Get(source)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode >= 300 {
+		return fmt.Errorf("http error in download %s", response.Status)
+	}
+
+	if _, err := io.Copy(writer, response.Body); err != nil {
+		return err
+	}
+
+	got := fmt.Sprintf("%x", hasher.Sum(nil))
+	if expectedSha256 != got {
+		return fmt.Errorf("mismatched hash on download, expected=%s, got=%s", expectedSha256, got)
+	}
+	return os.Rename(tempFile.Name(), target)
+}
+
+func fileExists(name string) bool {
+	stat, err := os.Stat(name)
+	if err != nil {
+		return false
+	}
+	return stat.Mode().IsRegular()
+}
+
+// ExtractTarball extracts a gzipped tarball to the specified directory,
+// stripping the top-level directory prefix that GitHub adds to tarballs.
+func ExtractTarball(tarballPath, destDir string) error {
+	f, err := os.Open(tarballPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	gzr, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		// When GitHub creates a tarball archive of a repository, it wraps all
+		// the files in a top-level directory named in the format
+		// "{repo}-{commit}/". Remove the GitHub top-level "repo-<commit>/"
+		// prefix.
+		name := hdr.Name
+		parts := strings.SplitN(name, "/", 2)
+		if len(parts) == 2 {
+			name = parts[1]
+		} else {
+			continue
+		}
+
+		target := filepath.Join(destDir, name)
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, 0755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return err
+			}
+
+			out, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.FileMode(hdr.Mode))
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(out, tr); err != nil {
+				out.Close()
+				return err
+			}
+			out.Close()
+		}
+	}
 }

@@ -15,18 +15,15 @@
 package sidekick
 
 import (
-	"crypto/sha256"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	cmd "github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -57,7 +54,7 @@ func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, err
 		return target, nil
 	}
 	tgz := target + ".tar.gz"
-	if err := downloadSourceRoot(tgz, sourceRoot, source); err != nil {
+	if err := fetch.DownloadTarball(tgz, sourceRoot, source); err != nil {
 		return "", err
 	}
 
@@ -82,71 +79,6 @@ func extractedName(rootConfig *config.Config, googleapisRoot, configPrefix strin
 		return name
 	}
 	return "googleapis-" + filepath.Base(strings.TrimSuffix(googleapisRoot, ".tar.gz"))
-}
-
-func downloadSourceRoot(target, source, sha256 string) error {
-	if fileExists(target) {
-		return nil
-	}
-	var err error
-	backoff := 10 * time.Second
-	for i := range 3 {
-		if i != 0 {
-			time.Sleep(backoff)
-			backoff = 2 * backoff
-		}
-		if err = downloadAttempt(target, source, sha256); err == nil {
-			return nil
-		}
-	}
-	return fmt.Errorf("download failed after 3 attempts, last error=%w", err)
-}
-
-func downloadAttempt(target, source, expectedSha256 string) error {
-	if err := os.MkdirAll(filepath.Dir(target), 0777); err != nil {
-		return err
-	}
-	tempFile, err := os.CreateTemp(filepath.Dir(target), "temp-")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		tempFile.Close()
-		os.Remove(tempFile.Name())
-	}()
-
-	hasher := sha256.New()
-	writer := io.MultiWriter(tempFile, hasher)
-
-	response, err := http.Get(source)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if response.StatusCode >= 300 {
-		return fmt.Errorf("http error in download %s", response.Status)
-	}
-
-	if _, err := io.Copy(writer, response.Body); err != nil {
-		return err
-	}
-	if err := tempFile.Close(); err != nil {
-		return err
-	}
-
-	got := fmt.Sprintf("%x", hasher.Sum(nil))
-	if expectedSha256 != got {
-		return fmt.Errorf("mismatched hash on download, expected=%s, got=%s", expectedSha256, got)
-	}
-	return os.Rename(tempFile.Name(), target)
-}
-
-func fileExists(name string) bool {
-	stat, err := os.Stat(name)
-	if err != nil {
-		return false
-	}
-	return stat.Mode().IsRegular()
 }
 
 func isDirectory(name string) bool {
