@@ -37,7 +37,8 @@ type cargoManifest struct {
 }
 
 // BumpVersions bumps versions for all Cargo.toml files and updates
-// librarian.yaml. If name is non-empty, only bumps the version for that library.
+// librarian.yaml. If name is non-empty, only bumps the version for that
+// library.
 func BumpVersions(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
 	if cfg.Versions == nil {
 		cfg.Versions = make(map[string]string)
@@ -51,7 +52,6 @@ func BumpVersions(ctx context.Context, cfg *config.Config, name string) (*config
 		if d.IsDir() || d.Name() != "Cargo.toml" {
 			return nil
 		}
-
 		contents, err := os.ReadFile(path)
 		if err != nil {
 			return err
@@ -64,7 +64,6 @@ func BumpVersions(ctx context.Context, cfg *config.Config, name string) (*config
 		if manifest.Package == nil {
 			return nil
 		}
-
 		if name != "" && manifest.Package.Name != name {
 			return nil
 		}
@@ -80,10 +79,10 @@ func BumpVersions(ctx context.Context, cfg *config.Config, name string) (*config
 		cfg.Versions[manifest.Package.Name] = newVersion
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
+
 	if name != "" && !found {
 		return nil, fmt.Errorf("library %q not found", name)
 	}
