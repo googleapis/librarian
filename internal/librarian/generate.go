@@ -49,7 +49,6 @@ func generateCommand() *cli.Command {
 func runGenerate(ctx context.Context, cmd *cli.Command) error {
 	all := cmd.Bool("all")
 	libraryName := cmd.Args().First()
-
 	if !all && libraryName == "" {
 		return errMissingLibraryOrAllFlag
 	}
@@ -61,7 +60,6 @@ func runGenerate(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-
 	if all {
 		var errs []error
 		for _, lib := range cfg.Libraries {
