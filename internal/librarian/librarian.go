@@ -23,6 +23,8 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+const librarianConfigPath = "librarian.yaml"
+
 // Run executes the librarian command with the given arguments.
 func Run(ctx context.Context, args ...string) error {
 	cmd := &cli.Command{
@@ -32,6 +34,7 @@ func Run(ctx context.Context, args ...string) error {
 		Version:   Version(),
 		Commands: []*cli.Command{
 			versionCommand(),
+			generateCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)
