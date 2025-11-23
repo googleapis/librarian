@@ -25,7 +25,7 @@ import (
 func Generate(ctx context.Context, language string, library *config.Library) error {
 	switch language {
 	case "testhelper":
-		return testGenerate(ctx, library)
+		return testGenerate(library)
 	default:
 		return fmt.Errorf("generate not implemented for %q", language)
 	}

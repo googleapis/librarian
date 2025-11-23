@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func testGenerate(ctx context.Context, library *config.Library) error {
+func testGenerate(library *config.Library) error {
 	if err := os.MkdirAll(library.Output, 0755); err != nil {
 		return err
 	}
