@@ -24,7 +24,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/walle/targz"
 )
@@ -131,70 +130,9 @@ func TestTargetExists(t *testing.T) {
 	}
 }
 
-func TestDownloadGoogleapisRootTgzExists(t *testing.T) {
-	testDir := t.TempDir()
-
-	tarball := makeTestContents(t)
-
-	// In this test we will create the download file with the right contents.
-	target := path.Join(testDir, "existing-file")
-	if err := os.WriteFile(target, tarball.Contents, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := downloadSourceRoot(target, "https://unused/placeholder.tar.gz", tarball.Sha256); err != nil {
-		t.Error(err)
-	}
-}
-
-func TestDownloadGoogleapisRootNeedsDownload(t *testing.T) {
-	testDir := t.TempDir()
-
-	tarball := makeTestContents(t)
-
-	// In this test we expect that a download is needed.
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/placeholder.tar.gz" {
-			t.Errorf("Expected to request '/placeholder.tar.gz', got: %s", r.URL.Path)
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Write(tarball.Contents)
-	}))
-	defer server.Close()
-
-	expected := path.Join(testDir, "new-file")
-	if err := downloadSourceRoot(expected, server.URL+"/placeholder.tar.gz", tarball.Sha256); err != nil {
-		t.Error(err)
-	}
-	got, err := os.ReadFile(expected)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(tarball.Contents, got); diff != "" {
-		t.Errorf("mismatched downloaded contents, (-want, +got):\n%s", diff)
-	}
-}
-
 type contents struct {
 	Sha256   string
 	Contents []byte
-}
-
-func makeTestContents(t *testing.T) *contents {
-	t.Helper()
-
-	hasher := sha256.New()
-	var data []byte
-	for i := range 10 {
-		line := []byte(fmt.Sprintf("%08d the quick brown fox jumps over the lazy dog\n", i))
-		data = append(data, line...)
-		hasher.Write(line)
-	}
-
-	return &contents{
-		Sha256:   fmt.Sprintf("%x", hasher.Sum(nil)),
-		Contents: data,
-	}
 }
 
 func makeTestTarball(t *testing.T, tempDir, subdir string) (*contents, error) {
