@@ -23,10 +23,19 @@ import (
 
 // Generate generates a single library for the specified language.
 func Generate(ctx context.Context, language string, library *config.Library) error {
+	var err error
 	switch language {
 	case "testhelper":
-		return testGenerate(library)
+		err = testGenerate(library)
 	default:
-		return fmt.Errorf("generate not implemented for %q", language)
+		err = fmt.Errorf("generate not implemented for %q", language)
 	}
+
+	if err != nil {
+		fmt.Printf("✗ Error generating %s: %v\n", library.Name, err)
+		return err
+	}
+
+	fmt.Printf("✓ Successfully generated %s\n", library.Name)
+	return nil
 }

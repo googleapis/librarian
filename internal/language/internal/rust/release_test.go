@@ -92,7 +92,7 @@ func checkCargoVersion(t *testing.T, path, wantVersion string) {
 		t.Fatal(err)
 	}
 
-	want := fmt.Sprintf(`version = '%s'`, wantVersion)
+	want := fmt.Sprintf(`version                = "%s"`, wantVersion)
 	if !contains(string(contents), want) {
 		t.Errorf("%s does not contain %q\nGot:\n%s", path, want, string(contents))
 	}

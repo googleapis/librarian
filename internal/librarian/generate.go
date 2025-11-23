@@ -63,10 +63,14 @@ func runGenerate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if all {
+		var errs []error
 		for _, lib := range cfg.Libraries {
 			if err := language.Generate(ctx, cfg.Language, lib); err != nil {
-				return err
+				errs = append(errs, err)
 			}
+		}
+		if len(errs) > 0 {
+			return errors.Join(errs...)
 		}
 	} else {
 		var library *config.Library
@@ -83,5 +87,5 @@ func runGenerate(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
-	return cfg.Write(librarianConfigPath)
+	return nil
 }
