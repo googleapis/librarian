@@ -77,12 +77,15 @@ versions:
 			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := Run(t.Context(), test.args...); err != nil {
-				if errors.Is(err, test.wantErr) {
-					return
-				}
-				t.Fatal(err)
+
+			err := Run(t.Context(), test.args...)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("Run() error = %v, wantErr %v", err, test.wantErr)
 			}
+			if test.wantErr != nil {
+				return
+			}
+
 			if test.wantVersions != nil {
 				cfg, err := config.Read(configPath)
 				if err != nil {
