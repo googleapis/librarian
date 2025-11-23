@@ -16,7 +16,6 @@ package fetch
 
 import (
 	"archive/tar"
-	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
 	"fmt"
@@ -24,6 +23,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -309,12 +309,12 @@ func TestExtractTarball(t *testing.T) {
 func createTestTarball(t *testing.T, topLevelDir string, files map[string]string) []byte {
 	t.Helper()
 
-	var buf bytes.Buffer
+	var buf strings.Builder
 	gw := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gw)
 
-	for filePath, content := range files {
-		fullPath := topLevelDir + "/" + filePath
+	for path, content := range files {
+		fullPath := topLevelDir + "/" + path
 		hdr := &tar.Header{
 			Name: fullPath,
 			Mode: 0644,
@@ -334,5 +334,5 @@ func createTestTarball(t *testing.T, topLevelDir string, files map[string]string
 	if err := gw.Close(); err != nil {
 		t.Fatal(err)
 	}
-	return buf.Bytes()
+	return []byte(buf.String())
 }

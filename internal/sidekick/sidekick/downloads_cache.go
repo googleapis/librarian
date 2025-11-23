@@ -19,10 +19,8 @@ import (
 	"log/slog"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
-	cmd "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
@@ -58,19 +56,11 @@ func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, err
 		return "", err
 	}
 
-	if err := extractTarball(tgz, cacheDir); err != nil {
-		slog.Error("error extracting .tar.gz file", "file", tgz, "cacheDir", cacheDir, "error", err)
-		return "", err
-	}
-	dirname := extractedName(rootConfig, sourceRoot, configPrefix)
-	if err := os.Rename(path.Join(cacheDir, dirname), target); err != nil {
+	if err := fetch.ExtractTarball(tgz, target); err != nil {
+		slog.Error("error extracting .tar.gz file", "file", tgz, "target", target, "error", err)
 		return "", err
 	}
 	return target, nil
-}
-
-func extractTarball(source, destination string) error {
-	return cmd.Run("tar", "-zxf", source, "-C", destination)
 }
 
 func extractedName(rootConfig *config.Config, googleapisRoot, configPrefix string) string {
@@ -78,7 +68,7 @@ func extractedName(rootConfig *config.Config, googleapisRoot, configPrefix strin
 	if ok {
 		return name
 	}
-	return "googleapis-" + filepath.Base(strings.TrimSuffix(googleapisRoot, ".tar.gz"))
+	return "googleapis-" + path.Base(strings.TrimSuffix(googleapisRoot, ".tar.gz"))
 }
 
 func isDirectory(name string) bool {
