@@ -159,6 +159,9 @@ type Library struct {
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 
+	// ServiceConfig is the path to the service config file.
+	ServiceConfig string `yaml:"-"`
+
 	// Transport overrides the default transport.
 	Transport string `yaml:"transport,omitempty"`
 

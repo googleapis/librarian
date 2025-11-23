@@ -12,32 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package language
+package rust
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/language/internal/rust"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
+	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 )
 
-// Generate generates a single library for the specified language.
-func Generate(ctx context.Context, language string, library *config.Library, googleapisDir string) error {
-	var err error
-	switch language {
-	case "testhelper":
-		err = testGenerate(library)
-	case "rust":
-		err = rust.Generate(ctx, library, googleapisDir)
-	default:
-		err = fmt.Errorf("generate not implemented for %q", language)
-	}
-
+// Generate generates a Rust client library.
+func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+	sidekickConfig := toSidekickConfig(library, googleapisDir, library.ServiceConfig)
+	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
-		fmt.Printf("✗ Error generating %s: %v\n", library.Name, err)
 		return err
 	}
-	fmt.Printf("✓ Successfully generated %s\n", library.Name)
-	return nil
+	return sidekickrust.Generate(model, library.Output, sidekickConfig)
 }

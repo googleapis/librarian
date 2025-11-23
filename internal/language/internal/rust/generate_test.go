@@ -12,43 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package language
+package rust
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	cmdtest "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestGenerate(t *testing.T) {
-	const (
-		libraryName = "test-library"
-		outputDir   = "output"
-	)
-
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-
-	library := &config.Library{
-		Name:   libraryName,
-		Output: outputDir,
-	}
-
-	if err := Generate(t.Context(), "testhelper", library, ""); err != nil {
-		t.Fatal(err)
-	}
-
-	readmePath := filepath.Join(outputDir, "README.md")
-	content, err := os.ReadFile(readmePath)
+	cmdtest.RequireCommand(t, "protoc")
+	testdataDir, err := filepath.Abs("../../../sidekick/testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want := "# test-library\n\nGenerated library\n"
-	if diff := cmp.Diff(want, string(content)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	outDir := t.TempDir()
+	googleapisDir := filepath.Join(testdataDir, "googleapis")
+	library := &config.Library{
+		Name:          "secretmanager",
+		Output:        outDir,
+		ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+		Channel:       "google/cloud/secretmanager/v1",
+		Version:       "0.1.0",
+		ReleaseLevel:  "preview",
+		CopyrightYear: "2025",
+	}
+	if err := Generate(t.Context(), library, googleapisDir); err != nil {
+		t.Fatal(err)
 	}
 }
