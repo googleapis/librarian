@@ -134,7 +134,7 @@ func DownloadTarball(target, url, expectedSha256 string) error {
 	defer func() {
 		tempFile.Close()
 		cerr := os.Remove(tempPath)
-		if err == nil {
+		if err == nil && cerr != nil && !os.IsNotExist(cerr) {
 			err = cerr
 		}
 	}()
