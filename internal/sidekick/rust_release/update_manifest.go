@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -46,7 +45,6 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if !needsBump {
 		return nil, nil
 	}
-
 	contents, err := os.ReadFile(manifest)
 	if err != nil {
 		return nil, err
@@ -62,7 +60,6 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if !info.Package.Publish {
 		return nil, nil
 	}
-
 	newVersion, err := BumpPackageVersion(info.Package.Version)
 	if err != nil {
 		return nil, err
@@ -76,40 +73,25 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	return []string{info.Package.Name}, nil
 }
 
-// UpdateCargoVersion updates the version in a Cargo.toml file and formats it with taplo.
+// UpdateCargoVersion updates the version in a Cargo.toml file.
+// It uses a line-based approach to preserve comments and formatting, which is
+// important because some Cargo.toml files are hand-crafted and contain comments
+// that must be preserved.
 func UpdateCargoVersion(path, newVersion string) error {
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	info := cargo{
-		Package: &crateInfo{
-			Publish: true,
-		},
+	lines := strings.Split(string(contents), "\n")
+	idx := slices.IndexFunc(lines, func(a string) bool { return strings.HasPrefix(a, "version ") })
+	if idx == -1 {
+		return fmt.Errorf("expected a line starting with `version ` in %v", lines)
 	}
-	if err := toml.Unmarshal(contents, &info); err != nil {
-		return err
-	}
-	if info.Package == nil {
-		return nil
-	}
-	if info.Package.Version == "" {
-		return fmt.Errorf("no version found in %s", path)
-	}
-
-	info.Package.Version = newVersion
-	updated, err := toml.Marshal(&info)
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(path, updated, 0644); err != nil {
-		return err
-	}
-	if err := command.Run("taplo", "fmt", path); err != nil {
-		return fmt.Errorf("failed to format %s: %w", path, err)
-	}
-	return nil
+	// The number of spaces may seem weird. They match the number of spaces in
+	// the mustache template.
+	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion)
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
 }
 
 // BumpPackageVersion increments the minor version and resets the patch version.
