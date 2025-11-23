@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command sideflip creates, generates, and release client libraries.
 package main
 
 import (
@@ -20,12 +19,12 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/legacylibrarian/legacylibrarian"
 )
 
 func main() {
 	ctx := context.Background()
-	if err := librarian.Run(ctx, os.Args[1:]...); err != nil {
+	if err := legacylibrarian.Run(ctx, os.Args[1:]...); err != nil {
 		slog.Error("librarian command failed", "err", err)
 		os.Exit(1)
 	}
