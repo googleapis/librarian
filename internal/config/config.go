@@ -65,7 +65,7 @@ type Source struct {
 	Commit string `yaml:"commit"`
 
 	// SHA256 is the expected SHA256 hash of the tarball for this commit.
-	SHA256 string `yaml:"sha256"`
+	SHA256 string `yaml:"sha256,omitempty"`
 }
 
 // Default contains default generation settings.
