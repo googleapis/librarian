@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command sideflip creates, generates, and release client libraries.
+// Command librarian creates, generates, and release client libraries.
 package main
 
 import (
