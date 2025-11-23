@@ -30,6 +30,7 @@ import (
 func TestUpdateManifestSuccess(t *testing.T) {
 	const tag = "update-manifest-success"
 	requireCommand(t, "git")
+	requireCommand(t, "taplo")
 	setupForVersionBump(t, tag)
 	release := config.Release{
 		Remote:       "origin",
