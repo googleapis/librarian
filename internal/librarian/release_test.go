@@ -67,7 +67,7 @@ func TestReleaseCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			if err := os.Chdir(tempDir); err != nil {
+			if err := t.Chdir(tempDir); err != nil {
 				t.Fatal(err)
 			}
 
