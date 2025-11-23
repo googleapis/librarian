@@ -132,8 +132,8 @@ func DownloadTarball(target, source, expectedSha256 string) error {
 	return fmt.Errorf("download failed after 3 attempts, last error=%w", err)
 }
 
-func downloadAttempt(target, source, expectedSha256 string) error {
-	if err := os.MkdirAll(filepath.Dir(target), 0777); err != nil {
+func downloadAttempt(target, source, expectedSha256 string) (err error) {
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 		return err
 	}
 	tempFile, err := os.CreateTemp(filepath.Dir(target), "temp-")
@@ -141,14 +141,20 @@ func downloadAttempt(target, source, expectedSha256 string) error {
 		return err
 	}
 	defer func() {
-		tempFile.Close()
-		os.Remove(tempFile.Name())
+		cerr := tempFile.Close()
+		if err == nil {
+			err = cerr
+		}
+		if err != nil {
+			os.Remove(tempFile.Name())
+		}
 	}()
 
 	hasher := sha256.New()
 	writer := io.MultiWriter(tempFile, hasher)
 
-	response, err := http.Get(source)
+	client := http.Client{Timeout: 60 * time.Second}
+	response, err := client.Get(source)
 	if err != nil {
 		return err
 	}
@@ -158,9 +164,6 @@ func downloadAttempt(target, source, expectedSha256 string) error {
 	}
 
 	if _, err := io.Copy(writer, response.Body); err != nil {
-		return err
-	}
-	if err := tempFile.Close(); err != nil {
 		return err
 	}
 
