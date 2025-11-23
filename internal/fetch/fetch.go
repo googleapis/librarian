@@ -16,6 +16,8 @@
 package fetch
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -180,4 +182,65 @@ func fileExists(name string) bool {
 		return false
 	}
 	return stat.Mode().IsRegular()
+}
+
+// ExtractTarball extracts a gzipped tarball to the specified directory,
+// stripping the top-level directory prefix that GitHub adds to tarballs.
+func ExtractTarball(tarballPath, destDir string) error {
+	f, err := os.Open(tarballPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	gzr, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		// When GitHub creates a tarball archive of a repository, it wraps all
+		// the files in a top-level directory named in the format
+		// "{repo}-{commit}/". Remove the GitHub top-level "repo-<commit>/"
+		// prefix.
+		name := hdr.Name
+		parts := strings.SplitN(name, "/", 2)
+		if len(parts) == 2 {
+			name = parts[1]
+		} else {
+			continue
+		}
+
+		target := filepath.Join(destDir, name)
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, 0755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return err
+			}
+
+			out, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.FileMode(hdr.Mode))
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(out, tr); err != nil {
+				out.Close()
+				return err
+			}
+			out.Close()
+		}
+	}
 }
