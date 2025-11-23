@@ -16,7 +16,6 @@
 package rust
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -36,10 +35,17 @@ type cargoManifest struct {
 	Package *cargoPackage `toml:"package"`
 }
 
-// BumpVersions bumps versions for all Cargo.toml files and updates
-// librarian.yaml. If name is non-empty, only bumps the version for that
-// library.
-func BumpVersions(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
+// ReleaseAll bumps versions for all Cargo.toml files and updates librarian.yaml.
+func ReleaseAll(cfg *config.Config) (*config.Config, error) {
+	return release(cfg, "")
+}
+
+// ReleaseOne bumps the version for a specific library and updates librarian.yaml.
+func ReleaseOne(cfg *config.Config, name string) (*config.Config, error) {
+	return release(cfg, name)
+}
+
+func release(cfg *config.Config, name string) (*config.Config, error) {
 	if cfg.Versions == nil {
 		cfg.Versions = make(map[string]string)
 	}

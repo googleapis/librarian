@@ -16,26 +16,23 @@ package language
 
 import (
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/language/internal/rust"
 )
 
-// TestReleaseVersion is the version that libraries are always released at
-// when using the testhelper language implementation.
-const TestReleaseVersion = "1.2.3"
-
-func testReleaseAll(cfg *config.Config) (*config.Config, error) {
-	if cfg.Versions == nil {
-		cfg.Versions = make(map[string]string)
-	}
-	for k := range cfg.Versions {
-		cfg.Versions[k] = TestReleaseVersion
-	}
-	return cfg, nil
+// Releaser provides release functions for a specific language.
+type Releaser struct {
+	ReleaseAll     func(cfg *config.Config) (*config.Config, error)
+	ReleaseLibrary func(cfg *config.Config, name string) (*config.Config, error)
 }
 
-func testReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
-	if cfg.Versions == nil {
-		cfg.Versions = make(map[string]string)
-	}
-	cfg.Versions[name] = TestReleaseVersion
-	return cfg, nil
+// Releasers maps language names to their Releaser implementations.
+var Releasers = map[string]Releaser{
+	"rust": {
+		ReleaseAll:     rust.ReleaseAll,
+		ReleaseLibrary: rust.ReleaseOne,
+	},
+	"testhelper": {
+		ReleaseAll:     testReleaseAll,
+		ReleaseLibrary: testReleaseLibrary,
+	},
 }

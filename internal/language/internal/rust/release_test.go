@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,46 +26,70 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestBumpVersions(t *testing.T) {
+const (
+	storageDir      = "src/storage"
+	storageCargo    = "src/storage/Cargo.toml"
+	storageName     = "google-cloud-storage"
+	storageInitial  = "1.0.0"
+	storageReleased = "1.1.0"
+
+	secretmanagerDir      = "src/secretmanager"
+	secretmanagerCargo    = "src/secretmanager/Cargo.toml"
+	secretmanagerName     = "google-cloud-secretmanager-v1"
+	secretmanagerInitial  = "1.5.3"
+	secretmanagerReleased = "1.6.0"
+)
+
+func TestReleaseAll(t *testing.T) {
+	cfg := setupRelease(t)
+	got, err := ReleaseAll(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checkCargoVersion(t, storageCargo, storageReleased)
+	checkCargoVersion(t, secretmanagerCargo, secretmanagerReleased)
+	want := map[string]string{
+		storageName:       storageReleased,
+		secretmanagerName: secretmanagerReleased,
+	}
+	if diff := cmp.Diff(want, got.Versions); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestReleaseOne(t *testing.T) {
+	cfg := setupRelease(t)
+	got, err := ReleaseOne(cfg, storageName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checkCargoVersion(t, storageCargo, storageReleased)
+	checkCargoVersion(t, secretmanagerCargo, secretmanagerInitial)
+	want := map[string]string{
+		storageName:       storageReleased,
+		secretmanagerName: secretmanagerInitial,
+	}
+	if diff := cmp.Diff(want, got.Versions); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func setupRelease(t *testing.T) *config.Config {
+	t.Helper()
 	cmdtest.RequireCommand(t, "cargo")
 	cmdtest.RequireCommand(t, "taplo")
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	createCrate(t, "src/storage", "google-cloud-storage", "1.0.0")
-	createCrate(t, "src/secretmanager", "google-cloud-secretmanager-v1", "1.5.3")
-
-	cfg := &config.Config{
-		Version:  "v1",
-		Language: "rust",
+	createCrate(t, storageDir, storageName, storageInitial)
+	createCrate(t, secretmanagerDir, secretmanagerName, secretmanagerInitial)
+	return &config.Config{
 		Versions: map[string]string{
-			"google-cloud-storage":          "1.0.0",
-			"google-cloud-secretmanager-v1": "1.5.3",
+			storageName:       storageInitial,
+			secretmanagerName: secretmanagerInitial,
 		},
-	}
-	configPath := "librarian.yaml"
-	if err := cfg.Write(configPath); err != nil {
-		t.Fatal(err)
-	}
-
-	updatedCfg, err := BumpVersions(t.Context(), cfg, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := updatedCfg.Write(configPath); err != nil {
-		t.Fatal(err)
-	}
-
-	checkCargoVersion(t, "src/storage/Cargo.toml", "1.1.0")
-	checkCargoVersion(t, "src/secretmanager/Cargo.toml", "1.6.0")
-
-	wantVersions := map[string]string{
-		"google-cloud-storage":          "1.1.0",
-		"google-cloud-secretmanager-v1": "1.6.0",
-	}
-	if diff := cmp.Diff(wantVersions, updatedCfg.Versions); diff != "" {
-		t.Errorf("versions mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -91,22 +116,9 @@ func checkCargoVersion(t *testing.T, path, wantVersion string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	want := fmt.Sprintf(`version                = "%s"`, wantVersion)
-	if !contains(string(contents), want) {
-		t.Errorf("%s does not contain %q\nGot:\n%s", path, want, string(contents))
+	wantLine := fmt.Sprintf(`version                = "%s"`, wantVersion)
+	got := string(contents)
+	if !strings.Contains(got, wantLine) {
+		t.Errorf("%s version mismatch:\nwant line: %q\ngot:\n%s", path, wantLine, got)
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && containsInner(s, substr))
-}
-
-func containsInner(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
