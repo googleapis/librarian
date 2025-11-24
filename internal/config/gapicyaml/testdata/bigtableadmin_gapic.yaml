@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
 # This file was copied from
 # https://github.com/googleapis/googleapis/blob/0fd6a324383fdd1220c9a937b2eef37f53764664/google/bigtable/admin/v2/bigtableadmin_gapic.yaml.
 type: com.google.api.codegen.ConfigProto

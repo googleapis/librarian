@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
 # This file was copied from
 # https://github.com/googleapis/googleapis/blob/d87eb93d825ed67d3873e4f5abe9cca89f108bb8/google/logging/v2/logging_gapic.yaml.
 type: com.google.api.codegen.ConfigProto
