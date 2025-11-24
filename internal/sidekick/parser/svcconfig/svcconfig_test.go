@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/config/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/sample"
 )
 

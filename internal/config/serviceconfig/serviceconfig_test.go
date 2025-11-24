@@ -50,7 +50,7 @@ func TestRead(t *testing.T) {
 // dependency is isolated to this package.
 func TestNoGenprotoServiceConfigImports(t *testing.T) {
 	const genprotoImport = "google.golang.org/genproto/googleapis/api/serviceconfig"
-	root := filepath.Join("..", "..")
+	root := filepath.Join("..", "..", "..")
 
 	var violations []string
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -58,7 +58,7 @@ func TestNoGenprotoServiceConfigImports(t *testing.T) {
 			!strings.HasSuffix(path, ".go") ||
 			strings.Contains(path, "/vendor/") ||
 			strings.Contains(path, "/testdata/") ||
-			strings.Contains(path, "internal/serviceconfig/") {
+			strings.Contains(path, "internal/config/serviceconfig/") {
 			return err
 		}
 		content, err := os.ReadFile(path)
@@ -73,7 +73,7 @@ func TestNoGenprotoServiceConfigImports(t *testing.T) {
 		return nil
 	})
 	if len(violations) > 0 {
-		t.Errorf("Found %d file(s) importing %q outside of internal/serviceconfig:\n  %s",
+		t.Errorf("Found %d file(s) importing %q outside of internal/config/serviceconfig:\n  %s",
 			len(violations), genprotoImport, strings.Join(violations, "\n  "))
 	}
 }

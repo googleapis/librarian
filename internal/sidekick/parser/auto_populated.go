@@ -15,7 +15,7 @@
 package parser
 
 import (
-	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/config/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
