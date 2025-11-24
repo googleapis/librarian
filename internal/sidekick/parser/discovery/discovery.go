@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config/serviceconfig"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
