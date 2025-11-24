@@ -18,7 +18,7 @@ package svcconfig
 import (
 	"strings"
 
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // ServiceNames contains the package and (unqualified) name of a service.

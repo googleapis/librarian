@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parser
+// Package serviceconfig reads and parses API service config files.
+package serviceconfig
 
 import (
 	"encoding/json"
@@ -26,14 +27,31 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func loadServiceConfig(cfg *config.Config) (*serviceconfig.Service, error) {
+// Type aliases for genproto service config types.
+type (
+	Service            = serviceconfig.Service
+	Documentation      = serviceconfig.Documentation
+	DocumentationRule  = serviceconfig.DocumentationRule
+	Backend            = serviceconfig.Backend
+	BackendRule        = serviceconfig.BackendRule
+	Authentication     = serviceconfig.Authentication
+	AuthenticationRule = serviceconfig.AuthenticationRule
+	OAuthRequirements  = serviceconfig.OAuthRequirements
+)
+
+// Load loads the service config specified in the configuration.
+// If no service config is specified, it returns nil.
+func Load(cfg *config.Config) (*Service, error) {
 	if name := cfg.General.ServiceConfig; name != "" {
-		return readServiceConfig(findServiceConfigPath(name, cfg.Source))
+		return Read(FindPath(name, cfg.Source))
 	}
 	return nil, nil
 }
 
-func readServiceConfig(serviceConfigPath string) (*serviceconfig.Service, error) {
+// Read reads a service config from a YAML file and returns it as a Service
+// proto. The file is parsed as YAML, converted to JSON, and then unmarshaled
+// into a Service proto.
+func Read(serviceConfigPath string) (*Service, error) {
 	y, err := os.ReadFile(serviceConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading service config [%s]: %w", serviceConfigPath, err)
@@ -48,7 +66,7 @@ func readServiceConfig(serviceConfigPath string) (*serviceconfig.Service, error)
 		return nil, fmt.Errorf("error converting YAML to JSON [%s]: %w", serviceConfigPath, err)
 	}
 
-	cfg := &serviceconfig.Service{}
+	cfg := &Service{}
 	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(j, cfg); err != nil {
 		return nil, fmt.Errorf("error unmarshalling service config [%s]: %w", serviceConfigPath, err)
 	}
@@ -61,12 +79,12 @@ func readServiceConfig(serviceConfigPath string) (*serviceconfig.Service, error)
 	return cfg, nil
 }
 
-// findServiceConfigPath finds the service config path for the current parser configuration.
+// FindPath finds the service config path for the current parser configuration.
 //
 // The service config files are specified as relative to the `googleapis-root`
 // path (or `extra-protos-root` when set). This finds the right path given a
 // configuration.
-func findServiceConfigPath(serviceConfigFile string, options map[string]string) string {
+func FindPath(serviceConfigFile string, options map[string]string) string {
 	for _, opt := range config.SourceRoots(options) {
 		dir, ok := options[opt]
 		if !ok {

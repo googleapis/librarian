@@ -18,6 +18,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser/discovery"
@@ -43,7 +44,7 @@ func ParseDisco(cfg *config.Config) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	serviceConfig, err := loadServiceConfig(cfg)
+	serviceConfig, err := serviceconfig.Load(cfg)
 	if err != nil {
 		return nil, err
 	}

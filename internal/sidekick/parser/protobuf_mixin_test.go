@@ -17,16 +17,16 @@ package parser
 import (
 	"testing"
 
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 	"google.golang.org/genproto/googleapis/api/annotations"
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/types/known/apipb"
 )
 
 func TestProtobuf_LocationMixin(t *testing.T) {
 	requireProtoc(t)
-	var serviceConfig = &serviceconfig.Service{
+	serviceConfig := &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
 		Documentation: &serviceconfig.Documentation{
@@ -93,7 +93,7 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 
 func TestProtobuf_IAMMixin(t *testing.T) {
 	requireProtoc(t)
-	var serviceConfig = &serviceconfig.Service{
+	serviceConfig := &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
 		Documentation: &serviceconfig.Documentation{
@@ -161,7 +161,7 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 
 func TestProtobuf_OperationMixin(t *testing.T) {
 	requireProtoc(t)
-	var serviceConfig = &serviceconfig.Service{
+	serviceConfig := &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
 		Documentation: &serviceconfig.Documentation{
@@ -234,7 +234,7 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 
 func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 	requireProtoc(t)
-	var serviceConfig = &serviceconfig.Service{
+	serviceConfig := &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
 		Documentation: &serviceconfig.Documentation{
@@ -328,7 +328,7 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 
 func TestProtobuf_DuplicateMixin(t *testing.T) {
 	requireProtoc(t)
-	var serviceConfig = &serviceconfig.Service{
+	serviceConfig := &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
 		Documentation: &serviceconfig.Documentation{

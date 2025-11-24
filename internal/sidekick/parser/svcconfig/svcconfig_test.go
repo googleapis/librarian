@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/sample"
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 func TestExtractPackageName(t *testing.T) {

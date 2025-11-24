@@ -24,10 +24,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 // NewAPI parses the discovery doc in `contents` and returns the corresponding `api.API` model.

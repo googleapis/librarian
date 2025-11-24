@@ -22,6 +22,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
@@ -30,7 +31,6 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 // ParseOpenAPI parses an OpenAPI specification and returns an API model.
@@ -44,7 +44,7 @@ func ParseOpenAPI(cfg *config.Config) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	serviceConfig, err := loadServiceConfig(cfg)
+	serviceConfig, err := serviceconfig.Load(cfg)
 	if err != nil {
 		return nil, err
 	}

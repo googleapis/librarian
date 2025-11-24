@@ -20,12 +20,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/types/known/apipb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -47,7 +47,7 @@ func TestProtobuf_Info(t *testing.T) {
 
 func TestProtobuf_PartialInfo(t *testing.T) {
 	requireProtoc(t)
-	var serviceConfig = &serviceconfig.Service{
+	serviceConfig := &serviceconfig.Service{
 		Name:  "secretmanager.googleapis.com",
 		Title: "Secret Manager API",
 	}
@@ -1392,7 +1392,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 
 func TestProtobuf_OperationInfo(t *testing.T) {
 	requireProtoc(t)
-	var serviceConfig = &serviceconfig.Service{
+	serviceConfig := &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
 		Documentation: &serviceconfig.Documentation{
@@ -1519,7 +1519,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 
 func TestProtobuf_AutoPopulated(t *testing.T) {
 	requireProtoc(t)
-	var serviceConfig = &serviceconfig.Service{
+	serviceConfig := &serviceconfig.Service{
 		Name:  "test.googleapis.com",
 		Title: "Test API",
 		Documentation: &serviceconfig.Documentation{

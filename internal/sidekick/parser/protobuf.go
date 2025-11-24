@@ -25,11 +25,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
 	"github.com/googleapis/librarian/internal/sidekick/protobuf"
-	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -43,7 +43,7 @@ func ParseProtobuf(cfg *config.Config) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	serviceConfig, err := loadServiceConfig(cfg)
+	serviceConfig, err := serviceconfig.Load(cfg)
 	if err != nil {
 		return nil, err
 	}
