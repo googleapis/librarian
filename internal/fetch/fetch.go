@@ -202,20 +202,6 @@ func downloadAttempt(target, source string) (err error) {
 	return nil
 }
 
-func computeSHA256(path string) (string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, file); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
-}
-
 func fileExists(name string) bool {
 	stat, err := os.Stat(name)
 	if err != nil {
