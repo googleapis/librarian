@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go/cloudbuild v1.23.1
 	cloud.google.com/go/iam v1.5.3
 	cloud.google.com/go/longrunning v0.7.0
+	github.com/bazelbuild/buildtools v0.0.0-20251112105957-8e68360eeafa
 	github.com/cbroglie/mustache v1.4.0
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/google/go-cmp v0.7.0
@@ -36,7 +37,6 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
-	github.com/bazelbuild/buildtools v0.0.0-20251112105957-8e68360eeafa // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
