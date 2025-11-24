@@ -31,61 +31,15 @@ import (
 )
 
 // Generate generates gcloud commands for a service.
-func Generate(ctx context.Context, googleapis, gcloudconfig, output string) error {
+func Generate(ctx context.Context, googleapis, gcloudconfig, output, includeList string) error {
 	cfg, err := readGcloudConfig(gcloudconfig)
 	if err != nil {
 		return err
 	}
 
-	//TODO(santi): move this function outside of this function
-	//TODO(santi): pass googleapisPath, and the includ_list to function
-	createAPIModel := func() (*api.API, error) {
-
-		parserConfig := &config.Config{
-
-			General: config.GeneralConfig{
-
-				SpecificationFormat: "protobuf",
-			},
-
-			Source: map[string]string{
-
-				// TODO(santi): Use the googleapis path as the root for the parser.
-				"local-root": ".",
-
-				// TODO(santi): Add a way to specify the target surface instead of hardcoding it.
-
-				"include-list": "google/cloud/parallelstore/v1/parallelstore.proto",
-			},
-		}
-
-		// We use `parser.CreateModel` instead of calling the individual parsing and processing
-		// functions directly because CreateModel is the designated entry point that ensures
-		// the API model is not only parsed but also fully linked (cross-referenced), validated,
-		// and processed with all necessary configuration overrides. This guarantees a complete
-		// and consistent model for the generator without code duplication. It's worth noting that
-		// we don't use all the functionality of post-processing of CreateModel, so depending
-		// on our needs, if we don't find ourselves needing the additional post-processing
-		// functionality, we could write our own simpler `CreateModel` function
-
-		model, err := parser.CreateModel(parserConfig)
-
-		if err != nil {
-
-			return nil, fmt.Errorf("failed to create API model: %w", err)
-
-		}
-
-		return model, nil
-
-	}
-
-	model, err := createAPIModel()
-
+	model, err := createAPIModel(googleapis, includeList)
 	if err != nil {
-
 		return err
-
 	}
 
 	// We need the short service name (e.g., "parallelstore") to use as the root
@@ -108,7 +62,7 @@ func Generate(ctx context.Context, googleapis, gcloudconfig, output string) erro
 	methodsByResource := make(map[string][]*api.Method)
 
 	// We iterate through all services and their methods defined in the API model.
-	// TODO(santi): we might want to move the mapping function to protobuf.go
+	// TODO(https://github.com/googleapis/librarian/issues/3034): we might want to move the mapping function to protobuf.go
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
 			// For each method, we determine the plural name of the resource it operates on.
@@ -133,6 +87,32 @@ func Generate(ctx context.Context, googleapis, gcloudconfig, output string) erro
 		}
 	}
 	return nil
+}
+
+func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
+	parserConfig := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "protobuf",
+		},
+		Source: map[string]string{
+			"local-root":   googleapisPath,
+			"include-list": includeList,
+		},
+	}
+
+	// We use `parser.CreateModel` instead of calling the individual parsing and processing
+	// functions directly because CreateModel is the designated entry point that ensures
+	// the API model is not only parsed but also fully linked (cross-referenced), validated,
+	// and processed with all necessary configuration overrides. This guarantees a complete
+	// and consistent model for the generator without code duplication. It's worth noting that
+	// we don't use all the functionality of post-processing of CreateModel, so depending
+	// on our needs, if we don't find ourselves needing the additional post-processing
+	// functionality, we could write our own simpler `CreateModel` function
+	model, err := parser.CreateModel(parserConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API model: %w", err)
+	}
+	return model, nil
 }
 
 // readGcloudConfig loads the gcloud configuration from a gcloud.yaml file.
@@ -191,7 +171,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		// We define the name of the partial file, which includes the verb and the
 		// release track. For now, we are hardcoding to the "ga" track.
 		// Example: "_create_ga.yaml"
-		// TODO(santi): generate multiple tracks
+		// TODO(https://github.com/googleapis/librarian/issues/3037): generate multiple tracks
 		track := "ga"
 		partialFileName := fmt.Sprintf("_%s_%s.yaml", verb, track)
 		partialCmdPath := filepath.Join(partialsDir, partialFileName)
@@ -218,7 +198,7 @@ func newCommand(method *api.Method, cfg *Config, model *api.API) *Command {
 	// `gcloud.yaml` configuration file.
 	rule := findHelpTextRule(method, cfg)
 	apiDef := findAPI(method, cfg)
-	//TODO(santi): parse exaples from `gcloud.yaml`
+	//TODO(https://github.com/googleapis/librarian/issues/3035): parse exaples from `gcloud.yaml`
 
 	// We initialize the command with some default values.
 	cmd := &Command{
@@ -231,7 +211,7 @@ func newCommand(method *api.Method, cfg *Config, model *api.API) *Command {
 		cmd.HelpText = HelpText{
 			Brief:       rule.HelpText.Brief,
 			Description: rule.HelpText.Description,
-			Examples:    rule.HelpText.Examples[0], //TODO(santi): add all examples
+			Examples:    rule.HelpText.Examples[0], //TODO(https://github.com/googleapis/librarian/issues/3035): add all examples
 		}
 	}
 
@@ -373,7 +353,7 @@ func newParam(field *api.Field, apiField string, cfg *Config, model *api.API) Pa
 	if rule := findFieldHelpTextRule(field, cfg); rule != nil {
 		param.HelpText = rule.HelpText.Brief
 	} else {
-		// TODO: improve default help text inference
+		// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
 		param.HelpText = fmt.Sprintf("Value for the `%s` field.", ToKebabCase(field.Name))
 	}
 	return param
@@ -539,7 +519,7 @@ func getResourceName(method *api.Method) string {
 
 // getResourceForMethod finds the `api.Resource` definition associated with a method.
 // This is a crucial function for linking a method to the resource it operates on.
-// TODO: reconsider this function. We might want to move all the resource processing somewhere else
+// TODO(https://github.com/googleapis/librarian/issues/3034): reconsider this function. We might want to move all the resource processing somewhere else
 func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 	// Strategy 1: For `Create` and `Update` methods, the request message usually
 	// contains a field that is the resource message itself. We look for that first.
@@ -627,7 +607,7 @@ func getGcloudType(t api.Typez) string {
 // getPluralName determines the plural name of a resource. It follows a clear
 // hierarchy of truth: first, the explicit `plural` field in the resource
 // definition, and second, inference from the resource pattern.
-// TODO(santi): we should get the resource the function operates on
+// TODO(https://github.com/googleapis/librarian/issues/3036): we should get the resource the function operates on
 func getPluralName(method *api.Method, model *api.API) string {
 	resource := getResourceForMethod(method, model)
 	if resource != nil {

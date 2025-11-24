@@ -39,13 +39,14 @@ func Run(ctx context.Context, args []string) error {
 
 func newCmdGenerate() *cli.Command {
 	var (
-		googleapis string
-		out        string
+		googleapis  string
+		out         string
+		includeList string
 	)
 
 	cmdGenerate := &cli.Command{
 		Short:     "generate generates gcloud commands",
-		UsageLine: "surfer generate <path to gcloud.yaml> --googleapis <path> [--out <path>]",
+		UsageLine: "surfer generate <path to gcloud.yaml> --googleapis <path> [--out <path>] --proto-files-include-list <proto files>",
 		Long: `generate generates gcloud commands
 
 generate generates gcloud command files from protobuf API specifications,
@@ -56,12 +57,13 @@ service config yaml, and gcloud.yaml.`,
 				return fmt.Errorf("path to gcloud.yaml is required")
 			}
 			config := args[0]
-			return gcloud.Generate(ctx, googleapis, config, out)
+			return gcloud.Generate(ctx, googleapis, config, out, includeList)
 		},
 	}
 	cmdGenerate.Init()
 	// TODO(santi): the flags aren't currently parsing the right value (they always get set to the default value)
 	cmdGenerate.Flags.StringVar(&googleapis, "googleapis", ".", "URL or directory path to googleapis")
 	cmdGenerate.Flags.StringVar(&out, "out", ".", "output directory")
+	cmdGenerate.Flags.StringVar(&includeList, "proto-files-include-list", "google/cloud/parallelstore/v1/parallelstore.proto", "comma-separated list of protobuf files used to generate the gcloud commands")
 	return cmdGenerate
 }

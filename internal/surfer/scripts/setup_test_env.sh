@@ -55,7 +55,7 @@ go build -o ./test_env/bin/surfer-dev ./cmd/surfer/main.go
 
 echo "Running the gcloud command generator..."
 # Run the newly built binary from within the test_env directory.
-(cd test_env && ./bin/surfer-dev generate gcloud.yaml --googleapis . --out .)
+(cd test_env && ./bin/surfer-dev generate gcloud.yaml --googleapis . --out . --proto-files-include-list google/cloud/parallelstore/v1/parallelstore.proto)
 
 echo "✅ Generation complete."
 echo "Generated files are in the 'parallelstore' directory."
