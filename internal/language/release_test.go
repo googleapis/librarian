@@ -29,13 +29,10 @@ func TestReleaseAll(t *testing.T) {
 			"lib2": "0.2.0",
 		},
 	}
-
-	r := Releasers["testhelper"]
-	cfg, err := r.ReleaseAll(cfg)
+	cfg, err := ReleaseAll(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	want := map[string]string{
 		"lib1": TestReleaseVersion,
 		"lib2": TestReleaseVersion,
@@ -53,13 +50,10 @@ func TestReleaseLibrary(t *testing.T) {
 			"lib2": "0.2.0",
 		},
 	}
-
-	r := Releasers["testhelper"]
-	cfg, err := r.ReleaseLibrary(cfg, "lib1")
+	cfg, err := ReleaseLibrary(cfg, "lib1")
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	want := map[string]string{
 		"lib1": TestReleaseVersion,
 		"lib2": "0.2.0",

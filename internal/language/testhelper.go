@@ -15,6 +15,10 @@
 package language
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -38,4 +42,13 @@ func testReleaseLibrary(cfg *config.Config, name string) (*config.Config, error)
 	}
 	cfg.Versions[name] = TestReleaseVersion
 	return cfg, nil
+}
+
+func testGenerate(library *config.Library) error {
+	if err := os.MkdirAll(library.Output, 0755); err != nil {
+		return err
+	}
+	content := fmt.Sprintf("# %s\n\nGenerated library\n", library.Name)
+	readmePath := filepath.Join(library.Output, "README.md")
+	return os.WriteFile(readmePath, []byte(content), 0644)
 }

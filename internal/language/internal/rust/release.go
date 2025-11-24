@@ -40,14 +40,25 @@ func ReleaseAll(cfg *config.Config) (*config.Config, error) {
 	return release(cfg, "")
 }
 
-// ReleaseOne bumps the version for a specific library and updates librarian.yaml.
-func ReleaseOne(cfg *config.Config, name string) (*config.Config, error) {
+// ReleaseLibrary bumps the version for a specific library and updates librarian.yaml.
+func ReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
 	return release(cfg, name)
 }
 
 func release(cfg *config.Config, name string) (*config.Config, error) {
 	if cfg.Versions == nil {
 		cfg.Versions = make(map[string]string)
+	}
+
+	shouldRelease := func(pkgName string) bool {
+		// If name is the empty string, release everything.
+		if name == "" {
+			return true
+		}
+		if name == pkgName {
+			return true
+		}
+		return false
 	}
 
 	var found bool
@@ -70,7 +81,7 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		if manifest.Package == nil {
 			return nil
 		}
-		if name != "" && manifest.Package.Name != name {
+		if !shouldRelease(manifest.Package.Name) {
 			return nil
 		}
 
@@ -88,7 +99,6 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if name != "" && !found {
 		return nil, fmt.Errorf("library %q not found", name)
 	}

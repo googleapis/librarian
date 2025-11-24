@@ -15,24 +15,34 @@
 package language
 
 import (
+	"fmt"
+
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/language/internal/rust"
 )
 
-// Releaser provides release functions for a specific language.
-type Releaser struct {
-	ReleaseAll     func(cfg *config.Config) (*config.Config, error)
-	ReleaseLibrary func(cfg *config.Config, name string) (*config.Config, error)
+// ReleaseAll bumps versions for all libraries and updates librarian.yaml and
+// other release artifacts for the language.
+func ReleaseAll(cfg *config.Config) (*config.Config, error) {
+	switch cfg.Language {
+	case "testhelper":
+		return testReleaseAll(cfg)
+	case "rust":
+		return rust.ReleaseAll(cfg)
+	default:
+		return nil, fmt.Errorf("language not supported for release --all: %q", cfg.Language)
+	}
 }
 
-// Releasers maps language names to their Releaser implementations.
-var Releasers = map[string]Releaser{
-	"rust": {
-		ReleaseAll:     rust.ReleaseAll,
-		ReleaseLibrary: rust.ReleaseOne,
-	},
-	"testhelper": {
-		ReleaseAll:     testReleaseAll,
-		ReleaseLibrary: testReleaseLibrary,
-	},
+// ReleaseLibrary bumps versions for one library and updates librarian.yaml and
+// other release artifacts for the language.
+func ReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
+	switch cfg.Language {
+	case "testhelper":
+		return testReleaseLibrary(cfg, name)
+	case "rust":
+		return rust.ReleaseLibrary(cfg, name)
+	default:
+		return nil, fmt.Errorf("language not supported for release --all: %q", cfg.Language)
+	}
 }

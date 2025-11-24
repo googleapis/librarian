@@ -60,7 +60,7 @@ func TestReleaseAll(t *testing.T) {
 
 func TestReleaseOne(t *testing.T) {
 	cfg := setupRelease(t)
-	got, err := ReleaseOne(cfg, storageName)
+	got, err := ReleaseLibrary(cfg, storageName)
 	if err != nil {
 		t.Fatal(err)
 	}

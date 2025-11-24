@@ -16,18 +16,10 @@ package librarian
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/language"
 	"github.com/urfave/cli/v3"
-)
-
-var (
-	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
-	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
-	errExecuteNotImplemented   = errors.New("--execute not yet implemented")
 )
 
 func releaseCommand() *cli.Command {
@@ -72,15 +64,10 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	r, ok := language.Releasers[cfg.Language]
-	if !ok {
-		return fmt.Errorf("release not implemented for language: %s", cfg.Language)
-	}
-
 	if all {
-		cfg, err = r.ReleaseAll(cfg)
+		cfg, err = language.ReleaseAll(cfg)
 	} else {
-		cfg, err = r.ReleaseLibrary(cfg, libraryName)
+		cfg, err = language.ReleaseLibrary(cfg, libraryName)
 	}
 	if err != nil {
 		return err

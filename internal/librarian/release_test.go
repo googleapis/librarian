@@ -46,11 +46,6 @@ func TestReleaseCommand(t *testing.T) {
 			wantErr: errBothLibraryAndAllFlag,
 		},
 		{
-			name:    "execute flag",
-			args:    []string{"librarian", "release", "--all", "--execute"},
-			wantErr: errExecuteNotImplemented,
-		},
-		{
 			name: "library name",
 			args: []string{"librarian", "release", testlib},
 			wantVersions: map[string]string{
