@@ -904,9 +904,13 @@ type Resource struct {
 	Type string
 	// Pattern is the resource name pattern.
 	Pattern []string
-	// Plural is the plural form of the resource name.
+	// The name of the resource in plural form
+	//
+	// For example for the `Shoe` resource would be `shoes` and the `Foot` resource this would `feet`.
 	Plural string
-	// Singular is the singular form of the resource name.
+	// The name of the resource in plural form
+	//
+	// For example for the `Shoe` resource would be `shoe` and the `Foot` resource this would `foot`.
 	Singular string
 
 	Self *Message
