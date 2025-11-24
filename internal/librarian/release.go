@@ -53,10 +53,6 @@ Examples:
 				Name:  "all",
 				Usage: "update all libraries in the workspace",
 			},
-			&cli.BoolFlag{
-				Name:  "execute",
-				Usage: "apply updates, create tags, and push them (default is dry-run)",
-			},
 		},
 		Action: runRelease,
 	}
@@ -64,7 +60,6 @@ Examples:
 
 func runRelease(ctx context.Context, cmd *cli.Command) error {
 	all := cmd.Bool("all")
-	execute := cmd.Bool("execute")
 	libraryName := cmd.Args().First()
 	if !all && libraryName == "" {
 		return errMissingLibraryOrAllFlag
@@ -73,17 +68,10 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		return errBothLibraryAndAllFlag
 	}
 
-	if execute {
-		// TODO(https://github.com/googleapis/librarian/issues/2966): implement
-		// tagging
-		return errExecuteNotImplemented
-	}
-
 	cfg, err := config.Read(librarianConfigPath)
 	if err != nil {
 		return err
 	}
-
 	r, ok := language.Releasers[cfg.Language]
 	if !ok {
 		return fmt.Errorf("release not implemented for language: %s", cfg.Language)
@@ -97,6 +85,5 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-
 	return cfg.Write(librarianConfigPath)
 }
