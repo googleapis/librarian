@@ -54,6 +54,7 @@ go_gapic_library(
 		Metadata:          true,
 		DIREGAPIC:         false,
 		RESTNumericEnums:  true,
+		HasGoGRPC:         true,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -108,6 +109,7 @@ go_gapic_library(
 		ReleaseLevel:      "ga",
 		Metadata:          true,
 		RESTNumericEnums:  true,
+		HasGoGRPC:         true,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -177,7 +179,9 @@ go_grpc_library(
 )
 `)
 
-	want := &Config{}
+	want := &Config{
+		HasGoGRPC: true,
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
