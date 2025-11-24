@@ -18,10 +18,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestParse(t *testing.T) {
-	content := `
+	got := mustParse(t, `
 go_grpc_library(
     name = "asset_go_proto",
     importpath = "cloud.google.com/go/asset/apiv1/assetpb",
@@ -40,48 +42,25 @@ go_gapic_library(
     transport = "grpc+rest",
     diregapic = False,
 )
-`
-	tmpDir := t.TempDir()
-	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+`)
 
-	got, err := Parse(tmpDir)
-	if err != nil {
-		t.Fatal(err)
+	want := &Config{
+		HasGAPIC:          true,
+		GAPICImportPath:   "cloud.google.com/go/asset/apiv1;asset",
+		ServiceYAML:       "cloudasset_v1.yaml",
+		GRPCServiceConfig: "cloudasset_grpc_service_config.json",
+		Transport:         "grpc+rest",
+		ReleaseLevel:      "ga",
+		Metadata:          true,
+		DIREGAPIC:         false,
+		RESTNumericEnums:  true,
 	}
-
-	if !got.HasGAPIC() {
-		t.Error("HasGAPIC() = false; want true")
-	}
-	if want := "cloud.google.com/go/asset/apiv1;asset"; got.GAPICImportPath() != want {
-		t.Errorf("GAPICImportPath() = %q; want %q", got.GAPICImportPath(), want)
-	}
-	if want := "cloudasset_v1.yaml"; got.ServiceYAML() != want {
-		t.Errorf("ServiceYAML() = %q; want %q", got.ServiceYAML(), want)
-	}
-	if want := "cloudasset_grpc_service_config.json"; got.GRPCServiceConfig() != want {
-		t.Errorf("GRPCServiceConfig() = %q; want %q", got.GRPCServiceConfig(), want)
-	}
-	if want := "grpc+rest"; got.Transport() != want {
-		t.Errorf("Transport() = %q; want %q", got.Transport(), want)
-	}
-	if want := "ga"; got.ReleaseLevel() != want {
-		t.Errorf("ReleaseLevel() = %q; want %q", got.ReleaseLevel(), want)
-	}
-	if !got.HasMetadata() {
-		t.Error("HasMetadata() = false; want true")
-	}
-	if got.HasDiregapic() {
-		t.Error("HasDiregapic() = true; want false")
-	}
-	if !got.HasRESTNumericEnums() {
-		t.Error("HasRESTNumericEnums() = false; want true")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestParse_misconfiguration(t *testing.T) {
+func TestParse_Misconfiguration(t *testing.T) {
 	content := `
 go_grpc_library()
 
@@ -90,7 +69,7 @@ go_proto_library()
 	tmpDir := t.TempDir()
 	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
 	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
-		t.Fatal(err)
+		t.Fatalf("failed to write test file: %v", err)
 	}
 
 	if _, err := Parse(tmpDir); err == nil {
@@ -98,8 +77,8 @@ go_proto_library()
 	}
 }
 
-func TestParse_serviceConfigIsTarget(t *testing.T) {
-	content := `
+func TestParse_ServiceConfigIsTarget(t *testing.T) {
+	got := mustParse(t, `
 go_grpc_library(
     name = "asset_go_proto",
     importpath = "cloud.google.com/go/asset/apiv1/assetpb",
@@ -118,92 +97,94 @@ go_gapic_library(
     transport = "grpc+rest",
     diregapic = False,
 )
-`
-	tmpDir := t.TempDir()
-	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+`)
 
-	got, err := Parse(tmpDir)
-	if err != nil {
-		t.Fatal(err)
+	want := &Config{
+		HasGAPIC:          true,
+		GAPICImportPath:   "cloud.google.com/go/asset/apiv1;asset",
+		ServiceYAML:       "cloudasset_v1.yaml",
+		GRPCServiceConfig: "cloudasset_grpc_service_config.json",
+		Transport:         "grpc+rest",
+		ReleaseLevel:      "ga",
+		Metadata:          true,
+		RESTNumericEnums:  true,
 	}
-
-	if want := "cloudasset_v1.yaml"; got.ServiceYAML() != want {
-		t.Errorf("ServiceYAML() = %q; want %q", got.ServiceYAML(), want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestConfig_Validate(t *testing.T) {
+func TestParse_Errors(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		cfg     *Config
+		content string
 		wantErr bool
 	}{
 		{
 			name: "valid GAPIC",
-			cfg: &Config{
-				hasGAPIC:          true,
-				gapicImportPath:   "a",
-				serviceYAML:       "b",
-				grpcServiceConfig: "c",
-				transport:         "d",
-			},
+			content: `go_gapic_library(
+    importpath = "cloud.google.com/go/test",
+    service_yaml = "test.yaml",
+)`,
 		},
 		{
-			name: "valid non-GAPIC",
-			cfg:  &Config{},
+			name:    "valid non-GAPIC",
+			content: `go_grpc_library()`,
 		},
 		{
 			name: "gRPC service config and transport are optional",
-			cfg:  &Config{hasGAPIC: true, gapicImportPath: "a", serviceYAML: "b"},
+			content: `go_gapic_library(
+    importpath = "cloud.google.com/go/test",
+    service_yaml = "test.yaml",
+)`,
 		},
 		{
-			name:    "missing gapicImportPath",
-			cfg:     &Config{hasGAPIC: true, serviceYAML: "b", grpcServiceConfig: "c", transport: "d"},
+			name: "missing GAPICImportPath",
+			content: `go_gapic_library(
+    service_yaml = "test.yaml",
+)`,
 			wantErr: true,
 		},
 		{
-			name:    "missing serviceYAML",
-			cfg:     &Config{hasGAPIC: true, gapicImportPath: "a", grpcServiceConfig: "c", transport: "d"},
+			name: "missing ServiceYAML",
+			content: `go_gapic_library(
+    importpath = "cloud.google.com/go/test",
+)`,
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.cfg.Validate(); (err != nil) != test.wantErr {
-				t.Errorf("Config.Validate() error = %v, wantErr %v", err, test.wantErr)
+			tmpDir := t.TempDir()
+			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
+			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := Parse(tmpDir); err != nil {
+				if !test.wantErr {
+					t.Errorf("Parse() error = %v, wantErr %v", err, test.wantErr)
+				}
 			}
 		})
 	}
 }
 
-func TestParse_noGapic(t *testing.T) {
-	content := `
+func TestParse_NoGAPIC(t *testing.T) {
+	got := mustParse(t, `
 go_grpc_library(
     name = "asset_go_proto",
     importpath = "cloud.google.com/go/asset/apiv1/assetpb",
     protos = [":asset_proto"],
 )
-`
-	tmpDir := t.TempDir()
-	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+`)
 
-	got, err := Parse(tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got.HasGAPIC() {
-		t.Error("HasGAPIC() = true; want false")
+	want := &Config{}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestParse_legacyProtocPlugin_noGrpc(t *testing.T) {
-	content := `
+func TestParse_LegacyProtocPluginNoGRPC(t *testing.T) {
+	got := mustParse(t, `
 go_proto_library(
     name = "asset_go_proto",
     importpath = "cloud.google.com/go/asset/apiv1/assetpb",
@@ -222,28 +203,25 @@ go_gapic_library(
     transport = "grpc+rest",
     diregapic = False,
 )
-`
-	tmpDir := t.TempDir()
-	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+`)
 
-	got, err := Parse(tmpDir)
-	if err != nil {
-		t.Fatal(err)
+	want := &Config{
+		HasGAPIC:          true,
+		GAPICImportPath:   "cloud.google.com/go/asset/apiv1;asset",
+		ServiceYAML:       "cloudasset_v1.yaml",
+		GRPCServiceConfig: "cloudasset_grpc_service_config.json",
+		Transport:         "grpc+rest",
+		ReleaseLevel:      "ga",
+		Metadata:          true,
+		RESTNumericEnums:  true,
 	}
-
-	if got.HasGoGRPC() {
-		t.Error("HasGoGRPC() = true; want false")
-	}
-	if got.HasLegacyGRPC() {
-		t.Error("HasLegacyGRPC() = true; want false")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestParse_legacyProtocPlugin_withGrpc(t *testing.T) {
-	content := `
+func TestParse_LegacyProtocPluginWithGRPC(t *testing.T) {
+	got := mustParse(t, `
 go_proto_library(
     name = "asset_go_proto",
 	compilers = ["@io_bazel_rules_go//proto:go_grpc"],
@@ -263,7 +241,26 @@ go_gapic_library(
     transport = "grpc+rest",
     diregapic = False,
 )
-`
+`)
+
+	want := &Config{
+		HasGAPIC:          true,
+		GAPICImportPath:   "cloud.google.com/go/asset/apiv1;asset",
+		ServiceYAML:       "cloudasset_v1.yaml",
+		GRPCServiceConfig: "cloudasset_grpc_service_config.json",
+		Transport:         "grpc+rest",
+		ReleaseLevel:      "ga",
+		Metadata:          true,
+		RESTNumericEnums:  true,
+		HasLegacyGRPC:     true,
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func mustParse(t *testing.T, content string) *Config {
+	t.Helper()
 	tmpDir := t.TempDir()
 	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
 	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
@@ -274,28 +271,5 @@ go_gapic_library(
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	if got.HasGoGRPC() {
-		t.Error("HasGoGRPC() = true; want false")
-	}
-	if !got.HasLegacyGRPC() {
-		t.Error("HasLegacyGRPC() = false; want true")
-	}
-}
-
-func TestDisableGAPIC(t *testing.T) {
-	cfg := &Config{
-		hasGAPIC:          true,
-		gapicImportPath:   "a",
-		serviceYAML:       "b",
-		grpcServiceConfig: "c",
-		transport:         "d",
-	}
-	if !cfg.HasGAPIC() {
-		t.Error("HasGAPIC() = false; want true")
-	}
-	cfg.DisableGAPIC()
-	if cfg.HasGAPIC() {
-		t.Error("HasLegacyGRPC() = true; want false")
-	}
+	return got
 }
