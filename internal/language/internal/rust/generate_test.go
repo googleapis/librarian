@@ -47,7 +47,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	// Verify generated files and their content.
-	filesToValidate := []struct {
+	for _, test := range []struct {
 		path    string
 		content string
 	}{
@@ -56,23 +56,22 @@ func TestGenerate(t *testing.T) {
 		{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
 		{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
 		{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
-	}
-
-	for _, tt := range filesToValidate {
-		info, err := os.Stat(tt.path)
+	} {
+		info, err := os.Stat(test.path)
 		if err != nil {
-			t.Fatalf("Failed to stat %q: %v", tt.path, err)
+			t.Fatalf("Failed to stat %q: %v", test.path, err)
 		}
 		if info.IsDir() {
-			t.Fatalf("%q is a directory, expected a file", tt.path)
+			t.Fatalf("%q is a directory, expected a file", test.path)
 		}
 
-		got, err := os.ReadFile(tt.path)
+		got, err := os.ReadFile(test.path)
 		if err != nil {
-			t.Fatalf("Failed to read %q: %v", tt.path, err)
+			t.Fatalf("Failed to read %q: %v", test.path, err)
 		}
-		if !strings.Contains(string(got), tt.content) {
-			t.Errorf("File %q content missing expected string. Got: %q, Want substring: %q", tt.path, string(got), tt.content)
+		if !strings.Contains(string(got), test.content) {
+			t.Errorf("File %q content missing expected string. Got: %q, Want substring: %q",
+				test.path, string(got), test.content)
 		}
 	}
 }
