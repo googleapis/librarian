@@ -248,12 +248,12 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 		}, nil
 	}
 
-	// Image comes from command line takes preference.
-	// Use image from state if it doesn't have one.
 	image := r.image
 	if image == "" {
 		image = r.state.Image
-		slog.Info("image is not provided from command line, use image from state", "image", image)
+		slog.Info("using image from state", "image", image)
+	} else {
+		slog.Info("using image from command line", "image", image)
 	}
 
 	if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, image, outputDir); err != nil {
