@@ -73,7 +73,7 @@ go_proto_library()
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	if _, err := Parse(tmpDir); err == nil {
+	if _, err := Parse(buildPath); err == nil {
 		t.Error("Parse() succeeded; want error")
 	}
 }
@@ -161,7 +161,7 @@ func TestParse_Errors(t *testing.T) {
 			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := Parse(tmpDir); err != nil {
+			if _, err := Parse(buildPath); err != nil {
 				if !test.wantErr {
 					t.Errorf("Parse() error = %v, wantErr %v", err, test.wantErr)
 				}
@@ -271,7 +271,7 @@ func mustParse(t *testing.T, content string) *Config {
 		t.Fatal(err)
 	}
 
-	got, err := Parse(tmpDir)
+	got, err := Parse(buildPath)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -18,7 +18,6 @@ package bazel
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
@@ -64,16 +63,7 @@ type Config struct {
 }
 
 // Parse reads a BUILD.bazel file and extracts configuration from Bazel rules.
-// The path can be a directory containing BUILD.bazel or a direct file path.
 func Parse(path string) (*Config, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to stat %s: %w", path, err)
-	}
-	if info.IsDir() {
-		path = filepath.Join(path, "BUILD.bazel")
-	}
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
