@@ -38,7 +38,7 @@ jobs:
       - name: Install protoc
         run: |
           set -e
-          curl -fsSL -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip
+          curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip
           cd /usr/local
           sudo unzip -o /tmp/protoc.zip
           protoc --version
