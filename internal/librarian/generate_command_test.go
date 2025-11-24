@@ -982,6 +982,7 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 		name       string
 		api        string
 		library    string
+		image      string
 		state      *config.LibrarianState
 		container  *mockContainerClient
 		ghClient   GitHubClient
@@ -989,6 +990,7 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 		wantErr    bool
 		wantErrMsg string
 		wantPRType pullRequestType
+		wantImage  string
 	}{
 		{
 			name:    "onboard library returns pullRequestOnboard",
@@ -1006,6 +1008,7 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 			ghClient:   &mockGitHubClient{},
 			build:      true,
 			wantPRType: pullRequestOnboard,
+			wantImage:  "gcr.io/test/image:v1.2.3",
 		},
 		{
 			name:    "generate existing library returns pullRequestGenerate",
@@ -1028,6 +1031,31 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 			ghClient:   &mockGitHubClient{},
 			build:      true,
 			wantPRType: pullRequestGenerate,
+			wantImage:  "gcr.io/test/image:v1.2.3",
+		},
+		{
+			name:    "generate existing library using image from command line",
+			library: "some-library",
+			image:   "image-from-command-line",
+			state: &config.LibrarianState{
+				Image: "gcr.io/test/image:v1.2.3",
+				Libraries: []*config.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*config.API{{Path: "some/api"}},
+						SourceRoots: []string{
+							"src/a",
+						},
+					},
+				},
+			},
+			container: &mockContainerClient{
+				wantLibraryGen: true,
+			},
+			ghClient:   &mockGitHubClient{},
+			build:      true,
+			wantPRType: pullRequestGenerate,
+			wantImage:  "image-from-command-line",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1035,6 +1063,7 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 			sourceRepo := newTestGitRepo(t)
 			r := &generateRunner{
 				api:             test.api,
+				image:           test.image,
 				library:         test.library,
 				build:           test.build,
 				repo:            repo,
@@ -1080,6 +1109,9 @@ func TestGenerateSingleLibraryCommand(t *testing.T) {
 			}
 			if status.prType != test.wantPRType {
 				t.Errorf("generateSingleLibrary() prType = %v, want %v", status.prType, test.wantPRType)
+			}
+			if test.container.Image != test.wantImage {
+				t.Errorf("generateSingleLibrary() image = %v, want %v", test.container.Image, test.wantImage)
 			}
 		})
 	}

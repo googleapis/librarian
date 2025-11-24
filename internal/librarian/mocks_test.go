@@ -159,6 +159,7 @@ type mockContainerClient struct {
 	configureLibraryPaths []string
 	// The last generation request
 	generateRequest *docker.GenerateRequest
+	Image           string
 }
 
 func (m *mockContainerClient) Build(ctx context.Context, request *docker.BuildRequest) error {
@@ -244,6 +245,7 @@ func (m *mockContainerClient) Configure(ctx context.Context, request *docker.Con
 func (m *mockContainerClient) Generate(ctx context.Context, request *docker.GenerateRequest) error {
 	m.generateCalls++
 	m.generateRequest = request
+	m.Image = request.Image
 
 	if m.noGenerateResponse {
 		return m.generateErr
