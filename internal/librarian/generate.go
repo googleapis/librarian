@@ -64,7 +64,11 @@ func runGenerate(ctx context.Context, cmd *cli.Command) error {
 		var errs []error
 		for _, lib := range cfg.Libraries {
 			// TODO(https://github.com/googleapis/librarian/issues/2966): use
-			// fetch.RepoDir to fetch googleapisDir once implemented
+			// fetch.RepoDir to fetch sources once implemented.
+			//
+			// The function signature also needs to be updated to handle
+			// sources beyond just googleapis, such as discovery, showcase, and
+			// protojson conformance for Rust.
 			if err := language.Generate(ctx, cfg.Language, lib, ""); err != nil {
 				errs = append(errs, err)
 			}
@@ -84,7 +88,11 @@ func runGenerate(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("library %q not found", libraryName)
 		}
 		// TODO(https://github.com/googleapis/librarian/issues/2966): use
-		// fetch.RepoDir to fetch googleapisDir once implemented
+		// fetch.RepoDir to fetch sources once implemented.
+		//
+		// The function signature also needs to be updated to handle
+		// sources beyond just googleapis, such as discovery, showcase, and
+		// protojson conformance for Rust.
 		if err := language.Generate(ctx, cfg.Language, library, ""); err != nil {
 			return err
 		}
