@@ -46,10 +46,9 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Verify generated files and their content.
 	for _, test := range []struct {
-		path    string
-		content string
+		path string
+		want string
 	}{
 		{filepath.Join(outDir, "Cargo.toml"), "name"},
 		{filepath.Join(outDir, "Cargo.toml"), "secretmanager"},
@@ -57,21 +56,17 @@ func TestGenerate(t *testing.T) {
 		{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
 		{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
 	} {
-		info, err := os.Stat(test.path)
-		if err != nil {
-			t.Fatalf("Failed to stat %q: %v", test.path, err)
-		}
-		if info.IsDir() {
-			t.Fatalf("%q is a directory, expected a file", test.path)
-		}
-
-		got, err := os.ReadFile(test.path)
-		if err != nil {
-			t.Fatalf("Failed to read %q: %v", test.path, err)
-		}
-		if !strings.Contains(string(got), test.content) {
-			t.Errorf("File %q content missing expected string. Got: %q, Want substring: %q",
-				test.path, string(got), test.content)
-		}
+		t.Run(test.path, func(t *testing.T) {
+			if _, err := os.Stat(test.path); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(got), test.want) {
+				t.Errorf("%q missing expected string: %q", test.path, test.want)
+			}
+		})
 	}
 }
