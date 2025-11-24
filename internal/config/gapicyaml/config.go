@@ -14,10 +14,10 @@
 
 // Package gapicyaml provides parsing for GAPIC YAML configuration files.
 //
-// As of 2025, there are 79 known gapic.yaml files in the googleapis repository:
+// As of 2025, there are 78 known gapic.yaml files in the googleapis repository:
 // https://github.com/search?q=repo%3Agoogleapis%2Fgoogleapis+path%3A*_gapic.yaml&type=code
 //
-// The gapic.yaml files are used by the Java GAPIC generator.
+// The <service>_gapic.yaml files are used by the Java GAPIC generator.
 package gapicyaml
 
 import (
