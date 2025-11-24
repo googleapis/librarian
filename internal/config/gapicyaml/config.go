@@ -75,11 +75,11 @@ type Batching struct {
 
 // BatchingThresholds defines when batching should occur.
 type BatchingThresholds struct {
-	ElementCountThreshold           int    `yaml:"element_count_threshold,omitempty"`
-	RequestByteThreshold            int    `yaml:"request_byte_threshold,omitempty"`
-	DelayThresholdMillis            int    `yaml:"delay_threshold_millis,omitempty"`
-	FlowControlElementLimit         int    `yaml:"flow_control_element_limit,omitempty"`
-	FlowControlByteLimit            int    `yaml:"flow_control_byte_limit,omitempty"`
+	ElementCountThreshold            int    `yaml:"element_count_threshold,omitempty"`
+	RequestByteThreshold             int    `yaml:"request_byte_threshold,omitempty"`
+	DelayThresholdMillis             int    `yaml:"delay_threshold_millis,omitempty"`
+	FlowControlElementLimit          int    `yaml:"flow_control_element_limit,omitempty"`
+	FlowControlByteLimit             int    `yaml:"flow_control_byte_limit,omitempty"`
 	FlowControlLimitExceededBehavior string `yaml:"flow_control_limit_exceeded_behavior,omitempty"`
 }
 
