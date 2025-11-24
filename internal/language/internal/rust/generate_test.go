@@ -15,7 +15,9 @@
 package rust
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	cmdtest "github.com/googleapis/librarian/internal/command"
@@ -42,5 +44,35 @@ func TestGenerate(t *testing.T) {
 	}
 	if err := Generate(t.Context(), library, googleapisDir); err != nil {
 		t.Fatal(err)
+	}
+
+	// Verify generated files and their content.
+	filesToValidate := []struct {
+		path    string
+		content string
+	}{
+		{filepath.Join(outDir, "Cargo.toml"), "name"},
+		{filepath.Join(outDir, "Cargo.toml"), "secretmanager"},
+		{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
+		{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
+		{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
+	}
+
+	for _, tt := range filesToValidate {
+		info, err := os.Stat(tt.path)
+		if err != nil {
+			t.Fatalf("Failed to stat %q: %v", tt.path, err)
+		}
+		if info.IsDir() {
+			t.Fatalf("%q is a directory, expected a file", tt.path)
+		}
+
+		got, err := os.ReadFile(tt.path)
+		if err != nil {
+			t.Fatalf("Failed to read %q: %v", tt.path, err)
+		}
+		if !strings.Contains(string(got), tt.content) {
+			t.Errorf("File %q content missing expected string. Got: %q, Want substring: %q", tt.path, string(got), tt.content)
+		}
 	}
 }

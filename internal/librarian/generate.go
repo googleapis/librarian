@@ -61,41 +61,49 @@ func runGenerate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	if all {
-		var errs []error
-		for _, lib := range cfg.Libraries {
-			// TODO(https://github.com/googleapis/librarian/issues/2966): use
-			// fetch.RepoDir to fetch sources once implemented.
-			//
-			// The function signature also needs to be updated to handle
-			// sources beyond just googleapis, such as discovery, showcase, and
-			// protojson conformance for Rust.
-			if err := language.Generate(ctx, cfg.Language, lib, ""); err != nil {
-				errs = append(errs, err)
-			}
-		}
-		if len(errs) > 0 {
-			return errors.Join(errs...)
-		}
-	} else {
-		var library *config.Library
-		for _, lib := range cfg.Libraries {
-			if lib.Name == libraryName {
-				library = lib
-				break
-			}
-		}
-		if library == nil {
-			return fmt.Errorf("library %q not found", libraryName)
-		}
+		return generateAll(ctx, cfg)
+	}
+	return generateLibrary(ctx, cfg, libraryName)
+}
+
+func generateAll(ctx context.Context, cfg *config.Config) error {
+	var errs []error
+	for _, lib := range cfg.Libraries {
 		// TODO(https://github.com/googleapis/librarian/issues/2966): use
 		// fetch.RepoDir to fetch sources once implemented.
 		//
 		// The function signature also needs to be updated to handle
 		// sources beyond just googleapis, such as discovery, showcase, and
 		// protojson conformance for Rust.
-		if err := language.Generate(ctx, cfg.Language, library, ""); err != nil {
-			return err
+		if err := language.Generate(ctx, cfg.Language, lib, ""); err != nil {
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
+}
+
+func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) error {
+	var library *config.Library
+	for _, lib := range cfg.Libraries {
+		if lib.Name == libraryName {
+			library = lib
+			break
+		}
+	}
+	if library == nil {
+		return fmt.Errorf("library %q not found", libraryName)
+	}
+	// TODO(https://github.com/googleapis/librarian/issues/2966): use
+	// fetch.RepoDir to fetch sources once implemented.
+	//
+	// The function signature also needs to be updated to handle
+	// sources beyond just googleapis, such as discovery, showcase, and
+	// protojson conformance for Rust.
+	if err := language.Generate(ctx, cfg.Language, library, ""); err != nil {
+		return err
 	}
 	return nil
 }
