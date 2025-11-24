@@ -924,6 +924,5 @@ type ResourceReference struct {
 
 // FullName returns the fully qualified name of the method.
 func (m *Method) FullName() string {
-	// TODO: add handling for empty Service.Package scenario
 	return m.Service.Package + "." + m.Service.Name + "." + m.Name
 }
