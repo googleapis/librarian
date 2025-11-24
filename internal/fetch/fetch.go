@@ -123,9 +123,6 @@ func DownloadTarball(target, url, expectedSha256 string) error {
 	if fileExists(target) {
 		return nil
 	}
-	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-		return err
-	}
 	tempFile, err := os.CreateTemp(filepath.Dir(target), "temp-")
 	if err != nil {
 		return err
