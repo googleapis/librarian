@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package grpcserviceconfig provides parsing and accessor methods for gRPC
-// service configuration files.
-//
 // This package was copied from:
 // https://github.com/googleapis/gapic-generator-go/tree/e36e26db44afdb436f19d1c19cf8d10a12d1710e/internal/grpc_service_config
 //
 // The only modifications were renaming the package from grpc_service_config to
 // grpcserviceconfig to be more idiomatic and adding comments.
+
+// Package grpcserviceconfig provides parsing and accessor methods for gRPC
+// service configuration files.
 package grpcserviceconfig
 
 import (
