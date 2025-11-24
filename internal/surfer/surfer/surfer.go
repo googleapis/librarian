@@ -61,7 +61,6 @@ service config yaml, and gcloud.yaml.`,
 		},
 	}
 	cmdGenerate.Init()
-	// TODO(santi): the flags aren't currently parsing the right value (they always get set to the default value)
 	cmdGenerate.Flags.StringVar(&googleapis, "googleapis", ".", "URL or directory path to googleapis")
 	cmdGenerate.Flags.StringVar(&out, "out", ".", "output directory")
 	cmdGenerate.Flags.StringVar(&includeList, "proto-files-include-list", "google/cloud/parallelstore/v1/parallelstore.proto", "comma-separated list of protobuf files used to generate the gcloud commands")
