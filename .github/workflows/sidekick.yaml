@@ -27,8 +27,10 @@ jobs:
         run: go version
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-      - name: Display Rust version
-        run: cargo --version
+      - name: Display Cargo version
+        run: cargo version
+      - name: Display rustc version
+        run: rustup show active-toolchain -v
       - name: Install taplo
         run: |
           set -e
@@ -38,7 +40,10 @@ jobs:
       - name: Install protoc
         run: |
           set -e
-          curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip
+
+          curl -fsSL --retry 5 --retry-delay 15 -o /workspace/.bin/codecovcli https://github.com/getsentry/prevent-cli/releases/download/${_CODECOV_VERSION}/codecovcli_linux
+          sha256sum -c <(echo "${_CODECOV_SHA256} */workspace/.bin/codecovcli")
+
           cd /usr/local
           sudo unzip -o /tmp/protoc.zip
           protoc --version
