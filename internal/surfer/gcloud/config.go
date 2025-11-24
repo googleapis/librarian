@@ -60,7 +60,7 @@ type API struct {
 	// HelpText contains all help text configurations for the surfaces
 	// including groups, commands, resources, and flags/arguments related to
 	// this API.
-	HelpText *HelpText `yaml:"help_text,omitempty"`
+	HelpText *HelpTextRules `yaml:"help_text,omitempty"`
 
 	// OutputFormatting contains all output formatting rules for commands
 	// within this API. These rules dictate how the results of commands are
@@ -73,10 +73,10 @@ type API struct {
 	CommandOperationsConfig []*CommandOperationsConfig `yaml:"command_operations_config,omitempty"`
 }
 
-// HelpText contains rules for various types of help text within an API
+// HelpTextRules contains rules for various types of help text within an API
 // surface. It groups help text definitions by the type of CLI element they
 // apply to.
-type HelpText struct {
+type HelpTextRules struct {
 	// ServiceRules defines help text rules specifically for services.
 	ServiceRules []*HelpTextRule `yaml:"service_rules,omitempty"`
 
