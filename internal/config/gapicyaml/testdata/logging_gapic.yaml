@@ -1,0 +1,45 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This file was copied from
+# https://github.com/googleapis/googleapis/blob/d87eb93d825ed67d3873e4f5abe9cca89f108bb8/google/logging/v2/logging_gapic.yaml
+# without modification.
+
+type: com.google.api.codegen.ConfigProto
+config_schema_version: 2.0.0
+language_settings:
+  java:
+    package_name: com.google.cloud.logging.v2
+    interface_names:
+      google.logging.v2.ConfigServiceV2: Config
+      google.logging.v2.LoggingServiceV2: Logging
+      google.logging.v2.MetricsServiceV2: Metrics
+interfaces:
+- name: google.logging.v2.LoggingServiceV2
+  methods:
+  - name: WriteLogEntries
+    batching:
+      thresholds:
+        element_count_threshold: 1000
+        request_byte_threshold: 1048576
+        delay_threshold_millis: 50
+        flow_control_element_limit: 100000
+        flow_control_byte_limit: 10485760
+        flow_control_limit_exceeded_behavior: THROW_EXCEPTION
+      batch_descriptor:
+        batched_field: entries
+        discriminator_fields:
+        - log_name
+        - resource
+        - labels
