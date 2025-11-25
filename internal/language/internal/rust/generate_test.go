@@ -42,7 +42,10 @@ func TestGenerate(t *testing.T) {
 		ReleaseLevel:  "preview",
 		CopyrightYear: "2025",
 	}
-	if err := Generate(t.Context(), library, googleapisDir); err != nil {
+	sources := &config.Sources{
+		Googleapis: &config.Source{Dir: googleapisDir},
+	}
+	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
 

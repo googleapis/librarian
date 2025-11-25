@@ -23,13 +23,13 @@ import (
 )
 
 // Generate generates a single library for the specified language.
-func Generate(ctx context.Context, language string, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
 	var err error
 	switch language {
 	case "testhelper":
 		err = testGenerate(library)
 	case "rust":
-		err = rust.Generate(ctx, library, googleapisDir)
+		err = rust.Generate(ctx, library, sources)
 	default:
 		err = fmt.Errorf("generate not implemented for %q", language)
 	}

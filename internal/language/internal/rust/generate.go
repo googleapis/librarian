@@ -18,16 +18,40 @@ import (
 	"context"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 )
 
+const (
+	googleapisRepo = "github.com/googleapis/googleapis"
+	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
+)
+
 // Generate generates a Rust client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
-	sidekickConfig := toSidekickConfig(library, googleapisDir, library.ServiceConfig)
+func Generate(ctx context.Context, library *config.Library, sources *config.Sources) error {
+	googleapisDir, err := sourceDir(sources.Googleapis, googleapisRepo)
+	if err != nil {
+		return err
+	}
+	discoveryDir, err := sourceDir(sources.Discovery, discoveryRepo)
+	if err != nil {
+		return err
+	}
+	sidekickConfig := toSidekickConfig(library, library.ServiceConfig, googleapisDir, discoveryDir)
 	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
 		return err
 	}
 	return sidekickrust.Generate(model, library.Output, sidekickConfig)
+}
+
+func sourceDir(source *config.Source, repo string) (string, error) {
+	if source == nil {
+		return "", nil
+	}
+	if source.Dir != "" {
+		return source.Dir, nil
+	}
+	return fetch.RepoDir(repo, source.Commit, source.SHA256)
 }

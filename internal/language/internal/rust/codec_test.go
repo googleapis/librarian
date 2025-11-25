@@ -26,8 +26,9 @@ func TestToSidekickConfig(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		library       *config.Library
-		googleapisDir string
 		serviceConfig string
+		googleapisDir string
+		discoveryDir  string
 		want          *sidekickconfig.Config
 	}{
 		{
@@ -294,9 +295,36 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with discovery format",
+			library: &config.Library{
+				Channel:             "discoveries/compute.v1.json",
+				Name:                "google-cloud-compute-v1",
+				SpecificationFormat: "discovery",
+			},
+			googleapisDir: "/tmp/googleapis",
+			discoveryDir:  "/tmp/discovery-artifact-manager",
+			serviceConfig: "google/cloud/compute/v1/compute_v1.yaml",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "disco",
+					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
+					SpecificationSource: "discoveries/compute.v1.json",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+					"discovery-root":  "/tmp/discovery-artifact-manager",
+					"roots":           "discovery,googleapis",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-compute-v1",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := toSidekickConfig(test.library, test.googleapisDir, test.serviceConfig)
+			got := toSidekickConfig(test.library, test.serviceConfig, test.googleapisDir, test.discoveryDir)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
