@@ -16,7 +16,7 @@ package parser
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/config"
@@ -41,7 +41,7 @@ func findServiceConfigPath(serviceConfigFile string, options map[string]string) 
 			// Ignore options that are not set
 			continue
 		}
-		location := path.Join(dir, serviceConfigFile)
+		location := filepath.Join(dir, serviceConfigFile)
 		stat, err := os.Stat(location)
 		if err == nil && stat.Mode().IsRegular() {
 			return location
