@@ -165,6 +165,57 @@ func TestRepoDir_TarballExists(t *testing.T) {
 	}
 }
 
+func TestRepoDir_MismatchTarball(t *testing.T) {
+	cache := t.TempDir()
+	t.Setenv(envLibrarianCache, cache)
+	// Set up a mock web server to fetch a tarball.
+	tarballData := createTestTarball(t, "googleapis-"+testCommit, map[string]string{
+		"README.md":                    "# googleapis",
+		"google/api/annotations.proto": "syntax = \"proto3\";",
+	})
+	expectedSHA := fmt.Sprintf("%x", sha256.Sum256(tarballData))
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/archive/"+testCommit+".tar.gz") {
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(tarballData)
+	}))
+	defer server.Close()
+
+	defer func(t http.RoundTripper) { http.DefaultTransport = t }(http.DefaultTransport)
+	http.DefaultTransport = server.Client().Transport
+	// Create an empty tarball file in the cache directory.
+	repo := strings.TrimPrefix(server.URL, "https://")
+	downloadDir := filepath.Join(cache, "download")
+	if err := os.MkdirAll(downloadDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	tarballName := fmt.Sprintf("%s@%s.tar.gz", repo, testCommit)
+	if _, err := os.Create(filepath.Join(downloadDir, tarballName)); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := RepoDir(repo, testCommit, expectedSHA)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(got, "README.md")); err != nil {
+		t.Errorf("expected README.md to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(got, "google/api/annotations.proto")); err != nil {
+		t.Errorf("expected google/api/annotations.proto to exist: %v", err)
+	}
+
+	tarballPath := tarballPath(cache, repo, testCommit)
+	if _, err := os.Stat(tarballPath); err != nil {
+		t.Errorf("expected tarball to be cached at %q: %v", tarballPath, err)
+	}
+}
+
 func TestRepoDir_Download(t *testing.T) {
 	cachedir := t.TempDir()
 	t.Setenv(envLibrarianCache, cachedir)
