@@ -18,6 +18,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -66,7 +67,7 @@ func RepoDir(repo, commit, expectedSHA256 string) (string, error) {
 	}
 
 	tgz := tarballPath(cacheDir, repo, commit)
-	outdir := filepath.Join(cacheDir, fmt.Sprintf("%s@%s", repo, commit))
+	outDir := filepath.Join(cacheDir, fmt.Sprintf("%s@%s", repo, commit))
 
 	// Step 1: Check if extracted directory exists and contains files.
 	if cached, err := extractedDir(cacheDir, repo, commit); err == nil {
@@ -74,15 +75,21 @@ func RepoDir(repo, commit, expectedSHA256 string) (string, error) {
 	}
 
 	// Step 2: Check if tarball exists. Verify its SHA256 matches expectedSHA256.
-	// If hash doesn't match, fall through to re-download.
+	// If hash doesn't match, delete the tarball and fall through to re-download.
 	if _, err := os.Stat(tgz); err == nil {
 		sha, err := computeSHA256(tgz)
-		if err == nil && sha == expectedSHA256 {
-			if err := os.MkdirAll(outdir, 0755); err != nil {
-				return "", fmt.Errorf("failed creating %q: %w", outdir, err)
-			}
-			if err := ExtractTarball(tgz, outdir); err == nil {
-				return outdir, nil
+		if err == nil {
+			if sha == expectedSHA256 {
+				if err := os.MkdirAll(outDir, 0755); err != nil {
+					return "", fmt.Errorf("failed creating %q: %w", outDir, err)
+				}
+				if err := ExtractTarball(tgz, outDir); err == nil {
+					return outDir, nil
+				}
+			} else {
+				if err := os.Remove(tgz); err != nil {
+					slog.Debug("failed to remove tarball %q: %w", tgz, err)
+				}
 			}
 		}
 	}
@@ -92,16 +99,16 @@ func RepoDir(repo, commit, expectedSHA256 string) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(tgz), 0755); err != nil {
 		return "", fmt.Errorf("failed creating %q: %w", filepath.Dir(tgz), err)
 	}
-	if err := os.MkdirAll(outdir, 0755); err != nil {
-		return "", fmt.Errorf("failed creating %q: %w", outdir, err)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 	}
 	if err := DownloadTarball(tgz, sourceURL, expectedSHA256); err != nil {
 		return "", err
 	}
-	if err := ExtractTarball(tgz, outdir); err != nil {
+	if err := ExtractTarball(tgz, outDir); err != nil {
 		return "", fmt.Errorf("failed to extract tarball: %w", err)
 	}
-	return outdir, nil
+	return outDir, nil
 }
 
 // cacheDir returns the root cache directory for librarian operations. It
