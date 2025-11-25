@@ -21,7 +21,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	cmdtest "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -49,13 +48,8 @@ func TestReleaseAll(t *testing.T) {
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerReleased)
-	want := map[string]string{
-		storageName:       storageReleased,
-		secretmanagerName: secretmanagerReleased,
-	}
-	if diff := cmp.Diff(want, got.Versions); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+	checkLibraryVersion(t, got, storageName, storageReleased)
+	checkLibraryVersion(t, got, secretmanagerName, secretmanagerReleased)
 }
 
 func TestReleaseOne(t *testing.T) {
@@ -67,13 +61,8 @@ func TestReleaseOne(t *testing.T) {
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerInitial)
-	want := map[string]string{
-		storageName:       storageReleased,
-		secretmanagerName: secretmanagerInitial,
-	}
-	if diff := cmp.Diff(want, got.Versions); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+	checkLibraryVersion(t, got, storageName, storageReleased)
+	checkLibraryVersion(t, got, secretmanagerName, secretmanagerInitial)
 }
 
 func setupRelease(t *testing.T) *config.Config {
@@ -86,9 +75,9 @@ func setupRelease(t *testing.T) *config.Config {
 	createCrate(t, storageDir, storageName, storageInitial)
 	createCrate(t, secretmanagerDir, secretmanagerName, secretmanagerInitial)
 	return &config.Config{
-		Versions: map[string]string{
-			storageName:       storageInitial,
-			secretmanagerName: secretmanagerInitial,
+		Libraries: []*config.Library{
+			{Name: storageName, Version: storageInitial},
+			{Name: secretmanagerName, Version: secretmanagerInitial},
 		},
 	}
 }
@@ -121,4 +110,17 @@ func checkCargoVersion(t *testing.T, path, wantVersion string) {
 	if !strings.Contains(got, wantLine) {
 		t.Errorf("%s version mismatch:\nwant line: %q\ngot:\n%s", path, wantLine, got)
 	}
+}
+
+func checkLibraryVersion(t *testing.T, cfg *config.Config, name, wantVersion string) {
+	t.Helper()
+	for _, lib := range cfg.Libraries {
+		if lib.Name == name {
+			if lib.Version != wantVersion {
+				t.Errorf("library %q version mismatch: want %q, got %q", name, wantVersion, lib.Version)
+			}
+			return
+		}
+	}
+	t.Errorf("library %q not found in config", name)
 }
