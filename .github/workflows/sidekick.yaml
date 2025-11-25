@@ -34,10 +34,13 @@ jobs:
       - name: Install taplo
         run: |
           set -e
-          curl -fsSL https://github.com/tamasfe/taplo/releases/download/0.10.0/taplo-linux-x86_64.gz | gunzip -c - | sudo tee /usr/local/bin/taplo > /dev/null
-          sha512sum -c <(echo "33587a0beb692561b1bc411f484f088117b45d14e993cdb8e5d66dd967026d9e166ab8b23ec7c4791d1c17ec8bd9f1d6b05a16e742c70c6a6f16dc5f7ca3ff53 /usr/local/bin/taplo")
+          curl -fsSL https://github.com/tamasfe/taplo/releases/download/$VERSION/taplo-linux-x86_64.gz | gunzip -c - | sudo tee /usr/local/bin/taplo > /dev/null
+          sha512sum -c <(echo "$CHECKSUM /usr/local/bin/taplo")
           sudo chmod +x /usr/local/bin/taplo
           taplo --version
+        env:
+          VERSION: 0.10.0
+          CHECKSUM: 33587a0beb692561b1bc411f484f088117b45d14e993cdb8e5d66dd967026d9e166ab8b23ec7c4791d1c17ec8bd9f1d6b05a16e742c70c6a6f16dc5f7ca3ff53
       - name: Install protoc
         run: |
           set -e
