@@ -23,13 +23,18 @@ import (
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 )
 
+const (
+	googleapisRepo = "github.com/googleapis/googleapis"
+	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
+)
+
 // Generate generates a Rust client library.
 func Generate(ctx context.Context, library *config.Library, sources *config.Sources) error {
-	googleapisDir, err := sourceDir(sources.Googleapis, "github.com/googleapis/googleapis")
+	googleapisDir, err := sourceDir(sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
 	}
-	discoveryDir, err := sourceDir(sources.Discovery, "github.com/googleapis/discovery-artifact-manager")
+	discoveryDir, err := sourceDir(sources.Discovery, discoveryRepo)
 	if err != nil {
 		return err
 	}

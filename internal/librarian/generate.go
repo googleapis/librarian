@@ -27,6 +27,7 @@ import (
 var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
+	errEmptySources            = errors.New("sources field is required in librarian.yaml: specify googleapis and/or discovery source commits")
 )
 
 func generateCommand() *cli.Command {
@@ -58,6 +59,9 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	cfg, err := config.Read(librarianConfigPath)
 	if err != nil {
 		return err
+	}
+	if cfg.Sources == nil {
+		return errEmptySources
 	}
 	if all {
 		return generateAll(ctx, cfg)

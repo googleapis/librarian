@@ -35,6 +35,9 @@ func TestGenerateCommand(t *testing.T) {
 	t.Chdir(tempDir)
 	configPath := filepath.Join(tempDir, librarianConfigPath)
 	configContent := fmt.Sprintf(`language: testhelper
+sources:
+  googleapis:
+    commit: abc123
 libraries:
   - name: %s
     output: %s
