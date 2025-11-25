@@ -40,18 +40,20 @@ func Version() string {
 }
 
 func version(info *debug.BuildInfo) string {
+	isRetracted := false
 	for _, v := range retractedVersions {
 		if strings.HasPrefix(info.Main.Version, v) {
-			// This version is retracted. Do not use it.
-			return newPseudoVersion(info)
+			isRetracted = true
+			break
 		}
 	}
-
-	if info.Main.Version != "" && info.Main.Version != "(devel)" {
-		return info.Main.Version
+	// A pseudo-version should be used for retracted versions or for
+	// development builds that don't have a proper version tag.
+	isDevelBuild := info.Main.Version == "" || info.Main.Version == "(devel)"
+	if isRetracted || isDevelBuild {
+		return newPseudoVersion(info)
 	}
-
-	return newPseudoVersion(info)
+	return info.Main.Version
 }
 
 // newPseudoVersion constructs a pseudo-version string from the build info.
