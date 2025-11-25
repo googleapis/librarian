@@ -24,6 +24,11 @@ import (
 //go:embed version.txt
 var versionString string
 
+// retractedVersions is a list of Go module versions that have been officially retracted
+// via the go.mod 'retract' directive. v1.0.2 added to account for local dev builds
+// from untagged commits.
+var retractedVersions = []string{"v1.0.0", "v1.0.1", "v1.0.2"}
+
 // Version return the version information for the binary, which is constructed
 // following https://go.dev/ref/mod#versions.
 func Version() string {
@@ -35,10 +40,22 @@ func Version() string {
 }
 
 func version(info *debug.BuildInfo) string {
+	for _, v := range retractedVersions {
+		if strings.HasPrefix(info.Main.Version, v) {
+			// This version is retracted. Do not use it.
+			return newPseudoVersion(info)
+		}
+	}
+
 	if info.Main.Version != "" && info.Main.Version != "(devel)" {
 		return info.Main.Version
 	}
 
+	return newPseudoVersion(info)
+}
+
+// newPseudoVersion constructs a pseudo-version string from the build info.
+func newPseudoVersion(info *debug.BuildInfo) string {
 	var revision, at string
 	for _, s := range info.Settings {
 		if s.Key == "vcs.revision" {
@@ -52,7 +69,6 @@ func version(info *debug.BuildInfo) string {
 	if revision == "" && at == "" {
 		return "not available"
 	}
-
 	// Construct the pseudo-version string per
 	// https://go.dev/ref/mod#pseudo-versions.
 	var buf strings.Builder
