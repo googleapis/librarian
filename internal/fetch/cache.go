@@ -88,7 +88,7 @@ func RepoDir(repo, commit, expectedSHA256 string) (string, error) {
 				}
 			} else {
 				if err := os.Remove(tgz); err != nil {
-					slog.Debug("failed to remove tarball %q: %w", tgz, err)
+					slog.Debug("failed to remove tarball", "path", tgz, "err", err)
 				}
 			}
 		}
