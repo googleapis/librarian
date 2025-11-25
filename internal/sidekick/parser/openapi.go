@@ -44,7 +44,7 @@ func ParseOpenAPI(cfg *config.Config) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	serviceConfig, err := serviceconfig.Load(cfg)
+	serviceConfig, err := loadServiceConfig(cfg)
 	if err != nil {
 		return nil, err
 	}

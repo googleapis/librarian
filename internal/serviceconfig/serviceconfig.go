@@ -19,9 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
@@ -38,15 +36,6 @@ type (
 	AuthenticationRule = serviceconfig.AuthenticationRule
 	OAuthRequirements  = serviceconfig.OAuthRequirements
 )
-
-// Load loads the service config specified in the configuration.
-// If no service config is specified, it returns nil.
-func Load(cfg *config.Config) (*Service, error) {
-	if name := cfg.General.ServiceConfig; name != "" {
-		return Read(FindPath(name, cfg.Source))
-	}
-	return nil, nil
-}
 
 // Read reads a service config from a YAML file and returns it as a Service
 // proto. The file is parsed as YAML, converted to JSON, and then unmarshaled
@@ -77,27 +66,4 @@ func Read(serviceConfigPath string) (*Service, error) {
 		return nil, fmt.Errorf("missing name in service config file [%s]", serviceConfigPath)
 	}
 	return cfg, nil
-}
-
-// FindPath finds the service config path for the current parser configuration.
-//
-// The service config files are specified as relative to the `googleapis-root`
-// path (or `extra-protos-root` when set). This finds the right path given a
-// configuration.
-func FindPath(serviceConfigFile string, options map[string]string) string {
-	for _, opt := range config.SourceRoots(options) {
-		dir, ok := options[opt]
-		if !ok {
-			// Ignore options that are not set
-			continue
-		}
-		location := path.Join(dir, serviceConfigFile)
-		stat, err := os.Stat(location)
-		if err == nil && stat.Mode().IsRegular() {
-			return location
-		}
-	}
-	// Fallback to the current directory, it may fail but that is detected
-	// elsewhere.
-	return serviceConfigFile
 }
