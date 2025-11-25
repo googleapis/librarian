@@ -194,9 +194,11 @@ func TestRepoDir_MismatchTarball(t *testing.T) {
 		t.Fatal(err)
 	}
 	tarballName := fmt.Sprintf("%s@%s.tar.gz", repo, testCommit)
-	if _, err := os.Create(filepath.Join(downloadDir, tarballName)); err != nil {
+	f, err := os.Create(filepath.Join(downloadDir, tarballName))
+	if err != nil {
 		t.Fatal(err)
 	}
+	defer f.Close()
 
 	got, err := RepoDir(repo, testCommit, expectedSHA)
 	if err != nil {
