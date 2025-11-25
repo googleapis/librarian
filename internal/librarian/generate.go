@@ -41,21 +41,20 @@ func generateCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return runGenerate(ctx, cmd)
+			all := cmd.Bool("all")
+			libraryName := cmd.Args().First()
+			if !all && libraryName == "" {
+				return errMissingLibraryOrAllFlag
+			}
+			if all && libraryName != "" {
+				return errBothLibraryAndAllFlag
+			}
+			return runGenerate(ctx, all, libraryName)
 		},
 	}
 }
 
-func runGenerate(ctx context.Context, cmd *cli.Command) error {
-	all := cmd.Bool("all")
-	libraryName := cmd.Args().First()
-	if !all && libraryName == "" {
-		return errMissingLibraryOrAllFlag
-	}
-	if all && libraryName != "" {
-		return errBothLibraryAndAllFlag
-	}
-
+func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	cfg, err := config.Read(librarianConfigPath)
 	if err != nil {
 		return err
@@ -69,13 +68,7 @@ func runGenerate(ctx context.Context, cmd *cli.Command) error {
 func generateAll(ctx context.Context, cfg *config.Config) error {
 	var errs []error
 	for _, lib := range cfg.Libraries {
-		// TODO(https://github.com/googleapis/librarian/issues/2966): use
-		// fetch.RepoDir to fetch sources once implemented.
-		//
-		// The function signature also needs to be updated to handle
-		// sources beyond just googleapis, such as discovery, showcase, and
-		// protojson conformance for Rust.
-		if err := language.Generate(ctx, cfg.Language, lib, ""); err != nil {
+		if err := language.Generate(ctx, cfg.Language, lib, cfg.Sources); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -96,14 +89,5 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 	if library == nil {
 		return fmt.Errorf("library %q not found", libraryName)
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/2966): use
-	// fetch.RepoDir to fetch sources once implemented.
-	//
-	// The function signature also needs to be updated to handle
-	// sources beyond just googleapis, such as discovery, showcase, and
-	// protojson conformance for Rust.
-	if err := language.Generate(ctx, cfg.Language, library, ""); err != nil {
-		return err
-	}
-	return nil
+	return language.Generate(ctx, cfg.Language, library, cfg.Sources)
 }

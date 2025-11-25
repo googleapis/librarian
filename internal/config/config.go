@@ -66,6 +66,10 @@ type Source struct {
 
 	// SHA256 is the expected SHA256 hash of the tarball for this commit.
 	SHA256 string `yaml:"sha256,omitempty"`
+
+	// Dir is a local directory path to use instead of fetching.
+	// This is useful for testing. If set, Commit and SHA256 are ignored.
+	Dir string `yaml:"-"`
 }
 
 // Default contains default generation settings.
@@ -158,6 +162,10 @@ type Library struct {
 
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
+
+	// SpecificationFormat specifies the API specification format.
+	// Valid values are "protobuf" (default) or "discovery".
+	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"-"`

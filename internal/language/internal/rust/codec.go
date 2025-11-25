@@ -21,18 +21,25 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, googleapisDir, serviceConfig string) *sidekickconfig.Config {
+func toSidekickConfig(library *config.Library, serviceConfig, googleapisDir, discoveryDir string) *sidekickconfig.Config {
+	source := map[string]string{
+		"googleapis-root": googleapisDir,
+	}
+	specFormat := "protobuf"
+	if library.SpecificationFormat == "discovery" {
+		specFormat = "disco"
+		source["discovery-root"] = discoveryDir
+		source["roots"] = "discovery,googleapis"
+	}
 	sidekickCfg := &sidekickconfig.Config{
 		General: sidekickconfig.GeneralConfig{
 			Language:            "rust",
-			SpecificationFormat: "protobuf",
+			SpecificationFormat: specFormat,
 			ServiceConfig:       serviceConfig,
 			SpecificationSource: library.Channel,
 		},
-		Source: map[string]string{
-			"googleapis-root": googleapisDir,
-		},
-		Codec: buildCodec(library),
+		Source: source,
+		Codec:  buildCodec(library),
 	}
 
 	if library.Rust != nil {
@@ -46,7 +53,6 @@ func toSidekickConfig(library *config.Library, googleapisDir, serviceConfig stri
 				}
 			}
 		}
-
 		if len(library.Rust.PaginationOverrides) > 0 {
 			sidekickCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
 			for i, override := range library.Rust.PaginationOverrides {

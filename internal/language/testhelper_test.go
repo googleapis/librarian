@@ -37,7 +37,7 @@ func TestGenerate(t *testing.T) {
 		Output: outputDir,
 	}
 
-	if err := Generate(t.Context(), "testhelper", library, ""); err != nil {
+	if err := Generate(t.Context(), "testhelper", library, nil); err != nil {
 		t.Fatal(err)
 	}
 
