@@ -42,6 +42,7 @@ jobs:
         run: |
           set -e
           curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip
+          sha512sum -c <(echo "f149c4a69910c8d241d27869d2cdf6791187a7a9434ad0f392b4a61e1697c3844e60bce634bd7147cb4cb7f2ad2530fc933be4976f67ac75d9ad78bb8b412f24 /tmp/protoc.zip")
           cd /usr/local
           sudo unzip -o /tmp/protoc.zip
           protoc --version
