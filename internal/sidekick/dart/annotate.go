@@ -264,6 +264,13 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			packageVersion = definition
 		case key == "part-file":
 			partFileReference = definition
+		case key == "imports":
+			// imports = "http, googleapis_auth"
+			// A list of imports to add to pubspec.yaml. This can be used to add imports for hand-written code.
+			imports := strings.Split(definition, ",")
+			for i := range imports {
+				annotate.imports[strings.TrimSpace(imports[i])] = true
+			}
 		case key == "extra-exports":
 			// extra-export = "export 'package:google_cloud_gax/gax.dart' show Any; export 'package:google_cloud_gax/gax.dart' show Status;"
 			// Dart `export` statements that should be appended after any imports.
