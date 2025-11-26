@@ -42,11 +42,6 @@ type Config struct {
 	// Only include libraries that differ from defaults.
 	// Versions are looked up from the Versions map below.
 	Libraries []*Library `yaml:"libraries,omitempty"`
-
-	// Versions contains version numbers for all libraries.
-	// This is the source of truth for release versions.
-	// Key is library name, value is version string.
-	Versions map[string]string `yaml:"versions,omitempty"`
 }
 
 // Sources contains references to external source repositories.
