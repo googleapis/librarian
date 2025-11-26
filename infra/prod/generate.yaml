@@ -16,7 +16,7 @@
 # secret name, and optional library ID
 steps:
   - name: gcr.io/cloud-builders/git
-    id: clone-language-repo
+    id: clone-language-repo2
     waitFor: ['-']
     args:
       - 'clone'
