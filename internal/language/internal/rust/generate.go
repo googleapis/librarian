@@ -30,11 +30,11 @@ const (
 
 // Generate generates a Rust client library.
 func Generate(ctx context.Context, library *config.Library, sources *config.Sources) error {
-	googleapisDir, err := sourceDir(sources.Googleapis, googleapisRepo)
+	googleapisDir, err := sourceDir(ctx, sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
 	}
-	discoveryDir, err := sourceDir(sources.Discovery, discoveryRepo)
+	discoveryDir, err := sourceDir(ctx, sources.Discovery, discoveryRepo)
 	if err != nil {
 		return err
 	}
@@ -46,12 +46,12 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	return sidekickrust.Generate(model, library.Output, sidekickConfig)
 }
 
-func sourceDir(source *config.Source, repo string) (string, error) {
+func sourceDir(ctx context.Context, source *config.Source, repo string) (string, error) {
 	if source == nil {
 		return "", nil
 	}
 	if source.Dir != "" {
 		return source.Dir, nil
 	}
-	return fetch.RepoDir(repo, source.Commit, source.SHA256)
+	return fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
 }

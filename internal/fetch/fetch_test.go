@@ -18,6 +18,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -207,7 +209,7 @@ func TestDownloadTarballTgzExists(t *testing.T) {
 	if err := os.WriteFile(target, tarball.Contents, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := DownloadTarball(target, "https://unused/placeholder.tar.gz", tarball.Sha256); err != nil {
+	if err := DownloadTarball(t.Context(), target, "https://unused/placeholder.tar.gz", tarball.Sha256); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -225,7 +227,7 @@ func TestDownloadTarballNeedsDownload(t *testing.T) {
 	defer server.Close()
 
 	expected := path.Join(testDir, "new-file")
-	if err := DownloadTarball(expected, server.URL+"/placeholder.tar.gz", tarball.Sha256); err != nil {
+	if err := DownloadTarball(t.Context(), expected, server.URL+"/placeholder.tar.gz", tarball.Sha256); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(expected)
@@ -249,12 +251,32 @@ func TestDownloadTarballChecksumMismatch(t *testing.T) {
 	target := path.Join(testDir, "target-file")
 	wrongSha := "0000000000000000000000000000000000000000000000000000000000000000"
 
-	err := DownloadTarball(target, server.URL+"/test.tar.gz", wrongSha)
+	err := DownloadTarball(t.Context(), target, server.URL+"/test.tar.gz", wrongSha)
 	if !errors.Is(err, errChecksumMismatch) {
 		t.Fatalf("expected errChecksumMismatch, got: %v", err)
 	}
 	if _, err := os.Stat(target); !os.IsNotExist(err) {
 		t.Errorf("target file should not exist after checksum failure: %v", err)
+	}
+}
+
+func TestDownloadTarball_ContextCanceled(t *testing.T) {
+	testDir := t.TempDir()
+	// Set up a mock web server that sleeps to simulate a long download.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	target := path.Join(testDir, "target-file")
+	// Create a context that will be canceled before the download completes.
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	err := DownloadTarball(ctx, target, server.URL+"/test.tar.gz", "any-sha")
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
 	}
 }
 
