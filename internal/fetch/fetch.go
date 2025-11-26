@@ -163,12 +163,22 @@ func downloadTarball(ctx context.Context, target, source string) error {
 	var err error
 	backoff := 10 * time.Second
 	for i := range 3 {
-		if i != 0 {
-			time.Sleep(backoff)
-			backoff = 2 * backoff
+		if i > 0 {
+			select {
+			case <-time.After(backoff):
+				backoff *= 2
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
-		if err = downloadAttempt(ctx, target, source); err == nil {
+
+		err = downloadAttempt(ctx, target, source)
+		if err == nil {
 			return nil
+		}
+
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return err
 		}
 	}
 	return fmt.Errorf("download failed after 3 attempts, last error=%w", err)
