@@ -69,12 +69,12 @@ jobs:
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     needs: [test, e2e-test]
-    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'legacy-librarian') }}
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
-      - name: Create an issue for push event to main/legacy-librarian
+      - name: Create an issue for push event to main
         run: |
-          ISSUE_TITLE="all: tests failed at HEAD (${{ github.ref_name }})"
-          BODY="Tests failed at HEAD of the \`${{ github.ref_name }}\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
+          ISSUE_TITLE="all: tests failed at HEAD"
+          BODY="Tests failed at HEAD of the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
           ISSUE_LINK=$(gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" -R $GH_REPO)
           ISSUE_NUM=${ISSUE_LINK##*/}
           gh issue comment $ISSUE_NUM --body "@googleapis/cloud-sdk-librarian-team A critical issue has been created, please respond immediately."
