@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -54,7 +55,7 @@ func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, err
 		return target, nil
 	}
 	tgz := target + ".tar.gz"
-	if err := fetch.DownloadTarball(tgz, sourceRoot, source); err != nil {
+	if err := fetch.DownloadTarball(context.Background(), tgz, sourceRoot, source); err != nil {
 		return "", err
 	}
 

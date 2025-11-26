@@ -15,6 +15,7 @@
 package fetch
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -60,7 +61,7 @@ const envLibrarianCache = "LIBRARIAN_CACHE"
 //     through to step 3.
 //  3. Download tarball, compute SHA256, verify it matches expectedSHA256 from
 //     librarian.yaml, extract, and return the path.
-func RepoDir(repo, commit, expectedSHA256 string) (string, error) {
+func RepoDir(ctx context.Context, repo, commit, expectedSHA256 string) (string, error) {
 	cacheDir, err := cacheDir()
 	if err != nil {
 		return "", err
@@ -102,7 +103,7 @@ func RepoDir(repo, commit, expectedSHA256 string) (string, error) {
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 	}
-	if err := DownloadTarball(tgz, sourceURL, expectedSHA256); err != nil {
+	if err := DownloadTarball(ctx, tgz, sourceURL, expectedSHA256); err != nil {
 		return "", err
 	}
 	if err := ExtractTarball(tgz, outDir); err != nil {

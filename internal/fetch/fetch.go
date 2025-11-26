@@ -18,6 +18,7 @@ package fetch
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -119,7 +120,7 @@ func TarballLink(githubDownload string, repo *Repo, sha string) string {
 // DownloadTarball downloads a tarball from the given url to the target
 // path, verifying its SHA256 checksum matches expectedSha256. It retries up to
 // 3 times with exponential backoff on failure.
-func DownloadTarball(target, url, expectedSha256 string) error {
+func DownloadTarball(ctx context.Context, target, url, expectedSha256 string) error {
 	if fileExists(target) {
 		return nil
 	}
@@ -139,7 +140,7 @@ func DownloadTarball(target, url, expectedSha256 string) error {
 		}
 	}()
 
-	if err := downloadTarball(tempPath, url); err != nil {
+	if err := downloadTarball(ctx, tempPath, url); err != nil {
 		return err
 	}
 
@@ -158,7 +159,7 @@ func DownloadTarball(target, url, expectedSha256 string) error {
 
 // downloadTarball downloads a tarball from the given source URL to the target
 // path. It retries up to 3 times with exponential backoff on failure.
-func downloadTarball(target, source string) error {
+func downloadTarball(ctx context.Context, target, source string) error {
 	var err error
 	backoff := 10 * time.Second
 	for i := range 3 {
@@ -166,14 +167,14 @@ func downloadTarball(target, source string) error {
 			time.Sleep(backoff)
 			backoff = 2 * backoff
 		}
-		if err = downloadAttempt(target, source); err == nil {
+		if err = downloadAttempt(ctx, target, source); err == nil {
 			return nil
 		}
 	}
 	return fmt.Errorf("download failed after 3 attempts, last error=%w", err)
 }
 
-func downloadAttempt(target, source string) (err error) {
+func downloadAttempt(ctx context.Context, target, source string) (err error) {
 	file, err := os.Create(target)
 	if err != nil {
 		return err
@@ -189,7 +190,11 @@ func downloadAttempt(target, source string) (err error) {
 	}()
 
 	client := http.Client{Timeout: 60 * time.Second}
-	response, err := client.Get(source)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source, nil)
+	if err != nil {
+		return err
+	}
+	response, err := client.Do(req)
 	if err != nil {
 		return err
 	}

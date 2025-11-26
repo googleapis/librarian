@@ -15,7 +15,9 @@
 package fetch
 
 import (
+	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -23,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -120,7 +123,7 @@ func TestRepoDir_ExtractedDirExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := RepoDir(testRepo, testCommit, testSHA256)
+	got, err := RepoDir(t.Context(), testRepo, testCommit, testSHA256)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +151,7 @@ func TestRepoDir_TarballExists(t *testing.T) {
 	}
 
 	sha := fmt.Sprintf("%x", sha256.Sum256(tarballData))
-	got, err := RepoDir(testRepo, testCommit, sha)
+	got, err := RepoDir(t.Context(), testRepo, testCommit, sha)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +203,7 @@ func TestRepoDir_MismatchTarball(t *testing.T) {
 	}
 	defer f.Close()
 
-	got, err := RepoDir(repo, testCommit, expectedSHA)
+	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +245,7 @@ func TestRepoDir_Download(t *testing.T) {
 
 	repo := strings.TrimPrefix(server.URL, "https://")
 	expectedSHA := fmt.Sprintf("%x", sha256.Sum256(tarballData))
-	got, err := RepoDir(repo, testCommit, expectedSHA)
+	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,5 +260,29 @@ func TestRepoDir_Download(t *testing.T) {
 	tarballPath := tarballPath(cachedir, repo, testCommit)
 	if _, err := os.Stat(tarballPath); err != nil {
 		t.Errorf("expected tarball to be cached at %q: %v", tarballPath, err)
+	}
+}
+
+func TestRepoDir_ContextCanceled(t *testing.T) {
+	cachedir := t.TempDir()
+	t.Setenv(envLibrarianCache, cachedir)
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	defer func(t http.RoundTripper) { http.DefaultTransport = t }(http.DefaultTransport)
+	http.DefaultTransport = server.Client().Transport
+
+	// very short timeout to trigger context deadline exceeded.
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	repo := strings.TrimPrefix(server.URL, "https://")
+	_, err := RepoDir(ctx, repo, testCommit, "any-sha")
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("expected context.DeadlineExceeded, got: %v", err)
 	}
 }
