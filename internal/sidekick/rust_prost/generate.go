@@ -81,7 +81,6 @@ func buildRS(rootName, tmpDir, outDir string) error {
 	cmd.Dir = tmpDir
 	cmd.Env = append(os.Environ(), fmt.Sprintf("SOURCE_ROOT=%s", absRoot))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("DEST=%s", absOutDir))
-	fmt.Fprintf(os.Stderr, "Running: %s\n", cmd.String())
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
 	}
