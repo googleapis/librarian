@@ -21,7 +21,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	cmdtest "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -42,38 +41,24 @@ const (
 
 func TestReleaseAll(t *testing.T) {
 	cfg := setupRelease(t)
-	got, err := ReleaseAll(cfg)
+	_, err := ReleaseAll(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerReleased)
-	want := map[string]string{
-		storageName:       storageReleased,
-		secretmanagerName: secretmanagerReleased,
-	}
-	if diff := cmp.Diff(want, got.Versions); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
 }
 
 func TestReleaseOne(t *testing.T) {
 	cfg := setupRelease(t)
-	got, err := ReleaseLibrary(cfg, storageName)
+	_, err := ReleaseLibrary(cfg, storageName)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerInitial)
-	want := map[string]string{
-		storageName:       storageReleased,
-		secretmanagerName: secretmanagerInitial,
-	}
-	if diff := cmp.Diff(want, got.Versions); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
 }
 
 func setupRelease(t *testing.T) *config.Config {
@@ -85,12 +70,7 @@ func setupRelease(t *testing.T) *config.Config {
 
 	createCrate(t, storageDir, storageName, storageInitial)
 	createCrate(t, secretmanagerDir, secretmanagerName, secretmanagerInitial)
-	return &config.Config{
-		Versions: map[string]string{
-			storageName:       storageInitial,
-			secretmanagerName: secretmanagerInitial,
-		},
-	}
+	return &config.Config{}
 }
 
 func createCrate(t *testing.T, dir, name, version string) {
