@@ -17,48 +17,25 @@ package language
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestReleaseAll(t *testing.T) {
 	cfg := &config.Config{
 		Language: "testhelper",
-		Versions: map[string]string{
-			"lib1": "0.1.0",
-			"lib2": "0.2.0",
-		},
 	}
-	cfg, err := ReleaseAll(cfg)
+	_, err := ReleaseAll(cfg)
 	if err != nil {
 		t.Fatal(err)
-	}
-	want := map[string]string{
-		"lib1": TestReleaseVersion,
-		"lib2": TestReleaseVersion,
-	}
-	if diff := cmp.Diff(want, cfg.Versions); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestReleaseLibrary(t *testing.T) {
 	cfg := &config.Config{
 		Language: "testhelper",
-		Versions: map[string]string{
-			"lib1": "0.1.0",
-			"lib2": "0.2.0",
-		},
 	}
-	cfg, err := ReleaseLibrary(cfg, "lib1")
+	_, err := ReleaseLibrary(cfg, "lib1")
 	if err != nil {
 		t.Fatal(err)
-	}
-	want := map[string]string{
-		"lib1": TestReleaseVersion,
-		"lib2": "0.2.0",
-	}
-	if diff := cmp.Diff(want, cfg.Versions); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

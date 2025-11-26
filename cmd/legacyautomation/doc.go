@@ -15,12 +15,14 @@
 //go:generate go run -tags docgen ../doc_generate.go -cmd .
 
 /*
-Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
-any repository listed in internal/automation/prod/repositories.yaml.
+Librarian manages Google API client libraries by automating onboarding,
+regeneration, and release. It runs language-agnostic workflows while
+delegating language-specific tasks—such as code generation, building, and
+testing—to Docker images.
 
 Usage:
 
-	automation <command> [arguments]
+	librarian <command> [arguments]
 
 The commands are:
 

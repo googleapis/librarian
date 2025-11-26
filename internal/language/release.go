@@ -26,7 +26,7 @@ import (
 func ReleaseAll(cfg *config.Config) (*config.Config, error) {
 	switch cfg.Language {
 	case "testhelper":
-		return testReleaseAll(cfg)
+		return cfg, nil
 	case "rust":
 		return rust.ReleaseAll(cfg)
 	default:
@@ -39,7 +39,7 @@ func ReleaseAll(cfg *config.Config) (*config.Config, error) {
 func ReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
 	switch cfg.Language {
 	case "testhelper":
-		return testReleaseLibrary(cfg, name)
+		return cfg, nil
 	case "rust":
 		return rust.ReleaseLibrary(cfg, name)
 	default:
