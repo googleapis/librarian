@@ -55,6 +55,7 @@ func makeSourceRoot(rootConfig *config.Config, configPrefix string) (string, err
 		return target, nil
 	}
 	tgz := target + ".tar.gz"
+	// No upstream context in makeSourceRoot, use context.Background().
 	if err := fetch.DownloadTarball(context.Background(), tgz, sourceRoot, source); err != nil {
 		return "", err
 	}
