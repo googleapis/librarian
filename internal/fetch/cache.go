@@ -75,7 +75,8 @@ func RepoDir(repo, commit, expectedSHA256 string) (string, error) {
 	}
 
 	// Step 2: Check if tarball exists. Verify its SHA256 matches expectedSHA256.
-	// If hash doesn't match, delete the tarball and fall through to re-download.
+	// If hash doesn't match or any error happens during the extraction, delete
+	// the tarball and fall through to re-download.
 	if _, err := os.Stat(tgz); err == nil {
 		sha, err := computeSHA256(tgz)
 		if err == nil {
@@ -86,10 +87,9 @@ func RepoDir(repo, commit, expectedSHA256 string) (string, error) {
 				if err := ExtractTarball(tgz, outDir); err == nil {
 					return outDir, nil
 				}
-			} else {
-				if err := os.Remove(tgz); err != nil {
-					slog.Debug("failed to remove tarball", "path", tgz, "err", err)
-				}
+			}
+			if err := os.Remove(tgz); err != nil {
+				slog.Debug("failed to remove tarball", "path", tgz, "err", err)
 			}
 		}
 	}
