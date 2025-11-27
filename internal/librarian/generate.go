@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/language"
+	"github.com/googleapis/librarian/internal/librarian/internal/rust"
 	"github.com/urfave/cli/v3"
 )
 
@@ -72,7 +72,7 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 func generateAll(ctx context.Context, cfg *config.Config) error {
 	var errs []error
 	for _, lib := range cfg.Libraries {
-		if err := language.Generate(ctx, cfg.Language, lib, cfg.Sources); err != nil {
+		if err := generate(ctx, cfg.Language, lib, cfg.Sources); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -83,15 +83,29 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 }
 
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) error {
-	var library *config.Library
 	for _, lib := range cfg.Libraries {
 		if lib.Name == libraryName {
-			library = lib
-			break
+			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
-	if library == nil {
-		return fmt.Errorf("library %q not found", libraryName)
+	return fmt.Errorf("library %q not found", libraryName)
+}
+
+func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
+	var err error
+	switch language {
+	case "testhelper":
+		err = testGenerate(library)
+	case "rust":
+		err = rust.Generate(ctx, library, sources)
+	default:
+		err = fmt.Errorf("generate not implemented for %q", language)
 	}
-	return language.Generate(ctx, cfg.Language, library, cfg.Sources)
+
+	if err != nil {
+		fmt.Printf("✗ Error generating %s: %v\n", library.Name, err)
+		return err
+	}
+	fmt.Printf("✓ Successfully generated %s\n", library.Name)
+	return nil
 }

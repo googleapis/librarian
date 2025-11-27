@@ -12,32 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package language
+package librarian
 
 import (
-	"context"
-	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/language/internal/rust"
 )
 
-// Generate generates a single library for the specified language.
-func Generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
-	var err error
-	switch language {
-	case "testhelper":
-		err = testGenerate(library)
-	case "rust":
-		err = rust.Generate(ctx, library, sources)
-	default:
-		err = fmt.Errorf("generate not implemented for %q", language)
+func TestGenerate(t *testing.T) {
+	const (
+		libraryName = "test-library"
+		outputDir   = "output"
+	)
+
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	library := &config.Library{
+		Name:   libraryName,
+		Output: outputDir,
 	}
 
-	if err != nil {
-		fmt.Printf("✗ Error generating %s: %v\n", library.Name, err)
-		return err
+	if err := generate(t.Context(), "testhelper", library, nil); err != nil {
+		t.Fatal(err)
 	}
-	fmt.Printf("✓ Successfully generated %s\n", library.Name)
-	return nil
+
+	readmePath := filepath.Join(outputDir, "README.md")
+	content, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := "# test-library\n\nGenerated library\n"
+	if diff := cmp.Diff(want, string(content)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 }
