@@ -44,6 +44,3 @@ libraries:
     rust:
       disabled_rustdoc_warnings:
         - rustdoc::bare_urls
-versions:
-  google-cloud-secretmanager-v1: 0.1.0
-  google-cloud-storage-v2: 0.2.0

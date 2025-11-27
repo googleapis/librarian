@@ -24,20 +24,31 @@ import (
 func TestReleaseAll(t *testing.T) {
 	cfg := &config.Config{
 		Language: "testhelper",
-		Versions: map[string]string{
-			"lib1": "0.1.0",
-			"lib2": "0.2.0",
+		Libraries: []*config.Library{
+			{
+				Name:    "lib-1",
+				Version: "0.1.0",
+			},
+			{
+				Name:    "lib-2",
+				Version: "0.2.0",
+			},
 		},
 	}
+
 	cfg, err := ReleaseAll(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]string{
-		"lib1": TestReleaseVersion,
-		"lib2": TestReleaseVersion,
+	gotVersions := make(map[string]string)
+	for _, lib := range cfg.Libraries {
+		gotVersions[lib.Name] = lib.Version
 	}
-	if diff := cmp.Diff(want, cfg.Versions); diff != "" {
+	want := map[string]string{
+		"lib-1": TestReleaseVersion,
+		"lib-2": TestReleaseVersion,
+	}
+	if diff := cmp.Diff(want, gotVersions); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -45,20 +56,32 @@ func TestReleaseAll(t *testing.T) {
 func TestReleaseLibrary(t *testing.T) {
 	cfg := &config.Config{
 		Language: "testhelper",
-		Versions: map[string]string{
-			"lib1": "0.1.0",
-			"lib2": "0.2.0",
+		Libraries: []*config.Library{
+			{
+				Name:    "lib-1",
+				Version: "0.1.0",
+			},
+			{
+				Name:    "lib-2",
+				Version: "0.2.0",
+			},
 		},
 	}
-	cfg, err := ReleaseLibrary(cfg, "lib1")
+
+	cfg, err := ReleaseLibrary(cfg, "lib-1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]string{
-		"lib1": TestReleaseVersion,
-		"lib2": "0.2.0",
+
+	gotVersions := make(map[string]string)
+	for _, lib := range cfg.Libraries {
+		gotVersions[lib.Name] = lib.Version
 	}
-	if diff := cmp.Diff(want, cfg.Versions); diff != "" {
+	want := map[string]string{
+		"lib-1": TestReleaseVersion,
+		"lib-2": "0.2.0",
+	}
+	if diff := cmp.Diff(want, gotVersions); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

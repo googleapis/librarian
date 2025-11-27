@@ -46,10 +46,6 @@ func ReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
 }
 
 func release(cfg *config.Config, name string) (*config.Config, error) {
-	if cfg.Versions == nil {
-		cfg.Versions = make(map[string]string)
-	}
-
 	shouldRelease := func(pkgName string) bool {
 		// If name is the empty string, release everything.
 		if name == "" {
@@ -93,7 +89,11 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		if err := rustrelease.UpdateCargoVersion(path, newVersion); err != nil {
 			return err
 		}
-		cfg.Versions[manifest.Package.Name] = newVersion
+		library, err := cfg.LibraryByName(manifest.Package.Name)
+		if err != nil {
+			return err
+		}
+		library.Version = newVersion
 		return nil
 	})
 	if err != nil {

@@ -15,11 +15,14 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
 )
+
+var errLibraryNotFound = errors.New("library not found")
 
 // Config represents the complete librarian.yaml configuration file.
 type Config struct {
@@ -40,13 +43,7 @@ type Config struct {
 
 	// Libraries contains configuration overrides for libraries that need special handling.
 	// Only include libraries that differ from defaults.
-	// Versions are looked up from the Versions map below.
 	Libraries []*Library `yaml:"libraries,omitempty"`
-
-	// Versions contains version numbers for all libraries.
-	// This is the source of truth for release versions.
-	// Key is library name, value is version string.
-	Versions map[string]string `yaml:"versions,omitempty"`
 }
 
 // Sources contains references to external source repositories.
@@ -226,4 +223,19 @@ func (c *Config) Write(path string) error {
 	}
 
 	return nil
+}
+
+// LibraryByName returns a library with the given name.
+func (c *Config) LibraryByName(name string) (*Library, error) {
+	if c.Libraries == nil {
+		return nil, errLibraryNotFound
+	}
+
+	for _, library := range c.Libraries {
+		if library.Name == name {
+			return library, nil
+		}
+	}
+
+	return nil, errLibraryNotFound
 }
