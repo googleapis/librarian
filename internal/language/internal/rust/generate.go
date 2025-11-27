@@ -38,12 +38,17 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
-	sidekickConfig := toSidekickConfig(library, library.ServiceConfig, googleapisDir, discoveryDir)
-	model, err := parser.CreateModel(sidekickConfig)
-	if err != nil {
-		return err
+	for _, channel := range library.Channels {
+		sidekickConfig := toSidekickConfig(library, channel, googleapisDir, discoveryDir)
+		model, err := parser.CreateModel(sidekickConfig)
+		if err != nil {
+			return err
+		}
+		if err := sidekickrust.Generate(model, library.Output, sidekickConfig); err != nil {
+			return err
+		}
 	}
-	return sidekickrust.Generate(model, library.Output, sidekickConfig)
+	return nil
 }
 
 func sourceDir(source *config.Source, repo string) (string, error) {
