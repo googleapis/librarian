@@ -37,7 +37,11 @@ func TestGenerate(t *testing.T) {
 		Output: outputDir,
 	}
 
-	if err := Generate(t.Context(), "testhelper", library, nil); err != nil {
+	cfg := &config.Config{
+		Language: "testhelper",
+	}
+
+	if err := Generate(t.Context(), cfg, library); err != nil {
 		t.Fatal(err)
 	}
 

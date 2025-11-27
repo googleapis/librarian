@@ -142,3 +142,29 @@ type RustPaginationOverride struct {
 	// ItemField is the name of the field used for items.
 	ItemField string `yaml:"item_field"`
 }
+
+// PythonDefault contains Python-specific default configuration.
+type PythonDefault struct {
+}
+
+// PythonPackage contains Python-specific library configuration.
+type PythonPackage struct {
+	// OptArgs contains additional options passed to the generator, where
+	// the options are common by all channels.
+	// Example: ["warehouse-package-name=google-cloud-batch"]
+	OptArgs []string `yaml:"opt_args,omitempty"`
+
+	// OptArgsByChannel contains additional options passed to the generator,
+	// where the options vary by channel.
+	// In each entry, the key is the API path (channel), and the value is the list of options
+	// to pass when generating that API path.
+	// Example: {"google/cloud/batch/v1": ["warehouse-package-name=google-cloud-batch"]}
+	OptArgsByChannel map[string][]string `yaml:"opt_args_by_channel,omitempty"`
+
+	// IsProtoOnly indicates this library only contains proto files (no GAPIC generation).
+	IsProtoOnly bool `yaml:"is_proto_only,omitempty"`
+
+	// APIDescription overrides the API description in .repo-metadata.json.
+	// If not set, the description is derived from the service YAML's documentation.summary field.
+	APIDescription string `yaml:"api_description,omitempty"`
+}

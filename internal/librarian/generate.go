@@ -72,7 +72,7 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 func generateAll(ctx context.Context, cfg *config.Config) error {
 	var errs []error
 	for _, lib := range cfg.Libraries {
-		if err := language.Generate(ctx, cfg.Language, lib, cfg.Sources); err != nil {
+		if err := language.Generate(ctx, cfg, lib); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -93,5 +93,5 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 	if library == nil {
 		return fmt.Errorf("library %q not found", libraryName)
 	}
-	return language.Generate(ctx, cfg.Language, library, cfg.Sources)
+	return language.Generate(ctx, cfg, library)
 }

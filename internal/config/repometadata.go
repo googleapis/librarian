@@ -14,6 +14,16 @@
 
 package config
 
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
 // RepoMetadata represents the .repo-metadata.json file structure.
 type RepoMetadata struct {
 	// APIDescription is the description of the API.
@@ -57,4 +67,199 @@ type RepoMetadata struct {
 
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`
+}
+
+// GenerateRepoMetadata generates the .repo-metadata.json file by parsing the service YAML.
+func GenerateRepoMetadata(library *Library, language, repo, serviceConfigPath, outdir string, apiPaths []string) error {
+	svcCfg, err := serviceconfig.Read(serviceConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to read service config: %w", err)
+	}
+
+	// Select the default version from all API paths, preferring stable versions
+	defaultVersion := SelectDefaultVersion(apiPaths)
+
+	// Build client documentation URL based on language
+	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(svcCfg.GetName()))
+
+	// Create metadata
+	metadata := &RepoMetadata{
+		APIID:               svcCfg.GetName(),
+		NamePretty:          CleanTitle(svcCfg.GetTitle()),
+		ClientDocumentation: clientDocURL,
+		ReleaseLevel:        library.ReleaseLevel,
+		Language:            language,
+		LibraryType:         "GAPIC_AUTO",
+		Repo:                repo,
+		DistributionName:    library.Name,
+		DefaultVersion:      defaultVersion,
+	}
+
+	// Add optional fields if available
+	if svcCfg.GetPublishing() != nil {
+		publishing := svcCfg.GetPublishing()
+		if publishing.GetDocumentationUri() != "" {
+			metadata.ProductDocumentation = extractBaseProductURL(publishing.GetDocumentationUri())
+		}
+		if publishing.GetApiShortName() != "" {
+			metadata.APIShortname = publishing.GetApiShortName()
+			metadata.Name = publishing.GetApiShortName()
+		}
+	}
+
+	// Set API description from override or service YAML
+	if language == "python" && library.Python != nil && library.Python.APIDescription != "" {
+		// Use override from library configuration
+		metadata.APIDescription = library.Python.APIDescription
+	} else if svcCfg.GetDocumentation() != nil && svcCfg.GetDocumentation().GetSummary() != "" {
+		// Fall back to service YAML documentation
+		metadata.APIDescription = strings.TrimSpace(svcCfg.GetDocumentation().GetSummary())
+	}
+
+	// Set default release level if not specified
+	if metadata.ReleaseLevel == "" {
+		metadata.ReleaseLevel = "stable"
+	}
+
+	// Write metadata file
+	data, err := json.MarshalIndent(metadata, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
+	metadataPath := filepath.Join(outdir, ".repo-metadata.json")
+	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write metadata file: %w", err)
+	}
+
+	return nil
+}
+
+// buildClientDocURL builds the client documentation URL based on language.
+func buildClientDocURL(language, serviceName string) string {
+	switch language {
+	case "python":
+		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", serviceName)
+	case "rust":
+		// Rust uses docs.rs
+		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", serviceName)
+	default:
+		return ""
+	}
+}
+
+// SelectDefaultVersion selects the best default version from a list of API paths.
+// It prefers stable versions (v1, v2) over beta/alpha versions (v1beta1, v1alpha1).
+// Among stable versions, it selects the highest. Among beta versions, it selects the highest.
+func SelectDefaultVersion(apiPaths []string) string {
+	if len(apiPaths) == 0 {
+		return ""
+	}
+
+	var stableVersions []string
+	var betaVersions []string
+
+	for _, apiPath := range apiPaths {
+		version := DeriveDefaultVersion(apiPath)
+		if version == "" {
+			continue
+		}
+		// Check if it's a stable version (vN where N is just digits)
+		if isStableVersion(version) {
+			stableVersions = append(stableVersions, version)
+		} else {
+			betaVersions = append(betaVersions, version)
+		}
+	}
+
+	// Prefer stable versions
+	if len(stableVersions) > 0 {
+		return selectHighestVersion(stableVersions)
+	}
+	if len(betaVersions) > 0 {
+		return selectHighestVersion(betaVersions)
+	}
+	return ""
+}
+
+// isStableVersion returns true if the version is stable (e.g., v1, v2) and not beta/alpha.
+func isStableVersion(version string) bool {
+	// Strip the "v" prefix
+	if !strings.HasPrefix(version, "v") {
+		return false
+	}
+	versionNum := strings.TrimPrefix(version, "v")
+	// Check if it contains only digits (stable) or has alpha/beta (not stable)
+	for _, r := range versionNum {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// selectHighestVersion selects the highest version from a list of versions.
+// For example, given ["v1", "v2", "v3"], it returns "v3".
+// For beta versions like ["v1beta1", "v1beta2"], it returns "v1beta2".
+func selectHighestVersion(versions []string) string {
+	if len(versions) == 0 {
+		return ""
+	}
+	if len(versions) == 1 {
+		return versions[0]
+	}
+
+	// Simple lexicographic comparison works for most cases
+	// v2 > v1, v1beta2 > v1beta1, etc.
+	highest := versions[0]
+	for _, v := range versions[1:] {
+		if v > highest {
+			highest = v
+		}
+	}
+	return highest
+}
+
+// DeriveDefaultVersion extracts the version from an API path.
+// Example: "google/cloud/secretmanager/v1" -> "v1".
+func DeriveDefaultVersion(apiPath string) string {
+	parts := strings.Split(apiPath, "/")
+	if len(parts) == 0 {
+		return ""
+	}
+	lastPart := parts[len(parts)-1]
+	// Check if it looks like a version (v1, v1beta1, etc.)
+	if strings.HasPrefix(lastPart, "v") {
+		return lastPart
+	}
+	return ""
+}
+
+// extractBaseProductURL extracts the base product URL from a documentation URI.
+// Example: "https://cloud.google.com/secret-manager/docs/overview" -> "https://cloud.google.com/secret-manager/"
+func extractBaseProductURL(docURI string) string {
+	// Strip off /docs/* suffix to get base product URL
+	if idx := strings.Index(docURI, "/docs/"); idx != -1 {
+		return docURI[:idx+1]
+	}
+	// If no /docs/ found, return as-is
+	return docURI
+}
+
+// CleanTitle removes "API" suffix from title to get name_pretty.
+// Example: "Secret Manager API" -> "Secret Manager".
+func CleanTitle(title string) string {
+	title = strings.TrimSpace(title)
+	title = strings.TrimSuffix(title, " API")
+	return strings.TrimSpace(title)
+}
+
+// extractNameFromAPIID extracts the service name from the API ID.
+// Example: "secretmanager.googleapis.com" -> "secretmanager".
+func extractNameFromAPIID(apiID string) string {
+	parts := strings.Split(apiID, ".")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return apiID
 }
