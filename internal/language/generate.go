@@ -19,19 +19,22 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/language/internal/python"
 	"github.com/googleapis/librarian/internal/language/internal/rust"
 )
 
 // Generate generates a single library for the specified language.
-func Generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library) error {
 	var err error
-	switch language {
+	switch cfg.Language {
 	case "testhelper":
 		err = testGenerate(library)
 	case "rust":
-		err = rust.Generate(ctx, library, sources)
+		err = rust.Generate(ctx, library, cfg.Sources)
+	case "python":
+		err = python.Generate(ctx, cfg, library)
 	default:
-		err = fmt.Errorf("generate not implemented for %q", language)
+		err = fmt.Errorf("generate not implemented for %q", cfg.Language)
 	}
 
 	if err != nil {

@@ -85,6 +85,9 @@ type Default struct {
 
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
+
+	// Python contains Python-specific default configuration.
+	Python *PythonDefault `yaml:"python,omitempty"`
 }
 
 // DefaultGenerate contains default generation configuration.
@@ -97,6 +100,9 @@ type DefaultGenerate struct {
 	// - "api": Bundle all versions of a service into one library (Python, Go default)
 	// - "channel": Create separate library per version (Rust, Dart default)
 	OneLibraryPer string `yaml:"one_library_per,omitempty"`
+
+	// RestNumericEnums indicates whether to use numeric enums in REST.
+	RestNumericEnums bool `yaml:"rest_numeric_enums,omitempty"`
 
 	// Transport is the default transport protocol (e.g., "grpc+rest", "grpc").
 	Transport string `yaml:"transport,omitempty"`
@@ -127,11 +133,11 @@ type Library struct {
 
 	// Channel specifies which googleapis Channel to generate from (for generated libraries).
 	// Can be a string (protobuf Channel path) or an APIObject (for discovery APIs).
-	// If both Channel and APIs are empty, this is a handwritten library.
+	// If both Channel and Channels are empty, this is a handwritten library.
 	Channel string `yaml:"channel,omitempty"`
 
 	// Channels specifies multiple API versions to bundle into one library (for multi-version libraries).
-	// Alternative to API field for libraries that bundle multiple versions.
+	// Alternative to Channel field for libraries that bundle multiple versions.
 	Channels []string `yaml:"channels,omitempty"`
 
 	// CopyrightYear is the copyright year for the library.
@@ -139,6 +145,9 @@ type Library struct {
 
 	// Generate contains per-library generate configuration.
 	Generate *LibraryGenerate `yaml:"generate,omitempty"`
+
+	// GRPCServiceConfig is the gRPC service config JSON file path.
+	GRPCServiceConfig string `yaml:"grpc_service_config,omitempty"`
 
 	// Keep lists files/directories to preserve during regeneration.
 	Keep []string `yaml:"keep,omitempty"`
@@ -153,6 +162,9 @@ type Library struct {
 
 	// Publish contains per-library publish configuration.
 	Publish *LibraryPublish `yaml:"publish,omitempty"`
+
+	// Python contains Python-specific library configuration.
+	Python *PythonPackage `yaml:"python,omitempty"`
 
 	// Release contains per-library release configuration.
 	Release *LibraryRelease `yaml:"release,omitempty"`
@@ -169,6 +181,9 @@ type Library struct {
 
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"-"`
+
+	// RestNumericEnums overrides the default rest_numeric_enums setting.
+	RestNumericEnums *bool `yaml:"rest_numeric_enums,omitempty"`
 
 	// Transport overrides the default transport.
 	Transport string `yaml:"transport,omitempty"`
