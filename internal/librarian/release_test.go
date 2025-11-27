@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/language"
 )
 
 func TestReleaseCommand(t *testing.T) {
@@ -49,14 +48,14 @@ func TestReleaseCommand(t *testing.T) {
 			name: "library name",
 			args: []string{"librarian", "release", testlib},
 			wantVersions: map[string]string{
-				testlib: language.TestReleaseVersion,
+				testlib: testReleaseVersion,
 			},
 		},
 		{
 			name: "all flag",
 			args: []string{"librarian", "release", "--all"},
 			wantVersions: map[string]string{
-				testlib: language.TestReleaseVersion,
+				testlib: testReleaseVersion,
 			},
 		},
 	} {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package language
+package librarian
 
 import (
 	"os"
@@ -37,7 +37,7 @@ func TestGenerate(t *testing.T) {
 		Output: outputDir,
 	}
 
-	if err := Generate(t.Context(), "testhelper", library, nil); err != nil {
+	if err := generate(t.Context(), "testhelper", library, nil); err != nil {
 		t.Fatal(err)
 	}
 

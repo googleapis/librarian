@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: Sidekick
+name: Rust & Sidekick
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
@@ -58,5 +58,5 @@ jobs:
           tar --version
       - name: Run sidekick tests
         run: go test -race ./internal/sidekick/...
-      - name: Run internal/language/internal/rust tests
-        run: go test -race ./internal/language/internal/rust
+      - name: Run internal/librarian/internal/rust tests
+        run: go test -race ./internal/librarian/internal/rust
