@@ -41,28 +41,28 @@ const (
 
 func TestReleaseAll(t *testing.T) {
 	cfg := setupRelease(t)
-	cfg, err := ReleaseAll(cfg)
+	got, err := ReleaseAll(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerReleased)
-	checkLibraryVersion(t, cfg, storageName, storageReleased)
-	checkLibraryVersion(t, cfg, secretmanagerName, secretmanagerReleased)
+	checkLibraryVersion(t, got, storageName, storageReleased)
+	checkLibraryVersion(t, got, secretmanagerName, secretmanagerReleased)
 }
 
 func TestReleaseOne(t *testing.T) {
 	cfg := setupRelease(t)
-	cfg, err := ReleaseLibrary(cfg, storageName)
+	got, err := ReleaseLibrary(cfg, storageName)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerInitial)
-	checkLibraryVersion(t, cfg, storageName, storageReleased)
-	checkLibraryVersion(t, cfg, secretmanagerName, secretmanagerInitial)
+	checkLibraryVersion(t, got, storageName, storageReleased)
+	checkLibraryVersion(t, got, secretmanagerName, secretmanagerInitial)
 }
 
 func setupRelease(t *testing.T) *config.Config {
