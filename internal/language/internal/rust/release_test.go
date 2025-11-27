@@ -41,24 +41,28 @@ const (
 
 func TestReleaseAll(t *testing.T) {
 	cfg := setupRelease(t)
-	_, err := ReleaseAll(cfg)
+	cfg, err := ReleaseAll(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerReleased)
+	checkLibraryVersion(t, cfg, storageName, storageReleased)
+	checkLibraryVersion(t, cfg, secretmanagerName, secretmanagerReleased)
 }
 
 func TestReleaseOne(t *testing.T) {
 	cfg := setupRelease(t)
-	_, err := ReleaseLibrary(cfg, storageName)
+	cfg, err := ReleaseLibrary(cfg, storageName)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerInitial)
+	checkLibraryVersion(t, cfg, storageName, storageReleased)
+	checkLibraryVersion(t, cfg, secretmanagerName, secretmanagerInitial)
 }
 
 func setupRelease(t *testing.T) *config.Config {
@@ -70,7 +74,18 @@ func setupRelease(t *testing.T) *config.Config {
 
 	createCrate(t, storageDir, storageName, storageInitial)
 	createCrate(t, secretmanagerDir, secretmanagerName, secretmanagerInitial)
-	return &config.Config{}
+	return &config.Config{
+		Libraries: []*config.Library{
+			{
+				Name:    storageName,
+				Version: storageInitial,
+			},
+			{
+				Name:    secretmanagerName,
+				Version: secretmanagerInitial,
+			},
+		},
+	}
 }
 
 func createCrate(t *testing.T, dir, name, version string) {
@@ -101,4 +116,17 @@ func checkCargoVersion(t *testing.T, path, wantVersion string) {
 	if !strings.Contains(got, wantLine) {
 		t.Errorf("%s version mismatch:\nwant line: %q\ngot:\n%s", path, wantLine, got)
 	}
+}
+
+func checkLibraryVersion(t *testing.T, cfg *config.Config, name, wantVersion string) {
+	t.Helper()
+	for _, lib := range cfg.Libraries {
+		if lib.Name == name {
+			if lib.Version != wantVersion {
+				t.Errorf("library %q version mismatch: want %q, got %q", name, wantVersion, lib.Version)
+			}
+			return
+		}
+	}
+	t.Errorf("library %q not found in config", name)
 }
