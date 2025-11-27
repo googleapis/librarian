@@ -26,6 +26,23 @@ import (
 // when using the testhelper language implementation.
 const TestReleaseVersion = "1.2.3"
 
+func testReleaseAll(cfg *config.Config) (*config.Config, error) {
+	for _, lib := range cfg.Libraries {
+		lib.Version = TestReleaseVersion
+	}
+	return cfg, nil
+}
+
+func testReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
+	for _, lib := range cfg.Libraries {
+		if lib.Name == name {
+			lib.Version = TestReleaseVersion
+			return cfg, nil
+		}
+	}
+	return cfg, nil
+}
+
 func testGenerate(library *config.Library) error {
 	if err := os.MkdirAll(library.Output, 0755); err != nil {
 		return err

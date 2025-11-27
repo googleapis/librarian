@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/language"
 )
@@ -65,8 +66,9 @@ func TestReleaseCommand(t *testing.T) {
 
 			configPath := filepath.Join(tempDir, librarianConfigPath)
 			configContent := fmt.Sprintf(`language: testhelper
-versions:
-  %s: 0.1.0
+libraries:
+  - name: %s
+    version: 0.1.0
 `, testlib)
 			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
@@ -81,9 +83,16 @@ versions:
 			}
 
 			if test.wantVersions != nil {
-				_, err := config.Read(configPath)
+				cfg, err := config.Read(configPath)
 				if err != nil {
 					t.Fatal(err)
+				}
+				gotVersions := make(map[string]string)
+				for _, lib := range cfg.Libraries {
+					gotVersions[lib.Name] = lib.Version
+				}
+				if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
