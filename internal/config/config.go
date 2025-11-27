@@ -153,3 +153,52 @@ func (c *Config) LibraryByName(name string) (*Library, error) {
 
 	return nil, errLibraryNotFound
 }
+
+// Fill populates empty library fields from the provided defaults.
+func (lib *Library) Fill(d *Default) {
+	if d == nil {
+		return
+	}
+	if lib.Output == "" {
+		lib.Output = d.Output
+	}
+	if lib.ReleaseLevel == "" {
+		lib.ReleaseLevel = d.ReleaseLevel
+	}
+	if d.Rust != nil {
+		lib.fillRust(d)
+	}
+}
+
+// fillRust() populates empty fields in `lib.Rust` from the provided default.
+func (lib *Library) fillRust(d *Default) {
+	if lib.Rust == nil {
+		lib.Rust = &RustCrate{}
+	}
+	lib.Rust.PackageDependencies = mergePackageDependencies(
+		d.Rust.PackageDependencies,
+		lib.Rust.PackageDependencies,
+	)
+	if len(lib.Rust.DisabledRustdocWarnings) == 0 {
+		lib.Rust.DisabledRustdocWarnings = d.Rust.DisabledRustdocWarnings
+	}
+}
+
+// mergePackageDependencies merges default and library package dependencies,
+// with library dependencies taking precedence for duplicates.
+func mergePackageDependencies(defaults, lib []*RustPackageDependency) []*RustPackageDependency {
+	seen := make(map[string]bool)
+	var result []*RustPackageDependency
+	for _, dep := range lib {
+		seen[dep.Name] = true
+		result = append(result, dep)
+	}
+	for _, dep := range defaults {
+		if seen[dep.Name] {
+			continue
+		}
+		copied := *dep
+		result = append(result, &copied)
+	}
+	return result
+}

@@ -99,6 +99,171 @@ func TestWrite(t *testing.T) {
 	}
 }
 
+func TestFill(t *testing.T) {
+	defaults := &Default{
+		Output:       "src/generated/",
+		ReleaseLevel: "stable",
+	}
+	for _, test := range []struct {
+		name     string
+		defaults *Default
+		lib      *Library
+		want     *Library
+	}{
+		{
+			name:     "fills empty fields",
+			defaults: defaults,
+			lib:      &Library{},
+			want: &Library{
+				Output:       "src/generated/",
+				ReleaseLevel: "stable",
+			},
+		},
+		{
+			name:     "preserves existing values",
+			defaults: defaults,
+			lib: &Library{
+				Output:       "custom/output/",
+				ReleaseLevel: "preview",
+			},
+			want: &Library{
+				Output:       "custom/output/",
+				ReleaseLevel: "preview",
+			},
+		},
+		{
+			name:     "partial fill",
+			defaults: defaults,
+			lib:      &Library{Output: "custom/output/"},
+			want: &Library{
+				Output:       "custom/output/",
+				ReleaseLevel: "stable",
+			},
+		},
+		{
+			name:     "nil defaults",
+			defaults: nil,
+			lib:      &Library{Output: "foo/"},
+			want:     &Library{Output: "foo/"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			test.lib.Fill(test.defaults)
+			if diff := cmp.Diff(test.want, test.lib); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFill_Rust(t *testing.T) {
+	defaults := &Default{
+		Rust: &RustDefault{
+			PackageDependencies: []*RustPackageDependency{
+				{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+				{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+			},
+			DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+		},
+	}
+	for _, test := range []struct {
+		name string
+		lib  *Library
+		want *Library
+	}{
+		{
+			name: "fills rust defaults",
+			lib:  &Library{},
+			want: &Library{
+				Rust: &RustCrate{
+					RustDefault: RustDefault{
+						PackageDependencies: []*RustPackageDependency{
+							{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+						},
+						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+					},
+				},
+			},
+		},
+		{
+			name: "merges package dependencies",
+			lib: &Library{
+				Rust: &RustCrate{
+					RustDefault: RustDefault{
+						PackageDependencies: []*RustPackageDependency{
+							{Name: "custom", Package: "custom-pkg"},
+						},
+					},
+				},
+			},
+			want: &Library{
+				Rust: &RustCrate{
+					RustDefault: RustDefault{
+						PackageDependencies: []*RustPackageDependency{
+							{Name: "custom", Package: "custom-pkg"},
+							{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+						},
+						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+					},
+				},
+			},
+		},
+		{
+			name: "library overrides default",
+			lib: &Library{
+				Rust: &RustCrate{
+					RustDefault: RustDefault{
+						PackageDependencies: []*RustPackageDependency{
+							{Name: "wkt", Package: "custom-wkt"},
+						},
+					},
+				},
+			},
+			want: &Library{
+				Rust: &RustCrate{
+					RustDefault: RustDefault{
+						PackageDependencies: []*RustPackageDependency{
+							{Name: "wkt", Package: "custom-wkt"},
+							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+						},
+						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+					},
+				},
+			},
+		},
+		{
+			name: "preserves existing warnings",
+			lib: &Library{
+				Rust: &RustCrate{
+					RustDefault: RustDefault{
+						DisabledRustdocWarnings: []string{"custom_warning"},
+					},
+				},
+			},
+			want: &Library{
+				Rust: &RustCrate{
+					RustDefault: RustDefault{
+						PackageDependencies: []*RustPackageDependency{
+							{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+						},
+						DisabledRustdocWarnings: []string{"custom_warning"},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			test.lib.Fill(defaults)
+			if diff := cmp.Diff(test.want, test.lib); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestLibraryByName(t *testing.T) {
 	for _, test := range []struct {
 		name        string
