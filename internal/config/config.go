@@ -119,7 +119,7 @@ type Library struct {
 
 	// Channels specifies multiple API versions to bundle into one library (for multi-version libraries).
 	// Alternative to API field for libraries that bundle multiple versions.
-	Channels []string `yaml:"channels,omitempty"`
+	Channels []*Channel `yaml:"channels,omitempty"`
 
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
@@ -147,18 +147,27 @@ type Library struct {
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 
-	// SpecificationFormat specifies the API specification format.
-	// Valid values are "protobuf" (default) or "discovery".
-	SpecificationFormat string `yaml:"specification_format,omitempty"`
-
-	// ServiceConfig is the path to the service config file.
-	ServiceConfig string `yaml:"-"`
-
 	// Transport overrides the default transport.
 	Transport string `yaml:"transport,omitempty"`
 
 	// Version is the library version.
 	Version string `yaml:"version,omitempty"`
+}
+
+// Channel contains information about an API channel.
+type Channel struct {
+	// Path specifies which googleapis Path to generate from (for generated
+	// libraries). Can be a string (protobuf Path path) or an APIObject (for
+	// discovery APIs). If both Path and APIs are empty, this is a handwritten
+	// library.
+	Path string `yaml:"channel,omitempty"`
+
+	// ServiceConfig is the path to the service config file.
+	ServiceConfig string `yaml:"service_config,omitempty"`
+
+	// Format specifies the API specification format.
+	// Valid values are "protobuf" (default) or "discovery".
+	Format string `yaml:"format,omitempty"`
 }
 
 // LibraryGenerate contains per-library generate configuration.

@@ -21,12 +21,12 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, serviceConfig, googleapisDir, discoveryDir string) *sidekickconfig.Config {
+func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir string) *sidekickconfig.Config {
 	source := map[string]string{
 		"googleapis-root": googleapisDir,
 	}
 	specFormat := "protobuf"
-	if library.SpecificationFormat == "discovery" {
+	if channel.Format == "discovery" {
 		specFormat = "disco"
 		source["discovery-root"] = discoveryDir
 		source["roots"] = "discovery,googleapis"
@@ -35,8 +35,8 @@ func toSidekickConfig(library *config.Library, serviceConfig, googleapisDir, dis
 		General: sidekickconfig.GeneralConfig{
 			Language:            "rust",
 			SpecificationFormat: specFormat,
-			ServiceConfig:       serviceConfig,
-			SpecificationSource: library.Channel,
+			ServiceConfig:       channel.ServiceConfig,
+			SpecificationSource: channel.Path,
 		},
 		Source: source,
 		Codec:  buildCodec(library),
