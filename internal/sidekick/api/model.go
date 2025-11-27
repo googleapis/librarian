@@ -157,6 +157,8 @@ type API struct {
 	// State contains helpful information that can be used when generating
 	// clients.
 	State *APIState
+	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
+	ResourceDefinitions []*Resource
 }
 
 // HasMessages returns true if the API contains messages (most do).
@@ -644,6 +646,8 @@ type Message struct {
 	Pagination *PaginationInfo
 	// Language specific annotations.
 	Codec any
+	// Resource contains the data from the `google.api.resource` annotation.
+	Resource *Resource
 }
 
 // HasFields returns true if the message has fields.
@@ -748,7 +752,7 @@ type Field struct {
 	// - For OpenAPI, it has format == "uuid"
 	AutoPopulated bool
 	// IsResourceReference is true if the field is annotated with google.api.resource_reference.
-	IsResourceReference bool
+	// TODO(coryan): This looks redundant now. If we are going to add `ResourceReference` then we should add a helper: func (f *field) IsResourceReference() bool { return f.ResourceReference != nil }
 	// FieldBehavior indicates how the field behaves in requests and responses.
 	//
 	// For example, that a field is required in requests, or given as output
@@ -763,7 +767,12 @@ type Field struct {
 	MessageType *Message
 	// The enum type for this field, can be nil.
 	EnumType *Enum
-	// A placeholder to put language specific annotations.
+	// The enum type for this field, can be nil.
+	EnumType *Enum
+	// ResourceReference contains the data from the `google.api.resource_reference`
+	// annotation.
+	ResourceReference *ResourceReference
+	// TODO(coryan): So far we have kept the `Codec any` entry last, no good reason, but no good reason to break away from that either I think? Also in some other structs.
 	Codec any
 }
 
@@ -889,4 +898,42 @@ type OneOf struct {
 	Fields []*Field
 	// Codec is a placeholder to put language specific annotations.
 	Codec any
+}
+
+// Resource contains metadata about a Google Cloud resource, derived from API definitions.
+// TODO(coryan): Is there a way to describe this without referring to the Protobuf annotation? Logically, what is this? If we switched to OpenAPI, what would these represent?
+type Resource struct {
+	// Type is the resource type identifier.
+	// TODO(coryan): That comment is not very useful. Can you say something about where the namespace for these types? Are they always messages in the current data model? Could they be imported from a different data model?
+	Type string
+	// Pattern is the resource name pattern.
+	Pattern []string
+	// The name of the resource in plural form
+	//
+	// For example for the `Shoe` resource would be `shoes` and the `Foot` resource this would `feet`.
+	Plural string
+	// The name of the resource in plural form
+	//
+	// For example for the `Shoe` resource would be `shoe` and the `Foot` resource this would `foot`.
+	Singular string
+
+	Self *Message
+	// TODO(coryan): Leave room for the codecs to annotate these things. Add `Codec any`.
+	Codec any
+}
+
+// ResourceReference contains metadata about a field that references another Google Cloud resource.
+// TODO(coryan): As above, make these comments meaningful, not just "not empty".
+type ResourceReference struct {
+	// Type is the resource type that the field references.
+	Type string
+	// ChildType is the resource type of a child of the resource that the field
+	// references.
+	ChildType string
+}
+
+// TODO(coryan): This is very similar to `.ID`, why do we need both?
+// FullName returns the fully qualified name of the method.
+func (m *Method) FullName() string {
+	return m.Service.Package + "." + m.Service.Name + "." + m.Name
 }
