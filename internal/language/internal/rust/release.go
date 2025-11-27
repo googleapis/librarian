@@ -89,6 +89,11 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		if err := rustrelease.UpdateCargoVersion(path, newVersion); err != nil {
 			return err
 		}
+		library, err := cfg.LibraryByName(name)
+		if err != nil {
+			return err
+		}
+		library.Version = newVersion
 		return nil
 	})
 	if err != nil {
