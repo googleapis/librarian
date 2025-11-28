@@ -23,9 +23,6 @@ import (
 
 // Config represents the complete librarian.yaml configuration file.
 type Config struct {
-	// Version is the version of librarian that created this config.
-	Version string `yaml:"version"`
-
 	// Language is the primary language for this repository (go, python, rust).
 	Language string `yaml:"language"`
 
@@ -89,14 +86,6 @@ type Default struct {
 
 // DefaultGenerate contains default generation configuration.
 type DefaultGenerate struct {
-	// Auto generates all client libraries with default configurations
-	// for the language, unless otherwise specified.
-	Auto bool `yaml:"auto,omitempty"`
-
-	// OneLibraryPer specifies packaging strategy: "api" or "channel".
-	// - "api": Bundle all versions of a service into one library (Python, Go default)
-	// - "channel": Create separate library per version (Rust, Dart default)
-	OneLibraryPer string `yaml:"one_library_per,omitempty"`
 
 	// Transport is the default transport protocol (e.g., "grpc+rest", "grpc").
 	Transport string `yaml:"transport,omitempty"`
@@ -120,10 +109,8 @@ type DefaultRelease struct {
 
 // Library represents a single library configuration entry.
 type Library struct {
-	// APIServiceConfigs maps API paths to their service config file paths (runtime only, not serialized).
-	// For single-API libraries: map[API]serviceConfigPath
-	// For multi-API libraries: map[APIs[0]]path1, map[APIs[1]]path2, etc.
-	APIServiceConfigs map[string]string `yaml:"-"`
+	// Name is the library name (e.g., "secretmanager", "storage").
+	Name string `yaml:"name,omitempty"`
 
 	// Channel specifies which googleapis Channel to generate from (for generated libraries).
 	// Can be a string (protobuf Channel path) or an APIObject (for discovery APIs).
@@ -142,9 +129,6 @@ type Library struct {
 
 	// Keep lists files/directories to preserve during regeneration.
 	Keep []string `yaml:"keep,omitempty"`
-
-	// Name is the library name (e.g., "secretmanager", "storage").
-	Name string `yaml:"name,omitempty"`
 
 	// Output specifies the filesystem location (overrides computed location from defaults.output).
 	// For generated libraries: overrides where code is generated to.
