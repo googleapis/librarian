@@ -79,7 +79,7 @@ func TestNoGenprotoServiceConfigImports(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	got, err := Find("testdata/googleapis", "google/cloud/speech/v1")
+	got, err := Find("../librarian/testdata/googleapis", "google/cloud/speech/v1")
 	if err != nil {
 		t.Fatal(err)
 	}

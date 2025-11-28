@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"os"
@@ -22,7 +23,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestGenerateCommand(t *testing.T) {
@@ -49,7 +51,7 @@ sources:
 libraries:
   - name: %s
     output: %s
-    apis:
+    channels:
       - path: google/cloud/speech/v1
       - path: google/cloud/speech/v1p1beta1
       - path: google/cloud/speech/v2
@@ -131,7 +133,7 @@ libraries:
 					t.Fatalf("could not read generated file for %q: %v", libName, err)
 				}
 				want := fmt.Sprintf("# %s\n\nGenerated library\n", libName)
-				if diff := cmp.Diff(want, string(got)); diff != "" {
+				if diff := gocmp.Diff(want, string(got)); diff != "" {
 					t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
 				}
 			}
@@ -221,6 +223,130 @@ func TestCleanOutput(t *testing.T) {
 			slices.Sort(test.want)
 			if !slices.Equal(got, test.want) {
 				t.Errorf("got %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestAddLibraries(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cfg  *config.Config
+		want []*config.Library
+	}{
+		{
+			name: "empty config",
+			cfg:  &config.Config{},
+			want: []*config.Library{
+				{
+					Name: "google/cloud/speech/v1",
+					Channels: []*config.Channel{{
+						Path:          "google/cloud/speech/v1",
+						ServiceConfig: "google/cloud/speech/v1/speech_v1.yaml",
+					}},
+				},
+				{
+					Name: "google/cloud/speech/v1p1beta1",
+					Channels: []*config.Channel{{
+						Path:          "google/cloud/speech/v1p1beta1",
+						ServiceConfig: "google/cloud/speech/v1p1beta1/speech_v1p1beta1.yaml",
+					}},
+				},
+				{
+					Name: "google/cloud/speech/v2",
+					Channels: []*config.Channel{{
+						Path:          "google/cloud/speech/v2",
+						ServiceConfig: "google/cloud/speech/v2/speech_v2.yaml",
+					}},
+				},
+				{
+					Name: "grafeas/v1",
+					Channels: []*config.Channel{{
+						Path:          "grafeas/v1",
+						ServiceConfig: "grafeas/v1/grafeas_v1.yaml",
+					}},
+				},
+			},
+		},
+		{
+			name: "some APIs already configured",
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name:     "existing-speech",
+						Channels: []*config.Channel{{Path: "google/cloud/speech/v1"}},
+					},
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:     "existing-speech",
+					Channels: []*config.Channel{{Path: "google/cloud/speech/v1"}},
+				},
+				{
+					Name: "google/cloud/speech/v1p1beta1",
+					Channels: []*config.Channel{{
+						Path:          "google/cloud/speech/v1p1beta1",
+						ServiceConfig: "google/cloud/speech/v1p1beta1/speech_v1p1beta1.yaml",
+					}},
+				},
+				{
+					Name: "google/cloud/speech/v2",
+					Channels: []*config.Channel{{
+						Path:          "google/cloud/speech/v2",
+						ServiceConfig: "google/cloud/speech/v2/speech_v2.yaml",
+					}},
+				},
+				{
+					Name: "grafeas/v1",
+					Channels: []*config.Channel{{
+						Path:          "grafeas/v1",
+						ServiceConfig: "grafeas/v1/grafeas_v1.yaml",
+					}},
+				},
+			},
+		},
+		{
+			name: "all APIs already configured",
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name: "speech-all",
+						Channels: []*config.Channel{
+							{Path: "google/cloud/speech/v1"},
+							{Path: "google/cloud/speech/v1p1beta1"},
+							{Path: "google/cloud/speech/v2"},
+							{Path: "grafeas/v1"},
+						},
+					},
+				},
+			},
+			want: []*config.Library{
+				{
+					Name: "speech-all",
+					Channels: []*config.Channel{
+						{Path: "google/cloud/speech/v1"},
+						{Path: "google/cloud/speech/v1p1beta1"},
+						{Path: "google/cloud/speech/v2"},
+						{Path: "grafeas/v1"},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := addLibraries(test.cfg, "testdata/googleapis"); err != nil {
+				t.Fatal(err)
+			}
+			sortLibraries := func(libs []*config.Library) {
+				slices.SortFunc(libs, func(a, b *config.Library) int {
+					return cmp.Compare(a.Name, b.Name)
+				})
+			}
+			sortLibraries(test.cfg.Libraries)
+			sortLibraries(test.want)
+			if diff := gocmp.Diff(test.want, test.cfg.Libraries); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

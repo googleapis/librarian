@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -78,6 +79,13 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
+	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
+	if err != nil {
+		return err
+	}
+	if err := addLibraries(cfg, googleapisDir); err != nil {
+		return err
+	}
 	for _, lib := range cfg.Libraries {
 		if err := generateLibrary(ctx, cfg, lib.Name); err != nil {
 			return err
@@ -168,4 +176,89 @@ func cleanOutput(dir string, keep []string) error {
 		}
 		return os.Remove(path)
 	})
+}
+
+func addLibraries(cfg *config.Config, googleapisDir string) error {
+	channels, err := findChannels(googleapisDir)
+	if err != nil {
+		return err
+	}
+
+	configured := make(map[string]bool)
+	for _, lib := range cfg.Libraries {
+		for _, api := range lib.Channels {
+			configured[api.Path] = true
+		}
+		if len(lib.Channels) == 0 {
+			configured[defaultRustLibraryName(lib.Name)] = true
+		}
+	}
+
+	for _, c := range channels {
+		if configured[c] {
+			continue
+		}
+		serviceConfig, err := serviceconfig.Find(googleapisDir, c)
+		if err != nil {
+			return err
+		}
+		cfg.Libraries = append(cfg.Libraries, &config.Library{
+			Name: defaultRustLibraryName(c),
+			Channels: []*config.Channel{{
+				Path:          c,
+				ServiceConfig: serviceConfig,
+			}},
+		})
+	}
+	return nil
+}
+
+// findChannels scans the googleapis directory and returns all API paths.
+func findChannels(googleapisDir string) ([]string, error) {
+	var paths []string
+	err := filepath.WalkDir(googleapisDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			return nil
+		}
+		if !containsProtoFiles(path) {
+			return nil
+		}
+		channel, err := filepath.Rel(googleapisDir, path)
+		if err != nil {
+			return err
+		}
+		paths = append(paths, channel)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
+// containsProtoFiles returns true if the directory contains any .proto files.
+func containsProtoFiles(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".proto") {
+			return true
+		}
+	}
+	return false
+}
+
+// defaultRustLibraryName derives an API path from a Rust library name.
+// For example: google-cloud-foo-v1 -> google/cloud/foo/v1
+//
+// TODO(https://github.com/googleapis/librarian/issues/3058): See
+// go/cloud-rust:on-crate-names for overrides and make sure they are handled
+// properly.
+func defaultRustLibraryName(name string) string {
+	return strings.ReplaceAll(name, "-", "/")
 }
