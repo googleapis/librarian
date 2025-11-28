@@ -19,12 +19,10 @@ sources:
   googleapis:
     commit: ded7ed1e4cce7c165c56a417572cebea9bc1d82c
     sha256: 839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085
-default:
+defaults:
   output: src/generated/
-  generate:
-    release_level: stable
-  release:
-    tag_format: '{name}/v{version}'
+  release_level: stable
+  tag_format: '{name}/v{version}'
   rust:
     disabled_rustdoc_warnings:
       - redundant_explicit_links
@@ -38,14 +36,13 @@ default:
         force_used: true
 libraries:
   - name: google-cloud-secretmanager-v1
-    channels:
-      - channel: google/cloud/secretmanager/v1
+    version: 0.1.0
+    apis:
+      - path: google/cloud/secretmanager/v1
   - name: google-cloud-storage-v2
-    channels:
-      - channel: google/cloud/storage/v2
+    version: 0.2.0
+    apis:
+      - path: google/cloud/storage/v2
     rust:
       disabled_rustdoc_warnings:
         - rustdoc::bare_urls
-versions:
-  google-cloud-secretmanager-v1: 0.1.0
-  google-cloud-storage-v2: 0.2.0

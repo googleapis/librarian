@@ -21,12 +21,12 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir string) *sidekickconfig.Config {
+func toSidekickConfig(library *config.Library, api *config.API, googleapisDir, discoveryDir string) *sidekickconfig.Config {
 	source := map[string]string{
 		"googleapis-root": googleapisDir,
 	}
 	specFormat := "protobuf"
-	if channel.Format == "discovery" {
+	if api.Format == "discovery" {
 		specFormat = "disco"
 		source["discovery-root"] = discoveryDir
 		source["roots"] = "discovery,googleapis"
@@ -35,8 +35,8 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 		General: sidekickconfig.GeneralConfig{
 			Language:            "rust",
 			SpecificationFormat: specFormat,
-			ServiceConfig:       channel.ServiceConfig,
-			SpecificationSource: channel.Path,
+			ServiceConfig:       api.ServiceConfig,
+			SpecificationSource: api.Path,
 		},
 		Source: source,
 		Codec:  buildCodec(library),
@@ -88,7 +88,7 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.ModulePath != "" {
 		codec["module-path"] = rust.ModulePath
 	}
-	if library.Publish != nil && library.Publish.Disabled {
+	if library.SkipPublish {
 		codec["not-for-publication"] = "true"
 	}
 	if len(rust.DisabledRustdocWarnings) > 0 {
@@ -131,7 +131,7 @@ func buildCodec(library *config.Library) map[string]string {
 	return codec
 }
 
-func formatPackageDependency(dep config.RustPackageDependency) string {
+func formatPackageDependency(dep *config.RustPackageDependency) string {
 	var parts []string
 	if dep.Package != "" {
 		parts = append(parts, "package="+dep.Package)

@@ -34,21 +34,22 @@ func TestGenerate(t *testing.T) {
 	outDir := t.TempDir()
 	googleapisDir := filepath.Join(testdataDir, "googleapis")
 	library := &config.Library{
-		Name:   "secretmanager",
-		Output: outDir,
-		Channels: []*config.Channel{
+		Name:          "secretmanager",
+		Version:       "0.1.0",
+		Output:        outDir,
+		ReleaseLevel:  "preview",
+		CopyrightYear: "2025",
+		APIs: []*config.API{
 			{
 				Path:          "google/cloud/secretmanager/v1",
 				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
-		Version:       "0.1.0",
-		ReleaseLevel:  "preview",
-		CopyrightYear: "2025",
 	}
 	sources := &config.Sources{
 		Googleapis: &config.Source{Dir: googleapisDir},
 	}
+
 	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}

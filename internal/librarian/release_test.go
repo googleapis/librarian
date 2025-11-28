@@ -66,8 +66,9 @@ func TestReleaseCommand(t *testing.T) {
 
 			configPath := filepath.Join(tempDir, librarianConfigPath)
 			configContent := fmt.Sprintf(`language: testhelper
-versions:
-  %s: 0.1.0
+libraries:
+  - name: %s
+    version: 0.1.0
 `, testlib)
 			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
@@ -86,10 +87,18 @@ versions:
 				if err != nil {
 					t.Fatal(err)
 				}
-				if diff := cmp.Diff(test.wantVersions, cfg.Versions); diff != "" {
+				if diff := cmp.Diff(test.wantVersions, libraryVersions(cfg)); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
 	}
+}
+
+func libraryVersions(cfg *config.Config) map[string]string {
+	m := make(map[string]string)
+	for _, lib := range cfg.Libraries {
+		m[lib.Name] = lib.Version
+	}
+	return m
 }

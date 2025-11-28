@@ -38,8 +38,8 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
-	for _, channel := range library.Channels {
-		sidekickConfig := toSidekickConfig(library, channel, googleapisDir, discoveryDir)
+	for _, api := range library.APIs {
+		sidekickConfig := toSidekickConfig(library, api, googleapisDir, discoveryDir)
 		model, err := parser.CreateModel(sidekickConfig)
 		if err != nil {
 			return err

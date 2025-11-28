@@ -53,7 +53,7 @@ func TestReleaseAll(t *testing.T) {
 		storageName:       storageReleased,
 		secretmanagerName: secretmanagerReleased,
 	}
-	if diff := cmp.Diff(want, got.Versions); diff != "" {
+	if diff := cmp.Diff(want, libraryVersions(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -71,7 +71,7 @@ func TestReleaseOne(t *testing.T) {
 		storageName:       storageReleased,
 		secretmanagerName: secretmanagerInitial,
 	}
-	if diff := cmp.Diff(want, got.Versions); diff != "" {
+	if diff := cmp.Diff(want, libraryVersions(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -86,9 +86,9 @@ func setupRelease(t *testing.T) *config.Config {
 	createCrate(t, storageDir, storageName, storageInitial)
 	createCrate(t, secretmanagerDir, secretmanagerName, secretmanagerInitial)
 	return &config.Config{
-		Versions: map[string]string{
-			storageName:       storageInitial,
-			secretmanagerName: secretmanagerInitial,
+		Libraries: []*config.Library{
+			{Name: storageName, Version: storageInitial},
+			{Name: secretmanagerName, Version: secretmanagerInitial},
 		},
 	}
 }
@@ -121,4 +121,12 @@ func checkCargoVersion(t *testing.T, path, wantVersion string) {
 	if !strings.Contains(got, wantLine) {
 		t.Errorf("%s version mismatch:\nwant line: %q\ngot:\n%s", path, wantLine, got)
 	}
+}
+
+func libraryVersions(cfg *config.Config) map[string]string {
+	m := make(map[string]string)
+	for _, lib := range cfg.Libraries {
+		m[lib.Name] = lib.Version
+	}
+	return m
 }
