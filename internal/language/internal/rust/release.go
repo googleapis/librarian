@@ -51,10 +51,13 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		if name == "" {
 			return true
 		}
-		if name == pkgName {
-			return true
-		}
-		return false
+		return name == pkgName
+	}
+
+	// Build a map of library names to library pointers for quick lookup.
+	libByName := make(map[string]*config.Library)
+	for _, lib := range cfg.Libraries {
+		libByName[lib.Name] = lib
 	}
 
 	var found bool

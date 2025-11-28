@@ -25,6 +25,8 @@ type RustDefault struct {
 
 // RustCrate contains Rust-specific library configuration.
 type RustCrate struct {
+	RustDefault `yaml:",inline"`
+
 	// PerServiceFeatures enables per-service feature flags.
 	PerServiceFeatures bool `yaml:"per_service_features,omitempty"`
 
@@ -63,12 +65,6 @@ type RustCrate struct {
 
 	// SkippedIds is a list of IDs to skip.
 	SkippedIds []string `yaml:"skipped_ids,omitempty"`
-
-	// PackageDependencies is a list of package dependencies.
-	PackageDependencies []RustPackageDependency `yaml:"package_dependencies,omitempty"`
-
-	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
-	DisabledRustdocWarnings []string `yaml:"disabled_rustdoc_warnings,omitempty"`
 
 	// DisabledClippyWarnings is a list of clippy warnings to disable.
 	DisabledClippyWarnings []string `yaml:"disabled_clippy_warnings,omitempty"`

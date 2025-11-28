@@ -44,6 +44,9 @@ func testReleaseLibrary(cfg *config.Config, name string) (*config.Config, error)
 }
 
 func testGenerate(library *config.Library) error {
+	if library.Output == "" {
+		return fmt.Errorf("library.Output is empty")
+	}
 	if err := os.MkdirAll(library.Output, 0755); err != nil {
 		return err
 	}

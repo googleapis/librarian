@@ -11,20 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-version: v1
 language: rust
 sources:
+  discovery:
+    commit: b27c80574e918a7e2a36eb21864d1d2e45b8c032
+    sha256: 67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212
   googleapis:
-    commit: 9fcfbea0aa5b50fa22e190faceb073d74504172b
-    sha256: 81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98
+    commit: ded7ed1e4cce7c165c56a417572cebea9bc1d82c
+    sha256: 839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085
 default:
   output: src/generated/
-  generate:
-    auto: true
-    one_library_per: channel
-    release_level: stable
-  release:
-    tag_format: '{name}/v{version}'
+  release_level: stable
+  tag_format: '{name}/v{version}'
   rust:
     disabled_rustdoc_warnings:
       - redundant_explicit_links
@@ -44,7 +42,7 @@ libraries:
   - name: google-cloud-storage-v2
     channels:
       - path: google/cloud/storage/v2
+    version: 2.3.4
     rust:
       disabled_rustdoc_warnings:
         - rustdoc::bare_urls
-    version: 2.3.4

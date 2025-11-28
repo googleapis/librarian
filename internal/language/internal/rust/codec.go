@@ -88,7 +88,7 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.ModulePath != "" {
 		codec["module-path"] = rust.ModulePath
 	}
-	if library.Publish != nil && library.Publish.Disabled {
+	if library.SkipPublish {
 		codec["not-for-publication"] = "true"
 	}
 	if len(rust.DisabledRustdocWarnings) > 0 {
@@ -131,7 +131,7 @@ func buildCodec(library *config.Library) map[string]string {
 	return codec
 }
 
-func formatPackageDependency(dep config.RustPackageDependency) string {
+func formatPackageDependency(dep *config.RustPackageDependency) string {
 	var parts []string
 	if dep.Package != "" {
 		parts = append(parts, "package="+dep.Package)

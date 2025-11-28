@@ -26,27 +26,26 @@ import (
 
 var errLibraryNotFound = errors.New("library not found")
 
-// Config represents the complete librarian.yaml configuration file.
+// Config represents a librarian.yaml configuration file.
 type Config struct {
-	// Language is the primary language for this repository (go, python, rust).
+	// Language is the language for this workspace.
 	Language string `yaml:"language"`
 
-	// Repo is the repository name (e.g., "googleapis/google-cloud-python").
+	// Repo is the repository path, such as "googleapis/google-cloud-python".
 	Repo string `yaml:"repo,omitempty"`
 
-	// Sources contains references to external source repositories.
+	// Sources references external source repositories.
 	Sources *Sources `yaml:"sources,omitempty"`
 
-	// Default contains default generation settings.
-	Default *Default `yaml:"default"`
+	// Default contains default settings for all libraries.
+	Default *Default `yaml:"default,omitempty"`
 
-	// Libraries contains configuration overrides for libraries that need special handling.
-	// Only include libraries that differ from defaults.
+	// Libraries contains configuration overrides for libraries that need
+	// special handling, and differ from default settings.
 	Libraries []*Library `yaml:"libraries,omitempty"`
 }
 
-// Sources contains references to external source repositories.
-// Each entry maps a source name to its configuration.
+// Sources references external source repositories.
 type Sources struct {
 	// Discovery is the discovery-artifact-manager repository configuration.
 	Discovery *Source `yaml:"discovery,omitempty"`
@@ -55,143 +54,97 @@ type Sources struct {
 	Googleapis *Source `yaml:"googleapis,omitempty"`
 }
 
-// Source represents a single source repository configuration.
+// Source represents a source repository.
 type Source struct {
 	// Commit is the git commit hash or tag to use.
 	Commit string `yaml:"commit"`
 
-	// SHA256 is the expected SHA256 hash of the tarball for this commit.
+	// SHA256 is the expected hash of the tarball for this commit.
 	SHA256 string `yaml:"sha256,omitempty"`
 
 	// Dir is a local directory path to use instead of fetching.
-	// This is useful for testing. If set, Commit and SHA256 are ignored.
+	// If set, Commit and SHA256 are ignored.
 	Dir string `yaml:"-"`
 }
 
-// Default contains default generation settings.
+// Default contains default settings for all libraries.
 type Default struct {
-	// Output is the directory where generated code is written (relative to repository root).
+	// Output is the directory where generated code is written. For example,
+	// for Rust this is src/generated.
 	Output string `yaml:"output,omitempty"`
 
-	// Generate contains default generation configuration.
-	Generate *DefaultGenerate `yaml:"generate,omitempty"`
+	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
+	Transport string `yaml:"transport,omitempty"`
 
-	// Release contains default release configuration.
-	Release *DefaultRelease `yaml:"release,omitempty"`
+	// ReleaseLevel is either "stable" or "preview".
+	ReleaseLevel string `yaml:"release_level,omitempty"`
+
+	// TagFormat is the template for git tags, such as "{name}/v{version}".
+	TagFormat string `yaml:"tag_format,omitempty"`
 
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
 }
 
-// DefaultGenerate contains default generation configuration.
-type DefaultGenerate struct {
-
-	// Transport is the default transport protocol (e.g., "grpc+rest", "grpc").
-	Transport string `yaml:"transport,omitempty"`
-
-	// ReleaseLevel is the default release level ("stable" or "preview").
-	ReleaseLevel string `yaml:"release_level,omitempty"`
-}
-
-// DefaultRelease contains release configuration.
-type DefaultRelease struct {
-	// TagFormat is the template for git tags (e.g., '{name}/v{version}').
-	// Supported placeholders: {name}, {version}
-	TagFormat string `yaml:"tag_format,omitempty"`
-
-	// Remote is the git remote name (e.g., "upstream", "origin").
-	Remote string `yaml:"remote,omitempty"`
-
-	// Branch is the default branch for releases (e.g., "main", "master").
-	Branch string `yaml:"branch,omitempty"`
-}
-
-// Library represents a single library configuration entry.
+// Library represents a library configuration.
 type Library struct {
-	// Name is the library name (e.g., "secretmanager", "storage").
-	Name string `yaml:"name,omitempty"`
+	// Name is the library name, such as "secretmanager" or "storage".
+	Name string `yaml:"name"`
 
-	// Channel specifies which googleapis Channel to generate from (for generated libraries).
-	// Can be a string (protobuf Channel path) or an APIObject (for discovery APIs).
-	// If both Channel and APIs are empty, this is a handwritten library.
-	Channel string `yaml:"channel,omitempty"`
-
-	// Channels specifies multiple API versions to bundle into one library (for multi-version libraries).
-	// Alternative to API field for libraries that bundle multiple versions.
+	// Channels lists the Channels to include in this library.
 	Channels []*Channel `yaml:"channels,omitempty"`
+
+	// Version is the library version.
+	Version string `yaml:"version,omitempty"`
+
+	// SkipGenerate disables code generation for this library.
+	SkipGenerate bool `yaml:"skip_generate,omitempty"`
+
+	// SkipRelease disables releasing for this library.
+	SkipRelease bool `yaml:"skip_release,omitempty"`
+
+	// SkipPublish disables publishing for this library.
+	SkipPublish bool `yaml:"skip_publish,omitempty"`
+
+	// Output is the directory where generated code is written.
+	Output string `yaml:"output,omitempty"`
+
+	// Keep lists files and directories to preserve during regeneration.
+	Keep []string `yaml:"keep,omitempty"`
 
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
-
-	// Generate contains per-library generate configuration.
-	Generate *LibraryGenerate `yaml:"generate,omitempty"`
-
-	// Keep lists files/directories to preserve during regeneration.
-	Keep []string `yaml:"keep,omitempty"`
-
-	// Output specifies the filesystem location (overrides computed location from defaults.output).
-	// For generated libraries: overrides where code is generated to.
-	// For handwritten libraries: specifies the source directory.
-	Output string `yaml:"output,omitempty"`
-
-	// Publish contains per-library publish configuration.
-	Publish *LibraryPublish `yaml:"publish,omitempty"`
-
-	// Release contains per-library release configuration.
-	Release *LibraryRelease `yaml:"release,omitempty"`
-
-	// ReleaseLevel overrides the default release level.
-	ReleaseLevel string `yaml:"release_level,omitempty"`
-
-	// Rust contains Rust-specific library configuration.
-	Rust *RustCrate `yaml:"rust,omitempty"`
 
 	// SpecificationFormat specifies the API specification format. Valid values
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
-	// Transport overrides the default transport.
+	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
 	Transport string `yaml:"transport,omitempty"`
 
-	// Version is the library version.
-	Version string `yaml:"version,omitempty"`
+	// ReleaseLevel is either "stable" or "preview".
+	ReleaseLevel string `yaml:"release_level,omitempty"`
+
+	// Rust contains Rust-specific library configuration.
+	Rust *RustCrate `yaml:"rust,omitempty"`
 }
 
-// Channel contains information about an API channel.
+// Channel describes an Channel to include in a library.
 type Channel struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
-	Path string `yaml:"channel,omitempty"`
+	Path string `yaml:"path,omitempty"`
 
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"service_config,omitempty"`
 }
 
-// LibraryGenerate contains per-library generate configuration.
-type LibraryGenerate struct {
-	// Disabled prevents library generation.
-	Disabled bool `yaml:"disabled,omitempty"`
-}
-
-// LibraryRelease contains per-library release configuration.
-type LibraryRelease struct {
-	// Disabled prevents library release.
-	Disabled bool `yaml:"disabled,omitempty"`
-}
-
-// LibraryPublish contains per-library publish configuration.
-type LibraryPublish struct {
-	// Disabled prevents library from being published to package registries.
-	Disabled bool `yaml:"disabled,omitempty"`
-}
-
-// Read reads the configuration from a file.
+// Read reads a [Config] from the file at path.
 func Read(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
-
 	var c Config
 	if err := yaml.Unmarshal(data, &c); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
@@ -199,7 +152,7 @@ func Read(path string) (*Config, error) {
 	return &c, nil
 }
 
-// Write writes the configuration to a file.
+// Write writes config to the file at path.
 func (c *Config) Write(path string) error {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
@@ -209,12 +162,12 @@ func (c *Config) Write(path string) error {
 
 	enc := yaml.NewEncoder(f)
 	enc.SetIndent(2)
-	defer enc.Close()
-
 	if err := enc.Encode(c); err != nil {
-		return fmt.Errorf("failed to marshal config: %w", err)
+		return fmt.Errorf("failed to encode config: %w", err)
 	}
-
+	if err := enc.Close(); err != nil {
+		return fmt.Errorf("failed to close encoder: %w", err)
+	}
 	return nil
 }
 
