@@ -916,13 +916,16 @@ type Resource struct {
 	Codec any
 }
 
-// ResourceReference contains metadata about a field that references another Google Cloud resource.
-// TODO(coryan): As above, make these comments meaningful, not just "not empty".
+// ResourceReference describes a field's relationship to another resource type.
+// It acts as a foreign key, indicating that the field's value identifies an instance of another resource.
+// This relationship is established via the `google.api.resource_reference` annotation in Protobuf.
 type ResourceReference struct {
-	// Type is the resource type that the field references.
+	// Type is the unique identifier of the referenced resource's kind (e.g., "library.googleapis.com/Shelf").
+	// This string matches the `Type` field in the corresponding `Resource` definition.
 	Type string
-	// ChildType is the resource type of a child of the resource that the field
-	// references.
+	// ChildType identifies the unique identifier of a *child* resource's kind.
+	// This is used when a field references a parent resource (e.g., "Shelf"), but the context
+	// implies interaction with a specific child type (e.g., "Book" within that shelf).
 	ChildType string
 	// Language specific annotations.
 	Codec any
