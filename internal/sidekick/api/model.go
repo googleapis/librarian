@@ -896,11 +896,12 @@ type OneOf struct {
 	Codec any
 }
 
-// Resource contains metadata about a Google Cloud resource, derived from API definitions.
-// TODO(coryan): Is there a way to describe this without referring to the Protobuf annotation? Logically, what is this? If we switched to OpenAPI, what would these represent?
+// Resource is a fundamental building block of an API, representing an individually-named entity (a "noun").
+// Resources are typically organized into a hierarchy, where each node is either a simple resource or a collection of resources.
+// This definition is based on AIP-121 (https://google.aip.dev/121).
 type Resource struct {
-	// Type is the resource type identifier.
-	// TODO(coryan): That comment is not very useful. Can you say something about where the namespace for these types? Are they always messages in the current data model? Could they be imported from a different data model?
+	// Type identifies the kind of resource (e.g., "cloudresourcemanager.googleapis.com/Project").
+	// This string is globally unique and identifies the type of resource across Google Cloud.
 	Type string
 	// Pattern is the resource name pattern.
 	Pattern []string
