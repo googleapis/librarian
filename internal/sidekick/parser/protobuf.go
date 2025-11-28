@@ -505,15 +505,14 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 	for _, mf := range m.Field {
 		isProtoOptional := mf.Proto3Optional != nil && *mf.Proto3Optional
 		field := &api.Field{
-			Name:                mf.GetName(),
-			ID:                  mFQN + "." + mf.GetName(),
-			JSONName:            mf.GetJsonName(),
-			Deprecated:          mf.GetOptions().GetDeprecated(),
-			Optional:            isProtoOptional,
-			IsOneOf:             mf.OneofIndex != nil && !isProtoOptional,
-			AutoPopulated:       protobufIsAutoPopulated(mf),
-			IsResourceReference: protobufIsResourceReference(mf),
-			Behavior:            protobufFieldBehavior(mf),
+			Name:          mf.GetName(),
+			ID:            mFQN + "." + mf.GetName(),
+			JSONName:      mf.GetJsonName(),
+			Deprecated:    mf.GetOptions().GetDeprecated(),
+			Optional:      isProtoOptional,
+			IsOneOf:       mf.OneofIndex != nil && !isProtoOptional,
+			AutoPopulated: protobufIsAutoPopulated(mf),
+			Behavior:      protobufFieldBehavior(mf),
 		}
 		processResourceReference(mf, field)
 		normalizeTypes(state, mf, field)

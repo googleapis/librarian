@@ -1595,13 +1595,13 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		Documentation: "A request to create a `Foo` resource.",
 		Fields: []*api.Field{
 			{
-				Name:                "parent",
-				JSONName:            "parent",
-				ID:                  ".test.CreateFooRequest.parent",
-				Documentation:       "Required. The resource name of the project.",
-				Typez:               api.STRING_TYPE,
-				Behavior:            []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
-				IsResourceReference: true,
+				Name:              "parent",
+				JSONName:          "parent",
+				ID:                ".test.CreateFooRequest.parent",
+				Documentation:     "Required. The resource name of the project.",
+				Typez:             api.STRING_TYPE,
+				Behavior:          []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				ResourceReference: &api.ResourceReference{Type: "cloudresourcemanager.googleapis.com/Project"},
 			},
 			{
 				Name:          "foo_id",

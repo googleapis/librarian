@@ -751,8 +751,6 @@ type Field struct {
 	// - For OpenAPI, it is an optional field
 	// - For OpenAPI, it has format == "uuid"
 	AutoPopulated bool
-	// IsResourceReference is true if the field is annotated with google.api.resource_reference.
-	// TODO(coryan): This looks redundant now. If we are going to add `ResourceReference` then we should add a helper: func (f *field) IsResourceReference() bool { return f.ResourceReference != nil }
 	// FieldBehavior indicates how the field behaves in requests and responses.
 	//
 	// For example, that a field is required in requests, or given as output
@@ -765,8 +763,6 @@ type Field struct {
 	Parent *Message
 	// The message type for this field, can be nil.
 	MessageType *Message
-	// The enum type for this field, can be nil.
-	EnumType *Enum
 	// The enum type for this field, can be nil.
 	EnumType *Enum
 	// ResourceReference contains the data from the `google.api.resource_reference`
@@ -908,13 +904,11 @@ type Resource struct {
 	Type string
 	// Pattern is the resource name pattern.
 	Pattern []string
-	// The name of the resource in plural form
-	//
-	// For example for the `Shoe` resource would be `shoes` and the `Foot` resource this would `feet`.
+	// Plural is the plural form of the resource name.
+	// For example, for a "Book" resource, Plural would be "books".
 	Plural string
-	// The name of the resource in plural form
-	//
-	// For example for the `Shoe` resource would be `shoe` and the `Foot` resource this would `foot`.
+	// Singular is the singular form of the resource name.
+	// For example, for a "Book" resource, Singular would be "book".
 	Singular string
 
 	Self *Message
@@ -936,4 +930,9 @@ type ResourceReference struct {
 // FullName returns the fully qualified name of the method.
 func (m *Method) FullName() string {
 	return m.Service.Package + "." + m.Service.Name + "." + m.Name
+}
+
+// IsResourceReference returns true if the field is annotated with google.api.resource_reference.
+func (f *Field) IsResourceReference() bool {
+	return f.ResourceReference != nil
 }

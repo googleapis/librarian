@@ -737,7 +737,7 @@ func (c *codec) findResourceNameCandidates(m *api.Method) []*resourceNameCandida
 
 	// Find top-level annotated fields
 	for _, field := range m.InputType.Fields {
-		if field.IsResourceReference && !field.Repeated && !field.Map && field.Typez == api.STRING_TYPE {
+		if field.IsResourceReference() && !field.Repeated && !field.Map && field.Typez == api.STRING_TYPE {
 			candidates = append(candidates, &resourceNameCandidateField{
 				FieldPath: []string{field.Name},
 				Field:     field,
@@ -753,7 +753,7 @@ func (c *codec) findResourceNameCandidates(m *api.Method) []*resourceNameCandida
 			continue
 		}
 		for _, nestedField := range field.MessageType.Fields {
-			if !nestedField.IsResourceReference || nestedField.Repeated || nestedField.Map || nestedField.Typez != api.STRING_TYPE {
+			if !nestedField.IsResourceReference() || nestedField.Repeated || nestedField.Map || nestedField.Typez != api.STRING_TYPE {
 				continue
 			}
 			candidates = append(candidates, &resourceNameCandidateField{

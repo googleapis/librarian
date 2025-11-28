@@ -1969,7 +1969,11 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 func TestFindResourceNameFields(t *testing.T) {
 	// Helper to create a field
 	makeField := func(name string, isRef bool, msgType *api.Message) *api.Field {
-		f := &api.Field{Name: name, ID: ".test.Request." + name, IsResourceReference: isRef}
+		var resourceRef *api.ResourceReference
+		if isRef {
+			resourceRef = &api.ResourceReference{Type: "placeholder"}
+		}
+		f := &api.Field{Name: name, ID: ".test.Request." + name, ResourceReference: resourceRef}
 		if msgType != nil {
 			f.Typez = api.MESSAGE_TYPE
 			f.TypezID = msgType.ID
@@ -2165,8 +2169,8 @@ func TestFindResourceNameFields(t *testing.T) {
 		{
 			name: "Non-string field ignored",
 			method: makeMethod(&api.Message{ID: ".test.NonString", Fields: []*api.Field{
-				{Name: "int_ref", ID: ".test.NonString.int_ref", IsResourceReference: true, Typez: api.INT64_TYPE},
-				{Name: "valid_ref", ID: ".test.NonString.valid_ref", IsResourceReference: true, Typez: api.STRING_TYPE},
+				{Name: "int_ref", ID: ".test.NonString.int_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.INT64_TYPE},
+				{Name: "valid_ref", ID: ".test.NonString.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
 			}}),
 			wantPaths:     [][]string{{"valid_ref"}},
 			wantAccessors: []string{"Some(&req.valid_ref)"},
@@ -2174,9 +2178,9 @@ func TestFindResourceNameFields(t *testing.T) {
 		{
 			name: "Repeated and Map fields ignored",
 			method: makeMethod(&api.Message{ID: ".test.RepeatedMap", Fields: []*api.Field{
-				{Name: "repeated_ref", ID: ".test.RepeatedMap.repeated_ref", IsResourceReference: true, Repeated: true, Typez: api.STRING_TYPE},
-				{Name: "map_ref", ID: ".test.RepeatedMap.map_ref", IsResourceReference: true, Map: true, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID, MessageType: nestedMsg},
-				{Name: "valid_ref", ID: ".test.RepeatedMap.valid_ref", IsResourceReference: true, Typez: api.STRING_TYPE},
+				{Name: "repeated_ref", ID: ".test.RepeatedMap.repeated_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Repeated: true, Typez: api.STRING_TYPE},
+				{Name: "map_ref", ID: ".test.RepeatedMap.map_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Map: true, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID, MessageType: nestedMsg},
+				{Name: "valid_ref", ID: ".test.RepeatedMap.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
 			}}),
 			wantPaths:     [][]string{{"valid_ref"}},
 			wantAccessors: []string{"Some(&req.valid_ref)"},
@@ -2185,7 +2189,7 @@ func TestFindResourceNameFields(t *testing.T) {
 			name: "Nested in repeated parent ignored",
 			method: makeMethod(&api.Message{ID: ".test.NestedRepeated", Fields: []*api.Field{
 				{Name: "repeated_parent", ID: ".test.NestedRepeated.repeated_parent", Repeated: true, MessageType: nestedMsg, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID},
-				{Name: "valid_ref", ID: ".test.NestedRepeated.valid_ref", IsResourceReference: true, Typez: api.STRING_TYPE},
+				{Name: "valid_ref", ID: ".test.NestedRepeated.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
 			}}),
 			wantPaths:     [][]string{{"valid_ref"}},
 			wantAccessors: []string{"Some(&req.valid_ref)"},
