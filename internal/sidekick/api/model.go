@@ -151,14 +151,13 @@ type API struct {
 	Messages []*Message
 	// Enums
 	Enums []*Enum
-	// Language specific annotations.
-	Codec any
-
 	// State contains helpful information that can be used when generating
 	// clients.
 	State *APIState
 	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
 	ResourceDefinitions []*Resource
+	// Language specific annotations.
+	Codec any
 }
 
 // HasMessages returns true if the API contains messages (most do).
@@ -644,10 +643,10 @@ type Message struct {
 	// Indicates that this Message is returned by a standard
 	// List RPC and conforms to [AIP-4233](https://google.aip.dev/client-libraries/4233).
 	Pagination *PaginationInfo
-	// Language specific annotations.
-	Codec any
 	// Resource contains the data from the `google.api.resource` annotation.
 	Resource *Resource
+	// Language specific annotations.
+	Codec any
 }
 
 // HasFields returns true if the message has fields.
@@ -911,9 +910,9 @@ type Resource struct {
 	// Singular is the singular form of the resource name.
 	// For example, for a "Book" resource, Singular would be "book".
 	Singular string
-
+	//TODO(santiquiroga): add decription for Self
 	Self *Message
-	// TODO(coryan): Leave room for the codecs to annotate these things. Add `Codec any`.
+	// Language specific annotations.
 	Codec any
 }
 
@@ -925,6 +924,8 @@ type ResourceReference struct {
 	// ChildType is the resource type of a child of the resource that the field
 	// references.
 	ChildType string
+	// Language specific annotations.
+	Codec any
 }
 
 // TODO(coryan): This is very similar to `.ID`, why do we need both?
