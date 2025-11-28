@@ -931,12 +931,6 @@ type ResourceReference struct {
 	Codec any
 }
 
-// TODO(coryan): This is very similar to `.ID`, why do we need both?
-// FullName returns the fully qualified name of the method.
-func (m *Method) FullName() string {
-	return m.Service.Package + "." + m.Service.Name + "." + m.Name
-}
-
 // IsResourceReference returns true if the field is annotated with google.api.resource_reference.
 func (f *Field) IsResourceReference() bool {
 	return f.ResourceReference != nil
