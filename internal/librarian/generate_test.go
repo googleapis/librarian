@@ -31,19 +31,31 @@ func TestGenerateCommand(t *testing.T) {
 		lib2       = "library-two"
 		lib2Output = "output2"
 	)
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	googleapisDir := filepath.Join(wd, "testdata", "googleapis")
+
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	configPath := filepath.Join(tempDir, librarianConfigPath)
+
 	configContent := fmt.Sprintf(`language: testhelper
 sources:
   googleapis:
-    commit: abc123
+    dir: %s
 libraries:
   - name: %s
     output: %s
+    apis:
+      - path: google/cloud/speech/v1
+      - path: google/cloud/speech/v1p1beta1
+      - path: google/cloud/speech/v2
+      - path: grafeas/v1
   - name: %s
     output: %s
-`, lib1, lib1Output, lib2, lib2Output)
+`, googleapisDir, lib1, lib1Output, lib2, lib2Output)
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
 	}

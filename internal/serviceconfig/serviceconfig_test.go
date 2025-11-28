@@ -77,3 +77,14 @@ func TestNoGenprotoServiceConfigImports(t *testing.T) {
 			len(violations), genprotoImport, strings.Join(violations, "\n  "))
 	}
 }
+
+func TestFind(t *testing.T) {
+	got, err := Find("testdata/googleapis", "google/cloud/speech/v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "google/cloud/speech/v1/speech_v1.yaml"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
