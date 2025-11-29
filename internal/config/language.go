@@ -95,6 +95,9 @@ type RustCrate struct {
 
 	// NameOverrides contains codec-level overrides for type and service names.
 	NameOverrides string `yaml:"name_overrides,omitempty"`
+
+	// Discovery contains discovery-specific configuration for LRO polling.
+	Discovery *RustDiscovery `yaml:"discovery,omitempty"`
 }
 
 // RustPackageDependency represents a package dependency configuration.
@@ -137,4 +140,22 @@ type RustPaginationOverride struct {
 
 	// ItemField is the name of the field used for items.
 	ItemField string `yaml:"item_field"`
+}
+
+// RustDiscovery contains discovery-specific configuration for LRO polling.
+type RustDiscovery struct {
+	// OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation").
+	OperationID string `yaml:"operation_id"`
+
+	// Pollers is a list of LRO polling configurations.
+	Pollers []RustPoller `yaml:"pollers,omitempty"`
+}
+
+// RustPoller defines how to find a suitable poller RPC for discovery APIs.
+type RustPoller struct {
+	// Prefix is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}").
+	Prefix string `yaml:"prefix"`
+
+	// MethodID is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get").
+	MethodID string `yaml:"method_id"`
 }
