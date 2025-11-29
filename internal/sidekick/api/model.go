@@ -910,7 +910,9 @@ type Resource struct {
 	// Singular is the singular form of the resource name.
 	// For example, for a "Book" resource, Singular would be "book".
 	Singular string
-	//TODO(santiquiroga): add decription for Self
+	// Self points to the Message that defines this resource.
+	// This creates a back-reference for navigating the API model,
+	// allowing a Resource definition to access its originating Message structure.
 	Self *Message
 	// Language specific annotations.
 	Codec any

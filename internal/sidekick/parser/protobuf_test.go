@@ -1804,6 +1804,123 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	})
 }
 
+func TestProtobuf_ResourceAnnotations(t *testing.T) {
+	requireProtoc(t)
+	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "resource_annotations.proto"))
+
+	// 1. Verify API.ResourceDefinitions
+	if len(test.ResourceDefinitions) != 1 {
+		t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
+	}
+	wantResourceDef := &api.Resource{
+		Type:    "library.googleapis.com/Shelf",
+		Pattern: []string{"publishers/{publisher}/shelves/{shelf}"},
+	}
+	if diff := cmp.Diff(wantResourceDef, test.ResourceDefinitions[0], cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
+		t.Errorf("ResourceDefinition mismatch (-want +got):\n%s", diff)
+	}
+
+	// 2. Verify Message.Resource
+	bookMessage, ok := test.State.MessageByID[".test.Book"]
+	if !ok {
+		t.Fatalf("Cannot find message %s in API State", ".test.Book")
+	}
+	// Check Resource separately to handle 'Self' cycle and ignore Codec
+	wantBookResource := &api.Resource{
+		Type:     "library.googleapis.com/Book",
+		Pattern:  []string{"publishers/{publisher}/shelves/{shelf}/books/{book}"},
+		Plural:   "books",
+		Singular: "book",
+	}
+	if diff := cmp.Diff(wantBookResource, bookMessage.Resource, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+		t.Errorf("Book message Resource mismatch (-want +got):\n%s", diff)
+	}
+
+	apitest.CheckMessage(t, bookMessage, &api.Message{
+		Name:    "Book",
+		ID:      ".test.Book",
+		Package: "test",
+		Fields: []*api.Field{
+			{
+				Name:     "name",
+				JSONName: "name",
+				ID:       ".test.Book.name",
+				Typez:    api.STRING_TYPE,
+			},
+		},
+	})
+
+	// 3. Verify CreateBookRequest
+	createBookRequest, ok := test.State.MessageByID[".test.CreateBookRequest"]
+	if !ok {
+		t.Fatalf("Cannot find message %s in API State", ".test.CreateBookRequest")
+	}
+	apitest.CheckMessage(t, createBookRequest, &api.Message{
+		Name:    "CreateBookRequest",
+		ID:      ".test.CreateBookRequest",
+		Package: "test",
+		Fields: []*api.Field{
+			{
+				Name:     "parent",
+				JSONName: "parent",
+				ID:       ".test.CreateBookRequest.parent",
+				Typez:    api.STRING_TYPE,
+				ResourceReference: &api.ResourceReference{
+					Type: "library.googleapis.com/Shelf",
+				},
+			},
+			{
+				Name:     "book_id",
+				JSONName: "bookId",
+				ID:       ".test.CreateBookRequest.book_id",
+				Typez:    api.STRING_TYPE,
+			},
+			{
+				Name:     "book",
+				JSONName: "book",
+				ID:       ".test.CreateBookRequest.book",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  ".test.Book",
+				Optional: true,
+			},
+		},
+	})
+
+	// 4. Verify ListBooksRequest
+	listBooksRequest, ok := test.State.MessageByID[".test.ListBooksRequest"]
+	if !ok {
+		t.Fatalf("Cannot find message %s in API State", ".test.ListBooksRequest")
+	}
+	apitest.CheckMessage(t, listBooksRequest, &api.Message{
+		Name:    "ListBooksRequest",
+		ID:      ".test.ListBooksRequest",
+		Package: "test",
+		Fields: []*api.Field{
+			{
+				Name:     "parent",
+				JSONName: "parent",
+				ID:       ".test.ListBooksRequest.parent",
+				Typez:    api.STRING_TYPE,
+				ResourceReference: &api.ResourceReference{
+					ChildType: "library.googleapis.com/Book",
+				},
+			},
+			{
+				Name:     "page_size",
+				JSONName: "pageSize",
+				ID:       ".test.ListBooksRequest.page_size",
+				Typez:    api.INT32_TYPE,
+			},
+			{
+				Name:     "page_token",
+				JSONName: "pageToken",
+				ID:       ".test.ListBooksRequest.page_token",
+				Typez:    api.STRING_TYPE,
+			},
+		},
+	})
+}
+
 func TestProtobuf_ParseBadFiles(t *testing.T) {
 	requireProtoc(t)
 	for _, general := range []config.GeneralConfig{
