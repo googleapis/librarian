@@ -767,7 +767,7 @@ type Field struct {
 	// ResourceReference contains the data from the `google.api.resource_reference`
 	// annotation.
 	ResourceReference *ResourceReference
-	// TODO(coryan): So far we have kept the `Codec any` entry last, no good reason, but no good reason to break away from that either I think? Also in some other structs.
+	// Codec is a placeholder to put language specific annotations.
 	Codec any
 }
 

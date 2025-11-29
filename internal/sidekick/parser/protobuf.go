@@ -539,7 +539,6 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 	return message
 }
 
-// TODO(coryan): These changes are missing tests in `protobuf_test.go`.
 func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message) {
 	if !proto.HasExtension(opts, annotations.E_Resource) {
 		return
