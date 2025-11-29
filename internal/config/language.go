@@ -99,12 +99,6 @@ type RustCrate struct {
 
 // RustPackageDependency represents a package dependency configuration.
 type RustPackageDependency struct {
-	// Feature is the feature name for the dependency.
-	Feature string `yaml:"feature,omitempty"`
-
-	// ForceUsed forces the dependency to be used even if not referenced.
-	ForceUsed bool `yaml:"force_used,omitempty"`
-
 	// Name is the dependency name.
 	Name string `yaml:"name"`
 
@@ -113,6 +107,12 @@ type RustPackageDependency struct {
 
 	// Source is the dependency source.
 	Source string `yaml:"source,omitempty"`
+
+	// Feature is the feature name for the dependency.
+	Feature string `yaml:"feature,omitempty"`
+
+	// ForceUsed forces the dependency to be used even if not referenced.
+	ForceUsed bool `yaml:"force_used,omitempty"`
 
 	// UsedIf specifies a condition for when the dependency is used.
 	UsedIf string `yaml:"used_if,omitempty"`
