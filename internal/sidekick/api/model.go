@@ -925,7 +925,7 @@ type ResourceReference struct {
 	// Type is the unique identifier of the referenced resource's kind (e.g., "library.googleapis.com/Shelf").
 	// This string matches the `Type` field in the corresponding `Resource` definition.
 	Type string
-	// ChildType identifies the unique identifier of a *child* resource's kind.
+	// ChildType is the unique identifier of a *child* resource's kind.
 	// This is used when a field references a parent resource (e.g., "Shelf"), but the context
 	// implies interaction with a specific child type (e.g., "Book" within that shelf).
 	ChildType string
