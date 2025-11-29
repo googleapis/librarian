@@ -160,5 +160,8 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	if dep.Feature != "" {
 		parts = append(parts, "feature="+dep.Feature)
 	}
+	if dep.Ignore {
+		parts = append(parts, "ignore=true")
+	}
 	return strings.Join(parts, ",")
 }

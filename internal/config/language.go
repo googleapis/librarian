@@ -102,6 +102,12 @@ type RustPackageDependency struct {
 	// Name is the dependency name.
 	Name string `yaml:"name"`
 
+	// Ignore prevents this package from being mapped to an external crate.
+	// When true, references to this package stay as `crate::` instead of being
+	// mapped to the external crate name. This is used for self-referencing
+	// packages like location and longrunning.
+	Ignore bool `yaml:"ignore,omitempty"`
+
 	// Package is the package name.
 	Package string `yaml:"package"`
 

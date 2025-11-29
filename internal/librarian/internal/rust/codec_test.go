@@ -529,8 +529,17 @@ func TestFormatPackageDependency(t *testing.T) {
 				ForceUsed: true,
 				UsedIf:    "feature = \"async\"",
 				Feature:   "async",
+				Ignore:    true,
 			},
-			want: "package=tokio,source=1.0,force-used=true,used-if=feature = \"async\",feature=async",
+			want: "package=tokio,source=1.0,force-used=true,used-if=feature = \"async\",feature=async,ignore=true",
+		},
+		{
+			name: "with ignore for self-referencing package",
+			dep: config.RustPackageDependency{
+				Name:   "longrunning",
+				Ignore: true,
+			},
+			want: "ignore=true",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
