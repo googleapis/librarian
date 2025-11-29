@@ -151,12 +151,13 @@ type API struct {
 	Messages []*Message
 	// Enums
 	Enums []*Enum
-	// Language specific annotations.
-	Codec any
-
 	// State contains helpful information that can be used when generating
 	// clients.
 	State *APIState
+	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
+	ResourceDefinitions []*Resource
+	// Language specific annotations.
+	Codec any
 }
 
 // HasMessages returns true if the API contains messages (most do).
@@ -642,6 +643,8 @@ type Message struct {
 	// Indicates that this Message is returned by a standard
 	// List RPC and conforms to [AIP-4233](https://google.aip.dev/client-libraries/4233).
 	Pagination *PaginationInfo
+	// Resource contains the data from the `google.api.resource` annotation.
+	Resource *Resource
 	// Language specific annotations.
 	Codec any
 }
@@ -747,8 +750,6 @@ type Field struct {
 	// - For OpenAPI, it is an optional field
 	// - For OpenAPI, it has format == "uuid"
 	AutoPopulated bool
-	// IsResourceReference is true if the field is annotated with google.api.resource_reference.
-	IsResourceReference bool
 	// FieldBehavior indicates how the field behaves in requests and responses.
 	//
 	// For example, that a field is required in requests, or given as output
@@ -763,7 +764,10 @@ type Field struct {
 	MessageType *Message
 	// The enum type for this field, can be nil.
 	EnumType *Enum
-	// A placeholder to put language specific annotations.
+	// ResourceReference contains the data from the `google.api.resource_reference`
+	// annotation.
+	ResourceReference *ResourceReference
+	// Codec is a placeholder to put language specific annotations.
 	Codec any
 }
 
@@ -889,4 +893,47 @@ type OneOf struct {
 	Fields []*Field
 	// Codec is a placeholder to put language specific annotations.
 	Codec any
+}
+
+// Resource is a fundamental building block of an API, representing an individually-named entity (a "noun").
+// Resources are typically organized into a hierarchy, where each node is either a simple resource or a collection of resources.
+// This definition is based on AIP-121 (https://google.aip.dev/121).
+type Resource struct {
+	// Type identifies the kind of resource (e.g., "cloudresourcemanager.googleapis.com/Project").
+	// This string is globally unique and identifies the type of resource across Google Cloud.
+	Type string
+	// Pattern is the resource name pattern.
+	Pattern []string
+	// Plural is the plural form of the resource name.
+	// For example, for a "Book" resource, Plural would be "books".
+	Plural string
+	// Singular is the singular form of the resource name.
+	// For example, for a "Book" resource, Singular would be "book".
+	Singular string
+	// Self points to the Message that defines this resource.
+	// This creates a back-reference for navigating the API model,
+	// allowing a Resource definition to access its originating Message structure.
+	Self *Message
+	// Language specific annotations.
+	Codec any
+}
+
+// ResourceReference describes a field's relationship to another resource type.
+// It acts as a foreign key, indicating that the field's value identifies an instance of another resource.
+// This relationship is established via the `google.api.resource_reference` annotation in Protobuf.
+type ResourceReference struct {
+	// Type is the unique identifier of the referenced resource's kind (e.g., "library.googleapis.com/Shelf").
+	// This string matches the `Type` field in the corresponding `Resource` definition.
+	Type string
+	// ChildType identifies the unique identifier of a *child* resource's kind.
+	// This is used when a field references a parent resource (e.g., "Shelf"), but the context
+	// implies interaction with a specific child type (e.g., "Book" within that shelf).
+	ChildType string
+	// Language specific annotations.
+	Codec any
+}
+
+// IsResourceReference returns true if the field is annotated with google.api.resource_reference.
+func (f *Field) IsResourceReference() bool {
+	return f.ResourceReference != nil
 }

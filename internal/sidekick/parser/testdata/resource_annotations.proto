@@ -1,0 +1,39 @@
+syntax = "proto3";
+package test;
+
+import "google/api/resource.proto";
+
+option (google.api.resource_definition) = {
+  type: "library.googleapis.com/Shelf"
+  pattern: "publishers/{publisher}/shelves/{shelf}"
+};
+
+message Book {
+  option (google.api.resource) = {
+    type: "library.googleapis.com/Book"
+    pattern: "publishers/{publisher}/shelves/{shelf}/books/{book}"
+    plural: "books"
+    singular: "book"
+  };
+  string name = 1;
+}
+
+message CreateBookRequest {
+  string parent = 1 [
+    (google.api.resource_reference) = {
+      type: "library.googleapis.com/Shelf"
+    }
+  ];
+  string book_id = 2;
+  Book book = 3;
+}
+
+message ListBooksRequest {
+  string parent = 1 [
+    (google.api.resource_reference) = {
+      child_type: "library.googleapis.com/Book"
+    }
+  ];
+  int32 page_size = 2;
+  string page_token = 3;
+}
