@@ -192,10 +192,3 @@ func protobufIsAutoPopulated(field *descriptorpb.FieldDescriptorProto) bool {
 
 	return true
 }
-
-func protobufIsResourceReference(field *descriptorpb.FieldDescriptorProto) bool {
-	if field.GetType() != descriptorpb.FieldDescriptorProto_TYPE_STRING {
-		return false
-	}
-	return proto.HasExtension(field.GetOptions(), annotations.E_ResourceReference)
-}
