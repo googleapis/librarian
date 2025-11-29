@@ -37,3 +37,11 @@ message ListBooksRequest {
   int32 page_size = 2;
   string page_token = 3;
 }
+
+message NoResourceMessage {
+  string id = 1;
+}
+
+message NoReferenceMessage {
+  string simple_field = 1;
+}

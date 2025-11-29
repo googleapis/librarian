@@ -325,3 +325,15 @@ func TestFlatPath(t *testing.T) {
 		}
 	}
 }
+
+func TestField_IsResourceReference(t *testing.T) {
+	field := &Field{}
+	if field.IsResourceReference() {
+		t.Errorf("IsResourceReference() should be false for nil ResourceReference")
+	}
+
+	field.ResourceReference = &ResourceReference{}
+	if !field.IsResourceReference() {
+		t.Errorf("IsResourceReference() should be true for non-nil ResourceReference")
+	}
+}
