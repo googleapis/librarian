@@ -221,11 +221,11 @@ func recordGoVersion(path string, sfs fs.FS, re *regexp.Regexp, goVersions map[s
 }
 
 func TestGolangCILint(t *testing.T) {
-	rungo(t, "run", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.0", "run")
+	rungo(t, "tool", "golangci-lint", "run")
 }
 
 func TestGoImports(t *testing.T) {
-	cmd := exec.Command("go", "run", "golang.org/x/tools/cmd/goimports@v0.38.0", "-d", ".")
+	cmd := exec.Command("go", "tool", "goimports", "-d", ".")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -243,7 +243,7 @@ func TestGoModTidy(t *testing.T) {
 }
 
 func TestYAMLFormat(t *testing.T) {
-	cmd := exec.Command("go", "run", "github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2", "-lint", ".")
+	cmd := exec.Command("go", "tool", "yamlfmt", "-lint", ".")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

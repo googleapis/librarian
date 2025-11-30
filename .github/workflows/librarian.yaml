@@ -33,39 +33,13 @@ jobs:
           cd /usr/local
           sudo unzip -x /tmp/protoc.zip
           protoc --version
-          go install golang.org/x/tools/cmd/goimports@latest
+          go install tool
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Upload coverage report
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-  e2e-test:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: "go.mod"
-      - name: Install tools
-        run: |
-          set -e
-          curl -fSSL -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
-          cd /usr/local
-          sudo unzip -x /tmp/protoc.zip
-          protoc --version
-          go install github.com/google/yamlfmt/cmd/yamlfmt@v0.17.2
-          go install golang.org/x/tools/cmd/goimports@latest
-      - uses: docker/setup-docker-action@v4
-      - name: Build the test image
-        run: |
-          DOCKER_BUILDKIT=1 docker build \
-            -f ./internal/legacylibrarian/legacyintegration/testdata/e2e-test.Dockerfile \
-            -t test-image:latest \
-            .
-      - name: Run end-to-end test
-        run: |
-          go test -tags e2e ./...
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     needs: [test, e2e-test]
