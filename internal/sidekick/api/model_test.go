@@ -327,13 +327,27 @@ func TestFlatPath(t *testing.T) {
 }
 
 func TestField_IsResourceReference(t *testing.T) {
-	field := &Field{}
-	if field.IsResourceReference() {
-		t.Errorf("IsResourceReference() should be false for nil ResourceReference")
-	}
-
-	field.ResourceReference = &ResourceReference{}
-	if !field.IsResourceReference() {
-		t.Errorf("IsResourceReference() should be true for non-nil ResourceReference")
+	for _, test := range []struct {
+		name  string
+		field *Field
+		want  bool
+	}{
+		{
+			name:  "nil ResourceReference",
+			field: &Field{},
+			want:  false,
+		},
+		{
+			name:  "non-nil ResourceReference",
+			field: &Field{ResourceReference: &ResourceReference{}},
+			want:  true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.field.IsResourceReference()
+			if got != test.want {
+				t.Errorf("IsResourceReference() got = %v, want %v", got, test.want)
+			}
+		})
 	}
 }
