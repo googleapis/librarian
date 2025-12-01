@@ -39,8 +39,10 @@ default:
 libraries:
   - name: google-cloud-secretmanager-v1
     channel: google/cloud/secretmanager/v1
+    version: 1.2.3
   - name: google-cloud-storage-v2
     channel: google/cloud/storage/v2
     rust:
       disabled_rustdoc_warnings:
         - rustdoc::bare_urls
+    version: 2.3.4
