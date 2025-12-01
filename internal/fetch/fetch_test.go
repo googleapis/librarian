@@ -533,9 +533,9 @@ func TestDownloadTarballErrors(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			backoffForTest = time.Millisecond
+			defaultBackoff = time.Millisecond
 			t.Cleanup(func() {
-				backoffForTest = 0
+				defaultBackoff = 10 * time.Second
 			})
 			err := DownloadTarball(context.Background(), test.target(t), test.url(t), test.sha)
 			if (err != nil) != test.wantErr {
@@ -546,9 +546,9 @@ func TestDownloadTarballErrors(t *testing.T) {
 }
 
 func TestDownloadTarballRetry(t *testing.T) {
-	backoffForTest = time.Millisecond
+	defaultBackoff = time.Millisecond
 	t.Cleanup(func() {
-		backoffForTest = 0
+		defaultBackoff = 10 * time.Second
 	})
 	testDir := t.TempDir()
 	tarball := makeTestContents(t)
