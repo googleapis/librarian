@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package migrate_sidekick provides tools to create a librarian configuration from
-// .sidekick.toml in a repository.
 package migrate_sidekick
 
 import (
