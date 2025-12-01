@@ -35,7 +35,10 @@ const (
 	sidekickFile = ".sidekick.toml"
 )
 
-var errSidekickNotFound = errors.New(".sidekick.toml not found")
+var (
+	errSidekickNotFound = errors.New(".sidekick.toml not found")
+	errSrcNotFound      = errors.New("src/generated directory not found")
+)
 
 // RootSidekickConfig represents the structure of the root .sidekick.toml file.
 type RootSidekickConfig struct {
@@ -240,7 +243,7 @@ func findSidekickFiles(repoPath string) ([]string, error) {
 	generatedPath := filepath.Join(repoPath, "src", "generated")
 	err := filepath.Walk(generatedPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return errSrcNotFound
 		}
 		if !info.IsDir() && info.Name() == sidekickFile {
 			files = append(files, path)
@@ -251,6 +254,10 @@ func findSidekickFiles(repoPath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return files[i] < files[j]
+	})
 
 	return files, nil
 }

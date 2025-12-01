@@ -31,7 +31,7 @@ func TestReadRootSidekick(t *testing.T) {
 	}{
 		{
 			name: "success",
-			path: "testdata/rootSidekick/success",
+			path: "testdata/root-sidekick/success",
 			want: &RootDefaults{
 				DisabledRustdocWarnings: []string{
 					"redundant_explicit_links",
@@ -58,12 +58,53 @@ func TestReadRootSidekick(t *testing.T) {
 		},
 		{
 			name:    "no_sidekick_file",
-			path:    "testdata/rootSidekick/no_sidekick_file",
+			path:    "testdata/root-sidekick/no_sidekick_file",
 			wantErr: errSidekickNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := readRootSidekick(test.path)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("got error %v, want %v", err, test.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("got error %v, want nil", err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindSidekickFiles(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		path    string
+		want    []string
+		wantErr error
+	}{
+		{
+			name: "found_sidekick_files",
+			path: "testdata/find-sidekick-files/success",
+			want: []string{
+				"testdata/find-sidekick-files/success/src/generated/sub-1/.sidekick.toml",
+				"testdata/find-sidekick-files/success/src/generated/sub-1/subsub-1/.sidekick.toml",
+			},
+		},
+		{
+			name:    "no_src_directory",
+			path:    "testdata/find-sidekick-files/no-src",
+			wantErr: errSrcNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findSidekickFiles(test.path)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)
