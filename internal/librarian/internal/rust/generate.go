@@ -55,17 +55,8 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err := command.Run("taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
 		return err
 	}
-	rsFiles, err := filepath.Glob(filepath.Join(library.Output, "src", "*.rs"))
-	if err != nil {
+	if err := command.Run("cargo", "fmt", "-p", library.Name); err != nil {
 		return err
-	}
-	if len(rsFiles) > 0 {
-		// rustfmt defaults to 2015 edition when run directly on files. Specify
-		// 2024 to match the edition in Cargo.toml.
-		args := append([]string{"--edition", "2024"}, rsFiles...)
-		if err := command.Run("rustfmt", args...); err != nil {
-			return err
-		}
 	}
 	return nil
 }
