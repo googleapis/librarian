@@ -57,11 +57,11 @@ func TestRepoFromTarballLinkErrors(t *testing.T) {
 		tarballLink string
 	}{
 		{
-			name:        "too short",
+			name:        "URL path does not match prefix",
 			tarballLink: "too-short",
 		},
 		{
-			name:        "not enough parts",
+			name:        "URL path has only one component after prefix removal",
 			tarballLink: testGitHubDn + "/org",
 		},
 	} {
@@ -482,7 +482,7 @@ func TestDownloadTarballErrors(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "http no content response",
+			name: "http non-retriable error response",
 			target: func(t *testing.T) string {
 				return path.Join(t.TempDir(), "target")
 			},
