@@ -49,7 +49,7 @@ func TestReadWrite(t *testing.T) {
 	}
 }
 
-func TestFindByName(t *testing.T) {
+func TestLibraryByName(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		libraryName string
