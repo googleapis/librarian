@@ -72,9 +72,7 @@ const expectedHeader = `// Copyright 202\d Google LLC
 // You may obtain a copy of the License at`
 
 var (
-	headerRegex          = regexp.MustCompile("(?s)" + expectedHeader)
-	dockerGoVersionRegex = regexp.MustCompile(`golang:(?P<version>[^ \n]+)`)
-	modGoVersionRegex    = regexp.MustCompile(`\ngo\s+(?P<version>[^ \n]+)`)
+	headerRegex = regexp.MustCompile("(?s)" + expectedHeader)
 )
 
 func TestHeaders(t *testing.T) {
@@ -161,63 +159,6 @@ func hasValidHeader(path string, r io.Reader) (bool, error) {
 	}
 
 	return headerRegex.Match(allBytes), nil
-}
-
-// TestConsistentGoVersions walks the directory tree and checks Dockerfiles and go.mod files for specified Go versions.
-// It ensures that only one unique Go version is specified across all found files to maintain consistency. The test
-// fails if multiple Go versions are detected.
-// TODO(https://github.com/googleapis/librarian/issues/2739): remove this test once is resolved.
-func TestConsistentGoVersions(t *testing.T) {
-	goVersions := make(map[string][]string)
-	sfs := os.DirFS(".")
-	err := fs.WalkDir(sfs, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if strings.HasSuffix(path, "Dockerfile") {
-			return recordGoVersion(path, sfs, dockerGoVersionRegex, goVersions)
-		}
-
-		if strings.HasSuffix(path, "go.mod") {
-			return recordGoVersion(path, sfs, modGoVersionRegex, goVersions)
-		}
-
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(goVersions) > 1 {
-		for ver, paths := range goVersions {
-			t.Logf("%s found in %s", ver, strings.Join(paths, "\n"))
-		}
-		t.Error("found multiple golang versions")
-	}
-}
-
-// recordGoVersion reads the content of the file at the given path, finds all matches of the provided regular
-// expression (re), and records the first capturing group (expected to be the version string) in the goVersions map
-// along with the file path.
-func recordGoVersion(path string, sfs fs.FS, re *regexp.Regexp, goVersions map[string][]string) error {
-	f, err := sfs.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	allBytes, err := io.ReadAll(f)
-	if err != nil {
-		return err
-	}
-
-	matches := re.FindAllStringSubmatch(string(allBytes), -1)
-	for _, match := range matches {
-		goVersions[match[1]] = append(goVersions[match[1]], path)
-	}
-
-	return nil
 }
 
 func TestGolangCILint(t *testing.T) {
