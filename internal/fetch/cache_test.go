@@ -263,7 +263,7 @@ func TestRepoDir_Download(t *testing.T) {
 	}
 }
 
-func TestRepoDir_ContextCanceled(t *testing.T) {
+func TestRepoDir_ContextDeadlineExceeded(t *testing.T) {
 	cachedir := t.TempDir()
 	t.Setenv(envLibrarianCache, cachedir)
 
@@ -277,7 +277,7 @@ func TestRepoDir_ContextCanceled(t *testing.T) {
 	http.DefaultTransport = server.Client().Transport
 
 	// very short timeout to trigger context deadline exceeded.
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 	defer cancel()
 
 	repo := strings.TrimPrefix(server.URL, "https://")

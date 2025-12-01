@@ -172,14 +172,14 @@ func downloadTarball(ctx context.Context, target, source string) error {
 			}
 		}
 
-		err = downloadAttempt(ctx, target, source)
-		if err == nil {
-			return nil
+		if err := downloadAttempt(ctx, target, source); err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return err
+			}
+			continue
 		}
+		return nil
 
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return err
-		}
 	}
 	return fmt.Errorf("download failed after 3 attempts, last error=%w", err)
 }

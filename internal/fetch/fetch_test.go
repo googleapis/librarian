@@ -264,19 +264,24 @@ func TestDownloadTarball_ContextCanceled(t *testing.T) {
 	testDir := t.TempDir()
 	// Set up a mock web server that sleeps to simulate a long download.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond) // Ensure this is longer than the explicit cancelation
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
 	target := path.Join(testDir, "target-file")
-	// Create a context that will be canceled before the download completes.
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
+	// Create a context that will be canceled explicitly after a short delay.
+	ctx, cancel := context.WithCancel(t.Context())
+	// Start a goroutine to cancel the context after a brief period,
+	// so that `DownloadTarball` is still in progress when the cancellation occurs.
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
 
 	err := DownloadTarball(ctx, target, server.URL+"/test.tar.gz", "any-sha")
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got: %v", err)
 	}
 }
 
