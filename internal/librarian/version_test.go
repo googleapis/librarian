@@ -90,6 +90,32 @@ func TestVersion(t *testing.T) {
 			want:      "not available",
 			buildinfo: &debug.BuildInfo{},
 		},
+		{
+			name: "retracted version, build from tagged commit",
+			want: fmt.Sprintf("%s-123456789000-20230125195754", baseVersion),
+			buildinfo: &debug.BuildInfo{
+				Main: debug.Module{
+					Version: "v1.0.0",
+				},
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.revision", Value: "1234567890001234"},
+					{Key: "vcs.time", Value: "2023-01-25T19:57:54Z"},
+				},
+			},
+		},
+		{
+			name: "retracted version, local dev builds from untagged commits",
+			want: fmt.Sprintf("%s-123456789000-20230125195754", baseVersion),
+			buildinfo: &debug.BuildInfo{
+				Main: debug.Module{
+					Version: "v1.0.2-0.20251125150633-68dcc1cc4ab4+dirty",
+				},
+				Settings: []debug.BuildSetting{
+					{Key: "vcs.revision", Value: "1234567890001234"},
+					{Key: "vcs.time", Value: "2023-01-25T19:57:54Z"},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := version(test.buildinfo); got != test.want {

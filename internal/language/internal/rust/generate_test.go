@@ -34,10 +34,14 @@ func TestGenerate(t *testing.T) {
 	outDir := t.TempDir()
 	googleapisDir := filepath.Join(testdataDir, "googleapis")
 	library := &config.Library{
-		Name:          "secretmanager",
-		Output:        outDir,
-		ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-		Channel:       "google/cloud/secretmanager/v1",
+		Name:   "secretmanager",
+		Output: outDir,
+		Channels: []*config.Channel{
+			{
+				Path:          "google/cloud/secretmanager/v1",
+				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+		},
 		Version:       "0.1.0",
 		ReleaseLevel:  "preview",
 		CopyrightYear: "2025",
